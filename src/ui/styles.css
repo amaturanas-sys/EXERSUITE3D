@@ -1,0 +1,242 @@
+:root {
+  --bg: #14161b;
+  --panel: #1e2128;
+  --panel-2: #262a33;
+  --border: #333845;
+  --text: #e6e8ec;
+  --text-dim: #9aa1ad;
+  --accent: #3b82f6;
+  --accent-2: #2563eb;
+  --danger: #ef4444;
+  --radius: 8px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+#viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- Barra superior ---- */
+#toolbar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(30, 33, 40, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.tool-group {
+  display: flex;
+  gap: 4px;
+  padding-right: 6px;
+  border-right: 1px solid var(--border);
+}
+.tool-group:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+button.tool {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px 11px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button.tool:hover {
+  border-color: var(--border);
+}
+button.tool.active {
+  background: var(--accent);
+  border-color: var(--accent-2);
+}
+button.tool.danger:hover {
+  background: var(--danger);
+}
+
+/* ---- Paneles laterales ---- */
+.panel {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  width: 248px;
+  background: rgba(30, 33, 40, 0.94);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  z-index: 9;
+  overflow: hidden;
+}
+#palette {
+  left: 12px;
+}
+#inspector {
+  right: 12px;
+}
+
+.panel-title {
+  padding: 10px 12px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.panel-body {
+  overflow-y: auto;
+  padding: 8px;
+  flex: 1;
+}
+
+/* ---- Paleta ---- */
+.cat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin: 10px 4px 4px;
+}
+.comp-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.comp-btn:hover {
+  border-color: var(--accent);
+}
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+/* ---- Inspector ---- */
+.field {
+  margin-bottom: 10px;
+}
+.field > label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.row {
+  display: flex;
+  gap: 6px;
+}
+.row .sub {
+  flex: 1;
+}
+.row .sub label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 7px;
+  font-size: 13px;
+}
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.empty-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 12px 4px;
+  line-height: 1.5;
+}
+
+/* ---- Outliner ---- */
+.outliner-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.outliner-item:hover {
+  background: var(--panel-2);
+}
+.outliner-item.selected {
+  background: var(--accent);
+}
+
+/* ---- HUD medidas ---- */
+#hud {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  background: rgba(30, 33, 40, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  z-index: 8;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .panel {
+    width: 200px;
+  }
+  #toolbar {
+    flex-wrap: wrap;
+    max-width: calc(100% - 24px);
+  }
+}
