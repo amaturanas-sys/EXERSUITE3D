@@ -54,6 +54,22 @@ export class Toolbar {
     delBtn.addEventListener("click", () => {
       const sel = this.editor.getSelected();
       if (sel) this.editor.removeObject(sel);
+      else if (this.editor.hasGroupSelected()) this.editor.deleteSelectedGroup();
+    });
+
+    // Agrupacion de piezas.
+    const groupBtn = el("button", { class: "tool", title: "Agrupar piezas (Shift+clic para multiseleccionar)" }, [
+      "Agrupar",
+    ]);
+    groupBtn.disabled = true;
+    groupBtn.addEventListener("click", () => this.editor.createGroup());
+    const ungroupBtn = el("button", { class: "tool", title: "Desagrupar" }, ["Desagrupar"]);
+    ungroupBtn.disabled = true;
+    ungroupBtn.addEventListener("click", () => this.editor.ungroupSelected());
+    this.editor.bus.on("groupingChanged", ({ multi, groupSelected }) => {
+      groupBtn.disabled = multi < 2;
+      groupBtn.textContent = multi >= 2 ? `Agrupar (${multi})` : "Agrupar";
+      ungroupBtn.disabled = !groupSelected;
     });
 
     // Figura humana de referencia (escala/ergonomia).
@@ -104,6 +120,7 @@ export class Toolbar {
       ]),
       el("div", { class: "tool-group" }, [spaceBtn, gridBtn, snapBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
+      el("div", { class: "tool-group" }, [groupBtn, ungroupBtn]),
       el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
 

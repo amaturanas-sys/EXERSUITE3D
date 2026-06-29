@@ -54,6 +54,8 @@ export type EditorEvents = {
   posesChanged: { names: string[] };
   /** Modo "apoyar mano en agarre" (IK): etapa actual. */
   attachModeChanged: { active: boolean; stage: "hand" | "grip" | null };
+  /** Cambio en la multiseleccion (para agrupar) o en los grupos. */
+  groupingChanged: { multi: number; groupSelected: boolean };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -101,6 +103,15 @@ export class Editor {
 
   private snap: SnapManager;
 
+  // Agrupacion de piezas en subensamblajes.
+  private multiSel = new Set<string>();
+  private groups = new Map<string, { name: string; ids: string[] }>();
+  private objGroup = new Map<string, string>();
+  private selectedGroupId: string | null = null;
+  private groupProxy = new THREE.Object3D();
+  private groupPrev = new THREE.Matrix4();
+  private nextGroupId = 1;
+
   private references = new THREE.Group();
   private humanFigure: THREE.Group | null = null;
   private humanHeight = DEFAULT_HUMAN_HEIGHT;
@@ -131,6 +142,10 @@ export class Editor {
       if (!e.value) this.snap.hideIndicator();
     });
     this.gizmo.addEventListener("objectChange", () => {
+      if (this.selectedGroupId) {
+        this.applyGroupDelta();
+        return;
+      }
       if (!this.selected) return;
       this.applySnap();
       this.bus.emit("objectTransformed", { object: this.selected });
@@ -144,6 +159,7 @@ export class Editor {
     this.sceneManager.scene.add(this.jointHelpers);
     this.sceneManager.scene.add(this.references);
     this.sceneManager.scene.add(this.cableVisuals);
+    this.sceneManager.scene.add(this.groupProxy);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     window.addEventListener("resize", this.onResize);
@@ -259,6 +275,21 @@ export class Editor {
     for (const c of this.listCables()) {
       if (c.nodes.some((n) => n.objectId === obj.id)) this.cables.delete(c.id);
     }
+    // Limpia membresia de grupo y multiseleccion.
+    this.multiSel.delete(obj.id);
+    const gid = this.objGroup.get(obj.id);
+    if (gid) {
+      this.objGroup.delete(obj.id);
+      const g = this.groups.get(gid);
+      if (g) {
+        g.ids = g.ids.filter((x) => x !== obj.id);
+        if (g.ids.length < 2) {
+          g.ids.forEach((x) => this.objGroup.delete(x));
+          this.groups.delete(gid);
+          if (this.selectedGroupId === gid) this.selectedGroupId = null;
+        }
+      }
+    }
     this.sceneManager.content.remove(obj.mesh);
     obj.dispose();
     this.objects.delete(obj.id);
@@ -291,11 +322,15 @@ export class Editor {
 
   // ------------------------------------------------------------ seleccion
   select(obj: SceneObject | null): void {
+    this.clearGroupHighlight();
     this.selected = obj;
     this.selectedFigure = false;
+    this.selectedGroupId = null;
+    this.clearMultiSel();
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
     this.bus.emit("selectionChanged", { selected: obj });
+    this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
   }
 
   getSelected(): SceneObject | null {
@@ -329,6 +364,169 @@ export class Editor {
     if (!r) return false;
     obj.mesh.position.add(r.delta);
     return true;
+  }
+
+  // ---------------------------------------------------------- agrupacion
+  groupOf(objId: string): string | undefined {
+    return this.objGroup.get(objId);
+  }
+
+  hasGroupSelected(): boolean {
+    return this.selectedGroupId !== null;
+  }
+
+  multiCount(): number {
+    return this.multiSel.size;
+  }
+
+  private setHighlight(obj: SceneObject, on: boolean): void {
+    const m = obj.mesh.material as THREE.MeshStandardMaterial;
+    if (m && m.emissive) m.emissive.setHex(on ? 0x14406a : 0x000000);
+  }
+
+  private clearMultiSel(): void {
+    for (const id of this.multiSel) {
+      const o = this.objects.get(id);
+      if (o) this.setHighlight(o, false);
+    }
+    this.multiSel.clear();
+  }
+
+  private clearGroupHighlight(): void {
+    if (!this.selectedGroupId) return;
+    const g = this.groups.get(this.selectedGroupId);
+    g?.ids.forEach((id) => {
+      const o = this.objects.get(id);
+      if (o) this.setHighlight(o, false);
+    });
+  }
+
+  /** Anade/quita un objeto a la multiseleccion (para agrupar). */
+  private toggleMulti(obj: SceneObject): void {
+    this.clearGroupHighlight();
+    this.selected = null;
+    this.selectedFigure = false;
+    this.selectedGroupId = null;
+    this.gizmo.detach();
+    if (this.multiSel.has(obj.id)) {
+      this.multiSel.delete(obj.id);
+      this.setHighlight(obj, false);
+    } else {
+      this.multiSel.add(obj.id);
+      this.setHighlight(obj, true);
+    }
+    this.bus.emit("selectionChanged", { selected: null });
+    this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+  }
+
+  /** Crea un grupo (subensamblaje) a partir de la multiseleccion (>=2). */
+  createGroup(): void {
+    this.createGroupFromIds([...this.multiSel]);
+  }
+
+  /** Crea un grupo a partir de una lista de ids (>=2). Devuelve el id del grupo. */
+  createGroupFromIds(ids: string[]): string | null {
+    const valid = ids.filter((id) => this.objects.has(id) && !this.objGroup.has(id));
+    if (valid.length < 2) return null;
+    const gid = `g${this.nextGroupId++}`;
+    this.groups.set(gid, { name: `Grupo ${gid.slice(1)}`, ids: valid });
+    for (const id of valid) {
+      this.objGroup.set(id, gid);
+      const o = this.objects.get(id);
+      if (o) this.setHighlight(o, false);
+    }
+    this.multiSel.clear();
+    this.selectGroup(gid);
+    return gid;
+  }
+
+  /** Mueve el grupo seleccionado (cm) aplicando el delta a todos sus miembros. */
+  nudgeSelectedGroup(dx: number, dy: number, dz: number): void {
+    if (!this.selectedGroupId) return;
+    this.groupProxy.position.add(new THREE.Vector3(dx, dy, dz));
+    this.applyGroupDelta();
+  }
+
+  /** Selecciona un grupo completo: el gizmo mueve todos sus miembros. */
+  private selectGroup(gid: string): void {
+    const g = this.groups.get(gid);
+    if (!g) return;
+    this.clearGroupHighlight();
+    this.clearMultiSel();
+    this.selected = null;
+    this.selectedFigure = false;
+    this.selectedGroupId = gid;
+
+    const centroid = new THREE.Vector3();
+    let n = 0;
+    for (const id of g.ids) {
+      const o = this.objects.get(id);
+      if (o) {
+        centroid.add(o.mesh.position);
+        n++;
+        this.setHighlight(o, true);
+      }
+    }
+    if (n > 0) centroid.multiplyScalar(1 / n);
+    this.groupProxy.position.copy(centroid);
+    this.groupProxy.quaternion.identity();
+    this.groupProxy.scale.set(1, 1, 1);
+    this.groupProxy.updateMatrixWorld(true);
+    this.groupPrev.copy(this.groupProxy.matrixWorld);
+
+    this.gizmo.attach(this.groupProxy);
+    this.setMode("translate");
+    this.bus.emit("selectionChanged", { selected: null });
+    this.bus.emit("groupingChanged", { multi: 0, groupSelected: true });
+  }
+
+  /** Aplica el delta del proxy a todos los miembros del grupo. */
+  private applyGroupDelta(): void {
+    if (!this.selectedGroupId) return;
+    const g = this.groups.get(this.selectedGroupId);
+    if (!g) return;
+    this.groupProxy.updateMatrixWorld(true);
+    const cur = this.groupProxy.matrixWorld;
+    const delta = cur.clone().multiply(this.groupPrev.clone().invert());
+    for (const id of g.ids) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      const m = new THREE.Matrix4().compose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
+      m.premultiply(delta);
+      m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
+    }
+    this.groupPrev.copy(cur);
+  }
+
+  /** Disuelve el grupo seleccionado (los miembros vuelven a ser individuales). */
+  ungroupSelected(): void {
+    const gid = this.selectedGroupId;
+    if (!gid) return;
+    const g = this.groups.get(gid);
+    g?.ids.forEach((id) => {
+      this.objGroup.delete(id);
+      const o = this.objects.get(id);
+      if (o) this.setHighlight(o, false);
+    });
+    this.groups.delete(gid);
+    this.selectedGroupId = null;
+    this.gizmo.detach();
+    this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
+  }
+
+  /** Elimina el grupo seleccionado y todas sus piezas. */
+  deleteSelectedGroup(): void {
+    const gid = this.selectedGroupId;
+    if (!gid) return;
+    const g = this.groups.get(gid);
+    this.selectedGroupId = null;
+    this.gizmo.detach();
+    g?.ids.slice().forEach((id) => {
+      const o = this.objects.get(id);
+      if (o) this.removeObject(o);
+    });
+    this.groups.delete(gid);
+    this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
   }
 
   /** Encaja la pieza arrastrada a un punto de anclaje compatible (solo al mover). */
@@ -904,7 +1102,16 @@ export class Editor {
       this.selectFigurePart(figHits[0].object);
     } else {
       const id = objHits[0].object.userData.sceneObjectId as string | undefined;
-      this.select((id && this.objects.get(id)) || null);
+      const obj = (id && this.objects.get(id)) || null;
+      if (!obj) {
+        this.select(null);
+      } else if (this.objGroup.has(obj.id)) {
+        this.selectGroup(this.objGroup.get(obj.id)!);
+      } else if (event.shiftKey) {
+        this.toggleMulti(obj);
+      } else {
+        this.select(obj);
+      }
     }
   };
 
@@ -935,6 +1142,7 @@ export class Editor {
       case "delete":
       case "backspace":
         if (this.selected) this.removeObject(this.selected);
+        else if (this.selectedGroupId) this.deleteSelectedGroup();
         break;
       case "escape":
         this.cancelConnect();

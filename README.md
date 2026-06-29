@@ -43,6 +43,7 @@ npm run typecheck  # solo comprobación de tipos
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
+| Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; clic en un miembro selecciona el grupo (se mueve junto); **Desagrupar** |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 | Posar figura        | Clic en un miembro del maniquí → rotar la articulación; panel **Posturas** para aplicar |
 | Editar/crear postura | Posa a mano y **Actualizar** (sobrescribe) o **Guardar como…** (nueva); editables y persistentes |
@@ -107,8 +108,10 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
 - [~] **Fase 3 — Modelado/ensamblaje**: snapping de ensamblaje ✔ (encaje
       magnético en puntos de anclaje: centro/eje, extremos de cilindros, centros
       de cara). Estilo visual ilustrativo ✔ (fondo claro de estudio, iluminación
-      suave, figura azul, sombras tenues). Pendiente: deformar/elongar/voltear,
-      agrupación multicomponente. Personaje posable ✔ (maniquí con rig de 12
+      suave, figura azul, sombras tenues). Agrupación multicomponente ✔
+      (subensamblajes: multiselección con Shift, mover/eliminar el grupo junto,
+      desagrupar). Pendiente: deformar/elongar/voltear.
+      Personaje posable ✔ (maniquí con rig de 12
       articulaciones rotables, apoyado en el suelo). Posturas estándar **editables
       y ampliables** ✔ (biblioteca persistente: aplicar, actualizar, guardar
       nuevas, eliminar, restaurar por defecto).
