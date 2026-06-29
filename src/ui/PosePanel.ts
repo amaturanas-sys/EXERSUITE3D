@@ -56,6 +56,23 @@ export class PosePanel {
 
     this.hint = el("div", { class: "empty-hint" }, [this.defaultHint]);
 
+    // Editor numerico de la articulacion seleccionada.
+    this.jointLabel = el("label", {}, ["Articulación"]);
+    const angInput = (axis: "x" | "y" | "z") => {
+      const input = el("input", { type: "number", step: "5", value: "0" });
+      input.addEventListener("change", () => {
+        const v = parseFloat(input.value);
+        if (Number.isFinite(v)) this.editor.setJointAngle(axis, v);
+      });
+      this.jointInputs[axis] = input;
+      return el("div", { class: "sub" }, [el("label", {}, [axis.toUpperCase()]), input]);
+    };
+    this.jointBox = el("div", { class: "field" }, [
+      this.jointLabel,
+      el("div", { class: "row" }, [angInput("x"), angInput("y"), angInput("z")]),
+    ]);
+    this.jointBox.style.display = "none";
+
     this.root = el("aside", { class: "panel", id: "poses" }, [
       el("div", { class: "panel-title" }, ["Posturas"]),
       el("div", { class: "panel-body" }, [
@@ -63,12 +80,25 @@ export class PosePanel {
         el("div", { class: "pose-actions" }, [applyBtn, updateBtn]),
         el("div", { class: "pose-actions" }, [saveBtn, delBtn]),
         el("div", { class: "pose-actions" }, [resetBtn]),
+        this.jointBox,
         el("div", { class: "field" }, [el("label", {}, ["Manos (IK)"])]),
         el("div", { class: "pose-actions" }, [attachBtn, detachBtn]),
         this.hint,
       ]),
     ]);
     this.root.style.display = "none";
+
+    this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
+      if (name) {
+        this.jointBox.style.display = "block";
+        this.jointLabel.textContent = `Articulación: ${name} (grados)`;
+        this.jointInputs.x.value = String(angles[0]);
+        this.jointInputs.y.value = String(angles[1]);
+        this.jointInputs.z.value = String(angles[2]);
+      } else {
+        this.jointBox.style.display = "none";
+      }
+    });
 
     this.refresh();
     this.editor.bus.on("posesChanged", () => this.refresh());
@@ -86,6 +116,9 @@ export class PosePanel {
   }
 
   private hint!: HTMLElement;
+  private jointBox!: HTMLElement;
+  private jointLabel!: HTMLElement;
+  private jointInputs = {} as { x: HTMLInputElement; y: HTMLInputElement; z: HTMLInputElement };
   private readonly defaultHint =
     "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.";
 

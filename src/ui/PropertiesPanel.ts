@@ -58,10 +58,34 @@ export class PropertiesPanel {
     ]);
 
     this.editor.bus.on("selectionChanged", ({ selected }) => this.show(selected));
+    this.editor.bus.on("groupSelectionChanged", ({ id, name }) => {
+      if (id) this.showGroup(id, name);
+    });
     this.editor.bus.on("objectTransformed", ({ object }) => {
       if (object === this.current) this.refreshTransform();
     });
     this.show(null);
+  }
+
+  private showGroup(id: string, name: string): void {
+    this.current = null;
+    clear(this.body);
+    const input = el("input", { type: "text", value: name });
+    input.addEventListener("change", () => this.editor.renameGroup(id, input.value));
+    const dup = el("button", { class: "tool" }, ["Duplicar"]);
+    dup.addEventListener("click", () => this.editor.duplicateSelectedGroup());
+    const ungroup = el("button", { class: "tool" }, ["Desagrupar"]);
+    ungroup.addEventListener("click", () => this.editor.ungroupSelected());
+    const del = el("button", { class: "tool danger" }, ["Eliminar grupo"]);
+    del.addEventListener("click", () => this.editor.deleteSelectedGroup());
+    this.body.append(
+      el("div", { class: "field" }, [el("label", {}, ["Nombre del grupo"]), input]),
+      el("div", { class: "pose-actions" }, [dup, ungroup]),
+      el("div", { class: "pose-actions" }, [del]),
+      el("div", { class: "empty-hint" }, [
+        "Mueve/rota el grupo con el gizmo. Las piezas se transforman juntas.",
+      ]),
+    );
   }
 
   private show(obj: SceneObject | null): void {
@@ -79,8 +103,23 @@ export class PropertiesPanel {
     this.body.append(this.materialField(obj));
     this.body.append(this.dimSection(obj));
     this.body.append(this.transformSection(obj));
+    this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  private flipSection(): HTMLElement {
+    const btn = (axis: "x" | "y" | "z") => {
+      const b = el("button", { class: "tool", title: `Voltear en ${axis.toUpperCase()}` }, [
+        `Voltear ${axis.toUpperCase()}`,
+      ]);
+      b.addEventListener("click", () => this.editor.flipSelected(axis));
+      return b;
+    };
+    return el("div", { class: "field" }, [
+      el("label", {}, ["Voltear (espejo)"]),
+      el("div", { class: "row" }, [btn("x"), btn("y"), btn("z")]),
+    ]);
   }
 
   private stackSection(obj: SceneObject): HTMLElement {

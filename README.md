@@ -43,7 +43,9 @@ npm run typecheck  # solo comprobación de tipos
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
-| Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; clic en un miembro selecciona el grupo (se mueve junto); **Desagrupar** |
+| Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; grupo: **nombrar/duplicar/desagrupar/eliminar** en el inspector |
+| Voltear (espejo)    | Inspector → **Voltear X/Y/Z** sobre la pieza seleccionada |
+| Ángulo de articulación | Selecciona un miembro del maniquí → campos **X/Y/Z (grados)** en el panel Posturas |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 | Posar figura        | Clic en un miembro del maniquí → rotar la articulación; panel **Posturas** para aplicar |
 | Editar/crear postura | Posa a mano y **Actualizar** (sobrescribe) o **Guardar como…** (nueva); editables y persistentes |

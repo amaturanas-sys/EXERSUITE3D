@@ -56,6 +56,10 @@ export type EditorEvents = {
   attachModeChanged: { active: boolean; stage: "hand" | "grip" | null };
   /** Cambio en la multiseleccion (para agrupar) o en los grupos. */
   groupingChanged: { multi: number; groupSelected: boolean };
+  /** Grupo seleccionado (para editar nombre/duplicar). */
+  groupSelectionChanged: { id: string | null; name: string };
+  /** Articulacion del personaje seleccionada (para editar angulos). */
+  jointSelectionChanged: { name: string | null; angles: [number, number, number] };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -108,6 +112,7 @@ export class Editor {
   private groups = new Map<string, { name: string; ids: string[] }>();
   private objGroup = new Map<string, string>();
   private selectedGroupId: string | null = null;
+  private selectedJointName: string | null = null;
   private groupProxy = new THREE.Object3D();
   private groupPrev = new THREE.Matrix4();
   private nextGroupId = 1;
@@ -299,17 +304,59 @@ export class Editor {
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
-  duplicateSelected(): void {
-    if (!this.selected) return;
-    const src = this.selected;
+  /** Crea una copia de `src` (sin seleccionarla) con un desplazamiento opcional. */
+  private duplicateObject(src: SceneObject, offset: THREE.Vector3): SceneObject {
     const obj = this.addComponent(src.componentId);
     obj.params = { ...src.params };
+    if (src.stack) obj.stack = { ...src.stack };
     obj.rebuildGeometry();
     obj.setMaterial(src.materialId);
-    obj.mesh.position.copy(src.mesh.position).add(new THREE.Vector3(20, 0, 20));
-    obj.mesh.rotation.copy(src.mesh.rotation);
+    obj.physics = { ...src.physics };
+    obj.mesh.position.copy(src.mesh.position).add(offset);
+    obj.mesh.quaternion.copy(src.mesh.quaternion);
     obj.mesh.scale.copy(src.mesh.scale);
+    return obj;
+  }
+
+  duplicateSelected(): void {
+    if (this.selectedGroupId) {
+      this.duplicateSelectedGroup();
+      return;
+    }
+    if (!this.selected) return;
+    const obj = this.duplicateObject(this.selected, new THREE.Vector3(20, 0, 20));
     this.bus.emit("objectTransformed", { object: obj });
+  }
+
+  /** Duplica el grupo seleccionado (copia todas sus piezas y las reagrupa). */
+  duplicateSelectedGroup(): void {
+    const gid = this.selectedGroupId;
+    const g = gid ? this.groups.get(gid) : null;
+    if (!g) return;
+    const offset = new THREE.Vector3(20, 0, 20);
+    const newIds: string[] = [];
+    for (const id of g.ids) {
+      const src = this.objects.get(id);
+      if (src) newIds.push(this.duplicateObject(src, offset).id);
+    }
+    this.createGroupFromIds(newIds);
+  }
+
+  /** Renombra el grupo seleccionado (o por id). */
+  renameGroup(id: string, name: string): void {
+    const g = this.groups.get(id);
+    if (!g || !name.trim()) return;
+    g.name = name.trim();
+    if (this.selectedGroupId === id) {
+      this.bus.emit("groupSelectionChanged", { id, name: g.name });
+    }
+  }
+
+  /** Voltea (espeja) el objeto seleccionado en un eje. */
+  flipSelected(axis: "x" | "y" | "z"): void {
+    if (!this.selected) return;
+    this.selected.mesh.scale[axis] *= -1;
+    this.bus.emit("objectTransformed", { object: this.selected });
   }
 
   listObjects(): SceneObject[] {
@@ -327,10 +374,13 @@ export class Editor {
     this.selectedFigure = false;
     this.selectedGroupId = null;
     this.clearMultiSel();
+    this.selectedJointName = null;
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
     this.bus.emit("selectionChanged", { selected: obj });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
+    this.bus.emit("groupSelectionChanged", { id: null, name: "" });
+    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0] });
   }
 
   getSelected(): SceneObject | null {
@@ -474,10 +524,13 @@ export class Editor {
     this.groupProxy.updateMatrixWorld(true);
     this.groupPrev.copy(this.groupProxy.matrixWorld);
 
+    this.selectedJointName = null;
     this.gizmo.attach(this.groupProxy);
     this.setMode("translate");
     this.bus.emit("selectionChanged", { selected: null });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: true });
+    this.bus.emit("groupSelectionChanged", { id: gid, name: g.name });
+    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0] });
   }
 
   /** Aplica el delta del proxy a todos los miembros del grupo. */
@@ -663,13 +716,52 @@ export class Editor {
       | Record<string, THREE.Object3D>
       | undefined;
     if (jn && joints && joints[jn]) {
-      this.select(null);
-      this.selectedFigure = true;
-      this.gizmo.attach(joints[jn]);
-      this.setMode("rotate"); // posar = rotar la articulacion
+      this.selectJoint(jn);
     } else {
       this.selectFigureRoot();
     }
+  }
+
+  /** Selecciona una articulacion del personaje para posarla (gizmo en rotar). */
+  selectJoint(name: string): void {
+    const joints = this.figureJoints();
+    if (!joints || !joints[name]) return;
+    this.select(null);
+    this.selectedFigure = true;
+    this.selectedJointName = name;
+    this.gizmo.attach(joints[name]);
+    this.setMode("rotate"); // posar = rotar la articulacion
+    this.emitJointSelection();
+  }
+
+  private emitJointSelection(): void {
+    const joints = this.figureJoints();
+    const jn = this.selectedJointName;
+    const j = jn && joints ? joints[jn] : null;
+    this.bus.emit("jointSelectionChanged", {
+      name: j ? jn : null,
+      angles: j
+        ? [
+            roundTo(radToDeg(j.rotation.x), 1),
+            roundTo(radToDeg(j.rotation.y), 1),
+            roundTo(radToDeg(j.rotation.z), 1),
+          ]
+        : [0, 0, 0],
+    });
+  }
+
+  /** Devuelve el nombre de la articulacion seleccionada (o null). */
+  getSelectedJoint(): string | null {
+    return this.selectedJointName;
+  }
+
+  /** Fija el angulo (grados) de un eje de la articulacion seleccionada. */
+  setJointAngle(axis: "x" | "y" | "z", deg: number): void {
+    const joints = this.figureJoints();
+    const jn = this.selectedJointName;
+    if (!joints || !jn || !joints[jn]) return;
+    joints[jn].rotation[axis] = degToRad(deg);
+    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
   }
 
   /** Selecciona la figura entera para moverla/rotarla. */
