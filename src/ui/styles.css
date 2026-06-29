@@ -182,11 +182,17 @@ body.simulating #palette {
 
 .joints-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 8px 8px 0;
 }
 .joints-actions .tool {
-  flex: 1;
+  flex: 1 1 40%;
+  min-width: 0;
+  padding: 7px 6px;
+}
+#joints .tool.sim {
+  margin: 8px 8px 0;
 }
 .joint-row {
   display: flex;

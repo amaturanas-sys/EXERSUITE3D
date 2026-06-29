@@ -6,6 +6,7 @@ import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
+import { Cable } from "../physics/cables";
 import {
   DEFAULT_HUMAN_HEIGHT,
   buildHumanFigure,
@@ -30,6 +31,10 @@ export type EditorEvents = {
   jointsChanged: { joints: Joint[] };
   /** Modo "conectar dos piezas" activo/inactivo. */
   connectModeChanged: { kind: JointKind | null; pending: boolean };
+  /** Cambio en la lista de cables. */
+  cablesChanged: { cables: Cable[] };
+  /** Modo "trazar cable" activo: nº de nodos colocados. */
+  cableModeChanged: { active: boolean; count: number };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -70,6 +75,11 @@ export class Editor {
   private connectMode: JointKind | null = null;
   private pendingA: SceneObject | null = null;
 
+  private cables = new Map<string, Cable>();
+  private cableVisuals = new THREE.Group();
+  private cableMode = false;
+  private cablePending: SceneObject[] = [];
+
   private references = new THREE.Group();
   private humanFigure: THREE.Group | null = null;
   private humanHeight = DEFAULT_HUMAN_HEIGHT;
@@ -103,6 +113,7 @@ export class Editor {
 
     this.sceneManager.scene.add(this.jointHelpers);
     this.sceneManager.scene.add(this.references);
+    this.sceneManager.scene.add(this.cableVisuals);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     window.addEventListener("resize", this.onResize);
@@ -119,6 +130,7 @@ export class Editor {
   private loop = (): void => {
     if (!this.running) return;
     if (this.simulating && this.physics) this.physics.step();
+    this.updateCableVisuals();
     this.orbit.update();
     this.sceneManager.render();
     requestAnimationFrame(this.loop);
@@ -150,8 +162,9 @@ export class Editor {
 
     this.select(null);
     this.cancelConnect();
+    this.cancelCable();
     this.physics = new PhysicsWorld();
-    this.physics.build(this.listObjects(), this.listJoints());
+    this.physics.build(this.listObjects(), this.listJoints(), this.listCables());
     this.jointHelpers.visible = false;
     this.simulating = true;
     this.bus.emit("simulationChanged", { running: true });
@@ -206,15 +219,19 @@ export class Editor {
 
   removeObject(obj: SceneObject): void {
     if (this.selected === obj) this.select(null);
-    // Elimina las articulaciones que referencian a este objeto.
+    // Elimina las articulaciones y cables que referencian a este objeto.
     for (const j of this.listJoints()) {
       if (j.bodyAId === obj.id || j.bodyBId === obj.id) this.joints.delete(j.id);
+    }
+    for (const c of this.listCables()) {
+      if (c.nodeIds.includes(obj.id)) this.cables.delete(c.id);
     }
     this.sceneManager.content.remove(obj.mesh);
     obj.dispose();
     this.objects.delete(obj.id);
     this.refreshJointHelpers();
     this.bus.emit("jointsChanged", { joints: this.listJoints() });
+    this.bus.emit("cablesChanged", { cables: this.listCables() });
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
@@ -389,6 +406,7 @@ export class Editor {
   /** Entra en modo "conectar": clic en pieza A y luego en pieza B. */
   beginConnect(kind: JointKind): void {
     if (this.simulating) return;
+    this.cancelCable();
     this.connectMode = kind;
     this.pendingA = null;
     this.select(null);
@@ -468,6 +486,90 @@ export class Editor {
     }
   }
 
+  // --------------------------------------------------------------- cables
+  listCables(): Cable[] {
+    return [...this.cables.values()];
+  }
+
+  getCableById(id: string): Cable | undefined {
+    return this.cables.get(id);
+  }
+
+  /** Entra en modo "trazar cable": clic en cada nodo (extremo, poleas, extremo). */
+  beginCable(): void {
+    if (this.simulating) return;
+    this.cancelConnect();
+    this.cableMode = true;
+    this.cablePending = [];
+    this.select(null);
+    this.bus.emit("cableModeChanged", { active: true, count: 0 });
+  }
+
+  cancelCable(): void {
+    if (!this.cableMode) return;
+    this.cableMode = false;
+    this.cablePending = [];
+    this.bus.emit("cableModeChanged", { active: false, count: 0 });
+  }
+
+  /** Cierra el cable en construccion (>=2 nodos). */
+  finishCable(): void {
+    if (!this.cableMode) return;
+    if (this.cablePending.length >= 2) {
+      this.createCable(this.cablePending.map((o) => o.id));
+    }
+    this.cancelCable();
+  }
+
+  /** Crea un cable a partir de una lista ordenada de ids de objetos. */
+  createCable(nodeIds: string[]): Cable | null {
+    if (nodeIds.length < 2) return null;
+    const cable = new Cable({ nodeIds });
+    this.cables.set(cable.id, cable);
+    this.bus.emit("cablesChanged", { cables: this.listCables() });
+    return cable;
+  }
+
+  removeCable(cable: Cable): void {
+    this.cables.delete(cable.id);
+    this.bus.emit("cablesChanged", { cables: this.listCables() });
+  }
+
+  /** Reconstruye las polilineas de los cables segun la posicion de sus nodos. */
+  private updateCableVisuals(): void {
+    // Anade/quita lineas para que coincidan con los cables actuales.
+    const wanted = new Set(this.cables.keys());
+    for (const child of [...this.cableVisuals.children]) {
+      if (!wanted.has(child.userData.cableId as string)) {
+        this.cableVisuals.remove(child);
+        ((child as THREE.Line).geometry as THREE.BufferGeometry).dispose();
+      }
+    }
+    const existing = new Map<string, THREE.Line>();
+    for (const child of this.cableVisuals.children) {
+      existing.set(child.userData.cableId as string, child as THREE.Line);
+    }
+
+    for (const cable of this.cables.values()) {
+      const pts: THREE.Vector3[] = [];
+      for (const id of cable.nodeIds) {
+        const obj = this.objects.get(id);
+        if (obj) pts.push(obj.mesh.position.clone());
+      }
+      if (pts.length < 2) continue;
+      let line = existing.get(cable.id);
+      if (!line) {
+        line = new THREE.Line(
+          new THREE.BufferGeometry(),
+          new THREE.LineBasicMaterial({ color: 0xd8dee9 }),
+        );
+        line.userData.cableId = cable.id;
+        this.cableVisuals.add(line);
+      }
+      line.geometry.setFromPoints(pts);
+    }
+  }
+
   // -------------------------------------------------------------- eventos
   private onPointerDown = (event: PointerEvent): void => {
     if (this.gizmo.dragging || this.simulating) return;
@@ -475,6 +577,23 @@ export class Editor {
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    // Modo cable: cada clic anade un nodo (objeto) al trazado.
+    if (this.cableMode) {
+      const cHits = this.raycaster.intersectObjects(
+        this.sceneManager.content.children,
+        false,
+      );
+      const id = cHits[0]?.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (!obj) return;
+      // Evita duplicar el mismo nodo consecutivo.
+      if (this.cablePending[this.cablePending.length - 1] !== obj) {
+        this.cablePending.push(obj);
+        this.bus.emit("cableModeChanged", { active: true, count: this.cablePending.length });
+      }
+      return;
+    }
 
     // Modo conexion: solo objetos editables (no la figura de referencia).
     if (this.connectMode) {
@@ -524,6 +643,10 @@ export class Editor {
       return;
     }
     if (this.simulating) return;
+    if (this.cableMode && (event.key === "Enter" || event.key === "Return")) {
+      this.finishCable();
+      return;
+    }
     switch (event.key.toLowerCase()) {
       case "g":
       case "w":
@@ -542,6 +665,7 @@ export class Editor {
         break;
       case "escape":
         this.cancelConnect();
+        this.cancelCable();
         this.select(null);
         break;
     }

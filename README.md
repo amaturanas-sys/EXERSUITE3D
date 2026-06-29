@@ -41,6 +41,7 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
+| Trazar cable        | **+ Cable**, clic en cada nodo (extremo → poleas → extremo), **Enter** para cerrar |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 
 ## Arquitectura
@@ -50,7 +51,7 @@ src/
   core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación)
   scene/       # SceneManager: escena, cámara, luces, grid en cm, entorno PBR
   objects/     # SceneObject, geometrías, librería de componentes, materiales, figura humana
-  physics/     # PhysicsWorld (Rapier) y joints (bisagra/corredera)
+  physics/     # PhysicsWorld (Rapier), joints (bisagra/corredera) y cables
   ui/          # paleta, toolbar, inspector, conexiones, HUD de medidas
   main.ts      # punto de entrada y ensamblado
 ```
@@ -95,8 +96,10 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
 - [~] **Fase 2 — Física**: integración de Rapier ✔ (cuerpos rígidos, gravedad,
       masas, colisiones, Play/Stop con restauración del diseño). Articulaciones ✔
       — bisagra (revolute) y corredera (prismatic) con eje, pivote, límites de
-      recorrido y motor de velocidad. Pendiente: cables y poleas, pilas de peso
-      conectadas, motores de posición.
+      recorrido y motor de velocidad. Cables y poleas ✔ — cable inextensible que
+      pasa por poleas (puntos de paso) y acopla sus dos extremos por conservación
+      de longitud (p. ej. agarradera ↔ pila de pesos). Pendiente: poleas móviles
+      (ratio 2:1), motores de posición, leva de resistencia variable.
 - [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
       conexión entre objetos, agrupación multicomponente.
 - [x] **Figura humana de referencia**: maniquí procedural **o** esqueleto

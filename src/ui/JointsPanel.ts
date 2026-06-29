@@ -10,6 +10,8 @@ export class JointsPanel {
   private status: HTMLElement;
   private hingeBtn: HTMLButtonElement;
   private slideBtn: HTMLButtonElement;
+  private cableBtn: HTMLButtonElement;
+  private finishBtn: HTMLButtonElement;
   private selectedId: string | null = null;
 
   constructor(private editor: Editor) {
@@ -23,27 +25,58 @@ export class JointsPanel {
     ]);
     this.slideBtn.addEventListener("click", () => this.editor.beginConnect("prismatic"));
 
+    this.cableBtn = el("button", { class: "tool", title: "Trazar un cable por poleas" }, [
+      "+ Cable",
+    ]);
+    this.cableBtn.addEventListener("click", () => this.editor.beginCable());
+
+    this.finishBtn = el("button", { class: "tool sim", title: "Finalizar el cable (Enter)" }, [
+      "Finalizar cable",
+    ]);
+    this.finishBtn.style.display = "none";
+    this.finishBtn.addEventListener("click", () => this.editor.finishCable());
+
     this.status = el("div", { class: "empty-hint" }, [
-      "Conecta dos piezas para articularlas.",
+      "Articula piezas (bisagra/corredera) o traza un cable por poleas.",
     ]);
     this.body = el("div", { class: "panel-body" });
 
     this.root = el("aside", { class: "panel", id: "joints" }, [
       el("div", { class: "panel-title" }, ["Conexiones"]),
-      el("div", { class: "joints-actions" }, [this.hingeBtn, this.slideBtn]),
+      el("div", { class: "joints-actions" }, [this.hingeBtn, this.slideBtn, this.cableBtn]),
+      this.finishBtn,
       this.status,
       this.body,
     ]);
 
     this.editor.bus.on("jointsChanged", () => this.render());
+    this.editor.bus.on("cablesChanged", () => this.render());
     this.editor.bus.on("connectModeChanged", ({ kind, pending }) =>
       this.onConnectMode(kind, pending),
+    );
+    this.editor.bus.on("cableModeChanged", ({ active, count }) =>
+      this.onCableMode(active, count),
     );
     this.editor.bus.on("simulationChanged", ({ running }) => {
       this.hingeBtn.disabled = running;
       this.slideBtn.disabled = running;
+      this.cableBtn.disabled = running;
     });
     this.render();
+  }
+
+  private onCableMode(active: boolean, count: number): void {
+    this.cableBtn.classList.toggle("active", active);
+    this.finishBtn.style.display = active ? "block" : "none";
+    if (active) {
+      this.status.textContent =
+        count < 2
+          ? `Cable: ${count} nodo(s). Clic en cada pieza (extremo → poleas → extremo).`
+          : `Cable: ${count} nodos. Sigue añadiendo o pulsa Finalizar (Enter).`;
+    } else {
+      this.status.textContent =
+        "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
+    }
   }
 
   private onConnectMode(kind: string | null, pending: boolean): void {
@@ -61,6 +94,34 @@ export class JointsPanel {
 
   private render(): void {
     clear(this.body);
+    this.renderJoints();
+    this.renderCables();
+  }
+
+  private renderCables(): void {
+    const cables = this.editor.listCables();
+    if (cables.length === 0) return;
+    this.body.append(el("div", { class: "cat-label" }, ["Cables"]));
+    for (const c of cables) {
+      const a = this.editor.getById(c.endAId)?.name ?? "?";
+      const b = this.editor.getById(c.endBId)?.name ?? "?";
+      const poleas = c.pulleyIds.length;
+      const row = el("div", { class: "joint-row" }, [
+        `↬ ${c.name}`,
+        el("span", { class: "joint-sub" }, [`${a} → ${b} · ${poleas} polea(s)`]),
+      ]);
+      const del = el("button", { class: "tool danger", title: "Eliminar cable" }, ["Eliminar"]);
+      del.style.marginTop = "6px";
+      del.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.editor.removeCable(c);
+      });
+      row.append(del);
+      this.body.append(row);
+    }
+  }
+
+  private renderJoints(): void {
     const joints = this.editor.listJoints();
     if (joints.length === 0) return;
 
