@@ -41,6 +41,7 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
+| Figura humana       | Botón **Figura** (escala/ergonomía); altura editable en cm |
 
 ## Arquitectura
 
@@ -48,7 +49,7 @@ npm run typecheck  # solo comprobación de tipos
 src/
   core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación)
   scene/       # SceneManager: escena, cámara, luces, grid en cm, entorno PBR
-  objects/     # SceneObject, geometrías, librería de componentes y materiales
+  objects/     # SceneObject, geometrías, librería de componentes, materiales, figura humana
   physics/     # PhysicsWorld (Rapier) y joints (bisagra/corredera)
   ui/          # paleta, toolbar, inspector, conexiones, HUD de medidas
   main.ts      # punto de entrada y ensamblado
@@ -88,5 +89,9 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       conectadas, motores de posición.
 - [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
       conexión entre objetos, agrupación multicomponente.
-- [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente.
+- [x] **Figura humana de referencia**: maniquí procedural a escala (altura
+      editable en cm) para diseñar máquinas en torno al cuerpo. A futuro,
+      sustituible por una malla glTF importada.
+- [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente
+      (incluida la opción de cargar un modelo humano/esqueleto detallado).
 - [ ] **Fase 5 — Empaquetado**: APK con Capacitor y standalone de Windows con Tauri.

@@ -96,6 +96,19 @@ button.tool:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+input.tool-input {
+  width: 58px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 6px;
+  font-size: 13px;
+}
+input.tool-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 /* Durante la simulacion, la paleta no admite anadir piezas. */
 body.simulating #palette {

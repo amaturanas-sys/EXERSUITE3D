@@ -45,6 +45,29 @@ export class Toolbar {
       if (sel) this.editor.removeObject(sel);
     });
 
+    // Figura humana de referencia (escala/ergonomia).
+    const figBtn = el("button", { class: "tool", title: "Mostrar/ocultar figura humana" }, [
+      "Figura",
+    ]);
+    figBtn.addEventListener("click", () => this.editor.toggleHumanFigure());
+    const figHeight = el("input", {
+      class: "tool-input",
+      type: "number",
+      title: "Altura de la figura (cm)",
+      value: String(this.editor.getHumanHeight()),
+      step: "5",
+      min: "50",
+      max: "250",
+    });
+    figHeight.addEventListener("change", () => {
+      const v = parseFloat(figHeight.value);
+      if (Number.isFinite(v) && v >= 50 && v <= 250) this.editor.setHumanHeight(v);
+    });
+    this.editor.bus.on("humanFigureChanged", ({ present, heightCm }) => {
+      figBtn.classList.toggle("active", present);
+      figHeight.value = String(heightCm);
+    });
+
     const simBtn = el("button", { class: "tool sim", title: "Simular fisica (Espacio)" }, [
       "▶ Simular",
     ]);
@@ -58,6 +81,7 @@ export class Toolbar {
       ]),
       el("div", { class: "tool-group" }, [spaceBtn, gridBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
+      el("div", { class: "tool-group" }, [figBtn, figHeight]),
     ];
 
     this.root = el("div", { id: "toolbar" }, [

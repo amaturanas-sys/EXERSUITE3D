@@ -6,6 +6,11 @@ import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
+import {
+  DEFAULT_HUMAN_HEIGHT,
+  buildHumanFigure,
+  disposeHumanFigure,
+} from "../objects/humanFigure";
 import { EventBus } from "./eventBus";
 
 export type TransformMode = "translate" | "rotate" | "scale";
@@ -22,6 +27,8 @@ export type EditorEvents = {
   jointsChanged: { joints: Joint[] };
   /** Modo "conectar dos piezas" activo/inactivo. */
   connectModeChanged: { kind: JointKind | null; pending: boolean };
+  /** Estado de la figura humana de referencia. */
+  humanFigureChanged: { present: boolean; heightCm: number };
 };
 
 interface SavedTransform {
@@ -55,6 +62,11 @@ export class Editor {
   private connectMode: JointKind | null = null;
   private pendingA: SceneObject | null = null;
 
+  private references = new THREE.Group();
+  private humanFigure: THREE.Group | null = null;
+  private humanHeight = DEFAULT_HUMAN_HEIGHT;
+  private selectedFigure = false;
+
   constructor(private canvas: HTMLCanvasElement) {
     this.sceneManager = new SceneManager(canvas);
 
@@ -80,6 +92,7 @@ export class Editor {
     this.sceneManager.scene.add(helper ?? (this.gizmo as unknown as THREE.Object3D));
 
     this.sceneManager.scene.add(this.jointHelpers);
+    this.sceneManager.scene.add(this.references);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     window.addEventListener("resize", this.onResize);
@@ -219,6 +232,7 @@ export class Editor {
   // ------------------------------------------------------------ seleccion
   select(obj: SceneObject | null): void {
     this.selected = obj;
+    this.selectedFigure = false;
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
     this.bus.emit("selectionChanged", { selected: obj });
@@ -235,6 +249,62 @@ export class Editor {
 
   setGizmoSpace(space: "local" | "world"): void {
     this.gizmo.setSpace(space);
+  }
+
+  // ------------------------------------------------------- figura humana
+  hasHumanFigure(): boolean {
+    return this.humanFigure !== null;
+  }
+
+  getHumanHeight(): number {
+    return this.humanHeight;
+  }
+
+  /** Anade o quita la figura humana de referencia. */
+  toggleHumanFigure(): void {
+    if (this.humanFigure) this.removeHumanFigure();
+    else this.addHumanFigure(this.humanHeight);
+  }
+
+  addHumanFigure(heightCm: number = this.humanHeight): void {
+    if (this.humanFigure) this.removeHumanFigure();
+    this.humanHeight = heightCm;
+    this.humanFigure = buildHumanFigure(heightCm);
+    this.references.add(this.humanFigure);
+    this.bus.emit("humanFigureChanged", { present: true, heightCm });
+  }
+
+  removeHumanFigure(): void {
+    if (!this.humanFigure) return;
+    if (this.selectedFigure) {
+      this.gizmo.detach();
+      this.selectedFigure = false;
+    }
+    this.references.remove(this.humanFigure);
+    disposeHumanFigure(this.humanFigure);
+    this.humanFigure = null;
+    this.bus.emit("humanFigureChanged", { present: false, heightCm: this.humanHeight });
+  }
+
+  /** Cambia la altura (cm) reconstruyendo la figura y conservando su transform. */
+  setHumanHeight(heightCm: number): void {
+    this.humanHeight = heightCm;
+    if (!this.humanFigure) return;
+    const pos = this.humanFigure.position.clone();
+    const quat = this.humanFigure.quaternion.clone();
+    const wasSelected = this.selectedFigure;
+    this.removeHumanFigure();
+    this.addHumanFigure(heightCm);
+    this.humanFigure!.position.copy(pos);
+    this.humanFigure!.quaternion.copy(quat);
+    if (wasSelected) this.selectFigure();
+  }
+
+  private selectFigure(): void {
+    if (!this.humanFigure) return;
+    this.select(null);
+    this.selectedFigure = true;
+    this.gizmo.attach(this.humanFigure);
   }
 
   // ----------------------------------------------------------- conexiones
@@ -336,27 +406,38 @@ export class Editor {
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
 
-    const hits = this.raycaster.intersectObjects(
-      this.sceneManager.content.children,
-      false,
-    );
-    const id = hits[0]?.object.userData.sceneObjectId as string | undefined;
-    const obj = id ? this.objects.get(id) : undefined;
-
-    // Modo conexion: primer clic = pieza A, segundo = pieza B -> crea joint.
+    // Modo conexion: solo objetos editables (no la figura de referencia).
     if (this.connectMode) {
-      if (!obj) return;
+      const objHits = this.raycaster.intersectObjects(
+        this.sceneManager.content.children,
+        false,
+      );
+      const cid = objHits[0]?.object.userData.sceneObjectId as string | undefined;
+      const cobj = cid ? this.objects.get(cid) : undefined;
+      if (!cobj) return;
       if (!this.pendingA) {
-        this.pendingA = obj;
-        this.select(obj);
+        this.pendingA = cobj;
+        this.select(cobj);
         this.bus.emit("connectModeChanged", { kind: this.connectMode, pending: true });
-      } else if (obj !== this.pendingA) {
-        this.createJoint(this.pendingA, obj);
+      } else if (cobj !== this.pendingA) {
+        this.createJoint(this.pendingA, cobj);
       }
       return;
     }
 
-    this.select(obj ?? null);
+    // Selección normal: objetos + partes de la figura humana, por cercanía.
+    const targets = [...this.sceneManager.content.children];
+    if (this.humanFigure) targets.push(...this.humanFigure.children);
+    const hits = this.raycaster.intersectObjects(targets, false);
+    const hit = hits[0]?.object;
+    if (!hit) {
+      this.select(null);
+    } else if (hit.userData.humanFigurePart) {
+      this.selectFigure();
+    } else {
+      const id = hit.userData.sceneObjectId as string | undefined;
+      this.select((id && this.objects.get(id)) || null);
+    }
   };
 
   private onKeyDown = (event: KeyboardEvent): void => {
