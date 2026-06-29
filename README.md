@@ -41,6 +41,8 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Guardar / cargar    | Botones **Guardar** / **Cargar** (proyecto a archivo `.json`) |
+| Nuevo proyecto      | Botón **Nuevo**: vacía la escena y descarta el autoguardado |
+| Autoguardado        | Automático en el navegador (localStorage); se restaura al reabrir. Indicador **Guardado ✓** en la barra |
 | Exportar / importar | Botones **Exportar** (.glb) / **Importar** (.glb/.gltf/.obj) para intercambiar modelos 3D |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
@@ -126,6 +128,8 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       diseñar máquinas en torno al cuerpo.
 - [x] **Guardar/cargar proyecto**: serializa toda la escena (piezas, joints,
       cables, grupos y personaje con su pose) a un archivo `.json` y la reconstruye.
+      Además, **autoguardado** en el navegador (localStorage): los cambios se
+      vuelcan de forma diferida y se restauran al reabrir la app.
 - [~] **Fase 4 — Interoperabilidad**: exportar el prototipo a glTF binario ✔
       (`.glb`, con materiales) e importar modelos externos ✔ (`.glb`/`.gltf` con
       Draco u `.obj`): la malla se fusiona en una sola pieza, se aplica una

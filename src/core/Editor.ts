@@ -73,6 +73,8 @@ export type EditorEvents = {
     mode: HumanMode;
     loading: boolean;
   };
+  /** El proyecto se acaba de autoguardar en el navegador. */
+  autosaved: { at: number };
 };
 
 interface SavedTransform {
@@ -135,6 +137,11 @@ export class Editor {
   private attachMode = false;
   private attachSide: HandSide | null = null;
 
+  // Autoguardado en el navegador (localStorage).
+  private static readonly AUTOSAVE_KEY = "exersuite.autosave.v1";
+  private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private autosaveSuspended = false;
+
   constructor(private canvas: HTMLCanvasElement) {
     this.sceneManager = new SceneManager(canvas);
 
@@ -153,6 +160,9 @@ export class Editor {
       if (!e.value) this.snap.hideIndicator();
     });
     this.gizmo.addEventListener("objectChange", () => {
+      // Cualquier arrastre del gizmo (pieza, grupo o articulación del maniquí)
+      // ensucia el proyecto y debe autoguardarse.
+      this.scheduleAutosave();
       if (this.selectedGroupId) {
         this.applyGroupDelta();
         return;
@@ -175,6 +185,90 @@ export class Editor {
     canvas.addEventListener("pointerdown", this.onPointerDown);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
+
+    this.setupAutosave();
+  }
+
+  // --------------------------------------------------------- autoguardado
+  /** Suscribe el autoguardado a los eventos de cambio del proyecto. */
+  private setupAutosave(): void {
+    const trigger = () => this.scheduleAutosave();
+    this.bus.on("objectsChanged", trigger);
+    this.bus.on("objectTransformed", trigger);
+    this.bus.on("jointsChanged", trigger);
+    this.bus.on("cablesChanged", trigger);
+    this.bus.on("groupingChanged", trigger);
+    this.bus.on("humanFigureChanged", trigger);
+    // Red de seguridad: vuelca a disco periódicamente por si algún cambio
+    // (material, ángulo numérico de articulación…) no emitió evento.
+    setInterval(() => this.writeAutosave(), 30_000);
+    window.addEventListener("beforeunload", () => this.flushAutosave());
+  }
+
+  /** Programa un autoguardado diferido (debounce) tras el último cambio. */
+  private scheduleAutosave(): void {
+    if (this.autosaveSuspended || this.simulating) return;
+    if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
+    this.autosaveTimer = setTimeout(() => {
+      this.autosaveTimer = null;
+      this.writeAutosave();
+    }, 800);
+  }
+
+  /** Serializa la escena y la guarda en localStorage. */
+  private writeAutosave(): void {
+    if (this.autosaveSuspended || this.simulating) return;
+    try {
+      localStorage.setItem(Editor.AUTOSAVE_KEY, JSON.stringify(this.serialize()));
+      this.bus.emit("autosaved", { at: Date.now() });
+    } catch (err) {
+      console.warn("No se pudo autoguardar:", err);
+    }
+  }
+
+  /** Fuerza un guardado inmediato (p. ej. antes de cerrar la pestaña). */
+  flushAutosave(): void {
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    this.writeAutosave();
+  }
+
+  /** ¿Hay una sesión autoguardada en este navegador? */
+  hasAutosave(): boolean {
+    try {
+      return !!localStorage.getItem(Editor.AUTOSAVE_KEY);
+    } catch {
+      return false;
+    }
+  }
+
+  /** Descarta el autoguardado almacenado. */
+  clearAutosave(): void {
+    try {
+      localStorage.removeItem(Editor.AUTOSAVE_KEY);
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  }
+
+  /** Restaura la última sesión autoguardada. Devuelve true si cargó algo. */
+  async restoreAutosave(): Promise<boolean> {
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(Editor.AUTOSAVE_KEY);
+    } catch {
+      return false;
+    }
+    if (!raw) return false;
+    try {
+      await this.loadProject(JSON.parse(raw) as ProjectData);
+      return true;
+    } catch (err) {
+      console.warn("Autoguardado corrupto, se ignora:", err);
+      return false;
+    }
   }
 
   // ----------------------------------------------------------------- ciclo
@@ -533,6 +627,16 @@ export class Editor {
   /** Reemplaza la escena con la de un proyecto serializado. */
   async loadProject(data: ProjectData): Promise<void> {
     if (this.simulating) this.stopSimulation();
+    this.autosaveSuspended = true;
+    try {
+      await this.loadProjectInner(data);
+    } finally {
+      this.autosaveSuspended = false;
+    }
+    this.scheduleAutosave();
+  }
+
+  private async loadProjectInner(data: ProjectData): Promise<void> {
     this.clearScene();
     const idMap = new Map<string, string>();
 
@@ -1015,6 +1119,7 @@ export class Editor {
     if (!joints || !jn || !joints[jn]) return;
     joints[jn].rotation[axis] = degToRad(deg);
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.scheduleAutosave();
   }
 
   /** Selecciona la figura entera para moverla/rotarla. */
@@ -1041,6 +1146,7 @@ export class Editor {
       if (j) j.rotation.set(degToRad(x), degToRad(y), degToRad(z));
     }
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.scheduleAutosave();
   }
 
   /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */

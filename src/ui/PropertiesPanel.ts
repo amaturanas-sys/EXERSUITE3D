@@ -210,6 +210,7 @@ export class PropertiesPanel {
     }
     select.addEventListener("change", () => {
       obj.setMaterial(select.value);
+      this.editor.bus.emit("objectTransformed", { object: obj });
     });
     return el("div", { class: "field" }, [el("label", {}, ["Material"]), select]);
   }

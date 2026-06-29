@@ -124,6 +124,28 @@ export class Toolbar {
       el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
 
+    // Nuevo proyecto: vacía la escena y descarta el autoguardado.
+    const newBtn = el("button", { class: "tool", title: "Vaciar la escena y empezar un proyecto nuevo" }, [
+      "Nuevo",
+    ]);
+    newBtn.addEventListener("click", () => {
+      if (window.confirm("¿Vaciar la escena y empezar un proyecto nuevo?")) {
+        this.editor.clearScene();
+        this.editor.clearAutosave();
+      }
+    });
+
+    // Indicador de autoguardado (localStorage del navegador).
+    const autosaveTag = el("span", { class: "autosave-tag", title: "Autoguardado en este navegador" }, [
+      "Autoguardado activo",
+    ]);
+    this.editor.bus.on("autosaved", ({ at }) => {
+      const d = new Date(at);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      autosaveTag.textContent = `Guardado ✓ ${hh}:${mm}`;
+    });
+
     // Guardar / cargar proyecto (a archivo .json).
     const saveBtn = el("button", { class: "tool", title: "Guardar el proyecto a un archivo" }, [
       "Guardar",
@@ -156,8 +178,9 @@ export class Toolbar {
     this.root = el("div", { id: "toolbar" }, [
       el("div", { class: "tool-group" }, [simBtn]),
       ...editGroups,
-      el("div", { class: "tool-group" }, [saveBtn, loadBtn]),
+      el("div", { class: "tool-group" }, [newBtn, saveBtn, loadBtn]),
       el("div", { class: "tool-group" }, [exportBtn, importBtn]),
+      el("div", { class: "tool-group" }, [autosaveTag]),
       fileInput,
       importInput,
     ]);

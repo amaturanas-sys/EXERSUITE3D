@@ -48,12 +48,18 @@ editor.bus.on("humanFigureChanged", ({ present, mode }) => {
 editor.setMode("translate");
 editor.start();
 
-// Escena de bienvenida: una base + pilar para mostrar el espacio de trabajo.
-const base = editor.addComponent("base-soporte");
-base.mesh.position.set(0, 3, 0);
-const pilar = editor.addComponent("pilar");
-pilar.mesh.position.set(-25, 100, 0);
-editor.select(null);
+// Restaura la última sesión autoguardada; si no hay, monta la escena de bienvenida.
+void (async () => {
+  const restored = await editor.restoreAutosave();
+  if (!restored) {
+    // Escena de bienvenida: una base + pilar para mostrar el espacio de trabajo.
+    const base = editor.addComponent("base-soporte");
+    base.mesh.position.set(0, 3, 0);
+    const pilar = editor.addComponent("pilar");
+    pilar.mesh.position.set(-25, 100, 0);
+    editor.select(null);
+  }
+})();
 
 // Expone el editor para depuracion en consola.
 (window as unknown as { exersuite: { editor: Editor; THREE: typeof THREE } }).exersuite = {
