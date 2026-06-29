@@ -62,95 +62,110 @@ export class PhysicsWorld {
   }
 
   /**
-   * Restriccion de cable inextensible y unilateral, a nivel de VELOCIDAD.
-   * Acopla los dos extremos a lo largo de sus segmentos terminales; las poleas
-   * intermedias son puntos de paso. Solo tira (lambda <= 0): si hay holgura no
-   * hace nada. La conservacion de longitud se afianza luego con solveCablePosition.
+   * Gradiente de la longitud total respecto a cada nodo. Para un nodo interior
+   * (p. ej. una POLEA MOVIL) el gradiente es la suma de los unitarios hacia sus
+   * dos vecinos: por eso una polea movil sostenida por dos segmentos "siente" el
+   * doble de tension y se mueve la mitad -> el ratio 2:1 (o 3:1...) emerge solo
+   * de la geometria, sin codificarlo.
+   */
+  private cableGradients(
+    p: { x: number; y: number; z: number }[],
+  ): { x: number; y: number; z: number }[] {
+    const n = p.length;
+    const J: { x: number; y: number; z: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      let gx = 0, gy = 0, gz = 0;
+      if (i > 0) {
+        const u = norm(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y, p[i].z - p[i - 1].z);
+        gx += u.x; gy += u.y; gz += u.z;
+      }
+      if (i < n - 1) {
+        const u = norm(p[i].x - p[i + 1].x, p[i].y - p[i + 1].y, p[i].z - p[i + 1].z);
+        gx += u.x; gy += u.y; gz += u.z;
+      }
+      J.push({ x: gx, y: gy, z: gz });
+    }
+    return J;
+  }
+
+  /**
+   * Restriccion de cable inextensible y unilateral, a nivel de VELOCIDAD,
+   * aplicada a TODOS los nodos dinamicos (extremos y poleas moviles). Solo tira:
+   * si hay holgura (L <= rest) o ya no se alarga (vrel <= 0) no hace nada.
    */
   private solveCableVelocity(entry: CableEntry): void {
-    if (!this.world) return;
     const { bodies, restLength } = entry;
     const n = bodies.length;
-    const A = bodies[0];
-    const B = bodies[n - 1];
-    const imA = A.isDynamic() ? 1 / A.mass() : 0;
-    const imB = B.isDynamic() ? 1 / B.mass() : 0;
-    const im = imA + imB;
-    if (im <= 0) return;
+    if (n < 2) return;
+    if (this.cableLength(bodies) <= restLength) return;
 
-    const L = this.cableLength(bodies);
-    if (L <= restLength) return; // holgura: el cable no empuja
+    const p = bodies.map((b) => b.translation());
+    const J = this.cableGradients(p);
+    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    let effMass = 0;
+    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    if (effMass <= 0) return;
 
-    const uA = this.endDir(bodies, 0);
-    const uB = this.endDir(bodies, n - 1);
-    const vA = A.linvel();
-    const vB = B.linvel();
-    const vrel = uA.x * vA.x + uA.y * vA.y + uA.z * vA.z + uB.x * vB.x + uB.y * vB.y + uB.z * vB.z;
-    if (vrel <= 0) return; // ya no se esta alargando
+    const v = bodies.map((b) => b.linvel());
+    let vrel = 0;
+    for (let i = 0; i < n; i++) vrel += J[i].x * v[i].x + J[i].y * v[i].y + J[i].z * v[i].z;
+    if (vrel <= 0) return;
 
-    const lambda = -vrel / im;
-    if (imA > 0) {
-      const k = imA * lambda;
-      A.setLinvel({ x: vA.x + uA.x * k, y: vA.y + uA.y * k, z: vA.z + uA.z * k }, true);
-    }
-    if (imB > 0) {
-      const k = imB * lambda;
-      B.setLinvel({ x: vB.x + uB.x * k, y: vB.y + uB.y * k, z: vB.z + uB.z * k }, true);
+    const lambda = -vrel / effMass;
+    for (let i = 0; i < n; i++) {
+      if (im[i] <= 0) continue;
+      const k = im[i] * lambda;
+      bodies[i].setLinvel(
+        { x: v[i].x + J[i].x * k, y: v[i].y + J[i].y * k, z: v[i].z + J[i].z * k },
+        true,
+      );
     }
   }
 
   /**
-   * Proyeccion de POSICION: si el cable supera su longitud de reposo, acerca los
-   * extremos a sus poleas (repartiendo por masa inversa) para conservar la
-   * longitud de forma dura. Es lo que evita que el cable se estire.
+   * Proyeccion de POSICION generalizada: si el cable supera su longitud de
+   * reposo, mueve los nodos dinamicos a lo largo de sus gradientes para
+   * conservar la longitud. El desplazamiento de cada nodo se limita para no
+   * cruzar una polea adyacente (evita inestabilidad en los extremos).
    */
   private solveCablePosition(entry: CableEntry): void {
     const { bodies, restLength } = entry;
     const n = bodies.length;
-    const A = bodies[0];
-    const B = bodies[n - 1];
-    const imA = A.isDynamic() ? 1 / A.mass() : 0;
-    const imB = B.isDynamic() ? 1 / B.mass() : 0;
-    const im = imA + imB;
-    if (im <= 0) return;
+    if (n < 2) return;
 
-    const C = this.cableLength(bodies) - restLength;
-    if (C <= 0) return; // holgura
-
-    const pA = A.translation();
-    const wA = bodies[1].translation();
-    const pB = B.translation();
-    const wB = bodies[n - 2].translation();
-    const segA = Math.hypot(pA.x - wA.x, pA.y - wA.y, pA.z - wA.z);
-    const segB = Math.hypot(pB.x - wB.x, pB.y - wB.y, pB.z - wB.z);
-
-    // Reduccion deseada por masa inversa, con tope para no acortar un segmento
-    // por debajo de 0: si un lado se agota, el sobrante mueve el otro extremo.
-    let rA = imA > 0 ? (imA / im) * C : 0;
-    let rB = imB > 0 ? (imB / im) * C : 0;
-    if (imA === 0) rB = C;
-    if (imB === 0) rA = C;
-    if (rA > segA) { rB += rA - segA; rA = segA; }
-    if (rB > segB) { rA = Math.min(segA, rA + (rB - segB)); rB = segB; }
-
-    if (imA > 0 && rA > 0) {
-      const uA = norm(pA.x - wA.x, pA.y - wA.y, pA.z - wA.z);
-      const s = segA - rA;
-      A.setTranslation({ x: wA.x + uA.x * s, y: wA.y + uA.y * s, z: wA.z + uA.z * s }, true);
+    const p = bodies.map((b) => b.translation());
+    const segLen: number[] = [];
+    for (let i = 0; i < n - 1; i++) {
+      segLen.push(Math.hypot(p[i].x - p[i + 1].x, p[i].y - p[i + 1].y, p[i].z - p[i + 1].z));
     }
-    if (imB > 0 && rB > 0) {
-      const uB = norm(pB.x - wB.x, pB.y - wB.y, pB.z - wB.z);
-      const s = segB - rB;
-      B.setTranslation({ x: wB.x + uB.x * s, y: wB.y + uB.y * s, z: wB.z + uB.z * s }, true);
-    }
-  }
+    const C = segLen.reduce((a, b) => a + b, 0) - restLength;
+    if (C <= 0) return;
 
-  /** Direccion unitaria del segmento terminal en el extremo `idx` (hacia su polea). */
-  private endDir(bodies: RAPIER.RigidBody[], idx: number): { x: number; y: number; z: number } {
-    const inner = idx === 0 ? 1 : bodies.length - 2;
-    const p = bodies[idx].translation();
-    const w = bodies[inner].translation();
-    return norm(p.x - w.x, p.y - w.y, p.z - w.z);
+    const J = this.cableGradients(p);
+    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    let effMass = 0;
+    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    if (effMass <= 0) return;
+
+    const lambda = -C / effMass;
+    for (let i = 0; i < n; i++) {
+      if (im[i] <= 0) continue;
+      let dx = im[i] * lambda * J[i].x;
+      let dy = im[i] * lambda * J[i].y;
+      let dz = im[i] * lambda * J[i].z;
+      // No cruzar una polea adyacente en un solo paso.
+      const adj = Math.min(
+        i > 0 ? segLen[i - 1] : Infinity,
+        i < n - 1 ? segLen[i] : Infinity,
+      );
+      const mag = Math.hypot(dx, dy, dz);
+      const max = 0.9 * adj;
+      if (mag > max && mag > 0) {
+        const s = max / mag;
+        dx *= s; dy *= s; dz *= s;
+      }
+      bodies[i].setTranslation({ x: p[i].x + dx, y: p[i].y + dy, z: p[i].z + dz }, true);
+    }
   }
 
   private addJoint(joint: Joint): void {
