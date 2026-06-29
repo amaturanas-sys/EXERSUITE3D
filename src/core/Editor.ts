@@ -6,8 +6,8 @@ import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
-import { Cable } from "../physics/cables";
-import { SnapManager } from "./snapping";
+import { Cable, type CableNode } from "../physics/cables";
+import { SnapManager, localSnapPoints } from "./snapping";
 import {
   DEFAULT_HUMAN_HEIGHT,
   buildHumanFigure,
@@ -81,7 +81,7 @@ export class Editor {
   private cables = new Map<string, Cable>();
   private cableVisuals = new THREE.Group();
   private cableMode = false;
-  private cablePending: SceneObject[] = [];
+  private cablePending: { object: SceneObject; local: THREE.Vector3 }[] = [];
 
   private snap: SnapManager;
 
@@ -233,7 +233,7 @@ export class Editor {
       if (j.bodyAId === obj.id || j.bodyBId === obj.id) this.joints.delete(j.id);
     }
     for (const c of this.listCables()) {
-      if (c.nodeIds.includes(obj.id)) this.cables.delete(c.id);
+      if (c.nodes.some((n) => n.objectId === obj.id)) this.cables.delete(c.id);
     }
     this.sceneManager.content.remove(obj.mesh);
     obj.dispose();
@@ -560,15 +560,20 @@ export class Editor {
   finishCable(): void {
     if (!this.cableMode) return;
     if (this.cablePending.length >= 2) {
-      this.createCable(this.cablePending.map((o) => o.id));
+      this.createCable(
+        this.cablePending.map((p) => ({
+          objectId: p.object.id,
+          local: { x: p.local.x, y: p.local.y, z: p.local.z },
+        })),
+      );
     }
     this.cancelCable();
   }
 
-  /** Crea un cable a partir de una lista ordenada de ids de objetos. */
-  createCable(nodeIds: string[]): Cable | null {
-    if (nodeIds.length < 2) return null;
-    const cable = new Cable({ nodeIds });
+  /** Crea un cable a partir de una lista ordenada de nodos (pieza + anclaje). */
+  createCable(nodes: CableNode[]): Cable | null {
+    if (nodes.length < 2) return null;
+    const cable = new Cable({ nodes });
     this.cables.set(cable.id, cable);
     this.bus.emit("cablesChanged", { cables: this.listCables() });
     return cable;
@@ -596,9 +601,16 @@ export class Editor {
 
     for (const cable of this.cables.values()) {
       const pts: THREE.Vector3[] = [];
-      for (const id of cable.nodeIds) {
-        const obj = this.objects.get(id);
-        if (obj) pts.push(obj.mesh.position.clone());
+      for (const node of cable.nodes) {
+        const obj = this.objects.get(node.objectId);
+        if (obj) {
+          obj.mesh.updateMatrixWorld();
+          pts.push(
+            new THREE.Vector3(node.local.x, node.local.y, node.local.z).applyMatrix4(
+              obj.mesh.matrixWorld,
+            ),
+          );
+        }
       }
       if (pts.length < 2) continue;
       let line = existing.get(cable.id);
@@ -622,18 +634,28 @@ export class Editor {
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
 
-    // Modo cable: cada clic anade un nodo (objeto) al trazado.
+    // Modo cable: cada clic ancla un nodo en el punto de anclaje mas cercano.
     if (this.cableMode) {
       const cHits = this.raycaster.intersectObjects(
         this.sceneManager.content.children,
         false,
       );
-      const id = cHits[0]?.object.userData.sceneObjectId as string | undefined;
+      const hit = cHits[0];
+      const id = hit?.object.userData.sceneObjectId as string | undefined;
       const obj = id ? this.objects.get(id) : undefined;
-      if (!obj) return;
-      // Evita duplicar el mismo nodo consecutivo.
-      if (this.cablePending[this.cablePending.length - 1] !== obj) {
-        this.cablePending.push(obj);
+      if (!obj || !hit) return;
+      // Punto de anclaje (local) cuya posicion mundial esta mas cerca del clic.
+      obj.mesh.updateMatrixWorld(true);
+      let best: THREE.Vector3 | null = null;
+      let bestD = Infinity;
+      for (const lp of localSnapPoints(obj)) {
+        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+        const d = wp.distanceTo(hit.point);
+        if (d < bestD) { bestD = d; best = lp; }
+      }
+      const prev = this.cablePending[this.cablePending.length - 1];
+      if (!prev || prev.object !== obj) {
+        this.cablePending.push({ object: obj, local: best ?? new THREE.Vector3() });
         this.bus.emit("cableModeChanged", { active: true, count: this.cablePending.length });
       }
       return;

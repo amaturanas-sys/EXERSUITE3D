@@ -8,6 +8,8 @@ const DEG2RAD = Math.PI / 180;
 
 interface CableEntry {
   bodies: RAPIER.RigidBody[];
+  /** Anclaje local de cada nodo en el frame del cuerpo, en METROS. */
+  local: { x: number; y: number; z: number }[];
   restLength: number; // metros
 }
 
@@ -45,17 +47,41 @@ export class PhysicsWorld {
   }
 
   private addCable(cable: Cable): void {
-    const bodies = cable.nodeIds.map((id) => this.bodies.get(id)?.body);
-    if (bodies.length < 2 || bodies.some((b) => !b)) return;
-    const resolved = bodies as RAPIER.RigidBody[];
-    this.cables.push({ bodies: resolved, restLength: this.cableLength(resolved) });
+    const entries = cable.nodes.map((n) => this.bodies.get(n.objectId));
+    if (entries.length < 2 || entries.some((e) => !e)) return;
+    const bodies = entries.map((e) => e!.body);
+    // Anclaje local (cm geometria) -> escala de la pieza -> metros, frame cuerpo.
+    const local = cable.nodes.map((n, i) => {
+      const s = entries[i]!.obj.mesh.scale;
+      return { x: n.local.x * s.x * S, y: n.local.y * s.y * S, z: n.local.z * s.z * S };
+    });
+    const entry: CableEntry = { bodies, local, restLength: 0 };
+    entry.restLength = this.cableLength(entry);
+    this.cables.push(entry);
   }
 
-  private cableLength(bodies: RAPIER.RigidBody[]): number {
+  /** Posicion mundial (metros) del anclaje del nodo i: trans + rot * local. */
+  private nodeWorld(entry: CableEntry, i: number): { x: number; y: number; z: number } {
+    const t = entry.bodies[i].translation();
+    const q = entry.bodies[i].rotation();
+    const l = entry.local[i];
+    // rotar l por el cuaternion q
+    const ix = q.w * l.x + q.y * l.z - q.z * l.y;
+    const iy = q.w * l.y + q.z * l.x - q.x * l.z;
+    const iz = q.w * l.z + q.x * l.y - q.y * l.x;
+    const iw = -q.x * l.x - q.y * l.y - q.z * l.z;
+    return {
+      x: t.x + (ix * q.w + iw * -q.x + iy * -q.z - iz * -q.y),
+      y: t.y + (iy * q.w + iw * -q.y + iz * -q.x - ix * -q.z),
+      z: t.z + (iz * q.w + iw * -q.z + ix * -q.y - iy * -q.x),
+    };
+  }
+
+  private cableLength(entry: CableEntry): number {
     let L = 0;
-    for (let i = 0; i < bodies.length - 1; i++) {
-      const a = bodies[i].translation();
-      const b = bodies[i + 1].translation();
+    for (let i = 0; i < entry.bodies.length - 1; i++) {
+      const a = this.nodeWorld(entry, i);
+      const b = this.nodeWorld(entry, i + 1);
       L += Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
     }
     return L;
@@ -97,9 +123,9 @@ export class PhysicsWorld {
     const { bodies, restLength } = entry;
     const n = bodies.length;
     if (n < 2) return;
-    if (this.cableLength(bodies) <= restLength) return;
+    if (this.cableLength(entry) <= restLength) return;
 
-    const p = bodies.map((b) => b.translation());
+    const p = bodies.map((_, i) => this.nodeWorld(entry, i));
     const J = this.cableGradients(p);
     const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
     let effMass = 0;
@@ -133,7 +159,7 @@ export class PhysicsWorld {
     const n = bodies.length;
     if (n < 2) return;
 
-    const p = bodies.map((b) => b.translation());
+    const p = bodies.map((_, i) => this.nodeWorld(entry, i));
     const segLen: number[] = [];
     for (let i = 0; i < n - 1; i++) {
       segLen.push(Math.hypot(p[i].x - p[i + 1].x, p[i].y - p[i + 1].y, p[i].z - p[i + 1].z));
@@ -164,7 +190,9 @@ export class PhysicsWorld {
         const s = max / mag;
         dx *= s; dy *= s; dz *= s;
       }
-      bodies[i].setTranslation({ x: p[i].x + dx, y: p[i].y + dy, z: p[i].z + dz }, true);
+      // El delta se aplica al CENTRO del cuerpo (el anclaje se mueve con el).
+      const c = bodies[i].translation();
+      bodies[i].setTranslation({ x: c.x + dx, y: c.y + dy, z: c.z + dz }, true);
     }
   }
 

@@ -41,7 +41,7 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
-| Trazar cable        | **+ Cable**, clic en cada nodo (extremo → poleas → extremo), **Enter** para cerrar |
+| Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 
