@@ -223,6 +223,23 @@ body.simulating #palette {
   border-radius: 6px;
 }
 
+/* Panel de posturas (flotante, junto a la paleta). */
+#poses {
+  top: auto;
+  left: 272px;
+  bottom: 48px;
+  width: 262px;
+  max-height: 340px;
+}
+.pose-actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+.pose-actions .tool {
+  flex: 1;
+}
+
 .panel-title {
   padding: 10px 12px;
   font-size: 12px;

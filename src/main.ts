@@ -5,6 +5,7 @@ import { ComponentPalette } from "./ui/ComponentPalette";
 import { Toolbar } from "./ui/Toolbar";
 import { PropertiesPanel } from "./ui/PropertiesPanel";
 import { JointsPanel } from "./ui/JointsPanel";
+import { PosePanel } from "./ui/PosePanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
 
 const app = document.getElementById("app")!;
@@ -20,6 +21,7 @@ const palette = new ComponentPalette(editor);
 const toolbar = new Toolbar(editor);
 const inspector = new PropertiesPanel(editor);
 const joints = new JointsPanel(editor);
+const posePanel = new PosePanel(editor);
 const hud = new MeasurementHUD(editor);
 
 // Columna derecha: inspector (arriba) + conexiones (abajo).
@@ -37,7 +39,7 @@ credit.textContent =
   "Esqueleto: Open3DModel · O.P. Gobée et al., LUMC (AnatomyTOOL) · CC BY-SA";
 credit.style.display = "none";
 
-app.append(palette.root, toolbar.root, rightDock, hud.root, credit);
+app.append(palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit);
 
 editor.bus.on("humanFigureChanged", ({ present, mode }) => {
   credit.style.display = present && mode === "skeleton" ? "block" : "none";

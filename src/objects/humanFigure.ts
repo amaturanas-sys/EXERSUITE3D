@@ -1,53 +1,17 @@
 import * as THREE from "three";
-import { degToRad } from "../core/units";
 
 // Figura humana de referencia POSABLE (rig articulado). Cada articulacion es un
 // pivote (Object3D); rotarlo mueve toda la cadena del miembro. Las mallas llevan
-// `jointName` para saber que articulacion controlar al hacer clic. Incluye
-// posturas estandar que luego se ajustan a mano.
+// `jointName` para saber que articulacion controlar al hacer clic.
 //
 // El grupo raiz expone en userData:
 //   isHumanFigure: true
 //   joints: Record<string, Object3D>   (pivotes articulables)
-//   applyPose(name): aplica una postura
-//   reset(): vuelve a "De pie"
+//   ground(): re-apoya los pies en y=0
+//
+// Las posturas estandar viven en poseLibrary.ts y las aplica el Editor.
 
 export const DEFAULT_HUMAN_HEIGHT = 175;
-
-export const POSE_NAMES = ["De pie", "Sentadilla", "Sentado", "Remo", "Press"] as const;
-export type PoseName = (typeof POSE_NAMES)[number];
-
-// Angulos por articulacion en grados [x,y,z]. x = flexion sagital.
-// Convencion: los miembros cuelgan en -Y; rotacion X NEGATIVA los lleva hacia
-// DELANTE (+Z, frente de la figura) y POSITIVA hacia atras. La columna se
-// extiende en +Y, asi que en ella X positiva inclina el torso hacia delante.
-const POSES: Record<PoseName, Record<string, [number, number, number]>> = {
-  "De pie": {},
-  Sentadilla: {
-    hipL: [-70, 0, 0], hipR: [-70, 0, 0],
-    kneeL: [110, 0, 0], kneeR: [110, 0, 0],
-    ankleL: [-30, 0, 0], ankleR: [-30, 0, 0],
-    spine: [25, 0, 0],
-    shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
-  },
-  Sentado: {
-    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
-    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
-    shoulderL: [-20, 0, 0], shoulderR: [-20, 0, 0],
-    elbowL: [55, 0, 0], elbowR: [55, 0, 0],
-  },
-  Remo: {
-    spine: [35, 0, 0],
-    hipL: [-15, 0, 0], hipR: [-15, 0, 0],
-    kneeL: [25, 0, 0], kneeR: [25, 0, 0],
-    shoulderL: [20, 0, 0], shoulderR: [20, 0, 0],
-    elbowL: [105, 0, 0], elbowR: [105, 0, 0],
-  },
-  Press: {
-    shoulderL: [-165, 0, 0], shoulderR: [-165, 0, 0],
-    elbowL: [-10, 0, 0], elbowR: [-10, 0, 0],
-  },
-};
 
 function mat(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color: 0x2f7dd1, metalness: 0.0, roughness: 0.6 });
@@ -143,14 +107,8 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   bb = new THREE.Box3().setFromObject(root);
   root.position.y -= bb.min.y;
 
-  const applyPose = (name: PoseName) => {
-    for (const g of Object.values(joints)) g.rotation.set(0, 0, 0);
-    const pose = POSES[name] ?? {};
-    for (const [jn, [x, y, z]] of Object.entries(pose)) {
-      const j = joints[jn];
-      if (j) j.rotation.set(degToRad(x), degToRad(y), degToRad(z));
-    }
-    // Re-apoya los pies en el suelo (conserva X/Z; solo ajusta altura).
+  // Re-apoya los pies en el suelo (conserva X/Z; solo ajusta altura).
+  const ground = () => {
     root.updateMatrixWorld(true);
     const b = new THREE.Box3().setFromObject(root);
     root.position.y -= b.min.y;
@@ -160,8 +118,7 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   root.userData.isHumanFigure = true;
   root.userData.heightCm = H;
   root.userData.joints = joints;
-  root.userData.applyPose = applyPose;
-  root.userData.reset = () => applyPose("De pie");
+  root.userData.ground = ground;
   return root;
 }
 

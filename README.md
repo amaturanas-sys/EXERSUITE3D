@@ -44,7 +44,8 @@ npm run typecheck  # solo comprobación de tipos
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
-| Posar figura        | Clic en un miembro del maniquí → rotar la articulación; menú de **posturas** (De pie/Sentadilla/Sentado/Remo/Press) |
+| Posar figura        | Clic en un miembro del maniquí → rotar la articulación; panel **Posturas** para aplicar |
+| Editar/crear postura | Posa a mano y **Actualizar** (sobrescribe) o **Guardar como…** (nueva); editables y persistentes |
 
 ## Arquitectura
 
@@ -107,8 +108,9 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       de cara). Estilo visual ilustrativo ✔ (fondo claro de estudio, iluminación
       suave, figura azul, sombras tenues). Pendiente: deformar/elongar/voltear,
       agrupación multicomponente. Personaje posable ✔ (maniquí con rig de 12
-      articulaciones rotables, posturas estándar y ajuste manual, apoyado en el
-      suelo).
+      articulaciones rotables, apoyado en el suelo). Posturas estándar **editables
+      y ampliables** ✔ (biblioteca persistente: aplicar, actualizar, guardar
+      nuevas, eliminar, restaurar por defecto).
 - [x] **Figura humana de referencia**: maniquí procedural **o** esqueleto
       anatómico detallado (glTF/Draco), a escala con altura editable en cm, para
       diseñar máquinas en torno al cuerpo.

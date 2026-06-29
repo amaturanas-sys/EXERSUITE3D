@@ -1,5 +1,4 @@
 import type { Editor, TransformMode } from "../core/Editor";
-import { POSE_NAMES } from "../objects/humanFigure";
 import { el } from "./dom";
 
 /** Barra superior: modos de transformacion y acciones de escena. */
@@ -86,18 +85,11 @@ export class Toolbar {
       const v = parseFloat(figHeight.value);
       if (Number.isFinite(v) && v >= 50 && v <= 250) this.editor.setHumanHeight(v);
     });
-    const figPose = el("select", { class: "select tool-select", title: "Postura estándar" });
-    for (const name of POSE_NAMES) figPose.append(el("option", { value: name }, [name]));
-    figPose.addEventListener("change", () => this.editor.applyPose(figPose.value));
-
-    this.editor.bus.on("humanFigureChanged", ({ present, heightCm, loading, mode }) => {
+    this.editor.bus.on("humanFigureChanged", ({ present, heightCm, loading }) => {
       figBtn.classList.toggle("active", present);
       figBtn.textContent = loading ? "Cargando…" : "Figura";
       figHeight.value = String(heightCm);
-      // Las posturas solo aplican al maniquí posable (no al esqueleto GLB).
-      figPose.disabled = !present || mode !== "mannequin";
     });
-    figPose.disabled = true;
 
     const simBtn = el("button", { class: "tool sim", title: "Simular fisica (Espacio)" }, [
       "▶ Simular",
@@ -112,7 +104,7 @@ export class Toolbar {
       ]),
       el("div", { class: "tool-group" }, [spaceBtn, gridBtn, snapBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
-      el("div", { class: "tool-group" }, [figBtn, figMode, figHeight, figPose]),
+      el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
 
     this.root = el("div", { id: "toolbar" }, [

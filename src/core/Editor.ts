@@ -14,6 +14,15 @@ import {
   disposeHumanFigure,
 } from "../objects/humanFigure";
 import { buildSkeletonFigure } from "../objects/skeletonModel";
+import {
+  getPose,
+  poseNames,
+  removePose,
+  resetDefaultPoses,
+  setPose,
+  type PoseDef,
+} from "../objects/poseLibrary";
+import { degToRad, radToDeg, roundTo } from "../core/units";
 import { EventBus } from "./eventBus";
 
 export type HumanMode = "mannequin" | "skeleton";
@@ -38,6 +47,8 @@ export type EditorEvents = {
   cableModeChanged: { active: boolean; count: number };
   /** Snapping de ensamblaje activado/desactivado. */
   snapChanged: { enabled: boolean };
+  /** Cambio en la lista de posturas (anadir/editar/eliminar). */
+  posesChanged: { names: string[] };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -459,10 +470,58 @@ export class Editor {
     this.setMode("translate");
   }
 
-  /** Aplica una postura estandar a la figura posable. */
+  private figureJoints(): Record<string, THREE.Object3D> | null {
+    return (this.humanFigure?.userData.joints as Record<string, THREE.Object3D>) ?? null;
+  }
+
+  /** Aplica una postura de la biblioteca a la figura posable. */
   applyPose(name: string): void {
-    const fn = this.humanFigure?.userData.applyPose as ((n: string) => void) | undefined;
-    if (fn) fn(name);
+    const joints = this.figureJoints();
+    const def = getPose(name);
+    if (!joints || !def) return;
+    for (const g of Object.values(joints)) g.rotation.set(0, 0, 0);
+    for (const [jn, [x, y, z]] of Object.entries(def)) {
+      const j = joints[jn];
+      if (j) j.rotation.set(degToRad(x), degToRad(y), degToRad(z));
+    }
+    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+  }
+
+  /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */
+  captureCurrentPose(): PoseDef {
+    const joints = this.figureJoints();
+    const def: PoseDef = {};
+    if (joints) {
+      for (const [jn, g] of Object.entries(joints)) {
+        def[jn] = [
+          roundTo(radToDeg(g.rotation.x), 1),
+          roundTo(radToDeg(g.rotation.y), 1),
+          roundTo(radToDeg(g.rotation.z), 1),
+        ];
+      }
+    }
+    return def;
+  }
+
+  listPoseNames(): string[] {
+    return poseNames();
+  }
+
+  /** Guarda/actualiza una postura con la pose actual de la figura. */
+  savePose(name: string): void {
+    if (!name.trim() || !this.humanFigure) return;
+    setPose(name.trim(), this.captureCurrentPose());
+    this.bus.emit("posesChanged", { names: poseNames() });
+  }
+
+  deletePose(name: string): void {
+    removePose(name);
+    this.bus.emit("posesChanged", { names: poseNames() });
+  }
+
+  restoreDefaultPoses(): void {
+    resetDefaultPoses();
+    this.bus.emit("posesChanged", { names: poseNames() });
   }
 
   private selectFigure(): void {
