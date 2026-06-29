@@ -16,7 +16,8 @@ export class SceneManager {
   private grid: THREE.GridHelper;
 
   constructor(private canvas: HTMLCanvasElement) {
-    this.scene.background = new THREE.Color(0x1e2128);
+    // Fondo claro de estudio (estilo ilustrativo).
+    this.scene.background = gradientTexture("#eef2f6", "#c6cfd8");
 
     this.camera = new THREE.PerspectiveCamera(
       50,
@@ -37,7 +38,7 @@ export class SceneManager {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.toneMappingExposure = 1.08;
 
     this.scene.add(this.content);
     this.setupEnvironment();
@@ -82,8 +83,8 @@ export class SceneManager {
   private setupGrid(): THREE.GridHelper {
     const sizeCm = 6 * METER; // 6 m de lado
     const divisions = sizeCm / 10; // celdas de 10 cm
-    const grid = new THREE.GridHelper(sizeCm, divisions, 0x5b6472, 0x363b45);
-    (grid.material as THREE.Material).opacity = 0.6;
+    const grid = new THREE.GridHelper(sizeCm, divisions, 0x9aa6b4, 0xc2cad3);
+    (grid.material as THREE.Material).opacity = 0.55;
     (grid.material as THREE.Material).transparent = true;
     this.scene.add(grid);
 
@@ -96,7 +97,7 @@ export class SceneManager {
 
   private setupGround(): void {
     const geo = new THREE.PlaneGeometry(6 * METER, 6 * METER);
-    const mat = new THREE.ShadowMaterial({ opacity: 0.25 });
+    const mat = new THREE.ShadowMaterial({ opacity: 0.18 });
     const ground = new THREE.Mesh(geo, mat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
@@ -119,4 +120,20 @@ export class SceneManager {
   render(): void {
     this.renderer.render(this.scene, this.camera);
   }
+}
+
+/** Textura de gradiente vertical para un fondo de estudio. */
+function gradientTexture(top: string, bottom: string): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 2;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bottom);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 2, 256);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }

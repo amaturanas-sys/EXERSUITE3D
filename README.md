@@ -103,8 +103,9 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       (ratio 2:1), motores de posición, leva de resistencia variable.
 - [~] **Fase 3 — Modelado/ensamblaje**: snapping de ensamblaje ✔ (encaje
       magnético en puntos de anclaje: centro/eje, extremos de cilindros, centros
-      de cara). Pendiente: deformar/elongar/voltear, agrupación multicomponente,
-      personaje posable (rig + posturas estándar), estilo visual ilustrativo.
+      de cara). Estilo visual ilustrativo ✔ (fondo claro de estudio, iluminación
+      suave, figura azul, sombras tenues). Pendiente: deformar/elongar/voltear,
+      agrupación multicomponente, personaje posable (rig + posturas estándar).
 - [x] **Figura humana de referencia**: maniquí procedural **o** esqueleto
       anatómico detallado (glTF/Draco), a escala con altura editable en cm, para
       diseñar máquinas en torno al cuerpo.

@@ -14,12 +14,9 @@ export const DEFAULT_HUMAN_HEIGHT = 175;
 
 function partMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
-    color: 0x8fb3d9,
-    transparent: true,
-    opacity: 0.55,
+    color: 0x2f7dd1, // azul ilustrativo (como las figuras de referencia)
     metalness: 0.0,
-    roughness: 0.85,
-    depthWrite: false,
+    roughness: 0.6,
   });
 }
 
@@ -72,7 +69,7 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   for (const s of segs) {
     const mesh = new THREE.Mesh(s.geo, mat);
     mesh.position.set(...s.pos);
-    mesh.castShadow = false;
+    mesh.castShadow = true;
     mesh.userData.humanFigurePart = true;
     group.add(mesh);
   }
