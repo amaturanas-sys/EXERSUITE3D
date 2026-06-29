@@ -433,11 +433,40 @@ export class Editor {
     });
   }
 
-  private selectFigure(): void {
+  /** Decide al hacer clic en la figura: articulacion (rotar) o raiz (mover). */
+  private selectFigurePart(hit: THREE.Object3D): void {
+    if (!this.humanFigure) return;
+    const jn = hit.userData.jointName as string | undefined;
+    const joints = this.humanFigure.userData.joints as
+      | Record<string, THREE.Object3D>
+      | undefined;
+    if (jn && joints && joints[jn]) {
+      this.select(null);
+      this.selectedFigure = true;
+      this.gizmo.attach(joints[jn]);
+      this.setMode("rotate"); // posar = rotar la articulacion
+    } else {
+      this.selectFigureRoot();
+    }
+  }
+
+  /** Selecciona la figura entera para moverla/rotarla. */
+  private selectFigureRoot(): void {
     if (!this.humanFigure) return;
     this.select(null);
     this.selectedFigure = true;
     this.gizmo.attach(this.humanFigure);
+    this.setMode("translate");
+  }
+
+  /** Aplica una postura estandar a la figura posable. */
+  applyPose(name: string): void {
+    const fn = this.humanFigure?.userData.applyPose as ((n: string) => void) | undefined;
+    if (fn) fn(name);
+  }
+
+  private selectFigure(): void {
+    this.selectFigureRoot();
   }
 
   // ----------------------------------------------------------- conexiones
@@ -717,7 +746,7 @@ export class Editor {
     if (objDist === Infinity && figDist === Infinity) {
       this.select(null);
     } else if (figDist < objDist) {
-      this.selectFigure();
+      this.selectFigurePart(figHits[0].object);
     } else {
       const id = objHits[0].object.userData.sceneObjectId as string | undefined;
       this.select((id && this.objects.get(id)) || null);
