@@ -213,6 +213,7 @@ export class Editor {
       params: def.defaults,
       physics: def.physics,
       materialId: def.materialId,
+      stack: def.stack,
     });
 
     // Apoya la base del objeto sobre el suelo (y=0).

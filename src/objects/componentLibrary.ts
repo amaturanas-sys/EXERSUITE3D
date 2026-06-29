@@ -310,8 +310,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "peso",
     materialId: "hierro-fundido",
     defaults: { kind: "box", width: 25, height: 90, depth: 18 },
-    physics: { massKg: 100, fixed: false },
-    description: "Stack selectorizado guiado por varillas con pin selector.",
+    physics: { massKg: 102, fixed: false },
+    stack: { plateCount: 15, plateMassKg: 6.8, selected: 5 },
+    description: "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba.",
   },
   {
     id: "cuerno-carga",

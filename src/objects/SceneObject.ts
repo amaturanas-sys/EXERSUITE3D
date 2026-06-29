@@ -1,5 +1,10 @@
 import * as THREE from "three";
-import type { ComponentCategory, PhysicalAttributes, PrimitiveParams } from "./types";
+import type {
+  ComponentCategory,
+  PhysicalAttributes,
+  PrimitiveParams,
+  StackInfo,
+} from "./types";
 import { buildGeometry } from "./geometryFactory";
 import { applyMaterial, buildMaterial } from "./materials";
 
@@ -17,6 +22,8 @@ export class SceneObject {
   materialId: string;
   params: PrimitiveParams;
   physics: PhysicalAttributes;
+  /** Pila selectorizada (solo en componentes tipo stack). */
+  stack?: StackInfo;
   readonly mesh: THREE.Mesh;
 
   constructor(opts: {
@@ -26,6 +33,7 @@ export class SceneObject {
     params: PrimitiveParams;
     physics: PhysicalAttributes;
     materialId: string;
+    stack?: StackInfo;
   }) {
     this.id = `obj_${nextId++}`;
     this.name = opts.name;
@@ -34,6 +42,7 @@ export class SceneObject {
     this.materialId = opts.materialId;
     this.params = { ...opts.params };
     this.physics = { ...opts.physics };
+    this.stack = opts.stack ? { ...opts.stack } : undefined;
 
     const geometry = buildGeometry(this.params);
     const material = buildMaterial(this.materialId);
@@ -59,6 +68,15 @@ export class SceneObject {
   setMaterial(id: string): void {
     this.materialId = id;
     applyMaterial(this.mesh.material as THREE.MeshStandardMaterial, id);
+  }
+
+  /** Masa que realmente se mueve (kg): si es pila, las placas seleccionadas. */
+  effectiveMassKg(): number {
+    if (this.stack) {
+      const sel = Math.max(0, Math.min(this.stack.selected, this.stack.plateCount));
+      return sel * this.stack.plateMassKg;
+    }
+    return this.physics.massKg;
   }
 
   /** Dimensiones efectivas en cm (bounding box mundial * escala del mesh). */

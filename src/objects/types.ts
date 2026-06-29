@@ -39,6 +39,20 @@ export type ComponentCategory =
   | "transmision"
   | "primitiva";
 
+/**
+ * Informacion de una pila de pesos selectorizada. El tubo selector arrastra las
+ * placas enganchadas por el pin (la seleccionada y las de encima); las de debajo
+ * no se mueven. La masa movilizada = selected * plateMassKg.
+ */
+export interface StackInfo {
+  /** Numero total de placas del stack. */
+  plateCount: number;
+  /** Masa de cada placa (kg). */
+  plateMassKg: number;
+  /** Placas seleccionadas (desde arriba) que se movilizan. */
+  selected: number;
+}
+
 /** Atributos fisicos/mecanicos editables de un componente. */
 export interface PhysicalAttributes {
   /** Masa en kilogramos (0 = estatico/anclado). */
@@ -58,6 +72,8 @@ export interface ComponentDefinition {
   defaults: PrimitiveParams;
   /** Atributos fisicos por defecto. */
   physics: PhysicalAttributes;
+  /** Si es una pila selectorizada, sus parametros por defecto. */
+  stack?: StackInfo;
   /** Descripcion corta para tooltips. */
   description: string;
 }

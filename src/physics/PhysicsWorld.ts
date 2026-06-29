@@ -258,7 +258,8 @@ export class PhysicsWorld {
 
   private addBody(obj: SceneObject): void {
     if (!this.world) return;
-    const dynamic = obj.physics.massKg > 0 && !obj.physics.fixed;
+    const massKg = obj.effectiveMassKg();
+    const dynamic = massKg > 0 && !obj.physics.fixed;
 
     const desc = dynamic
       ? RAPIER.RigidBodyDesc.dynamic()
@@ -270,7 +271,7 @@ export class PhysicsWorld {
 
     const body = this.world.createRigidBody(desc);
     this.world.createCollider(this.colliderDesc(obj), body);
-    if (dynamic) body.setAdditionalMass(obj.physics.massKg, true);
+    if (dynamic) body.setAdditionalMass(massKg, true);
 
     this.bodies.set(obj.id, { body, obj });
   }

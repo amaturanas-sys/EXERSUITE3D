@@ -66,10 +66,21 @@ con posible offset de ±mm".
 ### 2.3 Cables, poleas y pilas de peso (Rogue, REP, Titan, Obelix)
 - Poleas de **3,5"–6"**; **swivels** sobredimensionados; cable de acero **3/16"**.
 - **Relaciones** típicas: **2:1** en functional trainer, **1:1** en lat/row.
-- **Pila selectorizada**: placas de acero macizo (≈15 lb/6,8 kg cada una)
-  guiadas por **dos varillas verticales** con **pin selector**, más un
-  **mini-stack incremental** (+2,3–7,5 kg). Modelo: masa guiada linealmente
-  (prismatic joint) conectada por cable inextensible al perímetro de la leva/polea.
+- **Pila selectorizada (mecanismo detallado)**: placas de acero macizo
+  (≈15 lb/6,8 kg cada una) que **deslizan sobre dos varillas-guía tubulares**.
+  Por el centro de todas las placas pasa un **tubo selector** con una columna de
+  agujeros. Se inserta un **pin perpendicular** en la placa elegida, enganchando
+  el tubo. **El cable tira del tubo selector**, que arrastra la **placa del pin y
+  todas las de encima** (apiladas sobre ella); las placas **por debajo del pin no
+  interactúan**. Por tanto la **masa movilizada = nº de placas seleccionadas ×
+  peso por placa**. Suele haber un **mini-stack incremental** (+2,3–7,5 kg) y un
+  **resorte amortiguador** arriba.
+  - **Modelo en EXERSUITE3D**: el componente *pila de pesos* es **selectorizado**
+    (placas totales, kg/placa, selección); la **masa efectiva** = selección ×
+    kg/placa. Esa masa, guiada por una **corredera** (prismatic sobre las
+    varillas) y tirada por el **cable** (enganchado al tubo selector), es lo que
+    sube/baja. _Pendiente_: visualizar las placas individuales y que solo las
+    seleccionadas se eleven (animación por-placa).
 - **MTS (Hammer)**: transmisión por **correa de Kevlar** (>3000 lb) sobre poleas
   de nylon/fibra de vidrio, a dos pilas independientes.
 

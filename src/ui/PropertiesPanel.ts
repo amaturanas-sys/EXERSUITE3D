@@ -79,7 +79,42 @@ export class PropertiesPanel {
     this.body.append(this.materialField(obj));
     this.body.append(this.dimSection(obj));
     this.body.append(this.transformSection(obj));
+    if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  private stackSection(obj: SceneObject): HTMLElement {
+    const st = obj.stack!;
+    const effective = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const updateEff = () => {
+      effective.textContent = `Peso seleccionado: ${roundTo(obj.effectiveMassKg(), 1)} kg`;
+    };
+
+    const numField = (label: string, value: number, step: string, onChange: (v: number) => void) => {
+      const input = el("input", { type: "number", value: String(value), step, min: "0" });
+      input.addEventListener("change", () => {
+        const v = parseFloat(input.value);
+        if (Number.isFinite(v) && v >= 0) {
+          onChange(v);
+          updateEff();
+          this.editor.bus.emit("objectTransformed", { object: obj });
+        }
+      });
+      return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
+    };
+
+    updateEff();
+    return el("div", {}, [
+      el("div", { class: "field" }, [
+        el("label", {}, ["Pila selectorizada"]),
+        el("div", { class: "row" }, [
+          numField("Placas", st.plateCount, "1", (v) => (st.plateCount = Math.round(v))),
+          numField("kg/placa", st.plateMassKg, "0.5", (v) => (st.plateMassKg = v)),
+          numField("Seleccion", st.selected, "1", (v) => (st.selected = Math.round(v))),
+        ]),
+      ]),
+      el("div", { class: "field" }, [effective]),
+    ]);
   }
 
   // ------------------------------------------------------------- secciones
@@ -200,10 +235,13 @@ export class PropertiesPanel {
       "Anclado (fijo)",
     ]);
 
-    return el("div", {}, [
-      el("div", { class: "field" }, [el("label", {}, ["Masa (kg)"]), mass]),
-      el("div", { class: "field" }, [fixedLabel]),
-    ]);
+    const children = [];
+    // La masa de una pila es derivada (placas seleccionadas); no se edita aqui.
+    if (!obj.stack) {
+      children.push(el("div", { class: "field" }, [el("label", {}, ["Masa (kg)"]), mass]));
+    }
+    children.push(el("div", { class: "field" }, [fixedLabel]));
+    return el("div", {}, children);
   }
 
   /** Refresca solo los valores de posicion/rotacion (tras arrastrar el gizmo). */
