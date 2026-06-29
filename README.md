@@ -40,6 +40,7 @@ npm run typecheck  # solo comprobación de tipos
 | Eliminar selección  | `Supr` / `Backspace`                    |
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
+| Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 
 ## Arquitectura
 
@@ -48,8 +49,8 @@ src/
   core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación)
   scene/       # SceneManager: escena, cámara, luces, grid en cm, entorno PBR
   objects/     # SceneObject, geometrías, librería de componentes y materiales
-  physics/     # PhysicsWorld: integración de Rapier (cuerpos rígidos)
-  ui/          # paleta, barra de herramientas, inspector, HUD de medidas
+  physics/     # PhysicsWorld (Rapier) y joints (bisagra/corredera)
+  ui/          # paleta, toolbar, inspector, conexiones, HUD de medidas
   main.ts      # punto de entrada y ensamblado
 ```
 
@@ -74,9 +75,10 @@ asientos, respaldos). Cada componente lleva atributos físicos editables
       selección, gizmos mover/rotar/escalar, librería de componentes, inspector
       con medidas exactas, HUD de medidas.
 - [~] **Fase 2 — Física**: integración de Rapier ✔ (cuerpos rígidos, gravedad,
-      masas, colisiones, Play/Stop con restauración del diseño). Pendiente:
-      articulaciones/joints (pivotes, bisagras, correderas), cables y poleas,
-      pilas de peso conectadas, motores.
+      masas, colisiones, Play/Stop con restauración del diseño). Articulaciones ✔
+      — bisagra (revolute) y corredera (prismatic) con eje, pivote, límites de
+      recorrido y motor de velocidad. Pendiente: cables y poleas, pilas de peso
+      conectadas, motores de posición.
 - [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
       conexión entre objetos, agrupación multicomponente.
 - [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente.

@@ -5,6 +5,7 @@ import { SceneManager } from "../scene/SceneManager";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
+import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { EventBus } from "./eventBus";
 
 export type TransformMode = "translate" | "rotate" | "scale";
@@ -17,6 +18,10 @@ export type EditorEvents = {
   modeChanged: { mode: TransformMode };
   /** Estado de la simulacion fisica. */
   simulationChanged: { running: boolean };
+  /** Cambio en la lista de articulaciones. */
+  jointsChanged: { joints: Joint[] };
+  /** Modo "conectar dos piezas" activo/inactivo. */
+  connectModeChanged: { kind: JointKind | null; pending: boolean };
 };
 
 interface SavedTransform {
@@ -45,6 +50,11 @@ export class Editor {
   private simulating = false;
   private saved = new Map<string, SavedTransform>();
 
+  private joints = new Map<string, Joint>();
+  private jointHelpers = new THREE.Group();
+  private connectMode: JointKind | null = null;
+  private pendingA: SceneObject | null = null;
+
   constructor(private canvas: HTMLCanvasElement) {
     this.sceneManager = new SceneManager(canvas);
 
@@ -68,6 +78,8 @@ export class Editor {
     const helper = (this.gizmo as unknown as { getHelper?: () => THREE.Object3D })
       .getHelper?.();
     this.sceneManager.scene.add(helper ?? (this.gizmo as unknown as THREE.Object3D));
+
+    this.sceneManager.scene.add(this.jointHelpers);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     window.addEventListener("resize", this.onResize);
@@ -114,8 +126,10 @@ export class Editor {
     }
 
     this.select(null);
+    this.cancelConnect();
     this.physics = new PhysicsWorld();
-    this.physics.build(this.listObjects());
+    this.physics.build(this.listObjects(), this.listJoints());
+    this.jointHelpers.visible = false;
     this.simulating = true;
     this.bus.emit("simulationChanged", { running: true });
   }
@@ -135,6 +149,7 @@ export class Editor {
       o.mesh.scale.copy(s.scale);
     }
     this.saved.clear();
+    this.jointHelpers.visible = true;
     this.bus.emit("simulationChanged", { running: false });
   }
 
@@ -168,9 +183,15 @@ export class Editor {
 
   removeObject(obj: SceneObject): void {
     if (this.selected === obj) this.select(null);
+    // Elimina las articulaciones que referencian a este objeto.
+    for (const j of this.listJoints()) {
+      if (j.bodyAId === obj.id || j.bodyBId === obj.id) this.joints.delete(j.id);
+    }
     this.sceneManager.content.remove(obj.mesh);
     obj.dispose();
     this.objects.delete(obj.id);
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
@@ -216,6 +237,97 @@ export class Editor {
     this.gizmo.setSpace(space);
   }
 
+  // ----------------------------------------------------------- conexiones
+  listJoints(): Joint[] {
+    return [...this.joints.values()];
+  }
+
+  getJointById(id: string): Joint | undefined {
+    return this.joints.get(id);
+  }
+
+  /** Entra en modo "conectar": clic en pieza A y luego en pieza B. */
+  beginConnect(kind: JointKind): void {
+    if (this.simulating) return;
+    this.connectMode = kind;
+    this.pendingA = null;
+    this.select(null);
+    this.bus.emit("connectModeChanged", { kind, pending: false });
+  }
+
+  cancelConnect(): void {
+    if (!this.connectMode) return;
+    this.connectMode = null;
+    this.pendingA = null;
+    this.bus.emit("connectModeChanged", { kind: null, pending: false });
+  }
+
+  removeJoint(joint: Joint): void {
+    this.joints.delete(joint.id);
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
+  }
+
+  /** Notifica que un joint cambio (para refrescar marcadores y UI). */
+  jointUpdated(): void {
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
+  }
+
+  /** Crea una articulacion entre dos objetos (por id). Anchor por defecto = punto medio. */
+  connect(
+    aId: string,
+    bId: string,
+    kind: JointKind,
+    anchor?: THREE.Vector3,
+  ): Joint | null {
+    const a = this.objects.get(aId);
+    const b = this.objects.get(bId);
+    if (!a || !b || a === b) return null;
+    const anc = anchor ?? a.mesh.position.clone().add(b.mesh.position).multiplyScalar(0.5);
+    const joint = new Joint({ kind, bodyAId: aId, bodyBId: bId, anchor: anc });
+    this.joints.set(joint.id, joint);
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
+    return joint;
+  }
+
+  private createJoint(a: SceneObject, b: SceneObject): void {
+    if (!this.connectMode) return;
+    this.connect(a.id, b.id, this.connectMode);
+    this.cancelConnect();
+  }
+
+  /** Reconstruye los marcadores 3D de las articulaciones. */
+  refreshJointHelpers(): void {
+    for (const child of [...this.jointHelpers.children]) {
+      this.jointHelpers.remove(child);
+      (child as THREE.Mesh).geometry?.dispose?.();
+    }
+    for (const joint of this.joints.values()) {
+      const color = joint.kind === "revolute" ? 0x22d3ee : 0xf59e0b;
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(3, 16, 12),
+        new THREE.MeshBasicMaterial({ color, depthTest: false }),
+      );
+      sphere.position.copy(joint.anchor);
+      sphere.renderOrder = 999;
+
+      const dir = axisVector(joint.axis).multiplyScalar(30);
+      const pts = [
+        joint.anchor.clone().sub(dir),
+        joint.anchor.clone().add(dir),
+      ];
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color, depthTest: false }),
+      );
+      line.renderOrder = 999;
+
+      this.jointHelpers.add(sphere, line);
+    }
+  }
+
   // -------------------------------------------------------------- eventos
   private onPointerDown = (event: PointerEvent): void => {
     if (this.gizmo.dragging || this.simulating) return;
@@ -228,13 +340,23 @@ export class Editor {
       this.sceneManager.content.children,
       false,
     );
-    if (hits.length > 0) {
-      const id = hits[0].object.userData.sceneObjectId as string | undefined;
-      const obj = id ? this.objects.get(id) : undefined;
-      if (obj) this.select(obj);
-    } else {
-      this.select(null);
+    const id = hits[0]?.object.userData.sceneObjectId as string | undefined;
+    const obj = id ? this.objects.get(id) : undefined;
+
+    // Modo conexion: primer clic = pieza A, segundo = pieza B -> crea joint.
+    if (this.connectMode) {
+      if (!obj) return;
+      if (!this.pendingA) {
+        this.pendingA = obj;
+        this.select(obj);
+        this.bus.emit("connectModeChanged", { kind: this.connectMode, pending: true });
+      } else if (obj !== this.pendingA) {
+        this.createJoint(this.pendingA, obj);
+      }
+      return;
     }
+
+    this.select(obj ?? null);
   };
 
   private onKeyDown = (event: KeyboardEvent): void => {
@@ -262,6 +384,7 @@ export class Editor {
         if (this.selected) this.removeObject(this.selected);
         break;
       case "escape":
+        this.cancelConnect();
         this.select(null);
         break;
     }

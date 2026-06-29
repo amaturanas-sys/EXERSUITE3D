@@ -1,5 +1,9 @@
 import RAPIER from "@dimforge/rapier3d-compat";
+import * as THREE from "three";
 import type { SceneObject } from "../objects/SceneObject";
+import { axisVector, type Joint } from "./joints";
+
+const DEG2RAD = Math.PI / 180;
 
 // Simulacion de fisica rigida con Rapier.
 // El editor trabaja en centimetros (1 unidad = 1 cm). Rapier es mas estable en
@@ -17,8 +21,8 @@ export class PhysicsWorld {
     return (PhysicsWorld.ready ??= RAPIER.init());
   }
 
-  /** Construye el mundo a partir del estado actual de los objetos. */
-  build(objects: SceneObject[]): void {
+  /** Construye el mundo a partir del estado actual de los objetos y joints. */
+  build(objects: SceneObject[], joints: Joint[] = []): void {
     this.world = new RAPIER.World(GRAVITY);
 
     // Suelo fijo: cara superior en y = 0.
@@ -29,6 +33,67 @@ export class PhysicsWorld {
     );
 
     for (const obj of objects) this.addBody(obj);
+    for (const joint of joints) this.addJoint(joint);
+  }
+
+  private addJoint(joint: Joint): void {
+    if (!this.world) return;
+    const a = this.bodies.get(joint.bodyAId);
+    const b = this.bodies.get(joint.bodyBId);
+    if (!a || !b) return;
+
+    // Ancla local a cada cuerpo (sin escala; el frame del cuerpo no la tiene).
+    const anchorA = this.localAnchor(a.obj, joint.anchor);
+    const anchorB = this.localAnchor(b.obj, joint.anchor);
+    // Eje en el frame local del cuerpo A.
+    const axisLocalA = axisVector(joint.axis).applyQuaternion(
+      a.obj.mesh.quaternion.clone().invert(),
+    );
+    const axis = { x: axisLocalA.x, y: axisLocalA.y, z: axisLocalA.z };
+
+    const params =
+      joint.kind === "revolute"
+        ? RAPIER.JointData.revolute(anchorA, anchorB, axis)
+        : RAPIER.JointData.prismatic(anchorA, anchorB, axis);
+
+    const handle = this.world.createImpulseJoint(
+      params,
+      a.body,
+      b.body,
+      true,
+    ) as RAPIER.UnitImpulseJoint;
+
+    // Las piezas unidas por una articulacion no deben colisionar entre si
+    // (si no, se bloquean en el pivote).
+    handle.setContactsEnabled(false);
+
+    if (joint.limitsEnabled) {
+      const [min, max] =
+        joint.kind === "revolute"
+          ? [joint.min * DEG2RAD, joint.max * DEG2RAD]
+          : [joint.min * S, joint.max * S];
+      handle.setLimits(min, max);
+    }
+
+    if (joint.motor.enabled) {
+      const vel =
+        joint.kind === "revolute"
+          ? joint.motor.targetVel * DEG2RAD
+          : joint.motor.targetVel * S;
+      handle.configureMotorVelocity(vel, joint.motor.factor);
+    }
+  }
+
+  /** Convierte un punto mundial (cm) al frame local del cuerpo (metros). */
+  private localAnchor(obj: SceneObject, worldCm: THREE.Vector3): {
+    x: number;
+    y: number;
+    z: number;
+  } {
+    const rel = worldCm.clone().sub(obj.mesh.position);
+    rel.applyQuaternion(obj.mesh.quaternion.clone().invert());
+    rel.multiplyScalar(S);
+    return { x: rel.x, y: rel.y, z: rel.z };
   }
 
   private addBody(obj: SceneObject): void {

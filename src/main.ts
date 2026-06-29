@@ -4,6 +4,7 @@ import { Editor } from "./core/Editor";
 import { ComponentPalette } from "./ui/ComponentPalette";
 import { Toolbar } from "./ui/Toolbar";
 import { PropertiesPanel } from "./ui/PropertiesPanel";
+import { JointsPanel } from "./ui/JointsPanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
 
 const app = document.getElementById("app")!;
@@ -18,8 +19,15 @@ const editor = new Editor(canvas);
 const palette = new ComponentPalette(editor);
 const toolbar = new Toolbar(editor);
 const inspector = new PropertiesPanel(editor);
+const joints = new JointsPanel(editor);
 const hud = new MeasurementHUD(editor);
-app.append(palette.root, toolbar.root, inspector.root, hud.root);
+
+// Columna derecha: inspector (arriba) + conexiones (abajo).
+const rightDock = document.createElement("div");
+rightDock.id = "right-dock";
+rightDock.append(inspector.root, joints.root);
+
+app.append(palette.root, toolbar.root, rightDock, hud.root);
 
 editor.setMode("translate");
 editor.start();

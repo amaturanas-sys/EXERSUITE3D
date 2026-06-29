@@ -121,8 +121,65 @@ body.simulating #palette {
 #palette {
   left: 12px;
 }
-#inspector {
+
+/* Columna derecha apilada: inspector + conexiones. */
+#right-dock {
+  position: absolute;
+  top: 12px;
   right: 12px;
+  bottom: 48px;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9;
+}
+#right-dock .panel {
+  position: static;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+}
+#joints {
+  flex: 0 1 auto;
+  max-height: 50%;
+}
+
+.joints-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 8px 0;
+}
+.joints-actions .tool {
+  flex: 1;
+}
+.joint-row {
+  display: flex;
+  flex-direction: column;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.joint-row:hover {
+  border-color: var(--accent);
+}
+.joint-row.selected {
+  border-color: var(--accent);
+  background: var(--panel-2);
+}
+.joint-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.joint-editor {
+  padding: 8px;
+  margin-bottom: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
 }
 
 .panel-title {
