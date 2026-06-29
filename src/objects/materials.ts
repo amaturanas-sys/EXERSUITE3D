@@ -22,6 +22,7 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
   { id: "cromo", label: "Cromo", color: 0xdfe3e8, metalness: 1.0, roughness: 0.06, opacity: 1 },
   { id: "hierro-fundido", label: "Hierro fundido", color: 0x2b2e33, metalness: 0.5, roughness: 0.62, opacity: 1 },
   { id: "azul", label: "Azul metalico", color: 0x1d4ed8, metalness: 0.7, roughness: 0.35, opacity: 1 },
+  { id: "turquesa", label: "Turquesa (mecanismo)", color: 0x12808c, metalness: 0.55, roughness: 0.38, opacity: 1 },
   { id: "naranja", label: "Plastico naranja", color: 0xf2711c, metalness: 0.0, roughness: 0.45, opacity: 1 },
   { id: "blanco", label: "Plastico blanco", color: 0xeef0f2, metalness: 0.0, roughness: 0.5, opacity: 1 },
   { id: "nylon", label: "Nylon", color: 0x2e3136, metalness: 0.1, roughness: 0.55, opacity: 1 },
