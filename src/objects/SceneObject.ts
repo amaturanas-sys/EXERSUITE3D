@@ -24,6 +24,8 @@ export class SceneObject {
   physics: PhysicalAttributes;
   /** Pila selectorizada (solo en componentes tipo stack). */
   stack?: StackInfo;
+  /** True si la geometria proviene de un modelo importado (no parametrica). */
+  imported = false;
   readonly mesh: THREE.Mesh;
 
   constructor(opts: {
@@ -34,6 +36,7 @@ export class SceneObject {
     physics: PhysicalAttributes;
     materialId: string;
     stack?: StackInfo;
+    importedGeometry?: THREE.BufferGeometry;
   }) {
     this.id = `obj_${nextId++}`;
     this.name = opts.name;
@@ -44,7 +47,8 @@ export class SceneObject {
     this.physics = { ...opts.physics };
     this.stack = opts.stack ? { ...opts.stack } : undefined;
 
-    const geometry = buildGeometry(this.params);
+    this.imported = !!opts.importedGeometry;
+    const geometry = opts.importedGeometry ?? buildGeometry(this.params);
     const material = buildMaterial(this.materialId);
     this.mesh = new THREE.Mesh(geometry, material);
     this.mesh.castShadow = true;
@@ -64,6 +68,7 @@ export class SceneObject {
 
   /** Reconstruye la geometria tras cambiar `params`. */
   rebuildGeometry(): void {
+    if (this.imported) return; // la geometria importada no es parametrica
     const old = this.mesh.geometry;
     this.mesh.geometry = buildGeometry(this.params);
     old.dispose();

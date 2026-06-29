@@ -101,9 +101,13 @@ export class PropertiesPanel {
     }
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
-    this.body.append(this.dimSection(obj));
+    if (!obj.imported) {
+      this.body.append(this.dimSection(obj));
+    }
     this.body.append(this.transformSection(obj));
-    this.body.append(this.deformSection(obj));
+    if (!obj.imported) {
+      this.body.append(this.deformSection(obj));
+    }
     this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));

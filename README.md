@@ -41,6 +41,7 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Guardar / cargar    | Botones **Guardar** / **Cargar** (proyecto a archivo `.json`) |
+| Exportar / importar | Botones **Exportar** (.glb) / **Importar** (.glb/.gltf/.obj) para intercambiar modelos 3D |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
@@ -125,6 +126,10 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       diseñar máquinas en torno al cuerpo.
 - [x] **Guardar/cargar proyecto**: serializa toda la escena (piezas, joints,
       cables, grupos y personaje con su pose) a un archivo `.json` y la reconstruye.
-- [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente
-      (incluida la opción de cargar un modelo humano/esqueleto detallado).
+- [~] **Fase 4 — Interoperabilidad**: exportar el prototipo a glTF binario ✔
+      (`.glb`, con materiales) e importar modelos externos ✔ (`.glb`/`.gltf` con
+      Draco u `.obj`): la malla se fusiona en una sola pieza, se aplica una
+      heurística metros→cm y el objeto importado se centra y apoya en el suelo
+      (no es paramétrico y no se reserializa al guardar el proyecto). Pendiente:
+      preservar la jerarquía multicomponente al importar.
 - [ ] **Fase 5 — Empaquetado**: APK con Capacitor y standalone de Windows con Tauri.

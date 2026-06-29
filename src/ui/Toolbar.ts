@@ -140,11 +140,26 @@ export class Toolbar {
     fileInput.addEventListener("change", () => this.onLoadFile(fileInput));
     loadBtn.addEventListener("click", () => fileInput.click());
 
+    const exportBtn = el("button", { class: "tool", title: "Exportar el prototipo a glTF (.glb)" }, [
+      "Exportar",
+    ]);
+    exportBtn.addEventListener("click", () => this.exportGLB());
+
+    const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
+      "Importar",
+    ]);
+    const importInput = el("input", { type: "file", accept: ".glb,.gltf,.obj" });
+    importInput.style.display = "none";
+    importInput.addEventListener("change", () => this.onImportFile(importInput));
+    importBtn.addEventListener("click", () => importInput.click());
+
     this.root = el("div", { id: "toolbar" }, [
       el("div", { class: "tool-group" }, [simBtn]),
       ...editGroups,
       el("div", { class: "tool-group" }, [saveBtn, loadBtn]),
+      el("div", { class: "tool-group" }, [exportBtn, importBtn]),
       fileInput,
+      importInput,
     ]);
 
     this.editor.bus.on("modeChanged", ({ mode }) => this.highlight(mode));
@@ -193,6 +208,33 @@ export class Toolbar {
     } catch (err) {
       console.error("No se pudo cargar el proyecto:", err);
       window.alert("Archivo de proyecto no válido.");
+    }
+    input.value = "";
+  }
+
+  private async exportGLB(): Promise<void> {
+    try {
+      const buffer = await this.editor.exportGLB();
+      const blob = new Blob([buffer], { type: "model/gltf-binary" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "exersuite3d-prototipo.glb";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("No se pudo exportar:", err);
+    }
+  }
+
+  private async onImportFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      await this.editor.importModelFile(file);
+    } catch (err) {
+      console.error("No se pudo importar:", err);
+      window.alert("No se pudo importar el modelo.");
     }
     input.value = "";
   }

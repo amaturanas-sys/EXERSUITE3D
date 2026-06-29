@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
+import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { SceneManager } from "../scene/SceneManager";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
@@ -367,7 +372,7 @@ export class Editor {
     const q4 = (q: THREE.Quaternion): [number, number, number, number] => [q.x, q.y, q.z, q.w];
     return {
       version: PROJECT_VERSION,
-      objects: this.listObjects().map((o) => ({
+      objects: this.listObjects().filter((o) => !o.imported).map((o) => ({
         id: o.id,
         name: o.name,
         componentId: o.componentId,
@@ -410,6 +415,99 @@ export class Editor {
         })),
       },
     };
+  }
+
+  /** Exporta el prototipo (las piezas) como GLB binario para otras apps. */
+  exportGLB(): Promise<ArrayBuffer> {
+    const exporter = new GLTFExporter();
+    return new Promise((resolve, reject) => {
+      exporter.parse(
+        this.sceneManager.content,
+        (result) => resolve(result as ArrayBuffer),
+        (err) => reject(err),
+        { binary: true },
+      );
+    });
+  }
+
+  /** Importa un modelo 3D (glb/gltf/obj) como una pieza editable. */
+  async importModelFile(file: File): Promise<void> {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    const url = URL.createObjectURL(file);
+    try {
+      let root: THREE.Object3D;
+      if (ext === "obj") {
+        root = await new OBJLoader().loadAsync(url);
+      } else {
+        const draco = new DRACOLoader();
+        draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+        const loader = new GLTFLoader();
+        loader.setDRACOLoader(draco);
+        root = (await loader.loadAsync(url)).scene;
+      }
+      this.addImportedModel(root, file.name.replace(/\.[^.]+$/, ""));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  /** Fusiona las mallas del modelo en una pieza y la anade a la escena. */
+  private addImportedModel(root: THREE.Object3D, name: string): void {
+    root.updateMatrixWorld(true);
+    const geos: THREE.BufferGeometry[] = [];
+    root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) {
+        const mesh = o as THREE.Mesh;
+        const g = mesh.geometry.clone();
+        g.applyMatrix4(mesh.matrixWorld);
+        geos.push(this.normalizeGeometry(g));
+      }
+    });
+    if (geos.length === 0) return;
+    let merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
+    if (!merged) merged = geos[0];
+
+    // Centrar en X/Z y apoyar en el suelo; heuristica metros->cm.
+    merged.computeBoundingBox();
+    const bb = merged.boundingBox!;
+    const size = new THREE.Vector3();
+    bb.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = maxDim > 0 && maxDim < 5 ? 100 : 1;
+
+    const obj = new SceneObject({
+      name,
+      componentId: "imported",
+      category: "primitiva",
+      params: { kind: "box" },
+      physics: { massKg: 1, fixed: false },
+      materialId: "generico",
+      importedGeometry: merged,
+    });
+    obj.mesh.scale.setScalar(scale);
+    const center = new THREE.Vector3();
+    bb.getCenter(center);
+    obj.mesh.position.set(-center.x * scale, -bb.min.y * scale, -center.z * scale);
+
+    this.sceneManager.content.add(obj.mesh);
+    this.objects.set(obj.id, obj);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.select(obj);
+  }
+
+  /** Deja la geometria con solo position/normal/uv (no indexada) para fusionar. */
+  private normalizeGeometry(g: THREE.BufferGeometry): THREE.BufferGeometry {
+    const src = g.index ? g.toNonIndexed() : g;
+    const out = new THREE.BufferGeometry();
+    out.setAttribute("position", src.getAttribute("position"));
+    if (src.getAttribute("normal")) out.setAttribute("normal", src.getAttribute("normal"));
+    const count = src.getAttribute("position").count;
+    out.setAttribute(
+      "uv",
+      src.getAttribute("uv") ?? new THREE.BufferAttribute(new Float32Array(count * 2), 2),
+    );
+    if (!src.getAttribute("normal")) out.computeVertexNormals();
+    return out;
   }
 
   /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
