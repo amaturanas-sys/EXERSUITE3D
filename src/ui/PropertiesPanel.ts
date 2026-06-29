@@ -96,6 +96,7 @@ export class PropertiesPanel {
         const v = parseFloat(input.value);
         if (Number.isFinite(v) && v >= 0) {
           onChange(v);
+          obj.rebuildStackVisual();
           updateEff();
           this.editor.bus.emit("objectTransformed", { object: obj });
         }

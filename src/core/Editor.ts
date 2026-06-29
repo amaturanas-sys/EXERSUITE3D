@@ -139,6 +139,7 @@ export class Editor {
   private loop = (): void => {
     if (!this.running) return;
     if (this.simulating && this.physics) this.physics.step();
+    this.updateStackAnimation();
     this.updateCableVisuals();
     this.orbit.update();
     this.sceneManager.render();
@@ -583,6 +584,27 @@ export class Editor {
   removeCable(cable: Cable): void {
     this.cables.delete(cable.id);
     this.bus.emit("cablesChanged", { cables: this.listCables() });
+  }
+
+  /**
+   * Anima las pilas de pesos: durante la simulacion, el carriage (tubo + placas
+   * seleccionadas) sube con el cuerpo mientras las placas no seleccionadas y las
+   * varillas se contra-mueven para quedarse quietas. El cuerpo solo sube (>=0).
+   */
+  private updateStackAnimation(): void {
+    for (const obj of this.objects.values()) {
+      if (!obj.stack) continue;
+      const parts = obj.getStackParts();
+      if (parts.length === 0) continue;
+      let delta = 0;
+      if (this.simulating) {
+        const saved = this.saved.get(obj.id);
+        if (saved) delta = Math.max(0, obj.mesh.position.y - saved.position.y);
+      }
+      for (const p of parts) {
+        p.mesh.position.y = p.carriage ? p.restY : p.restY - delta;
+      }
+    }
   }
 
   /** Reconstruye las polilineas de los cables segun la posicion de sus nodos. */

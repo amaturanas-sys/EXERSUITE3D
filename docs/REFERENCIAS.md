@@ -79,8 +79,9 @@ con posible offset de ±mm".
     (placas totales, kg/placa, selección); la **masa efectiva** = selección ×
     kg/placa. Esa masa, guiada por una **corredera** (prismatic sobre las
     varillas) y tirada por el **cable** (enganchado al tubo selector), es lo que
-    sube/baja. _Pendiente_: visualizar las placas individuales y que solo las
-    seleccionadas se eleven (animación por-placa).
+    sube/baja. Las **placas se dibujan individualmente** (con varillas-guía, tubo
+    selector y pin); en la simulación **solo el tubo y las placas seleccionadas se
+    elevan**, mientras las de debajo permanecen en su sitio.
 - **MTS (Hammer)**: transmisión por **correa de Kevlar** (>3000 lb) sobre poleas
   de nylon/fibra de vidrio, a dos pilas independientes.
 
