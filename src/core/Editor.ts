@@ -23,7 +23,10 @@ import {
   type PoseDef,
 } from "../objects/poseLibrary";
 import { degToRad, radToDeg, roundTo } from "../core/units";
+import { solveTwoBoneIK } from "./armIK";
 import { EventBus } from "./eventBus";
+
+type HandSide = "L" | "R";
 
 export type HumanMode = "mannequin" | "skeleton";
 
@@ -49,6 +52,8 @@ export type EditorEvents = {
   snapChanged: { enabled: boolean };
   /** Cambio en la lista de posturas (anadir/editar/eliminar). */
   posesChanged: { names: string[] };
+  /** Modo "apoyar mano en agarre" (IK): etapa actual. */
+  attachModeChanged: { active: boolean; stage: "hand" | "grip" | null };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -103,6 +108,11 @@ export class Editor {
   private humanToken = 0;
   private selectedFigure = false;
 
+  /** Manos apoyadas en agarres (IK): lado -> objeto + punto local. */
+  private handTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
+  private attachMode = false;
+  private attachSide: HandSide | null = null;
+
   constructor(private canvas: HTMLCanvasElement) {
     this.sceneManager = new SceneManager(canvas);
 
@@ -151,6 +161,7 @@ export class Editor {
     if (!this.running) return;
     if (this.simulating && this.physics) this.physics.step();
     this.updateStackAnimation();
+    this.updateHandIK();
     this.updateCableVisuals();
     this.orbit.update();
     this.sceneManager.render();
@@ -425,6 +436,8 @@ export class Editor {
     disposeHumanFigure(this.humanFigure);
     this.humanFigure = null;
     this.humanToken++;
+    this.handTargets.clear();
+    this.cancelAttachHand();
     this.emitHumanState(false, false);
   }
 
@@ -522,6 +535,59 @@ export class Editor {
   restoreDefaultPoses(): void {
     resetDefaultPoses();
     this.bus.emit("posesChanged", { names: poseNames() });
+  }
+
+  // ------------------------------------------------- apoyo de manos (IK)
+  /** Entra en modo: clic en una mano de la figura y luego en un agarre. */
+  beginAttachHand(): void {
+    if (!this.humanFigure || this.humanMode !== "mannequin") return;
+    this.cancelConnect();
+    this.cancelCable();
+    this.attachMode = true;
+    this.attachSide = null;
+    this.bus.emit("attachModeChanged", { active: true, stage: "hand" });
+  }
+
+  cancelAttachHand(): void {
+    if (!this.attachMode) return;
+    this.attachMode = false;
+    this.attachSide = null;
+    this.bus.emit("attachModeChanged", { active: false, stage: null });
+  }
+
+  /** Apoya una mano (lado) en el punto local de un objeto (agarre). */
+  attachHand(side: HandSide, objectId: string, local: THREE.Vector3): void {
+    if (!this.objects.has(objectId)) return;
+    this.handTargets.set(side, { objectId, local: local.clone() });
+  }
+
+  /** Suelta todas las manos apoyadas. */
+  detachHands(): void {
+    this.handTargets.clear();
+  }
+
+  hasAttachedHands(): boolean {
+    return this.handTargets.size > 0;
+  }
+
+  /** Resuelve cada frame la IK de las manos apoyadas para que sigan su agarre. */
+  private updateHandIK(): void {
+    if (!this.humanFigure || this.handTargets.size === 0) return;
+    const joints = this.figureJoints();
+    if (!joints) return;
+    for (const [side, t] of [...this.handTargets]) {
+      const obj = this.objects.get(t.objectId);
+      if (!obj) {
+        this.handTargets.delete(side);
+        continue;
+      }
+      obj.mesh.updateMatrixWorld();
+      const target = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
+      const sh = joints[`shoulder${side}`];
+      const el = joints[`elbow${side}`];
+      const wr = joints[`wrist${side}`];
+      if (sh && el && wr) solveTwoBoneIK(sh, el, wr, target, this.humanFigure);
+    }
   }
 
   private selectFigure(): void {
@@ -745,6 +811,36 @@ export class Editor {
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
 
+    // Modo apoyar mano (IK): 1) clic en una mano/brazo de la figura, 2) clic en el agarre.
+    if (this.attachMode) {
+      if (!this.attachSide) {
+        if (!this.humanFigure) return;
+        const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
+        const jn = fHits[0]?.object.userData.jointName as string | undefined;
+        if (jn && (jn.startsWith("shoulder") || jn.startsWith("elbow"))) {
+          this.attachSide = jn.endsWith("R") ? "R" : "L";
+          this.bus.emit("attachModeChanged", { active: true, stage: "grip" });
+        }
+        return;
+      }
+      const gHits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hit = gHits[0];
+      const id = hit?.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (!obj || !hit) return;
+      obj.mesh.updateMatrixWorld(true);
+      let best = new THREE.Vector3();
+      let bestD = Infinity;
+      for (const lp of localSnapPoints(obj)) {
+        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+        const dd = wp.distanceTo(hit.point);
+        if (dd < bestD) { bestD = dd; best = lp; }
+      }
+      this.handTargets.set(this.attachSide, { objectId: obj.id, local: best });
+      this.cancelAttachHand();
+      return;
+    }
+
     // Modo cable: cada clic ancla un nodo en el punto de anclaje mas cercano.
     if (this.cableMode) {
       const cHits = this.raycaster.intersectObjects(
@@ -843,6 +939,7 @@ export class Editor {
       case "escape":
         this.cancelConnect();
         this.cancelCable();
+        this.cancelAttachHand();
         this.select(null);
         break;
     }

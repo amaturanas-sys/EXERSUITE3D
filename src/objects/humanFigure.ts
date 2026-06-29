@@ -77,9 +77,11 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
     sh.add(cyl(0.16 * H, 0.035 * H, `shoulder${side}`));
     const el = pivot(`elbow${side}`, sh, 0, -0.16 * H, 0);
     el.add(cyl(0.15 * H, 0.03 * H, `elbow${side}`));
+    // Muneca = efector final de la IK; la mano cuelga de ella.
+    const wrist = pivot(`wrist${side}`, el, 0, -0.15 * H, 0);
     const hand = ball(0.035 * H, `elbow${side}`);
-    hand.position.y = -0.15 * H - 0.02 * H;
-    el.add(hand);
+    hand.position.y = -0.02 * H;
+    wrist.add(hand);
   };
   buildArm("L", -0.15 * H);
   buildArm("R", 0.15 * H);

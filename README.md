@@ -46,6 +46,7 @@ npm run typecheck  # solo comprobación de tipos
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 | Posar figura        | Clic en un miembro del maniquí → rotar la articulación; panel **Posturas** para aplicar |
 | Editar/crear postura | Posa a mano y **Actualizar** (sobrescribe) o **Guardar como…** (nueva); editables y persistentes |
+| Apoyar mano (IK)    | Panel Posturas → **Apoyar mano** → clic en una mano y luego en un agarre; la mano se fija y lo sigue |
 
 ## Arquitectura
 

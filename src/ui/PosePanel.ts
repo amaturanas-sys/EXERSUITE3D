@@ -45,6 +45,17 @@ export class PosePanel {
     ]);
     resetBtn.addEventListener("click", () => this.editor.restoreDefaultPoses());
 
+    const attachBtn = el("button", { class: "tool", title: "Apoyar una mano en un agarre (IK)" }, [
+      "Apoyar mano",
+    ]);
+    attachBtn.addEventListener("click", () => this.editor.beginAttachHand());
+    const detachBtn = el("button", { class: "tool", title: "Soltar las manos apoyadas" }, [
+      "Soltar manos",
+    ]);
+    detachBtn.addEventListener("click", () => this.editor.detachHands());
+
+    this.hint = el("div", { class: "empty-hint" }, [this.defaultHint]);
+
     this.root = el("aside", { class: "panel", id: "poses" }, [
       el("div", { class: "panel-title" }, ["Posturas"]),
       el("div", { class: "panel-body" }, [
@@ -52,19 +63,31 @@ export class PosePanel {
         el("div", { class: "pose-actions" }, [applyBtn, updateBtn]),
         el("div", { class: "pose-actions" }, [saveBtn, delBtn]),
         el("div", { class: "pose-actions" }, [resetBtn]),
-        el("div", { class: "empty-hint" }, [
-          "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar para editar, o Guardar como… para una postura nueva.",
-        ]),
+        el("div", { class: "field" }, [el("label", {}, ["Manos (IK)"])]),
+        el("div", { class: "pose-actions" }, [attachBtn, detachBtn]),
+        this.hint,
       ]),
     ]);
     this.root.style.display = "none";
 
     this.refresh();
     this.editor.bus.on("posesChanged", () => this.refresh());
+    this.editor.bus.on("attachModeChanged", ({ active, stage }) => {
+      attachBtn.classList.toggle("active", active);
+      this.hint.textContent = !active
+        ? this.defaultHint
+        : stage === "hand"
+          ? "Apoyar mano: haz clic en una mano/brazo de la figura."
+          : "Ahora haz clic en el agarre donde apoyar la mano.";
+    });
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
       this.root.style.display = present && mode === "mannequin" ? "flex" : "none";
     });
   }
+
+  private hint!: HTMLElement;
+  private readonly defaultHint =
+    "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.";
 
   private refresh(): void {
     const current = this.select.value;
