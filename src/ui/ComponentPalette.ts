@@ -1,5 +1,6 @@
 import type { Editor } from "../core/Editor";
 import {
+  CATEGORY_COLORS,
   CATEGORY_LABELS,
   COMPONENT_LIBRARY,
   PRIMITIVE_DEFS,
@@ -23,7 +24,7 @@ export class ComponentPalette {
   private renderGroups(body: HTMLElement): void {
     clear(body);
     const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY];
-    const byCat = new Map<string, ComponentDefinition[]>();
+    const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);
     }
@@ -37,7 +38,8 @@ export class ComponentPalette {
 
   private componentButton(def: ComponentDefinition): HTMLElement {
     const swatch = el("span", { class: "swatch" });
-    swatch.style.background = `#${def.color.toString(16).padStart(6, "0")}`;
+    const accent = CATEGORY_COLORS[def.category];
+    swatch.style.background = `#${accent.toString(16).padStart(6, "0")}`;
     const btn = el(
       "button",
       { class: "comp-btn", title: def.description },

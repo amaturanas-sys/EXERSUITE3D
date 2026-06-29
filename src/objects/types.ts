@@ -43,8 +43,6 @@ export type ComponentCategory =
 export interface PhysicalAttributes {
   /** Masa en kilogramos (0 = estatico/anclado). */
   massKg: number;
-  /** Material para densidad/rozamiento visual y futura simulacion. */
-  material: string;
   /** Si esta anclado al "mundo" (no se mueve aunque tenga masa). */
   fixed: boolean;
 }
@@ -54,8 +52,8 @@ export interface ComponentDefinition {
   id: string;
   label: string;
   category: ComponentCategory;
-  /** Color base en hex. */
-  color: number;
+  /** Id del material PBR por defecto (ver materials.ts). */
+  materialId: string;
   /** Geometria por defecto. */
   defaults: PrimitiveParams;
   /** Atributos fisicos por defecto. */

@@ -89,7 +89,7 @@ export class Editor {
       category: def.category,
       params: def.defaults,
       physics: def.physics,
-      color: def.color,
+      materialId: def.materialId,
     });
 
     // Apoya la base del objeto sobre el suelo (y=0).
@@ -117,7 +117,7 @@ export class Editor {
     const obj = this.addComponent(src.componentId);
     obj.params = { ...src.params };
     obj.rebuildGeometry();
-    obj.setColor(src.color);
+    obj.setMaterial(src.materialId);
     obj.mesh.position.copy(src.mesh.position).add(new THREE.Vector3(20, 0, 20));
     obj.mesh.rotation.copy(src.mesh.rotation);
     obj.mesh.scale.copy(src.mesh.scale);

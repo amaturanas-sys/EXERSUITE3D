@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { METER } from "../core/units";
 
 /**
@@ -35,12 +36,24 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+
     this.scene.add(this.content);
+    this.setupEnvironment();
     this.setupLights();
     this.grid = this.setupGrid();
     this.setupGround();
 
     this.resize();
+  }
+
+  /** Mapa de entorno PMREM para reflejos PBR realistas en metales/plasticos. */
+  private setupEnvironment(): void {
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = envTex;
+    pmrem.dispose();
   }
 
   private setupLights(): void {

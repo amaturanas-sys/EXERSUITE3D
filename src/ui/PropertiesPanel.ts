@@ -1,6 +1,7 @@
 import type { Editor } from "../core/Editor";
 import type { SceneObject } from "../objects/SceneObject";
 import type { PrimitiveParams } from "../objects/types";
+import { MATERIAL_PRESETS } from "../objects/materials";
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { clear, el } from "./dom";
 
@@ -75,6 +76,7 @@ export class PropertiesPanel {
       return;
     }
     this.body.append(this.nameField(obj));
+    this.body.append(this.materialField(obj));
     this.body.append(this.dimSection(obj));
     this.body.append(this.transformSection(obj));
     this.body.append(this.physicsSection(obj));
@@ -89,6 +91,19 @@ export class PropertiesPanel {
       this.editor.bus.emit("objectsChanged", { objects: this.editor.listObjects() });
     });
     return el("div", { class: "field" }, [el("label", {}, ["Nombre"]), input]);
+  }
+
+  private materialField(obj: SceneObject): HTMLElement {
+    const select = el("select", { class: "select" });
+    for (const preset of MATERIAL_PRESETS) {
+      const opt = el("option", { value: preset.id }, [preset.label]);
+      if (preset.id === obj.materialId) opt.selected = true;
+      select.append(opt);
+    }
+    select.addEventListener("change", () => {
+      obj.setMaterial(select.value);
+    });
+    return el("div", { class: "field" }, [el("label", {}, ["Material"]), select]);
   }
 
   private dimSection(obj: SceneObject): HTMLElement {
@@ -175,11 +190,6 @@ export class PropertiesPanel {
       if (Number.isFinite(v) && v >= 0) obj.physics.massKg = v;
     });
 
-    const material = el("input", { type: "text", value: obj.physics.material });
-    material.addEventListener("change", () => {
-      obj.physics.material = material.value;
-    });
-
     const fixed = el("input", { type: "checkbox" });
     fixed.checked = obj.physics.fixed;
     fixed.addEventListener("change", () => {
@@ -191,11 +201,7 @@ export class PropertiesPanel {
     ]);
 
     return el("div", {}, [
-      el("div", { class: "field" }, [
-        el("label", {}, ["Masa (kg)"]),
-        mass,
-      ]),
-      el("div", { class: "field" }, [el("label", {}, ["Material"]), material]),
+      el("div", { class: "field" }, [el("label", {}, ["Masa (kg)"]), mass]),
       el("div", { class: "field" }, [fixedLabel]),
     ]);
   }
