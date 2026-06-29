@@ -63,6 +63,15 @@ npm run tauri:build    # genera el .exe + instaladores (NSIS / MSI) en
 > El binario de Windows debe compilarse en Windows (o cruzado con el toolchain
 > MSVC). En Linux, Tauri requiere además `webkit2gtk-4.1` para correr en local.
 
+### Compilación automática (CI)
+
+El workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) compila
+ambos binarios sin máquina local: el **APK** en un runner Linux con el Android
+SDK y el **`.exe` + instaladores** en un runner Windows con Rust. Se dispara a
+mano (*workflow_dispatch*), en cada push a la rama de trabajo y al publicar un
+tag `v*`. Los binarios quedan como *artifacts* de la ejecución
+(`exersuite3d-android-debug` y `exersuite3d-windows`).
+
 ## Controles del editor
 
 | Acción              | Atajo / interacción                     |
