@@ -46,6 +46,7 @@ npm run typecheck  # solo comprobación de tipos
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; grupo: **nombrar/duplicar/desagrupar/eliminar** en el inspector |
 | Voltear (espejo)    | Inspector → **Voltear X/Y/Z** sobre la pieza seleccionada |
+| Modelado avanzado   | Inspector → **Doblar °**, **Torcer °** (todas) y **Bisel cm** (cajas) |
 | Ángulo de articulación | Selecciona un miembro del maniquí → campos **X/Y/Z (grados)** en el panel Posturas |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 | Posar figura        | Clic en un miembro del maniquí → rotar la articulación; panel **Posturas** para aplicar |
@@ -113,7 +114,8 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       de cara). Estilo visual ilustrativo ✔ (fondo claro de estudio, iluminación
       suave, figura azul, sombras tenues). Agrupación multicomponente ✔
       (subensamblajes: multiselección con Shift, mover/eliminar el grupo junto,
-      desagrupar). Pendiente: deformar/elongar/voltear.
+      desagrupar). Modelado ✔ — voltear (espejo) y deformación libre: doblar
+      (bend), torcer (twist) y biselar/redondear aristas (cajas).
       Personaje posable ✔ (maniquí con rig de 12
       articulaciones rotables, apoyado en el suelo). Posturas estándar **editables
       y ampliables** ✔ (biblioteca persistente: aplicar, actualizar, guardar

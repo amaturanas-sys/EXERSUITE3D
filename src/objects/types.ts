@@ -28,6 +28,13 @@ export interface PrimitiveParams {
   tubeRadius?: number; // cm
   // discretizacion
   radialSegments?: number;
+  // modelado avanzado
+  /** Doblado a lo largo del eje Y, en grados. */
+  bendDeg?: number;
+  /** Torsion alrededor del eje Y, en grados. */
+  twistDeg?: number;
+  /** Bisel/redondeo de aristas (cm), solo cajas. */
+  bevel?: number;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */

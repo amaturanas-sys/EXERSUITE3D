@@ -103,9 +103,38 @@ export class PropertiesPanel {
     this.body.append(this.materialField(obj));
     this.body.append(this.dimSection(obj));
     this.body.append(this.transformSection(obj));
+    this.body.append(this.deformSection(obj));
     this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  private deformSection(obj: SceneObject): HTMLElement {
+    const field = (
+      label: string,
+      key: "bendDeg" | "twistDeg" | "bevel",
+      step: string,
+    ) => {
+      const input = el("input", {
+        type: "number",
+        value: String(obj.params[key] ?? 0),
+        step,
+      });
+      input.addEventListener("change", () => {
+        const v = parseFloat(input.value);
+        if (!Number.isFinite(v)) return;
+        (obj.params[key] as number) = v;
+        obj.rebuildGeometry();
+        this.editor.bus.emit("objectTransformed", { object: obj });
+      });
+      return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
+    };
+    const cols = [field("Doblar °", "bendDeg", "5"), field("Torcer °", "twistDeg", "5")];
+    if (obj.params.kind === "box") cols.push(field("Bisel cm", "bevel", "0.5"));
+    return el("div", { class: "field" }, [
+      el("label", {}, ["Modelado avanzado"]),
+      el("div", { class: "row" }, cols),
+    ]);
   }
 
   private flipSection(): HTMLElement {
