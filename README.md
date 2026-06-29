@@ -62,12 +62,19 @@ muestran en centímetros.
 
 ## Librería de componentes
 
-Agrupada por categoría: **estructural** (pilares, bases, soportes),
-**movimiento** (guías, rieles, fulcros, pivotes), **transmisión** (poleas,
-roldanas, engranajes, cables, cadenas, listones de Kevlar, resortes),
-**peso** (bloques, discos, contrapesos) y **ergonómico** (agarraderas,
-asientos, respaldos). Cada componente lleva atributos físicos editables
-(masa en kg, material, anclaje).
+Agrupada por categoría: **estructural** (pilares, bases, soportes, montante de
+rack, brazos/correas de seguridad, barras de dominadas y fondos, landmine),
+**movimiento** (guías, rieles, fulcros, pivotes, pop-pin, carro de cable),
+**transmisión** (poleas, roldanas, engranajes, cables, cadenas, listones de
+Kevlar, resortes, leva de resistencia variable), **peso** (bloques, discos,
+contrapesos, barra olímpica, pila de pesos, cuerno de carga, micro-disco) y
+**ergonómico** (agarraderas, asientos, respaldos, D-handle, cuerda de tríceps,
+barra de jalón, correa de tobillo). Cada componente lleva un material PBR y
+atributos físicos editables (masa en kg, anclaje).
+
+El diseño de los componentes, mecanismos, paletas de color y cinemática se
+documenta en [`docs/REFERENCIAS.md`](docs/REFERENCIAS.md), una síntesis de
+referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
 
 ## Hoja de ruta
 
