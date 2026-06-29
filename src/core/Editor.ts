@@ -11,7 +11,10 @@ import {
   buildHumanFigure,
   disposeHumanFigure,
 } from "../objects/humanFigure";
+import { buildSkeletonFigure } from "../objects/skeletonModel";
 import { EventBus } from "./eventBus";
+
+export type HumanMode = "mannequin" | "skeleton";
 
 export type TransformMode = "translate" | "rotate" | "scale";
 
@@ -28,7 +31,12 @@ export type EditorEvents = {
   /** Modo "conectar dos piezas" activo/inactivo. */
   connectModeChanged: { kind: JointKind | null; pending: boolean };
   /** Estado de la figura humana de referencia. */
-  humanFigureChanged: { present: boolean; heightCm: number };
+  humanFigureChanged: {
+    present: boolean;
+    heightCm: number;
+    mode: HumanMode;
+    loading: boolean;
+  };
 };
 
 interface SavedTransform {
@@ -65,6 +73,8 @@ export class Editor {
   private references = new THREE.Group();
   private humanFigure: THREE.Group | null = null;
   private humanHeight = DEFAULT_HUMAN_HEIGHT;
+  private humanMode: HumanMode = "mannequin";
+  private humanToken = 0;
   private selectedFigure = false;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -260,22 +270,79 @@ export class Editor {
     return this.humanHeight;
   }
 
+  getHumanMode(): HumanMode {
+    return this.humanMode;
+  }
+
   /** Anade o quita la figura humana de referencia. */
   toggleHumanFigure(): void {
     if (this.humanFigure) this.removeHumanFigure();
-    else this.addHumanFigure(this.humanHeight);
+    else void this.addHumanFigure(this.humanHeight);
   }
 
-  addHumanFigure(heightCm: number = this.humanHeight): void {
-    if (this.humanFigure) this.removeHumanFigure();
+  /** Cambia el modo (maniqui / esqueleto), reconstruyendo si esta presente. */
+  setHumanMode(mode: HumanMode): void {
+    if (mode === this.humanMode) return;
+    this.humanMode = mode;
+    if (this.humanFigure || this.lastFigureTransform) {
+      void this.addHumanFigure(this.humanHeight);
+    } else {
+      this.emitHumanState(false, false);
+    }
+  }
+
+  private lastFigureTransform: { position: THREE.Vector3; quaternion: THREE.Quaternion } | null =
+    null;
+
+  async addHumanFigure(heightCm: number = this.humanHeight): Promise<void> {
     this.humanHeight = heightCm;
-    this.humanFigure = buildHumanFigure(heightCm);
-    this.references.add(this.humanFigure);
-    this.bus.emit("humanFigureChanged", { present: true, heightCm });
+    const wasSelected = this.selectedFigure;
+    // Conserva el transform actual (si lo hay) para reaplicarlo.
+    const keep =
+      this.humanFigure
+        ? {
+            position: this.humanFigure.position.clone(),
+            quaternion: this.humanFigure.quaternion.clone(),
+          }
+        : this.lastFigureTransform;
+    this.removeHumanFigure();
+
+    const token = ++this.humanToken;
+    let figure: THREE.Group;
+    if (this.humanMode === "skeleton") {
+      this.emitHumanState(false, true); // loading
+      try {
+        figure = await buildSkeletonFigure(heightCm);
+      } catch (err) {
+        console.error("No se pudo cargar el esqueleto:", err);
+        this.humanMode = "mannequin";
+        figure = buildHumanFigure(heightCm);
+      }
+    } else {
+      figure = buildHumanFigure(heightCm);
+    }
+
+    // El usuario pudo quitar/cambiar la figura mientras cargaba.
+    if (token !== this.humanToken) {
+      disposeHumanFigure(figure);
+      return;
+    }
+    if (keep) {
+      figure.position.copy(keep.position);
+      figure.quaternion.copy(keep.quaternion);
+    }
+    this.humanFigure = figure;
+    this.references.add(figure);
+    if (wasSelected) this.selectFigure();
+    this.emitHumanState(true, false);
   }
 
   removeHumanFigure(): void {
     if (!this.humanFigure) return;
+    this.lastFigureTransform = {
+      position: this.humanFigure.position.clone(),
+      quaternion: this.humanFigure.quaternion.clone(),
+    };
     if (this.selectedFigure) {
       this.gizmo.detach();
       this.selectedFigure = false;
@@ -283,21 +350,24 @@ export class Editor {
     this.references.remove(this.humanFigure);
     disposeHumanFigure(this.humanFigure);
     this.humanFigure = null;
-    this.bus.emit("humanFigureChanged", { present: false, heightCm: this.humanHeight });
+    this.humanToken++;
+    this.emitHumanState(false, false);
   }
 
   /** Cambia la altura (cm) reconstruyendo la figura y conservando su transform. */
   setHumanHeight(heightCm: number): void {
     this.humanHeight = heightCm;
     if (!this.humanFigure) return;
-    const pos = this.humanFigure.position.clone();
-    const quat = this.humanFigure.quaternion.clone();
-    const wasSelected = this.selectedFigure;
-    this.removeHumanFigure();
-    this.addHumanFigure(heightCm);
-    this.humanFigure!.position.copy(pos);
-    this.humanFigure!.quaternion.copy(quat);
-    if (wasSelected) this.selectFigure();
+    void this.addHumanFigure(heightCm);
+  }
+
+  private emitHumanState(present: boolean, loading: boolean): void {
+    this.bus.emit("humanFigureChanged", {
+      present,
+      loading,
+      heightCm: this.humanHeight,
+      mode: this.humanMode,
+    });
   }
 
   private selectFigure(): void {
@@ -425,17 +495,23 @@ export class Editor {
       return;
     }
 
-    // Selección normal: objetos + partes de la figura humana, por cercanía.
-    const targets = [...this.sceneManager.content.children];
-    if (this.humanFigure) targets.push(...this.humanFigure.children);
-    const hits = this.raycaster.intersectObjects(targets, false);
-    const hit = hits[0]?.object;
-    if (!hit) {
+    // Selección normal: objetos editables vs figura humana, por cercanía.
+    const objHits = this.raycaster.intersectObjects(
+      this.sceneManager.content.children,
+      false,
+    );
+    const figHits = this.humanFigure
+      ? this.raycaster.intersectObjects([this.humanFigure], true)
+      : [];
+    const objDist = objHits[0]?.distance ?? Infinity;
+    const figDist = figHits[0]?.distance ?? Infinity;
+
+    if (objDist === Infinity && figDist === Infinity) {
       this.select(null);
-    } else if (hit.userData.humanFigurePart) {
+    } else if (figDist < objDist) {
       this.selectFigure();
     } else {
-      const id = hit.userData.sceneObjectId as string | undefined;
+      const id = objHits[0].object.userData.sceneObjectId as string | undefined;
       this.select((id && this.objects.get(id)) || null);
     }
   };

@@ -50,6 +50,17 @@ export class Toolbar {
       "Figura",
     ]);
     figBtn.addEventListener("click", () => this.editor.toggleHumanFigure());
+
+    const figMode = el("select", { class: "select tool-select", title: "Tipo de figura" });
+    figMode.append(
+      el("option", { value: "mannequin" }, ["Maniquí"]),
+      el("option", { value: "skeleton" }, ["Esqueleto"]),
+    );
+    figMode.value = this.editor.getHumanMode();
+    figMode.addEventListener("change", () =>
+      this.editor.setHumanMode(figMode.value as "mannequin" | "skeleton"),
+    );
+
     const figHeight = el("input", {
       class: "tool-input",
       type: "number",
@@ -63,8 +74,9 @@ export class Toolbar {
       const v = parseFloat(figHeight.value);
       if (Number.isFinite(v) && v >= 50 && v <= 250) this.editor.setHumanHeight(v);
     });
-    this.editor.bus.on("humanFigureChanged", ({ present, heightCm }) => {
+    this.editor.bus.on("humanFigureChanged", ({ present, heightCm, loading }) => {
       figBtn.classList.toggle("active", present);
+      figBtn.textContent = loading ? "Cargando…" : "Figura";
       figHeight.value = String(heightCm);
     });
 
@@ -81,7 +93,7 @@ export class Toolbar {
       ]),
       el("div", { class: "tool-group" }, [spaceBtn, gridBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
-      el("div", { class: "tool-group" }, [figBtn, figHeight]),
+      el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
 
     this.root = el("div", { id: "toolbar" }, [

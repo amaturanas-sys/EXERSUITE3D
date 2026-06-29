@@ -41,7 +41,7 @@ npm run typecheck  # solo comprobación de tipos
 | Deseleccionar       | `Esc`                                   |
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
-| Figura humana       | Botón **Figura** (escala/ergonomía); altura editable en cm |
+| Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 
 ## Arquitectura
 
@@ -55,7 +55,17 @@ src/
   main.ts      # punto de entrada y ensamblado
 ```
 
-### Convención de unidades
+## Assets de terceros y licencias
+
+El esqueleto humano de referencia (`public/models/overview-skeleton.glb`) es una
+conversión del modelo **Open3DModel** de O. Paul Gobée y col. (Dept. de Anatomía,
+LUMC; vía caskanatomy.info / AnatomyTOOL), bajo **Creative Commons
+Attribution-ShareAlike (CC BY-SA)**. La app muestra el crédito al activar el
+esqueleto. Detalles en [`public/models/ATTRIBUTION.md`](public/models/ATTRIBUTION.md).
+La cláusula ShareAlike aplica al modelo y sus derivados (la malla), no al resto
+del código de EXERSUITE3D.
+
+## Convención de unidades
 
 `1 unidad de mundo de Three.js = 1 cm`. La rejilla usa celdas de 10 cm con
 divisiones mayores cada metro. Todas las dimensiones del inspector se editan y
@@ -89,9 +99,9 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       conectadas, motores de posición.
 - [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
       conexión entre objetos, agrupación multicomponente.
-- [x] **Figura humana de referencia**: maniquí procedural a escala (altura
-      editable en cm) para diseñar máquinas en torno al cuerpo. A futuro,
-      sustituible por una malla glTF importada.
+- [x] **Figura humana de referencia**: maniquí procedural **o** esqueleto
+      anatómico detallado (glTF/Draco), a escala con altura editable en cm, para
+      diseñar máquinas en torno al cuerpo.
 - [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente
       (incluida la opción de cargar un modelo humano/esqueleto detallado).
 - [ ] **Fase 5 — Empaquetado**: APK con Capacitor y standalone de Windows con Tauri.

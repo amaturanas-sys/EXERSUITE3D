@@ -27,7 +27,21 @@ const rightDock = document.createElement("div");
 rightDock.id = "right-dock";
 rightDock.append(inspector.root, joints.root);
 
-app.append(palette.root, toolbar.root, rightDock, hud.root);
+// Crédito de atribución del esqueleto (CC BY-SA), visible solo al mostrarlo.
+const credit = document.createElement("a");
+credit.id = "credit";
+credit.target = "_blank";
+credit.rel = "noopener noreferrer";
+credit.href = "https://anatomytool.org/content/open3dmodel-skeleton-english-labels";
+credit.textContent =
+  "Esqueleto: Open3DModel · O.P. Gobée et al., LUMC (AnatomyTOOL) · CC BY-SA";
+credit.style.display = "none";
+
+app.append(palette.root, toolbar.root, rightDock, hud.root, credit);
+
+editor.bus.on("humanFigureChanged", ({ present, mode }) => {
+  credit.style.display = present && mode === "skeleton" ? "block" : "none";
+});
 
 editor.setMode("translate");
 editor.start();
