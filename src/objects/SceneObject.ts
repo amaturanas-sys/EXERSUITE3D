@@ -61,12 +61,21 @@ export class SceneObject {
     applyMaterial(this.mesh.material as THREE.MeshStandardMaterial, id);
   }
 
-  /** Dimensiones efectivas en cm (bounding box * escala del mesh). */
+  /** Dimensiones efectivas en cm (bounding box mundial * escala del mesh). */
   effectiveSize(): THREE.Vector3 {
     const box = new THREE.Box3().setFromObject(this.mesh);
     const size = new THREE.Vector3();
     box.getSize(size);
     return size;
+  }
+
+  /** Dimensiones locales en cm (bbox de la geometria * escala, sin rotacion). */
+  localSize(): THREE.Vector3 {
+    const geo = this.mesh.geometry;
+    geo.computeBoundingBox();
+    const size = new THREE.Vector3();
+    geo.boundingBox!.getSize(size);
+    return size.multiply(this.mesh.scale);
   }
 
   dispose(): void {

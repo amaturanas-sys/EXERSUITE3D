@@ -14,7 +14,7 @@ Objetivo multiplataforma desde un único código web:
 
 - **TypeScript** + **Vite**
 - **[Three.js](https://threejs.org/)** para render 3D (1 unidad = 1 cm)
-- **Rapier** (WASM) para físicas — _planificado para la fase 2_
+- **[Rapier](https://rapier.rs/)** (WASM) para simulación de física rígida
 
 ## Desarrollo
 
@@ -39,14 +39,16 @@ npm run typecheck  # solo comprobación de tipos
 | Duplicar selección  | `Ctrl + D`                              |
 | Eliminar selección  | `Supr` / `Backspace`                    |
 | Deseleccionar       | `Esc`                                   |
+| Simular / detener   | `Espacio` o botón **Simular**           |
 
 ## Arquitectura
 
 ```
 src/
-  core/        # unidades (cm), bus de eventos, Editor (orquestador)
-  scene/       # SceneManager: escena, cámara, luces, grid en cm
-  objects/     # SceneObject, fábrica de geometrías, librería de componentes
+  core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación)
+  scene/       # SceneManager: escena, cámara, luces, grid en cm, entorno PBR
+  objects/     # SceneObject, geometrías, librería de componentes y materiales
+  physics/     # PhysicsWorld: integración de Rapier (cuerpos rígidos)
   ui/          # paleta, barra de herramientas, inspector, HUD de medidas
   main.ts      # punto de entrada y ensamblado
 ```
@@ -71,8 +73,10 @@ asientos, respaldos). Cada componente lleva atributos físicos editables
 - [x] **Fase 1 — Base del editor**: viewport 3D, cámara orbital, grid en cm,
       selección, gizmos mover/rotar/escalar, librería de componentes, inspector
       con medidas exactas, HUD de medidas.
-- [ ] **Fase 2 — Física**: integración de Rapier, simulación de palancas,
-      poleas, cables y pilas de peso; conexiones/articulaciones entre componentes.
+- [~] **Fase 2 — Física**: integración de Rapier ✔ (cuerpos rígidos, gravedad,
+      masas, colisiones, Play/Stop con restauración del diseño). Pendiente:
+      articulaciones/joints (pivotes, bisagras, correderas), cables y poleas,
+      pilas de peso conectadas, motores.
 - [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
       conexión entre objetos, agrupación multicomponente.
 - [ ] **Fase 4 — Interoperabilidad**: exportar/importar glTF/OBJ multicomponente.

@@ -45,7 +45,12 @@ export class Toolbar {
       if (sel) this.editor.removeObject(sel);
     });
 
-    this.root = el("div", { id: "toolbar" }, [
+    const simBtn = el("button", { class: "tool sim", title: "Simular fisica (Espacio)" }, [
+      "▶ Simular",
+    ]);
+    simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
+
+    const editGroups = [
       el("div", { class: "tool-group" }, [
         mode("translate", "Mover", "W"),
         mode("rotate", "Rotar", "E"),
@@ -53,10 +58,26 @@ export class Toolbar {
       ]),
       el("div", { class: "tool-group" }, [spaceBtn, gridBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
+    ];
+
+    this.root = el("div", { id: "toolbar" }, [
+      el("div", { class: "tool-group" }, [simBtn]),
+      ...editGroups,
     ]);
 
     this.editor.bus.on("modeChanged", ({ mode }) => this.highlight(mode));
     this.highlight("translate");
+
+    // Durante la simulacion, las herramientas de edicion se desactivan.
+    const editButtons = editGroups.flatMap((g) =>
+      [...g.querySelectorAll("button")] as HTMLButtonElement[],
+    );
+    this.editor.bus.on("simulationChanged", ({ running }) => {
+      simBtn.textContent = running ? "■ Detener" : "▶ Simular";
+      simBtn.classList.toggle("active", running);
+      editButtons.forEach((b) => (b.disabled = running));
+      document.body.classList.toggle("simulating", running);
+    });
 
     window.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.key.toLowerCase() === "d") {

@@ -85,6 +85,23 @@ button.tool.active {
 button.tool.danger:hover {
   background: var(--danger);
 }
+button.tool.sim {
+  background: #16a34a;
+  font-weight: 600;
+}
+button.tool.sim.active {
+  background: var(--danger);
+}
+button.tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Durante la simulacion, la paleta no admite anadir piezas. */
+body.simulating #palette {
+  opacity: 0.5;
+  pointer-events: none;
+}
 
 /* ---- Paneles laterales ---- */
 .panel {

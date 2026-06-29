@@ -4,6 +4,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { SceneManager } from "../scene/SceneManager";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
+import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { EventBus } from "./eventBus";
 
 export type TransformMode = "translate" | "rotate" | "scale";
@@ -14,7 +15,15 @@ export type EditorEvents = {
   /** Cambio de transform/dimensiones del objeto seleccionado (para refrescar panel). */
   objectTransformed: { object: SceneObject };
   modeChanged: { mode: TransformMode };
+  /** Estado de la simulacion fisica. */
+  simulationChanged: { running: boolean };
 };
+
+interface SavedTransform {
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+  scale: THREE.Vector3;
+}
 
 /**
  * Nucleo del editor: posee la escena, los controles de camara, el gizmo de
@@ -31,6 +40,10 @@ export class Editor {
   private raycaster = new THREE.Raycaster();
   private pointer = new THREE.Vector2();
   private running = false;
+
+  private physics: PhysicsWorld | null = null;
+  private simulating = false;
+  private saved = new Map<string, SavedTransform>();
 
   constructor(private canvas: HTMLCanvasElement) {
     this.sceneManager = new SceneManager(canvas);
@@ -70,10 +83,60 @@ export class Editor {
 
   private loop = (): void => {
     if (!this.running) return;
+    if (this.simulating && this.physics) this.physics.step();
     this.orbit.update();
     this.sceneManager.render();
     requestAnimationFrame(this.loop);
   };
+
+  // ------------------------------------------------------------- simulacion
+  isSimulating(): boolean {
+    return this.simulating;
+  }
+
+  async toggleSimulation(): Promise<void> {
+    if (this.simulating) this.stopSimulation();
+    else await this.startSimulation();
+  }
+
+  private async startSimulation(): Promise<void> {
+    if (this.simulating) return;
+    await PhysicsWorld.init();
+
+    // Guarda el estado de diseno para poder restaurarlo al detener.
+    this.saved.clear();
+    for (const o of this.listObjects()) {
+      this.saved.set(o.id, {
+        position: o.mesh.position.clone(),
+        quaternion: o.mesh.quaternion.clone(),
+        scale: o.mesh.scale.clone(),
+      });
+    }
+
+    this.select(null);
+    this.physics = new PhysicsWorld();
+    this.physics.build(this.listObjects());
+    this.simulating = true;
+    this.bus.emit("simulationChanged", { running: true });
+  }
+
+  stopSimulation(): void {
+    if (!this.simulating) return;
+    this.simulating = false;
+    this.physics?.dispose();
+    this.physics = null;
+
+    // Restaura el estado de diseno.
+    for (const o of this.listObjects()) {
+      const s = this.saved.get(o.id);
+      if (!s) continue;
+      o.mesh.position.copy(s.position);
+      o.mesh.quaternion.copy(s.quaternion);
+      o.mesh.scale.copy(s.scale);
+    }
+    this.saved.clear();
+    this.bus.emit("simulationChanged", { running: false });
+  }
 
   // -------------------------------------------------------------- objetos
   addComponent(componentId: string, position?: THREE.Vector3): SceneObject {
@@ -155,7 +218,7 @@ export class Editor {
 
   // -------------------------------------------------------------- eventos
   private onPointerDown = (event: PointerEvent): void => {
-    if (this.gizmo.dragging) return;
+    if (this.gizmo.dragging || this.simulating) return;
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -176,6 +239,12 @@ export class Editor {
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (event.target instanceof HTMLInputElement) return;
+    if (event.key === " ") {
+      event.preventDefault();
+      void this.toggleSimulation();
+      return;
+    }
+    if (this.simulating) return;
     switch (event.key.toLowerCase()) {
       case "g":
       case "w":
