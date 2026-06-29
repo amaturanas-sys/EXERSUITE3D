@@ -24,6 +24,7 @@ import {
 } from "../objects/poseLibrary";
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
+import { PROJECT_VERSION, type ProjectData } from "./project";
 import { EventBus } from "./eventBus";
 
 type HandSide = "L" | "R";
@@ -357,6 +358,160 @@ export class Editor {
     if (!this.selected) return;
     this.selected.mesh.scale[axis] *= -1;
     this.bus.emit("objectTransformed", { object: this.selected });
+  }
+
+  // ---------------------------------------------------- guardar / cargar
+  /** Serializa toda la escena a un objeto JSON. */
+  serialize(): ProjectData {
+    const v3 = (v: THREE.Vector3): [number, number, number] => [v.x, v.y, v.z];
+    const q4 = (q: THREE.Quaternion): [number, number, number, number] => [q.x, q.y, q.z, q.w];
+    return {
+      version: PROJECT_VERSION,
+      objects: this.listObjects().map((o) => ({
+        id: o.id,
+        name: o.name,
+        componentId: o.componentId,
+        materialId: o.materialId,
+        params: { ...o.params },
+        physics: { ...o.physics },
+        stack: o.stack ? { ...o.stack } : undefined,
+        position: v3(o.mesh.position),
+        quaternion: q4(o.mesh.quaternion),
+        scale: v3(o.mesh.scale),
+      })),
+      joints: this.listJoints().map((j) => ({
+        name: j.name,
+        kind: j.kind,
+        bodyAId: j.bodyAId,
+        bodyBId: j.bodyBId,
+        anchor: v3(j.anchor),
+        axis: j.axis,
+        limitsEnabled: j.limitsEnabled,
+        min: j.min,
+        max: j.max,
+        motor: { ...j.motor },
+      })),
+      cables: this.listCables().map((c) => ({
+        name: c.name,
+        nodes: c.nodes.map((n) => ({ objectId: n.objectId, local: [n.local.x, n.local.y, n.local.z] as [number, number, number] })),
+      })),
+      groups: [...this.groups.values()].map((g) => ({ name: g.name, ids: [...g.ids] })),
+      human: {
+        present: this.humanFigure !== null,
+        mode: this.humanMode,
+        heightCm: this.humanHeight,
+        position: this.humanFigure ? v3(this.humanFigure.position) : [0, 0, 0],
+        quaternion: this.humanFigure ? q4(this.humanFigure.quaternion) : [0, 0, 0, 1],
+        pose: this.humanFigure && this.humanMode === "mannequin" ? this.captureCurrentPose() : null,
+        hands: [...this.handTargets].map(([side, t]) => ({
+          side,
+          objectId: t.objectId,
+          local: [t.local.x, t.local.y, t.local.z] as [number, number, number],
+        })),
+      },
+    };
+  }
+
+  /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
+  clearScene(): void {
+    this.select(null);
+    for (const o of this.objects.values()) {
+      this.sceneManager.content.remove(o.mesh);
+      o.dispose();
+    }
+    this.objects.clear();
+    this.joints.clear();
+    this.cables.clear();
+    this.groups.clear();
+    this.objGroup.clear();
+    this.multiSel.clear();
+    this.removeHumanFigure();
+    this.refreshJointHelpers();
+    this.bus.emit("objectsChanged", { objects: [] });
+    this.bus.emit("jointsChanged", { joints: [] });
+    this.bus.emit("cablesChanged", { cables: [] });
+  }
+
+  /** Reemplaza la escena con la de un proyecto serializado. */
+  async loadProject(data: ProjectData): Promise<void> {
+    if (this.simulating) this.stopSimulation();
+    this.clearScene();
+    const idMap = new Map<string, string>();
+
+    for (const od of data.objects) {
+      const obj = this.addComponent(od.componentId);
+      obj.name = od.name;
+      obj.mesh.name = od.name;
+      obj.params = { ...od.params };
+      obj.stack = od.stack ? { ...od.stack } : undefined;
+      obj.physics = { ...od.physics };
+      obj.rebuildGeometry();
+      obj.setMaterial(od.materialId);
+      obj.mesh.position.fromArray(od.position);
+      obj.mesh.quaternion.fromArray(od.quaternion);
+      obj.mesh.scale.fromArray(od.scale);
+      idMap.set(od.id, obj.id);
+    }
+
+    for (const jd of data.joints) {
+      const a = idMap.get(jd.bodyAId);
+      const b = idMap.get(jd.bodyBId);
+      if (!a || !b) continue;
+      const j = this.connect(a, b, jd.kind, new THREE.Vector3().fromArray(jd.anchor));
+      if (!j) continue;
+      j.name = jd.name;
+      j.axis = jd.axis;
+      j.limitsEnabled = jd.limitsEnabled;
+      j.min = jd.min;
+      j.max = jd.max;
+      j.motor = { ...jd.motor };
+    }
+
+    for (const cd of data.cables) {
+      const nodes = cd.nodes
+        .map((n) => ({ objectId: idMap.get(n.objectId) ?? "", local: { x: n.local[0], y: n.local[1], z: n.local[2] } }))
+        .filter((n) => n.objectId);
+      if (nodes.length >= 2) {
+        const c = this.createCable(nodes);
+        if (c) c.name = cd.name;
+      }
+    }
+
+    for (const gd of data.groups) {
+      const ids = gd.ids.map((id) => idMap.get(id)).filter((x): x is string => !!x);
+      if (ids.length >= 2) {
+        const gid = this.createGroupFromIds(ids);
+        if (gid) this.renameGroup(gid, gd.name);
+      }
+    }
+
+    this.select(null);
+
+    if (data.human?.present) {
+      this.humanMode = data.human.mode;
+      await this.addHumanFigure(data.human.heightCm);
+      const fig = this.humanFigure;
+      if (fig) {
+        fig.position.fromArray(data.human.position);
+        fig.quaternion.fromArray(data.human.quaternion);
+        const joints = this.figureJoints();
+        if (joints && data.human.pose) {
+          for (const [jn, [x, y, z]] of Object.entries(data.human.pose)) {
+            const jj = joints[jn];
+            if (jj) jj.rotation.set(degToRad(x), degToRad(y), degToRad(z));
+          }
+          (fig.userData.ground as (() => void) | undefined)?.();
+        }
+        for (const h of data.human.hands) {
+          const oid = idMap.get(h.objectId);
+          if (oid) this.attachHand(h.side, oid, new THREE.Vector3().fromArray(h.local));
+        }
+      }
+    } else if (data.human) {
+      this.humanMode = data.human.mode;
+    }
+
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
   listObjects(): SceneObject[] {

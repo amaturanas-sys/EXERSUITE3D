@@ -124,9 +124,27 @@ export class Toolbar {
       el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
 
+    // Guardar / cargar proyecto (a archivo .json).
+    const saveBtn = el("button", { class: "tool", title: "Guardar el proyecto a un archivo" }, [
+      "Guardar",
+    ]);
+    saveBtn.addEventListener("click", () => this.saveProject());
+    const loadBtn = el("button", { class: "tool", title: "Cargar un proyecto desde archivo" }, [
+      "Cargar",
+    ]);
+    const fileInput = el("input", {
+      type: "file",
+      accept: ".json,application/json",
+    });
+    fileInput.style.display = "none";
+    fileInput.addEventListener("change", () => this.onLoadFile(fileInput));
+    loadBtn.addEventListener("click", () => fileInput.click());
+
     this.root = el("div", { id: "toolbar" }, [
       el("div", { class: "tool-group" }, [simBtn]),
       ...editGroups,
+      el("div", { class: "tool-group" }, [saveBtn, loadBtn]),
+      fileInput,
     ]);
 
     this.editor.bus.on("modeChanged", ({ mode }) => this.highlight(mode));
@@ -153,5 +171,29 @@ export class Toolbar {
 
   private highlight(active: TransformMode): void {
     this.modeButtons.forEach((btn, m) => btn.classList.toggle("active", m === active));
+  }
+
+  private saveProject(): void {
+    const data = JSON.stringify(this.editor.serialize(), null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "exersuite3d-proyecto.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private async onLoadFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      await this.editor.loadProject(data);
+    } catch (err) {
+      console.error("No se pudo cargar el proyecto:", err);
+      window.alert("Archivo de proyecto no válido.");
+    }
+    input.value = "";
   }
 }
