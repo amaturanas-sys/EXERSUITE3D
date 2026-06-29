@@ -26,6 +26,43 @@ npm run preview    # sirve el build de producción
 npm run typecheck  # solo comprobación de tipos
 ```
 
+## Empaquetado (Android / Windows)
+
+El mismo bundle web (`dist/`, con `base: "./"` para cargarse desde `file://`)
+alimenta ambos empaquetados.
+
+### Android — APK (Capacitor)
+
+Requisitos: **Android Studio** + **Android SDK** y **JDK 17**. La configuración
+está en [`capacitor.config.ts`](capacitor.config.ts) (`appId: com.exersuite.app`,
+`webDir: dist`) y el proyecto nativo vive en [`android/`](android/).
+
+```bash
+npm run android:sync   # build web + copia a android/ y sincroniza plugins
+npm run android:open   # abre Android Studio para compilar/firmar el APK
+npm run android:apk    # alternativa CLI: genera app-debug.apk con Gradle
+# (si clonas en limpio y falta android/: npm run android:add)
+```
+
+El APK de depuración queda en `android/app/build/outputs/apk/debug/`. Para una
+APK/AAB de publicación, configura la firma en Android Studio (Build > Generate
+Signed Bundle/APK).
+
+### Windows — standalone (Tauri)
+
+Requisitos: **Rust** (stable, target `x86_64-pc-windows-msvc`), **Microsoft C++
+Build Tools** y **WebView2** (incluido en Windows 10/11). El crate de escritorio
+está en [`src-tauri/`](src-tauri/) (`identifier: com.exersuite.app`).
+
+```bash
+npm run tauri:dev      # ejecuta la app de escritorio en modo desarrollo
+npm run tauri:build    # genera el .exe + instaladores (NSIS / MSI) en
+                       # src-tauri/target/release/bundle/
+```
+
+> El binario de Windows debe compilarse en Windows (o cruzado con el toolchain
+> MSVC). En Linux, Tauri requiere además `webkit2gtk-4.1` para correr en local.
+
 ## Controles del editor
 
 | Acción              | Atajo / interacción                     |
@@ -136,4 +173,9 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       heurística metros→cm y el objeto importado se centra y apoya en el suelo
       (no es paramétrico y no se reserializa al guardar el proyecto). Pendiente:
       preservar la jerarquía multicomponente al importar.
-- [ ] **Fase 5 — Empaquetado**: APK con Capacitor y standalone de Windows con Tauri.
+- [~] **Fase 5 — Empaquetado**: configuración lista para ambos destinos. Android
+      con **Capacitor** (`capacitor.config.ts` + proyecto nativo en `android/`,
+      scripts `android:sync/open/apk`) y Windows con **Tauri** (`src-tauri/` con
+      `tauri.conf.json` y crate Rust, scripts `tauri:dev/build`). La compilación
+      final del APK/`.exe` se hace en un host con Android SDK / toolchain de
+      Windows; ver «Empaquetado» arriba.
