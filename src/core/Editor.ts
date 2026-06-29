@@ -7,6 +7,7 @@ import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable } from "../physics/cables";
+import { SnapManager } from "./snapping";
 import {
   DEFAULT_HUMAN_HEIGHT,
   buildHumanFigure,
@@ -35,6 +36,8 @@ export type EditorEvents = {
   cablesChanged: { cables: Cable[] };
   /** Modo "trazar cable" activo: nº de nodos colocados. */
   cableModeChanged: { active: boolean; count: number };
+  /** Snapping de ensamblaje activado/desactivado. */
+  snapChanged: { enabled: boolean };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -80,6 +83,8 @@ export class Editor {
   private cableMode = false;
   private cablePending: SceneObject[] = [];
 
+  private snap: SnapManager;
+
   private references = new THREE.Group();
   private humanFigure: THREE.Group | null = null;
   private humanHeight = DEFAULT_HUMAN_HEIGHT;
@@ -102,15 +107,19 @@ export class Editor {
     // El gizmo desactiva el orbit mientras se arrastra.
     this.gizmo.addEventListener("dragging-changed", (e) => {
       this.orbit.enabled = !e.value;
+      if (!e.value) this.snap.hideIndicator();
     });
     this.gizmo.addEventListener("objectChange", () => {
-      if (this.selected) this.bus.emit("objectTransformed", { object: this.selected });
+      if (!this.selected) return;
+      this.applySnap();
+      this.bus.emit("objectTransformed", { object: this.selected });
     });
     // En three r0.169 el helper del gizmo se anade por separado.
     const helper = (this.gizmo as unknown as { getHelper?: () => THREE.Object3D })
       .getHelper?.();
     this.sceneManager.scene.add(helper ?? (this.gizmo as unknown as THREE.Object3D));
 
+    this.snap = new SnapManager(this.sceneManager.scene);
     this.sceneManager.scene.add(this.jointHelpers);
     this.sceneManager.scene.add(this.references);
     this.sceneManager.scene.add(this.cableVisuals);
@@ -276,6 +285,41 @@ export class Editor {
 
   setGizmoSpace(space: "local" | "world"): void {
     this.gizmo.setSpace(space);
+  }
+
+  // ---------------------------------------------------------- snapping
+  isSnapEnabled(): boolean {
+    return this.snap.enabled;
+  }
+
+  setSnapEnabled(enabled: boolean): void {
+    this.snap.enabled = enabled;
+    if (!enabled) this.snap.hideIndicator();
+    this.bus.emit("snapChanged", { enabled });
+  }
+
+  /** Encaja `obj` al punto de anclaje compatible mas cercano. Devuelve true si encajo. */
+  snapObject(obj: SceneObject): boolean {
+    const others = this.listObjects().filter((o) => o !== obj);
+    const r = this.snap.computeSnap(obj, others);
+    if (!r) return false;
+    obj.mesh.position.add(r.delta);
+    return true;
+  }
+
+  /** Encaja la pieza arrastrada a un punto de anclaje compatible (solo al mover). */
+  private applySnap(): void {
+    if (!this.selected || this.gizmo.getMode() !== "translate" || !this.gizmo.dragging) {
+      return;
+    }
+    const others = this.listObjects().filter((o) => o !== this.selected);
+    const r = this.snap.computeSnap(this.selected, others);
+    if (r) {
+      this.selected.mesh.position.add(r.delta);
+      this.snap.showIndicator(r.target);
+    } else {
+      this.snap.hideIndicator();
+    }
   }
 
   // ------------------------------------------------------- figura humana

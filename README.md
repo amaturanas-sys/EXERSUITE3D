@@ -42,13 +42,14 @@ npm run typecheck  # solo comprobación de tipos
 | Simular / detener   | `Espacio` o botón **Simular**           |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada nodo (extremo → poleas → extremo), **Enter** para cerrar |
+| Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
 
 ## Arquitectura
 
 ```
 src/
-  core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación)
+  core/        # unidades (cm), bus de eventos, Editor (orquestador + simulación), snapping
   scene/       # SceneManager: escena, cámara, luces, grid en cm, entorno PBR
   objects/     # SceneObject, geometrías, librería de componentes, materiales, figura humana
   physics/     # PhysicsWorld (Rapier), joints (bisagra/corredera) y cables
@@ -100,8 +101,10 @@ referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.
       pasa por poleas (puntos de paso) y acopla sus dos extremos por conservación
       de longitud (p. ej. agarradera ↔ pila de pesos). Pendiente: poleas móviles
       (ratio 2:1), motores de posición, leva de resistencia variable.
-- [ ] **Fase 3 — Modelado**: deformar, elongar, voltear, snapping a la rejilla,
-      conexión entre objetos, agrupación multicomponente.
+- [~] **Fase 3 — Modelado/ensamblaje**: snapping de ensamblaje ✔ (encaje
+      magnético en puntos de anclaje: centro/eje, extremos de cilindros, centros
+      de cara). Pendiente: deformar/elongar/voltear, agrupación multicomponente,
+      personaje posable (rig + posturas estándar), estilo visual ilustrativo.
 - [x] **Figura humana de referencia**: maniquí procedural **o** esqueleto
       anatómico detallado (glTF/Draco), a escala con altura editable en cm, para
       diseñar máquinas en torno al cuerpo.

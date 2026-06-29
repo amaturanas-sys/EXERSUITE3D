@@ -34,6 +34,17 @@ export class Toolbar {
       gridBtn.classList.toggle("active", this.gridOn);
     });
 
+    const snapBtn = el("button", { class: "tool active", title: "Encaje magnetico en puntos de anclaje" }, [
+      "Imán",
+    ]);
+    snapBtn.classList.toggle("active", this.editor.isSnapEnabled());
+    snapBtn.addEventListener("click", () =>
+      this.editor.setSnapEnabled(!this.editor.isSnapEnabled()),
+    );
+    this.editor.bus.on("snapChanged", ({ enabled }) =>
+      snapBtn.classList.toggle("active", enabled),
+    );
+
     const dupBtn = el("button", { class: "tool", title: "Duplicar (Ctrl+D)" }, ["Duplicar"]);
     dupBtn.addEventListener("click", () => this.editor.duplicateSelected());
 
@@ -91,7 +102,7 @@ export class Toolbar {
         mode("rotate", "Rotar", "E"),
         mode("scale", "Escalar", "S"),
       ]),
-      el("div", { class: "tool-group" }, [spaceBtn, gridBtn]),
+      el("div", { class: "tool-group" }, [spaceBtn, gridBtn, snapBtn]),
       el("div", { class: "tool-group" }, [dupBtn, delBtn]),
       el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
     ];
