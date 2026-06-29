@@ -86,6 +86,52 @@ con posible offset de ±mm".
 
 ---
 
+## 2B. Recetas de mecanismos con poleas/palancas (referencias visuales)
+
+Estas configuraciones (de imágenes de referencia aportadas) muestran formas
+diversas de usar poleas y palancas. Todas se modelan con los bloques ya
+existentes en EXERSUITE3D: **cable** (cadena de nodos extremo→poleas→extremo con
+conservación de longitud), **polea fija** (nodo de paso anclado), **polea móvil**
+(nodo intermedio dinámico → ratio 2:1/3:1 emergente), **corredera** (prismatic,
+carril/varilla guía), **bisagra** (revolute, brazo-palanca) y **cuernos de carga**
+(masa por disco).
+
+### Receta A — Functional trainer / jalón con brazo ajustable
+*(cable + reenvío por polea + pila selectorizada en varillas)*
+- **Brazo ajustable** pivotante en el montante: **bisagra** (revolute) con
+  límites; los agujeros/placa de detención son posiciones discretas del ángulo.
+- **Agarre** en el extremo con una **polea** en el codo (nodo de paso).
+- **Bloque de doble polea** atornillado al montante = dos **poleas fijas**
+  (nodos de paso) que redirigen el cable.
+- **Pila selectorizada** = bloque pesado en **corredera vertical** (prismatic
+  sobre dos varillas guía), conectado por **cable** al agarre.
+- **Resorte amortiguador** arriba de la varilla = `resorte` como tope elástico.
+- Cadena del cable: `agarre → polea-codo → bloque-poleas → pila`.
+
+### Receta B — Belt squat / cable bajo con carro vertical
+*(poleas superiores + carro guiado + correa + cuernos de disco)*
+- **Placa superior con 2 poleas fijas** (nodos de paso).
+- **Carro** que sube/baja en **corredera vertical** (prismatic sobre varillas),
+  con **cuernos de carga** para discos (masa) y una **correa/strap** (tensil)
+  hacia el cinturón del usuario.
+- Cadena del cable: `correa-usuario → poleas-superiores → carro`.
+
+### Receta C — Belt squat de palanca (plate-loaded, sin polea)
+*(contraste: transmisión por palanca en vez de cable)*
+- Dos **brazos-palanca** que pivotan en la base: **bisagras** (revolute) con
+  **cuernos de carga** (discos) en el extremo → resistencia variable
+  `τ = m·g·d·cos(θ)` (igual que Iso-Lateral / pendular).
+- **Correa de cadera** (tensil) que une al usuario con el carro/palanca.
+- No usa poleas: ilustra cuándo conviene **palanca** (par variable con el
+  ángulo) frente a **cable** (tensión constante redirigida).
+
+> Conclusión: el motor de física actual (cables N-nodos con poleas fijas/móviles
+> + bisagras + correderas + cuernos) cubre estas tres familias. Lo que aún no
+> está es la **leva de resistencia variable `r(θ)`** (curva de fuerza tipo Cybex)
+> y la **correa elástica** modelada como resorte tensil.
+
+---
+
 ## 3. Materiales y acabados
 
 - **Acero estructural** tubular 11ga, soldado (Hammer/Cybex) o atornillado

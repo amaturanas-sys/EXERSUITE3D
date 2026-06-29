@@ -165,6 +165,15 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 1.5, fixed: false },
     description: "Trolley ajustable en altura del functional trainer.",
   },
+  {
+    id: "brazo-ajustable",
+    label: "Brazo ajustable",
+    category: "movimiento",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 8, height: 80, depth: 8 },
+    physics: { massKg: 3, fixed: false },
+    description: "Brazo-palanca pivotante con posiciones de detencion (jalon/remo).",
+  },
 
   // ---------------------------------------------------------------- TRANSMISION
   {
@@ -184,6 +193,15 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "cylinder", radiusTop: 4, radiusBottom: 4, height: 2.5 },
     physics: { massKg: 0.3, fixed: false },
     description: "Polea pequena de reenvio de cable.",
+  },
+  {
+    id: "bloque-poleas",
+    label: "Bloque de poleas",
+    category: "transmision",
+    materialId: "acero-negro",
+    defaults: { kind: "cylinder", radiusTop: 5, radiusBottom: 5, height: 7 },
+    physics: { massKg: 0.8, fixed: false },
+    description: "Bloque de doble polea de reenvio (swivel) atornillado al montante.",
   },
   {
     id: "engranaje",
