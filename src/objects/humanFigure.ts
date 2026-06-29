@@ -18,28 +18,33 @@ export const POSE_NAMES = ["De pie", "Sentadilla", "Sentado", "Remo", "Press"] a
 export type PoseName = (typeof POSE_NAMES)[number];
 
 // Angulos por articulacion en grados [x,y,z]. x = flexion sagital.
+// Convencion: los miembros cuelgan en -Y; rotacion X NEGATIVA los lleva hacia
+// DELANTE (+Z, frente de la figura) y POSITIVA hacia atras. La columna se
+// extiende en +Y, asi que en ella X positiva inclina el torso hacia delante.
 const POSES: Record<PoseName, Record<string, [number, number, number]>> = {
   "De pie": {},
   Sentadilla: {
-    hipL: [78, 0, 0], hipR: [78, 0, 0],
-    kneeL: [-125, 0, 0], kneeR: [-125, 0, 0],
-    ankleL: [25, 0, 0], ankleR: [25, 0, 0],
-    spine: [20, 0, 0],
-    shoulderL: [70, 0, 0], shoulderR: [70, 0, 0],
+    hipL: [-70, 0, 0], hipR: [-70, 0, 0],
+    kneeL: [110, 0, 0], kneeR: [110, 0, 0],
+    ankleL: [-30, 0, 0], ankleR: [-30, 0, 0],
+    spine: [25, 0, 0],
+    shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
   },
   Sentado: {
-    hipL: [85, 0, 0], hipR: [85, 0, 0],
-    kneeL: [-90, 0, 0], kneeR: [-90, 0, 0],
-    shoulderL: [25, 0, 0], shoulderR: [25, 0, 0],
-    elbowL: [-60, 0, 0], elbowR: [-60, 0, 0],
+    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
+    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
+    shoulderL: [-20, 0, 0], shoulderR: [-20, 0, 0],
+    elbowL: [55, 0, 0], elbowR: [55, 0, 0],
   },
   Remo: {
-    spine: [15, 0, 0],
-    shoulderL: [35, 0, 0], shoulderR: [35, 0, 0],
-    elbowL: [-95, 0, 0], elbowR: [-95, 0, 0],
+    spine: [35, 0, 0],
+    hipL: [-15, 0, 0], hipR: [-15, 0, 0],
+    kneeL: [25, 0, 0], kneeR: [25, 0, 0],
+    shoulderL: [20, 0, 0], shoulderR: [20, 0, 0],
+    elbowL: [105, 0, 0], elbowR: [105, 0, 0],
   },
   Press: {
-    shoulderL: [165, 0, 0], shoulderR: [165, 0, 0],
+    shoulderL: [-165, 0, 0], shoulderR: [-165, 0, 0],
     elbowL: [-10, 0, 0], elbowR: [-10, 0, 0],
   },
 };
