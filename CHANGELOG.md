@@ -22,6 +22,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   una **vista previa 3D** (turntable, orbitable) y sustituirlo por un modelo,
   haciendo más eficiente la edición del repertorio de piezas.
 
+### Corregido
+
+- El autoguardado ya no sobrescribe la sesión anterior con una escena vacía:
+  abrir "Crear nuevo" o "Explorar biblioteca" conserva la sesión hasta que haya
+  contenido nuevo (sigue disponible en "Continuar sesión anterior").
+- La vista previa de la biblioteca libera la geometría y el material de cada
+  componente al cambiar de selección (evita fugas de memoria/GPU).
+
 ## [0.1.2] — 2026-06-30
 
 ### Añadido

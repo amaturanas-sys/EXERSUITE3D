@@ -73,7 +73,13 @@ export class ComponentPreview {
   private clearMesh(): void {
     if (!this.mesh) return;
     this.scene.remove(this.mesh);
-    this.mesh = null; // la geometría/material son propiedad del llamador
+    // La geometría y el material se crean por cada selección (clon de la
+    // primitiva o del modelo): liberarlos evita fugas de memoria/GPU.
+    this.mesh.geometry.dispose();
+    const mat = this.mesh.material;
+    if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
+    else mat.dispose();
+    this.mesh = null;
   }
 
   start(): void {

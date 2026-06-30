@@ -233,6 +233,9 @@ export class Editor {
   /** Serializa la escena y la guarda en localStorage. */
   private writeAutosave(): void {
     if (this.autosaveSuspended || this.simulating) return;
+    // Una escena vacía (recién creada o tras "Explorar biblioteca") no debe
+    // sobrescribir una sesión anterior: solo se autoguarda cuando hay contenido.
+    if (this.objects.size === 0 && this.humanFigure === null) return;
     try {
       localStorage.setItem(Editor.AUTOSAVE_KEY, JSON.stringify(this.serialize()));
       this.bus.emit("autosaved", { at: Date.now() });
