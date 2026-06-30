@@ -7,6 +7,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Biblioteca de componentes**: ventana para sustituir la primitiva básica de
+  cualquier componente por un modelo 3D diseñado en SketchUp o Nomad
+  (`.glb`/`.gltf`/`.obj`). El modelo se fusiona, se escala a cm y se centra, se
+  aplica a todas las instancias del componente y se guarda en el navegador
+  (IndexedDB) para restaurarse al reabrir; botón **Restablecer** para volver a
+  la primitiva.
+
 ## [0.1.1] — 2026-06-30
 
 ### Añadido

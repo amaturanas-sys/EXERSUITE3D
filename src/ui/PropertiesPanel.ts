@@ -99,18 +99,27 @@ export class PropertiesPanel {
       );
       return;
     }
+    const parametric = !obj.imported && !obj.customModel;
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
-    if (!obj.imported) {
+    if (obj.customModel) this.body.append(this.customModelHint());
+    if (parametric) {
       this.body.append(this.dimSection(obj));
     }
     this.body.append(this.transformSection(obj));
-    if (!obj.imported) {
+    if (parametric) {
       this.body.append(this.deformSection(obj));
     }
     this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  private customModelHint(): HTMLElement {
+    return el("div", { class: "empty-hint", style: "padding:4px;" }, [
+      "Modelo 3D personalizado (biblioteca). Escala/posición editables; las " +
+        "dimensiones paramétricas no aplican.",
+    ]);
   }
 
   private deformSection(obj: SceneObject): HTMLElement {

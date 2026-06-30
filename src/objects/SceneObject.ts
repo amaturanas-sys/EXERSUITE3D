@@ -26,6 +26,8 @@ export class SceneObject {
   stack?: StackInfo;
   /** True si la geometria proviene de un modelo importado (no parametrica). */
   imported = false;
+  /** True si un modelo 3D personalizado sustituye a la primitiva del componente. */
+  customModel = false;
   readonly mesh: THREE.Mesh;
 
   constructor(opts: {
@@ -68,7 +70,30 @@ export class SceneObject {
 
   /** Reconstruye la geometria tras cambiar `params`. */
   rebuildGeometry(): void {
-    if (this.imported) return; // la geometria importada no es parametrica
+    // La geometria importada o de modelo personalizado no es parametrica.
+    if (this.imported || this.customModel) return;
+    const old = this.mesh.geometry;
+    this.mesh.geometry = buildGeometry(this.params);
+    old.dispose();
+    if (this.stack) this.rebuildStackVisual();
+  }
+
+  /**
+   * Sustituye la geometria por la de un modelo 3D personalizado (ya horneada:
+   * escalada a cm y centrada en el origen como una primitiva).
+   */
+  applyCustomGeometry(geometry: THREE.BufferGeometry): void {
+    const old = this.mesh.geometry;
+    this.mesh.geometry = geometry;
+    old.dispose();
+    this.mesh.scale.set(1, 1, 1);
+    this.customModel = true;
+  }
+
+  /** Vuelve a la primitiva parametrica del componente. */
+  revertToPrimitive(): void {
+    if (!this.customModel) return;
+    this.customModel = false;
     const old = this.mesh.geometry;
     this.mesh.geometry = buildGeometry(this.params);
     old.dispose();

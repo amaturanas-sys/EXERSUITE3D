@@ -8,7 +8,10 @@ export class Toolbar {
   private gridOn = true;
   private space: "local" | "world" = "local";
 
-  constructor(private editor: Editor) {
+  constructor(
+    private editor: Editor,
+    private onOpenLibrary?: () => void,
+  ) {
     const mode = (m: TransformMode, label: string, key: string) => {
       const b = el("button", { class: "tool", title: `${label} (${key})` }, [label]);
       b.addEventListener("click", () => this.editor.setMode(m));
@@ -167,6 +170,11 @@ export class Toolbar {
     ]);
     exportBtn.addEventListener("click", () => this.exportGLB());
 
+    const libraryBtn = el("button", { class: "tool", title: "Biblioteca: sustituir componentes por modelos 3D" }, [
+      "Biblioteca",
+    ]);
+    libraryBtn.addEventListener("click", () => this.onOpenLibrary?.());
+
     const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
       "Importar",
     ]);
@@ -179,7 +187,7 @@ export class Toolbar {
       el("div", { class: "tool-group" }, [simBtn]),
       ...editGroups,
       el("div", { class: "tool-group" }, [newBtn, saveBtn, loadBtn]),
-      el("div", { class: "tool-group" }, [exportBtn, importBtn]),
+      el("div", { class: "tool-group" }, [libraryBtn, exportBtn, importBtn]),
       el("div", { class: "tool-group" }, [autosaveTag]),
       fileInput,
       importInput,

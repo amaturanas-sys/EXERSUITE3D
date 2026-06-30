@@ -383,6 +383,97 @@ select.select:focus {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Ventana de biblioteca (sustituir componentes por modelos 3D) ---- */
+.lib-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 9, 12, 0.62);
+  backdrop-filter: blur(3px);
+}
+.lib-panel {
+  width: min(640px, 92vw);
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.lib-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.lib-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.lib-intro {
+  padding: 12px 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.lib-list {
+  overflow-y: auto;
+  padding: 8px 8px 12px;
+}
+.lib-cat {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  padding: 12px 8px 4px;
+}
+.lib-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px;
+  border-radius: 7px;
+}
+.lib-row:hover {
+  background: var(--panel-2);
+}
+.lib-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.lib-info .swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex: none;
+}
+.lib-name {
+  font-size: 13.5px;
+}
+.lib-status {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.lib-status.on {
+  color: #34d399;
+}
+.lib-actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
 /* ---- Marca EXERSUITE3D (cabecera de la paleta) ---- */
 .brand-header {
   display: flex;

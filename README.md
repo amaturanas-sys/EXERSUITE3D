@@ -111,6 +111,7 @@ El historial de cambios versión a versión está en
 | Guardar / cargar    | Botones **Guardar** / **Cargar** (proyecto a archivo `.json`) |
 | Nuevo proyecto      | Botón **Nuevo**: vacía la escena y descarta el autoguardado |
 | Autoguardado        | Automático en el navegador (localStorage); se restaura al reabrir. Indicador **Guardado ✓** en la barra |
+| Biblioteca de modelos | Botón **Biblioteca**: sustituye la primitiva de cualquier componente por un modelo 3D (.glb/.gltf/.obj) de SketchUp/Nomad; se aplica a todas sus piezas y persiste en el navegador |
 | Exportar / importar | Botones **Exportar** (.glb) / **Importar** (.glb/.gltf/.obj) para intercambiar modelos 3D |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
@@ -163,6 +164,14 @@ contrapesos, barra olímpica, pila de pesos, cuerno de carga, micro-disco) y
 **ergonómico** (agarraderas, asientos, respaldos, D-handle, cuerda de tríceps,
 barra de jalón, correa de tobillo). Cada componente lleva un material PBR y
 atributos físicos editables (masa en kg, anclaje).
+
+Cada componente se dibuja por defecto con una primitiva paramétrica, pero desde
+la **Biblioteca** (botón en la barra) puedes sustituir esa primitiva por un
+modelo 3D detallado diseñado en **SketchUp** o **Nomad** (`.glb`, `.gltf` u
+`.obj`): el modelo se fusiona, se escala a cm (heurística metros→cm), se centra y
+se aplica a **todas** las instancias de ese componente (presentes y futuras). El
+modelo se guarda en el navegador (**IndexedDB**) y se restaura al reabrir; con
+**Restablecer** se vuelve a la primitiva.
 
 El diseño de los componentes, mecanismos, paletas de color y cinemática se
 documenta en [`docs/REFERENCIAS.md`](docs/REFERENCIAS.md), una síntesis de

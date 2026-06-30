@@ -7,6 +7,7 @@ import { PropertiesPanel } from "./ui/PropertiesPanel";
 import { JointsPanel } from "./ui/JointsPanel";
 import { PosePanel } from "./ui/PosePanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
+import { LibraryWindow } from "./ui/LibraryWindow";
 
 const app = document.getElementById("app")!;
 
@@ -18,7 +19,8 @@ const editor = new Editor(canvas);
 
 // Paneles de interfaz.
 const palette = new ComponentPalette(editor);
-const toolbar = new Toolbar(editor);
+const library = new LibraryWindow(editor);
+const toolbar = new Toolbar(editor, () => library.toggle());
 const inspector = new PropertiesPanel(editor);
 const joints = new JointsPanel(editor);
 const posePanel = new PosePanel(editor);
@@ -39,7 +41,7 @@ credit.textContent =
   "Esqueleto: Open3DModel · O.P. Gobée et al., LUMC (AnatomyTOOL) · CC BY-SA";
 credit.style.display = "none";
 
-app.append(palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit);
+app.append(palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, library.root);
 
 editor.bus.on("humanFigureChanged", ({ present, mode }) => {
   credit.style.display = present && mode === "skeleton" ? "block" : "none";
@@ -50,6 +52,9 @@ editor.start();
 
 // Restaura la última sesión autoguardada; si no hay, monta la escena de bienvenida.
 void (async () => {
+  // Carga primero los modelos 3D personalizados de la biblioteca, para que las
+  // piezas restauradas usen el modelo en vez de la primitiva.
+  await editor.loadComponentModels();
   const restored = await editor.restoreAutosave();
   if (!restored) {
     // Escena de bienvenida: una base + pilar para mostrar el espacio de trabajo.

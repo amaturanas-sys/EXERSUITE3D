@@ -30,6 +30,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData } from "./project";
+import { deleteModel, getAllModels, putModel } from "./modelStore";
 import { EventBus } from "./eventBus";
 
 type HandSide = "L" | "R";
@@ -75,6 +76,8 @@ export type EditorEvents = {
   };
   /** El proyecto se acaba de autoguardar en el navegador. */
   autosaved: { at: number };
+  /** Cambió el conjunto de componentes con modelo 3D personalizado. */
+  componentModelsChanged: { ids: string[] };
 };
 
 interface SavedTransform {
@@ -136,6 +139,11 @@ export class Editor {
   private handTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
   private attachMode = false;
   private attachSide: HandSide | null = null;
+
+  // Modelos 3D personalizados por componente (biblioteca): geometria horneada
+  // (escalada a cm y centrada) y nombre de archivo, por componentId.
+  private componentModels = new Map<string, THREE.BufferGeometry>();
+  private componentModelInfo = new Map<string, { fileName: string }>();
 
   // Autoguardado en el navegador (localStorage).
   private static readonly AUTOSAVE_KEY = "exersuite.autosave.v1";
@@ -360,6 +368,11 @@ export class Editor {
       stack: def.stack,
     });
 
+    // Si la biblioteca tiene un modelo 3D para este componente, sustituye la
+    // primitiva por él.
+    const override = this.componentModels.get(def.id);
+    if (override) obj.applyCustomGeometry(override.clone());
+
     // Apoya la base del objeto sobre el suelo (y=0).
     const size = obj.effectiveSize();
     obj.mesh.position.copy(position ?? new THREE.Vector3(0, size.y / 2, 0));
@@ -526,22 +539,137 @@ export class Editor {
 
   /** Importa un modelo 3D (glb/gltf/obj) como una pieza editable. */
   async importModelFile(file: File): Promise<void> {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    const url = URL.createObjectURL(file);
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const root = await this.loadModelRoot(await file.arrayBuffer(), ext);
+    this.addImportedModel(root, file.name.replace(/\.[^.]+$/, ""));
+  }
+
+  /** Carga un modelo (glb/gltf/obj) desde sus bytes y devuelve su raíz. */
+  private async loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
+    const url = URL.createObjectURL(new Blob([bytes]));
     try {
-      let root: THREE.Object3D;
-      if (ext === "obj") {
-        root = await new OBJLoader().loadAsync(url);
-      } else {
-        const draco = new DRACOLoader();
-        draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
-        const loader = new GLTFLoader();
-        loader.setDRACOLoader(draco);
-        root = (await loader.loadAsync(url)).scene;
-      }
-      this.addImportedModel(root, file.name.replace(/\.[^.]+$/, ""));
+      if (ext === "obj") return await new OBJLoader().loadAsync(url);
+      const draco = new DRACOLoader();
+      draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+      const loader = new GLTFLoader();
+      loader.setDRACOLoader(draco);
+      return (await loader.loadAsync(url)).scene;
     } finally {
       URL.revokeObjectURL(url);
+    }
+  }
+
+  // ------------------------------------------------- biblioteca de modelos
+  /**
+   * Fusiona las mallas del modelo en una sola geometría, la escala a cm
+   * (heurística metros→cm) y la centra en el origen, lista para sustituir a la
+   * primitiva de un componente.
+   */
+  private bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometry {
+    root.updateMatrixWorld(true);
+    const geos: THREE.BufferGeometry[] = [];
+    root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) {
+        const mesh = o as THREE.Mesh;
+        const g = mesh.geometry.clone();
+        g.applyMatrix4(mesh.matrixWorld);
+        geos.push(this.normalizeGeometry(g));
+      }
+    });
+    if (geos.length === 0) throw new Error("El modelo no contiene mallas.");
+    let merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
+    if (!merged) merged = geos[0];
+
+    merged.computeBoundingBox();
+    const size = new THREE.Vector3();
+    merged.boundingBox!.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scale = maxDim > 0 && maxDim < 5 ? 100 : 1;
+    if (scale !== 1) merged.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale));
+
+    merged.computeBoundingBox();
+    const center = new THREE.Vector3();
+    merged.boundingBox!.getCenter(center);
+    merged.applyMatrix4(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+    merged.computeBoundingBox();
+    merged.computeBoundingSphere();
+    return merged;
+  }
+
+  private async bakeFromBytes(bytes: ArrayBuffer, ext: string): Promise<THREE.BufferGeometry> {
+    return this.bakeComponentGeometry(await this.loadModelRoot(bytes, ext));
+  }
+
+  /** ¿El componente tiene un modelo 3D personalizado asignado? */
+  hasComponentModel(componentId: string): boolean {
+    return this.componentModels.has(componentId);
+  }
+
+  /** Nombre del archivo del modelo de un componente (o null). */
+  getComponentModelName(componentId: string): string | null {
+    return this.componentModelInfo.get(componentId)?.fileName ?? null;
+  }
+
+  /** Asigna un modelo 3D a un componente y lo aplica a sus instancias. */
+  async setComponentModel(componentId: string, file: File): Promise<void> {
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+    const bytes = await file.arrayBuffer();
+    const geo = await this.bakeFromBytes(bytes, ext);
+    const prev = this.componentModels.get(componentId);
+    this.componentModels.set(componentId, geo);
+    this.componentModelInfo.set(componentId, { fileName: file.name });
+    prev?.dispose();
+    await putModel({ componentId, fileName: file.name, ext, bytes });
+    // Aplica a las instancias ya colocadas (conserva su posición/centro).
+    for (const o of this.objects.values()) {
+      if (o.componentId === componentId) o.applyCustomGeometry(geo.clone());
+    }
+    this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+  }
+
+  /** Quita el modelo personalizado de un componente y restaura la primitiva. */
+  async clearComponentModel(componentId: string): Promise<void> {
+    const geo = this.componentModels.get(componentId);
+    if (!geo) return;
+    this.componentModels.delete(componentId);
+    this.componentModelInfo.delete(componentId);
+    geo.dispose();
+    await deleteModel(componentId);
+    for (const o of this.objects.values()) {
+      if (o.componentId === componentId && o.customModel) o.revertToPrimitive();
+    }
+    this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+  }
+
+  /** Carga desde IndexedDB los modelos de componente guardados y los aplica. */
+  async loadComponentModels(): Promise<void> {
+    let stored;
+    try {
+      stored = await getAllModels();
+    } catch {
+      return;
+    }
+    for (const m of stored) {
+      try {
+        const geo = await this.bakeFromBytes(m.bytes, m.ext);
+        this.componentModels.set(m.componentId, geo);
+        this.componentModelInfo.set(m.componentId, { fileName: m.fileName });
+        for (const o of this.objects.values()) {
+          if (o.componentId === m.componentId && !o.customModel) {
+            o.applyCustomGeometry(geo.clone());
+          }
+        }
+      } catch (e) {
+        console.warn("Modelo de componente no válido:", m.componentId, e);
+      }
+    }
+    if (this.componentModels.size) {
+      this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
+      this.bus.emit("objectsChanged", { objects: this.listObjects() });
     }
   }
 
