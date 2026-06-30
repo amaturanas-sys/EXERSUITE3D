@@ -1,9 +1,18 @@
+<p align="center">
+  <img src="public/brand/logo-banner.png" alt="EXERSUITE3D" width="420" />
+</p>
+
 # EXERSUITE3D
 
 Plataforma de diseño 3D y simulación de físicas para **prototipar máquinas de
 gimnasio**. Editor estilo SketchUp / NomadSculpt con medidas exactas en
 centímetros, librería de componentes mecánicos y (próximamente) simulación de
 palancas, poleas y pesos.
+
+La identidad de marca (placa olímpica + compás de dibujo, monocroma) se integra
+en la interfaz, el favicon y los iconos nativos. Los assets están en
+[`public/brand/`](public/brand/) y se regeneran con
+[`scripts/make-brand-assets.py`](scripts/make-brand-assets.py).
 
 Objetivo multiplataforma desde un único código web:
 

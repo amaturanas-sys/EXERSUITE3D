@@ -7,14 +7,22 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.1.1] — 2026-06-30
+
+### Añadido
+
+- **Identidad de marca EXERSUITE3D**: el logotipo (placa olímpica + compás de
+  dibujo) se integra como favicon, cabecera de la paleta (insignia + wordmark)
+  e iconos nativos de la app (Android e iconos de Tauri), generados desde el
+  arte de marca. Paleta monocroma industrial (tinta + papel hueso) en la
+  interfaz: los estados activos/seleccionados usan el acento de marca.
+- Este `CHANGELOG.md`.
+
 ### Cambiado
 
 - El ejecutable de escritorio (Tauri) ahora se llama `EXERSUITE3D.exe` (antes
   `exersuite3d.exe`), vía `mainBinaryName` en `tauri.conf.json`.
-
-### Añadido
-
-- Este `CHANGELOG.md`.
+- Los paneles laterales arrancan bajo la barra superior para no quedar tapados.
 
 ## [0.1.0] — 2026-06-30
 
@@ -58,5 +66,6 @@ automáticamente en la Release.
   instaladores NSIS/MSI (runner Windows) en cada push y, al crear un tag `v*`,
   publica una GitHub Release con todos los binarios adjuntos.
 
-[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/amaturanas-sys/EXERSUITE3D/releases/tag/v0.1.0

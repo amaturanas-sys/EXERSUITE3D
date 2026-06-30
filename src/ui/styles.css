@@ -1,12 +1,17 @@
 :root {
+  /* Identidad EXERSUITE3D: monocroma industrial (tinta + papel hueso). */
+  --ink: #111418;
+  --paper: #efede8;
   --bg: #14161b;
   --panel: #1e2128;
   --panel-2: #262a33;
   --border: #333845;
   --text: #e6e8ec;
   --text-dim: #9aa1ad;
-  --accent: #3b82f6;
-  --accent-2: #2563eb;
+  /* Acento de marca: papel hueso sobre tinta (estados activos/seleccionados). */
+  --accent: #efede8;
+  --accent-2: #c7c4bc;
+  --on-accent: #14161b;
   --danger: #ef4444;
   --radius: 8px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -81,6 +86,8 @@ button.tool:hover {
 button.tool.active {
   background: var(--accent);
   border-color: var(--accent-2);
+  color: var(--on-accent);
+  font-weight: 600;
 }
 button.tool.danger:hover {
   background: var(--danger);
@@ -163,12 +170,14 @@ body.simulating #palette {
 }
 #palette {
   left: 12px;
+  /* Empieza bajo la barra superior para no quedar tapada por ella. */
+  top: 64px;
 }
 
 /* Columna derecha apilada: inspector + conexiones. */
 #right-dock {
   position: absolute;
-  top: 12px;
+  top: 64px;
   right: 12px;
   bottom: 48px;
   width: 248px;
@@ -355,6 +364,7 @@ select.select:focus {
 }
 .outliner-item.selected {
   background: var(--accent);
+  color: var(--on-accent);
 }
 
 /* ---- HUD medidas ---- */
@@ -371,6 +381,51 @@ select.select:focus {
   color: var(--text-dim);
   z-index: 8;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---- Marca EXERSUITE3D (cabecera de la paleta) ---- */
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+}
+.brand-header .brand-badge {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  background: var(--paper);
+  border: 1px solid var(--accent-2);
+  border-radius: 8px;
+  padding: 4px;
+}
+.brand-header .brand-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.brand-header .brand-word {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  min-width: 0;
+}
+.brand-header .brand-word b {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.brand-header .brand-word span {
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 3px;
+  white-space: nowrap;
 }
 
 @media (max-width: 720px) {

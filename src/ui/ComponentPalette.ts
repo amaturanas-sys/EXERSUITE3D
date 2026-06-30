@@ -16,8 +16,24 @@ export class ComponentPalette {
     const body = el("div", { class: "panel-body" });
     this.renderGroups(body);
     this.root = el("aside", { class: "panel", id: "palette" }, [
+      this.brandHeader(),
       el("div", { class: "panel-title" }, ["Componentes"]),
       body,
+    ]);
+  }
+
+  /** Cabecera de marca EXERSUITE3D en la parte superior de la paleta. */
+  private brandHeader(): HTMLElement {
+    const img = el("img", {
+      src: `${import.meta.env.BASE_URL}brand/logo-mark.png`,
+      alt: "EXERSUITE3D",
+    });
+    return el("div", { class: "brand-header", title: "EXERSUITE3D" }, [
+      el("div", { class: "brand-badge" }, [img]),
+      el("div", { class: "brand-word" }, [
+        el("b", {}, ["EXERSUITE3D"]),
+        el("span", {}, ["Gym machine design"]),
+      ]),
     ]);
   }
 
