@@ -7,6 +7,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.1.2] — 2026-06-30
+
 ### Añadido
 
 - **Biblioteca de componentes**: ventana para sustituir la primitiva básica de
@@ -75,6 +77,7 @@ automáticamente en la Release.
   instaladores NSIS/MSI (runner Windows) en cada push y, al crear un tag `v*`,
   publica una GitHub Release con todos los binarios adjuntos.
 
-[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.1...HEAD
+[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/amaturanas-sys/EXERSUITE3D/releases/tag/v0.1.0
