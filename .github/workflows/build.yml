@@ -98,14 +98,35 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - name: Descargar artefactos compilados
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Preparar notas de la Release desde CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          {
+            echo "## EXERSUITE3D ${GITHUB_REF_NAME}"
+            echo
+            awk -v ver="$VERSION" '
+              $0 ~ "^## \\[" ver "\\]" { cap=1; next }
+              cap && /^## \[/ { exit }
+              cap && /^\[[^]]+\]:[[:space:]]/ { exit }
+              cap { print }
+            ' CHANGELOG.md
+            echo
+            echo "**Changelog completo:** https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md"
+          } > RELEASE_NOTES.md
+          echo "----- notas generadas -----"
+          cat RELEASE_NOTES.md
 
       - name: Crear/actualizar la GitHub Release y adjuntar binarios
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: false
