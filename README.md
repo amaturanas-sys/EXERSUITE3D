@@ -72,6 +72,15 @@ mano (*workflow_dispatch*), en cada push a la rama de trabajo y al publicar un
 tag `v*`. Los binarios quedan como *artifacts* de la ejecución
 (`exersuite3d-android-debug` y `exersuite3d-windows`).
 
+**Publicación automática (Release):** al empujar un tag `v*` se ejecuta además
+el job `release`, que adjunta el APK, el `.exe` y los instaladores NSIS/MSI a una
+**GitHub Release** (con notas autogeneradas). Por ejemplo:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0   # compila y publica la Release con los binarios
+```
+
 ## Controles del editor
 
 | Acción              | Atajo / interacción                     |
