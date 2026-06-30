@@ -173,6 +173,13 @@ se aplica a **todas** las instancias de ese componente (presentes y futuras). El
 modelo se guarda en el navegador (**IndexedDB**) y se restaura al reabrir; con
 **Restablecer** se vuelve a la primitiva.
 
+Para ajustes **sin usar la app ni código**, también puedes reemplazar modelos por
+fichero: coloca tu `.glb/.gltf/.obj` en
+[`public/models/components/`](public/models/components/) y anótalo en su
+`manifest.json` (id de componente → nombre de fichero). Se cargan al arrancar;
+los modelos puestos desde la Biblioteca tienen prioridad. Ver
+[`public/models/components/LEEME.md`](public/models/components/LEEME.md).
+
 El diseño de los componentes, mecanismos, paletas de color y cinemática se
 documenta en [`docs/REFERENCIAS.md`](docs/REFERENCIAS.md), una síntesis de
 referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.

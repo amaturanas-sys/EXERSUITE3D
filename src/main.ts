@@ -52,8 +52,11 @@ editor.start();
 
 // Restaura la última sesión autoguardada; si no hay, monta la escena de bienvenida.
 void (async () => {
-  // Carga primero los modelos 3D personalizados de la biblioteca, para que las
-  // piezas restauradas usen el modelo en vez de la primitiva.
+  // Modelos de componente, antes de restaurar la escena para que las piezas
+  // usen el modelo en vez de la primitiva. Primero los definidos por archivo
+  // (carpeta public/models/components/) y luego los de usuario (Biblioteca),
+  // que tienen prioridad.
+  await editor.loadFileComponentModels();
   await editor.loadComponentModels();
   const restored = await editor.restoreAutosave();
   if (!restored) {

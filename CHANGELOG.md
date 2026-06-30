@@ -17,6 +17,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   aplica a todas las instancias del componente y se guarda en el navegador
   (IndexedDB) para restaurarse al reabrir; botón **Restablecer** para volver a
   la primitiva.
+- **Modelos por archivo**: carpeta `public/models/components/` con un
+  `manifest.json` (id de componente → fichero) para reemplazar modelos solo con
+  archivos, sin código ni la app. Se cargan al arrancar; un modelo puesto desde
+  la Biblioteca tiene prioridad sobre el de archivo. Incluye `LEEME.md` con la
+  lista de ids y las instrucciones.
 
 ### Cambiado
 

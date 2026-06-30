@@ -142,8 +142,15 @@ export class Editor {
 
   // Modelos 3D personalizados por componente (biblioteca): geometria horneada
   // (escalada a cm y centrada) y nombre de archivo, por componentId.
+  // Geometría activa por componente (la que se aplica) y su procedencia.
   private componentModels = new Map<string, THREE.BufferGeometry>();
-  private componentModelInfo = new Map<string, { fileName: string }>();
+  private componentModelInfo = new Map<
+    string,
+    { fileName: string; source: "file" | "user" }
+  >();
+  // Modelos provenientes de archivo (carpeta public/models/components/), que
+  // sirven de respaldo si se quita un modelo de usuario (Biblioteca).
+  private fileModels = new Map<string, { geo: THREE.BufferGeometry; fileName: string }>();
 
   // Autoguardado en el navegador (localStorage).
   private static readonly AUTOSAVE_KEY = "exersuite.autosave.v1";
@@ -610,42 +617,108 @@ export class Editor {
     return this.componentModelInfo.get(componentId)?.fileName ?? null;
   }
 
-  /** Asigna un modelo 3D a un componente y lo aplica a sus instancias. */
+  /** Procedencia del modelo de un componente: "file", "user" o null. */
+  getComponentModelSource(componentId: string): "file" | "user" | null {
+    return this.componentModelInfo.get(componentId)?.source ?? null;
+  }
+
+  /** Activa una geometría como modelo del componente y la aplica a sus piezas. */
+  private setActiveModel(
+    componentId: string,
+    geo: THREE.BufferGeometry,
+    fileName: string,
+    source: "file" | "user",
+  ): void {
+    const prev = this.componentModels.get(componentId);
+    this.componentModels.set(componentId, geo);
+    this.componentModelInfo.set(componentId, { fileName, source });
+    // No liberar geometrías de archivo (son respaldo compartido).
+    if (prev && prev !== geo && prev !== this.fileModels.get(componentId)?.geo) {
+      prev.dispose();
+    }
+    for (const o of this.objects.values()) {
+      if (o.componentId === componentId) o.applyCustomGeometry(geo.clone());
+    }
+  }
+
+  /** Asigna un modelo 3D a un componente (acción del usuario, persistente). */
   async setComponentModel(componentId: string, file: File): Promise<void> {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
     const bytes = await file.arrayBuffer();
     const geo = await this.bakeFromBytes(bytes, ext);
-    const prev = this.componentModels.get(componentId);
-    this.componentModels.set(componentId, geo);
-    this.componentModelInfo.set(componentId, { fileName: file.name });
-    prev?.dispose();
+    this.setActiveModel(componentId, geo, file.name, "user");
     await putModel({ componentId, fileName: file.name, ext, bytes });
-    // Aplica a las instancias ya colocadas (conserva su posición/centro).
-    for (const o of this.objects.values()) {
-      if (o.componentId === componentId) o.applyCustomGeometry(geo.clone());
-    }
     this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
     this.scheduleAutosave();
   }
 
-  /** Quita el modelo personalizado de un componente y restaura la primitiva. */
+  /**
+   * Quita el modelo de usuario de un componente. Si existe un modelo de archivo
+   * de respaldo, vuelve a él; si no, restaura la primitiva.
+   */
   async clearComponentModel(componentId: string): Promise<void> {
-    const geo = this.componentModels.get(componentId);
-    if (!geo) return;
-    this.componentModels.delete(componentId);
-    this.componentModelInfo.delete(componentId);
-    geo.dispose();
     await deleteModel(componentId);
-    for (const o of this.objects.values()) {
-      if (o.componentId === componentId && o.customModel) o.revertToPrimitive();
+    const fallback = this.fileModels.get(componentId);
+    if (fallback) {
+      this.setActiveModel(componentId, fallback.geo, fallback.fileName, "file");
+    } else {
+      const geo = this.componentModels.get(componentId);
+      this.componentModels.delete(componentId);
+      this.componentModelInfo.delete(componentId);
+      geo?.dispose();
+      for (const o of this.objects.values()) {
+        if (o.componentId === componentId && o.customModel) o.revertToPrimitive();
+      }
     }
     this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
     this.scheduleAutosave();
   }
 
-  /** Carga desde IndexedDB los modelos de componente guardados y los aplica. */
+  /**
+   * Carga los modelos definidos por archivo (public/models/components/) según
+   * su manifest.json. Son los modelos "de fábrica", reemplazables sin código.
+   */
+  async loadFileComponentModels(): Promise<void> {
+    const base = import.meta.env.BASE_URL;
+    let manifest: Record<string, unknown>;
+    try {
+      const res = await fetch(`${base}models/components/manifest.json`, { cache: "no-store" });
+      if (!res.ok) return;
+      manifest = await res.json();
+    } catch {
+      return;
+    }
+    for (const [componentId, value] of Object.entries(manifest)) {
+      const fileName = typeof value === "string" ? value.trim() : "";
+      if (!fileName) continue;
+      if (!getDefinition(componentId)) {
+        console.warn(`manifest.json: componente desconocido "${componentId}"`);
+        continue;
+      }
+      try {
+        const res = await fetch(`${base}models/components/${fileName}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const bytes = await res.arrayBuffer();
+        const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+        const geo = await this.bakeFromBytes(bytes, ext);
+        this.fileModels.set(componentId, { geo, fileName });
+        // No pisar un modelo de usuario ya cargado.
+        if (this.componentModelInfo.get(componentId)?.source !== "user") {
+          this.setActiveModel(componentId, geo, fileName, "file");
+        }
+      } catch (e) {
+        console.warn(`No se pudo cargar el modelo de archivo de "${componentId}" (${fileName}):`, e);
+      }
+    }
+    if (this.componentModels.size) {
+      this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
+      this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    }
+  }
+
+  /** Carga desde IndexedDB los modelos de usuario (Biblioteca); tienen prioridad. */
   async loadComponentModels(): Promise<void> {
     let stored;
     try {
@@ -656,13 +729,7 @@ export class Editor {
     for (const m of stored) {
       try {
         const geo = await this.bakeFromBytes(m.bytes, m.ext);
-        this.componentModels.set(m.componentId, geo);
-        this.componentModelInfo.set(m.componentId, { fileName: m.fileName });
-        for (const o of this.objects.values()) {
-          if (o.componentId === m.componentId && !o.customModel) {
-            o.applyCustomGeometry(geo.clone());
-          }
-        }
+        this.setActiveModel(m.componentId, geo, m.fileName, "user");
       } catch (e) {
         console.warn("Modelo de componente no válido:", m.componentId, e);
       }

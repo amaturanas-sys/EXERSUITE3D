@@ -41,7 +41,9 @@ export class LibraryWindow {
       el("div", { class: "lib-intro" }, [
         "Sustituye el dibujo básico de cualquier componente por un modelo 3D " +
           "(.glb, .gltf u .obj) hecho en SketchUp o Nomad. Se aplica a todas " +
-          "sus piezas y se guarda en este navegador.",
+          "sus piezas y se guarda en este navegador. También puedes colocar los " +
+          "modelos como ficheros en la carpeta public/models/components/ " +
+          "(ver LEEME.md) para sustituirlos sin usar la app.",
       ]),
       this.listEl,
       this.fileInput,
@@ -94,14 +96,18 @@ export class LibraryWindow {
   private row(def: ComponentDefinition): HTMLElement {
     const has = this.editor.hasComponentModel(def.id);
     const fileName = this.editor.getComponentModelName(def.id);
+    const source = this.editor.getComponentModelSource(def.id);
 
     const swatch = el("span", { class: "swatch" });
     const accent = CATEGORY_COLORS[def.category];
     swatch.style.background = `#${accent.toString(16).padStart(6, "0")}`;
 
-    const status = el("span", { class: has ? "lib-status on" : "lib-status" }, [
-      has ? `Modelo: ${fileName}` : "Primitiva básica",
-    ]);
+    let statusText = "Primitiva básica";
+    if (has) {
+      statusText =
+        source === "file" ? `Modelo (archivo): ${fileName}` : `Modelo: ${fileName}`;
+    }
+    const status = el("span", { class: has ? "lib-status on" : "lib-status" }, [statusText]);
 
     const replace = el("button", { class: "tool" }, [has ? "Cambiar…" : "Sustituir…"]);
     replace.addEventListener("click", () => {
@@ -111,7 +117,9 @@ export class LibraryWindow {
     });
 
     const actions = el("div", { class: "lib-actions" }, [replace]);
-    if (has) {
+    // Solo se puede "restablecer" un modelo puesto desde la app (usuario). Los
+    // modelos de archivo se gestionan reemplazando el fichero en la carpeta.
+    if (has && source === "user") {
       const reset = el("button", { class: "tool danger" }, ["Restablecer"]);
       reset.addEventListener("click", () => void this.editor.clearComponentModel(def.id));
       actions.append(reset);
