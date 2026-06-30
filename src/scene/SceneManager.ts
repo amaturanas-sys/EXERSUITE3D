@@ -16,8 +16,8 @@ export class SceneManager {
   private grid: THREE.GridHelper;
 
   constructor(private canvas: HTMLCanvasElement) {
-    // Fondo claro de estudio (estilo ilustrativo).
-    this.scene.background = gradientTexture("#eef2f6", "#c6cfd8");
+    // Fondo de estudio en escala de grises neutra (como el resto del programa).
+    this.scene.background = gradientTexture("#eef0f2", "#cdd0d3");
 
     this.camera = new THREE.PerspectiveCamera(
       50,
@@ -83,7 +83,7 @@ export class SceneManager {
   private setupGrid(): THREE.GridHelper {
     const sizeCm = 6 * METER; // 6 m de lado
     const divisions = sizeCm / 10; // celdas de 10 cm
-    const grid = new THREE.GridHelper(sizeCm, divisions, 0x9aa6b4, 0xc2cad3);
+    const grid = new THREE.GridHelper(sizeCm, divisions, 0x9a9a9e, 0xc4c4c8);
     (grid.material as THREE.Material).opacity = 0.55;
     (grid.material as THREE.Material).transparent = true;
     this.scene.add(grid);
@@ -95,14 +95,61 @@ export class SceneManager {
     return grid;
   }
 
+  /**
+   * Suelo de trabajo: un objeto siempre presente e inamovible (no es un
+   * SceneObject, así que el gizmo nunca lo selecciona ni lo borra). Plano gris
+   * neutro que recibe sombras y lleva el logotipo de la app como marca de agua
+   * tenue, en escala de grises de bajo contraste.
+   */
   private setupGround(): void {
-    const geo = new THREE.PlaneGeometry(6 * METER, 6 * METER);
-    const mat = new THREE.ShadowMaterial({ opacity: 0.18 });
-    const ground = new THREE.Mesh(geo, mat);
+    const size = 6 * METER;
+    const tex = this.buildFloorTexture();
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex,
+      color: 0xffffff,
+      roughness: 0.96,
+      metalness: 0,
+    });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.01;
+    ground.position.y = -0.05; // justo bajo la rejilla (y=0)
     ground.receiveShadow = true;
+    ground.name = "ground";
     this.scene.add(ground);
+  }
+
+  /**
+   * Textura del suelo: gris neutro con el logotipo dibujado al centro en un gris
+   * apenas más oscuro (bajo contraste). El logo se carga de forma asíncrona y se
+   * compone sobre el lienzo cuando está listo.
+   */
+  private buildFloorTexture(): THREE.CanvasTexture {
+    const S = 1024;
+    const FLOOR = "#e4e6e8"; // gris claro neutro del suelo
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = FLOOR;
+    ctx.fillRect(0, 0, S, S);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+
+    const img = new Image();
+    img.onload = () => {
+      const w = S * 0.5;
+      const h = (w * img.height) / img.width;
+      ctx.save();
+      // Marca de agua muy tenue: el arte negro del logo queda gris medio y los
+      // huecos blancos apenas más claros que el suelo => contraste leve.
+      ctx.globalAlpha = 0.13;
+      ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+      ctx.restore();
+      tex.needsUpdate = true;
+    };
+    img.src = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
+    return tex;
   }
 
   setGridVisible(visible: boolean): void {

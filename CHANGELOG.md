@@ -18,6 +18,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   (IndexedDB) para restaurarse al reabrir; botón **Restablecer** para volver a
   la primitiva.
 
+### Cambiado
+
+- **Suelo de trabajo** siempre presente e inamovible: plano gris neutro (escala
+  de grises) que recibe sombras y muestra el logotipo de la app como marca de
+  agua tenue, de bajo contraste. No es seleccionable ni se borra al limpiar la
+  escena. Fondo y rejilla neutralizados a grises.
+
 ## [0.1.1] — 2026-06-30
 
 ### Añadido
