@@ -8,6 +8,7 @@ export class Toolbar {
   private modeButtons = new Map<TransformMode, HTMLButtonElement>();
   private gridOn = true;
   private space: "local" | "world" = "local";
+  private lastSaveName = "exersuite3d-proyecto";
 
   constructor(
     private editor: Editor,
@@ -221,13 +222,19 @@ export class Toolbar {
   }
 
   private saveProject(): void {
+    const raw = window.prompt("Nombre del proyecto:", this.lastSaveName);
+    if (raw === null) return; // cancelado
+    // Nombre legible para los recientes y nombre de archivo saneado.
+    const name = raw.trim() || "exersuite3d-proyecto";
+    this.lastSaveName = name;
+    const fileName = name.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
+
     const project = this.editor.serialize();
-    const name = "exersuite3d-proyecto";
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${name}.json`;
+    a.download = `${fileName}.json`;
     a.click();
     URL.revokeObjectURL(url);
     void addRecent(name, project, Date.now()).catch(() => {});

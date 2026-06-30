@@ -473,6 +473,22 @@ select.select:focus {
   color: var(--text-dim);
   margin-bottom: 8px;
 }
+.land-ded-lang {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 12px 0 4px;
+}
+.land-ded-lang:first-of-type {
+  margin-top: 0;
+}
+.land-dedication {
+  max-height: 320px;
+  overflow-y: auto;
+}
 .land-dedication p {
   margin: 0 0 8px;
 }

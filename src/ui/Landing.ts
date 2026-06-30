@@ -96,8 +96,17 @@ export class Landing {
       return;
     }
     box.append(el("div", { class: "land-dedication-label" }, ["Dedicatoria"]));
-    for (const para of text.split(/\n\s*\n/)) {
-      box.append(el("p", {}, [para.trim()]));
+    for (const block of text.split(/\n\s*\n/)) {
+      const lines = block.trim().split("\n");
+      // Un bloque puede empezar con un marcador de idioma, p. ej. "[English]".
+      const m = lines[0].match(/^\[(.+)\]$/);
+      if (m) {
+        box.append(el("div", { class: "land-ded-lang" }, [m[1]]));
+        const body = lines.slice(1).join(" ").trim();
+        if (body) box.append(el("p", {}, [body]));
+      } else {
+        box.append(el("p", {}, [block.trim()]));
+      }
     }
   }
 

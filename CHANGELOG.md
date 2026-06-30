@@ -21,6 +21,10 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   vacía (sin cargar un proyecto) para revisar cada componente por separado con
   una **vista previa 3D** (turntable, orbitable) y sustituirlo por un modelo,
   haciendo más eficiente la edición del repertorio de piezas.
+- **Guardar** pide ahora un nombre de proyecto (se usa para el archivo `.json` y
+  para la entrada de proyectos recientes).
+- Dedicatoria del autor en cinco idiomas (español, inglés, alemán, francés y
+  portugués) con etiqueta de idioma en la pantalla de inicio.
 
 ### Corregido
 
