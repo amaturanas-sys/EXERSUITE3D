@@ -101,6 +101,9 @@ motor 3D** (WebGL/física) hasta que eliges una acción, para ahorrar recursos:
 
 - **Crear nuevo proyecto** / **Abrir archivo…** (`.json`) / **Continuar sesión
   anterior** (autoguardado).
+- **Explorar biblioteca**: abre la biblioteca sobre una escena vacía para revisar
+  cada componente con **vista previa 3D** y sustituirlo por otro modelo, sin
+  necesidad de cargar un proyecto completo.
 - **Proyectos recientes**: lista de los proyectos abiertos o guardados
   (almacenados en IndexedDB del navegador).
 - **Dedicatoria**: texto editable en [`public/dedicatoria.txt`](public/dedicatoria.txt)

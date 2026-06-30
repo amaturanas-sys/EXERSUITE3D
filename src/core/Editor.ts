@@ -622,6 +622,11 @@ export class Editor {
     return this.componentModelInfo.get(componentId)?.source ?? null;
   }
 
+  /** Clon de la geometría del modelo activo de un componente (o null). */
+  getComponentModelGeometryClone(componentId: string): THREE.BufferGeometry | null {
+    return this.componentModels.get(componentId)?.clone() ?? null;
+  }
+
   /** Activa una geometría como modelo del componente y la aplica a sus piezas. */
   private setActiveModel(
     componentId: string,

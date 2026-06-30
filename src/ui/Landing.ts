@@ -7,6 +7,7 @@ export interface LandingActions {
   onOpenFile: (file: File) => void;
   onOpenRecent: (data: ProjectData, name: string) => void;
   onContinue: () => void;
+  onExploreLibrary: () => void;
   hasAutosave: boolean;
 }
 
@@ -42,7 +43,10 @@ export class Landing {
     const openBtn = el("button", { class: "land-btn" }, ["📂  Abrir archivo…"]);
     openBtn.addEventListener("click", () => this.fileInput.click());
 
-    const actionsRow = el("div", { class: "land-actions" }, [newBtn, openBtn]);
+    const libBtn = el("button", { class: "land-btn" }, ["🧩  Explorar biblioteca"]);
+    libBtn.addEventListener("click", () => this.actions.onExploreLibrary());
+
+    const actionsRow = el("div", { class: "land-actions" }, [newBtn, openBtn, libBtn]);
     if (this.actions.hasAutosave) {
       const cont = el("button", { class: "land-btn ghost" }, ["↻  Continuar sesión anterior"]);
       cont.addEventListener("click", () => this.actions.onContinue());

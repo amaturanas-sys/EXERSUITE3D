@@ -15,6 +15,7 @@ import type { ProjectData } from "./core/project";
 const app = document.getElementById("app")!;
 
 let editor: Editor | null = null;
+let libraryWin: LibraryWindow | null = null;
 
 /**
  * Inicializa el editor 3D y toda la interfaz (solo la primera vez). Se difiere
@@ -32,6 +33,7 @@ function bootEditor(): Editor {
 
   const palette = new ComponentPalette(editor);
   const library = new LibraryWindow(editor);
+  libraryWin = library;
   const toolbar = new Toolbar(editor, () => library.toggle());
   const inspector = new PropertiesPanel(editor);
   const joints = new JointsPanel(editor);
@@ -108,6 +110,15 @@ async function startContinue(): Promise<void> {
   }
 }
 
+/** Abre directamente la biblioteca sobre una escena vacía (sin cargar proyecto). */
+async function startLibrary(): Promise<void> {
+  const ed = bootEditor();
+  await ensureModels(ed);
+  ed.clearScene();
+  ed.select(null);
+  libraryWin?.show();
+}
+
 // Pantalla de inicio (no inicializa WebGL hasta elegir una acción).
 let hasAutosave = false;
 try {
@@ -139,6 +150,10 @@ const landing = new Landing({
   onContinue: () => {
     landing.hide();
     void startContinue();
+  },
+  onExploreLibrary: () => {
+    landing.hide();
+    void startLibrary();
   },
 });
 app.append(landing.root);

@@ -15,6 +15,10 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   **Abrir archivo…**, **Continuar sesión anterior** (autoguardado), una lista de
   **proyectos recientes** (IndexedDB) y un apartado de **dedicatoria** editable
   desde `public/dedicatoria.txt`.
+- **Explorar biblioteca** desde la landing: abre la biblioteca sobre una escena
+  vacía (sin cargar un proyecto) para revisar cada componente por separado con
+  una **vista previa 3D** (turntable, orbitable) y sustituirlo por un modelo,
+  haciendo más eficiente la edición del repertorio de piezas.
 
 ## [0.1.2] — 2026-06-30
 

@@ -6,27 +6,36 @@ import {
   PRIMITIVE_DEFS,
 } from "../objects/componentLibrary";
 import type { ComponentCategory, ComponentDefinition } from "../objects/types";
+import { buildGeometry } from "../objects/geometryFactory";
+import { buildMaterial } from "../objects/materials";
+import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
 
 /**
- * Ventana de biblioteca: permite sustituir la primitiva básica de cada
- * componente por un modelo 3D diseñado en SketchUp / Nomad (.glb/.gltf/.obj).
- * Los modelos se guardan en el navegador y se aplican a todas las instancias.
+ * Ventana de biblioteca: explora cada componente individualmente con una
+ * vista previa 3D y permite sustituirlo por un modelo importado
+ * (.glb/.gltf/.obj) sin cargar un proyecto completo.
  */
 export class LibraryWindow {
   readonly root: HTMLElement;
   private listEl: HTMLElement;
+  private detailEl: HTMLElement;
+  private previewBox: HTMLElement;
   private fileInput: HTMLInputElement;
+  private preview: ComponentPreview | null = null;
   private pendingId: string | null = null;
+  private selectedId: string | null = null;
   private open = false;
+  private defs = new Map<string, ComponentDefinition>();
 
   constructor(private editor: Editor) {
-    this.listEl = el("div", { class: "lib-list" });
+    for (const def of [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY]) this.defs.set(def.id, def);
 
-    this.fileInput = el("input", {
-      type: "file",
-      accept: ".glb,.gltf,.obj",
-    });
+    this.listEl = el("div", { class: "lib-list" });
+    this.previewBox = el("div", { class: "lib-preview" });
+    this.detailEl = el("div", { class: "lib-detail-info" });
+
+    this.fileInput = el("input", { type: "file", accept: ".glb,.gltf,.obj" });
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => void this.onFilePicked());
 
@@ -39,16 +48,18 @@ export class LibraryWindow {
         closeBtn,
       ]),
       el("div", { class: "lib-intro" }, [
-        "Sustituye el dibujo básico de cualquier componente por un modelo 3D " +
-          "(.glb, .gltf u .obj) hecho en SketchUp o Nomad. Se aplica a todas " +
-          "sus piezas y se guarda en este navegador. También puedes colocar los " +
-          "modelos como ficheros en la carpeta public/models/components/ " +
-          "(ver LEEME.md) para sustituirlos sin usar la app.",
+        "Explora cada pieza por separado y sustitúyela por un modelo 3D " +
+          "(.glb, .gltf u .obj) de SketchUp o Nomad. Se aplica a todas sus " +
+          "instancias y se guarda en este navegador. También puedes reemplazar " +
+          "modelos por fichero en public/models/components/ (ver LEEME.md).",
       ]),
-      this.listEl,
+      el("div", { class: "lib-body" }, [
+        this.listEl,
+        el("div", { class: "lib-detail" }, [this.previewBox, this.detailEl]),
+      ]),
       this.fileInput,
     ]);
-    // Cerrar al hacer clic fuera del panel.
+
     this.root = el("div", { class: "lib-overlay", id: "library" }, [panel]);
     this.root.addEventListener("click", (e) => {
       if (e.target === this.root) this.hide();
@@ -56,7 +67,10 @@ export class LibraryWindow {
     this.root.style.display = "none";
 
     this.editor.bus.on("componentModelsChanged", () => {
-      if (this.open) this.renderList();
+      if (this.open) {
+        this.renderList();
+        if (this.selectedId) this.selectComponent(this.selectedId);
+      }
     });
 
     window.addEventListener("keydown", (e) => {
@@ -67,12 +81,17 @@ export class LibraryWindow {
   show(): void {
     this.open = true;
     this.root.style.display = "flex";
+    if (!this.preview) this.preview = new ComponentPreview(this.previewBox);
+    this.preview.start();
     this.renderList();
+    const first = this.selectedId ?? PRIMITIVE_DEFS[0]?.id ?? COMPONENT_LIBRARY[0]?.id;
+    if (first) this.selectComponent(first);
   }
 
   hide(): void {
     this.open = false;
     this.root.style.display = "none";
+    this.preview?.stop(); // libera el bucle de render mientras está oculta
   }
 
   toggle(): void {
@@ -95,46 +114,70 @@ export class LibraryWindow {
 
   private row(def: ComponentDefinition): HTMLElement {
     const has = this.editor.hasComponentModel(def.id);
-    const fileName = this.editor.getComponentModelName(def.id);
-    const source = this.editor.getComponentModelSource(def.id);
-
     const swatch = el("span", { class: "swatch" });
     const accent = CATEGORY_COLORS[def.category];
     swatch.style.background = `#${accent.toString(16).padStart(6, "0")}`;
 
-    let statusText = "Primitiva básica";
-    if (has) {
-      statusText =
-        source === "file" ? `Modelo (archivo): ${fileName}` : `Modelo: ${fileName}`;
-    }
-    const status = el("span", { class: has ? "lib-status on" : "lib-status" }, [statusText]);
+    const dot = el("span", { class: has ? "lib-dot on" : "lib-dot" }, []);
+    const row = el(
+      "button",
+      { class: this.selectedId === def.id ? "lib-row selected" : "lib-row" },
+      [el("div", { class: "lib-info" }, [swatch, el("div", { class: "lib-name" }, [def.label])]), dot],
+    );
+    row.addEventListener("click", () => this.selectComponent(def.id));
+    return row;
+  }
 
-    const replace = el("button", { class: "tool" }, [has ? "Cambiar…" : "Sustituir…"]);
+  private selectComponent(id: string): void {
+    this.selectedId = id;
+    const def = this.defs.get(id);
+    if (!def) return;
+    // Resalta la fila activa.
+    this.listEl.querySelectorAll(".lib-row").forEach((r) => r.classList.remove("selected"));
+    [...this.listEl.querySelectorAll<HTMLButtonElement>(".lib-row")].forEach((r) => {
+      if (r.querySelector(".lib-name")?.textContent === def.label) r.classList.add("selected");
+    });
+
+    // Previsualiza la geometría activa (modelo o primitiva).
+    if (this.preview) {
+      const geo = this.editor.getComponentModelGeometryClone(id) ?? buildGeometry(def.defaults);
+      this.preview.show(geo, buildMaterial(def.materialId));
+    }
+
+    this.renderDetail(def);
+  }
+
+  private renderDetail(def: ComponentDefinition): void {
+    clear(this.detailEl);
+    const has = this.editor.hasComponentModel(def.id);
+    const source = this.editor.getComponentModelSource(def.id);
+    const fileName = this.editor.getComponentModelName(def.id);
+
+    const statusText = has
+      ? source === "file"
+        ? `Modelo de archivo: ${fileName}`
+        : `Modelo personalizado: ${fileName}`
+      : "Primitiva básica (forma generada por defecto)";
+
+    const replace = el("button", { class: "tool" }, [has ? "Cambiar modelo…" : "Sustituir por modelo…"]);
     replace.addEventListener("click", () => {
       this.pendingId = def.id;
       this.fileInput.value = "";
       this.fileInput.click();
     });
-
-    const actions = el("div", { class: "lib-actions" }, [replace]);
-    // Solo se puede "restablecer" un modelo puesto desde la app (usuario). Los
-    // modelos de archivo se gestionan reemplazando el fichero en la carpeta.
+    const actions = el("div", { class: "lib-detail-actions" }, [replace]);
     if (has && source === "user") {
       const reset = el("button", { class: "tool danger" }, ["Restablecer"]);
       reset.addEventListener("click", () => void this.editor.clearComponentModel(def.id));
       actions.append(reset);
     }
 
-    return el("div", { class: "lib-row" }, [
-      el("div", { class: "lib-info" }, [
-        swatch,
-        el("div", {}, [
-          el("div", { class: "lib-name" }, [def.label]),
-          status,
-        ]),
-      ]),
+    this.detailEl.append(
+      el("div", { class: "lib-detail-name" }, [def.label]),
+      el("div", { class: has ? "lib-status on" : "lib-status" }, [statusText]),
+      def.description ? el("div", { class: "lib-desc" }, [def.description]) : el("span"),
       actions,
-    ]);
+    );
   }
 
   private async onFilePicked(): Promise<void> {
