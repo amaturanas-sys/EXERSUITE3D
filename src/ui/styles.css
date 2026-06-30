@@ -383,6 +383,160 @@ select.select:focus {
   font-variant-numeric: tabular-nums;
 }
 
+/* ---- Pantalla de inicio (landing / launcher) ---- */
+.landing {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background:
+    radial-gradient(1200px 700px at 30% -10%, #20242c 0%, transparent 60%),
+    linear-gradient(160deg, #14161b 0%, #0c0d11 100%);
+  color: var(--text);
+  display: flex;
+  align-items: stretch;
+  overflow: auto;
+}
+.land-grid {
+  margin: auto;
+  width: min(1040px, 94vw);
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 28px;
+  padding: 40px 24px;
+}
+.land-main {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+}
+.land-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.land-logo {
+  width: min(440px, 70%);
+  height: auto;
+  object-fit: contain;
+}
+.land-tagline {
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.land-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.land-btn {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.land-btn:hover {
+  border-color: var(--accent-2);
+}
+.land-btn.primary {
+  background: var(--paper);
+  color: var(--on-accent);
+  border-color: var(--paper);
+}
+.land-btn.ghost {
+  background: transparent;
+}
+.land-dedication {
+  margin-top: 6px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-2);
+  border-radius: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #c7cbd2;
+  font-style: italic;
+  max-width: 560px;
+}
+.land-dedication-label {
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.land-dedication p {
+  margin: 0 0 8px;
+}
+.land-dedication p:last-child {
+  margin-bottom: 0;
+}
+.land-aside {
+  background: rgba(20, 22, 27, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.land-aside-title {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.land-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+.land-recent {
+  text-align: left;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.land-recent:hover {
+  border-color: var(--accent-2);
+}
+.land-recent-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.land-recent-date {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.land-empty {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+@media (max-width: 720px) {
+  .land-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Ventana de biblioteca (sustituir componentes por modelos 3D) ---- */
 .lib-overlay {
   position: absolute;

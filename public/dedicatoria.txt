@@ -1,0 +1,5 @@
+Aquí irá tu dedicatoria.
+
+Edita este archivo (public/dedicatoria.txt) con el texto que quieras mostrar en
+la pantalla de inicio de EXERSUITE3D. Se admite texto plano; cada línea en
+blanco separa párrafos.

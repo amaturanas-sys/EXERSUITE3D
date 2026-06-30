@@ -7,6 +7,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Pantalla de inicio (launcher)**: al abrir la app se muestra una landing
+  ligera —sin inicializar WebGL/física hasta elegir acción, para ahorrar
+  recursos— con el logotipo grande y su lettering, botones **Crear nuevo** y
+  **Abrir archivo…**, **Continuar sesión anterior** (autoguardado), una lista de
+  **proyectos recientes** (IndexedDB) y un apartado de **dedicatoria** editable
+  desde `public/dedicatoria.txt`.
+
 ## [0.1.2] — 2026-06-30
 
 ### Añadido

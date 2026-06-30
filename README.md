@@ -94,6 +94,18 @@ El historial de cambios versión a versión está en
 [`CHANGELOG.md`](CHANGELOG.md). El ejecutable de Windows se publica como
 `EXERSUITE3D.exe` (junto al instalador NSIS y el `.msi`).
 
+## Pantalla de inicio
+
+Al abrir la aplicación se muestra una **landing ligera** que **no inicializa el
+motor 3D** (WebGL/física) hasta que eliges una acción, para ahorrar recursos:
+
+- **Crear nuevo proyecto** / **Abrir archivo…** (`.json`) / **Continuar sesión
+  anterior** (autoguardado).
+- **Proyectos recientes**: lista de los proyectos abiertos o guardados
+  (almacenados en IndexedDB del navegador).
+- **Dedicatoria**: texto editable en [`public/dedicatoria.txt`](public/dedicatoria.txt)
+  (se muestra tal cual; las líneas en blanco separan párrafos).
+
 ## Controles del editor
 
 | Acción              | Atajo / interacción                     |

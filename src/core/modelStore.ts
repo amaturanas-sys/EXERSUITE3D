@@ -16,7 +16,9 @@ export interface StoredModel {
 
 const DB_NAME = "exersuite3d";
 const STORE = "componentModels";
-const VERSION = 1;
+// La misma base de datos aloja también "recentProjects" (recentStore.ts); ambos
+// módulos deben usar esta versión y crear los dos object stores en el upgrade.
+const VERSION = 2;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -28,6 +30,9 @@ function open(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: "componentId" });
+      }
+      if (!db.objectStoreNames.contains("recentProjects")) {
+        db.createObjectStore("recentProjects", { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);

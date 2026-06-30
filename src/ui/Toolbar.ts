@@ -1,4 +1,5 @@
 import type { Editor, TransformMode } from "../core/Editor";
+import { addRecent } from "../core/recentStore";
 import { el } from "./dom";
 
 /** Barra superior: modos de transformacion y acciones de escena. */
@@ -220,14 +221,16 @@ export class Toolbar {
   }
 
   private saveProject(): void {
-    const data = JSON.stringify(this.editor.serialize(), null, 2);
-    const blob = new Blob([data], { type: "application/json" });
+    const project = this.editor.serialize();
+    const name = "exersuite3d-proyecto";
+    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "exersuite3d-proyecto.json";
+    a.download = `${name}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    void addRecent(name, project, Date.now()).catch(() => {});
   }
 
   private async onLoadFile(input: HTMLInputElement): Promise<void> {
@@ -236,6 +239,7 @@ export class Toolbar {
     try {
       const data = JSON.parse(await file.text());
       await this.editor.loadProject(data);
+      void addRecent(file.name.replace(/\.[^.]+$/, ""), data, Date.now()).catch(() => {});
     } catch (err) {
       console.error("No se pudo cargar el proyecto:", err);
       window.alert("Archivo de proyecto no válido.");
