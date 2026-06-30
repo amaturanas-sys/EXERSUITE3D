@@ -81,6 +81,10 @@ git tag v0.1.0
 git push origin v0.1.0   # compila y publica la Release con los binarios
 ```
 
+El historial de cambios versión a versión está en
+[`CHANGELOG.md`](CHANGELOG.md). El ejecutable de Windows se publica como
+`EXERSUITE3D.exe` (junto al instalador NSIS y el `.msi`).
+
 ## Controles del editor
 
 | Acción              | Atajo / interacción                     |
