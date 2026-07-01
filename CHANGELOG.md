@@ -9,6 +9,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Exportar/importar la biblioteca en bloque** (ZIP), para mantener el
+  repertorio entre dispositivos. Al importar, un diálogo de fusión clasifica
+  cada modelo entrante frente al local (**Nuevo / Más reciente / Más antiguo /
+  Sin cambios**) usando marcas de tiempo: por defecto aplica los nuevos y los
+  más recientes, y **no** sobrescribe tus ediciones con versiones más antiguas
+  ni con modelos por defecto (los que no cambiaron no viajan en el ZIP). El
+  usuario marca/desmarca qué aplicar.
 - **Opciones de rendimiento** (botón **Rendimiento** en el editor): presets
   Alto/Medio/Bajo y ajustes finos de resolución de render, sombras, reflejos de
   entorno y antialias, para diseñar con fluidez en equipos o tablets con poca

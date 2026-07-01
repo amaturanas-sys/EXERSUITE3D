@@ -12,6 +12,8 @@ export interface StoredModel {
   fileName: string;
   ext: string;
   bytes: ArrayBuffer;
+  /** Marca de tiempo de la última edición (ms), para resolver conflictos. */
+  updatedAt: number;
 }
 
 const DB_NAME = "exersuite3d";

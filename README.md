@@ -202,6 +202,12 @@ fichero: coloca tu `.glb/.gltf/.obj` en
 los modelos puestos desde la Biblioteca tienen prioridad. Ver
 [`public/models/components/LEEME.md`](public/models/components/LEEME.md).
 
+Para **mantener el repertorio entre dispositivos**, la biblioteca (en la Home)
+permite **Exportar ZIP** (todos los modelos con su fecha) e **Importar ZIP**: al
+importar, un diálogo compara cada modelo entrante con el local y lo clasifica
+(nuevo / más reciente / más antiguo / sin cambios); por defecto aplica los nuevos
+y los más recientes y no sobrescribe tus ediciones con versiones más antiguas.
+
 El diseño de los componentes, mecanismos, paletas de color y cinemática se
 documenta en [`docs/REFERENCIAS.md`](docs/REFERENCIAS.md), una síntesis de
 referencias de REP, Rogue, Titan, Hammer Strength, Cybex y Obelix.

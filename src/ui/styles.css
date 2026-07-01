@@ -561,6 +561,81 @@ select.select:focus {
   }
 }
 
+/* ---- Exportar/importar biblioteca (fusión) ---- */
+.lib-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.merge-dialog {
+  width: min(620px, 94vw);
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+}
+.merge-summary {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.merge-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.merge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  cursor: pointer;
+}
+.merge-main {
+  flex: 1;
+  min-width: 0;
+}
+.merge-name {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.merge-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.merge-badge {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.merge-badge.newer {
+  color: #34d399;
+  border-color: #34d39955;
+}
+.merge-badge.new {
+  color: #60a5fa;
+  border-color: #60a5fa55;
+}
+.merge-badge.older {
+  color: #f59e0b;
+  border-color: #f59e0b55;
+}
+.merge-badge.unknown {
+  color: #ef4444;
+  border-color: #ef444455;
+}
+
 /* ---- Biblioteca como vista de Home (pantalla completa) ---- */
 .lib-view-overlay {
   align-items: center;

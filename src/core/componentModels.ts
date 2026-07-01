@@ -1,7 +1,22 @@
 import * as THREE from "three";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { getDefinition } from "../objects/componentLibrary";
 import { deleteModel, getAllModels, putModel } from "./modelStore";
 import { bakeComponentGeometry, loadModelRoot } from "./modelLoading";
+
+/** Estado de un modelo entrante respecto al local, al importar un comprimido. */
+export type ImportStatus = "new" | "newer" | "older" | "unchanged" | "unknown";
+
+export interface ImportEntry {
+  componentId: string;
+  label: string;
+  fileName: string;
+  ext: string;
+  bytes: Uint8Array;
+  updatedAt: number;
+  localUpdatedAt: number | null;
+  status: ImportStatus;
+}
 
 /**
  * Gestor de modelos 3D por componente, independiente del editor y del renderer.
@@ -64,13 +79,23 @@ class ComponentModelManager {
     return bakeComponentGeometry(await loadModelRoot(bytes, ext));
   }
 
+  /** Hornea, activa y persiste un modelo de usuario con su marca de tiempo. */
+  private async store(
+    componentId: string,
+    fileName: string,
+    ext: string,
+    bytes: ArrayBuffer,
+    updatedAt: number,
+  ): Promise<void> {
+    const geo = await this.bake(bytes, ext);
+    this.setActive(componentId, geo, fileName, "user");
+    await putModel({ componentId, fileName, ext, bytes, updatedAt });
+  }
+
   /** Asigna un modelo de usuario a un componente (persistente) y notifica. */
   async setUserModel(componentId: string, file: File): Promise<void> {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    const bytes = await file.arrayBuffer();
-    const geo = await this.bake(bytes, ext);
-    this.setActive(componentId, geo, file.name, "user");
-    await putModel({ componentId, fileName: file.name, ext, bytes });
+    await this.store(componentId, file.name, ext, await file.arrayBuffer(), Date.now());
     this.emit();
   }
 
@@ -151,6 +176,98 @@ class ComponentModelManager {
     }
     if (this.models.size) this.emit();
   }
+
+  // ------------------------------------------------- exportar / importar bulk
+  /** Empaqueta todos los modelos de usuario en un ZIP (con marcas de tiempo). */
+  async exportZip(): Promise<Uint8Array> {
+    const stored = await getAllModels();
+    const files: Record<string, Uint8Array> = {};
+    const manifest: {
+      version: number;
+      exportedAt: number;
+      models: Record<string, { fileName: string; ext: string; updatedAt: number; path: string }>;
+    } = { version: 1, exportedAt: Date.now(), models: {} };
+
+    for (const m of stored) {
+      const path = `models/${m.componentId}.${m.ext}`;
+      files[path] = new Uint8Array(m.bytes);
+      manifest.models[m.componentId] = {
+        fileName: m.fileName,
+        ext: m.ext,
+        updatedAt: m.updatedAt ?? 0,
+        path,
+      };
+    }
+    files["manifest.json"] = strToU8(JSON.stringify(manifest, null, 2));
+    return zipSync(files, { level: 6 });
+  }
+
+  /**
+   * Analiza un ZIP entrante sin aplicarlo: compara cada modelo con el local y
+   * clasifica su estado (nuevo, más reciente, más antiguo, sin cambios).
+   */
+  async analyzeImport(zipBytes: ArrayBuffer): Promise<ImportEntry[]> {
+    const files = unzipSync(new Uint8Array(zipBytes));
+    const manifestRaw = files["manifest.json"];
+    if (!manifestRaw) throw new Error("El comprimido no contiene manifest.json.");
+    const manifest = JSON.parse(strFromU8(manifestRaw)) as {
+      models: Record<string, { fileName: string; ext: string; updatedAt: number; path: string }>;
+    };
+
+    const localList = await getAllModels().catch(() => []);
+    const local = new Map(localList.map((m) => [m.componentId, m]));
+
+    const entries: ImportEntry[] = [];
+    for (const [componentId, meta] of Object.entries(manifest.models ?? {})) {
+      const bytes = files[meta.path];
+      if (!bytes) continue;
+      const def = getDefinition(componentId);
+      const loc = local.get(componentId);
+      let status: ImportStatus;
+      if (!def) status = "unknown";
+      else if (!loc) status = "new";
+      else if (hashU8(bytes) === hashU8(new Uint8Array(loc.bytes))) status = "unchanged";
+      else status = (meta.updatedAt ?? 0) > (loc.updatedAt ?? 0) ? "newer" : "older";
+
+      entries.push({
+        componentId,
+        label: def?.label ?? componentId,
+        fileName: meta.fileName,
+        ext: meta.ext,
+        bytes,
+        updatedAt: meta.updatedAt ?? 0,
+        localUpdatedAt: loc?.updatedAt ?? null,
+        status,
+      });
+    }
+    // Orden: primero los que requieren decisión.
+    const rank: Record<ImportStatus, number> = { newer: 0, new: 1, older: 2, unchanged: 3, unknown: 4 };
+    entries.sort((a, b) => rank[a.status] - rank[b.status] || a.label.localeCompare(b.label));
+    return entries;
+  }
+
+  /** Aplica los modelos seleccionados de un análisis previo (conserva su fecha). */
+  async applyImport(selected: ImportEntry[]): Promise<void> {
+    for (const e of selected) {
+      if (e.status === "unknown") continue;
+      try {
+        await this.store(e.componentId, e.fileName, e.ext, e.bytes.slice().buffer, e.updatedAt);
+      } catch (err) {
+        console.warn(`No se pudo importar el modelo de "${e.componentId}":`, err);
+      }
+    }
+    if (selected.length) this.emit();
+  }
+}
+
+/** Hash rápido no criptográfico (FNV-1a 32 bits) para detectar cambios. */
+function hashU8(u8: Uint8Array): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < u8.length; i++) {
+    h ^= u8[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
 }
 
 /** Singleton compartido. */
