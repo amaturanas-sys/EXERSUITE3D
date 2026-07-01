@@ -6,20 +6,33 @@ import {
   PRIMITIVE_DEFS,
 } from "../objects/componentLibrary";
 import type { ComponentDefinition } from "../objects/types";
+import { componentModels } from "../core/componentModels";
 import { clear, el } from "./dom";
 
-/** Panel izquierdo: paleta de componentes agrupados por categoria. */
+/**
+ * Panel izquierdo: bandeja de "piezas disponibles" (estilo set de Lego). Cada
+ * pieza se coloca en el diseño con el modelo 3D que le haya asignado la
+ * biblioteca (que se edita en un entorno aparte, desde la Home).
+ */
 export class ComponentPalette {
   readonly root: HTMLElement;
+  private body: HTMLElement;
+  private unsub: () => void;
 
   constructor(private editor: Editor) {
-    const body = el("div", { class: "panel-body" });
-    this.renderGroups(body);
+    this.body = el("div", { class: "panel-body" });
+    this.renderGroups(this.body);
     this.root = el("aside", { class: "panel", id: "palette" }, [
       this.brandHeader(),
-      el("div", { class: "panel-title" }, ["Componentes"]),
-      body,
+      el("div", { class: "panel-title" }, ["Piezas disponibles"]),
+      this.body,
     ]);
+    // Refresca los indicadores cuando cambia el repertorio de la biblioteca.
+    this.unsub = componentModels.onChanged(() => this.renderGroups(this.body));
+  }
+
+  dispose(): void {
+    this.unsub();
   }
 
   /** Cabecera de marca EXERSUITE3D en la parte superior de la paleta. */
@@ -56,11 +69,14 @@ export class ComponentPalette {
     const swatch = el("span", { class: "swatch" });
     const accent = CATEGORY_COLORS[def.category];
     swatch.style.background = `#${accent.toString(16).padStart(6, "0")}`;
-    const btn = el(
-      "button",
-      { class: "comp-btn", title: def.description },
-      [swatch, def.label],
-    );
+    // Marca las piezas con modelo 3D propio (asignado en la biblioteca).
+    const modeled = componentModels.has(def.id);
+    const title = modeled
+      ? `${def.description} · con modelo 3D de la biblioteca`
+      : def.description;
+    const children: (Node | string)[] = [swatch, def.label];
+    if (modeled) children.push(el("span", { class: "comp-modeled", title: "Modelo 3D" }, []));
+    const btn = el("button", { class: "comp-btn", title }, children);
     btn.addEventListener("click", () => this.editor.addComponent(def.id));
     return btn;
   }

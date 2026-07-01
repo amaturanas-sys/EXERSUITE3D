@@ -19,6 +19,7 @@ const app = document.getElementById("app")!;
 
 let editor: Editor | null = null;
 let editorNodes: HTMLElement[] = [];
+let editorDisposables: Array<() => void> = [];
 let landing: Landing | null = null;
 let libraryView: LibraryView | null = null;
 
@@ -60,6 +61,7 @@ function bootEditor(): Editor {
   credit.style.display = "none";
 
   editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, perfPanel.root];
+  editorDisposables = [() => palette.dispose()];
   app.append(...editorNodes);
 
   ed.bus.on("humanFigureChanged", ({ present, mode }) => {
@@ -138,6 +140,8 @@ async function goHome(): Promise<void> {
     }
     editor.dispose();
     editor = null;
+    for (const d of editorDisposables) d();
+    editorDisposables = [];
     for (const n of editorNodes) n.remove();
     editorNodes = [];
   }
@@ -193,5 +197,9 @@ function showLanding(): void {
   });
   app.append(landing.root);
 }
+
+// Expuesto para depuración en consola.
+(window as unknown as { exersuiteModels: typeof componentModels }).exersuiteModels =
+  componentModels;
 
 showLanding();

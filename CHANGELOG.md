@@ -23,7 +23,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 - La **biblioteca de repertorio** ahora es una vista de la **Home** que muestra
   solo el ítem seleccionado en un visor 3D, sin ejecutar el entorno de diseño
   completo en segundo plano (menor consumo de recursos). El botón de biblioteca
-  se retira del editor; se accede desde la pantalla de inicio.
+  se retira del editor; se accede desde la pantalla de inicio. Toda la
+  previsualización y el reemplazo de modelos ocurren en ese entorno separado.
+- La paleta del editor pasa a ser una **bandeja de "piezas disponibles"** (estilo
+  set de Lego): cada pieza se coloca en el diseño con el modelo 3D que le haya
+  asignado la biblioteca, y se marca con un punto las que tienen modelo propio.
+  Los modelos se comparten entre todos los proyectos (gestor único).
 
 ## [0.1.3] — 2026-06-30
 
