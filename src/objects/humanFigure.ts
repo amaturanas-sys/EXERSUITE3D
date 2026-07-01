@@ -43,31 +43,59 @@ function mat(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color: 0x2f7dd1, metalness: 0.0, roughness: 0.6 });
 }
 
-export function buildHumanFigure(heightCm: number): THREE.Group {
+/** Segmentos reemplazables del maniquí (para modelos más estéticos). */
+export interface SegmentDef {
+  id: string;
+  label: string;
+}
+
+export const SEGMENT_DEFS: SegmentDef[] = [
+  { id: "cabeza", label: "Cabeza" },
+  { id: "cuello", label: "Cuello" },
+  { id: "torso", label: "Torso" },
+  { id: "pelvis", label: "Pelvis" },
+  { id: "brazo-sup-L", label: "Brazo superior izq." },
+  { id: "brazo-sup-R", label: "Brazo superior der." },
+  { id: "antebrazo-L", label: "Antebrazo izq." },
+  { id: "antebrazo-R", label: "Antebrazo der." },
+  { id: "mano-L", label: "Mano izq." },
+  { id: "mano-R", label: "Mano der." },
+  { id: "muslo-L", label: "Muslo izq." },
+  { id: "muslo-R", label: "Muslo der." },
+  { id: "pierna-L", label: "Pierna izq." },
+  { id: "pierna-R", label: "Pierna der." },
+  { id: "pie-L", label: "Pie izq." },
+  { id: "pie-R", label: "Pie der." },
+];
+
+/** Proveedor de geometría de segmento (modelo baked: cm, centrado en origen). */
+export type SegmentProvider = (segmentId: string) => THREE.BufferGeometry | null;
+
+export function buildHumanFigure(
+  heightCm: number,
+  segments?: SegmentProvider,
+): THREE.Group {
   const H = heightCm;
   const joints: Record<string, THREE.Object3D> = {};
 
-  const cyl = (len: number, r: number, jointName: string) => {
+  const tag = (m: THREE.Mesh, jointName: string, segmentId: string) => {
+    m.castShadow = true;
+    m.userData.humanFigurePart = true;
+    m.userData.jointName = jointName;
+    m.userData.segmentId = segmentId;
+    return m;
+  };
+
+  const cyl = (len: number, r: number, jointName: string, segmentId: string) => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 14), mat());
     m.position.y = -len / 2;
-    m.castShadow = true;
-    m.userData.humanFigurePart = true;
-    m.userData.jointName = jointName;
-    return m;
+    return tag(m, jointName, segmentId);
   };
-  const box = (w: number, h: number, d: number, jointName: string) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat());
-    m.castShadow = true;
-    m.userData.humanFigurePart = true;
-    m.userData.jointName = jointName;
-    return m;
+  const box = (w: number, h: number, d: number, jointName: string, segmentId: string) => {
+    return tag(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat()), jointName, segmentId);
   };
-  const ball = (r: number, jointName: string) => {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mat());
-    m.castShadow = true;
-    m.userData.humanFigurePart = true;
-    m.userData.jointName = jointName;
-    return m;
+  const ball = (r: number, jointName: string, segmentId: string) => {
+    return tag(new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mat()), jointName, segmentId);
   };
   const pivot = (name: string, parent: THREE.Object3D, x: number, y: number, z: number) => {
     const g = new THREE.Group();
@@ -80,32 +108,32 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   const root = new THREE.Group();
 
   // Pelvis (raiz). jointName "" = mover toda la figura.
-  const pelvis = box(0.2 * H, 0.1 * H, 0.13 * H, "");
+  const pelvis = box(0.2 * H, 0.1 * H, 0.13 * H, "", "pelvis");
   root.add(pelvis);
 
   // Columna -> torso, cuello, cabeza
   const spine = pivot("spine", root, 0, 0.05 * H, 0);
-  const chest = box(0.24 * H, 0.3 * H, 0.15 * H, "spine");
+  const chest = box(0.24 * H, 0.3 * H, 0.15 * H, "spine", "torso");
   chest.position.y = 0.15 * H;
   spine.add(chest);
 
   const neck = pivot("neck", spine, 0, 0.3 * H, 0);
-  const neckMesh = cyl(0.05 * H, 0.035 * H, "neck");
+  const neckMesh = cyl(0.05 * H, 0.035 * H, "neck", "cuello");
   neckMesh.position.y = 0.025 * H;
   neck.add(neckMesh);
-  const head = ball(0.066 * H, "neck");
+  const head = ball(0.066 * H, "neck", "cabeza");
   head.position.y = 0.05 * H + 0.066 * H;
   neck.add(head);
 
   // Brazos
   const buildArm = (side: "L" | "R", sx: number) => {
     const sh = pivot(`shoulder${side}`, spine, sx, 0.27 * H, 0);
-    sh.add(cyl(0.16 * H, 0.035 * H, `shoulder${side}`));
+    sh.add(cyl(0.16 * H, 0.035 * H, `shoulder${side}`, `brazo-sup-${side}`));
     const el = pivot(`elbow${side}`, sh, 0, -0.16 * H, 0);
-    el.add(cyl(0.15 * H, 0.03 * H, `elbow${side}`));
+    el.add(cyl(0.15 * H, 0.03 * H, `elbow${side}`, `antebrazo-${side}`));
     // Muneca = efector final de la IK; la mano cuelga de ella.
     const wrist = pivot(`wrist${side}`, el, 0, -0.15 * H, 0);
-    const hand = ball(0.035 * H, `elbow${side}`);
+    const hand = ball(0.035 * H, `elbow${side}`, `mano-${side}`);
     hand.position.y = -0.02 * H;
     wrist.add(hand);
   };
@@ -115,16 +143,19 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   // Piernas
   const buildLeg = (side: "L" | "R", sx: number) => {
     const hip = pivot(`hip${side}`, root, sx, -0.05 * H, 0);
-    hip.add(cyl(0.23 * H, 0.05 * H, `hip${side}`));
+    hip.add(cyl(0.23 * H, 0.05 * H, `hip${side}`, `muslo-${side}`));
     const knee = pivot(`knee${side}`, hip, 0, -0.23 * H, 0);
-    knee.add(cyl(0.23 * H, 0.04 * H, `knee${side}`));
+    knee.add(cyl(0.23 * H, 0.04 * H, `knee${side}`, `pierna-${side}`));
     const ankle = pivot(`ankle${side}`, knee, 0, -0.23 * H, 0);
-    const foot = box(0.07 * H, 0.04 * H, 0.16 * H, `ankle${side}`);
+    const foot = box(0.07 * H, 0.04 * H, 0.16 * H, `ankle${side}`, `pie-${side}`);
     foot.position.set(0, -0.02 * H, 0.05 * H);
     ankle.add(foot);
   };
   buildLeg("L", -0.06 * H);
   buildLeg("R", 0.06 * H);
+
+  // Sustituye las primitivas por los modelos de segmento (ajustados a su hueco).
+  if (segments) applySegmentOverrides(root, segments);
 
   // Escala el rig a la altura exacta solicitada y apoya los pies en y=0.
   root.updateMatrixWorld(true);
@@ -148,6 +179,57 @@ export function buildHumanFigure(heightCm: number): THREE.Group {
   root.userData.joints = joints;
   root.userData.ground = ground;
   return root;
+}
+
+/**
+ * Sustituye la geometría de cada segmento que tenga un modelo asignado,
+ * ajustándolo al hueco de la primitiva original: escala uniforme para igualar la
+ * dimensión más larga y lo centra donde estaba la parte. La malla conserva su
+ * material (color de referencia) y su lugar en la jerarquía articulada.
+ */
+function applySegmentOverrides(root: THREE.Group, provider: SegmentProvider): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    const id = m.userData?.segmentId as string | undefined;
+    if (!m.isMesh || !id) return;
+    const geo = provider(id);
+    if (geo) fitSegmentGeometry(m, geo);
+  });
+}
+
+function fitSegmentGeometry(mesh: THREE.Mesh, geo: THREE.BufferGeometry): void {
+  mesh.geometry.computeBoundingBox();
+  const os = new THREE.Vector3();
+  mesh.geometry.boundingBox!.getSize(os);
+  const origLongest = Math.max(os.x, os.y, os.z);
+
+  geo.computeBoundingBox();
+  const cs = new THREE.Vector3();
+  geo.boundingBox!.getSize(cs);
+  const custLongest = Math.max(cs.x, cs.y, cs.z) || 1;
+
+  const s = origLongest / custLongest;
+  geo.applyMatrix4(new THREE.Matrix4().makeScale(s, s, s));
+  // Centra el modelo donde estaba el centro de la primitiva (mesh.position, ya
+  // que las primitivas están centradas en su origen local).
+  geo.computeBoundingBox();
+  const cc = new THREE.Vector3();
+  geo.boundingBox!.getCenter(cc);
+  geo.applyMatrix4(
+    new THREE.Matrix4().makeTranslation(
+      mesh.position.x - cc.x,
+      mesh.position.y - cc.y,
+      mesh.position.z - cc.z,
+    ),
+  );
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+
+  mesh.geometry.dispose();
+  mesh.geometry = geo;
+  mesh.position.set(0, 0, 0);
+  mesh.rotation.set(0, 0, 0);
+  mesh.scale.set(1, 1, 1);
 }
 
 /** Libera la geometria de la figura. */

@@ -9,6 +9,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Reemplazo de segmentos del maniquí**: en la biblioteca (pestaña **Maniquí**)
+  se puede sustituir cada parte del cuerpo (cabeza, torso, brazos, antebrazos,
+  manos, muslos, piernas, pies…) por un modelo 3D más estético. El modelo se
+  ajusta automáticamente al hueco de la parte (igualando su dimensión más larga
+  y centrándolo), conserva la articulación y se guarda en el navegador; el
+  maniquí se reconstruye al cambiarlo. La biblioteca queda en dos pestañas:
+  **Componentes** y **Maniquí**.
 - **Posado dinámico del maniquí por eje articular**: al seleccionar un segmento,
   el gizmo se coloca en la articulación y solo muestra los **ejes naturales** de
   esa articulación (bisagra en codo/rodilla = 1 eje; esférica en hombro/cadera =

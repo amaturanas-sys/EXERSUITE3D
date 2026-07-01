@@ -12,6 +12,7 @@ import { Landing } from "./ui/Landing";
 import { LibraryView } from "./ui/LibraryView";
 import { confirmUnsavedChanges } from "./ui/confirmDialog";
 import { componentModels } from "./core/componentModels";
+import { figureSegments } from "./core/figureSegments";
 import { addRecent } from "./core/recentStore";
 import type { ProjectData } from "./core/project";
 
@@ -79,7 +80,9 @@ function bootEditor(): Editor {
 }
 
 function ensureModels(): Promise<void> {
-  return componentModels.ensureLoaded();
+  return Promise.all([componentModels.ensureLoaded(), figureSegments.ensureLoaded()]).then(
+    () => undefined,
+  );
 }
 
 async function startNew(): Promise<void> {
@@ -199,7 +202,11 @@ function showLanding(): void {
 }
 
 // Expuesto para depuración en consola.
-(window as unknown as { exersuiteModels: typeof componentModels }).exersuiteModels =
-  componentModels;
+(window as unknown as {
+  exersuiteModels: typeof componentModels;
+  exersuiteSegments: typeof figureSegments;
+}).exersuiteModels = componentModels;
+(window as unknown as { exersuiteSegments: typeof figureSegments }).exersuiteSegments =
+  figureSegments;
 
 showLanding();

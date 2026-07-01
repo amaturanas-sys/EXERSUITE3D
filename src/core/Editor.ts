@@ -28,6 +28,7 @@ import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData } from "./project";
 import { componentModels } from "./componentModels";
+import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
 import { EventBus } from "./eventBus";
 
@@ -140,8 +141,9 @@ export class Editor {
 
   // Cambios sin guardar (para sugerir guardar al volver a la Home).
   private dirty = false;
-  // Baja de la suscripción al repertorio de modelos.
+  // Bajas de las suscripciones a los repertorios (modelos y segmentos).
   private unsubModels: (() => void) | null = null;
+  private unsubSegments: (() => void) | null = null;
 
   // Autoguardado en el navegador (localStorage).
   private static readonly AUTOSAVE_KEY = "exersuite.autosave.v1";
@@ -202,6 +204,10 @@ export class Editor {
 
     // Reaplica los modelos del repertorio a las piezas si cambian.
     this.unsubModels = componentModels.onChanged(() => this.onComponentModelsChanged());
+    // Reconstruye el maniquí si cambian los modelos de sus segmentos.
+    this.unsubSegments = figureSegments.onChanged(() => {
+      if (this.humanFigure && this.humanMode === "mannequin") void this.addHumanFigure(this.humanHeight);
+    });
 
     this.setupAutosave();
   }
@@ -667,6 +673,7 @@ export class Editor {
     window.removeEventListener("keydown", this.onKeyDown);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.unsubModels?.();
+    this.unsubSegments?.();
     this.gizmo.detach();
     // En three r0.169 TransformControls.dispose() puede fallar (el helper visual
     // está separado del control); no debe abortar la limpieza.
@@ -1057,10 +1064,10 @@ export class Editor {
       } catch (err) {
         console.error("No se pudo cargar el esqueleto:", err);
         this.humanMode = "mannequin";
-        figure = buildHumanFigure(heightCm);
+        figure = buildHumanFigure(heightCm, figureSegments.provider);
       }
     } else {
-      figure = buildHumanFigure(heightCm);
+      figure = buildHumanFigure(heightCm, figureSegments.provider);
     }
 
     // El usuario pudo quitar/cambiar la figura mientras cargaba.

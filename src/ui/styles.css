@@ -639,6 +639,29 @@ select.select:focus {
   border-color: #ef444455;
 }
 
+/* ---- Pestañas de la biblioteca ---- */
+.lib-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px 0;
+}
+.lib-tab {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lib-tab.active {
+  background: var(--panel-2);
+  color: var(--text);
+  border-color: var(--accent-2);
+}
+
 /* ---- Biblioteca como vista de Home (pantalla completa) ---- */
 .lib-view-overlay {
   align-items: center;

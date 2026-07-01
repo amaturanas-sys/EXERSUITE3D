@@ -143,6 +143,7 @@ tablets con poca potencia.
 | Modelado avanzado   | Inspector → **Doblar °**, **Torcer °** (todas) y **Bisel cm** (cajas) |
 | Ángulo de articulación | Selecciona un miembro del maniquí → campos **X/Y/Z (grados)** en el panel Posturas |
 | Figura humana       | Botón **Figura**; tipo **Maniquí / Esqueleto** y altura en cm |
+| Segmentos del maniquí | Biblioteca (Home) → pestaña **Maniquí**: sustituye cada parte del cuerpo por un modelo 3D (se ajusta al hueco de la parte) |
 | Posar figura        | Clic en un miembro del maniquí → arrastrar el eje articular gira el segmento en torno a la articulación, solo en sus **ejes naturales** y dentro de rangos anatómicos |
 | Editar/crear postura | Posa a mano y **Actualizar** (sobrescribe) o **Guardar como…** (nueva); editables y persistentes |
 | Apoyar mano (IK)    | Panel Posturas → **Apoyar mano** → clic en una mano y luego en un agarre; la mano se fija y lo sigue |
