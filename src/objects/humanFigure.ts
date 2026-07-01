@@ -13,6 +13,32 @@ import * as THREE from "three";
 
 export const DEFAULT_HUMAN_HEIGHT = 175;
 
+/**
+ * Grados de libertad naturales de cada articulación (ejes rotables y sus
+ * límites en grados). Las bisagras (codo/rodilla) solo giran en X; las esféricas
+ * (hombro/cadera) en los tres ejes; muñeca/tobillo en X y Z. Sirve para que al
+ * posar el maniquí cada segmento gire siguiendo el eje natural de su articulación
+ * y dentro de un rango realista.
+ */
+export type AxisLimits = { x?: [number, number]; y?: [number, number]; z?: [number, number] };
+
+export const JOINT_DOF: Record<string, AxisLimits> = {
+  spine: { x: [-30, 80], y: [-40, 40], z: [-35, 35] },
+  neck: { x: [-50, 55], y: [-70, 70], z: [-40, 40] },
+  shoulderL: { x: [-180, 60], y: [-90, 90], z: [-30, 150] },
+  shoulderR: { x: [-180, 60], y: [-90, 90], z: [-150, 30] },
+  elbowL: { x: [-15, 150] },
+  elbowR: { x: [-15, 150] },
+  wristL: { x: [-70, 70], z: [-25, 25] },
+  wristR: { x: [-70, 70], z: [-25, 25] },
+  hipL: { x: [-135, 30], y: [-45, 45], z: [-45, 20] },
+  hipR: { x: [-135, 30], y: [-45, 45], z: [-20, 45] },
+  kneeL: { x: [-5, 150] },
+  kneeR: { x: [-5, 150] },
+  ankleL: { x: [-45, 45], z: [-25, 25] },
+  ankleR: { x: [-45, 45], z: [-25, 25] },
+};
+
 function mat(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color: 0x2f7dd1, metalness: 0.0, roughness: 0.6 });
 }

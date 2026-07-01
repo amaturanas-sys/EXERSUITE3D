@@ -328,6 +328,9 @@ body.simulating #palette {
 .row .sub {
   flex: 1;
 }
+.row .sub.axis-off {
+  opacity: 0.35;
+}
 .row .sub label {
   display: block;
   font-size: 10px;

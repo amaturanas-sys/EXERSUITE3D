@@ -92,9 +92,15 @@ export class PosePanel {
       if (name) {
         this.jointBox.style.display = "block";
         this.jointLabel.textContent = `Articulación: ${name} (grados)`;
-        this.jointInputs.x.value = String(angles[0]);
-        this.jointInputs.y.value = String(angles[1]);
-        this.jointInputs.z.value = String(angles[2]);
+        // Solo los ejes naturales de la articulación quedan editables.
+        const axes = this.editor.getSelectedJointAxes();
+        const idx = { x: 0, y: 1, z: 2 } as const;
+        for (const ax of ["x", "y", "z"] as const) {
+          const input = this.jointInputs[ax];
+          input.value = String(angles[idx[ax]]);
+          input.disabled = !axes[ax];
+          input.closest(".sub")?.classList.toggle("axis-off", !axes[ax]);
+        }
       } else {
         this.jointBox.style.display = "none";
       }

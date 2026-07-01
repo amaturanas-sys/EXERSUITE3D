@@ -11,6 +11,7 @@ import { Cable, type CableNode } from "../physics/cables";
 import { SnapManager, localSnapPoints } from "./snapping";
 import {
   DEFAULT_HUMAN_HEIGHT,
+  JOINT_DOF,
   buildHumanFigure,
   disposeHumanFigure,
 } from "../objects/humanFigure";
@@ -171,6 +172,13 @@ export class Editor {
       this.scheduleAutosave();
       if (this.selectedGroupId) {
         this.applyGroupDelta();
+        return;
+      }
+      // Posando el maniquí: al arrastrar el eje articular gira el segmento en
+      // torno a la articulación, limitado a su eje/rango natural.
+      if (this.selectedFigure && this.selectedJointName) {
+        this.clampSelectedJoint();
+        this.emitJointSelection();
         return;
       }
       if (!this.selected) return;
@@ -770,6 +778,7 @@ export class Editor {
     this.selectedGroupId = null;
     this.clearMultiSel();
     this.selectedJointName = null;
+    this.resetGizmoAxes();
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
     this.bus.emit("selectionChanged", { selected: obj });
@@ -920,6 +929,7 @@ export class Editor {
     this.groupPrev.copy(this.groupProxy.matrixWorld);
 
     this.selectedJointName = null;
+    this.resetGizmoAxes();
     this.gizmo.attach(this.groupProxy);
     this.setMode("translate");
     this.bus.emit("selectionChanged", { selected: null });
@@ -1125,8 +1135,41 @@ export class Editor {
     this.selectedFigure = true;
     this.selectedJointName = name;
     this.gizmo.attach(joints[name]);
+    // Posar sobre los ejes locales de la articulación y solo los naturales.
+    this.gizmo.setSpace("local");
+    const dof = JOINT_DOF[name] ?? { x: undefined, y: undefined, z: undefined };
+    this.gizmo.showX = dof.x !== undefined;
+    this.gizmo.showY = dof.y !== undefined;
+    this.gizmo.showZ = dof.z !== undefined;
     this.setMode("rotate"); // posar = rotar la articulacion
     this.emitJointSelection();
+  }
+
+  /** Restaura los tres ejes del gizmo (para piezas/grupos/figura completa). */
+  private resetGizmoAxes(): void {
+    this.gizmo.showX = true;
+    this.gizmo.showY = true;
+    this.gizmo.showZ = true;
+  }
+
+  /** Limita la articulación seleccionada a su eje/rango natural. */
+  private clampSelectedJoint(): void {
+    const joints = this.figureJoints();
+    const jn = this.selectedJointName;
+    if (!joints || !jn || !joints[jn]) return;
+    const dof = JOINT_DOF[jn];
+    if (!dof) return;
+    const j = joints[jn];
+    for (const ax of ["x", "y", "z"] as const) {
+      const lim = dof[ax];
+      if (!lim) {
+        j.rotation[ax] = 0; // eje no natural: bloqueado
+      } else {
+        const deg = radToDeg(j.rotation[ax]);
+        j.rotation[ax] = degToRad(Math.max(lim[0], Math.min(lim[1], deg)));
+      }
+    }
+    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
   }
 
   private emitJointSelection(): void {
@@ -1155,9 +1198,19 @@ export class Editor {
     const joints = this.figureJoints();
     const jn = this.selectedJointName;
     if (!joints || !jn || !joints[jn]) return;
-    joints[jn].rotation[axis] = degToRad(deg);
+    // Respeta el rango natural del eje (y bloquea los ejes no articulables).
+    const lim = JOINT_DOF[jn]?.[axis];
+    const value = lim ? Math.max(lim[0], Math.min(lim[1], deg)) : 0;
+    joints[jn].rotation[axis] = degToRad(value);
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.emitJointSelection();
     this.scheduleAutosave();
+  }
+
+  /** Ejes rotables (naturales) de la articulación seleccionada. */
+  getSelectedJointAxes(): { x: boolean; y: boolean; z: boolean } {
+    const dof = (this.selectedJointName && JOINT_DOF[this.selectedJointName]) || {};
+    return { x: dof.x !== undefined, y: dof.y !== undefined, z: dof.z !== undefined };
   }
 
   /** Selecciona la figura entera para moverla/rotarla. */
@@ -1165,6 +1218,8 @@ export class Editor {
     if (!this.humanFigure) return;
     this.select(null);
     this.selectedFigure = true;
+    this.selectedJointName = null;
+    this.resetGizmoAxes();
     this.gizmo.attach(this.humanFigure);
     this.setMode("translate");
   }

@@ -9,6 +9,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Posado dinámico del maniquí por eje articular**: al seleccionar un segmento,
+  el gizmo se coloca en la articulación y solo muestra los **ejes naturales** de
+  esa articulación (bisagra en codo/rodilla = 1 eje; esférica en hombro/cadera =
+  3 ejes; muñeca/tobillo = 2). Arrastrar el eje gira el segmento completo en
+  torno a la articulación, dentro de **rangos anatómicos** (se limitan los
+  ángulos y se bloquean los ejes no naturales, también en el editor numérico).
 - **Exportar/importar la biblioteca en bloque** (ZIP), para mantener el
   repertorio entre dispositivos. Al importar, un diálogo de fusión clasifica
   cada modelo entrante frente al local (**Nuevo / Más reciente / Más antiguo /
