@@ -10,6 +10,12 @@ import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { SnapManager, localSnapPoints } from "./snapping";
+
+/**
+ * Únicas piezas sobre las que un cable puede DESLIZARSE (superficies de reenvío):
+ * ruedas acanaladas. Un nodo intermedio de un cable debe ser una de estas.
+ */
+const PULLEY_IDS = new Set(["polea", "roldana", "bloque-poleas"]);
 import {
   DEFAULT_HUMAN_HEIGHT,
   JOINT_DOF,
@@ -53,8 +59,8 @@ export type EditorEvents = {
   connectModeChanged: { kind: JointKind | null; pending: boolean };
   /** Cambio en la lista de cables. */
   cablesChanged: { cables: Cable[] };
-  /** Modo "trazar cable" activo: nº de nodos colocados. */
-  cableModeChanged: { active: boolean; count: number };
+  /** Modo "trazar cable" activo: nº de nodos colocados + pista de acción. */
+  cableModeChanged: { active: boolean; count: number; hint?: string };
   /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
   /** Cuerda seleccionada (para editar tensión) o null. */
@@ -128,6 +134,8 @@ export class Editor {
   private selectedRopeId: string | null = null;
 
   private snap: SnapManager;
+  // Línea elástica de previsualización al colocar cable/cuerda (línea recta).
+  private placementLine: THREE.Line | null = null;
 
   // Agrupacion de piezas en subensamblajes.
   private multiSel = new Set<string>();
@@ -212,6 +220,7 @@ export class Editor {
     this.sceneManager.scene.add(this.groupProxy);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
+    canvas.addEventListener("pointermove", this.onPointerMove);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
 
@@ -704,6 +713,13 @@ export class Editor {
     window.removeEventListener("resize", this.onResize);
     window.removeEventListener("keydown", this.onKeyDown);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+    this.canvas.removeEventListener("pointermove", this.onPointerMove);
+    if (this.placementLine) {
+      this.sceneManager.scene.remove(this.placementLine);
+      this.placementLine.geometry.dispose();
+      (this.placementLine.material as THREE.Material).dispose();
+      this.placementLine = null;
+    }
     this.unsubModels?.();
     this.unsubSegments?.();
     this.gizmo.detach();
@@ -1494,20 +1510,46 @@ export class Editor {
     return this.cables.get(id);
   }
 
-  /** Entra en modo "trazar cable": clic en cada nodo (extremo, poleas, extremo). */
+  /** ¿Es la pieza una roldana/polea (única superficie válida de deslizamiento)? */
+  private isPulley(obj: SceneObject): boolean {
+    return PULLEY_IDS.has(obj.componentId);
+  }
+
+  /**
+   * Entra en modo "trazar cable": se colocan DOS puntos de anclaje (línea recta).
+   * Entre ellos pueden insertarse roldanas/poleas como puntos de reenvío: clic en
+   * una roldana la añade y continúa; clic en cualquier otra pieza cierra el cable.
+   */
   beginCable(): void {
     if (this.simulating) return;
     this.cancelConnect();
+    this.cancelRope();
     this.cableMode = true;
     this.cablePending = [];
     this.select(null);
-    this.bus.emit("cableModeChanged", { active: true, count: 0 });
+    this.emitCableMode();
+  }
+
+  /** Emite el estado del modo cable con una pista de la siguiente acción. */
+  private emitCableMode(): void {
+    const count = this.cablePending.length;
+    let hint: string;
+    if (count === 0) {
+      hint = "Cable: clic en el 1.er punto de anclaje (se ajusta al punto de conexión más cercano).";
+    } else if (count === 1) {
+      hint =
+        "Clic en el 2.º anclaje (línea recta). Para reenviar, clic antes en una roldana/polea.";
+    } else {
+      hint = `Cable con ${count} nodos. Clic en la pieza final para cerrar, o en otra roldana. Enter para finalizar.`;
+    }
+    this.bus.emit("cableModeChanged", { active: true, count, hint });
   }
 
   cancelCable(): void {
     if (!this.cableMode) return;
     this.cableMode = false;
     this.cablePending = [];
+    this.clearPlacementPreview();
     this.bus.emit("cableModeChanged", { active: false, count: 0 });
   }
 
@@ -1618,29 +1660,108 @@ export class Editor {
     if (!this.ropeMode) return;
     this.ropeMode = null;
     this.ropePendingA = null;
+    this.clearPlacementPreview();
     this.bus.emit("ropeModeChanged", { active: false, kind: null, count: 0 });
   }
 
-  /** Punto de anclaje del clic actual: a una pieza (punto de anclaje) o al suelo. */
-  private pickRopeEnd(): RopeEnd | null {
+  /**
+   * Punto de anclaje (pieza + local + mundo) cuyo punto de conexión está más
+   * cerca del ray actual; null si el ray no toca ninguna pieza. Facilita el
+   * anclaje ajustándose al punto de conexión más próximo de la pieza señalada.
+   */
+  private pickAnchorPoint(): { object: SceneObject; local: THREE.Vector3; world: THREE.Vector3 } | null {
     const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
     const hit = hits[0];
     const id = hit?.object.userData.sceneObjectId as string | undefined;
     const obj = id ? this.objects.get(id) : undefined;
-    if (obj && hit) {
-      obj.mesh.updateMatrixWorld(true);
-      let best = new THREE.Vector3();
-      let bestD = Infinity;
-      for (const lp of localSnapPoints(obj)) {
-        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
-        const d = wp.distanceTo(hit.point);
-        if (d < bestD) {
-          bestD = d;
-          best = lp;
-        }
-      }
-      return { objectId: obj.id, local: best };
+    if (!obj || !hit) return null;
+    obj.mesh.updateMatrixWorld(true);
+    let best = new THREE.Vector3();
+    let bestD = Infinity;
+    for (const lp of localSnapPoints(obj)) {
+      const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+      const d = wp.distanceTo(hit.point);
+      if (d < bestD) { bestD = d; best = lp; }
     }
+    return { object: obj, local: best, world: best.clone().applyMatrix4(obj.mesh.matrixWorld) };
+  }
+
+  /** Posición de mundo del último punto colocado (para la línea elástica). */
+  private placementAnchorWorld(): THREE.Vector3 | null {
+    if (this.cableMode && this.cablePending.length > 0) {
+      const last = this.cablePending[this.cablePending.length - 1];
+      last.object.mesh.updateMatrixWorld();
+      return last.local.clone().applyMatrix4(last.object.mesh.matrixWorld);
+    }
+    if (this.ropeMode && this.ropePendingA) {
+      return this.ropeEndWorld(this.ropePendingA);
+    }
+    return null;
+  }
+
+  private showPlacementLine(a: THREE.Vector3, b: THREE.Vector3): void {
+    if (!this.placementLine) {
+      this.placementLine = new THREE.Line(
+        new THREE.BufferGeometry(),
+        new THREE.LineDashedMaterial({
+          color: 0x22d3ee,
+          dashSize: 3,
+          gapSize: 2,
+          depthTest: false,
+          transparent: true,
+          opacity: 0.9,
+        }),
+      );
+      this.placementLine.renderOrder = 999;
+      this.sceneManager.scene.add(this.placementLine);
+    }
+    this.placementLine.geometry.setFromPoints([a, b]);
+    this.placementLine.computeLineDistances();
+    this.placementLine.visible = true;
+  }
+
+  private clearPlacementPreview(): void {
+    this.snap.hideIndicator();
+    if (this.placementLine) this.placementLine.visible = false;
+  }
+
+  /** Previsualiza el anclaje (indicador) y la línea recta al colocar cable/cuerda. */
+  private onPointerMove = (event: PointerEvent): void => {
+    if (this.simulating || (!this.cableMode && !this.ropeMode)) {
+      return;
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    let world: THREE.Vector3 | null = null;
+    let onPiece = false;
+    const pick = this.pickAnchorPoint();
+    if (pick) {
+      world = pick.world;
+      onPiece = true;
+    } else if (this.ropeMode) {
+      // La cuerda admite anclas libres sobre el suelo (y=0).
+      const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const p = new THREE.Vector3();
+      if (this.raycaster.ray.intersectPlane(ground, p)) world = p;
+    }
+
+    if (!world) {
+      this.clearPlacementPreview();
+      return;
+    }
+    if (onPiece) this.snap.showIndicator(world);
+    else this.snap.hideIndicator();
+    const from = this.placementAnchorWorld();
+    if (from) this.showPlacementLine(from, world);
+    else if (this.placementLine) this.placementLine.visible = false;
+  };
+
+  private pickRopeEnd(): RopeEnd | null {
+    const pick = this.pickAnchorPoint();
+    if (pick) return { objectId: pick.object.id, local: pick.local };
     // Sin pieza: ancla libre sobre el plano del suelo (y=0).
     const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const p = new THREE.Vector3();
@@ -1779,29 +1900,25 @@ export class Editor {
       return;
     }
 
-    // Modo cable: cada clic ancla un nodo en el punto de anclaje mas cercano.
+    // Modo cable: dos puntos de anclaje describen una línea recta; entre medias
+    // solo roldanas/poleas actúan como superficie de reenvío (deslizamiento).
     if (this.cableMode) {
-      const cHits = this.raycaster.intersectObjects(
-        this.sceneManager.content.children,
-        false,
-      );
-      const hit = cHits[0];
-      const id = hit?.object.userData.sceneObjectId as string | undefined;
-      const obj = id ? this.objects.get(id) : undefined;
-      if (!obj || !hit) return;
-      // Punto de anclaje (local) cuya posicion mundial esta mas cerca del clic.
-      obj.mesh.updateMatrixWorld(true);
-      let best: THREE.Vector3 | null = null;
-      let bestD = Infinity;
-      for (const lp of localSnapPoints(obj)) {
-        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
-        const d = wp.distanceTo(hit.point);
-        if (d < bestD) { bestD = d; best = lp; }
-      }
+      const pick = this.pickAnchorPoint();
+      if (!pick) return;
       const prev = this.cablePending[this.cablePending.length - 1];
-      if (!prev || prev.object !== obj) {
-        this.cablePending.push({ object: obj, local: best ?? new THREE.Vector3() });
-        this.bus.emit("cableModeChanged", { active: true, count: this.cablePending.length });
+      if (prev && prev.object === pick.object) return; // mismo nodo, ignora
+      if (this.cablePending.length === 0) {
+        // Primer extremo (ancla A).
+        this.cablePending.push({ object: pick.object, local: pick.local });
+        this.emitCableMode();
+      } else if (this.isPulley(pick.object)) {
+        // Roldana intermedia: punto de reenvío, el cable sigue abierto.
+        this.cablePending.push({ object: pick.object, local: pick.local });
+        this.emitCableMode();
+      } else {
+        // Pieza no-polea: extremo final (ancla B). Cierra el cable.
+        this.cablePending.push({ object: pick.object, local: pick.local });
+        this.finishCable();
       }
       return;
     }

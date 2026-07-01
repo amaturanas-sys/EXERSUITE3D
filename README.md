@@ -136,7 +136,7 @@ tablets con poca potencia.
 | Biblioteca de modelos | Botón **Biblioteca**: sustituye la primitiva de cualquier componente por un modelo 3D (.glb/.gltf/.obj) de SketchUp/Nomad; se aplica a todas sus piezas y persiste en el navegador |
 | Exportar / importar | Botones **Exportar** (.glb) / **Importar** (.glb/.gltf/.obj) para intercambiar modelos 3D |
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
-| Trazar cable        | **+ Cable**, clic en cada pieza (se ancla al punto más cercano al clic), **Enter** para cerrar |
+| Trazar cable        | **+ Cable** → **línea recta** entre dos anclas: clic en el 1.er anclaje y en el 2.º (se ajusta al **punto de conexión** más cercano, con previsualización). Para reenviar, clic en una **roldana/polea** antes del 2.º anclaje (solo esas superficies deslizan); **Enter/Finalizar** cierra un cable con reenvíos |
 | Cadena/correa de seguridad | Clic en la pieza de la paleta → **línea**: clic en el extremo de inicio y en el final (se anclan a piezas/superficie). Cuelgan en catenaria; ajusta la **tensión** en Conexiones. Sus segmentos (eslabón/listón) se reemplazan desde la biblioteca |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; grupo: **nombrar/duplicar/desagrupar/eliminar** en el inspector |

@@ -81,8 +81,8 @@ export class JointsPanel {
     this.editor.bus.on("connectModeChanged", ({ kind, pending }) =>
       this.onConnectMode(kind, pending),
     );
-    this.editor.bus.on("cableModeChanged", ({ active, count }) =>
-      this.onCableMode(active, count),
+    this.editor.bus.on("cableModeChanged", ({ active, count, hint }) =>
+      this.onCableMode(active, count, hint),
     );
     this.editor.bus.on("ropeModeChanged", ({ active, kind, count }) => {
       if (active) {
@@ -114,14 +114,14 @@ export class JointsPanel {
     this.render();
   }
 
-  private onCableMode(active: boolean, count: number): void {
+  private onCableMode(active: boolean, count: number, hint?: string): void {
     this.cableBtn.classList.toggle("active", active);
-    this.finishBtn.style.display = active ? "block" : "none";
+    // El botón "Finalizar" solo tiene sentido cuando ya hay una cuerda de reenvío
+    // en construcción (>=2 nodos); con dos anclas se cierra sola al 2.º clic.
+    this.finishBtn.style.display = active && count >= 2 ? "block" : "none";
     if (active) {
       this.status.textContent =
-        count < 2
-          ? `Cable: ${count} nodo(s). Clic en cada pieza (extremo → poleas → extremo).`
-          : `Cable: ${count} nodos. Sigue añadiendo o pulsa Finalizar (Enter).`;
+        hint ?? `Cable: ${count} nodo(s). Clic en cada punto de anclaje.`;
     } else {
       this.status.textContent =
         "Articula piezas (bisagra/corredera) o traza un cable por poleas.";

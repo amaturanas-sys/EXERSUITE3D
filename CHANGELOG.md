@@ -9,6 +9,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Cable por poleas rediseñado**: la herramienta de cable se coloca ahora
+  seleccionando **dos puntos de anclaje** que describen una **línea recta**
+  (estilo “línea recta” de Paint), con **previsualización elástica** y un
+  indicador que resalta el **punto de conexión** más cercano de la pieza
+  señalada (anclaje facilitado por proximidad). Entre los dos extremos, las
+  únicas superficies por las que el cable puede **deslizarse** son
+  **roldanas/poleas** (`polea`, `roldana`, `bloque de poleas`): al hacer clic en
+  una se añade como punto de reenvío y el trazado continúa; al hacer clic en
+  cualquier otra pieza se cierra el cable (o **Enter/Finalizar**).
 - **Cadenas y correas de seguridad como cuerdas**: se colocan con una
   herramienta de **línea** (clic en un extremo y luego en el otro, estilo “línea
   recta” de Paint). Cada extremo se **ancla** a la pieza más cercana (a su punto
