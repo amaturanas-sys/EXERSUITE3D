@@ -77,7 +77,11 @@ export class ComponentPalette {
     const children: (Node | string)[] = [swatch, def.label];
     if (modeled) children.push(el("span", { class: "comp-modeled", title: "Modelo 3D" }, []));
     const btn = el("button", { class: "comp-btn", title }, children);
-    btn.addEventListener("click", () => this.editor.addComponent(def.id));
+    btn.addEventListener("click", () => {
+      if (def.placement === "rope-chain") this.editor.beginRope("chain");
+      else if (def.placement === "rope-strap") this.editor.beginRope("strap");
+      else this.editor.addComponent(def.id);
+    });
     return btn;
   }
 }

@@ -81,6 +81,11 @@ export interface ComponentDefinition {
   physics: PhysicalAttributes;
   /** Si es una pila selectorizada, sus parametros por defecto. */
   stack?: StackInfo;
+  /**
+   * Colocación especial con herramienta de línea (dos extremos) para elementos
+   * tipo cuerda: cadena o correa de seguridad.
+   */
+  placement?: "rope-chain" | "rope-strap";
   /** Descripcion corta para tooltips. */
   description: string;
 }

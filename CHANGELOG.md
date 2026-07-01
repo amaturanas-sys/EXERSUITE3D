@@ -9,6 +9,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Añadido
 
+- **Cadenas y correas de seguridad como cuerdas**: se colocan con una
+  herramienta de **línea** (clic en un extremo y luego en el otro, estilo “línea
+  recta” de Paint). Cada extremo se **ancla** a la pieza más cercana (a su punto
+  de anclaje) o a la superficie del suelo. Cuelgan describiendo una **catenaria**
+  con **tensión/holgura ajustable** (panel Conexiones). Se dibujan como
+  **segmentos articulados** (eslabones o listones), y la forma del segmento se
+  toma de la biblioteca: al reemplazar el modelo de **Cadena de eslabones** o
+  **Listón de Kevlar** en la biblioteca, las cuerdas usan ese modelo más preciso.
 - **Reemplazo de segmentos del maniquí**: en la biblioteca (pestaña **Maniquí**)
   se puede sustituir cada parte del cuerpo (cabeza, torso, brazos, antebrazos,
   manos, muslos, piernas, pies…) por un modelo 3D más estético. El modelo se

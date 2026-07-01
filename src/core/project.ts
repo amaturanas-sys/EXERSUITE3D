@@ -44,6 +44,14 @@ export interface GroupData {
   ids: string[];
 }
 
+export interface RopeData {
+  name: string;
+  kind: "chain" | "strap";
+  slack: number;
+  a: { objectId: string | null; local: Vec3 };
+  b: { objectId: string | null; local: Vec3 };
+}
+
 export interface HumanData {
   present: boolean;
   mode: "mannequin" | "skeleton";
@@ -60,6 +68,7 @@ export interface ProjectData {
   objects: ObjData[];
   joints: JointData[];
   cables: CableData[];
+  ropes?: RopeData[];
   groups: GroupData[];
   human: HumanData;
 }

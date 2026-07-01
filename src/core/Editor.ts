@@ -8,6 +8,7 @@ import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
+import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { SnapManager, localSnapPoints } from "./snapping";
 import {
   DEFAULT_HUMAN_HEIGHT,
@@ -54,6 +55,10 @@ export type EditorEvents = {
   cablesChanged: { cables: Cable[] };
   /** Modo "trazar cable" activo: nº de nodos colocados. */
   cableModeChanged: { active: boolean; count: number };
+  /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
+  ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
+  /** Cuerda seleccionada (para editar tensión) o null. */
+  ropeSelectionChanged: { id: string; name: string; slack: number } | null;
   /** Snapping de ensamblaje activado/desactivado. */
   snapChanged: { enabled: boolean };
   /** Cambio en la lista de posturas (anadir/editar/eliminar). */
@@ -114,6 +119,13 @@ export class Editor {
   private cableVisuals = new THREE.Group();
   private cableMode = false;
   private cablePending: { object: SceneObject; local: THREE.Vector3 }[] = [];
+
+  // Cuerdas (cadenas/correas de seguridad): elementos de línea con catenaria.
+  private ropes = new Map<string, Rope>();
+  private ropeVisuals = new THREE.Group();
+  private ropeMode: RopeKind | null = null;
+  private ropePendingA: RopeEnd | null = null;
+  private selectedRopeId: string | null = null;
 
   private snap: SnapManager;
 
@@ -196,6 +208,7 @@ export class Editor {
     this.sceneManager.scene.add(this.jointHelpers);
     this.sceneManager.scene.add(this.references);
     this.sceneManager.scene.add(this.cableVisuals);
+    this.sceneManager.scene.add(this.ropeVisuals);
     this.sceneManager.scene.add(this.groupProxy);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
@@ -208,6 +221,8 @@ export class Editor {
     this.unsubSegments = figureSegments.onChanged(() => {
       if (this.humanFigure && this.humanMode === "mannequin") void this.addHumanFigure(this.humanHeight);
     });
+    // Al mover una pieza, actualiza las cuerdas ancladas a ella.
+    this.bus.on("objectTransformed", ({ object }) => this.updateRopesForObject(object.id));
 
     this.setupAutosave();
   }
@@ -219,6 +234,7 @@ export class Editor {
       if (geo) o.applyCustomGeometry(geo);
       else if (o.customModel) o.revertToPrimitive();
     }
+    this.rebuildAllRopes(); // los segmentos de eslabón/Kevlar pueden haber cambiado
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
@@ -438,6 +454,10 @@ export class Editor {
     for (const c of this.listCables()) {
       if (c.nodes.some((n) => n.objectId === obj.id)) this.cables.delete(c.id);
     }
+    // Elimina las cuerdas ancladas al objeto.
+    for (const r of this.listRopes()) {
+      if (r.a.objectId === obj.id || r.b.objectId === obj.id) this.deleteRope(r.id);
+    }
     // Limpia membresia de grupo y multiseleccion.
     this.multiSel.delete(obj.id);
     const gid = this.objGroup.get(obj.id);
@@ -552,6 +572,13 @@ export class Editor {
         name: c.name,
         nodes: c.nodes.map((n) => ({ objectId: n.objectId, local: [n.local.x, n.local.y, n.local.z] as [number, number, number] })),
       })),
+      ropes: this.listRopes().map((r) => ({
+        name: r.name,
+        kind: r.kind,
+        slack: r.slack,
+        a: { objectId: r.a.objectId, local: [r.a.local.x, r.a.local.y, r.a.local.z] as [number, number, number] },
+        b: { objectId: r.b.objectId, local: [r.b.local.x, r.b.local.y, r.b.local.z] as [number, number, number] },
+      })),
       groups: [...this.groups.values()].map((g) => ({ name: g.name, ids: [...g.ids] })),
       human: {
         present: this.humanFigure !== null,
@@ -636,6 +663,11 @@ export class Editor {
     this.objects.clear();
     this.joints.clear();
     this.cables.clear();
+    for (const r of this.ropes.values()) {
+      this.ropeVisuals.remove(r.group);
+      r.dispose();
+    }
+    this.ropes.clear();
     this.groups.clear();
     this.objGroup.clear();
     this.multiSel.clear();
@@ -683,6 +715,8 @@ export class Editor {
       /* ignora */
     }
     this.orbit.dispose();
+    for (const r of this.ropes.values()) r.dispose();
+    this.ropes.clear();
     for (const o of this.objects.values()) o.dispose();
     this.objects.clear();
     this.physics?.dispose();
@@ -730,6 +764,18 @@ export class Editor {
         const c = this.createCable(nodes);
         if (c) c.name = cd.name;
       }
+    }
+
+    for (const rd of data.ropes ?? []) {
+      const remap = (e: { objectId: string | null; local: [number, number, number] }): RopeEnd | null => {
+        const local = new THREE.Vector3(e.local[0], e.local[1], e.local[2]);
+        if (e.objectId === null) return { objectId: null, local };
+        const mapped = idMap.get(e.objectId);
+        return mapped ? { objectId: mapped, local } : null;
+      };
+      const a = remap(rd.a);
+      const b = remap(rd.b);
+      if (a && b) this.createRope(rd.kind, a, b, rd.slack, rd.name);
     }
 
     for (const gd of data.groups) {
@@ -785,6 +831,10 @@ export class Editor {
     this.selectedGroupId = null;
     this.clearMultiSel();
     this.selectedJointName = null;
+    if (this.selectedRopeId) {
+      this.selectedRopeId = null;
+      this.bus.emit("ropeSelectionChanged", null);
+    }
     this.resetGizmoAxes();
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
@@ -1552,6 +1602,130 @@ export class Editor {
     }
   }
 
+  // ---------------------------------------------------------------- cuerdas
+  /** Entra en modo "colocar cuerda": clic en el extremo A y luego en el B. */
+  beginRope(kind: RopeKind): void {
+    this.cancelCable();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.select(null);
+    this.ropeMode = kind;
+    this.ropePendingA = null;
+    this.bus.emit("ropeModeChanged", { active: true, kind, count: 0 });
+  }
+
+  cancelRope(): void {
+    if (!this.ropeMode) return;
+    this.ropeMode = null;
+    this.ropePendingA = null;
+    this.bus.emit("ropeModeChanged", { active: false, kind: null, count: 0 });
+  }
+
+  /** Punto de anclaje del clic actual: a una pieza (punto de anclaje) o al suelo. */
+  private pickRopeEnd(): RopeEnd | null {
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+    const hit = hits[0];
+    const id = hit?.object.userData.sceneObjectId as string | undefined;
+    const obj = id ? this.objects.get(id) : undefined;
+    if (obj && hit) {
+      obj.mesh.updateMatrixWorld(true);
+      let best = new THREE.Vector3();
+      let bestD = Infinity;
+      for (const lp of localSnapPoints(obj)) {
+        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+        const d = wp.distanceTo(hit.point);
+        if (d < bestD) {
+          bestD = d;
+          best = lp;
+        }
+      }
+      return { objectId: obj.id, local: best };
+    }
+    // Sin pieza: ancla libre sobre el plano del suelo (y=0).
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const p = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(ground, p)) {
+      return { objectId: null, local: p };
+    }
+    return null;
+  }
+
+  /** Coordenada de mundo de un extremo de cuerda. */
+  private ropeEndWorld(end: RopeEnd): THREE.Vector3 {
+    if (end.objectId) {
+      const obj = this.objects.get(end.objectId);
+      if (obj) {
+        obj.mesh.updateMatrixWorld();
+        return end.local.clone().applyMatrix4(obj.mesh.matrixWorld);
+      }
+    }
+    return end.local.clone();
+  }
+
+  private ropeSegTemplate(kind: RopeKind): THREE.BufferGeometry | null {
+    return componentModels.geometryClone(kind === "chain" ? "cadena-eslabones" : "liston-kevlar");
+  }
+
+  private rebuildRope(rope: Rope): void {
+    rope.rebuild(this.ropeEndWorld(rope.a), this.ropeEndWorld(rope.b), this.ropeSegTemplate(rope.kind));
+  }
+
+  private rebuildAllRopes(): void {
+    for (const r of this.ropes.values()) this.rebuildRope(r);
+  }
+
+  private updateRopesForObject(objectId: string): void {
+    for (const r of this.ropes.values()) {
+      if (r.a.objectId === objectId || r.b.objectId === objectId) this.rebuildRope(r);
+    }
+  }
+
+  createRope(kind: RopeKind, a: RopeEnd, b: RopeEnd, slack?: number, name?: string): Rope {
+    const rope = new Rope({ kind, a, b, slack, name });
+    this.ropes.set(rope.id, rope);
+    this.ropeVisuals.add(rope.group);
+    this.rebuildRope(rope);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    return rope;
+  }
+
+  listRopes(): Rope[] {
+    return [...this.ropes.values()];
+  }
+
+  setRopeSlack(id: string, slack: number): void {
+    const rope = this.ropes.get(id);
+    if (!rope) return;
+    rope.slack = Math.max(0, Math.min(1, slack));
+    this.rebuildRope(rope);
+    if (this.selectedRopeId === id) {
+      this.bus.emit("ropeSelectionChanged", { id, name: rope.name, slack: rope.slack });
+    }
+    this.scheduleAutosave();
+  }
+
+  deleteRope(id: string): void {
+    const rope = this.ropes.get(id);
+    if (!rope) return;
+    this.ropeVisuals.remove(rope.group);
+    rope.dispose();
+    this.ropes.delete(id);
+    if (this.selectedRopeId === id) {
+      this.selectedRopeId = null;
+      this.bus.emit("ropeSelectionChanged", null);
+    }
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+  }
+
+  private selectRope(id: string): void {
+    const rope = this.ropes.get(id);
+    if (!rope) return;
+    this.select(null);
+    this.selectedRopeId = id;
+    this.bus.emit("ropeSelectionChanged", { id, name: rope.name, slack: rope.slack });
+  }
+
   // -------------------------------------------------------------- eventos
   private onPointerDown = (event: PointerEvent): void => {
     if (this.gizmo.dragging || this.simulating) return;
@@ -1587,6 +1761,21 @@ export class Editor {
       }
       this.handTargets.set(this.attachSide, { objectId: obj.id, local: best });
       this.cancelAttachHand();
+      return;
+    }
+
+    // Modo cuerda: clic en el extremo A y luego en el B (línea recta).
+    if (this.ropeMode) {
+      const end = this.pickRopeEnd();
+      if (!end) return;
+      if (!this.ropePendingA) {
+        this.ropePendingA = end;
+        this.bus.emit("ropeModeChanged", { active: true, kind: this.ropeMode, count: 1 });
+      } else {
+        const rope = this.createRope(this.ropeMode, this.ropePendingA, end);
+        this.cancelRope();
+        this.selectRope(rope.id);
+      }
       return;
     }
 
@@ -1636,7 +1825,7 @@ export class Editor {
       return;
     }
 
-    // Selección normal: objetos editables vs figura humana, por cercanía.
+    // Selección normal: objetos editables, cuerdas o figura humana, por cercanía.
     const objHits = this.raycaster.intersectObjects(
       this.sceneManager.content.children,
       false,
@@ -1644,8 +1833,16 @@ export class Editor {
     const figHits = this.humanFigure
       ? this.raycaster.intersectObjects([this.humanFigure], true)
       : [];
+    const ropeHits = this.raycaster.intersectObjects(this.ropeVisuals.children, true);
     const objDist = objHits[0]?.distance ?? Infinity;
     const figDist = figHits[0]?.distance ?? Infinity;
+    const ropeDist = ropeHits[0]?.distance ?? Infinity;
+
+    if (ropeDist < objDist && ropeDist < figDist) {
+      const rid = ropeHits[0].object.userData.ropeId as string | undefined;
+      if (rid) this.selectRope(rid);
+      return;
+    }
 
     if (objDist === Infinity && figDist === Infinity) {
       this.select(null);
@@ -1694,10 +1891,12 @@ export class Editor {
       case "backspace":
         if (this.selected) this.removeObject(this.selected);
         else if (this.selectedGroupId) this.deleteSelectedGroup();
+        else if (this.selectedRopeId) this.deleteRope(this.selectedRopeId);
         break;
       case "escape":
         this.cancelConnect();
         this.cancelCable();
+        this.cancelRope();
         this.cancelAttachHand();
         this.select(null);
         break;

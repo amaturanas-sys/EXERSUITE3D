@@ -13,6 +13,10 @@ export class JointsPanel {
   private cableBtn: HTMLButtonElement;
   private finishBtn: HTMLButtonElement;
   private selectedId: string | null = null;
+  private ropeBox!: HTMLElement;
+  private ropeLabel!: HTMLElement;
+  private ropeSlider!: HTMLInputElement;
+  private ropeId: string | null = null;
 
   constructor(private editor: Editor) {
     this.hingeBtn = el("button", { class: "tool", title: "Conectar dos piezas con una bisagra" }, [
@@ -41,11 +45,34 @@ export class JointsPanel {
     ]);
     this.body = el("div", { class: "panel-body" });
 
+    // Editor de la cuerda seleccionada (cadena/correa): tensión y borrar.
+    this.ropeSlider = el("input", {
+      type: "range",
+      min: "0",
+      max: "100",
+      value: "25",
+    }) as HTMLInputElement;
+    this.ropeSlider.addEventListener("input", () => {
+      if (this.ropeId) this.editor.setRopeSlack(this.ropeId, parseFloat(this.ropeSlider.value) / 100);
+    });
+    this.ropeLabel = el("label", {}, ["Cuerda"]);
+    const ropeDel = el("button", { class: "tool danger" }, ["Eliminar cuerda"]);
+    ropeDel.addEventListener("click", () => {
+      if (this.ropeId) this.editor.deleteRope(this.ropeId);
+    });
+    this.ropeBox = el("div", { class: "field" }, [
+      this.ropeLabel,
+      el("div", { class: "sub" }, [el("label", {}, ["Tensión ← → Holgura (catenaria)"]), this.ropeSlider]),
+      ropeDel,
+    ]);
+    this.ropeBox.style.display = "none";
+
     this.root = el("aside", { class: "panel", id: "joints" }, [
       el("div", { class: "panel-title" }, ["Conexiones"]),
       el("div", { class: "joints-actions" }, [this.hingeBtn, this.slideBtn, this.cableBtn]),
       this.finishBtn,
       this.status,
+      this.ropeBox,
       this.body,
     ]);
 
@@ -57,6 +84,28 @@ export class JointsPanel {
     this.editor.bus.on("cableModeChanged", ({ active, count }) =>
       this.onCableMode(active, count),
     );
+    this.editor.bus.on("ropeModeChanged", ({ active, kind, count }) => {
+      if (active) {
+        const t = kind === "chain" ? "cadena" : "correa";
+        this.status.textContent =
+          count < 1
+            ? `Colocar ${t}: clic en el punto de INICIO (se ancla a la pieza/superficie).`
+            : `Ahora clic en el punto FINAL de la ${t}.`;
+      } else {
+        this.status.textContent = "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
+      }
+    });
+    this.editor.bus.on("ropeSelectionChanged", (payload) => {
+      if (payload) {
+        this.ropeId = payload.id;
+        this.ropeLabel.textContent = payload.name;
+        this.ropeSlider.value = String(Math.round(payload.slack * 100));
+        this.ropeBox.style.display = "block";
+      } else {
+        this.ropeId = null;
+        this.ropeBox.style.display = "none";
+      }
+    });
     this.editor.bus.on("simulationChanged", ({ running }) => {
       this.hingeBtn.disabled = running;
       this.slideBtn.disabled = running;

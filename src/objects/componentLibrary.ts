@@ -80,7 +80,8 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "nylon",
     defaults: { kind: "box", width: 120, height: 4, depth: 0.6 },
     physics: { massKg: 0.3, fixed: false },
-    description: "Strap de nylon de 3\" entre montantes (elemento tensil).",
+    placement: "rope-strap",
+    description: "Strap de nylon de 3\" entre montantes: cuélgalo con la herramienta de línea (dos extremos).",
   },
   {
     id: "barra-dominadas",
@@ -237,7 +238,8 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "cylinder", radiusTop: 0.7, radiusBottom: 0.7, height: 90 },
     physics: { massKg: 0.5, fixed: false },
-    description: "Cadena de tope/seguridad del power rack (CHAIN SAFE).",
+    placement: "rope-chain",
+    description: "Cadena de tope/seguridad del power rack: cuélgala con la herramienta de línea (dos extremos).",
   },
   {
     id: "liston-kevlar",
