@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { METER } from "../core/units";
+import { getPerf } from "../core/performance";
 
 /**
  * Gestiona el contexto de render de Three.js: escena, camara, renderer,
@@ -14,8 +15,12 @@ export class SceneManager {
   readonly content = new THREE.Group();
 
   private grid: THREE.GridHelper;
+  private key!: THREE.DirectionalLight;
+  private envTex: THREE.Texture | null = null;
 
   constructor(private canvas: HTMLCanvasElement) {
+    const perf = getPerf();
+
     // Fondo de estudio en escala de grises neutra (como el resto del programa).
     this.scene.background = gradientTexture("#eef0f2", "#cdd0d3");
 
@@ -30,19 +35,21 @@ export class SceneManager {
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: perf.antialias,
       alpha: false,
+      powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, perf.maxPixelRatio));
+    this.renderer.shadowMap.enabled = perf.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
     this.scene.add(this.content);
-    this.setupEnvironment();
+    if (perf.environment) this.setupEnvironment();
     this.setupLights();
+    this.key.castShadow = perf.shadows;
     this.grid = this.setupGrid();
     this.setupGround();
 
@@ -52,9 +59,36 @@ export class SceneManager {
   /** Mapa de entorno PMREM para reflejos PBR realistas en metales/plasticos. */
   private setupEnvironment(): void {
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environment = envTex;
+    this.envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    this.scene.environment = this.envTex;
     pmrem.dispose();
+  }
+
+  // ------------------------------------------------------------- rendimiento
+  setMaxPixelRatio(cap: number): void {
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, cap));
+    this.resize();
+  }
+
+  setShadowsEnabled(on: boolean): void {
+    this.renderer.shadowMap.enabled = on;
+    this.key.castShadow = on;
+    this.renderer.shadowMap.needsUpdate = true;
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((mm) => (mm.needsUpdate = true));
+      else if (m) m.needsUpdate = true;
+    });
+  }
+
+  setEnvironmentEnabled(on: boolean): void {
+    if (on && !this.envTex) {
+      this.setupEnvironment();
+    } else if (!on && this.envTex) {
+      this.scene.environment = null;
+      this.envTex.dispose();
+      this.envTex = null;
+    }
   }
 
   private setupLights(): void {
@@ -73,6 +107,7 @@ export class SceneManager {
     s.near = 1;
     s.far = 2000;
     this.scene.add(key);
+    this.key = key;
 
     const fill = new THREE.DirectionalLight(0xffffff, 0.4);
     fill.position.set(-300, 200, -200);
@@ -166,6 +201,21 @@ export class SceneManager {
 
   render(): void {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  /** Libera el contexto WebGL y los recursos de la escena. */
+  dispose(): void {
+    (this.scene.background as THREE.Texture | null)?.dispose?.();
+    this.envTex?.dispose();
+    this.scene.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      mesh.geometry?.dispose?.();
+      const m = mesh.material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((mm) => mm.dispose());
+      else m?.dispose?.();
+    });
+    this.renderer.dispose();
+    this.renderer.forceContextLoss();
   }
 }
 

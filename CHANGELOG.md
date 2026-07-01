@@ -7,6 +7,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Opciones de rendimiento** (botón **Rendimiento** en el editor): presets
+  Alto/Medio/Bajo y ajustes finos de resolución de render, sombras, reflejos de
+  entorno y antialias, para diseñar con fluidez en equipos o tablets con poca
+  potencia. Se guardan y se aplican en vivo (el antialias, al reabrir).
+- **Volver a la Home** desde un proyecto (botón **⌂ Home**): sugiere guardar si
+  hay cambios (Guardar y salir / Salir sin guardar / Cancelar) y libera por
+  completo el editor, permitiendo trabajar en varios proyectos de forma
+  secuencial sin reiniciar la app.
+
+### Cambiado
+
+- La **biblioteca de repertorio** ahora es una vista de la **Home** que muestra
+  solo el ítem seleccionado en un visor 3D, sin ejecutar el entorno de diseño
+  completo en segundo plano (menor consumo de recursos). El botón de biblioteca
+  se retira del editor; se accede desde la pantalla de inicio.
+
 ## [0.1.3] — 2026-06-30
 
 ### Añadido

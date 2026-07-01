@@ -101,11 +101,18 @@ motor 3D** (WebGL/física) hasta que eliges una acción, para ahorrar recursos:
 
 - **Crear nuevo proyecto** / **Abrir archivo…** (`.json`) / **Continuar sesión
   anterior** (autoguardado).
-- **Explorar biblioteca**: abre la biblioteca sobre una escena vacía para revisar
-  cada componente con **vista previa 3D** y sustituirlo por otro modelo, sin
-  necesidad de cargar un proyecto completo.
+- **Explorar biblioteca**: vista de la Home que muestra solo el componente
+  seleccionado en un **visor 3D** (sin cargar el entorno de diseño) para editar
+  el repertorio de piezas con el mínimo de recursos.
 - **Proyectos recientes**: lista de los proyectos abiertos o guardados
   (almacenados en IndexedDB del navegador).
+
+Desde un proyecto, el botón **⌂ Home** vuelve a la pantalla de inicio (sugiriendo
+guardar si hay cambios) y libera el editor, de modo que se puede trabajar en
+varios proyectos de forma **secuencial** sin reiniciar la app. El botón
+**Rendimiento** abre las opciones de calidad (presets Alto/Medio/Bajo, resolución
+de render, sombras, reflejos y antialias) para diseñar con fluidez en equipos o
+tablets con poca potencia.
 - **Dedicatoria**: texto editable en [`public/dedicatoria.txt`](public/dedicatoria.txt)
   (se muestra tal cual; las líneas en blanco separan párrafos).
 

@@ -2,10 +2,6 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { SceneManager } from "../scene/SceneManager";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
@@ -30,7 +26,8 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData } from "./project";
-import { deleteModel, getAllModels, putModel } from "./modelStore";
+import { componentModels } from "./componentModels";
+import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
 import { EventBus } from "./eventBus";
 
 type HandSide = "L" | "R";
@@ -140,21 +137,15 @@ export class Editor {
   private attachMode = false;
   private attachSide: HandSide | null = null;
 
-  // Modelos 3D personalizados por componente (biblioteca): geometria horneada
-  // (escalada a cm y centrada) y nombre de archivo, por componentId.
-  // Geometría activa por componente (la que se aplica) y su procedencia.
-  private componentModels = new Map<string, THREE.BufferGeometry>();
-  private componentModelInfo = new Map<
-    string,
-    { fileName: string; source: "file" | "user" }
-  >();
-  // Modelos provenientes de archivo (carpeta public/models/components/), que
-  // sirven de respaldo si se quita un modelo de usuario (Biblioteca).
-  private fileModels = new Map<string, { geo: THREE.BufferGeometry; fileName: string }>();
+  // Cambios sin guardar (para sugerir guardar al volver a la Home).
+  private dirty = false;
+  // Baja de la suscripción al repertorio de modelos.
+  private unsubModels: (() => void) | null = null;
 
   // Autoguardado en el navegador (localStorage).
   private static readonly AUTOSAVE_KEY = "exersuite.autosave.v1";
   private autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+  private autosaveInterval: ReturnType<typeof setInterval> | null = null;
   private autosaveSuspended = false;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -201,13 +192,29 @@ export class Editor {
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
 
+    // Reaplica los modelos del repertorio a las piezas si cambian.
+    this.unsubModels = componentModels.onChanged(() => this.onComponentModelsChanged());
+
     this.setupAutosave();
+  }
+
+  /** Reaplica la geometría del repertorio a las instancias afectadas. */
+  private onComponentModelsChanged(): void {
+    for (const o of this.objects.values()) {
+      const geo = componentModels.geometryClone(o.componentId);
+      if (geo) o.applyCustomGeometry(geo);
+      else if (o.customModel) o.revertToPrimitive();
+    }
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
   // --------------------------------------------------------- autoguardado
   /** Suscribe el autoguardado a los eventos de cambio del proyecto. */
   private setupAutosave(): void {
-    const trigger = () => this.scheduleAutosave();
+    const trigger = () => {
+      this.dirty = true;
+      this.scheduleAutosave();
+    };
     this.bus.on("objectsChanged", trigger);
     this.bus.on("objectTransformed", trigger);
     this.bus.on("jointsChanged", trigger);
@@ -216,8 +223,22 @@ export class Editor {
     this.bus.on("humanFigureChanged", trigger);
     // Red de seguridad: vuelca a disco periódicamente por si algún cambio
     // (material, ángulo numérico de articulación…) no emitió evento.
-    setInterval(() => this.writeAutosave(), 30_000);
-    window.addEventListener("beforeunload", () => this.flushAutosave());
+    this.autosaveInterval = setInterval(() => this.writeAutosave(), 30_000);
+    window.addEventListener("beforeunload", this.onBeforeUnload);
+  }
+
+  private onBeforeUnload = (): void => {
+    this.flushAutosave();
+  };
+
+  /** ¿Hay cambios sin guardar a un archivo? */
+  isDirty(): boolean {
+    return this.dirty;
+  }
+
+  /** Marca el proyecto como guardado (sin cambios pendientes). */
+  markClean(): void {
+    this.dirty = false;
   }
 
   /** Programa un autoguardado diferido (debounce) tras el último cambio. */
@@ -380,8 +401,8 @@ export class Editor {
 
     // Si la biblioteca tiene un modelo 3D para este componente, sustituye la
     // primitiva por él.
-    const override = this.componentModels.get(def.id);
-    if (override) obj.applyCustomGeometry(override.clone());
+    const override = componentModels.geometryClone(def.id);
+    if (override) obj.applyCustomGeometry(override);
 
     // Apoya la base del objeto sobre el suelo (y=0).
     const size = obj.effectiveSize();
@@ -550,219 +571,18 @@ export class Editor {
   /** Importa un modelo 3D (glb/gltf/obj) como una pieza editable. */
   async importModelFile(file: File): Promise<void> {
     const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    const root = await this.loadModelRoot(await file.arrayBuffer(), ext);
+    const root = await loadModelRoot(await file.arrayBuffer(), ext);
     this.addImportedModel(root, file.name.replace(/\.[^.]+$/, ""));
-  }
-
-  /** Carga un modelo (glb/gltf/obj) desde sus bytes y devuelve su raíz. */
-  private async loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
-    const url = URL.createObjectURL(new Blob([bytes]));
-    try {
-      if (ext === "obj") return await new OBJLoader().loadAsync(url);
-      const draco = new DRACOLoader();
-      draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
-      const loader = new GLTFLoader();
-      loader.setDRACOLoader(draco);
-      return (await loader.loadAsync(url)).scene;
-    } finally {
-      URL.revokeObjectURL(url);
-    }
-  }
-
-  // ------------------------------------------------- biblioteca de modelos
-  /**
-   * Fusiona las mallas del modelo en una sola geometría, la escala a cm
-   * (heurística metros→cm) y la centra en el origen, lista para sustituir a la
-   * primitiva de un componente.
-   */
-  private bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometry {
-    root.updateMatrixWorld(true);
-    const geos: THREE.BufferGeometry[] = [];
-    root.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) {
-        const mesh = o as THREE.Mesh;
-        const g = mesh.geometry.clone();
-        g.applyMatrix4(mesh.matrixWorld);
-        geos.push(this.normalizeGeometry(g));
-      }
-    });
-    if (geos.length === 0) throw new Error("El modelo no contiene mallas.");
-    let merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
-    if (!merged) merged = geos[0];
-
-    merged.computeBoundingBox();
-    const size = new THREE.Vector3();
-    merged.boundingBox!.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = maxDim > 0 && maxDim < 5 ? 100 : 1;
-    if (scale !== 1) merged.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale));
-
-    merged.computeBoundingBox();
-    const center = new THREE.Vector3();
-    merged.boundingBox!.getCenter(center);
-    merged.applyMatrix4(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
-    merged.computeBoundingBox();
-    merged.computeBoundingSphere();
-    return merged;
-  }
-
-  private async bakeFromBytes(bytes: ArrayBuffer, ext: string): Promise<THREE.BufferGeometry> {
-    return this.bakeComponentGeometry(await this.loadModelRoot(bytes, ext));
-  }
-
-  /** ¿El componente tiene un modelo 3D personalizado asignado? */
-  hasComponentModel(componentId: string): boolean {
-    return this.componentModels.has(componentId);
-  }
-
-  /** Nombre del archivo del modelo de un componente (o null). */
-  getComponentModelName(componentId: string): string | null {
-    return this.componentModelInfo.get(componentId)?.fileName ?? null;
-  }
-
-  /** Procedencia del modelo de un componente: "file", "user" o null. */
-  getComponentModelSource(componentId: string): "file" | "user" | null {
-    return this.componentModelInfo.get(componentId)?.source ?? null;
-  }
-
-  /** Clon de la geometría del modelo activo de un componente (o null). */
-  getComponentModelGeometryClone(componentId: string): THREE.BufferGeometry | null {
-    return this.componentModels.get(componentId)?.clone() ?? null;
-  }
-
-  /** Activa una geometría como modelo del componente y la aplica a sus piezas. */
-  private setActiveModel(
-    componentId: string,
-    geo: THREE.BufferGeometry,
-    fileName: string,
-    source: "file" | "user",
-  ): void {
-    const prev = this.componentModels.get(componentId);
-    this.componentModels.set(componentId, geo);
-    this.componentModelInfo.set(componentId, { fileName, source });
-    // No liberar geometrías de archivo (son respaldo compartido).
-    if (prev && prev !== geo && prev !== this.fileModels.get(componentId)?.geo) {
-      prev.dispose();
-    }
-    for (const o of this.objects.values()) {
-      if (o.componentId === componentId) o.applyCustomGeometry(geo.clone());
-    }
-  }
-
-  /** Asigna un modelo 3D a un componente (acción del usuario, persistente). */
-  async setComponentModel(componentId: string, file: File): Promise<void> {
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    const bytes = await file.arrayBuffer();
-    const geo = await this.bakeFromBytes(bytes, ext);
-    this.setActiveModel(componentId, geo, file.name, "user");
-    await putModel({ componentId, fileName: file.name, ext, bytes });
-    this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
-    this.bus.emit("objectsChanged", { objects: this.listObjects() });
-    this.scheduleAutosave();
-  }
-
-  /**
-   * Quita el modelo de usuario de un componente. Si existe un modelo de archivo
-   * de respaldo, vuelve a él; si no, restaura la primitiva.
-   */
-  async clearComponentModel(componentId: string): Promise<void> {
-    await deleteModel(componentId);
-    const fallback = this.fileModels.get(componentId);
-    if (fallback) {
-      this.setActiveModel(componentId, fallback.geo, fallback.fileName, "file");
-    } else {
-      const geo = this.componentModels.get(componentId);
-      this.componentModels.delete(componentId);
-      this.componentModelInfo.delete(componentId);
-      geo?.dispose();
-      for (const o of this.objects.values()) {
-        if (o.componentId === componentId && o.customModel) o.revertToPrimitive();
-      }
-    }
-    this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
-    this.bus.emit("objectsChanged", { objects: this.listObjects() });
-    this.scheduleAutosave();
-  }
-
-  /**
-   * Carga los modelos definidos por archivo (public/models/components/) según
-   * su manifest.json. Son los modelos "de fábrica", reemplazables sin código.
-   */
-  async loadFileComponentModels(): Promise<void> {
-    const base = import.meta.env.BASE_URL;
-    let manifest: Record<string, unknown>;
-    try {
-      const res = await fetch(`${base}models/components/manifest.json`, { cache: "no-store" });
-      if (!res.ok) return;
-      manifest = await res.json();
-    } catch {
-      return;
-    }
-    for (const [componentId, value] of Object.entries(manifest)) {
-      const fileName = typeof value === "string" ? value.trim() : "";
-      if (!fileName) continue;
-      if (!getDefinition(componentId)) {
-        console.warn(`manifest.json: componente desconocido "${componentId}"`);
-        continue;
-      }
-      try {
-        const res = await fetch(`${base}models/components/${fileName}`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const bytes = await res.arrayBuffer();
-        const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-        const geo = await this.bakeFromBytes(bytes, ext);
-        this.fileModels.set(componentId, { geo, fileName });
-        // No pisar un modelo de usuario ya cargado.
-        if (this.componentModelInfo.get(componentId)?.source !== "user") {
-          this.setActiveModel(componentId, geo, fileName, "file");
-        }
-      } catch (e) {
-        console.warn(`No se pudo cargar el modelo de archivo de "${componentId}" (${fileName}):`, e);
-      }
-    }
-    if (this.componentModels.size) {
-      this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
-      this.bus.emit("objectsChanged", { objects: this.listObjects() });
-    }
-  }
-
-  /** Carga desde IndexedDB los modelos de usuario (Biblioteca); tienen prioridad. */
-  async loadComponentModels(): Promise<void> {
-    let stored;
-    try {
-      stored = await getAllModels();
-    } catch {
-      return;
-    }
-    for (const m of stored) {
-      try {
-        const geo = await this.bakeFromBytes(m.bytes, m.ext);
-        this.setActiveModel(m.componentId, geo, m.fileName, "user");
-      } catch (e) {
-        console.warn("Modelo de componente no válido:", m.componentId, e);
-      }
-    }
-    if (this.componentModels.size) {
-      this.bus.emit("componentModelsChanged", { ids: [...this.componentModels.keys()] });
-      this.bus.emit("objectsChanged", { objects: this.listObjects() });
-    }
   }
 
   /** Fusiona las mallas del modelo en una pieza y la anade a la escena. */
   private addImportedModel(root: THREE.Object3D, name: string): void {
-    root.updateMatrixWorld(true);
-    const geos: THREE.BufferGeometry[] = [];
-    root.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) {
-        const mesh = o as THREE.Mesh;
-        const g = mesh.geometry.clone();
-        g.applyMatrix4(mesh.matrixWorld);
-        geos.push(this.normalizeGeometry(g));
-      }
-    });
-    if (geos.length === 0) return;
-    let merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
-    if (!merged) merged = geos[0];
+    let merged: THREE.BufferGeometry;
+    try {
+      merged = mergeRootGeometry(root);
+    } catch {
+      return;
+    }
 
     // Centrar en X/Z y apoyar en el suelo; heuristica metros->cm.
     merged.computeBoundingBox();
@@ -790,21 +610,6 @@ export class Editor {
     this.objects.set(obj.id, obj);
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
     this.select(obj);
-  }
-
-  /** Deja la geometria con solo position/normal/uv (no indexada) para fusionar. */
-  private normalizeGeometry(g: THREE.BufferGeometry): THREE.BufferGeometry {
-    const src = g.index ? g.toNonIndexed() : g;
-    const out = new THREE.BufferGeometry();
-    out.setAttribute("position", src.getAttribute("position"));
-    if (src.getAttribute("normal")) out.setAttribute("normal", src.getAttribute("normal"));
-    const count = src.getAttribute("position").count;
-    out.setAttribute(
-      "uv",
-      src.getAttribute("uv") ?? new THREE.BufferAttribute(new Float32Array(count * 2), 2),
-    );
-    if (!src.getAttribute("normal")) out.computeVertexNormals();
-    return out;
   }
 
   /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
@@ -836,7 +641,37 @@ export class Editor {
     } finally {
       this.autosaveSuspended = false;
     }
+    this.dirty = false; // recién cargado = sin cambios
     this.scheduleAutosave();
+  }
+
+  /**
+   * Libera por completo el editor (bucle de render, contexto WebGL, listeners y
+   * temporizadores) para volver a la Home sin acumular recursos entre proyectos.
+   */
+  dispose(): void {
+    this.running = false;
+    if (this.simulating) this.stopSimulation();
+    if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
+    if (this.autosaveInterval !== null) clearInterval(this.autosaveInterval);
+    window.removeEventListener("beforeunload", this.onBeforeUnload);
+    window.removeEventListener("resize", this.onResize);
+    window.removeEventListener("keydown", this.onKeyDown);
+    this.canvas.removeEventListener("pointerdown", this.onPointerDown);
+    this.unsubModels?.();
+    this.gizmo.detach();
+    // En three r0.169 TransformControls.dispose() puede fallar (el helper visual
+    // está separado del control); no debe abortar la limpieza.
+    try {
+      this.gizmo.dispose();
+    } catch {
+      /* ignora */
+    }
+    this.orbit.dispose();
+    for (const o of this.objects.values()) o.dispose();
+    this.objects.clear();
+    this.physics?.dispose();
+    this.sceneManager.dispose();
   }
 
   private async loadProjectInner(data: ProjectData): Promise<void> {

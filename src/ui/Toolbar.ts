@@ -12,7 +12,7 @@ export class Toolbar {
 
   constructor(
     private editor: Editor,
-    private onOpenLibrary?: () => void,
+    private hooks: { onHome?: () => void; onPerformance?: () => void } = {},
   ) {
     const mode = (m: TransformMode, label: string, key: string) => {
       const b = el("button", { class: "tool", title: `${label} (${key})` }, [label]);
@@ -172,10 +172,15 @@ export class Toolbar {
     ]);
     exportBtn.addEventListener("click", () => this.exportGLB());
 
-    const libraryBtn = el("button", { class: "tool", title: "Biblioteca: sustituir componentes por modelos 3D" }, [
-      "Biblioteca",
+    const homeBtn = el("button", { class: "tool", title: "Volver a la pantalla de inicio" }, [
+      "⌂ Home",
     ]);
-    libraryBtn.addEventListener("click", () => this.onOpenLibrary?.());
+    homeBtn.addEventListener("click", () => this.hooks.onHome?.());
+
+    const perfBtn = el("button", { class: "tool", title: "Opciones de rendimiento" }, [
+      "Rendimiento",
+    ]);
+    perfBtn.addEventListener("click", () => this.hooks.onPerformance?.());
 
     const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
       "Importar",
@@ -186,10 +191,11 @@ export class Toolbar {
     importBtn.addEventListener("click", () => importInput.click());
 
     this.root = el("div", { id: "toolbar" }, [
-      el("div", { class: "tool-group" }, [simBtn]),
+      el("div", { class: "tool-group" }, [homeBtn, simBtn]),
       ...editGroups,
       el("div", { class: "tool-group" }, [newBtn, saveBtn, loadBtn]),
-      el("div", { class: "tool-group" }, [libraryBtn, exportBtn, importBtn]),
+      el("div", { class: "tool-group" }, [exportBtn, importBtn]),
+      el("div", { class: "tool-group" }, [perfBtn]),
       el("div", { class: "tool-group" }, [autosaveTag]),
       fileInput,
       importInput,
@@ -237,6 +243,7 @@ export class Toolbar {
     a.download = `${fileName}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    this.editor.markClean();
     void addRecent(name, project, Date.now()).catch(() => {});
   }
 

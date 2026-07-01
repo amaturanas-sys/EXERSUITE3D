@@ -1,0 +1,80 @@
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+
+/**
+ * Carga y horneado de modelos 3D (glb/gltf/obj). Todo aquí es independiente del
+ * renderer (no necesita contexto WebGL), por lo que puede usarse tanto en el
+ * editor como en la biblioteca autónoma.
+ */
+
+/** Carga un modelo desde sus bytes y devuelve su raíz. */
+export async function loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
+  const url = URL.createObjectURL(new Blob([bytes]));
+  try {
+    if (ext === "obj") return await new OBJLoader().loadAsync(url);
+    const draco = new DRACOLoader();
+    draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(draco);
+    return (await loader.loadAsync(url)).scene;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Deja la geometría con solo position/normal/uv (no indexada) para fusionar. */
+export function normalizeGeometry(g: THREE.BufferGeometry): THREE.BufferGeometry {
+  const src = g.index ? g.toNonIndexed() : g;
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", src.getAttribute("position"));
+  if (src.getAttribute("normal")) out.setAttribute("normal", src.getAttribute("normal"));
+  const count = src.getAttribute("position").count;
+  out.setAttribute(
+    "uv",
+    src.getAttribute("uv") ?? new THREE.BufferAttribute(new Float32Array(count * 2), 2),
+  );
+  if (!src.getAttribute("normal")) out.computeVertexNormals();
+  return out;
+}
+
+/** Fusiona todas las mallas de un modelo en una sola geometría (matrices aplicadas). */
+export function mergeRootGeometry(root: THREE.Object3D): THREE.BufferGeometry {
+  root.updateMatrixWorld(true);
+  const geos: THREE.BufferGeometry[] = [];
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) {
+      const mesh = o as THREE.Mesh;
+      const g = mesh.geometry.clone();
+      g.applyMatrix4(mesh.matrixWorld);
+      geos.push(normalizeGeometry(g));
+    }
+  });
+  if (geos.length === 0) throw new Error("El modelo no contiene mallas.");
+  const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
+  return merged ?? geos[0];
+}
+
+/**
+ * Fusiona, escala a cm (heurística metros→cm) y centra en el origen: lista para
+ * sustituir a la primitiva de un componente.
+ */
+export function bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometry {
+  const merged = mergeRootGeometry(root);
+  merged.computeBoundingBox();
+  const size = new THREE.Vector3();
+  merged.boundingBox!.getSize(size);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = maxDim > 0 && maxDim < 5 ? 100 : 1;
+  if (scale !== 1) merged.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale));
+
+  merged.computeBoundingBox();
+  const center = new THREE.Vector3();
+  merged.boundingBox!.getCenter(center);
+  merged.applyMatrix4(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+  merged.computeBoundingBox();
+  merged.computeBoundingSphere();
+  return merged;
+}
