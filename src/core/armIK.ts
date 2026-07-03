@@ -19,17 +19,19 @@ function setBoneWorldDir(joint: THREE.Object3D, worldDir: THREE.Vector3): void {
 
 /**
  * Resuelve la IK del brazo: hombro->codo->muneca para alcanzar `target` (mundo).
- * `root` es la figura (para refrescar matrices). Modifica las rotaciones locales
- * de `shoulder` y `elbow`.
+ * Modifica las rotaciones locales de `shoulder` y `elbow`.
+ *
+ * No refresca el arbol completo de la figura: getWorldPosition/Quaternion ya
+ * recalculan la cadena de padres del nodo consultado (updateWorldMatrix), que
+ * es lo unico que se lee aqui; recorrer toda la figura 3 veces por mano y por
+ * frame era el mayor coste por frame con manos apoyadas.
  */
 export function solveTwoBoneIK(
   shoulder: THREE.Object3D,
   elbow: THREE.Object3D,
   wrist: THREE.Object3D,
   target: THREE.Vector3,
-  root: THREE.Object3D,
 ): void {
-  root.updateMatrixWorld(true);
   const S = shoulder.getWorldPosition(new THREE.Vector3());
   const E = elbow.getWorldPosition(new THREE.Vector3());
   const W = wrist.getWorldPosition(new THREE.Vector3());
@@ -56,7 +58,7 @@ export function solveTwoBoneIK(
 
   const elbowPos = S.clone().add(dir.clone().multiplyScalar(a)).add(bend.multiplyScalar(h));
   setBoneWorldDir(shoulder, elbowPos.clone().sub(S).normalize());
-  root.updateMatrixWorld(true);
+  // setBoneWorldDir(elbow) consulta el cuaternion mundial de su padre, lo que
+  // recalcula la cadena hasta el codo ya con la nueva rotacion del hombro.
   setBoneWorldDir(elbow, Tc.clone().sub(elbowPos).normalize());
-  root.updateMatrixWorld(true);
 }

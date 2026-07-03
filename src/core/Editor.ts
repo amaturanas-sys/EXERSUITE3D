@@ -1519,7 +1519,7 @@ export class Editor {
       const sh = joints[`shoulder${side}`];
       const el = joints[`elbow${side}`];
       const wr = joints[`wrist${side}`];
-      if (sh && el && wr) solveTwoBoneIK(sh, el, wr, target, this.humanFigure);
+      if (sh && el && wr) solveTwoBoneIK(sh, el, wr, target);
     }
   }
 
