@@ -7,6 +7,75 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Crear pilar / travesaño (línea)**: nueva herramienta de la paleta que traza
+  un perfil de acero entre dos puntos, como la línea recta de Paint. Un diálogo
+  permite elegir **perfil 1:1 / 1:2 / 1:3**, **medida nominal** (40–100 mm),
+  **extremos** (corte plano o diagonal en inglete a 45°) y **pinholes** reales
+  (agujeros pasantes con diámetro y distancia configurables). Incluye **aim
+  assist**: el cursor se imanta a extremos, nodos y puntos medios de otras
+  piezas para encadenar estructuras complejas; el modo queda activo para trazar
+  varias piezas seguidas (ESC para salir).
+- **Crear tubo de acero (línea)**: igual que el pilar pero con sección circular
+  y **medidas nominales** de tubo (⌀ 25–76 mm), con el mismo aim assist.
+- **Bending (doblado por nodos)**: al seleccionar un pilar/travesaño o tubo, el
+  botón **Doblar (nodos)** muestra los nodos de su trayectoria como asas
+  arrastrables; arrastrarlos da forma a la pieza con una **curva suave**
+  (Catmull-Rom), al estilo de las curvas editables de Photoshop. La forma se
+  guarda con el proyecto y la física usa el volumen doblado. En piezas dobladas
+  no aplican agujeros ni extremos diagonales (vuelven al enderezarlas).
+
+### Corregido
+
+- **Física**: la velocidad de la simulación ya no depende del refresco del
+  monitor (paso fijo de 1/60 s con acumulador; a 120/144 Hz corría al doble).
+  Collider del toro (aro) ajustado a su caja real (flotaba/empujaba a
+  distancia); colliders de geometrías dobladas alineados con el centro real de
+  la forma (colisionaban desplazados); iniciar la simulación dos veces seguidas
+  (Espacio mantenido) ya no crea mundos de física duplicados sin liberar.
+- **Guardar durante la simulación** (botón Guardar, Home → "Guardar y salir")
+  serializa ahora el estado de **diseño**, no las posiciones simuladas del
+  momento (antes guardaba la máquina "colapsada").
+- **"Nuevo" durante la simulación** detiene la física antes de vaciar la
+  escena (antes seguía simulando sobre una escena vacía y la edición quedaba
+  bloqueada).
+- **Cambios sin guardar**: posar el maniquí, tensar cuerdas, mover grupos y
+  doblar piezas ya cuentan como cambios (antes se salía sin aviso de guardar).
+- Las **cuerdas** siguen a sus anclas al mover un **grupo**, durante la
+  **simulación** y al **restaurar** el diseño al detenerla (antes quedaban
+  flotando en la posición antigua).
+- **Cargar un proyecto** con una pieza desconocida (de otra versión) ya no
+  aborta la carga completa: se omite esa pieza con aviso y se carga el resto.
+  Abrir un proyecto reciente que falla muestra un error en vez de quedar en
+  silencio. **Duplicar una pieza importada** (glb/obj) ya no lanza un error.
+- **Desagrupar/eliminar un grupo** ya no deja el inspector mostrando los
+  controles del grupo inexistente.
+- **Atajos de teclado**: ya no se disparan al escribir o navegar en selectores
+  y campos de la UI (Espacio arrancaba la simulación desde un desplegable,
+  Supr borraba la pieza…); con un botón enfocado, Espacio activa el botón.
+- **Alternar maniquí/esqueleto** ya no resucita una figura que el usuario
+  quitó, y volver a mostrar el esqueleto ya no re-sube el modelo entero a GPU
+  (la caché compartida se conservaba mal).
+- **Abrir el mismo archivo dos veces** desde la pantalla de inicio funciona
+  (el selector no se reseteaba tras un archivo inválido).
+- **Fugas de memoria/GPU corregidas** al alternar proyecto ↔ Home: atajos
+  globales de Toolbar y panel de Rendimiento que retenían el editor entero,
+  contexto WebGL y entorno PMREM de la vista previa de la biblioteca,
+  texturas del suelo, materiales de los ayudantes de articulaciones y de los
+  cables, decodificador Draco duplicado por cada modelo cargado, y pilas
+  selectorizadas que no se reconstruían al asignarles un modelo 3D.
+
+### Rendimiento
+
+- Los visuales de **cables** solo se reconstruyen cuando algo se mueve (antes
+  re-subían sus buffers a GPU en cada frame, incluso en reposo).
+- El **snapping** ya no recalcula el bounding box de todas las geometrías en
+  cada evento de arrastre (se degradaba con modelos personalizados grandes).
+- El bundle se divide en chunks (`three`, `rapier`, app): descarga en paralelo
+  y mejor caché del navegador entre versiones (el código propio pasa de
+  3,2 MB a ~300 kB por actualización).
+
 ## [0.1.4] — 2026-07-01
 
 ### Añadido

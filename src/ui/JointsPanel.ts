@@ -95,6 +95,25 @@ export class JointsPanel {
         this.status.textContent = "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
       }
     });
+    this.editor.bus.on("lineModeChanged", ({ active, kind, count }) => {
+      if (active) {
+        const t = kind === "beam" ? "pilar/travesaño" : "tubo";
+        this.status.textContent =
+          count < 1
+            ? `Trazar ${t}: clic en el punto de INICIO (imán a extremos/puntos medios de otras piezas). ESC para salir.`
+            : `Ahora clic en el punto FINAL del ${t}. Puedes seguir trazando; ESC para salir.`;
+      } else {
+        this.status.textContent = "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
+      }
+    });
+    this.editor.bus.on("bendModeChanged", ({ active }) => {
+      if (active) {
+        this.status.textContent =
+          "Doblado: arrastra los nodos de la pieza para darle forma (curva suave). Clic fuera o ESC para terminar.";
+      } else {
+        this.status.textContent = "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
+      }
+    });
     this.editor.bus.on("ropeSelectionChanged", (payload) => {
       if (payload) {
         this.ropeId = payload.id;

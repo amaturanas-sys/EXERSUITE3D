@@ -49,6 +49,8 @@ export class PropertiesPanel {
   readonly root: HTMLElement;
   private body: HTMLElement;
   private current: SceneObject | null = null;
+  /** Grupo mostrado actualmente (para vaciar el panel si el grupo se disuelve). */
+  private groupShownId: string | null = null;
 
   constructor(private editor: Editor) {
     this.body = el("div", { class: "panel-body" });
@@ -60,6 +62,11 @@ export class PropertiesPanel {
     this.editor.bus.on("selectionChanged", ({ selected }) => this.show(selected));
     this.editor.bus.on("groupSelectionChanged", ({ id, name }) => {
       if (id) this.showGroup(id, name);
+      else if (this.groupShownId) {
+        // El grupo mostrado se desagrupó/eliminó: vaciar el panel.
+        this.groupShownId = null;
+        this.show(this.current);
+      }
     });
     this.editor.bus.on("objectTransformed", ({ object }) => {
       if (object === this.current) this.refreshTransform();
@@ -69,6 +76,7 @@ export class PropertiesPanel {
 
   private showGroup(id: string, name: string): void {
     this.current = null;
+    this.groupShownId = id;
     clear(this.body);
     const input = el("input", { type: "text", value: name });
     input.addEventListener("change", () => this.editor.renameGroup(id, input.value));
@@ -90,6 +98,7 @@ export class PropertiesPanel {
 
   private show(obj: SceneObject | null): void {
     this.current = obj;
+    this.groupShownId = null;
     clear(this.body);
     if (!obj) {
       this.body.append(
@@ -99,13 +108,15 @@ export class PropertiesPanel {
       );
       return;
     }
-    const parametric = !obj.imported && !obj.customModel;
+    const isLine = obj.params.kind === "beam" || obj.params.kind === "tube";
+    const parametric = !obj.imported && !obj.customModel && !isLine;
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
     if (obj.customModel) this.body.append(this.customModelHint());
     if (parametric) {
       this.body.append(this.dimSection(obj));
     }
+    if (isLine) this.body.append(this.lineSection(obj));
     this.body.append(this.transformSection(obj));
     if (parametric) {
       this.body.append(this.deformSection(obj));
@@ -113,6 +124,58 @@ export class PropertiesPanel {
     this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  /** Sección de piezas de línea (pilar/travesaño/tubo): medidas y doblado. */
+  private lineSection(obj: SceneObject): HTMLElement {
+    const isTube = obj.params.kind === "tube";
+    const num = (
+      label: string,
+      key: "radius" | "width" | "depth" | "holeDiameter" | "holeSpacing",
+      step: string,
+    ) => {
+      const input = el("input", {
+        type: "number",
+        value: String(roundTo((obj.params[key] as number | undefined) ?? 0, 2)),
+        step,
+        min: "0",
+      });
+      input.addEventListener("change", () => {
+        const v = parseFloat(input.value);
+        if (!Number.isFinite(v) || v < 0) return;
+        (obj.params[key] as number) = v;
+        obj.rebuildGeometry();
+        this.editor.bus.emit("objectTransformed", { object: obj });
+      });
+      return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
+    };
+
+    const rows: HTMLElement[] = [];
+    if (isTube) {
+      rows.push(el("div", { class: "row" }, [num("Radio (cm)", "radius", "0.1")]));
+    } else {
+      rows.push(
+        el("div", { class: "row" }, [num("Ancho (cm)", "width", "0.5"), num("Fondo (cm)", "depth", "0.5")]),
+        el("div", { class: "row" }, [
+          num("⌀ agujero (cm)", "holeDiameter", "0.1"),
+          num("Dist. agujeros (cm)", "holeSpacing", "0.5"),
+        ]),
+      );
+    }
+
+    const bendBtn = el("button", { class: "tool", title: "Editar la trayectoria arrastrando sus nodos" }, [
+      "✎ Doblar (nodos)",
+    ]);
+    bendBtn.addEventListener("click", () => this.editor.beginBendNodes());
+
+    return el("div", { class: "field" }, [
+      el("label", {}, [isTube ? "Tubo de acero" : "Perfil de acero"]),
+      ...rows,
+      bendBtn,
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        "Doblar: arrastra los nodos de la trayectoria (curva suave). En piezas dobladas no aplican agujeros ni extremos diagonales.",
+      ]),
+    ]);
   }
 
   private customModelHint(): HTMLElement {

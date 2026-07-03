@@ -215,12 +215,19 @@ export class Toolbar {
       document.body.classList.toggle("simulating", running);
     });
 
-    window.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.key.toLowerCase() === "d") {
-        e.preventDefault();
-        this.editor.duplicateSelected();
-      }
-    });
+    window.addEventListener("keydown", this.onKeyDown);
+  }
+
+  private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.ctrlKey && e.key.toLowerCase() === "d") {
+      e.preventDefault();
+      this.editor.duplicateSelected();
+    }
+  };
+
+  /** Da de baja los listeners globales (al volver a la Home). */
+  dispose(): void {
+    window.removeEventListener("keydown", this.onKeyDown);
   }
 
   private highlight(active: TransformMode): void {

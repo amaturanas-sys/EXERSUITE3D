@@ -1,6 +1,7 @@
 import RAPIER from "@dimforge/rapier3d-compat";
 import * as THREE from "three";
 import type { SceneObject } from "../objects/SceneObject";
+import { pathIsStraight } from "../objects/linePieces";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
 
@@ -32,6 +33,11 @@ export class PhysicsWorld {
 
   /** Construye el mundo a partir del estado actual de los objetos, joints y cables. */
   build(objects: SceneObject[], joints: Joint[] = [], cables: Cable[] = []): void {
+    // Libera un mundo anterior si build() se reutiliza (si no, fuga WASM y los
+    // cables quedarian apuntando a cuerpos de un mundo liberado).
+    this.world?.free();
+    this.bodies.clear();
+    this.cables = [];
     this.world = new RAPIER.World(GRAVITY);
 
     // Suelo fijo: cara superior en y = 0.
@@ -294,26 +300,57 @@ export class PhysicsWorld {
         desc = RAPIER.ColliderDesc.ball(Math.max(hx, hy, hz));
         break;
       case "torus":
-        desc = RAPIER.ColliderDesc.cylinder(Math.max(hy, hz), r);
+        // El bbox exacto (cuboid) representa el aro mejor que un cilindro de
+        // eje Y: el torus de three vive en el plano XY (fondo fino en Z).
+        desc = RAPIER.ColliderDesc.cuboid(hx, hy, hz);
         break;
-      default: // box / plane
+      case "tube":
+        // Tubo recto: cilindro exacto; doblado: bbox de la forma barrida.
+        desc = pathIsStraight(obj.params.path)
+          ? RAPIER.ColliderDesc.cylinder(hy, r)
+          : RAPIER.ColliderDesc.cuboid(hx, hy, hz);
+        break;
+      default: // box / plane / beam
         desc = RAPIER.ColliderDesc.cuboid(hx, Math.max(hy, 0.005), hz);
+    }
+    // La geometria puede estar descentrada respecto al origen del cuerpo
+    // (doblados, barridos): alinea el collider con el centro real del bbox.
+    const geo = obj.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const center = geo.boundingBox!.getCenter(new THREE.Vector3());
+    if (center.lengthSq() > 1e-8) {
+      const s = obj.mesh.scale;
+      desc.setTranslation(center.x * s.x * S, center.y * s.y * S, center.z * s.z * S);
     }
     return desc.setRestitution(0.05).setFriction(0.8);
   }
 
-  /** Avanza la simulacion y sincroniza las mallas (convirtiendo m -> cm). */
-  step(): void {
+  /** Acumulador de tiempo real para avanzar con pasos fijos de 1/60 s. */
+  private accumulator = 0;
+  private static readonly FIXED_DT = 1 / 60;
+
+  /**
+   * Avanza la simulacion en tiempo real y sincroniza las mallas (m -> cm).
+   * `dtSeconds` es el tiempo transcurrido desde el frame anterior: se acumula y
+   * se ejecutan pasos fijos de 1/60 s, para que la velocidad de la fisica no
+   * dependa del refresco del monitor (60/120/144 Hz) ni de bajones de FPS.
+   */
+  step(dtSeconds: number = PhysicsWorld.FIXED_DT): void {
     if (!this.world) return;
-    this.world.step();
-    // Cable: primero corrige velocidades, luego proyecta posiciones para
-    // conservar la longitud de forma dura (cable inextensible).
-    if (this.cables.length > 0) {
-      for (let it = 0; it < 8; it++) {
-        for (const c of this.cables) this.solveCableVelocity(c);
-      }
-      for (let it = 0; it < 6; it++) {
-        for (const c of this.cables) this.solveCablePosition(c);
+    // Limita el dt (pestana en segundo plano, hipos) para no espiralar.
+    this.accumulator = Math.min(this.accumulator + dtSeconds, 4 * PhysicsWorld.FIXED_DT);
+    while (this.accumulator >= PhysicsWorld.FIXED_DT) {
+      this.accumulator -= PhysicsWorld.FIXED_DT;
+      this.world.step();
+      // Cable: primero corrige velocidades, luego proyecta posiciones para
+      // conservar la longitud de forma dura (cable inextensible).
+      if (this.cables.length > 0) {
+        for (let it = 0; it < 8; it++) {
+          for (const c of this.cables) this.solveCableVelocity(c);
+        }
+        for (let it = 0; it < 6; it++) {
+          for (const c of this.cables) this.solveCablePosition(c);
+        }
       }
     }
     for (const { body, obj } of this.bodies.values()) {

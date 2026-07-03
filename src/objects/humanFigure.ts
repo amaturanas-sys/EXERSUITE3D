@@ -234,6 +234,10 @@ function fitSegmentGeometry(mesh: THREE.Mesh, geo: THREE.BufferGeometry): void {
 
 /** Libera la geometria de la figura. */
 export function disposeHumanFigure(group: THREE.Group): void {
+  // El esqueleto glTF se clona desde una cache COMPARTIENDO geometrias y un
+  // material singleton: hacer dispose aqui destruiria la cache y forzaria
+  // re-subir el modelo entero a GPU en cada toggle maniqui/esqueleto.
+  if (group.userData.sharedResources) return;
   group.traverse((o) => {
     if (o instanceof THREE.Mesh) {
       o.geometry.dispose();

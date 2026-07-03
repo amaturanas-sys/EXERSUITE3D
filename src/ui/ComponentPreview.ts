@@ -112,7 +112,13 @@ export class ComponentPreview {
     this.ro.disconnect();
     this.clearMesh();
     this.controls.dispose();
+    // Libera el entorno PMREM y fuerza la pérdida del contexto WebGL: abrir la
+    // biblioteca repetidamente no debe acumular contextos vivos (límite ~8-16
+    // por página) hasta que el GC recoja los canvas.
+    this.scene.environment?.dispose();
+    this.scene.environment = null;
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 }

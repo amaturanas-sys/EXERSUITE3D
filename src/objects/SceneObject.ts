@@ -88,6 +88,9 @@ export class SceneObject {
     old.dispose();
     this.mesh.scale.set(1, 1, 1);
     this.customModel = true;
+    // Las placas/varillas/pin de la pila se dimensionan con el bbox de la
+    // geometria: hay que reconstruirlas con la nueva.
+    if (this.stack) this.rebuildStackVisual();
   }
 
   /** Vuelve a la primitiva parametrica del componente. */

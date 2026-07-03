@@ -36,9 +36,16 @@ export class PerformancePanel {
     });
     this.root.style.display = "none";
 
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && this.open) this.hide();
-    });
+    window.addEventListener("keydown", this.onKeyDown);
+  }
+
+  private onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key === "Escape" && this.open) this.hide();
+  };
+
+  /** Da de baja el listener global (al volver a la Home). */
+  dispose(): void {
+    window.removeEventListener("keydown", this.onKeyDown);
   }
 
   toggle(): void {

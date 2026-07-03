@@ -8,8 +8,26 @@ import type { SceneObject } from "../objects/SceneObject";
 
 /** Puntos de anclaje en el espacio LOCAL (sin escala) de la geometria. */
 export function localSnapPoints(obj: SceneObject): THREE.Vector3[] {
+  // Piezas de linea (beam/tube): extremos, nodos del path y puntos medios de
+  // cada segmento — los puntos desde los que se encadenan nuevas piezas.
+  const path = obj.params.path;
+  if ((obj.params.kind === "beam" || obj.params.kind === "tube") && path && path.length >= 2) {
+    const pts: THREE.Vector3[] = path.map(([x, y, z]) => new THREE.Vector3(x, y, z));
+    for (let i = 0; i < path.length - 1; i++) {
+      pts.push(
+        new THREE.Vector3(
+          (path[i][0] + path[i + 1][0]) / 2,
+          (path[i][1] + path[i + 1][1]) / 2,
+          (path[i][2] + path[i + 1][2]) / 2,
+        ),
+      );
+    }
+    return pts;
+  }
   const geo = obj.mesh.geometry;
-  geo.computeBoundingBox();
+  // computeBoundingBox recorre todos los vertices: solo si aun no esta cacheado
+  // (rebuildGeometry crea geometria nueva con boundingBox = null).
+  if (!geo.boundingBox) geo.computeBoundingBox();
   const bb = geo.boundingBox!;
   const hx = bb.max.x;
   const hy = bb.max.y;

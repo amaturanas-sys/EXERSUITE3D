@@ -62,7 +62,11 @@ function bootEditor(): Editor {
   credit.style.display = "none";
 
   editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, perfPanel.root];
-  editorDisposables = [() => palette.dispose()];
+  editorDisposables = [
+    () => palette.dispose(),
+    () => toolbar.dispose(),
+    () => perfPanel.dispose(),
+  ];
   app.append(...editorNodes);
 
   ed.bus.on("humanFigureChanged", ({ present, mode }) => {
@@ -147,6 +151,8 @@ async function goHome(): Promise<void> {
     editorDisposables = [];
     for (const n of editorNodes) n.remove();
     editorNodes = [];
+    // No retener el editor destruido desde la consola de depuración.
+    (window as unknown as { exersuite?: unknown }).exersuite = undefined;
   }
   showLanding();
 }
@@ -187,7 +193,10 @@ function showLanding(): void {
     },
     onOpenRecent: (data, name) => {
       landing?.hide();
-      void startWithProject(data, name);
+      startWithProject(data, name).catch((err) => {
+        console.error("No se pudo abrir el proyecto reciente:", err);
+        window.alert("No se pudo abrir el proyecto reciente.");
+      });
     },
     onContinue: () => {
       landing?.hide();

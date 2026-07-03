@@ -20,6 +20,38 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Columna vertical de soporte de carga.",
   },
   {
+    id: "pilar-linea",
+    label: "Pilar / travesaño (línea)",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: {
+      kind: "beam",
+      width: 5,
+      depth: 5,
+      ends: "plano",
+      path: [[0, -50, 0], [0, -25, 0], [0, 0, 0], [0, 25, 0], [0, 50, 0]],
+    },
+    physics: { massKg: 0, fixed: true },
+    placement: "beam",
+    description:
+      "Perfil de acero trazado entre dos puntos (perfiles 1:1/1:2/1:3, extremos plano/diagonal, pinholes). Se dobla por nodos.",
+  },
+  {
+    id: "tubo-linea",
+    label: "Tubo de acero (línea)",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: {
+      kind: "tube",
+      radius: 2.4,
+      path: [[0, -50, 0], [0, -25, 0], [0, 0, 0], [0, 25, 0], [0, 50, 0]],
+    },
+    physics: { massKg: 0, fixed: true },
+    placement: "tube",
+    description:
+      "Tubo de acero trazado entre dos puntos, con medidas nominales. Se dobla por nodos.",
+  },
+  {
     id: "base-soporte",
     label: "Base de soporte",
     category: "estructural",

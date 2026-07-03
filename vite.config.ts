@@ -13,5 +13,16 @@ export default defineConfig({
     target: "es2022",
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Separa las librerías pesadas del código de la app: se descargan en
+        // paralelo y el navegador las cachea entre versiones (three y el WASM
+        // de Rapier cambian mucho menos que el código propio).
+        manualChunks: {
+          three: ["three"],
+          rapier: ["@dimforge/rapier3d-compat"],
+        },
+      },
+    },
   },
 });

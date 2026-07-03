@@ -7,7 +7,9 @@ export type PrimitiveKind =
   | "sphere"
   | "cone"
   | "torus"
-  | "plane";
+  | "plane"
+  | "beam" // perfil de acero (pilar/travesano) trazado entre dos puntos
+  | "tube"; // tubo de acero trazado entre dos puntos
 
 /**
  * Parametros dimensionales de una primitiva, SIEMPRE en centimetros (o grados/segmentos).
@@ -35,6 +37,19 @@ export interface PrimitiveParams {
   twistDeg?: number;
   /** Bisel/redondeo de aristas (cm), solo cajas. */
   bevel?: number;
+  // piezas de linea (beam / tube)
+  /**
+   * Trayectoria de la pieza en coordenadas locales (cm). Los nodos describen la
+   * forma general y se editan con la herramienta de doblado (bending): una
+   * curva suave (Catmull-Rom) pasa por todos ellos.
+   */
+  path?: [number, number, number][];
+  /** Extremos del perfil: corte plano o diagonal (solo beam recto). */
+  ends?: "plano" | "diagonal";
+  /** Diametro de los pinholes (cm); 0 o ausente = sin agujeros (solo beam recto). */
+  holeDiameter?: number;
+  /** Distancia entre centros de pinholes (cm). */
+  holeSpacing?: number;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */
@@ -82,10 +97,10 @@ export interface ComponentDefinition {
   /** Si es una pila selectorizada, sus parametros por defecto. */
   stack?: StackInfo;
   /**
-   * Colocación especial con herramienta de línea (dos extremos) para elementos
-   * tipo cuerda: cadena o correa de seguridad.
+   * Colocación especial con herramienta de línea (dos extremos): cuerdas
+   * (cadena/correa de seguridad) o piezas trazadas (perfil/tubo de acero).
    */
-  placement?: "rope-chain" | "rope-strap";
+  placement?: "rope-chain" | "rope-strap" | "beam" | "tube";
   /** Descripcion corta para tooltips. */
   description: string;
 }

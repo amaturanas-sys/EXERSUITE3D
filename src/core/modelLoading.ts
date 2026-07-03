@@ -10,16 +10,26 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
  * editor como en la biblioteca autónoma.
  */
 
+// Un unico DRACOLoader compartido: cada instancia crea workers y un modulo
+// WASM propios que nunca se liberan si se instancian por carga.
+let sharedGltfLoader: GLTFLoader | null = null;
+
+function gltfLoader(): GLTFLoader {
+  if (!sharedGltfLoader) {
+    const draco = new DRACOLoader();
+    draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
+    sharedGltfLoader = new GLTFLoader();
+    sharedGltfLoader.setDRACOLoader(draco);
+  }
+  return sharedGltfLoader;
+}
+
 /** Carga un modelo desde sus bytes y devuelve su raíz. */
 export async function loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
   const url = URL.createObjectURL(new Blob([bytes]));
   try {
     if (ext === "obj") return await new OBJLoader().loadAsync(url);
-    const draco = new DRACOLoader();
-    draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
-    const loader = new GLTFLoader();
-    loader.setDRACOLoader(draco);
-    return (await loader.loadAsync(url)).scene;
+    return (await gltfLoader().loadAsync(url)).scene;
   } finally {
     URL.revokeObjectURL(url);
   }

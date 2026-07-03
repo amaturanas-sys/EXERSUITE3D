@@ -211,8 +211,18 @@ export class SceneManager {
       const mesh = o as THREE.Mesh;
       mesh.geometry?.dispose?.();
       const m = mesh.material as THREE.Material | THREE.Material[] | undefined;
-      if (Array.isArray(m)) m.forEach((mm) => mm.dispose());
-      else m?.dispose?.();
+      const disposeMat = (mm: THREE.Material) => {
+        // Libera tambien las texturas del material (p. ej. la CanvasTexture
+        // 1024x1024 del logo del suelo), que dispose() no toca.
+        const std = mm as THREE.MeshStandardMaterial;
+        std.map?.dispose?.();
+        std.normalMap?.dispose?.();
+        std.roughnessMap?.dispose?.();
+        std.metalnessMap?.dispose?.();
+        mm.dispose();
+      };
+      if (Array.isArray(m)) m.forEach(disposeMat);
+      else if (m) disposeMat(m);
     });
     this.renderer.dispose();
     this.renderer.forceContextLoss();

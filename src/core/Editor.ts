@@ -9,6 +9,7 @@ import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
+import { straightPath } from "../objects/linePieces";
 import { SnapManager, localSnapPoints } from "./snapping";
 
 /**
@@ -34,6 +35,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData } from "./project";
+import type { PrimitiveParams } from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
@@ -63,6 +65,10 @@ export type EditorEvents = {
   cableModeChanged: { active: boolean; count: number; hint?: string };
   /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
+  /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
+  lineModeChanged: { active: boolean; kind: "beam" | "tube" | null; count: number };
+  /** Modo "doblado por nodos" (bending) activo/inactivo. */
+  bendModeChanged: { active: boolean };
   /** Cuerda seleccionada (para editar tensión) o null. */
   ropeSelectionChanged: { id: string; name: string; slack: number } | null;
   /** Snapping de ensamblaje activado/desactivado. */
@@ -132,6 +138,14 @@ export class Editor {
   private ropeMode: RopeKind | null = null;
   private ropePendingA: RopeEnd | null = null;
   private selectedRopeId: string | null = null;
+
+  // Piezas de línea (pilar/travesaño/tubo): trazado por dos puntos + bending.
+  private lineMode: "beam" | "tube" | null = null;
+  private lineParams: PrimitiveParams | null = null;
+  private linePendingA: THREE.Vector3 | null = null;
+  private bendTarget: SceneObject | null = null;
+  private bendHandles: THREE.Group | null = null;
+  private bendDrag: { index: number; plane: THREE.Plane } | null = null;
 
   private snap: SnapManager;
   // Línea elástica de previsualización al colocar cable/cuerda (línea recta).
@@ -221,6 +235,7 @@ export class Editor {
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
+    window.addEventListener("pointerup", this.onPointerUp);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
 
@@ -232,6 +247,13 @@ export class Editor {
     });
     // Al mover una pieza, actualiza las cuerdas ancladas a ella.
     this.bus.on("objectTransformed", ({ object }) => this.updateRopesForObject(object.id));
+    // Los visuales de cable solo se reconstruyen cuando algo cambió (no por frame).
+    const markCables = () => {
+      this.cablesDirty = true;
+    };
+    this.bus.on("objectTransformed", markCables);
+    this.bus.on("objectsChanged", markCables);
+    this.bus.on("cablesChanged", markCables);
 
     this.setupAutosave();
   }
@@ -283,6 +305,9 @@ export class Editor {
   /** Programa un autoguardado diferido (debounce) tras el último cambio. */
   private scheduleAutosave(): void {
     if (this.autosaveSuspended || this.simulating) return;
+    // Todo cambio que autoguarda es también un cambio sin guardar a archivo
+    // (posar el maniquí, tensar cuerdas, mover grupos… no emiten evento).
+    this.dirty = true;
     if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => {
       this.autosaveTimer = null;
@@ -353,19 +378,47 @@ export class Editor {
   start(): void {
     if (this.running) return;
     this.running = true;
+    this.lastFrameTime = performance.now();
     this.loop();
   }
 
+  private lastFrameTime = 0;
+  private simFrame = 0;
+  /** Los visuales de cable solo se reconstruyen cuando algo se ha movido. */
+  private cablesDirty = true;
+
   private loop = (): void => {
     if (!this.running) return;
-    if (this.simulating && this.physics) this.physics.step();
+    const now = performance.now();
+    const dt = Math.min((now - this.lastFrameTime) / 1000, 0.25);
+    this.lastFrameTime = now;
+    if (this.simulating && this.physics) {
+      this.physics.step(dt);
+      this.cablesDirty = true;
+      // Las cuerdas ancladas a piezas dinamicas siguen a sus anclas (throttle).
+      if (++this.simFrame % 6 === 0) this.rebuildDynamicRopes();
+    }
     this.updateStackAnimation();
     this.updateHandIK();
-    this.updateCableVisuals();
+    if (this.cablesDirty) {
+      this.updateCableVisuals();
+      this.cablesDirty = false;
+    }
     this.orbit.update();
     this.sceneManager.render();
     requestAnimationFrame(this.loop);
   };
+
+  /** Reconstruye solo las cuerdas con algún extremo en una pieza no fija. */
+  private rebuildDynamicRopes(): void {
+    for (const rope of this.ropes.values()) {
+      const dyn = [rope.a.objectId, rope.b.objectId].some((id) => {
+        const o = id ? this.objects.get(id) : null;
+        return o && !o.physics.fixed && o.effectiveMassKg() > 0;
+      });
+      if (dyn) this.rebuildRope(rope);
+    }
+  }
 
   // ------------------------------------------------------------- simulacion
   isSimulating(): boolean {
@@ -377,9 +430,19 @@ export class Editor {
     else await this.startSimulation();
   }
 
+  private startingSim = false;
+
   private async startSimulation(): Promise<void> {
-    if (this.simulating) return;
-    await PhysicsWorld.init();
+    // El guard `startingSim` evita arranques concurrentes mientras carga el
+    // WASM de Rapier (auto-repeat de Espacio): se creaban varios mundos y los
+    // anteriores nunca se liberaban.
+    if (this.simulating || this.startingSim) return;
+    this.startingSim = true;
+    try {
+      await PhysicsWorld.init();
+    } finally {
+      this.startingSim = false;
+    }
 
     // Guarda el estado de diseno para poder restaurarlo al detener.
     this.saved.clear();
@@ -394,6 +457,9 @@ export class Editor {
     this.select(null);
     this.cancelConnect();
     this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.endBendNodes();
     this.physics = new PhysicsWorld();
     this.physics.build(this.listObjects(), this.listJoints(), this.listCables());
     this.jointHelpers.visible = false;
@@ -417,6 +483,9 @@ export class Editor {
     }
     this.saved.clear();
     this.jointHelpers.visible = true;
+    // Cables y cuerdas vuelven a las posiciones de diseño restauradas.
+    this.cablesDirty = true;
+    this.rebuildAllRopes();
     this.bus.emit("simulationChanged", { running: false });
   }
 
@@ -455,6 +524,7 @@ export class Editor {
   }
 
   removeObject(obj: SceneObject): void {
+    if (this.bendTarget === obj) this.endBendNodes();
     if (this.selected === obj) this.select(null);
     // Elimina las articulaciones y cables que referencian a este objeto.
     for (const j of this.listJoints()) {
@@ -493,10 +563,31 @@ export class Editor {
 
   /** Crea una copia de `src` (sin seleccionarla) con un desplazamiento opcional. */
   private duplicateObject(src: SceneObject, offset: THREE.Vector3): SceneObject {
-    const obj = this.addComponent(src.componentId);
-    obj.params = { ...src.params };
-    if (src.stack) obj.stack = { ...src.stack };
-    obj.rebuildGeometry();
+    let obj: SceneObject;
+    if (src.imported) {
+      // Las piezas importadas no existen en la biblioteca: se clona su malla.
+      obj = new SceneObject({
+        name: `${src.name} copia`,
+        componentId: src.componentId,
+        category: src.category,
+        params: { ...src.params },
+        physics: { ...src.physics },
+        materialId: src.materialId,
+        importedGeometry: src.mesh.geometry.clone(),
+      });
+      this.sceneManager.content.add(obj.mesh);
+      this.objects.set(obj.id, obj);
+      this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    } else {
+      obj = this.addComponent(src.componentId);
+      // Copia profunda del path: si se comparte, doblar la copia doblaria la original.
+      obj.params = {
+        ...src.params,
+        path: src.params.path?.map((n) => [...n] as [number, number, number]),
+      };
+      if (src.stack) obj.stack = { ...src.stack };
+      obj.rebuildGeometry();
+    }
     obj.setMaterial(src.materialId);
     obj.physics = { ...src.physics };
     obj.mesh.position.copy(src.mesh.position).add(offset);
@@ -553,18 +644,23 @@ export class Editor {
     const q4 = (q: THREE.Quaternion): [number, number, number, number] => [q.x, q.y, q.z, q.w];
     return {
       version: PROJECT_VERSION,
-      objects: this.listObjects().filter((o) => !o.imported).map((o) => ({
-        id: o.id,
-        name: o.name,
-        componentId: o.componentId,
-        materialId: o.materialId,
-        params: { ...o.params },
-        physics: { ...o.physics },
-        stack: o.stack ? { ...o.stack } : undefined,
-        position: v3(o.mesh.position),
-        quaternion: q4(o.mesh.quaternion),
-        scale: v3(o.mesh.scale),
-      })),
+      objects: this.listObjects().filter((o) => !o.imported).map((o) => {
+        // Durante la simulación se serializa el estado de DISEÑO (guardado al
+        // arrancar la física), no las posiciones simuladas del momento.
+        const s = this.simulating ? this.saved.get(o.id) : undefined;
+        return {
+          id: o.id,
+          name: o.name,
+          componentId: o.componentId,
+          materialId: o.materialId,
+          params: { ...o.params },
+          physics: { ...o.physics },
+          stack: o.stack ? { ...o.stack } : undefined,
+          position: v3(s?.position ?? o.mesh.position),
+          quaternion: q4(s?.quaternion ?? o.mesh.quaternion),
+          scale: v3(s?.scale ?? o.mesh.scale),
+        };
+      }),
       joints: this.listJoints().map((j) => ({
         name: j.name,
         kind: j.kind,
@@ -664,6 +760,11 @@ export class Editor {
 
   /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
   clearScene(): void {
+    // "Nuevo" con la física corriendo: detenla antes de vaciar (si no, el
+    // mundo sigue haciendo step sobre mallas liberadas).
+    if (this.simulating) this.stopSimulation();
+    this.endBendNodes();
+    this.cancelLine();
     this.select(null);
     for (const o of this.objects.values()) {
       this.sceneManager.content.remove(o.mesh);
@@ -696,8 +797,8 @@ export class Editor {
     } finally {
       this.autosaveSuspended = false;
     }
-    this.dirty = false; // recién cargado = sin cambios
     this.scheduleAutosave();
+    this.dirty = false; // recién cargado = sin cambios
   }
 
   /**
@@ -714,6 +815,8 @@ export class Editor {
     window.removeEventListener("keydown", this.onKeyDown);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
+    window.removeEventListener("pointerup", this.onPointerUp);
+    this.endBendNodes();
     if (this.placementLine) {
       this.sceneManager.scene.remove(this.placementLine);
       this.placementLine.geometry.dispose();
@@ -744,18 +847,24 @@ export class Editor {
     const idMap = new Map<string, string>();
 
     for (const od of data.objects) {
-      const obj = this.addComponent(od.componentId);
-      obj.name = od.name;
-      obj.mesh.name = od.name;
-      obj.params = { ...od.params };
-      obj.stack = od.stack ? { ...od.stack } : undefined;
-      obj.physics = { ...od.physics };
-      obj.rebuildGeometry();
-      obj.setMaterial(od.materialId);
-      obj.mesh.position.fromArray(od.position);
-      obj.mesh.quaternion.fromArray(od.quaternion);
-      obj.mesh.scale.fromArray(od.scale);
-      idMap.set(od.id, obj.id);
+      // Un componente desconocido (proyecto de otra versión, JSON editado) no
+      // debe abortar la carga del resto de la escena.
+      try {
+        const obj = this.addComponent(od.componentId);
+        obj.name = od.name;
+        obj.mesh.name = od.name;
+        obj.params = { ...od.params };
+        obj.stack = od.stack ? { ...od.stack } : undefined;
+        obj.physics = { ...od.physics };
+        obj.rebuildGeometry();
+        obj.setMaterial(od.materialId);
+        obj.mesh.position.fromArray(od.position);
+        obj.mesh.quaternion.fromArray(od.quaternion);
+        obj.mesh.scale.fromArray(od.scale);
+        idMap.set(od.id, obj.id);
+      } catch (err) {
+        console.warn(`Se omite la pieza "${od.name}" (${od.componentId}):`, err);
+      }
     }
 
     for (const jd of data.joints) {
@@ -841,6 +950,7 @@ export class Editor {
 
   // ------------------------------------------------------------ seleccion
   select(obj: SceneObject | null): void {
+    if (this.bendTarget && obj !== this.bendTarget) this.endBendNodes();
     this.clearGroupHighlight();
     this.selected = obj;
     this.selectedFigure = false;
@@ -1025,7 +1135,10 @@ export class Editor {
       const m = new THREE.Matrix4().compose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
       m.premultiply(delta);
       m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
+      // Las cuerdas ancladas a miembros del grupo siguen a sus anclas.
+      this.updateRopesForObject(o.id);
     }
+    this.cablesDirty = true;
     this.groupPrev.copy(cur);
   }
 
@@ -1043,6 +1156,8 @@ export class Editor {
     this.selectedGroupId = null;
     this.gizmo.detach();
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
+    // Avisa al inspector de que el grupo ya no existe.
+    this.bus.emit("groupSelectionChanged", { id: null, name: "" });
   }
 
   /** Elimina el grupo seleccionado y todas sus piezas. */
@@ -1058,6 +1173,7 @@ export class Editor {
     });
     this.groups.delete(gid);
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
+    this.bus.emit("groupSelectionChanged", { id: null, name: "" });
   }
 
   /** Encaja la pieza arrastrada a un punto de anclaje compatible (solo al mover). */
@@ -1098,7 +1214,9 @@ export class Editor {
   setHumanMode(mode: HumanMode): void {
     if (mode === this.humanMode) return;
     this.humanMode = mode;
-    if (this.humanFigure || this.lastFigureTransform) {
+    // Solo se reconstruye si la figura ESTÁ presente: cambiar el modo no debe
+    // resucitar una figura que el usuario quitó.
+    if (this.humanFigure) {
       void this.addHumanFigure(this.humanHeight);
     } else {
       this.emitHumanState(false, false);
@@ -1476,6 +1594,7 @@ export class Editor {
     for (const child of [...this.jointHelpers.children]) {
       this.jointHelpers.remove(child);
       (child as THREE.Mesh).geometry?.dispose?.();
+      ((child as THREE.Mesh).material as THREE.Material | undefined)?.dispose?.();
     }
     for (const joint of this.joints.values()) {
       const color = joint.kind === "revolute" ? 0x22d3ee : 0xf59e0b;
@@ -1610,6 +1729,7 @@ export class Editor {
       if (!wanted.has(child.userData.cableId as string)) {
         this.cableVisuals.remove(child);
         ((child as THREE.Line).geometry as THREE.BufferGeometry).dispose();
+        ((child as THREE.Line).material as THREE.Material).dispose();
       }
     }
     const existing = new Map<string, THREE.Line>();
@@ -1662,6 +1782,182 @@ export class Editor {
     this.ropePendingA = null;
     this.clearPlacementPreview();
     this.bus.emit("ropeModeChanged", { active: false, kind: null, count: 0 });
+  }
+
+  // ------------------------------------------- piezas de línea (beam/tube)
+  /**
+   * Entra en modo "trazar pieza de línea" (pilar/travesaño o tubo): dos clics
+   * definen los extremos, como la línea recta de Paint. `params` es la plantilla
+   * (perfil/extremos/agujeros o radio) elegida en el diálogo; el path se genera
+   * al fijar los dos puntos. El modo queda activo para encadenar piezas (ESC
+   * para salir).
+   */
+  beginLine(kind: "beam" | "tube", params: PrimitiveParams): void {
+    if (this.simulating) return;
+    this.cancelConnect();
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelAttachHand();
+    this.endBendNodes();
+    this.select(null);
+    this.lineMode = kind;
+    this.lineParams = params;
+    this.linePendingA = null;
+    this.bus.emit("lineModeChanged", { active: true, kind, count: 0 });
+  }
+
+  cancelLine(): void {
+    if (!this.lineMode) return;
+    this.lineMode = null;
+    this.lineParams = null;
+    this.linePendingA = null;
+    this.clearPlacementPreview();
+    this.bus.emit("lineModeChanged", { active: false, kind: null, count: 0 });
+  }
+
+  /**
+   * Aim assist del trazado: punto bajo el cursor, con ayuda de puntería que
+   * imanta a los puntos clave de otras piezas (extremos, nodos y puntos medios)
+   * cuando el cursor pasa a menos de ~16 px en pantalla. Si no hay imán, usa la
+   * superficie señalada; si no, el suelo (y=0) redondeado al cm.
+   */
+  private pickLinePlacePoint(): { point: THREE.Vector3; snapped: boolean } | null {
+    const rect = this.canvas.getBoundingClientRect();
+    let best: THREE.Vector3 | null = null;
+    let bestPx = 16;
+    const ndc = new THREE.Vector3();
+    for (const obj of this.objects.values()) {
+      obj.mesh.updateMatrixWorld();
+      for (const lp of localSnapPoints(obj)) {
+        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+        ndc.copy(wp).project(this.sceneManager.camera);
+        if (ndc.z > 1 || ndc.z < -1) continue; // fuera del frustum en Z
+        const dx = ((ndc.x - this.pointer.x) * rect.width) / 2;
+        const dy = ((ndc.y - this.pointer.y) * rect.height) / 2;
+        const px = Math.hypot(dx, dy);
+        if (px < bestPx) {
+          bestPx = px;
+          best = wp;
+        }
+      }
+    }
+    if (best) return { point: best, snapped: true };
+
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+    if (hits[0]) return { point: hits[0].point.clone(), snapped: false };
+
+    const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const p = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(ground, p)) {
+      p.set(Math.round(p.x), 0, Math.round(p.z));
+      return { point: p, snapped: false };
+    }
+    return null;
+  }
+
+  /** Crea la pieza de línea entre dos puntos de mundo (recta, path por nodos). */
+  private createLinePiece(a: THREE.Vector3, b: THREE.Vector3): SceneObject | null {
+    const kind = this.lineMode;
+    const tpl = this.lineParams;
+    if (!kind || !tpl) return null;
+    const dir = b.clone().sub(a);
+    const L = dir.length();
+    if (L < 2) return null; // trazo demasiado corto
+    dir.divideScalar(L);
+
+    const def = getDefinition(kind === "beam" ? "pilar-linea" : "tubo-linea");
+    if (!def) return null;
+    const count = [...this.objects.values()].filter((o) => o.componentId === def.id).length;
+    const obj = new SceneObject({
+      name: count > 0 ? `${def.label} ${count + 1}` : def.label,
+      componentId: def.id,
+      category: def.category,
+      params: { ...tpl, path: straightPath(L) },
+      physics: def.physics,
+      materialId: def.materialId,
+    });
+    obj.mesh.position.copy(a).add(b).multiplyScalar(0.5);
+    obj.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    this.sceneManager.content.add(obj.mesh);
+    this.objects.set(obj.id, obj);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+    return obj;
+  }
+
+  // ------------------------------------------------- doblado por nodos
+  /**
+   * Activa el doblado (bending) de la pieza seleccionada: muestra los nodos de
+   * su trayectoria como asas arrastrables (curvas tipo Bézier editables). Solo
+   * para piezas de línea (con `params.path`).
+   */
+  beginBendNodes(): void {
+    const obj = this.selected;
+    if (!obj || !obj.params.path || this.simulating) return;
+    this.cancelConnect();
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.endBendNodes();
+    this.bendTarget = obj;
+    this.gizmo.detach();
+
+    const group = new THREE.Group();
+    const r = Math.max(2, Math.min(4, (obj.params.radius ?? obj.params.width ?? 5) * 0.7));
+    for (let i = 0; i < obj.params.path.length; i++) {
+      const h = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 16, 12),
+        new THREE.MeshBasicMaterial({
+          color: 0x22d3ee,
+          depthTest: false,
+          transparent: true,
+          opacity: 0.95,
+        }),
+      );
+      h.renderOrder = 1001;
+      h.userData.bendIndex = i;
+      group.add(h);
+    }
+    this.bendHandles = group;
+    this.sceneManager.scene.add(group);
+    this.refreshBendHandles();
+    this.bus.emit("bendModeChanged", { active: true });
+  }
+
+  isBending(): boolean {
+    return this.bendTarget !== null;
+  }
+
+  /** Coloca las asas sobre los nodos del path (en coordenadas de mundo). */
+  private refreshBendHandles(): void {
+    const obj = this.bendTarget;
+    if (!obj || !this.bendHandles) return;
+    obj.mesh.updateMatrixWorld(true);
+    for (const h of this.bendHandles.children) {
+      const i = h.userData.bendIndex as number;
+      const n = obj.params.path![i];
+      h.position.set(n[0], n[1], n[2]).applyMatrix4(obj.mesh.matrixWorld);
+    }
+  }
+
+  endBendNodes(): void {
+    if (!this.bendTarget) return;
+    if (this.bendHandles) {
+      this.sceneManager.scene.remove(this.bendHandles);
+      for (const h of this.bendHandles.children) {
+        (h as THREE.Mesh).geometry.dispose();
+        ((h as THREE.Mesh).material as THREE.Material).dispose();
+      }
+      this.bendHandles = null;
+    }
+    const obj = this.bendTarget;
+    this.bendTarget = null;
+    this.bendDrag = null;
+    this.orbit.enabled = true;
+    // Reengancha el gizmo si la pieza sigue seleccionada.
+    if (this.selected === obj) this.gizmo.attach(obj.mesh);
+    this.bus.emit("bendModeChanged", { active: false });
+    this.scheduleAutosave();
   }
 
   /**
@@ -1725,15 +2021,47 @@ export class Editor {
     if (this.placementLine) this.placementLine.visible = false;
   }
 
-  /** Previsualiza el anclaje (indicador) y la línea recta al colocar cable/cuerda. */
+  /**
+   * Previsualiza el anclaje (indicador) y la línea recta al colocar
+   * cable/cuerda/pieza de línea, y arrastra los nodos en modo doblado.
+   */
   private onPointerMove = (event: PointerEvent): void => {
-    if (this.simulating || (!this.cableMode && !this.ropeMode)) {
+    if (this.simulating || (!this.cableMode && !this.ropeMode && !this.lineMode && !this.bendDrag)) {
       return;
     }
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    // Arrastre de un nodo de doblado: mueve el nodo en el plano de cámara y
+    // reconstruye la pieza en vivo (curva Catmull-Rom por los nodos).
+    if (this.bendDrag && this.bendTarget) {
+      const hit = new THREE.Vector3();
+      if (!this.raycaster.ray.intersectPlane(this.bendDrag.plane, hit)) return;
+      const obj = this.bendTarget;
+      obj.mesh.updateMatrixWorld(true);
+      const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
+      obj.params.path![this.bendDrag.index] = [local.x, local.y, local.z];
+      obj.rebuildGeometry();
+      this.refreshBendHandles();
+      this.bus.emit("objectTransformed", { object: obj });
+      return;
+    }
+
+    // Trazado de pieza de línea: imán de puntería + línea elástica.
+    if (this.lineMode) {
+      const pick = this.pickLinePlacePoint();
+      if (!pick) {
+        this.clearPlacementPreview();
+        return;
+      }
+      if (pick.snapped) this.snap.showIndicator(pick.point);
+      else this.snap.hideIndicator();
+      if (this.linePendingA) this.showPlacementLine(this.linePendingA, pick.point);
+      else if (this.placementLine) this.placementLine.visible = false;
+      return;
+    }
 
     let world: THREE.Vector3 | null = null;
     let onPiece = false;
@@ -1854,6 +2182,40 @@ export class Editor {
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    // Modo doblado: clic en un asa inicia el arrastre del nodo; fuera, sale.
+    if (this.bendTarget && this.bendHandles) {
+      const hits = this.raycaster.intersectObjects(this.bendHandles.children, false);
+      if (hits[0]) {
+        const idx = hits[0].object.userData.bendIndex as number;
+        const node = hits[0].object.position.clone();
+        const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
+        this.bendDrag = {
+          index: idx,
+          plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, node),
+        };
+        this.orbit.enabled = false;
+      } else {
+        this.endBendNodes();
+      }
+      return;
+    }
+
+    // Modo línea (pilar/travesaño/tubo): dos clics con aim assist.
+    if (this.lineMode) {
+      const pick = this.pickLinePlacePoint();
+      if (!pick) return;
+      if (!this.linePendingA) {
+        this.linePendingA = pick.point.clone();
+        this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
+      } else {
+        this.createLinePiece(this.linePendingA, pick.point);
+        this.linePendingA = null;
+        if (this.placementLine) this.placementLine.visible = false;
+        this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });
+      }
+      return;
+    }
 
     // Modo apoyar mano (IK): 1) clic en una mano/brazo de la figura, 2) clic en el agarre.
     if (this.attachMode) {
@@ -1980,9 +2342,26 @@ export class Editor {
     }
   };
 
+  /** Suelta el nodo de doblado al levantar el puntero (en cualquier parte). */
+  private onPointerUp = (): void => {
+    if (!this.bendDrag) return;
+    this.bendDrag = null;
+    this.orbit.enabled = true;
+    this.scheduleAutosave();
+  };
+
   private onKeyDown = (event: KeyboardEvent): void => {
-    if (event.target instanceof HTMLInputElement) return;
+    // No robar atajos mientras se escribe o navega un control de la UI.
+    const t = event.target;
+    if (
+      t instanceof HTMLElement &&
+      (t.closest("input, select, textarea") !== null || t.isContentEditable)
+    ) {
+      return;
+    }
     if (event.key === " ") {
+      // Con un botón enfocado, Espacio debe activar el botón, no la simulación.
+      if (t instanceof HTMLElement && t.closest("button") !== null) return;
       event.preventDefault();
       void this.toggleSimulation();
       return;
@@ -2014,7 +2393,9 @@ export class Editor {
         this.cancelConnect();
         this.cancelCable();
         this.cancelRope();
+        this.cancelLine();
         this.cancelAttachHand();
+        this.endBendNodes();
         this.select(null);
         break;
     }

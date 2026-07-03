@@ -7,6 +7,7 @@ import {
 } from "../objects/componentLibrary";
 import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
+import { configureBeam, configureTube } from "./lineToolDialog";
 import { clear, el } from "./dom";
 
 /**
@@ -80,7 +81,11 @@ export class ComponentPalette {
     btn.addEventListener("click", () => {
       if (def.placement === "rope-chain") this.editor.beginRope("chain");
       else if (def.placement === "rope-strap") this.editor.beginRope("strap");
-      else this.editor.addComponent(def.id);
+      else if (def.placement === "beam") {
+        void configureBeam().then((p) => p && this.editor.beginLine("beam", p));
+      } else if (def.placement === "tube") {
+        void configureTube().then((p) => p && this.editor.beginLine("tube", p));
+      } else this.editor.addComponent(def.id);
     });
     return btn;
   }

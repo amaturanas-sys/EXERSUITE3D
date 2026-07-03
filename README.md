@@ -138,6 +138,9 @@ tablets con poca potencia.
 | Crear articulación  | **+ Bisagra** / **+ Corredera**, luego clic en pieza A y pieza B |
 | Trazar cable        | **+ Cable** → **línea recta** entre dos anclas: clic en el 1.er anclaje y en el 2.º (se ajusta al **punto de conexión** más cercano, con previsualización). Para reenviar, clic en una **roldana/polea** antes del 2.º anclaje (solo esas superficies deslizan); **Enter/Finalizar** cierra un cable con reenvíos |
 | Cadena/correa de seguridad | Clic en la pieza de la paleta → **línea**: clic en el extremo de inicio y en el final (se anclan a piezas/superficie). Cuelgan en catenaria; ajusta la **tensión** en Conexiones. Sus segmentos (eslabón/listón) se reemplazan desde la biblioteca |
+| Pilar / travesaño (línea) | Paleta → **Pilar / travesaño (línea)**: elige **perfil 1:1/1:2/1:3**, medida nominal, **extremos** (plano/diagonal) y **pinholes** (⌀ y distancia) → clic en inicio y fin, como la línea recta de Paint. **Aim assist**: imán a extremos/nodos/puntos medios de otras piezas. Encadena varias; **ESC** para salir |
+| Tubo de acero (línea) | Paleta → **Tubo de acero (línea)**: elige el **⌀ nominal** → clic en inicio y fin, con el mismo aim assist |
+| Doblar por nodos (bending) | Selecciona un pilar/travesaño o tubo → Inspector → **✎ Doblar (nodos)**: arrastra los nodos de la trayectoria para dar forma (curva suave estilo Photoshop). Clic fuera o **ESC** para terminar |
 | Encaje magnético    | Botón **Imán**: al mover una pieza, encaja en puntos de anclaje (centro/extremos/caras) de otras |
 | Agrupar piezas      | **Shift+clic** para multiseleccionar → **Agrupar**; grupo: **nombrar/duplicar/desagrupar/eliminar** en el inspector |
 | Voltear (espejo)    | Inspector → **Voltear X/Y/Z** sobre la pieza seleccionada |

@@ -28,6 +28,9 @@ export class Landing {
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => {
       const f = this.fileInput.files?.[0];
+      // Resetea el value para poder reintentar con el MISMO archivo (si el
+      // primer intento falló, change no se dispararía de nuevo).
+      this.fileInput.value = "";
       if (f) this.actions.onOpenFile(f);
     });
 

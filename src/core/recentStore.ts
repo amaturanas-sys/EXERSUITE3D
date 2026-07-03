@@ -40,8 +40,16 @@ function open(): Promise<IDBDatabase> {
         db.createObjectStore(STORE, { keyPath: "id" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Si otra pestana pide una version mas nueva, cerramos para no bloquearla.
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error);
+    // Otra pestana con la version antigua abierta bloquea el upgrade: mejor
+    // fallar con mensaje que colgar la promesa para siempre.
+    req.onblocked = () =>
+      reject(new Error("Base de datos bloqueada por otra pestana abierta"));
   });
   return dbPromise;
 }

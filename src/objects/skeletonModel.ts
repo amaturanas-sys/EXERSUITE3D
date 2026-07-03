@@ -88,6 +88,9 @@ export async function buildSkeletonFigure(heightCm: number): Promise<THREE.Group
   group.name = "Figura humana (esqueleto)";
   group.userData.isHumanFigure = true;
   group.userData.heightCm = heightCm;
+  // El clon comparte geometrias con la cache y usa el material singleton:
+  // disposeHumanFigure no debe liberarlos.
+  group.userData.sharedResources = true;
   group.add(inner);
   return group;
 }
