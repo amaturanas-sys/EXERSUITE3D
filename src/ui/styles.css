@@ -147,10 +147,49 @@ select.tool-select {
   border-color: var(--accent);
 }
 
-/* Durante la simulacion, la paleta no admite anadir piezas. */
-body.simulating #palette {
-  opacity: 0.5;
-  pointer-events: none;
+/*
+ * Durante la simulacion se OCULTA toda la UI de edicion (paneles y grupos de
+ * herramientas) para liberar recursos y dejar solo las herramientas de
+ * simulacion; vuelve al detenerla.
+ */
+body.simulating #palette,
+body.simulating #right-dock,
+body.simulating #poses,
+body.simulating #hud,
+body.simulating .edit-only {
+  display: none;
+}
+
+/* ---- Barra de herramientas de simulacion ---- */
+#simbar {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 10px;
+  background: rgba(30, 33, 40, 0.92);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  z-index: 11;
+  backdrop-filter: blur(8px);
+  max-width: calc(100vw - 24px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+body.simulating #simbar,
+body.simulator-mode #simbar {
+  display: flex;
+}
+#simbar .sim-hint {
+  color: #9aa3b2;
+  font-size: 12px;
+  padding: 0 4px;
+}
+body.simulator-mode #viewport {
+  cursor: grab;
 }
 
 /* ---- Paneles laterales ---- */
@@ -441,6 +480,32 @@ select.select:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+/* Selector Builder / Simulador de la pantalla de inicio. */
+.land-mode-row {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  overflow: hidden;
+  width: fit-content;
+}
+.land-mode {
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.land-mode.active {
+  background: var(--panel-2);
+  color: var(--text);
+}
+.land-mode-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  max-width: 520px;
+  min-height: 0;
 }
 .land-btn {
   background: var(--panel-2);

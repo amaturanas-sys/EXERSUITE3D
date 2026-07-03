@@ -129,7 +129,9 @@ tablets con poca potencia.
 | Duplicar selección  | `Ctrl + D`                              |
 | Eliminar selección  | `Supr` / `Backspace`                    |
 | Deseleccionar       | `Esc`                                   |
-| Simular / detener   | `Espacio` o botón **Simular**           |
+| Simular / detener   | `Espacio` o botón **Simular**. Al simular se oculta la UI de edición y aparece la **barra de simulación** |
+| Modo Simulador      | Pantalla de inicio → selector **▶ Simulador**: abre un proyecto solo para correr su física (sin herramientas de edición) |
+| Herramientas de simulación | Barra inferior: **perspectivas** (Frontal/Lateral/Superior/Isométrica), **zoom** ＋/－, arrastrar el **maniquí** para situarlo, y **mano interactiva**: arrastra una pieza móvil y un resorte físico tira de ella (como una persona usando agarres y barras) |
 | Guardar / cargar    | Botones **Guardar** / **Cargar** (proyecto a archivo `.json`) |
 | Nuevo proyecto      | Botón **Nuevo**: vacía la escena y descarta el autoguardado |
 | Autoguardado        | Automático en el navegador (localStorage); se restaura al reabrir. Indicador **Guardado ✓** en la barra |

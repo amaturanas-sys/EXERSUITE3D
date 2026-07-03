@@ -46,6 +46,7 @@ export class PhysicsWorld {
     this.world?.free();
     this.bodies.clear();
     this.cables = [];
+    this.drag = null;
     this.world = new RAPIER.World(GRAVITY);
 
     // Suelo fijo: cara superior en y = 0.
@@ -415,6 +416,79 @@ export class PhysicsWorld {
     return desc.setRestitution(0.05).setFriction(0.8);
   }
 
+  // ------------------------------------------------- mano interactiva
+  /** Agarre activo: cuerpo, punto local (m) y objetivo del arrastre (m). */
+  private drag: {
+    body: R.RigidBody;
+    local: THREE.Vector3;
+    target: THREE.Vector3;
+  } | null = null;
+
+  /**
+   * Agarra una pieza dinámica por el punto de mundo dado (cm), como una mano.
+   * Devuelve false si la pieza no existe o no es dinámica.
+   */
+  grab(objectId: string, worldCm: THREE.Vector3): boolean {
+    const e = this.bodies.get(objectId);
+    if (!e || !e.body.isDynamic()) return false;
+    const t = e.body.translation();
+    const q = e.body.rotation();
+    const worldM = worldCm.clone().multiplyScalar(S);
+    const local = worldM
+      .clone()
+      .sub(new THREE.Vector3(t.x, t.y, t.z))
+      .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w).invert());
+    this.drag = { body: e.body, local, target: worldM };
+    return true;
+  }
+
+  /** Mueve el objetivo de la mano (cm). */
+  dragTo(worldCm: THREE.Vector3): void {
+    if (this.drag) this.drag.target.copy(worldCm).multiplyScalar(S);
+  }
+
+  /** Suelta la pieza agarrada. */
+  release(): void {
+    this.drag = null;
+  }
+
+  isDragging(): boolean {
+    return this.drag !== null;
+  }
+
+  /**
+   * Resorte amortiguado de la mano, aplicado como impulso en el punto de
+   * agarre en cada paso fijo: tira de la pieza hacia el objetivo sin volverse
+   * inestable (aceleración limitada), permitiendo que la pieza rote/palanquee
+   * como lo haría empujada por una persona.
+   */
+  private applyDrag(dt: number): void {
+    const d = this.drag;
+    if (!d) return;
+    const t = d.body.translation();
+    const q = d.body.rotation();
+    const pw = d.local
+      .clone()
+      .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w))
+      .add(new THREE.Vector3(t.x, t.y, t.z));
+    const v = d.body.linvel();
+    const kp = 60; // rigidez del resorte (1/s^2)
+    const kd = 12; // amortiguación (1/s)
+    const acc = new THREE.Vector3(
+      (d.target.x - pw.x) * kp - v.x * kd,
+      (d.target.y - pw.y) * kp - v.y * kd,
+      (d.target.z - pw.z) * kp - v.z * kd,
+    );
+    const maxAcc = 60; // m/s^2 (~6g): mano firme pero no un motor infinito
+    if (acc.length() > maxAcc) acc.setLength(maxAcc);
+    const m = d.body.mass();
+    d.body.applyImpulseAtPoint(
+      { x: acc.x * m * dt, y: acc.y * m * dt, z: acc.z * m * dt },
+      { x: pw.x, y: pw.y, z: pw.z },
+      true,
+    );
+  }
+
   /** Acumulador de tiempo real para avanzar con pasos fijos de 1/60 s. */
   private accumulator = 0;
   private static readonly FIXED_DT = 1 / 60;
@@ -431,6 +505,7 @@ export class PhysicsWorld {
     this.accumulator = Math.min(this.accumulator + dtSeconds, 4 * PhysicsWorld.FIXED_DT);
     while (this.accumulator >= PhysicsWorld.FIXED_DT) {
       this.accumulator -= PhysicsWorld.FIXED_DT;
+      this.applyDrag(PhysicsWorld.FIXED_DT);
       this.world.step();
       // Cable: primero corrige velocidades, luego proyecta posiciones para
       // conservar la longitud de forma dura (cable inextensible).
@@ -457,6 +532,7 @@ export class PhysicsWorld {
     this.world = null;
     this.bodies.clear();
     this.cables = [];
+    this.drag = null;
   }
 }
 

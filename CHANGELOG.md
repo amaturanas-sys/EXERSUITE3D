@@ -7,6 +7,30 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Modo Simulador desde la pantalla de inicio**: un selector **Builder /
+  Simulador** permite abrir un proyecto (archivo, reciente o sesión anterior)
+  solo para **correr su física**, sin construir ninguna herramienta de edición
+  (paleta, inspector, paneles…) — ideal para mostrar un diseño gastando el
+  mínimo de recursos. La física arranca sola y la única interfaz es la barra
+  de simulación (Inicio, Pausar/Reanudar y las herramientas de abajo).
+- **Barra de herramientas de simulación** (también en el Builder, al pulsar
+  Simular): set de **perspectivas** (Frontal / Lateral / Superior / Isométrica,
+  encuadrando el proyecto), **zoom** por botones (además de la rueda),
+  **posicionamiento del maniquí** (arrástralo para situarlo frente a la
+  máquina) y **mano interactiva**: arrastra cualquier pieza móvil y un resorte
+  físico amortiguado tira de ella por el punto agarrado, como una persona real
+  usando los agarres y barras de la máquina (la pieza palanquea, gira y
+  arrastra lo que tenga conectado).
+
+### Cambiado
+
+- Durante la simulación se **oculta toda la interfaz de edición** (paleta,
+  inspector, conexiones, posturas, HUD y los grupos de herramientas de la
+  barra): edición y simulación quedan como dos entornos separados, y al
+  detener la física la interfaz vuelve tal cual estaba.
+
 ## [0.1.5] — 2026-07-03
 
 ### Añadido

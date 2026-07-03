@@ -18,6 +18,12 @@ export interface LandingActions {
  */
 export class Landing {
   readonly root: HTMLElement;
+  /**
+   * Modo de apertura: **builder** (edición completa) o **simulator** (solo
+   * corre la física del proyecto, sin herramientas de edición — para mostrar
+   * un diseño gastando el mínimo de recursos).
+   */
+  mode: "builder" | "simulator" = "builder";
   private recentList: HTMLElement;
   private fileInput: HTMLInputElement;
 
@@ -49,6 +55,27 @@ export class Landing {
     const libBtn = el("button", { class: "land-btn" }, ["🧩  Explorar biblioteca"]);
     libBtn.addEventListener("click", () => this.actions.onExploreLibrary());
 
+    // Selector Builder / Simulador: en modo Simulador, abrir un archivo o un
+    // reciente solo corre la física (crear/biblioteca son cosa del Builder).
+    const builderBtn = el("button", { class: "land-mode active" }, ["🛠 Builder"]);
+    const simBtn = el("button", { class: "land-mode" }, ["▶ Simulador"]);
+    const modeHint = el("div", { class: "land-mode-hint" }, [""]);
+    const setMode = (m: "builder" | "simulator") => {
+      this.mode = m;
+      builderBtn.classList.toggle("active", m === "builder");
+      simBtn.classList.toggle("active", m === "simulator");
+      const sim = m === "simulator";
+      newBtn.style.display = sim ? "none" : "";
+      libBtn.style.display = sim ? "none" : "";
+      openBtn.textContent = sim ? "📂  Simular archivo…" : "📂  Abrir archivo…";
+      modeHint.textContent = sim
+        ? "Simulador: abre un proyecto solo para correr su física e interactuar con él (sin herramientas de edición)."
+        : "";
+    };
+    builderBtn.addEventListener("click", () => setMode("builder"));
+    simBtn.addEventListener("click", () => setMode("simulator"));
+    const modeRow = el("div", { class: "land-mode-row" }, [builderBtn, simBtn]);
+
     const actionsRow = el("div", { class: "land-actions" }, [newBtn, openBtn, libBtn]);
     if (this.actions.hasAutosave) {
       const cont = el("button", { class: "land-btn ghost" }, ["↻  Continuar sesión anterior"]);
@@ -61,6 +88,8 @@ export class Landing {
 
     const left = el("div", { class: "land-main" }, [
       el("div", { class: "land-brand" }, [logo, tagline]),
+      modeRow,
+      modeHint,
       actionsRow,
       dedication,
       this.fileInput,

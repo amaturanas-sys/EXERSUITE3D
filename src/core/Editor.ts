@@ -470,6 +470,7 @@ export class Editor {
 
   stopSimulation(): void {
     if (!this.simulating) return;
+    this.endSimInteraction();
     this.simulating = false;
     this.physics?.dispose();
     this.physics = null;
@@ -2028,13 +2029,29 @@ export class Editor {
    * cable/cuerda/pieza de línea, y arrastra los nodos en modo doblado.
    */
   private onPointerMove = (event: PointerEvent): void => {
-    if (this.simulating || (!this.cableMode && !this.ropeMode && !this.lineMode && !this.bendDrag)) {
+    const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
+    if (
+      (this.simulating && !simInteract) ||
+      (!this.simulating && !this.cableMode && !this.ropeMode && !this.lineMode && !this.bendDrag)
+    ) {
       return;
     }
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    // Arrastres de simulación: mano interactiva y posicionamiento del maniquí.
+    if (simInteract) {
+      const at = new THREE.Vector3();
+      if (this.simDrag && this.raycaster.ray.intersectPlane(this.simDrag.plane, at)) {
+        this.physics?.dragTo(at);
+      } else if (this.figureDrag && this.humanFigure &&
+        this.raycaster.ray.intersectPlane(this.figureDrag.plane, at)) {
+        this.humanFigure.position.copy(at.add(this.figureDrag.offset));
+      }
+      return;
+    }
 
     // Arrastre de un nodo de doblado: mueve el nodo en el plano de cámara y
     // reconstruye la pieza en vivo (curva Catmull-Rom por los nodos).
@@ -2195,13 +2212,97 @@ export class Editor {
     this.bus.emit("ropeSelectionChanged", { id, name: rope.name, slack: rope.slack });
   }
 
+  // -------------------------------------- herramientas de simulación
+  /** Arrastre de mano activo (plano de arrastre frente a la cámara). */
+  private simDrag: { plane: THREE.Plane } | null = null;
+  /** Arrastre del maniquí (plano horizontal + offset al punto de agarre). */
+  private figureDrag: { plane: THREE.Plane; offset: THREE.Vector3 } | null = null;
+
+  /**
+   * Clic durante la simulación: si toca una pieza dinámica, la AGARRA con la
+   * mano interactiva (resorte físico, como una persona tirando de un agarre);
+   * si toca el maniquí, lo desliza por el suelo para situarlo.
+   */
+  private beginSimInteraction(): void {
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+    const hit = hits[0];
+    const id = hit?.object.userData.sceneObjectId as string | undefined;
+    const obj = id ? this.objects.get(id) : undefined;
+    if (obj && hit && this.physics?.grab(obj.id, hit.point)) {
+      const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
+      this.simDrag = {
+        plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+      };
+      this.orbit.enabled = false;
+      return;
+    }
+    if (this.humanFigure) {
+      const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
+      if (fHits[0]) {
+        const p = this.humanFigure.position;
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -p.y);
+        const at = new THREE.Vector3();
+        if (this.raycaster.ray.intersectPlane(plane, at)) {
+          this.figureDrag = { plane, offset: p.clone().sub(at) };
+          this.orbit.enabled = false;
+        }
+      }
+    }
+  }
+
+  /** Termina los arrastres de simulación (mano y maniquí). */
+  private endSimInteraction(): void {
+    if (this.simDrag) this.physics?.release();
+    if (this.simDrag || this.figureDrag) this.orbit.enabled = true;
+    this.simDrag = null;
+    this.figureDrag = null;
+  }
+
+  /** Vistas predefinidas para presentar el proyecto en simulación. */
+  setViewPreset(view: "frontal" | "lateral" | "superior" | "isometrica"): void {
+    // Encuadra el contenido (piezas + figura) con un margen cómodo.
+    const box = new THREE.Box3();
+    if (this.objects.size > 0) box.setFromObject(this.sceneManager.content);
+    if (this.humanFigure) box.expandByObject(this.humanFigure);
+    if (box.isEmpty()) box.set(new THREE.Vector3(-100, 0, -100), new THREE.Vector3(100, 200, 100));
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3()).length();
+    const cam = this.sceneManager.camera;
+    const dist = Math.max(80, (size / 2) / Math.tan((cam.fov * Math.PI) / 360) * 1.25);
+    const dirs = {
+      frontal: new THREE.Vector3(0, 0.18, 1),
+      lateral: new THREE.Vector3(1, 0.18, 0),
+      superior: new THREE.Vector3(0.001, 1, 0.001),
+      isometrica: new THREE.Vector3(1, 0.75, 1),
+    } as const;
+    cam.position.copy(center).add(dirs[view].clone().normalize().multiplyScalar(dist));
+    this.orbit.target.copy(center);
+    this.orbit.update();
+  }
+
+  /** Zoom por botones (además de la rueda): factor <1 acerca, >1 aleja. */
+  zoomBy(factor: number): void {
+    const cam = this.sceneManager.camera;
+    const offset = cam.position.clone().sub(this.orbit.target);
+    const len = THREE.MathUtils.clamp(offset.length() * factor, 20, 3000);
+    cam.position.copy(this.orbit.target).add(offset.setLength(len));
+    this.orbit.update();
+  }
+
   // -------------------------------------------------------------- eventos
   private onPointerDown = (event: PointerEvent): void => {
-    if (this.gizmo.dragging || this.simulating) return;
+    if (this.gizmo.dragging) return;
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+
+    // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
+    // posicionamiento del maniquí; no hay selección ni edición.
+    if (this.simulating) {
+      this.beginSimInteraction();
+      return;
+    }
 
     // Modo doblado: clic en un asa inicia el arrastre del nodo; fuera, sale.
     if (this.bendTarget && this.bendHandles) {
@@ -2362,8 +2463,12 @@ export class Editor {
     }
   };
 
-  /** Suelta el nodo de doblado al levantar el puntero (en cualquier parte). */
+  /** Suelta el nodo de doblado o el agarre de simulación al levantar el puntero. */
   private onPointerUp = (): void => {
+    if (this.simDrag || this.figureDrag) {
+      this.endSimInteraction();
+      return;
+    }
     if (!this.bendDrag) return;
     this.bendDrag = null;
     this.orbit.enabled = true;

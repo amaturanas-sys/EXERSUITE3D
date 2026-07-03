@@ -117,16 +117,18 @@ export class Toolbar {
     ]);
     simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
 
+    // Grupos de edición: durante la simulación se OCULTAN (clase edit-only)
+    // para dejar solo las herramientas de simulación.
     const editGroups = [
-      el("div", { class: "tool-group" }, [
+      el("div", { class: "tool-group edit-only" }, [
         mode("translate", "Mover", "W"),
         mode("rotate", "Rotar", "E"),
         mode("scale", "Escalar", "S"),
       ]),
-      el("div", { class: "tool-group" }, [spaceBtn, gridBtn, snapBtn]),
-      el("div", { class: "tool-group" }, [dupBtn, delBtn]),
-      el("div", { class: "tool-group" }, [groupBtn, ungroupBtn]),
-      el("div", { class: "tool-group" }, [figBtn, figMode, figHeight]),
+      el("div", { class: "tool-group edit-only" }, [spaceBtn, gridBtn, snapBtn]),
+      el("div", { class: "tool-group edit-only" }, [dupBtn, delBtn]),
+      el("div", { class: "tool-group edit-only" }, [groupBtn, ungroupBtn]),
+      el("div", { class: "tool-group edit-only" }, [figBtn, figMode, figHeight]),
     ];
 
     // Nuevo proyecto: vacía la escena y descarta el autoguardado.
@@ -193,9 +195,9 @@ export class Toolbar {
     this.root = el("div", { id: "toolbar" }, [
       el("div", { class: "tool-group" }, [homeBtn, simBtn]),
       ...editGroups,
-      el("div", { class: "tool-group" }, [newBtn, saveBtn, loadBtn]),
-      el("div", { class: "tool-group" }, [exportBtn, importBtn]),
-      el("div", { class: "tool-group" }, [perfBtn]),
+      el("div", { class: "tool-group edit-only" }, [newBtn, saveBtn, loadBtn]),
+      el("div", { class: "tool-group edit-only" }, [exportBtn, importBtn]),
+      el("div", { class: "tool-group edit-only" }, [perfBtn]),
       el("div", { class: "tool-group" }, [autosaveTag]),
       fileInput,
       importInput,
