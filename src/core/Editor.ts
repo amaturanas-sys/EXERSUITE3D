@@ -265,7 +265,8 @@ export class Editor {
       if (geo) o.applyCustomGeometry(geo);
       else if (o.customModel) o.revertToPrimitive();
     }
-    this.rebuildAllRopes(); // los segmentos de eslabón/Kevlar pueden haber cambiado
+    this.clearRopeTemplates(); // los segmentos de eslabón/Kevlar pueden haber cambiado
+    this.rebuildAllRopes();
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
   }
 
@@ -836,6 +837,7 @@ export class Editor {
     this.orbit.dispose();
     for (const r of this.ropes.values()) r.dispose();
     this.ropes.clear();
+    this.clearRopeTemplates();
     for (const o of this.objects.values()) o.dispose();
     this.objects.clear();
     this.physics?.dispose();
@@ -2111,8 +2113,26 @@ export class Editor {
     return end.local.clone();
   }
 
+  /**
+   * Plantilla de segmento memoizada por tipo de cuerda: la referencia estable
+   * permite a Rope.rebuild detectar si de verdad cambió (y no reconstruir su
+   * geometría unitaria en cada arrastre). Se invalida al cambiar la biblioteca.
+   */
+  private ropeTemplates = new Map<RopeKind, THREE.BufferGeometry | null>();
+
   private ropeSegTemplate(kind: RopeKind): THREE.BufferGeometry | null {
-    return componentModels.geometryClone(kind === "chain" ? "cadena-eslabones" : "liston-kevlar");
+    if (!this.ropeTemplates.has(kind)) {
+      this.ropeTemplates.set(
+        kind,
+        componentModels.geometryClone(kind === "chain" ? "cadena-eslabones" : "liston-kevlar"),
+      );
+    }
+    return this.ropeTemplates.get(kind)!;
+  }
+
+  private clearRopeTemplates(): void {
+    for (const g of this.ropeTemplates.values()) g?.dispose();
+    this.ropeTemplates.clear();
   }
 
   private rebuildRope(rope: Rope): void {

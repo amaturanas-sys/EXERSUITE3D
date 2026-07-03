@@ -40,48 +40,72 @@ export class Rope {
     this.group.userData.ropeId = this.id;
   }
 
-  /** Reconstruye los segmentos entre los puntos de mundo A y B. */
+  /** Geometría unitaria (longitud 1) COMPARTIDA por todos los segmentos. */
+  private unitGeo: THREE.BufferGeometry | null = null;
+  /** Plantilla con la que se construyó unitGeo (para detectar cambios). */
+  private unitTemplate: THREE.BufferGeometry | null | undefined = undefined;
+
+  /**
+   * Reconstruye los segmentos entre los puntos de mundo A y B. Los meshes se
+   * REUTILIZAN (pool) y todos comparten una geometría unitaria escalada por
+   * mesh: reconstruir al arrastrar/tensar/simular no clona geometrías ni las
+   * sube a GPU (solo al cambiar la plantilla del segmento en la biblioteca).
+   */
   rebuild(A: THREE.Vector3, B: THREE.Vector3, segTemplate: THREE.BufferGeometry | null): void {
-    for (const c of [...this.group.children]) {
-      this.group.remove(c);
-      (c as THREE.Mesh).geometry?.dispose?.();
-    }
     const D = A.distanceTo(B);
-    if (D < 0.01) return;
+    if (D < 0.01) {
+      this.setSegmentCount(0);
+      return;
+    }
+
+    // La geometría unitaria solo se regenera si la plantilla cambió (el Editor
+    // pasa una referencia estable, memoizada por tipo de cuerda).
+    if (this.unitGeo === null || this.unitTemplate !== segTemplate) {
+      this.unitGeo?.dispose();
+      this.unitGeo = this.segmentGeometry(segTemplate, 1);
+      this.unitTemplate = segTemplate;
+      for (const c of this.group.children) (c as THREE.Mesh).geometry = this.unitGeo;
+    }
 
     const sag = this.slack * D * 0.45; // profundidad de la catenaria
     const r = sag / D;
     const ropeLen = D * (1 + (8 / 3) * r * r); // long. de arco aprox. de la parábola
     const defLen = this.kind === "chain" ? 5 : 9; // cm por segmento
     const n = Math.max(6, Math.min(140, Math.round(ropeLen / defLen)));
-
-    const pts: THREE.Vector3[] = [];
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      const p = new THREE.Vector3().lerpVectors(A, B, t);
-      p.y -= 4 * sag * t * (1 - t); // parábola: máxima caída al centro
-      pts.push(p);
-    }
+    this.setSegmentCount(n);
 
     const segLen = ropeLen / n;
-    const base = this.segmentGeometry(segTemplate, segLen);
     const up = new THREE.Vector3(0, 1, 0);
+    const p0 = new THREE.Vector3();
+    const p1 = new THREE.Vector3();
+    const dir = new THREE.Vector3();
     for (let i = 0; i < n; i++) {
-      const p0 = pts[i];
-      const p1 = pts[i + 1];
-      const mid = new THREE.Vector3().addVectors(p0, p1).multiplyScalar(0.5);
-      const dir = new THREE.Vector3().subVectors(p1, p0).normalize();
-      const geo = base.clone();
-      const m = new THREE.Mesh(geo, this.segMat);
-      m.position.copy(mid);
-      m.quaternion.setFromUnitVectors(up, dir);
+      const t0 = i / n;
+      const t1 = (i + 1) / n;
+      p0.lerpVectors(A, B, t0);
+      p0.y -= 4 * sag * t0 * (1 - t0); // parábola: máxima caída al centro
+      p1.lerpVectors(A, B, t1);
+      p1.y -= 4 * sag * t1 * (1 - t1);
+      const m = this.group.children[i] as THREE.Mesh;
+      m.position.addVectors(p0, p1).multiplyScalar(0.5);
+      m.scale.setScalar(segLen);
+      m.quaternion.setFromUnitVectors(up, dir.subVectors(p1, p0).normalize());
       // Cadena por defecto: alterna 90° para simular eslabones entrelazados.
       if (!segTemplate && this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
+    }
+  }
+
+  /** Ajusta el pool de meshes al número de segmentos (geometría compartida). */
+  private setSegmentCount(n: number): void {
+    while (this.group.children.length > n) {
+      this.group.remove(this.group.children[this.group.children.length - 1]);
+    }
+    while (this.group.children.length < n) {
+      const m = new THREE.Mesh(this.unitGeo ?? undefined, this.segMat);
       m.castShadow = true;
       m.userData.ropeId = this.id;
       this.group.add(m);
     }
-    base.dispose();
   }
 
   /** Geometría de un segmento (modelo de biblioteca ajustado, o forma por defecto). */
@@ -96,7 +120,9 @@ export class Rope {
   }
 
   dispose(): void {
-    for (const c of this.group.children) (c as THREE.Mesh).geometry?.dispose?.();
+    // Los segmentos comparten unitGeo: un único dispose.
+    this.unitGeo?.dispose();
+    this.unitGeo = null;
     (this.segMat as THREE.Material).dispose?.();
   }
 }
