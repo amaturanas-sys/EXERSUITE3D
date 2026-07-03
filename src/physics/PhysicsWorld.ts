@@ -1,5 +1,9 @@
-import RAPIER from "@dimforge/rapier3d-compat";
+import type * as R from "@dimforge/rapier3d-compat";
 import * as THREE from "three";
+
+// Rapier (~2,2 MB de WASM en base64) se importa dinamicamente al iniciar la
+// PRIMERA simulacion: disenar no lo necesita y el arranque queda mas ligero.
+let RAPIER: typeof R;
 import type { SceneObject } from "../objects/SceneObject";
 import { pathIsStraight } from "../objects/linePieces";
 import { axisVector, type Joint } from "./joints";
@@ -8,7 +12,7 @@ import type { Cable } from "./cables";
 const DEG2RAD = Math.PI / 180;
 
 interface CableEntry {
-  bodies: RAPIER.RigidBody[];
+  bodies: R.RigidBody[];
   /** Anclaje local de cada nodo en el frame del cuerpo, en METROS. */
   local: { x: number; y: number; z: number }[];
   restLength: number; // metros
@@ -22,13 +26,17 @@ const GRAVITY = { x: 0, y: -9.81, z: 0 };
 
 export class PhysicsWorld {
   private static ready: Promise<void> | null = null;
-  private world: RAPIER.World | null = null;
-  private bodies = new Map<string, { body: RAPIER.RigidBody; obj: SceneObject }>();
+  private world: R.World | null = null;
+  private bodies = new Map<string, { body: R.RigidBody; obj: SceneObject }>();
   private cables: CableEntry[] = [];
 
-  /** Carga e inicializa el WASM de Rapier una sola vez. */
+  /** Importa el modulo y carga/inicializa el WASM de Rapier una sola vez. */
   static init(): Promise<void> {
-    return (PhysicsWorld.ready ??= RAPIER.init());
+    return (PhysicsWorld.ready ??= import("@dimforge/rapier3d-compat").then((m) => {
+      const mod = m as unknown as { default?: typeof R };
+      RAPIER = mod.default ?? (m as unknown as typeof R);
+      return RAPIER.init();
+    }));
   }
 
   /** Construye el mundo a partir del estado actual de los objetos, joints y cables. */
@@ -230,14 +238,14 @@ export class PhysicsWorld {
         ? axisLocalA.angleTo(axisLocalB) < 1e-3 // giro libre alrededor del eje
         : qA.angleTo(qB) < 1e-3; // la corredera bloquea toda rotacion relativa
 
-    let handle: RAPIER.UnitImpulseJoint;
+    let handle: R.UnitImpulseJoint;
     if (compatible) {
       const params =
         joint.kind === "revolute"
           ? RAPIER.JointData.revolute(anchorA, anchorB, axis)
           : RAPIER.JointData.prismatic(anchorA, anchorB, axis);
       handle = this.world.createImpulseJoint(params, a.body, b.body, true) as
-        RAPIER.UnitImpulseJoint;
+        R.UnitImpulseJoint;
       handle.setContactsEnabled(false);
     } else {
       handle = this.addJointViaAdapter(joint, a, b, anchorA, anchorB, axis);
@@ -267,12 +275,12 @@ export class PhysicsWorld {
    */
   private addJointViaAdapter(
     joint: Joint,
-    a: { body: RAPIER.RigidBody; obj: SceneObject },
-    b: { body: RAPIER.RigidBody; obj: SceneObject },
+    a: { body: R.RigidBody; obj: SceneObject },
+    b: { body: R.RigidBody; obj: SceneObject },
     anchorA: { x: number; y: number; z: number },
     anchorB: { x: number; y: number; z: number },
     axis: { x: number; y: number; z: number },
-  ): RAPIER.UnitImpulseJoint {
+  ): R.UnitImpulseJoint {
     const world = this.world!;
     const qA = a.obj.mesh.quaternion;
     const qB = b.obj.mesh.quaternion;
@@ -298,7 +306,7 @@ export class PhysicsWorld {
         ? RAPIER.JointData.revolute(anchorA, zero, axis)
         : RAPIER.JointData.prismatic(anchorA, zero, axis);
     const unit = world.createImpulseJoint(params, a.body, adapter, true) as
-      RAPIER.UnitImpulseJoint;
+      R.UnitImpulseJoint;
     unit.setContactsEnabled(false);
 
     // Soldadura adaptador->B conservando la pose relativa actual: el frame de
@@ -364,13 +372,13 @@ export class PhysicsWorld {
     this.bodies.set(obj.id, { body, obj });
   }
 
-  private colliderDesc(obj: SceneObject): RAPIER.ColliderDesc {
+  private colliderDesc(obj: SceneObject): R.ColliderDesc {
     const size = obj.localSize();
     const hx = (size.x / 2) * S;
     const hy = (size.y / 2) * S;
     const hz = (size.z / 2) * S;
     const r = Math.max(hx, hz);
-    let desc: RAPIER.ColliderDesc;
+    let desc: R.ColliderDesc;
     switch (obj.params.kind) {
       case "cylinder":
         desc = RAPIER.ColliderDesc.cylinder(hy, r);
