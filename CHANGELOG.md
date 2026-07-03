@@ -28,6 +28,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Corregido
 
+- **Articular piezas con orientaciones distintas** ya no produce un latigazo al
+  iniciar la simulación: cuando los frames de diseño no son compatibles, la
+  bisagra/corredera se crea a través de un cuerpo adaptador que respeta la
+  orientación de ambas piezas (antes el solver reorientaba la pieza móvil de
+  golpe para alinear los ejes locales).
 - **Física**: la velocidad de la simulación ya no depende del refresco del
   monitor (paso fijo de 1/60 s con acumulador; a 120/144 Hz corría al doble).
   Collider del toro (aro) ajustado a su caja real (flotaba/empujaba a
@@ -68,6 +73,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Rendimiento
 
+- **Rapier se carga bajo demanda**: el módulo de física (~2,2 MB de WASM) se
+  descarga al pulsar **Simular** por primera vez, no al abrir la app; la
+  landing y el editor arrancan más ligeros.
+- Las **cuerdas** reutilizan sus meshes (pool) y comparten una única geometría
+  unitaria escalada por segmento: arrastrar la pieza anclada o el slider de
+  tensión ya no clona ni re-sube geometrías a GPU.
+- La **IK de manos** ya no recorre el árbol completo de la figura 3 veces por
+  mano y por frame: solo recalcula la cadena hombro→muñeca consultada.
+- Los **proyectos recientes** guardan sus metadatos (nombre/fecha) en un store
+  aparte de IndexedDB (migración automática): listar la Home o podar ya no
+  deserializa hasta 12 proyectos completos.
 - Los visuales de **cables** solo se reconstruyen cuando algo se mueve (antes
   re-subían sus buffers a GPU en cada frame, incluso en reposo).
 - El **snapping** ya no recalcula el bounding box de todas las geometrías en
