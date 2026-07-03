@@ -3,8 +3,10 @@
  *
  * Guarda una copia del proyecto cada vez que se abre o se guarda, para poder
  * reabrirlo desde la pantalla de inicio sin depender de la ruta del archivo
- * (que el navegador no expone).
+ * (que el navegador no expone). Los METADATOS (id/nombre/fecha) viven en un
+ * store aparte: listar la Home o podar no deserializa los proyectos enteros.
  */
+import { STORE_RECENT, STORE_RECENT_META, openAppDb } from "./appDb";
 import type { ProjectData } from "./project";
 
 export interface RecentRecord {
@@ -20,42 +22,18 @@ export interface RecentMeta {
   savedAt: number;
 }
 
-const DB_NAME = "exersuite3d";
-const STORE = "recentProjects";
-const VERSION = 2; // sube respecto al store de modelos (versión 1)
 const MAX_RECENT = 12;
 
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-function open(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains("componentModels")) {
-        db.createObjectStore("componentModels", { keyPath: "componentId" });
-      }
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => {
-      // Si otra pestana pide una version mas nueva, cerramos para no bloquearla.
-      req.result.onversionchange = () => req.result.close();
-      resolve(req.result);
-    };
-    req.onerror = () => reject(req.error);
-    // Otra pestana con la version antigua abierta bloquea el upgrade: mejor
-    // fallar con mensaje que colgar la promesa para siempre.
-    req.onblocked = () =>
-      reject(new Error("Base de datos bloqueada por otra pestana abierta"));
-  });
-  return dbPromise;
+/** Transacción sobre ambos stores (datos + metadatos). */
+function both(mode: IDBTransactionMode): Promise<IDBTransaction> {
+  return openAppDb().then((db) => db.transaction([STORE_RECENT, STORE_RECENT_META], mode));
 }
 
-function store(mode: IDBTransactionMode): Promise<IDBObjectStore> {
-  return open().then((db) => db.transaction(STORE, mode).objectStore(STORE));
+function request<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 /** Identificador estable a partir del nombre (para no duplicar el mismo archivo). */
@@ -65,49 +43,46 @@ function idFor(name: string): string {
 
 /** Registra/actualiza un proyecto reciente. `now` debe ser Date.now(). */
 export async function addRecent(name: string, data: ProjectData, now: number): Promise<void> {
-  const s = await store("readwrite");
-  const rec: RecentRecord = { id: idFor(name || "proyecto"), name: name || "Proyecto", savedAt: now, data };
-  await new Promise<void>((resolve, reject) => {
-    const req = s.put(rec);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  const rec: RecentRecord = {
+    id: idFor(name || "proyecto"),
+    name: name || "Proyecto",
+    savedAt: now,
+    data,
+  };
+  const tx = await both("readwrite");
+  await Promise.all([
+    request(tx.objectStore(STORE_RECENT).put(rec)),
+    request(tx.objectStore(STORE_RECENT_META).put({ id: rec.id, name: rec.name, savedAt: rec.savedAt })),
+  ]);
   await prune();
 }
 
-/** Lista los recientes (sin los datos pesados), más nuevos primero. */
+/** Lista los recientes (solo metadatos ligeros), más nuevos primero. */
 export async function listRecent(): Promise<RecentMeta[]> {
-  const s = await store("readonly");
-  const all = await new Promise<RecentRecord[]>((resolve, reject) => {
-    const req = s.getAll();
-    req.onsuccess = () => resolve(req.result as RecentRecord[]);
-    req.onerror = () => reject(req.error);
-  });
-  return all
-    .map((r) => ({ id: r.id, name: r.name, savedAt: r.savedAt }))
-    .sort((a, b) => b.savedAt - a.savedAt);
+  const db = await openAppDb();
+  const metas = await request(
+    db.transaction(STORE_RECENT_META, "readonly").objectStore(STORE_RECENT_META).getAll(),
+  );
+  return (metas as RecentMeta[]).sort((a, b) => b.savedAt - a.savedAt);
 }
 
 export async function getRecent(id: string): Promise<ProjectData | null> {
-  const s = await store("readonly");
-  const rec = await new Promise<RecentRecord | undefined>((resolve, reject) => {
-    const req = s.get(id);
-    req.onsuccess = () => resolve(req.result as RecentRecord | undefined);
-    req.onerror = () => reject(req.error);
-  });
-  return rec?.data ?? null;
+  const db = await openAppDb();
+  const rec = await request(
+    db.transaction(STORE_RECENT, "readonly").objectStore(STORE_RECENT).get(id),
+  );
+  return (rec as RecentRecord | undefined)?.data ?? null;
 }
 
 export async function deleteRecent(id: string): Promise<void> {
-  const s = await store("readwrite");
-  await new Promise<void>((resolve, reject) => {
-    const req = s.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
+  const tx = await both("readwrite");
+  await Promise.all([
+    request(tx.objectStore(STORE_RECENT).delete(id)),
+    request(tx.objectStore(STORE_RECENT_META).delete(id)),
+  ]);
 }
 
-/** Conserva solo los MAX_RECENT más recientes. */
+/** Conserva solo los MAX_RECENT más recientes (leyendo solo metadatos). */
 async function prune(): Promise<void> {
   const metas = await listRecent();
   if (metas.length <= MAX_RECENT) return;

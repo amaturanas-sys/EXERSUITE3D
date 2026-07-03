@@ -6,6 +6,7 @@
  * al recargar la app. Se usa IndexedDB (no localStorage) porque los modelos
  * pueden pesar varios MB.
  */
+import { STORE_MODELS, openAppDb } from "./appDb";
 
 export interface StoredModel {
   componentId: string;
@@ -16,43 +17,8 @@ export interface StoredModel {
   updatedAt: number;
 }
 
-const DB_NAME = "exersuite3d";
-const STORE = "componentModels";
-// La misma base de datos aloja también "recentProjects" (recentStore.ts); ambos
-// módulos deben usar esta versión y crear los dos object stores en el upgrade.
-const VERSION = 2;
-
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-function open(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: "componentId" });
-      }
-      if (!db.objectStoreNames.contains("recentProjects")) {
-        db.createObjectStore("recentProjects", { keyPath: "id" });
-      }
-    };
-    req.onsuccess = () => {
-      // Si otra pestana pide una version mas nueva, cerramos para no bloquearla.
-      req.result.onversionchange = () => req.result.close();
-      resolve(req.result);
-    };
-    req.onerror = () => reject(req.error);
-    // Otra pestana con la version antigua abierta bloquea el upgrade: mejor
-    // fallar con mensaje que colgar la promesa para siempre.
-    req.onblocked = () =>
-      reject(new Error("Base de datos bloqueada por otra pestana abierta"));
-  });
-  return dbPromise;
-}
-
 function tx(mode: IDBTransactionMode): Promise<IDBObjectStore> {
-  return open().then((db) => db.transaction(STORE, mode).objectStore(STORE));
+  return openAppDb().then((db) => db.transaction(STORE_MODELS, mode).objectStore(STORE_MODELS));
 }
 
 export async function putModel(model: StoredModel): Promise<void> {
