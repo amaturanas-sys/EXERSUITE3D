@@ -7,6 +7,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.1.5] — 2026-07-03
+
 ### Añadido
 
 - **Modo Simulador desde la pantalla de inicio**: un selector **Builder /
@@ -23,18 +25,6 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   físico amortiguado tira de ella por el punto agarrado, como una persona real
   usando los agarres y barras de la máquina (la pieza palanquea, gira y
   arrastra lo que tenga conectado).
-
-### Cambiado
-
-- Durante la simulación se **oculta toda la interfaz de edición** (paleta,
-  inspector, conexiones, posturas, HUD y los grupos de herramientas de la
-  barra): edición y simulación quedan como dos entornos separados, y al
-  detener la física la interfaz vuelve tal cual estaba.
-
-## [0.1.5] — 2026-07-03
-
-### Añadido
-
 - **Crear pilar / travesaño (línea)**: nueva herramienta de la paleta que traza
   un perfil de acero entre dos puntos, como la línea recta de Paint. Un diálogo
   permite elegir **perfil 1:1 / 1:2 / 1:3**, **medida nominal** (40–100 mm),
@@ -51,6 +41,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   (Catmull-Rom), al estilo de las curvas editables de Photoshop. La forma se
   guarda con el proyecto y la física usa el volumen doblado. En piezas dobladas
   no aplican agujeros ni extremos diagonales (vuelven al enderezarlas).
+
+### Cambiado
+
+- Durante la simulación se **oculta toda la interfaz de edición** (paleta,
+  inspector, conexiones, posturas, HUD y los grupos de herramientas de la
+  barra): edición y simulación quedan como dos entornos separados, y al
+  detener la física la interfaz vuelve tal cual estaba.
 
 ### Corregido
 
