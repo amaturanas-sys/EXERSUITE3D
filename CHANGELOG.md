@@ -7,6 +7,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.1.5] — 2026-07-03
+
 ### Añadido
 
 - **Crear pilar / travesaño (línea)**: nueva herramienta de la paleta que traza
@@ -263,7 +265,8 @@ automáticamente en la Release.
   instaladores NSIS/MSI (runner Windows) en cada push y, al crear un tag `v*`,
   publica una GitHub Release con todos los binarios adjuntos.
 
-[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.4...HEAD
+[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.1...v0.1.2
