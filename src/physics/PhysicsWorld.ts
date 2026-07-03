@@ -211,27 +211,37 @@ export class PhysicsWorld {
     // Ancla local a cada cuerpo (sin escala; el frame del cuerpo no la tiene).
     const anchorA = this.localAnchor(a.obj, joint.anchor);
     const anchorB = this.localAnchor(b.obj, joint.anchor);
+    const qA = a.obj.mesh.quaternion;
+    const qB = b.obj.mesh.quaternion;
     // Eje en el frame local del cuerpo A.
-    const axisLocalA = axisVector(joint.axis).applyQuaternion(
-      a.obj.mesh.quaternion.clone().invert(),
-    );
+    const axisLocalA = axisVector(joint.axis).applyQuaternion(qA.clone().invert());
     const axis = { x: axisLocalA.x, y: axisLocalA.y, z: axisLocalA.z };
 
-    const params =
+    // RAPIER.JointData.revolute/prismatic aplican el MISMO eje local a ambos
+    // cuerpos: si sus orientaciones de diseno difieren, el solver reorienta B
+    // de golpe al arrancar para alinear los frames. Cuando las orientaciones ya
+    // son compatibles usamos el joint directo (camino probado); si no,
+    // interponemos un ADAPTADOR: un cuerpecillo con la orientacion de A,
+    // articulado con A y soldado a B con un joint fijo (que si admite frames
+    // por cuerpo), de modo que B conserva su orientacion de diseno.
+    const axisLocalB = axisVector(joint.axis).applyQuaternion(qB.clone().invert());
+    const compatible =
       joint.kind === "revolute"
-        ? RAPIER.JointData.revolute(anchorA, anchorB, axis)
-        : RAPIER.JointData.prismatic(anchorA, anchorB, axis);
+        ? axisLocalA.angleTo(axisLocalB) < 1e-3 // giro libre alrededor del eje
+        : qA.angleTo(qB) < 1e-3; // la corredera bloquea toda rotacion relativa
 
-    const handle = this.world.createImpulseJoint(
-      params,
-      a.body,
-      b.body,
-      true,
-    ) as RAPIER.UnitImpulseJoint;
-
-    // Las piezas unidas por una articulacion no deben colisionar entre si
-    // (si no, se bloquean en el pivote).
-    handle.setContactsEnabled(false);
+    let handle: RAPIER.UnitImpulseJoint;
+    if (compatible) {
+      const params =
+        joint.kind === "revolute"
+          ? RAPIER.JointData.revolute(anchorA, anchorB, axis)
+          : RAPIER.JointData.prismatic(anchorA, anchorB, axis);
+      handle = this.world.createImpulseJoint(params, a.body, b.body, true) as
+        RAPIER.UnitImpulseJoint;
+      handle.setContactsEnabled(false);
+    } else {
+      handle = this.addJointViaAdapter(joint, a, b, anchorA, anchorB, axis);
+    }
 
     if (joint.limitsEnabled) {
       const [min, max] =
@@ -248,6 +258,78 @@ export class PhysicsWorld {
           : joint.motor.targetVel * S;
       handle.configureMotorVelocity(vel, joint.motor.factor);
     }
+  }
+
+  /**
+   * Crea la articulacion a traves de un cuerpo adaptador para respetar la
+   * orientacion de diseno de ambas piezas: A —(bisagra/corredera)— adaptador
+   * —(fijo con frames)— B. Devuelve el joint articulado (para limites/motor).
+   */
+  private addJointViaAdapter(
+    joint: Joint,
+    a: { body: RAPIER.RigidBody; obj: SceneObject },
+    b: { body: RAPIER.RigidBody; obj: SceneObject },
+    anchorA: { x: number; y: number; z: number },
+    anchorB: { x: number; y: number; z: number },
+    axis: { x: number; y: number; z: number },
+  ): RAPIER.UnitImpulseJoint {
+    const world = this.world!;
+    const qA = a.obj.mesh.quaternion;
+    const qB = b.obj.mesh.quaternion;
+
+    // Adaptador: cuerpo diminuto en el punto de ancla, orientado como A (asi el
+    // eje local de A vale tambien para el). Masa/inercia pequenas: va soldado a
+    // B, no aporta dinamica apreciable.
+    const w = joint.anchor.clone().multiplyScalar(S);
+    const desc = RAPIER.RigidBodyDesc.dynamic()
+      .setTranslation(w.x, w.y, w.z)
+      .setRotation({ x: qA.x, y: qA.y, z: qA.z, w: qA.w })
+      .setAdditionalMassProperties(
+        0.05,
+        { x: 0, y: 0, z: 0 },
+        { x: 1e-4, y: 1e-4, z: 1e-4 },
+        { x: 0, y: 0, z: 0, w: 1 },
+      );
+    const adapter = world.createRigidBody(desc);
+
+    const zero = { x: 0, y: 0, z: 0 };
+    const params =
+      joint.kind === "revolute"
+        ? RAPIER.JointData.revolute(anchorA, zero, axis)
+        : RAPIER.JointData.prismatic(anchorA, zero, axis);
+    const unit = world.createImpulseJoint(params, a.body, adapter, true) as
+      RAPIER.UnitImpulseJoint;
+    unit.setContactsEnabled(false);
+
+    // Soldadura adaptador->B conservando la pose relativa actual: el frame de
+    // la union en mundo es la identidad, luego frame1 = qA^-1 y frame2 = qB^-1.
+    const f1 = qA.clone().invert();
+    const f2 = qB.clone().invert();
+    const weld = world.createImpulseJoint(
+      RAPIER.JointData.fixed(
+        zero,
+        { x: f1.x, y: f1.y, z: f1.z, w: f1.w },
+        anchorB,
+        { x: f2.x, y: f2.y, z: f2.z, w: f2.w },
+      ),
+      adapter,
+      b.body,
+      true,
+    );
+    weld.setContactsEnabled(false);
+
+    // El flag de contactos solo filtra pares unidos DIRECTAMENTE por un joint:
+    // registra un joint de cuerda inerte (longitud enorme) entre A y B para
+    // que tampoco colisionen entre si en el pivote.
+    const rope = world.createImpulseJoint(
+      RAPIER.JointData.rope(1e6, anchorA, anchorB),
+      a.body,
+      b.body,
+      true,
+    );
+    rope.setContactsEnabled(false);
+
+    return unit;
   }
 
   /** Convierte un punto mundial (cm) al frame local del cuerpo (metros). */
