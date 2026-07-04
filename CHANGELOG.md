@@ -7,6 +7,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.1.6] — 2026-07-04
+
 ### Cambiado
 
 - **Ajuste completo de la interfaz a la pantalla del dispositivo**: la barra
@@ -298,7 +300,8 @@ automáticamente en la Release.
   instaladores NSIS/MSI (runner Windows) en cada push y, al crear un tag `v*`,
   publica una GitHub Release con todos los binarios adjuntos.
 
-[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.5...HEAD
+[Sin publicar]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/amaturanas-sys/EXERSUITE3D/compare/v0.1.2...v0.1.3
