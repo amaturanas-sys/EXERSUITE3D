@@ -77,6 +77,24 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   // edición se oculta por CSS) con perspectivas, zoom y la mano interactiva.
   const simBar = new SimulatorBar(ed);
 
+  // Pestañas para plegar/desplegar los paneles en pantallas pequeñas (las
+  // muestra el CSS solo cuando los paneles pasan a ser cajones ocultables).
+  const dockToggle = (id: string, label: string, cls: string, title: string) => {
+    const b = document.createElement("button");
+    b.id = id;
+    b.className = "dock-toggle";
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener("click", () => {
+      const on = document.body.classList.toggle(cls);
+      b.classList.toggle("active", on);
+    });
+    return b;
+  };
+  const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Piezas disponibles");
+  const toggleRight = dockToggle("toggle-right", "🧰", "show-right", "Propiedades y conexiones");
+  const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
+
   const credit = document.createElement("a");
   credit.id = "credit";
   credit.target = "_blank";
@@ -86,7 +104,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     "Esqueleto: Open3DModel · O.P. Gobée et al., LUMC (AnatomyTOOL) · CC BY-SA";
   credit.style.display = "none";
 
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, perfPanel.root, simBar.root];
+  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses];
   editorDisposables = [
     () => palette.dispose(),
     () => toolbar.dispose(),
@@ -176,7 +194,13 @@ async function goHome(): Promise<void> {
     editorDisposables = [];
     for (const n of editorNodes) n.remove();
     editorNodes = [];
-    document.body.classList.remove("simulator-mode", "simulating");
+    document.body.classList.remove(
+      "simulator-mode",
+      "simulating",
+      "show-left",
+      "show-right",
+      "show-poses",
+    );
     // No retener el editor destruido desde la consola de depuración.
     (window as unknown as { exersuite?: unknown }).exersuite = undefined;
   }

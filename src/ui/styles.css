@@ -14,6 +14,13 @@
   --on-accent: #14161b;
   --danger: #ef4444;
   --radius: 8px;
+  /* Ancho de los paneles laterales: se estrecha con la pantalla (ver @media). */
+  --panel-w: 248px;
+  /* Zonas seguras del dispositivo (notch, barras del sistema). */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -44,9 +51,14 @@ body,
 }
 
 /* ---- Barra superior ---- */
+/*
+ * La barra NUNCA se desborda de la pantalla: se limita al ancho visible y,
+ * si las herramientas no caben, se desplaza horizontalmente (swipe/rueda),
+ * manteniendo una sola fila de altura fija (los paneles empiezan debajo).
+ */
 #toolbar {
   position: absolute;
-  top: 12px;
+  top: calc(10px + var(--safe-t));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -57,6 +69,21 @@ body,
   border-radius: var(--radius);
   backdrop-filter: blur(8px);
   z-index: 10;
+  max-width: calc(100vw - 16px - var(--safe-l) - var(--safe-r));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+#toolbar::-webkit-scrollbar {
+  height: 5px;
+}
+#toolbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.tool-group {
+  flex: none; /* los grupos no se comprimen: la barra desplaza */
 }
 
 .tool-group {
@@ -165,7 +192,7 @@ body.simulating .edit-only {
   display: none;
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(14px + var(--safe-b));
   transform: translateX(-50%);
   align-items: center;
   gap: 10px;
@@ -196,8 +223,8 @@ body.simulator-mode #viewport {
 .panel {
   position: absolute;
   top: 12px;
-  bottom: 12px;
-  width: 248px;
+  bottom: calc(12px + var(--safe-b));
+  width: var(--panel-w);
   background: rgba(30, 33, 40, 0.94);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -208,18 +235,18 @@ body.simulator-mode #viewport {
   overflow: hidden;
 }
 #palette {
-  left: 12px;
+  left: calc(12px + var(--safe-l));
   /* Empieza bajo la barra superior para no quedar tapada por ella. */
-  top: 64px;
+  top: calc(64px + var(--safe-t));
 }
 
 /* Columna derecha apilada: inspector + conexiones. */
 #right-dock {
   position: absolute;
-  top: 64px;
-  right: 12px;
-  bottom: 48px;
-  width: 248px;
+  top: calc(64px + var(--safe-t));
+  right: calc(12px + var(--safe-r));
+  bottom: calc(48px + var(--safe-b));
+  width: var(--panel-w);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -282,10 +309,10 @@ body.simulator-mode #viewport {
 /* Panel de posturas (flotante, junto a la paleta). */
 #poses {
   top: auto;
-  left: 272px;
-  bottom: 48px;
+  left: calc(var(--panel-w) + 24px + var(--safe-l));
+  bottom: calc(48px + var(--safe-b));
   width: 262px;
-  max-height: 340px;
+  max-height: min(340px, 46vh);
 }
 .pose-actions {
   display: flex;
@@ -421,8 +448,9 @@ select.select:focus {
 #hud {
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(14px + var(--safe-b));
   transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
   background: rgba(30, 33, 40, 0.9);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -1036,12 +1064,106 @@ select.select:focus {
   white-space: nowrap;
 }
 
-@media (max-width: 720px) {
-  .panel {
-    width: 200px;
+/* ---- Pestañas para plegar/desplegar paneles en pantallas pequeñas ---- */
+.dock-toggle {
+  display: none;
+  position: absolute;
+  /* Por encima de los cajones: la pestaña sirve también para cerrarlos. */
+  z-index: 14;
+  background: rgba(30, 33, 40, 0.94);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+.dock-toggle.active {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent-2);
+}
+#toggle-left {
+  left: calc(10px + var(--safe-l));
+  bottom: calc(64px + var(--safe-b));
+}
+#toggle-poses {
+  left: calc(10px + var(--safe-l));
+  bottom: calc(116px + var(--safe-b));
+}
+#toggle-right {
+  right: calc(10px + var(--safe-r));
+  bottom: calc(64px + var(--safe-b));
+}
+body.simulating .dock-toggle {
+  display: none !important;
+}
+
+/* ---- Adaptación al ancho de pantalla ---- */
+/* Pantallas medianas (portátiles pequeños, tablets apaisadas): paneles más
+   estrechos para que el viewport respire y nada quede cortado. */
+@media (max-width: 1180px) {
+  :root {
+    --panel-w: 216px;
   }
-  #toolbar {
-    flex-wrap: wrap;
-    max-width: calc(100% - 24px);
+  #poses {
+    width: 232px;
+  }
+}
+@media (max-width: 920px) {
+  :root {
+    --panel-w: 198px;
+  }
+  button.tool {
+    padding: 7px 9px;
+    font-size: 12.5px;
+  }
+}
+
+/* Pantallas pequeñas (móviles, tablets verticales): los paneles se convierten
+   en CAJONES ocultables con pestañas — el viewport queda libre y todas las
+   opciones siguen accesibles al desplegarlos. */
+@media (max-width: 680px) {
+  :root {
+    --panel-w: min(300px, 82vw);
+  }
+  .dock-toggle {
+    display: block;
+  }
+  #palette {
+    transform: translateX(calc(-100% - 24px));
+    transition: transform 0.22s ease;
+    z-index: 13;
+  }
+  body.show-left #palette {
+    transform: none;
+  }
+  #right-dock {
+    transform: translateX(calc(100% + 24px));
+    transition: transform 0.22s ease;
+    z-index: 13;
+  }
+  body.show-right #right-dock {
+    transform: none;
+  }
+  #poses {
+    left: calc(12px + var(--safe-l));
+    right: calc(12px + var(--safe-r));
+    width: auto;
+    max-height: 44vh;
+    transform: translateY(calc(100% + 60px));
+    transition: transform 0.22s ease;
+    z-index: 13;
+  }
+  body.show-poses #poses {
+    transform: none;
+  }
+  /* El HUD deja sitio a las pestañas inferiores. */
+  #hud {
+    display: none;
+  }
+  #credit {
+    display: none !important;
   }
 }

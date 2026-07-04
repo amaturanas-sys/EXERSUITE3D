@@ -7,6 +7,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Cambiado
+
+- **Ajuste completo de la interfaz a la pantalla del dispositivo**: la barra
+  superior ya no se desborda —se limita al ancho visible y se desplaza
+  horizontalmente (swipe/rueda) cuando las herramientas no caben—; los paneles
+  laterales estrechan su ancho por tramos en pantallas medianas y, en móviles
+  y tablets verticales, se convierten en **cajones ocultables** con pestañas
+  (🧩 piezas, 🧰 propiedades/conexiones, 🧍 posturas) que dejan el viewport
+  libre y mantienen todas las opciones accesibles. Se respetan las **zonas
+  seguras** del dispositivo (notch, barras del sistema) en barra, paneles y
+  barra de simulación.
+
 ## [0.1.5] — 2026-07-03
 
 ### Añadido
