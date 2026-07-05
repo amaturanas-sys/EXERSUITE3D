@@ -55,7 +55,7 @@ func _build() -> void:
 	bar.add_theme_constant_override("separation", 6)
 	add_child(bar)
 
-	_btn(bar, "⌂ Inicio", func(): request_home.emit())
+	_btn(bar, "Inicio", func(): request_home.emit())
 	_btn(bar, "Nuevo", func(): world.clear(); ed.select_piece(null))
 	var open_dlg := _file_dialog(FileDialog.FILE_MODE_OPEN_FILE)
 	_btn(bar, "Abrir", func(): open_dlg.popup_centered_ratio(0.7))
@@ -70,7 +70,7 @@ func _build() -> void:
 		LandingUI.add_recent(path.get_file().get_basename(), Serializer.serialize(world)))
 
 	sim_btn = Button.new()
-	sim_btn.text = "▶ Simular"
+	sim_btn.text = "Simular"
 	sim_btn.pressed.connect(func():
 		ed.select_piece(null)
 		ed.set_mode("select")
@@ -80,11 +80,11 @@ func _build() -> void:
 	for v in [["Frontal", "frontal"], ["Lateral", "lateral"], ["Sup.", "superior"], ["Iso", "isometrica"]]:
 		var view: String = v[1]
 		_btn(bar, v[0], func(): cam.set_view(view, world.bounds()))
-	_btn(bar, "＋", func(): cam.zoom_by(0.8))
-	_btn(bar, "－", func(): cam.zoom_by(1.25))
+	_btn(bar, "+", func(): cam.zoom_by(0.8))
+	_btn(bar, "-", func(): cam.zoom_by(1.25))
 	_btn(bar, "Agrupar", func(): ed.group_selection())
 	_btn(bar, "Desagrupar", func(): ed.ungroup_selection())
-	_btn(bar, "🧩 Biblioteca", func(): request_library.emit())
+	_btn(bar, "Biblioteca", func(): request_library.emit())
 
 	# ---- Paleta (izquierda)
 	palette = ItemList.new()
@@ -156,11 +156,11 @@ func _on_palette_pick(index: int) -> void:
 
 
 func _on_sim_changed(running: bool) -> void:
-	sim_btn.text = "■ Detener" if running else "▶ Simular"
+	sim_btn.text = "Detener" if running else "Simular"
 	get_node("PalettePanel").visible = not running
 	get_node("InspectorPanel").visible = not running
 	status_label.text = (
-		"🖐 Arrastra piezas móviles con la mano · Espacio detiene" if running else "")
+		"Arrastra piezas móviles con la mano · Espacio detiene" if running else "")
 
 
 # ---------------------------------------------------------------- inspector
@@ -235,7 +235,7 @@ func _refresh_inspector() -> void:
 	inspector.add_child(rot)
 
 	if p.params.has("path"):
-		_ibtn("✎ Doblar (nodos)", func(): ed.set_mode("bend"))
+		_ibtn("Doblar (nodos)", func(): ed.set_mode("bend"))
 	_ibtn("Duplicar", func(): ed.duplicate_selected())
 	_ibtn("Eliminar", func(): ed.delete_selected())
 

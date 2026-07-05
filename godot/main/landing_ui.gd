@@ -43,23 +43,24 @@ func _ready() -> void:
 	tagline.text = "DISEÑO Y SIMULACIÓN 3D DE MÁQUINAS DE GIMNASIO — NATIVO"
 	tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tagline.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	tagline.add_theme_font_size_override("font_size", 13)
 	center.add_child(tagline)
 
 	var row1 := HBoxContainer.new()
 	row1.alignment = BoxContainer.ALIGNMENT_CENTER
 	row1.add_theme_constant_override("separation", 10)
 	center.add_child(row1)
-	_btn(row1, "✦ Crear nuevo", func(): action.emit("new", null))
-	_btn(row1, "📂 Abrir (Builder)", func(): _pick_file("open"))
-	_btn(row1, "▶ Simulador", func(): _pick_file("simulate"))
+	_btn(row1, "Crear nuevo", func(): action.emit("new", null))
+	_btn(row1, "Abrir (Builder)", func(): _pick_file("open"))
+	_btn(row1, "Simulador", func(): _pick_file("simulate"))
 
 	var row2 := HBoxContainer.new()
 	row2.alignment = BoxContainer.ALIGNMENT_CENTER
 	row2.add_theme_constant_override("separation", 10)
 	center.add_child(row2)
 	if FileAccess.file_exists("user://autosave.json"):
-		_btn(row2, "↻ Continuar sesión anterior", func(): action.emit("continue", null))
-	_btn(row2, "🧩 Biblioteca", func(): action.emit("library", null))
+		_btn(row2, "Continuar sesión anterior", func(): action.emit("continue", null))
+	_btn(row2, "Biblioteca", func(): action.emit("library", null))
 	_btn(row2, "Demo", func(): action.emit("demo", null))
 
 	# Recientes
@@ -82,6 +83,8 @@ func _ready() -> void:
 func _btn(parent: Node, text: String, fn: Callable) -> void:
 	var b := Button.new()
 	b.text = text
+	b.custom_minimum_size = Vector2(0, 44)
+	b.add_theme_font_size_override("font_size", 17)
 	b.pressed.connect(fn)
 	parent.add_child(b)
 

@@ -15,6 +15,7 @@ const DANGER := Color("ef4444")
 
 static func build() -> Theme:
 	var t := Theme.new()
+	t.default_font_size = 15
 
 	var panel := StyleBoxFlat.new()
 	panel.bg_color = Color(PANEL.r, PANEL.g, PANEL.b, 0.96)

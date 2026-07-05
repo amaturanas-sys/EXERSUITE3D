@@ -48,7 +48,7 @@ func setup(w: World) -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var close_btn := Button.new()
-	close_btn.text = "✕ Volver"
+	close_btn.text = "Volver"
 	close_btn.pressed.connect(func():
 		world.refresh_models()
 		closed.emit())
@@ -69,7 +69,7 @@ func setup(w: World) -> void:
 	actions.add_theme_constant_override("separation", 8)
 	box.add_child(actions)
 	var assign_btn := Button.new()
-	assign_btn.text = "📂 Asignar modelo .glb…"
+	assign_btn.text = "Asignar modelo .glb…"
 	assign_btn.pressed.connect(_assign)
 	actions.add_child(assign_btn)
 	var reset_btn := Button.new()
@@ -88,12 +88,12 @@ func _refresh_lists() -> void:
 	_comp_ids = []
 	for c in ComponentLibrary.all_components():
 		var id := String(c["id"])
-		var mark := "  ●" if ModelStore.has_component_override(id) else ""
+		var mark := "  •" if ModelStore.has_component_override(id) else ""
 		comp_list.add_item("%s (%s)%s" % [String(c.get("label", id)), id, mark])
 		_comp_ids.append(id)
 	man_list.clear()
 	for seg in MANNEQUIN_SEGMENTS:
-		var mark := "  ●" if ModelStore.has_mannequin_override(seg) else ""
+		var mark := "  •" if ModelStore.has_mannequin_override(seg) else ""
 		man_list.add_item(seg + mark)
 
 
