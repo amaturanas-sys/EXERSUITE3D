@@ -7,6 +7,20 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Kit de migración a Godot 4** (`godot/` + `docs/MIGRACION-GODOT.md`):
+  proyecto Godot nativo que **abre los mismos proyectos `.json`** de la app y
+  los simula con física nativa — piezas con material/escala, bisagras y
+  correderas con límites y motor, **cables inextensibles con poleas 2:1
+  emergente**, cuerdas en catenaria, perfiles/tubos por línea (rectos y
+  doblados por Catmull-Rom), maniquí a escala con pose, **mano interactiva**,
+  cámara orbital táctil con vistas y demo integrada. La biblioteca de datos
+  (47 componentes, 20 materiales) se genera automáticamente desde el código
+  TypeScript. La guía cubre instalación, uso de los modelos `.glb`,
+  exportación a Windows/Android paso a paso y la hoja de ruta con la tabla de
+  paridad para completar el editor en Godot.
+
 ## [0.1.6] — 2026-07-04
 
 ### Cambiado

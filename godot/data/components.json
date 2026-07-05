@@ -1,0 +1,1011 @@
+{
+ "categories": {
+  "estructural": "Estructural",
+  "movimiento": "Movimiento",
+  "peso": "Peso",
+  "ergonomico": "Ergonomico",
+  "transmision": "Transmision",
+  "primitiva": "Primitivas"
+ },
+ "materials": [
+  {
+   "id": "acero-negro",
+   "label": "Acero negro mate",
+   "color": 2237480,
+   "metalness": 0.55,
+   "roughness": 0.45
+  },
+  {
+   "id": "acero",
+   "label": "Acero pintado",
+   "color": 3882822,
+   "metalness": 0.6,
+   "roughness": 0.4
+  },
+  {
+   "id": "acero-pulido",
+   "label": "Acero pulido",
+   "color": 12106948,
+   "metalness": 1,
+   "roughness": 0.18
+  },
+  {
+   "id": "cromo",
+   "label": "Cromo",
+   "color": 14672872,
+   "metalness": 1,
+   "roughness": 0.06
+  },
+  {
+   "id": "hierro-fundido",
+   "label": "Hierro fundido",
+   "color": 2829875,
+   "metalness": 0.5,
+   "roughness": 0.62
+  },
+  {
+   "id": "azul",
+   "label": "Azul metalico",
+   "color": 1920728,
+   "metalness": 0.7,
+   "roughness": 0.35
+  },
+  {
+   "id": "turquesa",
+   "label": "Turquesa (mecanismo)",
+   "color": 1212556,
+   "metalness": 0.55,
+   "roughness": 0.38
+  },
+  {
+   "id": "rojo",
+   "label": "Rojo (Hammer/REP)",
+   "color": 13111342,
+   "metalness": 0.4,
+   "roughness": 0.5
+  },
+  {
+   "id": "plata",
+   "label": "Plata (Silver Bullet)",
+   "color": 10132640,
+   "metalness": 0.85,
+   "roughness": 0.3
+  },
+  {
+   "id": "amarillo",
+   "label": "Amarillo",
+   "color": 15909376,
+   "metalness": 0.2,
+   "roughness": 0.5
+  },
+  {
+   "id": "naranja",
+   "label": "Plastico naranja",
+   "color": 15888668,
+   "metalness": 0,
+   "roughness": 0.45
+  },
+  {
+   "id": "blanco",
+   "label": "Plastico blanco",
+   "color": 15659250,
+   "metalness": 0,
+   "roughness": 0.5
+  },
+  {
+   "id": "nylon",
+   "label": "Nylon",
+   "color": 3027254,
+   "metalness": 0.1,
+   "roughness": 0.55
+  },
+  {
+   "id": "goma",
+   "label": "Goma",
+   "color": 2763308,
+   "metalness": 0,
+   "roughness": 0.9
+  },
+  {
+   "id": "caucho",
+   "label": "Caucho",
+   "color": 1842464,
+   "metalness": 0,
+   "roughness": 0.95
+  },
+  {
+   "id": "tapizado",
+   "label": "Tapizado",
+   "color": 2500653,
+   "metalness": 0,
+   "roughness": 0.85
+  },
+  {
+   "id": "madera",
+   "label": "Madera (veneer)",
+   "color": 10119999,
+   "metalness": 0,
+   "roughness": 0.7
+  },
+  {
+   "id": "kevlar",
+   "label": "Kevlar",
+   "color": 13214247,
+   "metalness": 0.15,
+   "roughness": 0.6
+  },
+  {
+   "id": "vidrio",
+   "label": "Vidrio",
+   "color": 10466248,
+   "metalness": 0,
+   "roughness": 0.05
+  },
+  {
+   "id": "generico",
+   "label": "Generico",
+   "color": 9741240,
+   "metalness": 0.25,
+   "roughness": 0.6
+  }
+ ],
+ "components": [
+  {
+   "id": "prim-box",
+   "label": "Caja",
+   "category": "primitiva",
+   "materialId": "generico",
+   "defaults": {
+    "kind": "box",
+    "width": 30,
+    "height": 30,
+    "depth": 30
+   },
+   "physics": {
+    "massKg": 1,
+    "fixed": false
+   },
+   "description": "Primitiva cubo/caja."
+  },
+  {
+   "id": "prim-cylinder",
+   "label": "Cilindro",
+   "category": "primitiva",
+   "materialId": "generico",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 15,
+    "radiusBottom": 15,
+    "height": 30
+   },
+   "physics": {
+    "massKg": 1,
+    "fixed": false
+   },
+   "description": "Primitiva cilindro."
+  },
+  {
+   "id": "prim-sphere",
+   "label": "Esfera",
+   "category": "primitiva",
+   "materialId": "generico",
+   "defaults": {
+    "kind": "sphere",
+    "radius": 15
+   },
+   "physics": {
+    "massKg": 1,
+    "fixed": false
+   },
+   "description": "Primitiva esfera."
+  },
+  {
+   "id": "pilar",
+   "label": "Pilar estructural",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8,
+    "height": 200,
+    "depth": 8
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Columna vertical de soporte de carga."
+  },
+  {
+   "id": "pilar-linea",
+   "label": "Pilar / travesaño (línea)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "beam",
+    "width": 5,
+    "depth": 5,
+    "ends": "plano",
+    "path": [
+     [
+      0,
+      -50,
+      0
+     ],
+     [
+      0,
+      -25,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      25,
+      0
+     ],
+     [
+      0,
+      50,
+      0
+     ]
+    ]
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "placement": "beam",
+   "description": "Perfil de acero trazado entre dos puntos (perfiles 1:1/1:2/1:3, extremos plano/diagonal, pinholes). Se dobla por nodos."
+  },
+  {
+   "id": "tubo-linea",
+   "label": "Tubo de acero (línea)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "tube",
+    "radius": 2.4,
+    "path": [
+     [
+      0,
+      -50,
+      0
+     ],
+     [
+      0,
+      -25,
+      0
+     ],
+     [
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      25,
+      0
+     ],
+     [
+      0,
+      50,
+      0
+     ]
+    ]
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "placement": "tube",
+   "description": "Tubo de acero trazado entre dos puntos, con medidas nominales. Se dobla por nodos."
+  },
+  {
+   "id": "base-soporte",
+   "label": "Base de soporte",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 60,
+    "height": 6,
+    "depth": 60
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Base inferior que ancla la maquina al suelo."
+  },
+  {
+   "id": "base-apoyo",
+   "label": "Base de apoyo",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 40,
+    "height": 4,
+    "depth": 40
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Apoyo intermedio o pata estabilizadora."
+  },
+  {
+   "id": "soporte-peso",
+   "label": "Soporte de peso",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 30,
+    "height": 8,
+    "depth": 12
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Brazo o repisa que sostiene la pila de pesos."
+  },
+  {
+   "id": "j-hook",
+   "label": "Gancho J / soporte barra",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 6,
+    "height": 10,
+    "depth": 14
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW)."
+  },
+  {
+   "id": "montante-rack",
+   "label": "Montante de rack",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7.6,
+    "height": 230,
+    "depth": 7.6
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Columna perforada de power rack (3x3\", grilla de pin)."
+  },
+  {
+   "id": "brazo-seguridad",
+   "label": "Brazo de seguridad",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8,
+    "height": 8,
+    "depth": 55
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Spotter arm que detiene la barra a una altura dada."
+  },
+  {
+   "id": "correa-seguridad",
+   "label": "Correa de seguridad",
+   "category": "estructural",
+   "materialId": "nylon",
+   "defaults": {
+    "kind": "box",
+    "width": 120,
+    "height": 4,
+    "depth": 0.6
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "placement": "rope-strap",
+   "description": "Strap de nylon de 3\" entre montantes: cuélgalo con la herramienta de línea (dos extremos)."
+  },
+  {
+   "id": "barra-dominadas",
+   "label": "Barra de dominadas",
+   "category": "estructural",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.6,
+    "radiusBottom": 1.6,
+    "height": 120
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Barra superior de pull-ups (gruesa/fina)."
+  },
+  {
+   "id": "barra-fondos",
+   "label": "Barra de fondos",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 2,
+    "radiusBottom": 2,
+    "height": 40
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Agarre paralelo para fondos (dips)."
+  },
+  {
+   "id": "landmine",
+   "label": "Landmine",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 2.6,
+    "radiusBottom": 2.6,
+    "height": 18
+   },
+   "physics": {
+    "massKg": 1,
+    "fixed": false
+   },
+   "description": "Manguito pivotante para un extremo de barra."
+  },
+  {
+   "id": "guia",
+   "label": "Guia",
+   "category": "movimiento",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.5,
+    "radiusBottom": 1.5,
+    "height": 180
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Varilla vertical que guia el recorrido de la pila."
+  },
+  {
+   "id": "riel",
+   "label": "Riel",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "box",
+    "width": 4,
+    "height": 150,
+    "depth": 4
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Carril lineal para carros o asientos deslizantes."
+  },
+  {
+   "id": "fulcro",
+   "label": "Fulcro",
+   "category": "movimiento",
+   "materialId": "turquesa",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 2,
+    "radiusBottom": 2,
+    "height": 12
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Punto de apoyo fijo de una palanca."
+  },
+  {
+   "id": "pivote",
+   "label": "Pivote",
+   "category": "movimiento",
+   "materialId": "turquesa",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.2,
+    "radiusBottom": 1.2,
+    "height": 8
+   },
+   "physics": {
+    "massKg": 0.2,
+    "fixed": false
+   },
+   "description": "Eje de rotacion de un brazo o palanca movil."
+  },
+  {
+   "id": "pop-pin",
+   "label": "Pasador (pop-pin)",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.8,
+    "radiusBottom": 0.8,
+    "height": 14
+   },
+   "physics": {
+    "massKg": 0.1,
+    "fixed": false
+   },
+   "description": "Pasador de ajuste rapido con resorte."
+  },
+  {
+   "id": "carro-cable",
+   "label": "Carro de cable",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 14,
+    "height": 16,
+    "depth": 10
+   },
+   "physics": {
+    "massKg": 1.5,
+    "fixed": false
+   },
+   "description": "Trolley ajustable en altura del functional trainer."
+  },
+  {
+   "id": "brazo-ajustable",
+   "label": "Brazo ajustable",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8,
+    "height": 80,
+    "depth": 8
+   },
+   "physics": {
+    "massKg": 3,
+    "fixed": false
+   },
+   "description": "Brazo-palanca pivotante con posiciones de detencion (jalon/remo)."
+  },
+  {
+   "id": "polea",
+   "label": "Polea",
+   "category": "transmision",
+   "materialId": "nylon",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 6,
+    "radiusBottom": 6,
+    "height": 3
+   },
+   "physics": {
+    "massKg": 0.5,
+    "fixed": false
+   },
+   "description": "Rueda acanalada que redirige un cable."
+  },
+  {
+   "id": "roldana",
+   "label": "Roldana",
+   "category": "transmision",
+   "materialId": "nylon",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 4,
+    "radiusBottom": 4,
+    "height": 2.5
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "description": "Polea pequena de reenvio de cable."
+  },
+  {
+   "id": "bloque-poleas",
+   "label": "Bloque de poleas",
+   "category": "transmision",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 5,
+    "radiusBottom": 5,
+    "height": 7
+   },
+   "physics": {
+    "massKg": 0.8,
+    "fixed": false
+   },
+   "description": "Bloque de doble polea de reenvio (swivel) atornillado al montante."
+  },
+  {
+   "id": "engranaje",
+   "label": "Engranaje",
+   "category": "transmision",
+   "materialId": "acero",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 5,
+    "radiusBottom": 5,
+    "height": 2
+   },
+   "physics": {
+    "massKg": 0.6,
+    "fixed": false
+   },
+   "description": "Rueda dentada para conversion de fuerzas."
+  },
+  {
+   "id": "cable",
+   "label": "Cable",
+   "category": "transmision",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.4,
+    "radiusBottom": 0.4,
+    "height": 100
+   },
+   "physics": {
+    "massKg": 0.1,
+    "fixed": false
+   },
+   "description": "Cable de acero que transmite la traccion."
+  },
+  {
+   "id": "cadena-eslabones",
+   "label": "Cadena de eslabones",
+   "category": "transmision",
+   "materialId": "acero",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.6,
+    "radiusBottom": 0.6,
+    "height": 80
+   },
+   "physics": {
+    "massKg": 0.4,
+    "fixed": false
+   },
+   "description": "Cadena metalica de transmision."
+  },
+  {
+   "id": "cadena-seguridad",
+   "label": "Cadena de seguridad",
+   "category": "transmision",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.7,
+    "radiusBottom": 0.7,
+    "height": 90
+   },
+   "physics": {
+    "massKg": 0.5,
+    "fixed": false
+   },
+   "placement": "rope-chain",
+   "description": "Cadena de tope/seguridad del power rack: cuélgala con la herramienta de línea (dos extremos)."
+  },
+  {
+   "id": "liston-kevlar",
+   "label": "Liston de Kevlar",
+   "category": "transmision",
+   "materialId": "kevlar",
+   "defaults": {
+    "kind": "box",
+    "width": 3,
+    "height": 90,
+    "depth": 0.4
+   },
+   "physics": {
+    "massKg": 0.05,
+    "fixed": false
+   },
+   "description": "Correa de alta resistencia y baja elongacion."
+  },
+  {
+   "id": "resorte",
+   "label": "Resorte",
+   "category": "transmision",
+   "materialId": "acero",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 3,
+    "radiusBottom": 3,
+    "height": 30
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "description": "Muelle elastico que almacena energia."
+  },
+  {
+   "id": "leva",
+   "label": "Leva (cam)",
+   "category": "transmision",
+   "materialId": "acero",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 8,
+    "radiusBottom": 8,
+    "height": 2.5
+   },
+   "physics": {
+    "massKg": 0.7,
+    "fixed": false
+   },
+   "description": "Leva de resistencia variable: el radio efectivo r(θ) modela la curva de fuerza."
+  },
+  {
+   "id": "bloque-peso",
+   "label": "Bloque de peso",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 30,
+    "height": 4,
+    "depth": 18
+   },
+   "physics": {
+    "massKg": 5,
+    "fixed": false
+   },
+   "description": "Placa de la pila de pesos seleccionable."
+  },
+  {
+   "id": "disco-peso",
+   "label": "Disco de peso",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 22,
+    "radiusBottom": 22,
+    "height": 3
+   },
+   "physics": {
+    "massKg": 20,
+    "fixed": false
+   },
+   "description": "Disco olimpico para barras o ejes."
+  },
+  {
+   "id": "contrapeso",
+   "label": "Contrapeso",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 20,
+    "height": 20,
+    "depth": 20
+   },
+   "physics": {
+    "massKg": 15,
+    "fixed": false
+   },
+   "description": "Masa de equilibrado del mecanismo."
+  },
+  {
+   "id": "barra-olimpica",
+   "label": "Barra olimpica",
+   "category": "peso",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.45,
+    "radiusBottom": 1.45,
+    "height": 220,
+    "radialSegments": 24
+   },
+   "physics": {
+    "massKg": 20,
+    "fixed": false
+   },
+   "description": "Barra olimpica de 2.2 m (barbell)."
+  },
+  {
+   "id": "pila-pesos",
+   "label": "Pila de pesos",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 25,
+    "height": 90,
+    "depth": 18
+   },
+   "physics": {
+    "massKg": 102,
+    "fixed": false
+   },
+   "stack": {
+    "plateCount": 15,
+    "plateMassKg": 6.8,
+    "selected": 5
+   },
+   "description": "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba."
+  },
+  {
+   "id": "cuerno-carga",
+   "label": "Cuerno de carga",
+   "category": "peso",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 2.5,
+    "radiusBottom": 2.5,
+    "height": 25
+   },
+   "physics": {
+    "massKg": 0.5,
+    "fixed": false
+   },
+   "description": "Manguito olimpico donde se cargan los discos (plate-loaded)."
+  },
+  {
+   "id": "micro-disco",
+   "label": "Micro-disco",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 6,
+    "radiusBottom": 6,
+    "height": 1.2
+   },
+   "physics": {
+    "massKg": 1.25,
+    "fixed": false
+   },
+   "description": "Disco fraccional para saltos de peso pequenos."
+  },
+  {
+   "id": "agarradera",
+   "label": "Agarradera",
+   "category": "ergonomico",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "torus",
+    "radius": 8,
+    "tubeRadius": 1.5
+   },
+   "physics": {
+    "massKg": 0.4,
+    "fixed": false
+   },
+   "description": "Mango o asa que toma el usuario."
+  },
+  {
+   "id": "asiento",
+   "label": "Asiento",
+   "category": "ergonomico",
+   "materialId": "tapizado",
+   "defaults": {
+    "kind": "box",
+    "width": 40,
+    "height": 6,
+    "depth": 35
+   },
+   "physics": {
+    "massKg": 2,
+    "fixed": false
+   },
+   "description": "Superficie de apoyo del usuario."
+  },
+  {
+   "id": "respaldo",
+   "label": "Respaldo",
+   "category": "ergonomico",
+   "materialId": "tapizado",
+   "defaults": {
+    "kind": "box",
+    "width": 40,
+    "height": 50,
+    "depth": 6
+   },
+   "physics": {
+    "massKg": 2,
+    "fixed": false
+   },
+   "description": "Soporte para la espalda."
+  },
+  {
+   "id": "agarre-d",
+   "label": "Agarradera en D",
+   "category": "ergonomico",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "torus",
+    "radius": 6,
+    "tubeRadius": 1.2
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "description": "Mango en D para cable (single handle)."
+  },
+  {
+   "id": "cuerda-triceps",
+   "label": "Cuerda de triceps",
+   "category": "ergonomico",
+   "materialId": "nylon",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.2,
+    "radiusBottom": 1.2,
+    "height": 60
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "description": "Cuerda doble para pushdowns y face pulls."
+  },
+  {
+   "id": "barra-jalon",
+   "label": "Barra de jalon",
+   "category": "ergonomico",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.4,
+    "radiusBottom": 1.4,
+    "height": 120
+   },
+   "physics": {
+    "massKg": 2,
+    "fixed": false
+   },
+   "description": "Barra de lat pulldown moleteada."
+  },
+  {
+   "id": "correa-tobillo",
+   "label": "Correa de tobillo",
+   "category": "ergonomico",
+   "materialId": "nylon",
+   "defaults": {
+    "kind": "box",
+    "width": 20,
+    "height": 8,
+    "depth": 1
+   },
+   "physics": {
+    "massKg": 0.2,
+    "fixed": false
+   },
+   "description": "Correa acolchada para trabajo de cable en pierna."
+  }
+ ]
+}

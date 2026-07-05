@@ -94,6 +94,15 @@ El historial de cambios versión a versión está en
 [`CHANGELOG.md`](CHANGELOG.md). El ejecutable de Windows se publica como
 `EXERSUITE3D.exe` (junto al instalador NSIS y el `.msi`).
 
+### Migración a Godot (nativo)
+
+La carpeta [`godot/`](godot/) contiene un **proyecto Godot 4 funcional** que
+abre los mismos proyectos `.json` y los simula con física nativa (kit de
+migración: piezas, articulaciones, cables, cuerdas, maniquí, mano interactiva
+y cámara). La guía paso a paso — instalación, modelos `.glb`, exportar a
+Windows/Android y hoja de ruta para completar el editor — está en
+[`docs/MIGRACION-GODOT.md`](docs/MIGRACION-GODOT.md).
+
 ## Pantalla de inicio
 
 Al abrir la aplicación se muestra una **landing ligera** que **no inicializa el
