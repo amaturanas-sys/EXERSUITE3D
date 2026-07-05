@@ -1,0 +1,109 @@
+# Valida el kit de Godot con el MOTOR REAL y compila los binarios nativos
+# (APK Android + EXE Windows) sin necesidad de un PC local: el contenedor de
+# desarrollo no puede ejecutar Godot (política de red), pero la CI sí.
+name: godot-nativo
+
+on:
+  push:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot.yml"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.3-stable"
+  GODOT_DIR_VERSION: "4.3.stable"
+
+jobs:
+  validar:
+    name: Validar con el motor (headless)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Godot headless
+        run: |
+          curl -sSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot-bin
+          chmod +x godot-bin
+
+      - name: Importar el proyecto (registra clases y recursos)
+        run: ./godot-bin --headless --path godot --import || true
+
+      - name: Chequeo de sintaxis de todos los .gd
+        run: |
+          set -e
+          for f in $(find godot -name '*.gd' | sed 's|^godot/||'); do
+            echo "check $f"
+            ./godot-bin --headless --path godot --check-only -s "res://$f"
+          done
+
+      - name: Prueba de humo (carga el ejemplo + 2 s de física real)
+        run: ./godot-bin --headless --path godot -s res://tests/smoke.gd
+
+  exportar:
+    name: Exportar APK Android + EXE Windows
+    needs: validar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Godot + plantillas de exportación
+        run: |
+          curl -sSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot-bin
+          chmod +x godot-bin
+          curl -sSL -o templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_DIR_VERSION}"
+          unzip -q templates.tpz
+          mv templates/* "$HOME/.local/share/godot/export_templates/${GODOT_DIR_VERSION}/"
+
+      - name: Configurar Android (keystore de debug + ruta del SDK)
+        run: |
+          keytool -genkeypair -v -keystore "$HOME/debug.keystore" \
+            -alias androiddebugkey -keypass android -storepass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.3.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/debug_keystore = "$HOME/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Importar el proyecto
+        run: ./godot-bin --headless --path godot --import || true
+
+      - name: Exportar APK (debug) y EXE (release)
+        run: |
+          ./godot-bin --headless --path godot --export-debug "Android" ../EXERSUITE3D-godot.apk
+          ./godot-bin --headless --path godot --export-release "Windows Desktop" ../EXERSUITE3D-godot.exe
+          ls -la EXERSUITE3D-godot.*
+
+      - name: Subir artefactos
+        uses: actions/upload-artifact@v4
+        with:
+          name: exersuite3d-godot-nativo
+          path: |
+            EXERSUITE3D-godot.apk
+            EXERSUITE3D-godot.exe
+
+      - name: Adjuntar a la Release (solo tags v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            EXERSUITE3D-godot.apk
+            EXERSUITE3D-godot.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
