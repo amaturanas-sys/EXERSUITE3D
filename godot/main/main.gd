@@ -81,7 +81,7 @@ func _load_demo() -> void:
 			{"id": "o2", "name": "Brazo", "componentId": "brazo-ajustable", "materialId": "acero",
 			 "params": {"kind": "box", "width": 8, "height": 80, "depth": 8},
 			 "physics": {"massKg": 4, "fixed": false},
-			 "position": [40, 160, 0], "quaternion": [0, 0, 0, 1], "scale": [1, 1, 1]},
+			 "position": [40, 160, 0], "quaternion": [0, 0, 0.38268343, 0.92387953], "scale": [1, 1, 1]},
 			{"id": "o3", "name": "Bloque", "componentId": "bloque-peso", "materialId": "hierro-fundido",
 			 "params": {"kind": "box", "width": 30, "height": 15, "depth": 30},
 			 "physics": {"massKg": 20, "fixed": false},
@@ -89,7 +89,7 @@ func _load_demo() -> void:
 		],
 		"joints": [
 			{"name": "Bisagra", "kind": "revolute", "bodyAId": "o1", "bodyBId": "o2",
-			 "anchor": [40, 200, 0], "axis": "z", "limitsEnabled": false,
+			 "anchor": [11.72, 188.28, 0], "axis": "z", "limitsEnabled": false,
 			 "min": -90, "max": 90, "motor": {"enabled": false, "targetVel": 0, "factor": 1}},
 		],
 		"cables": [],
