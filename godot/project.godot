@@ -18,7 +18,10 @@ boot_splash/fullsize=false
 
 window/size/viewport_width=1280
 window/size/viewport_height=800
-window/stretch/mode="disabled"
+; La UI se diseña a 1280x800 y se escala al tamaño/densidad de la pantalla
+; real (canvas_items no reduce la resolución del render 3D).
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=6
 
 [input]

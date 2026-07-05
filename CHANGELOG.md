@@ -42,6 +42,16 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   - **Persistencia**: **autosave** cada 20 s (`user://autosave.json`, botón
     Continuar en el inicio) y **proyectos recientes** nativos.
 
+### Corregido
+
+- **Godot: el APK/EXE exportado salía sin la biblioteca de datos**: los
+  `.json` no son recursos importados y el filtro de exportación no los
+  incluía, por lo que los binarios nativos arrancaban sin componentes ni
+  materiales (escena vacía). Ahora `data/*.json` y `extras/*.json` viajan
+  dentro del paquete. Además, la interfaz se escala a la densidad real de la
+  pantalla (`canvas_items`, diseño base 1280×800) para que botones y paneles
+  se vean a tamaño correcto en tablets sin tocar la resolución del render 3D.
+
 ## [0.1.6] — 2026-07-04
 
 ### Cambiado
