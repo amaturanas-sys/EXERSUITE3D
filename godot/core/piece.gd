@@ -67,16 +67,18 @@ func is_dynamic() -> bool:
 	return mass_kg > 0.0 and not fixed
 
 
-## Congela/descongela según empiece o pare la simulación.
+## Congela/descongela según empiece o pare la simulación. El estado de diseño
+## se captura como transform LOCAL (las piezas cuelgan directas del World):
+## no depende de estar dentro del árbol de escena.
 func set_simulating(on: bool) -> void:
 	if on:
-		_design_transform = global_transform
+		_design_transform = transform
 		freeze = not is_dynamic()
 	else:
 		freeze = true
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
-		global_transform = _design_transform
+		transform = _design_transform
 
 
 ## Punto local (cm de la web) a coordenadas de mundo actuales.

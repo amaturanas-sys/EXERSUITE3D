@@ -2,12 +2,40 @@ extends SceneTree
 ## Prueba de humo headless para CI: carga el proyecto de ejemplo con el motor
 ## REAL, simula 2 segundos de física y comprueba resultados.
 ## Uso: godot --headless --path godot -s res://tests/smoke.gd
+##
+## La preparación se hace en el PRIMER frame de proceso (no en _initialize):
+## el árbol de escena ya está activo y los nodos tienen transform global/path.
 
 var world
 var frames := 0
+var prepared := false
 
 
-func _initialize() -> void:
+func _process(_delta: float) -> bool:
+	frames += 1
+	if not prepared:
+		prepared = true
+		_setup()
+		return false
+	if frames < 140:
+		return false
+	var block = world.pieces["o3"]
+	var arm = world.pieces["o2"]
+	var block_fell: bool = block.global_position.y < 0.35   # cayó de 0,60 m al suelo
+	var arm_moved: bool = arm.global_position.distance_to(Vector3(0.4, 1.6, 0)) > 0.05
+	world.set_simulating(false)
+	var restored: bool = absf(block.position.y - 0.6) < 0.01
+	print("SMOKE: block_fell=%s arm_moved=%s restored=%s" % [block_fell, arm_moved, restored])
+	if block_fell and arm_moved and restored:
+		print("SMOKE_OK")
+		quit(0)
+	else:
+		print("SMOKE_FAIL")
+		quit(1)
+	return true
+
+
+func _setup() -> void:
 	print("SMOKE: arrancando…")
 	world = load("res://core/world.gd").new()
 	root.add_child(world)
@@ -23,23 +51,3 @@ func _initialize() -> void:
 	assert((out["objects"] as Array).size() == 3, "serialize perdió piezas")
 	world.set_simulating(true)
 	print("SMOKE: simulando 120 pasos…")
-
-
-func _process(_delta: float) -> bool:
-	frames += 1
-	if frames < 120:
-		return false
-	var block = world.pieces["o3"]
-	var arm = world.pieces["o2"]
-	var block_fell: bool = block.global_position.y < 0.35   # cayó de 0,60 m al suelo
-	var arm_moved: bool = arm.global_position.distance_to(Vector3(0.4, 1.6, 0)) > 0.05
-	world.set_simulating(false)
-	var restored: bool = absf(block.global_position.y - 0.6) < 0.01
-	print("SMOKE: block_fell=%s arm_moved=%s restored=%s" % [block_fell, arm_moved, restored])
-	if block_fell and arm_moved and restored:
-		print("SMOKE_OK")
-		quit(0)
-	else:
-		print("SMOKE_FAIL")
-		quit(1)
-	return true
