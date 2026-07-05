@@ -4,7 +4,7 @@ extends Node3D
 ## Cada flecha es un StaticBody3D en la capa 2: el editor lanza un rayo a esa
 ## capa para saber qué eje se agarra y desplaza la pieza a lo largo de él.
 
-const AXES := [Vector3.RIGHT, Vector3.UP, Vector3.BACK]
+const AXES: Array[Vector3] = [Vector3.RIGHT, Vector3.UP, Vector3.BACK]
 const COLORS := [Color(0.9, 0.25, 0.25), Color(0.3, 0.85, 0.35), Color(0.3, 0.5, 0.95)]
 
 var target: Piece = null

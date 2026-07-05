@@ -347,14 +347,14 @@ func _on_press(pos: Vector2) -> bool:
 
 ## Ángulo del cursor alrededor del eje del anillo activo (para rotar).
 func _ring_angle(from: Vector3, dir: Vector3) -> float:
-	var axis := Gizmo.AXES[_drag_axis]
+	var axis: Vector3 = Gizmo.AXES[_drag_axis]
 	var plane := Plane(axis, _drag_origin.dot(axis))
 	var hit = plane.intersects_ray(from, dir)
 	if hit == null:
 		return _rot_angle0
 	var v: Vector3 = (hit as Vector3) - _drag_origin
-	var b1 := axis.cross(Vector3.UP if absf(axis.dot(Vector3.UP)) < 0.9 else Vector3.RIGHT).normalized()
-	var b2 := axis.cross(b1)
+	var b1: Vector3 = axis.cross(Vector3.UP if absf(axis.dot(Vector3.UP)) < 0.9 else Vector3.RIGHT).normalized()
+	var b2: Vector3 = axis.cross(b1)
 	return atan2(v.dot(b2), v.dot(b1))
 
 
@@ -369,7 +369,7 @@ func _on_motion(pos: Vector2) -> bool:
 		return true
 	if _drag_kind == "move" and _drag_axis >= 0 and selected:
 		var t := Gizmo.closest_axis_t(_drag_origin, Gizmo.AXES[_drag_axis], from, dir)
-		var delta := Gizmo.AXES[_drag_axis] * (t - _drag_t0)
+		var delta: Vector3 = Gizmo.AXES[_drag_axis] * (t - _drag_t0)
 		for piece in _drag_starts:
 			piece.global_position = (_drag_starts[piece] as Transform3D).origin + delta
 		world.refresh_attachments()
