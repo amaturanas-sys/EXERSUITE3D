@@ -9,6 +9,7 @@ var ed: EditorController
 var ui: EditorUI
 var landing: LandingUI = null
 var library: LibraryUI = null
+var grid_node: Node3D = null
 
 
 func _ready() -> void:
@@ -24,8 +25,9 @@ func _ready() -> void:
 	ui = EditorUI.new()
 	add_child(ui)
 	ui.setup(world, cam, ed)
-	ui.request_home.connect(_show_landing)
+	ui.request_home.connect(_confirm_home)
 	ui.request_library.connect(_show_library)
+	ui.grid_toggled.connect(func(on): grid_node.visible = on)
 
 	# Autoguardado en user:// cada 20 s (equivalente al localStorage web).
 	var autosave := Timer.new()
@@ -66,12 +68,14 @@ func _on_landing_action(kind: String, payload) -> void:
 			ed.select_piece(null)
 			if world.load_project_file(String(payload)):
 				cam.set_view("isometrica", world.bounds())
+				ui.sync_from_world()
 				LandingUI.add_recent(String(payload).get_file().get_basename(), Serializer.serialize(world))
 		"simulate":
 			_hide_landing()
 			ed.select_piece(null)
 			if world.load_project_file(String(payload)):
 				cam.set_view("isometrica", world.bounds())
+				ui.sync_from_world()
 				ui.set_simulator_mode(true)
 				world.set_simulating(true)
 		"continue":
@@ -79,6 +83,7 @@ func _on_landing_action(kind: String, payload) -> void:
 			ed.select_piece(null)
 			if world.load_project_file("user://autosave.json"):
 				cam.set_view("isometrica", world.bounds())
+				ui.sync_from_world()
 		"library":
 			_show_library()
 		"demo":
@@ -98,9 +103,10 @@ func _show_library() -> void:
 
 
 func _build_environment() -> void:
+	# Fondo claro degradado como la web (#eef0f2 → #cdd0d3).
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.90, 0.90, 0.92)
+	env.background_color = Color("eef0f2")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.85, 0.86, 0.9)
 	env.ambient_light_energy = 0.7
@@ -129,10 +135,79 @@ func _build_environment() -> void:
 	pm.size = Vector2(40, 40)
 	mi.mesh = pm
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.82, 0.82, 0.84)
+	mat.albedo_color = Color("e8e9eb")
 	mi.material_override = mat
 	floor_body.add_child(mi)
 	add_child(floor_body)
+
+	grid_node = _build_grid()
+	add_child(grid_node)
+
+
+## Rejilla de la web: 6 m de lado, celdas de 10 cm, líneas mayores cada 1 m,
+## más los ejes X (rojo), Y (verde) y Z (azul) de 1 m.
+func _build_grid() -> Node3D:
+	var root := Node3D.new()
+	root.name = "Grid"
+	var im := ImmediateMesh.new()
+	var half := 3.0
+	var minor := Color("c4c4c8", 0.55)
+	var major := Color("9a9a9e", 0.8)
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
+	for i in range(61):
+		var p := -half + float(i) * 0.1
+		var c := major if i % 10 == 0 else minor
+		im.surface_set_color(c)
+		im.surface_add_vertex(Vector3(p, 0, -half))
+		im.surface_set_color(c)
+		im.surface_add_vertex(Vector3(p, 0, half))
+		im.surface_set_color(c)
+		im.surface_add_vertex(Vector3(-half, 0, p))
+		im.surface_set_color(c)
+		im.surface_add_vertex(Vector3(half, 0, p))
+	# Ejes de 1 m (X rojo, Y verde, Z azul), como el AxesHelper de three.
+	var axes := [
+		[Vector3(1, 0, 0), Color("e04434")],
+		[Vector3(0, 1, 0), Color("46a049")],
+		[Vector3(0, 0, 1), Color("3565c0")],
+	]
+	for a in axes:
+		im.surface_set_color(a[1])
+		im.surface_add_vertex(Vector3.ZERO)
+		im.surface_set_color(a[1])
+		im.surface_add_vertex(a[0])
+	im.surface_end()
+	var mi := MeshInstance3D.new()
+	mi.mesh = im
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mi.material_override = mat
+	mi.position.y = 0.002
+	root.add_child(mi)
+	return root
+
+
+## "Cambios sin guardar" al volver al inicio, como en la web.
+func _confirm_home() -> void:
+	if world.pieces.is_empty():
+		_show_landing()
+		return
+	var dlg := ConfirmationDialog.new()
+	dlg.title = "Cambios sin guardar"
+	dlg.dialog_text = ("Tienes cambios en el proyecto actual.\n"
+		+ "¿Quieres guardarlos antes de volver a la pantalla de inicio?")
+	dlg.ok_button_text = "Guardar y salir"
+	dlg.cancel_button_text = "Cancelar"
+	dlg.add_button("Salir sin guardar", true, "discard")
+	dlg.confirmed.connect(func():
+		Serializer.save_file(world, "user://autosave.json")
+		LandingUI.add_recent("autosave", Serializer.serialize(world))
+		_show_landing())
+	dlg.custom_action.connect(func(_action): dlg.hide(); _show_landing())
+	ui.add_child(dlg)
+	dlg.popup_centered()
 
 
 func _unhandled_input(event: InputEvent) -> void:

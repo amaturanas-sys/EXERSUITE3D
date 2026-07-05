@@ -8,13 +8,29 @@ const AXES: Array[Vector3] = [Vector3.RIGHT, Vector3.UP, Vector3.BACK]
 const COLORS := [Color(0.9, 0.25, 0.25), Color(0.3, 0.85, 0.35), Color(0.3, 0.5, 0.95)]
 
 var target: Piece = null
+var _arrows: Array = []
+var _rings: Array = []
 
 
 func _ready() -> void:
 	for i in range(3):
-		add_child(_arrow(i))
-		add_child(_ring(i))
+		var a := _arrow(i)
+		var r := _ring(i)
+		_arrows.append(a)
+		_rings.append(r)
+		add_child(a)
+		add_child(r)
 	visible = false
+
+
+## Filtro de asas según la herramienta activa: "move", "rotate" o "all".
+func set_tool(which: String) -> void:
+	for a in _arrows:
+		(a as Node3D).visible = which != "rotate"
+		(a as StaticBody3D).collision_layer = 2 if which != "rotate" else 0
+	for r in _rings:
+		(r as Node3D).visible = which != "move"
+		(r as StaticBody3D).collision_layer = 2 if which != "move" else 0
 
 
 ## Anillo de ROTACIÓN alrededor del eje i (toro fino + colisión por segmentos).

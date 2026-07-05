@@ -42,6 +42,33 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   - **Persistencia**: **autosave** cada 20 s (`user://autosave.json`, botón
     Continuar en el inicio) y **proyectos recientes** nativos.
 
+### Cambiado
+
+- **Godot: paridad visual y de herramientas 1:1 con la web v0.1.6** —
+  - **Home** como el de la web: logotipo grande, selector **Builder /
+    Simulador** con sus acciones (Crear nuevo proyecto, Abrir archivo…,
+    Explorar biblioteca / Simular archivo…), tarjeta de **PROYECTOS
+    RECIENTES** y **DEDICATORIA**.
+  - **Barra del Builder** completa: **Simular en verde**, Mover/Rotar
+    (filtran las asas del gizmo), **Grid** conmutable, Duplicar, Eliminar,
+    Agrupar/Desagrupar, **Figura** con altura del maniquí en cm, vistas,
+    zoom, proyecto y "Autoguardado activo".
+  - **Paleta** como la web: cabecera con el logotipo, "PIEZAS DISPONIBLES" y
+    tarjetas por pieza con **punto de color por categoría** (los
+    CATEGORY_COLORS exactos de la web).
+  - **Visor claro** como la web: fondo gris claro, **rejilla de 10 cm** con
+    líneas mayores cada metro, **ejes X/Y/Z de colores** y rótulo "1 celda =
+    10 cm · ejes en cm".
+  - **Inspector** en tarjetas **PROPIEDADES** / **CONEXIONES** (bisagra,
+    corredera, cable siempre a mano) con los mismos textos de la web.
+  - **Biblioteca de modelos** como la web: **vista previa 3D giratoria** del
+    ítem (primitiva o .glb sustituido), "Sustituir por modelo…",
+    "Restablecer primitiva" y **Exportar/Importar ZIP** de toda la colección.
+  - Diálogo **"Cambios sin guardar"** (Guardar y salir / Salir sin guardar /
+    Cancelar) al volver al inicio.
+  - Splash e iconos con los logotipos correctos (icono como la web: logo
+    negro sobre blanco; splash con el logotipo claro sobre fondo oscuro).
+
 ### Corregido
 
 - **Godot: el APK/EXE exportado salía sin la biblioteca de datos**: los

@@ -211,6 +211,26 @@ func refresh_models() -> void:
 		mannequin.quaternion = quat
 
 
+## Botón "Figura" de la barra: añade/quita el maniquí y fija su altura.
+func set_mannequin(present: bool, height_cm: float) -> void:
+	var prev_pos := Vector3(0.9, 0, 0.9)
+	var prev_quat := Quaternion.IDENTITY
+	if mannequin:
+		prev_pos = mannequin.position
+		prev_quat = mannequin.quaternion
+		mannequin.queue_free()
+		mannequin = null
+	human_data["present"] = present
+	human_data["heightCm"] = height_cm
+	if not human_data.has("mode"):
+		human_data["mode"] = "mannequin"
+	if present:
+		mannequin = Mannequin.create(height_cm, human_data.get("pose"))
+		add_child(mannequin)
+		mannequin.position = prev_pos
+		mannequin.quaternion = prev_quat
+
+
 ## Manos apoyadas en agarres (human.hands): IK de dos huesos cada frame.
 func _update_hands() -> void:
 	if mannequin == null:
