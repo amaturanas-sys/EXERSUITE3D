@@ -25,12 +25,18 @@ cargando tus proyectos `.json` actuales. El repo incluye en `godot/` un
 | `core/world.gd` | **Cargador de proyectos `.json`**, articulaciones nativas (bisagra/corredera con límites y motor), **cables por conservación de longitud** (ratio 2:1 emergente), **cuerdas en catenaria** (MultiMesh), **mano interactiva** (resorte crítico) | `Editor.ts`, `PhysicsWorld.ts`, `Rope.ts`, `cables.ts` |
 | `core/mannequin.gd` | Maniquí posable simplificado a escala (aplica las poses guardadas en el proyecto) | `humanFigure.ts` |
 | `core/orbit_camera.gd` | Cámara orbital ratón + táctil (pellizco para zoom) y presets Frontal/Lateral/Superior/Iso | `OrbitControls` + `setViewPreset` |
-| `main/Main.tscn` + `main/main.gd` | Escena principal: entorno, suelo fijo, UI (Abrir proyecto / Demo / Simular / vistas) y demo integrada | `main.ts` (modo Simulador) |
+| `core/serializer.gd` | **Guardar `.json`** en el formato exacto de la web (interoperable en ambos sentidos) | `Editor.serialize` |
+| `core/gizmo.gd` | Gizmo de traslación de 3 ejes (flechas X/Y/Z arrastrables) | `TransformControls` |
+| `core/editor.gd` | Controlador del editor: selección, colocación de piezas, **línea con aim assist**, **doblado por nodos**, cuerdas, bisagras/correderas, cables, duplicar/eliminar, mano interactiva | `Editor.ts` |
+| `main/editor_ui.gd` | UI del Builder: barra (Nuevo/Abrir/Guardar/Simular/vistas/zoom), **paleta de 47 piezas**, **inspector** (material, masa, anclado, dimensiones, rotar, doblar) y línea de estado; los paneles se ocultan al simular | `Toolbar.ts`, `ComponentPalette.ts`, `PropertiesPanel.ts`, `JointsPanel.ts` |
+| `main/Main.tscn` + `main/main.gd` | Escena principal: entorno, suelo fijo y demo integrada | `main.ts` |
 
-**Estado**: el kit es un **simulador/visor funcional** de tus proyectos (el
-equivalente al "modo Simulador" de la web) más la base geométrica y física
-para construir encima el editor completo. La sección 7 lista la paridad y el
-orden recomendado para portar lo que falta.
+**Estado**: el kit es un **editor + simulador funcional**: abre y GUARDA los
+mismos `.json` que la web, coloca piezas desde la paleta (47 componentes),
+selecciona y mueve con gizmo de 3 ejes, edita dimensiones/material/física en
+el inspector, traza perfiles y tubos por línea con aim assist, dobla por
+nodos, coloca cuerdas, crea bisagras/correderas/cables, y simula con física
+nativa y mano interactiva. La sección 7 lista la paridad restante.
 
 ---
 
@@ -162,20 +168,21 @@ referencia donde está TODA la lógica a portar:
 | Mano interactiva (resorte) | ✔ | `PhysicsWorld.applyDrag` | `world.gd::_physics_process` |
 | Cámara orbital + táctil + vistas | ✔ | `OrbitControls`/`setViewPreset` | `orbit_camera.gd` |
 | Suelo fijo + entorno | ✔ | `SceneManager.ts` | `main.gd` |
-| **Editor**: seleccionar/mover/rotar/escalar piezas | ⏳ | `Editor.ts` (gizmo) | raycast + un gizmo (AssetLib tiene varios listos) |
-| Paleta de piezas y añadir componentes | ⏳ | `ComponentPalette.ts` | `ItemList` de la UI + `Piece.create` con `ComponentLibrary.get_definition(id)` (ya devuelve `defaults`/`physics`) |
-| Guardar `.json` (mismo formato) | ⏳ | `Editor.serialize` | recorre `world.pieces` invirtiendo `Units` (m→cm) |
-| Trazado por línea con aim assist | ⏳ | `Editor.pickLinePlacePoint` | raycast al suelo + snap a nodos (los paths ya están en `params`) |
-| Bending por nodos | ⏳ | `Editor.beginBendNodes` | asas = `Area3D` esferas; al arrastrar, reescribe `params.path` y `GeometryFactory.build_mesh` |
+| **Editor**: seleccionar y mover con gizmo 3 ejes | ✔ | `Editor.ts` | `editor.gd` + `gizmo.gd` (rotar: botones de 15° en el inspector; escalar: edita dimensiones) |
+| Paleta de piezas y añadir componentes | ✔ | `ComponentPalette.ts` | `editor_ui.gd` (paleta) + `world.add_component` |
+| Guardar `.json` (mismo formato) | ✔ | `Editor.serialize` | `serializer.gd` |
+| Trazado por línea con aim assist | ✔ | `Editor.pickLinePlacePoint` | `editor.gd::_pick_line_point` (imán en píxeles de pantalla) |
+| Bending por nodos | ✔ | `Editor.beginBendNodes` | `editor.gd` (asas capa 4, arrastre en plano de cámara) |
+| Crear cuerdas / bisagras / correderas / cables | ✔ | `Editor.ts` | `editor.gd` (modos) + `world.add_*` |
+| Gizmo de rotación/escala libre continua | ⏳ | `TransformControls` | añade anillos al `gizmo.gd` (misma técnica que las flechas) |
+| Grupos (subensamblajes) | ⏳ | `Editor.ts` (groups) | multiselección + mover en bloque |
 | Pinholes reales en perfiles | ⏳ | `linePieces.ts` (ExtrudeGeometry con holes) | `CSGBox3D` + bucle de `CSGCylinder3D` restados, o quedarte con la caja |
 | IK de manos en agarres | ⏳ | `armIK.ts` (60 líneas, portable 1:1) | `mannequin.gd` |
 | Biblioteca en bloque (ZIP), autosave, recientes | ⏳ | `componentModels.ts`, `recentStore.ts` | `FileAccess` + `user://` |
 
-**Orden recomendado**: 1) guardar `.json` (cierra el ciclo con la web) →
-2) paleta + colocar piezas → 3) gizmo de transformación → 4) trazado de línea
-→ 5) bending → 6) el resto. Con 1–3 ya tienes un editor usable y **los dos
-mundos comparten archivo de proyecto**, así que puedes migrar por fases sin
-perder nada: diseña donde quieras, simula en Godot.
+**El ciclo completo ya está cerrado**: puedes diseñar en Godot, guardar, abrir
+en la web (y al revés) — los dos mundos comparten archivo de proyecto, así que
+la migración puede ser gradual sin perder ningún diseño.
 
 ---
 

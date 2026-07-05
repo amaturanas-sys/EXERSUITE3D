@@ -76,6 +76,121 @@ func load_project(data: Dictionary) -> void:
 	_update_cable_lines()
 
 
+# ------------------------------------------------------------ edición
+
+var _next_id := 1
+
+
+## Añade una pieza desde una definición de la biblioteca, en la posición dada.
+func add_component(component_id: String, pos: Vector3) -> Piece:
+	var def := ComponentLibrary.get_definition(component_id)
+	if def.is_empty():
+		return null
+	var od := {
+		"id": "obj_g%d" % _next_id,
+		"name": String(def.get("label", component_id)),
+		"componentId": component_id,
+		"materialId": def.get("materialId", "acero"),
+		"params": (def.get("defaults", {}) as Dictionary).duplicate(true),
+		"physics": (def.get("physics", {}) as Dictionary).duplicate(true),
+	}
+	_next_id += 1
+	var piece := Piece.create(od)
+	piece.position = pos
+	add_child(piece)
+	pieces[od["id"]] = piece
+	return piece
+
+
+## Añade una pieza de línea (beam/tube) entre dos puntos de mundo (metros).
+func add_line_piece(kind: String, a: Vector3, b: Vector3, tpl: Dictionary) -> Piece:
+	var length_cm := a.distance_to(b) / Units.CM
+	if length_cm < 2.0:
+		return null
+	var path := []
+	for i in range(5):
+		var t := float(i) / 4.0
+		path.append([0.0, -length_cm / 2.0 + t * length_cm, 0.0])
+	var params := tpl.duplicate(true)
+	params["kind"] = kind
+	params["path"] = path
+	var od := {
+		"id": "obj_g%d" % _next_id,
+		"name": "Perfil (línea)" if kind == "beam" else "Tubo (línea)",
+		"componentId": "pilar-linea" if kind == "beam" else "tubo-linea",
+		"materialId": "acero-negro",
+		"params": params,
+		"physics": {"massKg": 0, "fixed": true},
+	}
+	_next_id += 1
+	var piece := Piece.create(od)
+	piece.position = (a + b) / 2.0
+	var dir := (b - a).normalized()
+	piece.quaternion = Quaternion(Vector3.UP, dir) if not Vector3.UP.is_equal_approx(dir) else Quaternion.IDENTITY
+	add_child(piece)
+	pieces[od["id"]] = piece
+	return piece
+
+
+func id_of(piece: Piece) -> String:
+	for id in pieces:
+		if pieces[id] == piece:
+			return id
+	return ""
+
+
+## Elimina una pieza y todo lo que la referencia (joints, cables, cuerdas).
+func remove_piece(piece: Piece) -> void:
+	var pid := id_of(piece)
+	if pid == "":
+		return
+	joints_data = joints_data.filter(func(j): return j.get("bodyAId") != pid and j.get("bodyBId") != pid)
+	cables_data = cables_data.filter(func(c):
+		for nd in c.get("nodes", []):
+			if String(nd.get("objectId", "")) == pid:
+				return false
+		return true)
+	var kept: Array = []
+	for rv in _rope_visuals:
+		var rd: Dictionary = rv["data"]
+		var a_id = rd.get("a", {}).get("objectId")
+		var b_id = rd.get("b", {}).get("objectId")
+		if String(a_id if a_id != null else "") == pid or String(b_id if b_id != null else "") == pid:
+			rv["node"].queue_free()
+		else:
+			kept.append(rv)
+	_rope_visuals = kept
+	ropes_data = ropes_data.filter(func(r):
+		var a_id = r.get("a", {}).get("objectId")
+		var b_id = r.get("b", {}).get("objectId")
+		return String(a_id if a_id != null else "") != pid and String(b_id if b_id != null else "") != pid)
+	pieces.erase(pid)
+	piece.queue_free()
+	_update_cable_lines()
+
+
+## Añade una cuerda (cadena/correa) entre dos extremos (RopeData de la web).
+func add_rope(rd: Dictionary) -> void:
+	ropes_data.append(rd)
+	_rope_visuals.append({"data": rd, "node": _make_rope_node(rd)})
+	_update_ropes()
+
+
+func add_joint(jd: Dictionary) -> void:
+	joints_data.append(jd)
+
+
+func add_cable(cd: Dictionary) -> void:
+	cables_data.append(cd)
+	_update_cable_lines()
+
+
+## Refresca cuerdas y cables tras mover piezas en el editor.
+func refresh_attachments() -> void:
+	_update_ropes()
+	_update_cable_lines()
+
+
 func load_project_file(path: String) -> bool:
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
@@ -373,6 +488,7 @@ func try_grab(from: Vector3, dir: Vector3) -> bool:
 		return false
 	var space := get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 100.0)
+	q.collision_mask = 1  # solo piezas (el suelo vive en la capa 8)
 	var hit := space.intersect_ray(q)
 	if hit.is_empty() or not (hit["collider"] is Piece):
 		return false

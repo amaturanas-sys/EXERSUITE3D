@@ -38,6 +38,11 @@ static func category_label(cat: String) -> String:
 	return _data.get("categories", {}).get(cat, cat)
 
 
+static func materials_list() -> Array:
+	_ensure_loaded()
+	return _data.get("materials", [])
+
+
 ## Material PBR equivalente al preset de la web (color entero 0xRRGGBB).
 static func material(id: String) -> StandardMaterial3D:
 	_ensure_loaded()

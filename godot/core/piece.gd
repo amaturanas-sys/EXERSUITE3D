@@ -6,11 +6,13 @@ extends RigidBody3D
 
 var component_id: String = ""
 var display_name: String = ""
+var material_id: String = "acero"
 var params: Dictionary = {}
 var mass_kg: float = 0.0
 var fixed: bool = true
 
 var mesh_instance: MeshInstance3D
+var collision: CollisionShape3D
 var _design_transform: Transform3D
 
 
@@ -26,10 +28,11 @@ static func create(od: Dictionary) -> Piece:
 	p.mass_kg = float(phys.get("massKg", 0))
 	p.fixed = bool(phys.get("fixed", true))
 
+	p.material_id = String(od.get("materialId", "acero"))
 	var mesh := GeometryFactory.build_mesh(p.params)
 	p.mesh_instance = MeshInstance3D.new()
 	p.mesh_instance.mesh = mesh
-	p.mesh_instance.material_override = ComponentLibrary.material(String(od.get("materialId", "acero")))
+	p.mesh_instance.material_override = ComponentLibrary.material(p.material_id)
 	# El torus de three vive en el plano XY (eje Z); el de Godot en XZ (eje Y).
 	if String(p.params.get("kind", "")) == "torus":
 		p.mesh_instance.rotation_degrees.x = 90.0
@@ -47,6 +50,7 @@ static func create(od: Dictionary) -> Piece:
 	# Centra el collider en el AABB real (barridos doblados descentrados).
 	col.position = mesh.get_aabb().get_center() * p.mesh_instance.scale
 	p.add_child(col)
+	p.collision = col
 
 	p.mass = maxf(p.mass_kg, 0.05)
 	p.freeze = true
@@ -78,3 +82,41 @@ func set_simulating(on: bool) -> void:
 ## Punto local (cm de la web) a coordenadas de mundo actuales.
 func local_cm_to_world(local_cm: Array) -> Vector3:
 	return global_transform * (Units.arr_cm(local_cm) * mesh_instance.scale)
+
+
+## Reconstruye malla y colisión tras editar `params` (dimensiones, path…).
+func rebuild_geometry() -> void:
+	var mesh := GeometryFactory.build_mesh(params)
+	mesh_instance.mesh = mesh
+	collision.shape = GeometryFactory.build_collision(mesh, params)
+	collision.position = mesh.get_aabb().get_center() * mesh_instance.scale
+
+
+func set_material_id(id: String) -> void:
+	material_id = id
+	mesh_instance.material_override = ComponentLibrary.material(id)
+
+
+## Resalta la pieza seleccionada (emisión suave sobre una copia del material).
+func set_selected(on: bool) -> void:
+	if on:
+		var m: StandardMaterial3D = ComponentLibrary.material(material_id).duplicate()
+		m.emission_enabled = true
+		m.emission = Color(0.95, 0.93, 0.85)
+		m.emission_energy_multiplier = 0.35
+		mesh_instance.material_override = m
+	else:
+		mesh_instance.material_override = ComponentLibrary.material(material_id)
+
+
+## Puntos de imán (mundo): origen, extremos y nodos del path si los hay.
+func snap_points() -> PackedVector3Array:
+	var pts := PackedVector3Array([global_position])
+	if params.has("path"):
+		for n in params["path"]:
+			pts.append(local_cm_to_world(n))
+	else:
+		var ab: AABB = mesh_instance.get_aabb()
+		for off in [Vector3(0, ab.size.y / 2, 0), Vector3(0, -ab.size.y / 2, 0)]:
+			pts.append(global_transform * (off * mesh_instance.scale))
+	return pts
