@@ -13,6 +13,8 @@ var fixed: bool = true
 
 var mesh_instance: MeshInstance3D
 var collision: CollisionShape3D
+## Visual alternativo: modelo .glb de la biblioteca o CSG con pinholes reales.
+var override_visual: Node3D = null
 var _design_transform: Transform3D
 
 
@@ -60,7 +62,73 @@ static func create(od: Dictionary) -> Piece:
 		p.position = Units.arr_cm(od["position"])
 	if od.has("quaternion"):
 		p.quaternion = Units.quat(od["quaternion"])
+	p.refresh_visual()
 	return p
+
+
+## Aplica el visual definitivo: modelo de la biblioteca (user:// o res://) si
+## existe; si no y es un perfil recto con pinholes, CSG con agujeros REALES;
+## si no, la primitiva paramétrica. La colisión siempre sale de la primitiva.
+func refresh_visual() -> void:
+	if override_visual:
+		override_visual.queue_free()
+		override_visual = null
+	mesh_instance.visible = true
+
+	var path := ModelStore.component_override_path(component_id)
+	if path != "":
+		var target: AABB = mesh_instance.mesh.get_aabb()
+		var inst := ModelStore.instantiate_fitted(path, target)
+		if inst:
+			# Respeta la escala no uniforme aplicada a la primitiva.
+			inst.scale = inst.scale * mesh_instance.scale
+			inst.position = inst.position * mesh_instance.scale
+			override_visual = inst
+			add_child(inst)
+			mesh_instance.visible = false
+			return
+
+	if String(params.get("kind", "")) == "beam" and float(params.get("holeDiameter", 0)) > 0.05:
+		var csg := _beam_with_pinholes()
+		if csg:
+			override_visual = csg
+			add_child(csg)
+			mesh_instance.visible = false
+
+
+## Perfil recto con pinholes pasantes reales (CSG: caja menos cilindros).
+func _beam_with_pinholes() -> Node3D:
+	var ab: AABB = mesh_instance.mesh.get_aabb()
+	if ab.size.y < 0.02:
+		return null
+	var w := ab.size.x
+	var length := ab.size.y
+	var d := ab.size.z
+	var hole_r := Units.cm(float(params.get("holeDiameter", 1.6))) / 2.0
+	var spacing := maxf(Units.cm(float(params.get("holeSpacing", 5))), hole_r * 2.0 + 0.005)
+	var margin := (w if String(params.get("ends", "plano")) == "diagonal" else w / 2.0) + hole_r
+	var usable := length - 2.0 * margin
+	if usable <= 0.0:
+		return null
+
+	var root := CSGCombiner3D.new()
+	var box := CSGBox3D.new()
+	box.size = Vector3(w, length, d)
+	box.material = ComponentLibrary.material(material_id)
+	root.add_child(box)
+	var count := int(floor(usable / spacing)) + 1
+	var start := -(float(count - 1) * spacing) / 2.0
+	for i in range(count):
+		var hole := CSGCylinder3D.new()
+		hole.operation = CSGShape3D.OPERATION_SUBTRACTION
+		hole.radius = hole_r
+		hole.height = d * 1.2
+		hole.sides = 12
+		hole.rotation_degrees.x = 90.0
+		hole.position = Vector3(0, start + float(i) * spacing, 0)
+		root.add_child(hole)
+	root.position = ab.get_center()
+	return root
 
 
 func is_dynamic() -> bool:
@@ -92,23 +160,33 @@ func rebuild_geometry() -> void:
 	mesh_instance.mesh = mesh
 	collision.shape = GeometryFactory.build_collision(mesh, params)
 	collision.position = mesh.get_aabb().get_center() * mesh_instance.scale
+	refresh_visual()
 
 
 func set_material_id(id: String) -> void:
 	material_id = id
 	mesh_instance.material_override = ComponentLibrary.material(id)
+	if override_visual is CSGCombiner3D:
+		refresh_visual()
 
 
-## Resalta la pieza seleccionada (emisión suave sobre una copia del material).
+## Resalta la pieza seleccionada. Con visual sustituido (glb/CSG) se muestra
+## además la primitiva como "fantasma" translúcido para marcar la selección.
 func set_selected(on: bool) -> void:
 	if on:
 		var m: StandardMaterial3D = ComponentLibrary.material(material_id).duplicate()
 		m.emission_enabled = true
 		m.emission = Color(0.95, 0.93, 0.85)
 		m.emission_energy_multiplier = 0.35
+		if override_visual:
+			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			m.albedo_color.a = 0.22
+			mesh_instance.visible = true
 		mesh_instance.material_override = m
 	else:
 		mesh_instance.material_override = ComponentLibrary.material(material_id)
+		if override_visual:
+			mesh_instance.visible = false
 
 
 ## Puntos de imán (mundo): origen, extremos y nodos del path si los hay.

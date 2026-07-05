@@ -20,6 +20,27 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   TypeScript. La guía cubre instalación, uso de los modelos `.glb`,
   exportación a Windows/Android paso a paso y la hoja de ruta con la tabla de
   paridad para completar el editor en Godot.
+- **Migración 1:1 definitiva a Godot** (`godot/`): el kit pasa de "núcleo
+  funcional" a réplica completa lista para publicar —
+  - **Identidad visual**: icono y splash de la marca, tema propio (paleta
+    papel/tinta de la web) en toda la interfaz y **pantalla de inicio** con
+    logo, Crear/Abrir/**Simulador**/Continuar/Biblioteca/Demo y **proyectos
+    recientes**.
+  - **Editor completo**: **anillos de rotación libre** en el gizmo,
+    **multiselección** (Shift/Ctrl+clic) con arrastre en bloque y **grupos**
+    (Agrupar/Desagrupar, interoperables con la web), y **pinholes reales** en
+    perfiles (CSG: caja menos cilindros).
+  - **Biblioteca de repertorio potenciada**: pantalla propia para **sustituir
+    por un `.glb`** el modelo de cada componente **y de cada segmento del
+    maniquí** (ajuste automático al hueco de la primitiva, persistencia en
+    `user://`, carga en caliente sin reimportar, prioridad usuario →
+    empaquetado → primitiva, y primitiva fantasma al seleccionar).
+  - **Maniquí potenciado**: segmentos con los ids de la web, overrides de
+    modelo por segmento e **IK de manos de dos huesos** que sigue los agarres
+    durante la simulación; pose y manos viajan en el `.json` en ambos
+    sentidos.
+  - **Persistencia**: **autosave** cada 20 s (`user://autosave.json`, botón
+    Continuar en el inicio) y **proyectos recientes** nativos.
 
 ## [0.1.6] — 2026-07-04
 

@@ -7,6 +7,8 @@ var world: World
 var cam: OrbitCamera
 var ed: EditorController
 var ui: EditorUI
+var landing: LandingUI = null
+var library: LibraryUI = null
 
 
 func _ready() -> void:
@@ -22,7 +24,77 @@ func _ready() -> void:
 	ui = EditorUI.new()
 	add_child(ui)
 	ui.setup(world, cam, ed)
-	_load_demo()
+	ui.request_home.connect(_show_landing)
+	ui.request_library.connect(_show_library)
+
+	# Autoguardado en user:// cada 20 s (equivalente al localStorage web).
+	var autosave := Timer.new()
+	autosave.wait_time = 20.0
+	autosave.autostart = true
+	autosave.timeout.connect(func():
+		if not world.pieces.is_empty() and not world.simulating:
+			Serializer.save_file(world, "user://autosave.json"))
+	add_child(autosave)
+
+	_show_landing()
+
+
+func _show_landing() -> void:
+	world.set_simulating(false)
+	ui.visible = false
+	ui.set_simulator_mode(false)
+	landing = LandingUI.new()
+	add_child(landing)
+	landing.action.connect(_on_landing_action)
+
+
+func _hide_landing() -> void:
+	if landing:
+		landing.queue_free()
+		landing = null
+	ui.visible = true
+
+
+func _on_landing_action(kind: String, payload) -> void:
+	match kind:
+		"new":
+			_hide_landing()
+			ed.select_piece(null)
+			world.clear()
+		"open", "open_path":
+			_hide_landing()
+			ed.select_piece(null)
+			if world.load_project_file(String(payload)):
+				cam.set_view("isometrica", world.bounds())
+				LandingUI.add_recent(String(payload).get_file().get_basename(), Serializer.serialize(world))
+		"simulate":
+			_hide_landing()
+			ed.select_piece(null)
+			if world.load_project_file(String(payload)):
+				cam.set_view("isometrica", world.bounds())
+				ui.set_simulator_mode(true)
+				world.set_simulating(true)
+		"continue":
+			_hide_landing()
+			ed.select_piece(null)
+			if world.load_project_file("user://autosave.json"):
+				cam.set_view("isometrica", world.bounds())
+		"library":
+			_show_library()
+		"demo":
+			_hide_landing()
+			_load_demo()
+
+
+func _show_library() -> void:
+	if library:
+		return
+	library = LibraryUI.new()
+	add_child(library)
+	library.setup(world)
+	library.closed.connect(func():
+		library.queue_free()
+		library = null)
 
 
 func _build_environment() -> void:

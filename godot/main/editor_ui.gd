@@ -1,5 +1,8 @@
 class_name EditorUI
 extends CanvasLayer
+
+signal request_home
+signal request_library
 ## Interfaz del Builder: barra superior (proyecto/simulación/vistas), paleta
 ## de piezas a la izquierda, inspector a la derecha y línea de estado.
 ## Durante la simulación, paleta e inspector se ocultan (como en la web).
@@ -31,9 +34,20 @@ func _panel(control: Control) -> PanelContainer:
 	return pc
 
 
+var _theme_res: Theme
+
+
+func set_simulator_mode(on: bool) -> void:
+	## Modo Simulador: sin paleta ni inspector, solo simulación y vistas.
+	get_node("PalettePanel").visible = not on
+	get_node("InspectorPanel").visible = not on
+
+
 func _build() -> void:
+	_theme_res = UiTheme.build()
 	# ---- Barra superior
 	var bar := HBoxContainer.new()
+	bar.theme = _theme_res
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	bar.offset_left = 8
 	bar.offset_right = -8
@@ -41,6 +55,7 @@ func _build() -> void:
 	bar.add_theme_constant_override("separation", 6)
 	add_child(bar)
 
+	_btn(bar, "⌂ Inicio", func(): request_home.emit())
 	_btn(bar, "Nuevo", func(): world.clear(); ed.select_piece(null))
 	var open_dlg := _file_dialog(FileDialog.FILE_MODE_OPEN_FILE)
 	_btn(bar, "Abrir", func(): open_dlg.popup_centered_ratio(0.7))
@@ -50,7 +65,9 @@ func _build() -> void:
 			cam.set_view("isometrica", world.bounds()))
 	var save_dlg := _file_dialog(FileDialog.FILE_MODE_SAVE_FILE)
 	_btn(bar, "Guardar", func(): save_dlg.popup_centered_ratio(0.7))
-	save_dlg.file_selected.connect(func(path): Serializer.save_file(world, path))
+	save_dlg.file_selected.connect(func(path):
+		Serializer.save_file(world, path)
+		LandingUI.add_recent(path.get_file().get_basename(), Serializer.serialize(world)))
 
 	sim_btn = Button.new()
 	sim_btn.text = "▶ Simular"
@@ -65,11 +82,15 @@ func _build() -> void:
 		_btn(bar, v[0], func(): cam.set_view(view, world.bounds()))
 	_btn(bar, "＋", func(): cam.zoom_by(0.8))
 	_btn(bar, "－", func(): cam.zoom_by(1.25))
+	_btn(bar, "Agrupar", func(): ed.group_selection())
+	_btn(bar, "Desagrupar", func(): ed.ungroup_selection())
+	_btn(bar, "🧩 Biblioteca", func(): request_library.emit())
 
 	# ---- Paleta (izquierda)
 	palette = ItemList.new()
 	palette.custom_minimum_size = Vector2(230, 0)
 	var pp := _panel(palette)
+	pp.theme = _theme_res
 	pp.name = "PalettePanel"
 	pp.set_anchors_preset(Control.PRESET_LEFT_WIDE)
 	pp.offset_top = 48
@@ -97,6 +118,7 @@ func _build() -> void:
 	scroll.add_child(inspector)
 	inspector.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var ip := _panel(scroll)
+	ip.theme = _theme_res
 	ip.name = "InspectorPanel"
 	ip.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	ip.offset_top = 48

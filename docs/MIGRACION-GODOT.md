@@ -26,17 +26,24 @@ cargando tus proyectos `.json` actuales. El repo incluye en `godot/` un
 | `core/mannequin.gd` | Maniquí posable simplificado a escala (aplica las poses guardadas en el proyecto) | `humanFigure.ts` |
 | `core/orbit_camera.gd` | Cámara orbital ratón + táctil (pellizco para zoom) y presets Frontal/Lateral/Superior/Iso | `OrbitControls` + `setViewPreset` |
 | `core/serializer.gd` | **Guardar `.json`** en el formato exacto de la web (interoperable en ambos sentidos) | `Editor.serialize` |
-| `core/gizmo.gd` | Gizmo de traslación de 3 ejes (flechas X/Y/Z arrastrables) | `TransformControls` |
-| `core/editor.gd` | Controlador del editor: selección, colocación de piezas, **línea con aim assist**, **doblado por nodos**, cuerdas, bisagras/correderas, cables, duplicar/eliminar, mano interactiva | `Editor.ts` |
-| `main/editor_ui.gd` | UI del Builder: barra (Nuevo/Abrir/Guardar/Simular/vistas/zoom), **paleta de 47 piezas**, **inspector** (material, masa, anclado, dimensiones, rotar, doblar) y línea de estado; los paneles se ocultan al simular | `Toolbar.ts`, `ComponentPalette.ts`, `PropertiesPanel.ts`, `JointsPanel.ts` |
-| `main/Main.tscn` + `main/main.gd` | Escena principal: entorno, suelo fijo y demo integrada | `main.ts` |
+| `core/gizmo.gd` | Gizmo de traslación (flechas X/Y/Z) **+ anillos de rotación libre** por eje | `TransformControls` |
+| `core/editor.gd` | Controlador del editor: selección (**multiselección con Shift/Ctrl**), **grupos**, colocación de piezas, **línea con aim assist**, **doblado por nodos**, cuerdas, bisagras/correderas, cables, duplicar/eliminar, mano interactiva | `Editor.ts` |
+| `core/model_store.gd` | **Sustitución de modelos .glb** por componente y por segmento del maniquí; persiste en `user://` (equivalente nativo del IndexedDB) y carga `.glb` en caliente con `GLTFDocument` | `componentModels.ts`, `modelStore.ts` |
+| `core/mannequin.gd` | Maniquí posable con los **ids de segmento de la web**, overrides de modelo por segmento e **IK de manos** (dos huesos) | `humanFigure.ts`, `armIK.ts` |
+| `main/ui_theme.gd` | Tema visual con la identidad de la app (paleta "papel/tinta" de la web) | `styles.css` |
+| `main/landing_ui.gd` | **Pantalla de inicio**: logo, Crear/Abrir/**Simulador**/Continuar/Biblioteca/Demo y **proyectos recientes** | `main.ts` (landing) |
+| `main/library_ui.gd` | **Biblioteca de repertorio**: asignar/restablecer un `.glb` a cada componente y a cada segmento del maniquí | `LibraryPanel` web |
+| `main/editor_ui.gd` | UI del Builder: barra (Inicio/Nuevo/Abrir/Guardar/Simular/vistas/zoom/Agrupar/Biblioteca), **paleta de 47 piezas**, **inspector** y línea de estado; los paneles se ocultan al simular; **modo Simulador** sin herramientas de edición | `Toolbar.ts`, `ComponentPalette.ts`, `PropertiesPanel.ts`, `JointsPanel.ts`, `SimulatorBar.ts` |
+| `main/Main.tscn` + `main/main.gd` | Escena principal: landing, entorno, suelo fijo, demo integrada y **autosave cada 20 s** (`user://autosave.json`) | `main.ts` |
 
-**Estado**: el kit es un **editor + simulador funcional**: abre y GUARDA los
-mismos `.json` que la web, coloca piezas desde la paleta (47 componentes),
-selecciona y mueve con gizmo de 3 ejes, edita dimensiones/material/física en
-el inspector, traza perfiles y tubos por línea con aim assist, dobla por
-nodos, coloca cuerdas, crea bisagras/correderas/cables, y simula con física
-nativa y mano interactiva. La sección 7 lista la paridad restante.
+**Estado**: el kit es la **migración 1:1 funcional**: pantalla de inicio con
+identidad visual (icono, splash y tema propios), abre y GUARDA los mismos
+`.json` que la web (incluidos grupos y pose/manos del maniquí), coloca piezas
+desde la paleta (47 componentes), selecciona/multiselecciona, mueve y **rota**
+con gizmo, agrupa, edita dimensiones/material/física, traza perfiles y tubos
+por línea con aim assist, dobla por nodos, muestra **pinholes reales** (CSG),
+sustituye modelos `.glb` de biblioteca y maniquí desde la app, y simula con
+física nativa, IK de manos y mano interactiva. La sección 7 detalla la paridad.
 
 ---
 
@@ -81,38 +88,26 @@ nativa y mano interactiva. La sección 7 lista la paridad restante.
 
 ---
 
-## 4. Tus modelos 3D (.glb) de la biblioteca
+## 4. Tus modelos 3D (.glb) de la biblioteca — YA INTEGRADO
 
-Godot importa `.glb` de forma nativa (mejor que la web: sin decodificador).
+La sustitución de modelos está **integrada en la app** (`model_store.gd` +
+`library_ui.gd`), no hace falta tocar código:
 
-1. Crea `godot/models/` y copia ahí tus `.glb` con el **id del componente**
-   como nombre: `models/polea.glb`, `models/asiento.glb`… (los mismos ids de
-   `public/models/components/manifest.json` de la web).
-2. En `piece.gd`, dentro de `create()`, añade justo después de construir
-   `p.mesh_instance` este bloque para usar el modelo si existe:
-
-```gdscript
-var model_path := "res://models/%s.glb" % p.component_id
-if ResourceLoader.exists(model_path):
-    var scene: PackedScene = load(model_path)
-    var inst := scene.instantiate()
-    p.mesh_instance.queue_free()
-    p.mesh_instance = MeshInstance3D.new()  # contenedor de medida
-    p.add_child(inst)
-    # Escala del modelo al tamaño del componente (la web "hornea" a cm;
-    # aquí escala el AABB del glb al AABB de la primitiva):
-    var target: Vector3 = GeometryFactory.build_mesh(p.params).get_aabb().size
-    var src: AABB = _scene_aabb(inst)
-    if src.size.length() > 0.001:
-        var k: float = target.length() / src.size.length()
-        inst.scale = Vector3.ONE * k
-        inst.position = -src.get_center() * k
-```
-
-   (añade el helper `_scene_aabb` que recorre los `MeshInstance3D` del glb y
-   une sus AABB; 10 líneas).
-
-3. Los modelos de exportación de la web (`Exportar .glb` del prototipo) también
+1. Dentro de la app: **🧩 Biblioteca** (desde el inicio o desde la barra del
+   Builder) → pestaña **Componentes** o **Maniquí** → selecciona el ítem →
+   **📂 Asignar modelo .glb…** → elige el archivo. El modelo se copia a
+   `user://models/` (o `user://mannequin/`) y desde ese momento TODAS las
+   piezas de ese componente lo usan, ajustado y centrado al hueco de la
+   primitiva (mismo criterio de "horneado" que la web). **Restablecer
+   primitiva** deshace la sustitución. Los ítems con modelo se marcan con ●.
+2. Alternativa "empaquetada": copia tus `.glb` en `godot/models/` con el id
+   del componente como nombre (`models/polea.glb`…) y quedarán dentro del
+   APK/EXE. La prioridad es: modelo del usuario (`user://`) → modelo
+   empaquetado (`res://models/`) → primitiva paramétrica.
+3. La colisión física siempre proviene de la primitiva (estable y barata); el
+   `.glb` es visual. Al seleccionar una pieza con modelo sustituido se muestra
+   la primitiva como fantasma translúcido.
+4. Los modelos de exportación de la web (`Exportar .glb` del prototipo) también
    se abren directamente: arrastra el archivo dentro del editor de Godot.
 
 ---
@@ -168,17 +163,21 @@ referencia donde está TODA la lógica a portar:
 | Mano interactiva (resorte) | ✔ | `PhysicsWorld.applyDrag` | `world.gd::_physics_process` |
 | Cámara orbital + táctil + vistas | ✔ | `OrbitControls`/`setViewPreset` | `orbit_camera.gd` |
 | Suelo fijo + entorno | ✔ | `SceneManager.ts` | `main.gd` |
-| **Editor**: seleccionar y mover con gizmo 3 ejes | ✔ | `Editor.ts` | `editor.gd` + `gizmo.gd` (rotar: botones de 15° en el inspector; escalar: edita dimensiones) |
+| **Editor**: seleccionar y mover con gizmo 3 ejes | ✔ | `Editor.ts` | `editor.gd` + `gizmo.gd` |
 | Paleta de piezas y añadir componentes | ✔ | `ComponentPalette.ts` | `editor_ui.gd` (paleta) + `world.add_component` |
-| Guardar `.json` (mismo formato) | ✔ | `Editor.serialize` | `serializer.gd` |
+| Guardar `.json` (mismo formato) | ✔ | `Editor.serialize` | `serializer.gd` (incluye grupos y pose/manos del maniquí) |
 | Trazado por línea con aim assist | ✔ | `Editor.pickLinePlacePoint` | `editor.gd::_pick_line_point` (imán en píxeles de pantalla) |
 | Bending por nodos | ✔ | `Editor.beginBendNodes` | `editor.gd` (asas capa 4, arrastre en plano de cámara) |
 | Crear cuerdas / bisagras / correderas / cables | ✔ | `Editor.ts` | `editor.gd` (modos) + `world.add_*` |
-| Gizmo de rotación/escala libre continua | ⏳ | `TransformControls` | añade anillos al `gizmo.gd` (misma técnica que las flechas) |
-| Grupos (subensamblajes) | ⏳ | `Editor.ts` (groups) | multiselección + mover en bloque |
-| Pinholes reales en perfiles | ⏳ | `linePieces.ts` (ExtrudeGeometry con holes) | `CSGBox3D` + bucle de `CSGCylinder3D` restados, o quedarte con la caja |
-| IK de manos en agarres | ⏳ | `armIK.ts` (60 líneas, portable 1:1) | `mannequin.gd` |
-| Biblioteca en bloque (ZIP), autosave, recientes | ⏳ | `componentModels.ts`, `recentStore.ts` | `FileAccess` + `user://` |
+| Gizmo de rotación libre continua (anillos) | ✔ | `TransformControls` | `gizmo.gd` (anillos torus por eje) + `editor.gd::_ring_angle` |
+| Grupos (subensamblajes) + multiselección | ✔ | `Editor.ts` (groups) | `editor.gd` (Shift/Ctrl+clic, Agrupar/Desagrupar, arrastre en bloque) |
+| Pinholes reales en perfiles | ✔ | `linePieces.ts` (ExtrudeGeometry con holes) | `piece.gd::_beam_with_pinholes` (CSGBox3D − CSGCylinder3D) |
+| IK de manos en agarres | ✔ | `armIK.ts` | `mannequin.gd::solve_hand_ik` + `world.gd::_update_hands` |
+| Sustitución de modelos .glb (biblioteca + maniquí) | ✔ | `componentModels.ts`, `modelStore.ts` | `model_store.gd` + `library_ui.gd` (`user://`) |
+| Autosave + proyectos recientes | ✔ | `recentStore.ts` | `main.gd` (Timer 20 s) + `landing_ui.gd` (`user://recents`) |
+| Pantalla de inicio Builder/Simulador | ✔ | `main.ts` (landing) | `landing_ui.gd` + `main.gd` |
+| Identidad visual (icono, splash, tema) | ✔ | `public/brand`, `styles.css` | `project.godot` + `ui_theme.gd` |
+| Escala libre continua con gizmo | ⏳ | `TransformControls` | edita dimensiones en el inspector (equivalente funcional) |
 
 **El ciclo completo ya está cerrado**: puedes diseñar en Godot, guardar, abrir
 en la web (y al revés) — los dos mundos comparten archivo de proyecto, así que
@@ -225,6 +224,8 @@ console.log('OK', out.components.length, 'componentes');
 
 ---
 
-*Kit generado desde el estado v0.1.6 del proyecto web. Los archivos TS citados
-son la fuente de verdad de cada algoritmo: todos están documentados en
-español y las funciones portadas conservan nombres equivalentes.*
+*Kit generado desde el estado v0.1.6 del proyecto web y completado como
+migración 1:1 (identidad visual, editor completo, biblioteca sustituible,
+maniquí con IK, autosave/recientes). Los archivos TS citados son la fuente de
+verdad de cada algoritmo: todos están documentados en español y las funciones
+portadas conservan nombres equivalentes.*

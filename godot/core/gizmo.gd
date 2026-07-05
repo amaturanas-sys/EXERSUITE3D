@@ -13,7 +13,49 @@ var target: Piece = null
 func _ready() -> void:
 	for i in range(3):
 		add_child(_arrow(i))
+		add_child(_ring(i))
 	visible = false
+
+
+## Anillo de ROTACIÓN alrededor del eje i (toro fino + colisión por segmentos).
+func _ring(index: int) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.collision_layer = 2
+	body.collision_mask = 0
+	body.set_meta("rot_axis", index)
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = COLORS[index]
+	mat.albedo_color.a = 0.85
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.no_depth_test = true
+	mat.render_priority = 9
+
+	var mi := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.68
+	torus.outer_radius = 0.72
+	mi.mesh = torus
+	mi.material_override = mat
+	body.add_child(mi)
+
+	# Colisión: 12 cajitas repartidas por la circunferencia (el toro no tiene
+	# shape nativo). El anillo del toro vive en el plano XZ (eje Y).
+	for k in range(12):
+		var ang := TAU * float(k) / 12.0
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(0.14, 0.05, 0.14)
+		col.shape = box
+		col.position = Vector3(cos(ang), 0, sin(ang)) * 0.7
+		body.add_child(col)
+
+	# Orienta el plano del anillo perpendicular a su eje.
+	match index:
+		0: body.rotation_degrees = Vector3(0, 0, 90)   # eje X
+		2: body.rotation_degrees = Vector3(90, 0, 0)   # eje Z
+	return body
 
 
 func _arrow(index: int) -> StaticBody3D:
@@ -77,17 +119,19 @@ func _process(_delta: float) -> void:
 		scale = Vector3.ONE * clampf(global_position.distance_to(cam.global_position) * 0.28, 0.2, 8.0)
 
 
-## Eje bajo el rayo (0/1/2) o -1. El rayo debe consultarse contra la capa 2.
-func pick_axis(space: PhysicsDirectSpaceState3D, from: Vector3, dir: Vector3) -> int:
+## Asa bajo el rayo: {kind: "move"|"rotate", axis: 0..2} o vacío.
+func pick_handle(space: PhysicsDirectSpaceState3D, from: Vector3, dir: Vector3) -> Dictionary:
 	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 100.0)
 	q.collision_mask = 2
 	var hit := space.intersect_ray(q)
 	if hit.is_empty():
-		return -1
+		return {}
 	var collider: Object = hit["collider"]
 	if collider.has_meta("axis"):
-		return int(collider.get_meta("axis"))
-	return -1
+		return {"kind": "move", "axis": int(collider.get_meta("axis"))}
+	if collider.has_meta("rot_axis"):
+		return {"kind": "rotate", "axis": int(collider.get_meta("rot_axis"))}
+	return {}
 
 
 ## Parámetro t del punto de la línea (origin + t*axis) más cercano al rayo.

@@ -10,6 +10,8 @@ var pieces: Dictionary = {}          # id original del .json -> Piece
 var joints_data: Array = []          # JointData crudos del proyecto
 var cables_data: Array = []          # CableData crudos (nodos remapeados)
 var ropes_data: Array = []           # RopeData crudos
+var groups_data: Array = []          # GroupData crudos ({name, ids})
+var human_data: Dictionary = {}      # HumanData crudo (pose/manos se conservan)
 var mannequin: Mannequin = null
 
 var simulating := false
@@ -44,6 +46,8 @@ func clear() -> void:
 	joints_data = []
 	cables_data = []
 	ropes_data = []
+	groups_data = []
+	human_data = {}
 	for r in _rope_visuals:
 		r["node"].queue_free()
 	_rope_visuals = []
@@ -65,14 +69,15 @@ func load_project(data: Dictionary) -> void:
 	for rd in ropes_data:
 		_rope_visuals.append({"data": rd, "node": _make_rope_node(rd)})
 	_update_ropes()
-	var human: Dictionary = data.get("human", {})
-	if bool(human.get("present", false)):
-		mannequin = Mannequin.create(float(human.get("heightCm", 175)), human.get("pose"))
+	groups_data = (data.get("groups", []) as Array).duplicate(true)
+	human_data = (data.get("human", {}) as Dictionary).duplicate(true)
+	if bool(human_data.get("present", false)):
+		mannequin = Mannequin.create(float(human_data.get("heightCm", 175)), human_data.get("pose"))
 		add_child(mannequin)
-		if human.has("position"):
-			mannequin.position = Units.arr_cm(human["position"])
-		if human.has("quaternion"):
-			mannequin.quaternion = Units.quat(human["quaternion"])
+		if human_data.has("position"):
+			mannequin.position = Units.arr_cm(human_data["position"])
+		if human_data.has("quaternion"):
+			mannequin.quaternion = Units.quat(human_data["quaternion"])
 	_update_cable_lines()
 
 
@@ -189,6 +194,34 @@ func add_cable(cd: Dictionary) -> void:
 func refresh_attachments() -> void:
 	_update_ropes()
 	_update_cable_lines()
+
+
+## Reaplica los modelos de la Biblioteca a todas las piezas y al maniquí
+## (tras asignar/restablecer un .glb desde la pantalla de Biblioteca).
+func refresh_models() -> void:
+	for piece in pieces.values():
+		piece.refresh_visual()
+	if mannequin:
+		var pos := mannequin.position
+		var quat := mannequin.quaternion
+		mannequin.queue_free()
+		mannequin = Mannequin.create(float(human_data.get("heightCm", 175)), human_data.get("pose"))
+		add_child(mannequin)
+		mannequin.position = pos
+		mannequin.quaternion = quat
+
+
+## Manos apoyadas en agarres (human.hands): IK de dos huesos cada frame.
+func _update_hands() -> void:
+	if mannequin == null:
+		return
+	for hand in human_data.get("hands", []):
+		var piece: Piece = pieces.get(String(hand.get("objectId", "")))
+		if piece == null:
+			continue
+		var l = hand.get("local", [0, 0, 0])
+		var la: Array = l if l is Array else [l.get("x", 0), l.get("y", 0), l.get("z", 0)]
+		mannequin.solve_hand_ik(String(hand.get("side", "R")), piece.local_cm_to_world(la))
 
 
 func load_project_file(path: String) -> bool:
@@ -535,3 +568,4 @@ func _process(_delta: float) -> void:
 	if simulating:
 		_update_ropes()
 		_update_cable_lines()
+	_update_hands()

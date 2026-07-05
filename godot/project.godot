@@ -9,6 +9,10 @@ config/name="EXERSUITE3D"
 config/description="Diseño y simulación 3D de máquinas de gimnasio (migración desde la app web)"
 run/main_scene="res://main/Main.tscn"
 config/features=PackedStringArray("4.3")
+config/icon="res://extras/logo-mark.png"
+boot_splash/bg_color=Color(0.0784314, 0.0862745, 0.105882, 1)
+boot_splash/image="res://extras/logo-full.png"
+boot_splash/fullsize=false
 
 [display]
 

@@ -22,9 +22,13 @@ var _line_tpl: Dictionary = {}
 var _rope_a = null                  # Dictionary extremo o null
 var _joint_a: Piece = null
 var _cable_nodes: Array = []
-var _drag_axis := -1                # eje del gizmo en arrastre
+var selection: Array = []           # multiselección (incluye a `selected`)
+var _drag_kind := ""                # "move" | "rotate" (asa del gizmo activa)
+var _drag_axis := -1
 var _drag_t0 := 0.0
 var _drag_origin := Vector3.ZERO
+var _drag_starts: Dictionary = {}   # Piece -> Transform3D al iniciar arrastre
+var _rot_angle0 := 0.0
 var _hand_active := false
 var _bend_handles: Array = []       # StaticBody3D capa 4
 var _bend_index := -1
@@ -66,20 +70,66 @@ func set_mode(m: String, arg := "") -> void:
 
 
 func select_piece(p) -> void:
-	if selected and is_instance_valid(selected):
-		selected.set_selected(false)
-	selected = p
-	if selected:
-		selected.set_selected(true)
+	select_pieces([] if p == null else [p], p)
+
+
+## Selección múltiple: `primary` lleva el gizmo; todas se resaltan y se
+## mueven/rotan juntas. Seleccionar una pieza agrupada selecciona su grupo.
+func select_pieces(list: Array, primary) -> void:
+	for old in selection:
+		if is_instance_valid(old):
+			old.set_selected(false)
+	selection = []
+	for piece in list:
+		if piece != null and not selection.has(piece):
+			selection.append(piece)
+	# Expande a los grupos: cualquier grupo que contenga una seleccionada.
+	for g in world.groups_data:
+		var has_any := false
+		for id in g.get("ids", []):
+			var member = world.pieces.get(String(id))
+			if member != null and selection.has(member):
+				has_any = true
+				break
+		if has_any:
+			for id in g.get("ids", []):
+				var member = world.pieces.get(String(id))
+				if member != null and not selection.has(member):
+					selection.append(member)
+	selected = primary if primary != null else (selection[0] if not selection.is_empty() else null)
+	for piece in selection:
+		piece.set_selected(true)
 	gizmo.attach(selected)
 	selection_changed.emit(selected)
 
 
+## Agrupa la selección actual (subensamblaje persistente en el .json).
+func group_selection() -> void:
+	if selection.size() < 2:
+		status.emit("Selecciona 2+ piezas (Shift+clic) para agrupar")
+		return
+	var ids: Array = []
+	for piece in selection:
+		ids.append(world.id_of(piece))
+	world.groups_data.append({"name": "Grupo %d" % (world.groups_data.size() + 1), "ids": ids})
+	status.emit("Grupo creado (%d piezas)" % ids.size())
+
+
+func ungroup_selection() -> void:
+	if selected == null:
+		return
+	var pid := world.id_of(selected)
+	world.groups_data = world.groups_data.filter(func(g): return not (g.get("ids", []) as Array).has(pid))
+	status.emit("Grupo disuelto")
+	select_piece(selected)
+
+
 func delete_selected() -> void:
-	if selected:
-		var p := selected
-		select_piece(null)
-		world.remove_piece(p)
+	var doomed := selection.duplicate()
+	select_piece(null)
+	for piece in doomed:
+		if is_instance_valid(piece):
+			world.remove_piece(piece)
 
 
 func duplicate_selected() -> void:
@@ -189,13 +239,20 @@ func _on_press(pos: Vector2) -> bool:
 		set_mode("select")
 		return false
 
-	# Gizmo primero (capa 2).
+	# Gizmo primero (capa 2): flechas = mover, anillos = rotar.
 	if selected:
-		var axis := gizmo.pick_axis(get_world_3d().direct_space_state, from, dir)
-		if axis >= 0:
-			_drag_axis = axis
+		var handle := gizmo.pick_handle(get_world_3d().direct_space_state, from, dir)
+		if not handle.is_empty():
+			_drag_kind = String(handle["kind"])
+			_drag_axis = int(handle["axis"])
 			_drag_origin = selected.global_position
-			_drag_t0 = Gizmo.closest_axis_t(_drag_origin, Gizmo.AXES[axis], from, dir)
+			_drag_starts = {}
+			for piece in selection:
+				_drag_starts[piece] = piece.global_transform
+			if _drag_kind == "move":
+				_drag_t0 = Gizmo.closest_axis_t(_drag_origin, Gizmo.AXES[_drag_axis], from, dir)
+			else:
+				_rot_angle0 = _ring_angle(from, dir)
 			return true
 
 	match mode:
@@ -268,13 +325,37 @@ func _on_press(pos: Vector2) -> bool:
 				_cable_nodes.append({"objectId": world.id_of(p), "local": [local.x, local.y, local.z]})
 				status.emit("Cable: %d nodo(s). Pulsa Finalizar para cerrarlo" % _cable_nodes.size())
 			return true
-	# Selección normal.
+	# Selección normal (Shift/Ctrl+clic añade o quita de la multiselección).
 	var hit := _ray(pos)
+	var multi := Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_CTRL)
 	if not hit.is_empty() and hit["collider"] is Piece:
-		select_piece(hit["collider"])
+		var piece: Piece = hit["collider"]
+		if multi and not selection.is_empty():
+			var list := selection.duplicate()
+			if list.has(piece):
+				list.erase(piece)
+			else:
+				list.append(piece)
+			select_pieces(list, piece if list.has(piece) else (list[0] if not list.is_empty() else null))
+		else:
+			select_piece(piece)
 		return false  # deja pasar para poder orbitar arrastrando
-	select_piece(null)
+	if not multi:
+		select_piece(null)
 	return false
+
+
+## Ángulo del cursor alrededor del eje del anillo activo (para rotar).
+func _ring_angle(from: Vector3, dir: Vector3) -> float:
+	var axis := Gizmo.AXES[_drag_axis]
+	var plane := Plane(axis, _drag_origin.dot(axis))
+	var hit = plane.intersects_ray(from, dir)
+	if hit == null:
+		return _rot_angle0
+	var v: Vector3 = (hit as Vector3) - _drag_origin
+	var b1 := axis.cross(Vector3.UP if absf(axis.dot(Vector3.UP)) < 0.9 else Vector3.RIGHT).normalized()
+	var b2 := axis.cross(b1)
+	return atan2(v.dot(b2), v.dot(b1))
 
 
 func _on_motion(pos: Vector2) -> bool:
@@ -286,9 +367,20 @@ func _on_motion(pos: Vector2) -> bool:
 		if hit != null:
 			world.drag_to(hit)
 		return true
-	if _drag_axis >= 0 and selected:
+	if _drag_kind == "move" and _drag_axis >= 0 and selected:
 		var t := Gizmo.closest_axis_t(_drag_origin, Gizmo.AXES[_drag_axis], from, dir)
-		selected.global_position = _drag_origin + Gizmo.AXES[_drag_axis] * (t - _drag_t0)
+		var delta := Gizmo.AXES[_drag_axis] * (t - _drag_t0)
+		for piece in _drag_starts:
+			piece.global_position = (_drag_starts[piece] as Transform3D).origin + delta
+		world.refresh_attachments()
+		return true
+	if _drag_kind == "rotate" and _drag_axis >= 0 and selected:
+		var ang := _ring_angle(from, dir) - _rot_angle0
+		var rot := Quaternion(Gizmo.AXES[_drag_axis], ang)
+		for piece in _drag_starts:
+			var t0: Transform3D = _drag_starts[piece]
+			piece.global_position = _drag_origin + rot * (t0.origin - _drag_origin)
+			piece.quaternion = rot * t0.basis.get_rotation_quaternion()
 		world.refresh_attachments()
 		return true
 	if _bend_index >= 0 and selected:
@@ -310,7 +402,9 @@ func _on_release() -> void:
 	if _hand_active:
 		world.release_drag()
 		_hand_active = false
+	_drag_kind = ""
 	_drag_axis = -1
+	_drag_starts = {}
 	_bend_index = -1
 
 
