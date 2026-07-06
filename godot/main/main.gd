@@ -29,6 +29,11 @@ func _ready() -> void:
 	ui.request_library.connect(_show_library)
 	ui.grid_toggled.connect(func(on): grid_node.visible = on)
 
+	# Bajo consumo en el Builder (solo repinta con actividad, como un editor);
+	# durante la simulación se vuelve al bucle continuo.
+	OS.low_processor_usage_mode = true
+	world.simulation_changed.connect(func(on): OS.low_processor_usage_mode = not on)
+
 	# Autoguardado en user:// cada 20 s (equivalente al localStorage web).
 	var autosave := Timer.new()
 	autosave.wait_time = 20.0
@@ -97,9 +102,12 @@ func _show_library() -> void:
 	library = LibraryUI.new()
 	add_child(library)
 	library.setup(world)
+	# La vista previa giratoria necesita repintado continuo.
+	OS.low_processor_usage_mode = false
 	library.closed.connect(func():
 		library.queue_free()
-		library = null)
+		library = null
+		OS.low_processor_usage_mode = not world.simulating)
 
 
 func _build_environment() -> void:

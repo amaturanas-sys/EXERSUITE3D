@@ -94,6 +94,30 @@ func refresh_visual() -> void:
 			override_visual = csg
 			add_child(csg)
 			mesh_instance.visible = false
+			# El CSG es caro: en cuanto calcule su malla se HORNEA a un
+			# MeshInstance3D estático y el nodo CSG se libera (coste 0/frame).
+			if is_inside_tree():
+				_bake_pinholes.call_deferred(csg)
+			else:
+				tree_entered.connect(_bake_pinholes.bind(csg), CONNECT_ONE_SHOT)
+
+
+## Sustituye el CSG de pinholes por su malla horneada (misma geometría).
+func _bake_pinholes(csg: CSGCombiner3D) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_instance_valid(csg) or override_visual != csg:
+		return
+	var baked := csg.bake_static_mesh()
+	if baked == null or baked.get_surface_count() == 0:
+		return
+	var mi := MeshInstance3D.new()
+	mi.mesh = baked
+	mi.transform = csg.transform
+	mi.material_override = ComponentLibrary.material(material_id)
+	add_child(mi)
+	override_visual = mi
+	csg.queue_free()
 
 
 ## Perfil recto con pinholes pasantes reales (CSG: caja menos cilindros).
@@ -142,11 +166,18 @@ func set_simulating(on: bool) -> void:
 	if on:
 		_design_transform = transform
 		freeze = not is_dynamic()
+		# Interpolación física (Godot 4.4+) solo en cuerpos que se mueven:
+		# suaviza el paso 60 Hz física → refresco de pantalla.
+		physics_interpolation_mode = (
+			Node.PHYSICS_INTERPOLATION_MODE_INHERIT if is_dynamic()
+			else Node.PHYSICS_INTERPOLATION_MODE_OFF)
 	else:
 		freeze = true
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
 		transform = _design_transform
+		physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+		reset_physics_interpolation()
 
 
 ## Punto local (cm de la web) a coordenadas de mundo actuales.
@@ -166,7 +197,8 @@ func rebuild_geometry() -> void:
 func set_material_id(id: String) -> void:
 	material_id = id
 	mesh_instance.material_override = ComponentLibrary.material(id)
-	if override_visual is CSGCombiner3D:
+	# Con pinholes (CSG u horneado) el visual lleva el material integrado.
+	if override_visual and ModelStore.component_override_path(component_id) == "":
 		refresh_visual()
 
 

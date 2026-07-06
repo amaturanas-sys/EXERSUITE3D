@@ -24,6 +24,17 @@ const CAT_COLORS := {
 }
 
 static var _cat_icons: Dictionary = {}
+static var _font: SystemFont = null
+
+
+## La pila de fuentes del sistema de la web (styles.css): en Android resuelve
+## a Roboto (la misma que usa el WebView) y en Windows a Segoe UI.
+static func system_font() -> SystemFont:
+	if _font == null:
+		_font = SystemFont.new()
+		_font.font_names = PackedStringArray(
+			["Roboto", "Segoe UI", "Noto Sans", "Open Sans", "DejaVu Sans"])
+	return _font
 
 
 ## Punto de color de la categoría (icono 12x12 para los botones de la paleta).
@@ -47,6 +58,7 @@ static func _flat(bg: Color, border: Color, radius: int, margin: int) -> StyleBo
 
 static func build() -> Theme:
 	var t := Theme.new()
+	t.default_font = system_font()
 	t.default_font_size = 15
 
 	var panel := _flat(Color(PANEL.r, PANEL.g, PANEL.b, 0.96), BORDER, 8, 10)

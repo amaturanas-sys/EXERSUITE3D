@@ -588,4 +588,4 @@ func _process(_delta: float) -> void:
 	if simulating:
 		_update_ropes()
 		_update_cable_lines()
-	_update_hands()
+		_update_hands()

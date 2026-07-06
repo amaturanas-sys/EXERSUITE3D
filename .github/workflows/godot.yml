@@ -14,8 +14,9 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.3-stable"
-  GODOT_DIR_VERSION: "4.3.stable"
+  # 4.4+: Jolt Physics integrado e interpolación física 3D (anti-stuttering).
+  GODOT_VERSION: "4.4.1-stable"
+  GODOT_DIR_VERSION: "4.4.1.stable"
 
 jobs:
   validar:
@@ -45,6 +46,40 @@ jobs:
 
       - name: Prueba de humo (carga el ejemplo + 2 s de física real)
         run: ./godot-bin --headless --path godot -s res://tests/smoke.gd
+
+  capturas:
+    name: Capturas de la interfaz (revisión visual)
+    needs: validar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descargar Godot
+        run: |
+          curl -sSL -o godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}_linux.x86_64 godot-bin
+          chmod +x godot-bin
+
+      - name: Importar el proyecto
+        run: ./godot-bin --headless --path godot --import || true
+
+      - name: Ejecutar la app y capturar pantallas (renderer por software)
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq xvfb
+          xvfb-run -a -s "-screen 0 1280x800x24" ./godot-bin --path godot \
+            --rendering-method gl_compatibility --rendering-driver opengl3 \
+            --resolution 1280x800 -s res://tests/screenshots.gd
+          mkdir -p capturas
+          cp "$HOME/.local/share/godot/app_userdata/EXERSUITE3D/capturas/"*.png capturas/
+          ls -la capturas/
+
+      - name: Subir capturas
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-ui
+          path: capturas/
 
   exportar:
     name: Exportar APK Android + EXE Windows
@@ -77,7 +112,7 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
           mkdir -p "$HOME/.config/godot"
-          cat > "$HOME/.config/godot/editor_settings-4.3.tres" <<EOF
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
           [resource]
           export/android/android_sdk_path = "$SDK"
@@ -86,7 +121,8 @@ jobs:
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
-          cat "$HOME/.config/godot/editor_settings-4.3.tres"
+          cp "$HOME/.config/godot/editor_settings-4.4.tres" "$HOME/.config/godot/editor_settings-4.3.tres"
+          cat "$HOME/.config/godot/editor_settings-4.4.tres"
 
       - name: Importar el proyecto
         run: ./godot-bin --headless --path godot --import || true
