@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Lienzo from "./Lienzo";
 
 /**
  * La página de presentación. Con `editable` (desde /admin) cada texto se
@@ -63,6 +64,17 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
           <img src={c.hero.imagen} alt={c.marca} />
         </div>
       </div>
+
+      {/* ----------------------------------------------- lienzo libre (Canva) */}
+      {c.lienzo && (
+        <Seccion id="lienzo" visible={c.lienzo.visible}>
+          <Lienzo
+            lienzo={c.lienzo}
+            editable={editable}
+            onCambiar={(elementos) => onEdit("lienzo.elementos", elementos)}
+          />
+        </Seccion>
+      )}
 
       {/* -------------------------------------------------- características */}
       <Seccion id="caracteristicas" visible={c.caracteristicas.visible}>
