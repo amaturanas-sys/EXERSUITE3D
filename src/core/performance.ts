@@ -24,7 +24,13 @@ export const PERF_PRESETS: Record<Exclude<PerfPreset, "custom">, Omit<PerfSettin
 };
 
 function defaults(): PerfSettings {
-  return { preset: "alto", ...PERF_PRESETS.alto };
+  // En móvil/tablet (WebView Android, iPad…) el coste de píxel a DPR 2 es el
+  // principal cuello de botella: se parte del preset "medio" (DPR 1.25, sin
+  // antialias). El usuario puede subirlo cuando quiera desde Rendimiento.
+  const movil =
+    typeof navigator !== "undefined" && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  const preset: Exclude<PerfPreset, "custom"> = movil ? "medio" : "alto";
+  return { preset, ...PERF_PRESETS[preset] };
 }
 
 export function getPerf(): PerfSettings {

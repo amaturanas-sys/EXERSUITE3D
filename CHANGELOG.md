@@ -44,6 +44,25 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Cambiado
 
+- **Rendimiento web (app v0.1.6)**: **render bajo demanda** — fuera de la
+  simulación solo se repinta con interacción (puntero/teclado/rueda),
+  movimiento de cámara o cambios de escena, con latido de seguridad cada
+  500 ms; en tablets elimina el trabajo de GPU en reposo (fluidez, batería y
+  temperatura). En móvil/tablet el preset de Rendimiento por defecto pasa a
+  **"medio"** (DPR 1,25, sin antialias) — el usuario puede subirlo cuando
+  quiera desde el panel Rendimiento.
+- **Rendimiento Godot**: CI y binarios sobre **Godot 4.4.1** con **Jolt
+  Physics** e **interpolación física 3D** (adiós stuttering 60 Hz ↔
+  pantalla, solo en cuerpos dinámicos y con reset al restaurar el diseño);
+  los **pinholes CSG se hornean** a malla estática tras el primer cálculo
+  (coste cero por frame); overrides móviles (sin MSAA, sombra 1024 con
+  filtro duro solo en Android); **bajo consumo en el Builder** (solo repinta
+  con actividad); IK de manos solo al simular; y **tipografía del sistema**
+  (Roboto/Segoe UI, la pila de la web) en toda la interfaz.
+- **CI Godot**: nuevo job **"capturas"** que ejecuta la app con renderer por
+  software (xvfb + gl_compatibility), fotografía Home/Builder/Biblioteca/
+  Simulación y sube los PNG como artifact `capturas-ui` — revisión visual
+  sin instalar el APK.
 - **Godot: paridad visual y de herramientas 1:1 con la web v0.1.6** —
   - **Home** como el de la web: logotipo grande, selector **Builder /
     Simulador** con sus acciones (Crear nuevo proyecto, Abrir archivo…,

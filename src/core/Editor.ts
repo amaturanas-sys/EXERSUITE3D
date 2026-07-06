@@ -380,6 +380,7 @@ export class Editor {
     if (this.running) return;
     this.running = true;
     this.lastFrameTime = performance.now();
+    this.installRenderOnDemand();
     this.loop();
   }
 
@@ -387,6 +388,38 @@ export class Editor {
   private simFrame = 0;
   /** Los visuales de cable solo se reconstruyen cuando algo se ha movido. */
   private cablesDirty = true;
+  /** Frames de render pendientes (render bajo demanda fuera de simulación). */
+  private renderDemand = 5;
+  private lastRenderTime = 0;
+
+  /** Pide repintar los próximos frames (interacción, cambios de escena…). */
+  requestRender(frames = 3): void {
+    this.renderDemand = Math.max(this.renderDemand, frames);
+  }
+
+  /**
+   * Render bajo demanda: fuera de la simulación solo se pinta cuando hay
+   * interacción (puntero/teclado/rueda), la cámara se mueve o algo cambió,
+   * con un latido de seguridad cada 500 ms (cargas asíncronas de modelos).
+   * En tablets elimina el trabajo de GPU en reposo (batería y fluidez).
+   */
+  private installRenderOnDemand(): void {
+    const bump = (): void => this.requestRender();
+    for (const ev of ["pointerdown", "pointerup", "wheel", "keydown", "touchstart", "touchend"]) {
+      window.addEventListener(ev, bump, { passive: true, capture: true });
+    }
+    // El movimiento del puntero solo repinta arrastrando o sobre el lienzo
+    // (previsualizaciones de colocación/línea/doblado con el cursor).
+    window.addEventListener(
+      "pointermove",
+      (e: PointerEvent) => {
+        if (e.buttons > 0 || e.target === this.sceneManager.renderer.domElement) bump();
+      },
+      { passive: true, capture: true },
+    );
+    window.addEventListener("touchmove", bump, { passive: true, capture: true });
+    window.addEventListener("resize", () => this.requestRender(5));
+  }
 
   private loop = (): void => {
     if (!this.running) return;
@@ -404,9 +437,14 @@ export class Editor {
     if (this.cablesDirty) {
       this.updateCableVisuals();
       this.cablesDirty = false;
+      this.requestRender();
     }
-    this.orbit.update();
-    this.sceneManager.render();
+    const moved = this.orbit.update();
+    if (this.simulating || moved || this.renderDemand > 0 || now - this.lastRenderTime > 500) {
+      this.sceneManager.render();
+      this.lastRenderTime = now;
+      if (this.renderDemand > 0) this.renderDemand--;
+    }
     requestAnimationFrame(this.loop);
   };
 
