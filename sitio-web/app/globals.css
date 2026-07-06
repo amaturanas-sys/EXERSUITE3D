@@ -136,6 +136,19 @@ h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); margin-bottom: 18px; }
 }
 .carrusel-puntos button.activo { background: var(--accent); }
 
+/* ---- Widgets: vídeo (YouTube, Vimeo, Instagram, TikTok, Facebook, .mp4) */
+.video-marco {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  background: #000;
+}
+.video.vertical .video-marco {
+  aspect-ratio: 9 / 16; max-width: 380px; margin: 0 auto;
+}
+.video-marco iframe, .video-marco video {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
+}
+
 /* ---- Widgets: pestañas desplegables (acordeón) */
 .acordeon details {
   background: var(--panel); border: 1px solid var(--border); border-radius: 10px;

@@ -23,6 +23,43 @@ export function nuevoCarrusel() {
   };
 }
 
+export function nuevoVideo(url) {
+  return { id: nuevoId(), tipo: "video", titulo: "Vídeo", url, pie: "" };
+}
+
+/**
+ * Reconoce la URL de un vídeo y devuelve cómo incrustarlo:
+ * YouTube (watch/youtu.be/shorts), Vimeo, Instagram (p/reel), TikTok,
+ * Facebook y archivos de vídeo directos (.mp4/.webm).
+ */
+export function analizarVideo(url) {
+  const u = String(url || "").trim();
+  let m;
+  if ((m = u.match(/(?:youtube\.com\/(?:watch\?.*v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{6,})/))) {
+    return { src: `https://www.youtube.com/embed/${m[1]}`, vertical: u.includes("/shorts/") };
+  }
+  if ((m = u.match(/vimeo\.com\/(\d+)/))) {
+    return { src: `https://player.vimeo.com/video/${m[1]}`, vertical: false };
+  }
+  if ((m = u.match(/instagram\.com\/(p|reel|tv)\/([\w-]+)/))) {
+    return { src: `https://www.instagram.com/${m[1]}/${m[2]}/embed`, vertical: true };
+  }
+  if ((m = u.match(/tiktok\.com\/.*video\/(\d+)/))) {
+    return { src: `https://www.tiktok.com/embed/v2/${m[1]}`, vertical: true };
+  }
+  if (/facebook\.com|fb\.watch/.test(u)) {
+    return {
+      src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(u)}&show_text=false`,
+      vertical: false,
+    };
+  }
+  if (/\.(mp4|webm|ogv)(\?|$)/i.test(u)) {
+    return { archivo: u, vertical: false };
+  }
+  // Último recurso: intenta incrustar la URL tal cual (no todas lo permiten).
+  return u ? { src: u, vertical: false, dudoso: true } : null;
+}
+
 export function nuevoAcordeon() {
   return {
     id: nuevoId(),
@@ -56,6 +93,16 @@ export default function Widgets({ widgets, editable = false, onCambiar = () => {
           <strong>Widgets</strong>
           <button onClick={() => cambiar([...lista, nuevoCarrusel()])}>+ Carrusel</button>
           <button onClick={() => cambiar([...lista, nuevoAcordeon()])}>+ Pestañas desplegables</button>
+          <button
+            onClick={() => {
+              const url = window.prompt(
+                "URL del vídeo (YouTube, Shorts, Vimeo, Instagram, TikTok, Facebook o .mp4):",
+              );
+              if (url) cambiar([...lista, nuevoVideo(url.trim())]);
+            }}
+          >
+            + Vídeo
+          </button>
         </div>
       )}
       {lista.map((w) => (
@@ -74,10 +121,14 @@ export default function Widgets({ widgets, editable = false, onCambiar = () => {
             editable={editable}
             onCambiar={(t) => cambiarW(w.id, { titulo: t })}
           />
-          {w.tipo === "carrusel" ? (
+          {w.tipo === "carrusel" && (
             <Carrusel w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
-          ) : (
+          )}
+          {w.tipo === "acordeon" && (
             <Acordeon w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
+          )}
+          {w.tipo === "video" && (
+            <Video w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
           )}
         </div>
       ))}
@@ -185,6 +236,62 @@ function Carrusel({ w, editable, onCambiar }) {
           </button>
           <span className="dim">
             {i + 1} / {n}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* --------------------------------------------------------------- vídeo */
+
+function Video({ w, editable, onCambiar }) {
+  const info = analizarVideo(w.url);
+
+  return (
+    <div className={`video ${info?.vertical ? "vertical" : ""}`}>
+      {info?.archivo ? (
+        <div className="video-marco">
+          <video src={info.archivo} controls playsInline style={{ width: "100%", display: "block" }} />
+        </div>
+      ) : info?.src ? (
+        <div className="video-marco">
+          <iframe
+            src={info.src}
+            title={w.titulo || "Vídeo"}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
+      ) : (
+        <p className="dim">Pega la URL de un vídeo para mostrarlo aquí.</p>
+      )}
+      {(w.pie || editable) && (
+        <p
+          className="carrusel-pie dim"
+          data-editable={editable || undefined}
+          contentEditable={editable}
+          suppressContentEditableWarning
+          onBlur={(e) => editable && onCambiar({ pie: e.currentTarget.textContent })}
+        >
+          {w.pie || "(pie del vídeo)"}
+        </p>
+      )}
+      {editable && (
+        <div className="lienzo-barra" style={{ marginTop: 8 }}>
+          <button
+            onClick={() => {
+              const url = window.prompt("Nueva URL del vídeo:", w.url);
+              if (url) onCambiar({ url: url.trim() });
+            }}
+          >
+            Cambiar vídeo
+          </button>
+          <span className="dim">
+            {info?.dudoso
+              ? "⚠ Plataforma no reconocida: se intentará incrustar tal cual"
+              : w.url}
           </span>
         </div>
       )}
