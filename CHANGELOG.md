@@ -5,7 +5,7 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [0.1.7] — 2026-07-06
 
 ### Añadido
 
@@ -43,6 +43,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
     Continuar en el inicio) y **proyectos recientes** nativos.
 
 ### Cambiado
+
+- **Resolución dinámica** (web): mientras se orbita, se arrastra sobre el
+  lienzo o corre la simulación, el render baja a ×0,7 de la escala elegida y
+  vuelve a nítido en reposo — la técnica de las apps nativas de escultura.
+  Activa por defecto en los presets Medio y Bajo, con conmutador propio en
+  Rendimiento.
 
 - **Rendimiento web, segunda ronda**: la **escala de render** admite ×0.75 y
   ×0.5 (el preset **Bajo** pasa a ×0.75 — la palanca que usan las apps
@@ -95,6 +101,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
     Cancelar) al volver al inicio.
   - Splash e iconos con los logotipos correctos (icono como la web: logo
     negro sobre blanco; splash con el logotipo claro sobre fondo oscuro).
+
+### Eliminado
+
+- **Figura de esqueleto**: se retira el modo "Esqueleto" de la figura humana
+  (sin relevancia para el proyecto). El selector de tipo de figura
+  desaparece de la barra, el modelo `overview-skeleton.glb` (1,25 MB) sale
+  del paquete y los proyectos guardados con ese modo se abren con el
+  maniquí.
 
 ### Corregido
 

@@ -83,16 +83,6 @@ export class Toolbar {
     ]);
     figBtn.addEventListener("click", () => this.editor.toggleHumanFigure());
 
-    const figMode = el("select", { class: "select tool-select", title: "Tipo de figura" });
-    figMode.append(
-      el("option", { value: "mannequin" }, ["Maniquí"]),
-      el("option", { value: "skeleton" }, ["Esqueleto"]),
-    );
-    figMode.value = this.editor.getHumanMode();
-    figMode.addEventListener("change", () =>
-      this.editor.setHumanMode(figMode.value as "mannequin" | "skeleton"),
-    );
-
     const figHeight = el("input", {
       class: "tool-input",
       type: "number",
@@ -128,7 +118,7 @@ export class Toolbar {
       el("div", { class: "tool-group edit-only" }, [spaceBtn, gridBtn, snapBtn]),
       el("div", { class: "tool-group edit-only" }, [dupBtn, delBtn]),
       el("div", { class: "tool-group edit-only" }, [groupBtn, ungroupBtn]),
-      el("div", { class: "tool-group edit-only" }, [figBtn, figMode, figHeight]),
+      el("div", { class: "tool-group edit-only" }, [figBtn, figHeight]),
     ];
 
     // Nuevo proyecto: vacía la escena y descarta el autoguardado.

@@ -143,6 +143,12 @@ export class PerformancePanel {
         (v) => this.apply({ ...s, preset: "custom", simpleShading: v }),
         "los materiales cambian al reabrir el proyecto",
       ),
+      toggle(
+        "Resolución dinámica",
+        s.dynamicResolution,
+        (v) => this.apply({ ...s, preset: "custom", dynamicResolution: v }),
+        "baja la resolución solo mientras mueves o simulas",
+      ),
       el("div", { class: "perf-hint" }, [
         "Consejo: en equipos o tablets con poca potencia, usa el preset " +
           "Bajo o reduce la resolución para un diseño más fluido. " +

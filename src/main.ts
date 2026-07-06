@@ -95,26 +95,13 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const toggleRight = dockToggle("toggle-right", "🧰", "show-right", "Propiedades y conexiones");
   const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
 
-  const credit = document.createElement("a");
-  credit.id = "credit";
-  credit.target = "_blank";
-  credit.rel = "noopener noreferrer";
-  credit.href = "https://anatomytool.org/content/open3dmodel-skeleton-english-labels";
-  credit.textContent =
-    "Esqueleto: Open3DModel · O.P. Gobée et al., LUMC (AnatomyTOOL) · CC BY-SA";
-  credit.style.display = "none";
-
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, credit, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses];
+  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses];
   editorDisposables = [
     () => palette.dispose(),
     () => toolbar.dispose(),
     () => perfPanel.dispose(),
   ];
   app.append(...editorNodes);
-
-  ed.bus.on("humanFigureChanged", ({ present, mode }) => {
-    credit.style.display = present && mode === "skeleton" ? "block" : "none";
-  });
 
   ed.setMode("translate");
   ed.start();

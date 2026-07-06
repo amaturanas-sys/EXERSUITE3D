@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { SceneManager } from "../scene/SceneManager";
+import { getPerf } from "./performance";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
@@ -23,7 +24,6 @@ import {
   buildHumanFigure,
   disposeHumanFigure,
 } from "../objects/humanFigure";
-import { buildSkeletonFigure } from "../objects/skeletonModel";
 import {
   getPose,
   poseNames,
@@ -391,6 +391,9 @@ export class Editor {
   /** Frames de render pendientes (render bajo demanda fuera de simulación). */
   private renderDemand = 5;
   private lastRenderTime = 0;
+  /** Resolución dinámica: arrastre sobre el lienzo y último movimiento. */
+  private canvasDragging = false;
+  private lastMotionAt = 0;
 
   /** Pide repintar los próximos frames (interacción, cambios de escena…). */
   requestRender(frames = 3): void {
@@ -419,6 +422,17 @@ export class Editor {
     );
     window.addEventListener("touchmove", bump, { passive: true, capture: true });
     window.addEventListener("resize", () => this.requestRender(5));
+    // Arrastre sobre el lienzo (orbitar, gizmo, doblado…): activa la escala
+    // de movimiento de la resolución dinámica.
+    const canvas = this.sceneManager.renderer.domElement;
+    canvas.addEventListener("pointerdown", () => (this.canvasDragging = true), { passive: true });
+    canvas.addEventListener("touchstart", () => (this.canvasDragging = true), { passive: true });
+    for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) {
+      window.addEventListener(ev, () => (this.canvasDragging = false), {
+        passive: true,
+        capture: true,
+      });
+    }
   }
 
   private loop = (): void => {
@@ -440,6 +454,18 @@ export class Editor {
       this.requestRender();
     }
     const moved = this.orbit.update();
+    // Resolución dinámica: menos píxeles mientras hay movimiento real
+    // (cámara, arrastre sobre el lienzo o simulación); nítido en reposo.
+    if (getPerf().dynamicResolution) {
+      if (this.simulating || moved || this.canvasDragging) {
+        this.lastMotionAt = now;
+        this.sceneManager.setMotionScale(true);
+      } else if (now - this.lastMotionAt > 300 && this.sceneManager.setMotionScale(false)) {
+        this.requestRender();
+      }
+    } else if (this.sceneManager.setMotionScale(false)) {
+      this.requestRender();
+    }
     if (this.simulating || moved || this.renderDemand > 0 || now - this.lastRenderTime > 500) {
       this.sceneManager.render();
       this.lastRenderTime = now;
@@ -955,7 +981,7 @@ export class Editor {
     this.select(null);
 
     if (data.human?.present) {
-      this.humanMode = data.human.mode;
+      this.humanMode = "mannequin"; // el modo esqueleto se retiró en 0.1.7
       await this.addHumanFigure(data.human.heightCm);
       const fig = this.humanFigure;
       if (fig) {
@@ -975,7 +1001,7 @@ export class Editor {
         }
       }
     } else if (data.human) {
-      this.humanMode = data.human.mode;
+      this.humanMode = "mannequin"; // el modo esqueleto se retiró en 0.1.7
     }
 
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
@@ -1281,19 +1307,7 @@ export class Editor {
     this.removeHumanFigure();
 
     const token = ++this.humanToken;
-    let figure: THREE.Group;
-    if (this.humanMode === "skeleton") {
-      this.emitHumanState(false, true); // loading
-      try {
-        figure = await buildSkeletonFigure(heightCm);
-      } catch (err) {
-        console.error("No se pudo cargar el esqueleto:", err);
-        this.humanMode = "mannequin";
-        figure = buildHumanFigure(heightCm, figureSegments.provider);
-      }
-    } else {
-      figure = buildHumanFigure(heightCm, figureSegments.provider);
-    }
+    const figure: THREE.Group = buildHumanFigure(heightCm, figureSegments.provider);
 
     // El usuario pudo quitar/cambiar la figura mientras cargaba.
     if (token !== this.humanToken) {

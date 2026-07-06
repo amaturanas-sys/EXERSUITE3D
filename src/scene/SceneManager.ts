@@ -39,6 +39,7 @@ export class SceneManager {
       alpha: false,
       powerPreference: "high-performance",
     });
+    this.ratioCap = perf.maxPixelRatio;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, perf.maxPixelRatio));
     this.renderer.shadowMap.enabled = perf.shadows;
     this.renderer.shadowMap.type = perf.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
@@ -69,7 +70,30 @@ export class SceneManager {
   }
 
   // ------------------------------------------------------------- rendimiento
+  /** Tope de escala configurado por el usuario (sin contar el de movimiento). */
+  private ratioCap = 2;
+  /** Resolución dinámica: escala reducida mientras hay movimiento. */
+  private motionScale = false;
+
   setMaxPixelRatio(cap: number): void {
+    this.ratioCap = cap;
+    this.applyPixelRatio();
+  }
+
+  /**
+   * Activa/desactiva la escala de movimiento (×0.7 sobre el tope): renderiza
+   * a menos resolución mientras se orbita/arrastra/simula y vuelve a nítido
+   * en reposo. Devuelve true si el estado cambió (para repintar).
+   */
+  setMotionScale(on: boolean): boolean {
+    if (on === this.motionScale) return false;
+    this.motionScale = on;
+    this.applyPixelRatio();
+    return true;
+  }
+
+  private applyPixelRatio(): void {
+    const cap = this.ratioCap * (this.motionScale ? 0.7 : 1);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, cap));
     this.resize();
   }

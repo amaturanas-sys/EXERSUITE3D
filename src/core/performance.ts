@@ -20,6 +20,9 @@ export interface PerfSettings {
   /** Sombreado simple (Lambert, sin tone mapping): mucho más barato por
    *  píxel que el PBR. Los materiales se aplican al reabrir el proyecto. */
   simpleShading: boolean;
+  /** Resolución dinámica: baja la escala de render (×0.7) mientras se orbita,
+   *  arrastra o simula, y la restaura en reposo (técnica de apps nativas). */
+  dynamicResolution: boolean;
 }
 
 const KEY = "exersuite.perf.v1";
@@ -33,6 +36,7 @@ export const PERF_PRESETS: Record<Exclude<PerfPreset, "custom">, Omit<PerfSettin
     environment: true,
     antialias: true,
     simpleShading: false,
+    dynamicResolution: false,
   },
   medio: {
     maxPixelRatio: 1.25,
@@ -42,6 +46,7 @@ export const PERF_PRESETS: Record<Exclude<PerfPreset, "custom">, Omit<PerfSettin
     environment: true,
     antialias: false,
     simpleShading: false,
+    dynamicResolution: true,
   },
   bajo: {
     maxPixelRatio: 0.75,
@@ -51,6 +56,7 @@ export const PERF_PRESETS: Record<Exclude<PerfPreset, "custom">, Omit<PerfSettin
     environment: false,
     antialias: false,
     simpleShading: true,
+    dynamicResolution: true,
   },
 };
 
@@ -64,17 +70,22 @@ function defaults(): PerfSettings {
   return { preset, ...PERF_PRESETS[preset] };
 }
 
+let cache: PerfSettings | null = null;
+
 export function getPerf(): PerfSettings {
+  if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...defaults(), ...(JSON.parse(raw) as Partial<PerfSettings>) };
+    if (raw) cache = { ...defaults(), ...(JSON.parse(raw) as Partial<PerfSettings>) };
   } catch {
     /* usa valores por defecto */
   }
-  return defaults();
+  cache = cache ?? defaults();
+  return cache;
 }
 
 export function setPerf(s: PerfSettings): void {
+  cache = s;
   try {
     localStorage.setItem(KEY, JSON.stringify(s));
   } catch {
