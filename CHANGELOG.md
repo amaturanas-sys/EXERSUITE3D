@@ -39,6 +39,19 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   del eje y el **trazado de pilares/travesaños/tubos** proyecta el segundo
   punto sobre el eje desde el primero. Botones X/Y/Z en la barra (para
   tablet) y aviso "EJE … BLOQUEADO" en la línea inferior.
+- **Contador de desplazamiento en vivo**: durante cualquier arrastre o
+  trazado, la línea inferior muestra la medida en centímetros — Δ por eje
+  con bloqueo activo, Δ total con desglose X/Y/Z sin él, grados al rotar
+  con el gizmo y longitud en vivo al trazar pilares/travesaños/tubos.
+
+### Corregido
+
+- **El eje Y no funcionaba con el bloqueo de eje**: el trazado y el imán
+  dependían de que el puntero tocara suelo o superficies — al apuntar hacia
+  arriba no había intersección y la herramienta no respondía. Con eje
+  bloqueado, ahora el punto se calcula sobre la recta del eje más cercana
+  al rayo del puntero (funciona "apuntando al cielo") y el imán de anclaje
+  se desactiva para no corregir la posición fuera del eje.
 
 ## [0.1.7] — 2026-07-06
 

@@ -9,6 +9,7 @@ export class MeasurementHUD {
   private current: SceneObject | null = null;
   private simulating = false;
   private axisLock: "x" | "y" | "z" | null = null;
+  private measure: string | null = null;
 
   constructor(editor: Editor) {
     this.root = el("div", { id: "hud" }, ["1 celda = 10 cm · ejes en cm"]);
@@ -27,6 +28,10 @@ export class MeasurementHUD {
       this.axisLock = axis;
       this.update();
     });
+    editor.bus.on("dragMeasure", ({ text }) => {
+      this.measure = text;
+      this.update();
+    });
   }
 
   private update(): void {
@@ -37,6 +42,10 @@ export class MeasurementHUD {
     const eje = this.axisLock
       ? `EJE ${this.axisLock.toUpperCase()} BLOQUEADO (0 libera)  ·  `
       : "";
+    if (this.measure) {
+      this.root.textContent = eje + this.measure;
+      return;
+    }
     if (!this.current) {
       this.root.textContent = eje + "1 celda = 10 cm · ejes en cm";
       return;

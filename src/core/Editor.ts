@@ -4,6 +4,7 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { SceneManager } from "../scene/SceneManager";
 import { getPerf } from "./performance";
+import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
@@ -102,6 +103,8 @@ export type EditorEvents = {
   dragToolChanged: { on: boolean };
   /** Eje de trabajo bloqueado (1=X, 2=Y, 3=Z; 0/Esc libera) o null. */
   axisLockChanged: { axis: "x" | "y" | "z" | null };
+  /** Contador de desplazamiento en vivo durante un arrastre/trazado (cm/°). */
+  dragMeasure: { text: string | null };
 };
 
 interface SavedTransform {
@@ -189,6 +192,7 @@ export class Editor {
     plane: THREE.Plane;
     starts: Map<string, THREE.Vector3>;
   } | null = null;
+  private gizmoDragStart: { pos: THREE.Vector3; quat: THREE.Quaternion } | null = null;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private applyingHistory = false;
   private nextGroupId = 1;
@@ -232,12 +236,36 @@ export class Editor {
     // El gizmo desactiva el orbit mientras se arrastra.
     this.gizmo.addEventListener("dragging-changed", (e) => {
       this.orbit.enabled = !e.value;
+      if (e.value && this.gizmo.object) {
+        this.gizmoDragStart = {
+          pos: this.gizmo.object.position.clone(),
+          quat: this.gizmo.object.quaternion.clone(),
+        };
+      } else {
+        this.gizmoDragStart = null;
+        this.bus.emit("dragMeasure", { text: null });
+      }
       if (!e.value) this.snap.hideIndicator();
     });
     this.gizmo.addEventListener("objectChange", () => {
       // Cualquier arrastre del gizmo (pieza, grupo o articulación del maniquí)
       // ensucia el proyecto y debe autoguardarse.
       this.scheduleAutosave();
+      // Contador de desplazamiento en vivo (cm al mover, grados al rotar).
+      if (this.gizmo.dragging && this.gizmoDragStart && this.gizmo.object) {
+        const mode = this.gizmo.getMode();
+        if (mode === "rotate") {
+          const dq = this.gizmo.object.quaternion
+            .clone()
+            .multiply(this.gizmoDragStart.quat.clone().invert());
+          const ang = THREE.MathUtils.radToDeg(2 * Math.acos(Math.min(1, Math.abs(dq.w))));
+          this.bus.emit("dragMeasure", { text: `Giro: ${ang.toFixed(1)}°` });
+        } else if (mode === "translate") {
+          this.emitDragMeasure(
+            this.gizmo.object.position.clone().sub(this.gizmoDragStart.pos),
+          );
+        }
+      }
       if (this.selectedGroupId) {
         this.applyGroupDelta();
         return;
@@ -1622,6 +1650,9 @@ export class Editor {
 
   /** Encaja la pieza arrastrada a un punto de anclaje compatible (solo al mover). */
   private applySnap(): void {
+    // Con eje bloqueado no se aplica el imán: corregiría la posición fuera
+    // del eje (y en Y lo anulaba por completo contra el suelo).
+    if (this.axisLock) return;
     if (!this.selected || this.gizmo.getMode() !== "translate" || !this.gizmo.dragging) {
       return;
     }
@@ -1819,11 +1850,23 @@ export class Editor {
     return this.raycaster.ray.intersectPlane(plane, out) !== null;
   }
 
-  /** Proyecta un punto sobre la recta que pasa por `a` según el eje bloqueado. */
-  private constrainToAxisFrom(a: THREE.Vector3, p: THREE.Vector3): THREE.Vector3 {
-    const axis = this.axisVec();
-    if (!axis) return p;
-    return a.clone().addScaledVector(axis, p.clone().sub(a).dot(axis));
+  /**
+   * Punto del trazado con eje bloqueado: el punto de la recta (a + t·eje) más
+   * cercano al rayo del puntero. No necesita tocar suelo ni superficies, así
+   * el eje Y funciona apuntando "al cielo".
+   */
+  private lockedLinePoint(a: THREE.Vector3): THREE.Vector3 | null {
+    const p = new THREE.Vector3();
+    const unused = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    return this.dragPoint(a, unused, p) ? p : null;
+  }
+
+  /** Publica el contador de desplazamiento (por eje si hay bloqueo). */
+  private emitDragMeasure(d: THREE.Vector3): void {
+    const text = this.axisLock
+      ? `Δ${this.axisLock.toUpperCase()} = ${formatCm(d[this.axisLock])}`
+      : `Δ = ${formatCm(d.length())}  (X ${formatCm(d.x)} · Y ${formatCm(d.y)} · Z ${formatCm(d.z)})`;
+    this.bus.emit("dragMeasure", { text });
   }
 
   // -------------------------------------------- herramienta de arrastre
@@ -2303,6 +2346,7 @@ export class Editor {
 
   cancelLine(): void {
     if (!this.lineMode) return;
+    this.bus.emit("dragMeasure", { text: null });
     this.lineMode = null;
     this.lineParams = null;
     this.linePendingA = null;
@@ -2533,6 +2577,7 @@ export class Editor {
       const cur = new THREE.Vector3();
       if (!this.dragPoint(this.dragMove.grabbed, this.dragMove.plane, cur)) return;
       const delta = cur.sub(this.dragMove.grabbed);
+      this.emitDragMeasure(delta);
       for (const id of this.dragMove.ids) {
         const o = this.objects.get(id);
         const start = this.dragMove.starts.get(id);
@@ -2573,6 +2618,7 @@ export class Editor {
     if (this.bendDrag && this.bendTarget) {
       const hit = new THREE.Vector3();
       if (!this.dragPoint(this.bendDrag.origin, this.bendDrag.plane, hit)) return;
+      this.emitDragMeasure(hit.clone().sub(this.bendDrag.origin));
       const obj = this.bendTarget;
       obj.mesh.updateMatrixWorld(true);
       const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
@@ -2586,18 +2632,21 @@ export class Editor {
     // Trazado de pieza de línea: imán de puntería + línea elástica.
     if (this.lineMode) {
       const pick = this.pickLinePlacePoint();
-      if (!pick) {
+      let point: THREE.Vector3 | null = pick?.point ?? null;
+      if (this.axisLock && this.linePendingA) point = this.lockedLinePoint(this.linePendingA);
+      if (!point) {
         this.clearPlacementPreview();
+        this.bus.emit("dragMeasure", { text: null });
         return;
       }
-      if (pick.snapped) this.snap.showIndicator(pick.point);
+      if (pick?.snapped && !this.axisLock) this.snap.showIndicator(pick.point);
       else this.snap.hideIndicator();
-      if (this.linePendingA)
-        this.showPlacementLine(
-          this.linePendingA,
-          this.constrainToAxisFrom(this.linePendingA, pick.point),
-        );
-      else if (this.placementLine) this.placementLine.visible = false;
+      if (this.linePendingA) {
+        this.showPlacementLine(this.linePendingA, point);
+        this.bus.emit("dragMeasure", {
+          text: `Longitud: ${formatCm(this.linePendingA.distanceTo(point))}`,
+        });
+      } else if (this.placementLine) this.placementLine.visible = false;
       return;
     }
 
@@ -2883,20 +2932,24 @@ export class Editor {
       return;
     }
 
-    // Modo línea (pilar/travesaño/tubo): dos clics con aim assist.
+    // Modo línea (pilar/travesaño/tubo): dos clics con aim assist. Con eje
+    // bloqueado, el segundo punto sale de la recta del eje bajo el puntero
+    // (no necesita tocar nada: el eje Y se traza apuntando al cielo).
     if (this.lineMode) {
       const pick = this.pickLinePlacePoint();
-      if (!pick) return;
       if (!this.linePendingA) {
+        if (!pick) return;
         this.linePendingA = pick.point.clone();
         this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
       } else {
-        this.createLinePiece(
-          this.linePendingA,
-          this.constrainToAxisFrom(this.linePendingA, pick.point),
-        );
+        const b = this.axisLock
+          ? this.lockedLinePoint(this.linePendingA)
+          : (pick?.point ?? null);
+        if (!b) return;
+        this.createLinePiece(this.linePendingA, b);
         this.linePendingA = null;
         if (this.placementLine) this.placementLine.visible = false;
+        this.bus.emit("dragMeasure", { text: null });
         this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });
       }
       return;
@@ -3041,6 +3094,7 @@ export class Editor {
       this.dragMove = null;
       this.orbit.enabled = true;
       this.refreshMultiGizmo();
+      this.bus.emit("dragMeasure", { text: null });
       this.scheduleAutosave();
       return;
     }
@@ -3051,6 +3105,7 @@ export class Editor {
     if (!this.bendDrag) return;
     this.bendDrag = null;
     this.orbit.enabled = true;
+    this.bus.emit("dragMeasure", { text: null });
     this.scheduleAutosave();
   };
 
