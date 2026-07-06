@@ -35,7 +35,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData } from "./project";
-import type { PrimitiveParams } from "../objects/types";
+import type { ComponentCategory, PrimitiveParams } from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
@@ -94,6 +94,10 @@ export type EditorEvents = {
   autosaved: { at: number };
   /** Cambió el conjunto de componentes con modelo 3D personalizado. */
   componentModelsChanged: { ids: string[] };
+  /** Historial de deshacer/rehacer: disponibilidad actual. */
+  historyChanged: { canUndo: boolean; canRedo: boolean };
+  /** Herramienta de selección de área (marquee) activada/desactivada. */
+  areaSelectChanged: { on: boolean };
 };
 
 interface SavedTransform {
@@ -159,6 +163,20 @@ export class Editor {
   private selectedJointName: string | null = null;
   private groupProxy = new THREE.Object3D();
   private groupPrev = new THREE.Matrix4();
+  // ---- Selección de área (marquee), portapapeles e historial (v0.1.8)
+  private areaSelect = false;
+  private marquee: { x0: number; y0: number; x1: number; y1: number; additive: boolean } | null =
+    null;
+  private marqueeEl: HTMLDivElement | null = null;
+  private clipboard: {
+    data: ProjectData["objects"][number];
+    category: ComponentCategory;
+    importedGeometry: THREE.BufferGeometry | null;
+  }[] = [];
+  private history: string[] = [];
+  private hIndex = -1;
+  private historyTimer: ReturnType<typeof setTimeout> | null = null;
+  private applyingHistory = false;
   private nextGroupId = 1;
 
   private references = new THREE.Group();
@@ -208,6 +226,10 @@ export class Editor {
       this.scheduleAutosave();
       if (this.selectedGroupId) {
         this.applyGroupDelta();
+        return;
+      }
+      if (this.multiSel.size > 0 && this.gizmo.object === this.groupProxy) {
+        this.applyMultiDelta();
         return;
       }
       // Posando el maniquí: al arrastrar el eje articular gira el segmento en
@@ -309,6 +331,7 @@ export class Editor {
     // Todo cambio que autoguarda es también un cambio sin guardar a archivo
     // (posar el maniquí, tensar cuerdas, mover grupos… no emiten evento).
     this.dirty = true;
+    this.historyPush();
     if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
     this.autosaveTimer = setTimeout(() => {
       this.autosaveTimer = null;
@@ -381,6 +404,7 @@ export class Editor {
     this.running = true;
     this.lastFrameTime = performance.now();
     this.installRenderOnDemand();
+    if (this.history.length === 0) this.resetHistory();
     this.loop();
   }
 
@@ -852,6 +876,9 @@ export class Editor {
     this.bus.emit("objectsChanged", { objects: [] });
     this.bus.emit("jointsChanged", { joints: [] });
     this.bus.emit("cablesChanged", { cables: [] });
+    // Al deshacer/rehacer, clearScene forma parte de la carga interna y no
+    // debe tocar la pila del historial.
+    if (!this.applyingHistory) this.resetHistory();
   }
 
   /** Reemplaza la escena con la de un proyecto serializado. */
@@ -1005,6 +1032,7 @@ export class Editor {
     }
 
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    if (!this.applyingHistory) this.resetHistory();
   }
 
   listObjects(): SceneObject[] {
@@ -1083,6 +1111,267 @@ export class Editor {
     return this.multiSel.size;
   }
 
+  // ------------------------------------------ selección de área (marquee)
+
+  setAreaSelect(on: boolean): void {
+    this.areaSelect = on;
+    if (!on) this.cancelMarquee();
+    this.bus.emit("areaSelectChanged", { on });
+  }
+
+  isAreaSelect(): boolean {
+    return this.areaSelect;
+  }
+
+  private beginMarquee(e: PointerEvent): void {
+    this.marquee = {
+      x0: e.clientX,
+      y0: e.clientY,
+      x1: e.clientX,
+      y1: e.clientY,
+      additive: e.ctrlKey || e.metaKey || e.shiftKey,
+    };
+    this.orbit.enabled = false;
+    const div = document.createElement("div");
+    div.className = "marquee";
+    document.body.appendChild(div);
+    this.marqueeEl = div;
+    this.updateMarquee(e);
+  }
+
+  private updateMarquee(e: PointerEvent): void {
+    if (!this.marquee || !this.marqueeEl) return;
+    this.marquee.x1 = e.clientX;
+    this.marquee.y1 = e.clientY;
+    const x = Math.min(this.marquee.x0, this.marquee.x1);
+    const y = Math.min(this.marquee.y0, this.marquee.y1);
+    const w = Math.abs(this.marquee.x1 - this.marquee.x0);
+    const h = Math.abs(this.marquee.y1 - this.marquee.y0);
+    Object.assign(this.marqueeEl.style, {
+      left: `${x}px`,
+      top: `${y}px`,
+      width: `${w}px`,
+      height: `${h}px`,
+    });
+  }
+
+  /** Cierra el recuadro y selecciona todo lo que cae dentro. */
+  private finishMarquee(): void {
+    const m = this.marquee;
+    this.cancelMarquee();
+    if (!m) return;
+    if (!m.additive) this.select(null); // limpia selección y multiselección
+    const rect = this.canvas.getBoundingClientRect();
+    const nx = (cx: number): number => ((cx - rect.left) / rect.width) * 2 - 1;
+    const ny = (cy: number): number => -((cy - rect.top) / rect.height) * 2 + 1;
+    const minX = Math.min(nx(m.x0), nx(m.x1));
+    const maxX = Math.max(nx(m.x0), nx(m.x1));
+    const minY = Math.min(ny(m.y0), ny(m.y1));
+    const maxY = Math.max(ny(m.y0), ny(m.y1));
+    const v = new THREE.Vector3();
+    const inside: string[] = [];
+    for (const o of this.objects.values()) {
+      o.mesh.getWorldPosition(v).project(this.sceneManager.camera);
+      if (v.z < 1 && v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
+        inside.push(o.id);
+      }
+    }
+    // Un miembro dentro arrastra a todo su grupo (los grupos son unidades).
+    const ids = new Set<string>(inside);
+    for (const id of inside) {
+      const gid = this.objGroup.get(id);
+      if (gid) this.groups.get(gid)?.ids.forEach((i) => ids.add(i));
+    }
+    for (const id of ids) {
+      const o = this.objects.get(id);
+      if (!o || this.multiSel.has(id)) continue;
+      this.multiSel.add(id);
+      this.setHighlight(o, true);
+    }
+    this.refreshMultiGizmo(true);
+    this.bus.emit("selectionChanged", { selected: null });
+    this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+  }
+
+  private cancelMarquee(): void {
+    this.marqueeEl?.remove();
+    this.marqueeEl = null;
+    this.marquee = null;
+    this.orbit.enabled = true;
+  }
+
+  // ------------------------------------ portapapeles (copiar/pegar/eliminar)
+
+  /** Ids de la selección actual (pieza, multiselección o grupo). */
+  getSelectionIds(): string[] {
+    if (this.selected) return [this.selected.id];
+    if (this.multiSel.size > 0) return [...this.multiSel];
+    if (this.selectedGroupId) return [...(this.groups.get(this.selectedGroupId)?.ids ?? [])];
+    return [];
+  }
+
+  /** Copia la selección al portapapeles interno (datos del proyecto). */
+  copySelection(): void {
+    const ids = this.getSelectionIds();
+    if (ids.length === 0) return;
+    const all = this.serialize().objects;
+    this.clipboard = [];
+    for (const id of ids) {
+      const o = this.objects.get(id);
+      const data = all.find((d) => d.id === id);
+      if (!o || !data) continue;
+      this.clipboard.push({
+        data: JSON.parse(JSON.stringify(data)) as ProjectData["objects"][number],
+        category: o.category,
+        importedGeometry: o.imported ? o.mesh.geometry.clone() : null,
+      });
+    }
+  }
+
+  /** Pega el portapapeles con un pequeño desplazamiento y lo deja seleccionado. */
+  pasteClipboard(): void {
+    if (this.clipboard.length === 0) return;
+    const offset = new THREE.Vector3(15, 0, 15);
+    const created: string[] = [];
+    for (const entry of this.clipboard) {
+      const d = entry.data;
+      let obj: SceneObject;
+      if (entry.importedGeometry) {
+        obj = new SceneObject({
+          name: `${d.name} copia`,
+          componentId: d.componentId,
+          category: entry.category,
+          params: { ...d.params },
+          physics: { ...d.physics },
+          materialId: d.materialId,
+          importedGeometry: entry.importedGeometry.clone(),
+        });
+        this.sceneManager.content.add(obj.mesh);
+        this.objects.set(obj.id, obj);
+      } else {
+        obj = this.addComponent(d.componentId);
+        obj.params = {
+          ...d.params,
+          path: d.params.path?.map((n) => [...n] as [number, number, number]),
+        };
+        obj.rebuildGeometry();
+      }
+      obj.setMaterial(d.materialId);
+      obj.physics = { ...d.physics };
+      obj.mesh.position.fromArray(d.position).add(offset);
+      obj.mesh.quaternion.fromArray(d.quaternion);
+      if (d.scale) obj.mesh.scale.fromArray(d.scale);
+      created.push(obj.id);
+    }
+    // Deja lo pegado como selección activa (listo para mover en bloque).
+    this.select(null);
+    for (const id of created) {
+      const o = this.objects.get(id);
+      if (o) {
+        this.multiSel.add(id);
+        this.setHighlight(o, true);
+      }
+    }
+    this.refreshMultiGizmo(true);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+    this.scheduleAutosave();
+  }
+
+  /** Elimina la selección actual: pieza, multiselección, grupo o cuerda. */
+  deleteSelection(): void {
+    if (this.selected) {
+      this.removeObject(this.selected);
+      return;
+    }
+    if (this.multiSel.size > 0) {
+      for (const id of [...this.multiSel]) {
+        const o = this.objects.get(id);
+        if (o) this.removeObject(o);
+      }
+      this.gizmo.detach();
+      this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
+      return;
+    }
+    if (this.selectedGroupId) {
+      this.deleteSelectedGroup();
+      return;
+    }
+    if (this.selectedRopeId) this.deleteRope(this.selectedRopeId);
+  }
+
+  // -------------------------------------------------- deshacer / rehacer
+
+  /** Instantánea diferida del proyecto tras cada cambio (para deshacer). */
+  private historyPush(): void {
+    if (this.applyingHistory || this.simulating || this.autosaveSuspended) return;
+    if (this.historyTimer !== null) clearTimeout(this.historyTimer);
+    this.historyTimer = setTimeout(() => {
+      this.historyTimer = null;
+      this.historyCommit();
+    }, 300);
+  }
+
+  private historyCommit(): void {
+    if (this.applyingHistory || this.simulating) return;
+    const snap = JSON.stringify(this.serialize());
+    if (snap === this.history[this.hIndex]) return;
+    this.history.splice(this.hIndex + 1);
+    this.history.push(snap);
+    if (this.history.length > 60) this.history.shift();
+    this.hIndex = this.history.length - 1;
+    this.emitHistory();
+  }
+
+  /** Reinicia el historial con el estado actual como punto de partida. */
+  private resetHistory(): void {
+    if (this.historyTimer !== null) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+    }
+    this.history = [JSON.stringify(this.serialize())];
+    this.hIndex = 0;
+    this.emitHistory();
+  }
+
+  private emitHistory(): void {
+    this.bus.emit("historyChanged", {
+      canUndo: this.hIndex > 0,
+      canRedo: this.hIndex < this.history.length - 1,
+    });
+  }
+
+  async undo(): Promise<void> {
+    if (this.simulating) return;
+    // Si hay una instantánea pendiente de confirmar, ciérrala primero.
+    if (this.historyTimer !== null) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+      this.historyCommit();
+    }
+    if (this.hIndex <= 0) return;
+    this.hIndex--;
+    await this.applyHistory();
+  }
+
+  async redo(): Promise<void> {
+    if (this.simulating || this.hIndex >= this.history.length - 1) return;
+    this.hIndex++;
+    await this.applyHistory();
+  }
+
+  private async applyHistory(): Promise<void> {
+    this.applyingHistory = true;
+    try {
+      await this.loadProjectInner(JSON.parse(this.history[this.hIndex]) as ProjectData);
+    } finally {
+      this.applyingHistory = false;
+    }
+    this.emitHistory();
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
   private setHighlight(obj: SceneObject, on: boolean): void {
     const m = obj.mesh.material as THREE.MeshStandardMaterial;
     if (m && m.emissive) m.emissive.setHex(on ? 0x14406a : 0x000000);
@@ -1119,8 +1408,81 @@ export class Editor {
       this.multiSel.add(obj.id);
       this.setHighlight(obj, true);
     }
+    this.refreshMultiGizmo(true);
     this.bus.emit("selectionChanged", { selected: null });
     this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+  }
+
+  /** Añade/quita TODO un grupo a la multiselección (Ctrl+clic sobre un miembro). */
+  private toggleMultiGroup(gid: string): void {
+    const g = this.groups.get(gid);
+    if (!g) return;
+    this.clearGroupHighlight();
+    this.selected = null;
+    this.selectedFigure = false;
+    this.selectedGroupId = null;
+    const allIn = g.ids.every((id) => this.multiSel.has(id));
+    for (const id of g.ids) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      if (allIn) {
+        this.multiSel.delete(id);
+        this.setHighlight(o, false);
+      } else {
+        this.multiSel.add(id);
+        this.setHighlight(o, true);
+      }
+    }
+    this.refreshMultiGizmo(true);
+    this.bus.emit("selectionChanged", { selected: null });
+    this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+  }
+
+  /**
+   * Coloca el gizmo en el centroide de la multiselección para mover/rotar el
+   * conjunto en bloque (mismo mecanismo de proxy que los grupos).
+   */
+  private refreshMultiGizmo(attachFresh = false): void {
+    if (this.multiSel.size === 0) {
+      if (this.gizmo.object === this.groupProxy) this.gizmo.detach();
+      return;
+    }
+    const centroid = new THREE.Vector3();
+    let n = 0;
+    for (const id of this.multiSel) {
+      const o = this.objects.get(id);
+      if (o) {
+        centroid.add(o.mesh.position);
+        n++;
+      }
+    }
+    if (n === 0) return;
+    centroid.multiplyScalar(1 / n);
+    this.groupProxy.position.copy(centroid);
+    this.groupProxy.quaternion.identity();
+    this.groupProxy.scale.set(1, 1, 1);
+    this.groupProxy.updateMatrixWorld(true);
+    this.groupPrev.copy(this.groupProxy.matrixWorld);
+    this.resetGizmoAxes();
+    this.gizmo.attach(this.groupProxy);
+    if (attachFresh && this.gizmo.getMode() === "scale") this.setMode("translate");
+  }
+
+  /** Aplica el delta del proxy a todos los objetos de la multiselección. */
+  private applyMultiDelta(): void {
+    this.groupProxy.updateMatrixWorld(true);
+    const cur = this.groupProxy.matrixWorld;
+    const delta = cur.clone().multiply(this.groupPrev.clone().invert());
+    for (const id of this.multiSel) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      const m = new THREE.Matrix4().compose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
+      m.premultiply(delta);
+      m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
+      this.updateRopesForObject(o.id);
+    }
+    this.cablesDirty = true;
+    this.groupPrev.copy(cur);
   }
 
   /** Crea un grupo (subensamblaje) a partir de la multiseleccion (>=2). */
@@ -2081,6 +2443,10 @@ export class Editor {
    * cable/cuerda/pieza de línea, y arrastra los nodos en modo doblado.
    */
   private onPointerMove = (event: PointerEvent): void => {
+    if (this.marquee) {
+      this.updateMarquee(event);
+      return;
+    }
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
     if (
       (this.simulating && !simInteract) ||
@@ -2349,6 +2715,12 @@ export class Editor {
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
 
+    // Herramienta de selección de área: arrastrar dibuja el recuadro.
+    if (this.areaSelect && !this.simulating && event.button === 0) {
+      this.beginMarquee(event);
+      return;
+    }
+
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
@@ -2506,8 +2878,12 @@ export class Editor {
       if (!obj) {
         this.select(null);
       } else if (this.objGroup.has(obj.id)) {
-        this.selectGroup(this.objGroup.get(obj.id)!);
-      } else if (event.shiftKey) {
+        if (event.shiftKey || event.ctrlKey || event.metaKey) {
+          this.toggleMultiGroup(this.objGroup.get(obj.id)!);
+        } else {
+          this.selectGroup(this.objGroup.get(obj.id)!);
+        }
+      } else if (event.shiftKey || event.ctrlKey || event.metaKey) {
         this.toggleMulti(obj);
       } else {
         this.select(obj);
@@ -2517,6 +2893,10 @@ export class Editor {
 
   /** Suelta el nodo de doblado o el agarre de simulación al levantar el puntero. */
   private onPointerUp = (): void => {
+    if (this.marquee) {
+      this.finishMarquee();
+      return;
+    }
     if (this.simDrag || this.figureDrag) {
       this.endSimInteraction();
       return;
@@ -2543,6 +2923,34 @@ export class Editor {
       void this.toggleSimulation();
       return;
     }
+    if ((event.ctrlKey || event.metaKey) && !this.simulating) {
+      const k = event.key.toLowerCase();
+      if (k === "c") {
+        this.copySelection();
+        return;
+      }
+      if (k === "v") {
+        event.preventDefault();
+        this.pasteClipboard();
+        return;
+      }
+      if (k === "x") {
+        this.copySelection();
+        this.deleteSelection();
+        return;
+      }
+      if (k === "z") {
+        event.preventDefault();
+        if (event.shiftKey) void this.redo();
+        else void this.undo();
+        return;
+      }
+      if (k === "y") {
+        event.preventDefault();
+        void this.redo();
+        return;
+      }
+    }
     if (this.simulating) return;
     if (this.cableMode && (event.key === "Enter" || event.key === "Return")) {
       this.finishCable();
@@ -2562,9 +2970,7 @@ export class Editor {
         break;
       case "delete":
       case "backspace":
-        if (this.selected) this.removeObject(this.selected);
-        else if (this.selectedGroupId) this.deleteSelectedGroup();
-        else if (this.selectedRopeId) this.deleteRope(this.selectedRopeId);
+        this.deleteSelection();
         break;
       case "escape":
         this.cancelConnect();

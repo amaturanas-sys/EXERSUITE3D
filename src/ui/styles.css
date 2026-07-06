@@ -1167,3 +1167,13 @@ body.simulating .dock-toggle {
     display: none !important;
   }
 }
+
+
+/* Recuadro de la selección de área (marquee), v0.1.8 */
+.marquee {
+  position: fixed;
+  z-index: 60;
+  border: 1px dashed var(--accent, #efede8);
+  background: rgba(239, 237, 232, 0.08);
+  pointer-events: none;
+}

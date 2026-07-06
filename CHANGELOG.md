@@ -5,6 +5,30 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.1.8] — 2026-07-06
+
+### Añadido
+
+- **Herramienta de selección completa** en el Builder web:
+  - **Ctrl+clic** (o Shift+clic) añade/quita piezas de la selección; sobre
+    una pieza agrupada, añade/quita el grupo entero.
+  - **Selección de área**: botón "Área" en la barra — arrastra un recuadro
+    tipo Paint y selecciona todo lo que cae dentro (con Ctrl, añade a lo ya
+    seleccionado); los grupos entran como unidad.
+  - La multiselección ahora lleva **gizmo propio en el centroide**: mover o
+    rotar actúa sobre todo el conjunto en bloque (cuerdas y cables siguen a
+    sus anclas).
+- **Copiar / pegar / cortar / eliminar la selección**: botones Copiar y
+  Pegar en la barra y atajos **Ctrl+C / Ctrl+V / Ctrl+X / Supr**; lo pegado
+  aparece con un pequeño desplazamiento y queda seleccionado, listo para
+  colocar. Funciona con piezas sueltas, multiselección y grupos (también
+  piezas importadas).
+- **Deshacer / Rehacer**: botones ↺/↻ en la barra y **Ctrl+Z / Ctrl+Y**
+  (o Ctrl+Shift+Z). Historial por instantáneas del proyecto completo
+  (piezas, articulaciones, cables, cuerdas, grupos y maniquí), con
+  agrupación automática de cambios rápidos (arrastres del gizmo = un solo
+  paso) y tope de 60 pasos.
+
 ## [0.1.7] — 2026-07-06
 
 ### Añadido

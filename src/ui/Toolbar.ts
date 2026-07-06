@@ -50,17 +50,42 @@ export class Toolbar {
       snapBtn.classList.toggle("active", enabled),
     );
 
+    // Herramienta de selección de área (recuadro tipo Paint).
+    const areaBtn = el("button", {
+      class: "tool",
+      title: "Selección de área: arrastra un recuadro (Ctrl+clic añade a la selección)",
+    }, ["Área"]);
+    areaBtn.addEventListener("click", () =>
+      this.editor.setAreaSelect(!this.editor.isAreaSelect()),
+    );
+    this.editor.bus.on("areaSelectChanged", ({ on }) => areaBtn.classList.toggle("active", on));
+
+    // Deshacer / rehacer.
+    const undoBtn = el("button", { class: "tool", title: "Deshacer (Ctrl+Z)" }, ["↺"]);
+    undoBtn.disabled = true;
+    undoBtn.addEventListener("click", () => void this.editor.undo());
+    const redoBtn = el("button", { class: "tool", title: "Rehacer (Ctrl+Y)" }, ["↻"]);
+    redoBtn.disabled = true;
+    redoBtn.addEventListener("click", () => void this.editor.redo());
+    this.editor.bus.on("historyChanged", ({ canUndo, canRedo }) => {
+      undoBtn.disabled = !canUndo;
+      redoBtn.disabled = !canRedo;
+    });
+
+    const copyBtn = el("button", { class: "tool", title: "Copiar selección (Ctrl+C)" }, [
+      "Copiar",
+    ]);
+    copyBtn.addEventListener("click", () => this.editor.copySelection());
+    const pasteBtn = el("button", { class: "tool", title: "Pegar (Ctrl+V)" }, ["Pegar"]);
+    pasteBtn.addEventListener("click", () => this.editor.pasteClipboard());
+
     const dupBtn = el("button", { class: "tool", title: "Duplicar (Ctrl+D)" }, ["Duplicar"]);
     dupBtn.addEventListener("click", () => this.editor.duplicateSelected());
 
     const delBtn = el("button", { class: "tool danger", title: "Eliminar (Supr)" }, [
       "Eliminar",
     ]);
-    delBtn.addEventListener("click", () => {
-      const sel = this.editor.getSelected();
-      if (sel) this.editor.removeObject(sel);
-      else if (this.editor.hasGroupSelected()) this.editor.deleteSelectedGroup();
-    });
+    delBtn.addEventListener("click", () => this.editor.deleteSelection());
 
     // Agrupacion de piezas.
     const groupBtn = el("button", { class: "tool", title: "Agrupar piezas (Shift+clic para multiseleccionar)" }, [
@@ -116,7 +141,8 @@ export class Toolbar {
         mode("scale", "Escalar", "S"),
       ]),
       el("div", { class: "tool-group edit-only" }, [spaceBtn, gridBtn, snapBtn]),
-      el("div", { class: "tool-group edit-only" }, [dupBtn, delBtn]),
+      el("div", { class: "tool-group edit-only" }, [areaBtn, undoBtn, redoBtn]),
+      el("div", { class: "tool-group edit-only" }, [copyBtn, pasteBtn, dupBtn, delBtn]),
       el("div", { class: "tool-group edit-only" }, [groupBtn, ungroupBtn]),
       el("div", { class: "tool-group edit-only" }, [figBtn, figHeight]),
     ];
