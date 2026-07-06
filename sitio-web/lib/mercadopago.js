@@ -15,6 +15,9 @@ function token() {
 
 /** Crea la preferencia de Checkout Pro y devuelve la URL de pago. */
 export async function crearPreferencia({ titulo, monto, moneda, urlBase }) {
+  // Referencia externa única por orden: mejora la conciliación y la
+  // "calidad de integración" que mide el panel de Mercado Pago.
+  const referencia = `exersuite3d-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const res = await fetch(`${API}/checkout/preferences`, {
     method: "POST",
     headers: {
@@ -24,12 +27,17 @@ export async function crearPreferencia({ titulo, monto, moneda, urlBase }) {
     body: JSON.stringify({
       items: [
         {
+          id: "exersuite3d-licencia",
           title: titulo,
+          description: "Licencia personal de EXERSUITE3D (Android + Windows)",
+          category_id: "software",
           quantity: 1,
           currency_id: moneda,
           unit_price: Number(monto),
         },
       ],
+      external_reference: referencia,
+      notification_url: `${urlBase}/api/webhook/mp`,
       back_urls: {
         success: `${urlBase}/gracias`,
         pending: `${urlBase}/gracias`,
