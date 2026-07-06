@@ -28,6 +28,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   (piezas, articulaciones, cables, cuerdas, grupos y maniquí), con
   agrupación automática de cambios rápidos (arrastres del gizmo = un solo
   paso) y tope de 60 pasos.
+- **Herramienta "Arrastrar"**: agarra cualquier pieza directamente en el
+  visor y llévala sin pasar por las asas del gizmo; arrastra igualmente
+  multiselecciones y grupos completos (cuerdas y cables siguen).
+- **Eje de trabajo bloqueado (1=X, 2=Y, 3=Z; 0 o Esc libera; repetir la
+  tecla también)**: restringe TODO el trazado al eje elegido para construir
+  con precisión en 3D mirando una pantalla 2D — el gizmo muestra solo el
+  asa de ese eje (mover y rotar), la herramienta Arrastrar desliza la pieza
+  por la recta del eje, los **nodos de doblado** se mueven solo a lo largo
+  del eje y el **trazado de pilares/travesaños/tubos** proyecta el segundo
+  punto sobre el eje desde el primero. Botones X/Y/Z en la barra (para
+  tablet) y aviso "EJE … BLOQUEADO" en la línea inferior.
 
 ## [0.1.7] — 2026-07-06
 

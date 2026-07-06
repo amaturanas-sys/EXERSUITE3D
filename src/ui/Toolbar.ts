@@ -50,6 +50,33 @@ export class Toolbar {
       snapBtn.classList.toggle("active", enabled),
     );
 
+    // Herramienta de arrastre directo de piezas.
+    const dragToolBtn = el("button", {
+      class: "tool",
+      title: "Arrastrar piezas directamente (con eje 1/2/3 bloqueado, solo por ese eje)",
+    }, ["Arrastrar"]);
+    dragToolBtn.addEventListener("click", () =>
+      this.editor.setDragTool(!this.editor.isDragTool()),
+    );
+    this.editor.bus.on("dragToolChanged", ({ on }) =>
+      dragToolBtn.classList.toggle("active", on),
+    );
+
+    // Eje de trabajo bloqueado: 1=X, 2=Y, 3=Z (también botones para táctil).
+    const axisBtns = (["x", "y", "z"] as const).map((axis, i) => {
+      const b = el("button", {
+        class: "tool",
+        title: `Bloquear el eje ${axis.toUpperCase()} (tecla ${i + 1}; repetir libera)`,
+      }, [axis.toUpperCase()]);
+      b.addEventListener("click", () => this.editor.setAxisLock(axis));
+      return b;
+    });
+    this.editor.bus.on("axisLockChanged", ({ axis }) => {
+      (["x", "y", "z"] as const).forEach((a, i) =>
+        axisBtns[i].classList.toggle("active", axis === a),
+      );
+    });
+
     // Herramienta de selección de área (recuadro tipo Paint).
     const areaBtn = el("button", {
       class: "tool",
@@ -141,7 +168,8 @@ export class Toolbar {
         mode("scale", "Escalar", "S"),
       ]),
       el("div", { class: "tool-group edit-only" }, [spaceBtn, gridBtn, snapBtn]),
-      el("div", { class: "tool-group edit-only" }, [areaBtn, undoBtn, redoBtn]),
+      el("div", { class: "tool-group edit-only" }, [areaBtn, dragToolBtn, ...axisBtns]),
+      el("div", { class: "tool-group edit-only" }, [undoBtn, redoBtn]),
       el("div", { class: "tool-group edit-only" }, [copyBtn, pasteBtn, dupBtn, delBtn]),
       el("div", { class: "tool-group edit-only" }, [groupBtn, ungroupBtn]),
       el("div", { class: "tool-group edit-only" }, [figBtn, figHeight]),

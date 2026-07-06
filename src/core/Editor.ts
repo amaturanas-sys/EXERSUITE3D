@@ -98,6 +98,10 @@ export type EditorEvents = {
   historyChanged: { canUndo: boolean; canRedo: boolean };
   /** Herramienta de selección de área (marquee) activada/desactivada. */
   areaSelectChanged: { on: boolean };
+  /** Herramienta de arrastre directo activada/desactivada. */
+  dragToolChanged: { on: boolean };
+  /** Eje de trabajo bloqueado (1=X, 2=Y, 3=Z; 0/Esc libera) o null. */
+  axisLockChanged: { axis: "x" | "y" | "z" | null };
 };
 
 interface SavedTransform {
@@ -149,7 +153,7 @@ export class Editor {
   private linePendingA: THREE.Vector3 | null = null;
   private bendTarget: SceneObject | null = null;
   private bendHandles: THREE.Group | null = null;
-  private bendDrag: { index: number; plane: THREE.Plane } | null = null;
+  private bendDrag: { index: number; plane: THREE.Plane; origin: THREE.Vector3 } | null = null;
 
   private snap: SnapManager;
   // Línea elástica de previsualización al colocar cable/cuerda (línea recta).
@@ -175,6 +179,16 @@ export class Editor {
   }[] = [];
   private history: string[] = [];
   private hIndex = -1;
+  /** Eje de trabajo bloqueado (teclas 1/2/3): restringe TODO el trazado. */
+  private axisLock: "x" | "y" | "z" | null = null;
+  /** Herramienta de arrastre directo de piezas. */
+  private dragTool = false;
+  private dragMove: {
+    ids: string[];
+    grabbed: THREE.Vector3;
+    plane: THREE.Plane;
+    starts: Map<string, THREE.Vector3>;
+  } | null = null;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private applyingHistory = false;
   private nextGroupId = 1;
@@ -1116,6 +1130,7 @@ export class Editor {
   setAreaSelect(on: boolean): void {
     this.areaSelect = on;
     if (!on) this.cancelMarquee();
+    else if (this.dragTool) this.setDragTool(false);
     this.bus.emit("areaSelectChanged", { on });
   }
 
@@ -1755,9 +1770,72 @@ export class Editor {
 
   /** Restaura los tres ejes del gizmo (para piezas/grupos/figura completa). */
   private resetGizmoAxes(): void {
-    this.gizmo.showX = true;
-    this.gizmo.showY = true;
-    this.gizmo.showZ = true;
+    // Con eje bloqueado, el gizmo solo ofrece el asa de ese eje (edición
+    // precisa: se construye en 3D mirando una pantalla 2D).
+    this.gizmo.showX = this.axisLock === null || this.axisLock === "x";
+    this.gizmo.showY = this.axisLock === null || this.axisLock === "y";
+    this.gizmo.showZ = this.axisLock === null || this.axisLock === "z";
+  }
+
+  // ------------------------------------------------ eje de trabajo (1/2/3)
+
+  /** Bloquea el trazado al eje dado; repetir el mismo eje lo libera. */
+  setAxisLock(axis: "x" | "y" | "z" | null): void {
+    this.axisLock = this.axisLock === axis ? null : axis;
+    this.resetGizmoAxes();
+    this.bus.emit("axisLockChanged", { axis: this.axisLock });
+  }
+
+  getAxisLock(): "x" | "y" | "z" | null {
+    return this.axisLock;
+  }
+
+  private axisVec(): THREE.Vector3 | null {
+    if (this.axisLock === "x") return new THREE.Vector3(1, 0, 0);
+    if (this.axisLock === "y") return new THREE.Vector3(0, 1, 0);
+    if (this.axisLock === "z") return new THREE.Vector3(0, 0, 1);
+    return null;
+  }
+
+  /**
+   * Punto de arrastre bajo el puntero: si hay eje bloqueado, el punto de la
+   * recta (origin + t·eje) más cercano al rayo del puntero; si no, la
+   * intersección con el plano dado. Devuelve false si no hay solución.
+   */
+  private dragPoint(origin: THREE.Vector3, plane: THREE.Plane, out: THREE.Vector3): boolean {
+    const axis = this.axisVec();
+    if (axis) {
+      const ray = this.raycaster.ray;
+      const w0 = new THREE.Vector3().subVectors(origin, ray.origin);
+      const b = axis.dot(ray.direction);
+      const d = axis.dot(w0);
+      const e = ray.direction.dot(w0);
+      const denom = 1 - b * b; // axis y direction son unitarios
+      if (Math.abs(denom) < 1e-6) return false;
+      const t = (b * e - d) / denom;
+      out.copy(origin).addScaledVector(axis, t);
+      return true;
+    }
+    return this.raycaster.ray.intersectPlane(plane, out) !== null;
+  }
+
+  /** Proyecta un punto sobre la recta que pasa por `a` según el eje bloqueado. */
+  private constrainToAxisFrom(a: THREE.Vector3, p: THREE.Vector3): THREE.Vector3 {
+    const axis = this.axisVec();
+    if (!axis) return p;
+    return a.clone().addScaledVector(axis, p.clone().sub(a).dot(axis));
+  }
+
+  // -------------------------------------------- herramienta de arrastre
+
+  setDragTool(on: boolean): void {
+    this.dragTool = on;
+    if (on) this.setAreaSelect(false);
+    this.bus.emit("dragToolChanged", { on });
+  }
+
+  isDragTool(): boolean {
+    return this.dragTool;
   }
 
   /** Limita la articulación seleccionada a su eje/rango natural. */
@@ -2447,6 +2525,25 @@ export class Editor {
       this.updateMarquee(event);
       return;
     }
+    if (this.dragMove) {
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      const cur = new THREE.Vector3();
+      if (!this.dragPoint(this.dragMove.grabbed, this.dragMove.plane, cur)) return;
+      const delta = cur.sub(this.dragMove.grabbed);
+      for (const id of this.dragMove.ids) {
+        const o = this.objects.get(id);
+        const start = this.dragMove.starts.get(id);
+        if (!o || !start) continue;
+        o.mesh.position.copy(start).add(delta);
+        this.updateRopesForObject(o.id);
+        this.bus.emit("objectTransformed", { object: o });
+      }
+      this.cablesDirty = true;
+      return;
+    }
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
     if (
       (this.simulating && !simInteract) ||
@@ -2475,7 +2572,7 @@ export class Editor {
     // reconstruye la pieza en vivo (curva Catmull-Rom por los nodos).
     if (this.bendDrag && this.bendTarget) {
       const hit = new THREE.Vector3();
-      if (!this.raycaster.ray.intersectPlane(this.bendDrag.plane, hit)) return;
+      if (!this.dragPoint(this.bendDrag.origin, this.bendDrag.plane, hit)) return;
       const obj = this.bendTarget;
       obj.mesh.updateMatrixWorld(true);
       const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
@@ -2495,7 +2592,11 @@ export class Editor {
       }
       if (pick.snapped) this.snap.showIndicator(pick.point);
       else this.snap.hideIndicator();
-      if (this.linePendingA) this.showPlacementLine(this.linePendingA, pick.point);
+      if (this.linePendingA)
+        this.showPlacementLine(
+          this.linePendingA,
+          this.constrainToAxisFrom(this.linePendingA, pick.point),
+        );
       else if (this.placementLine) this.placementLine.visible = false;
       return;
     }
@@ -2721,6 +2822,41 @@ export class Editor {
       return;
     }
 
+    // Herramienta de arrastre directo: agarrar una pieza y llevarla (con el
+    // eje bloqueado, se desliza solo a lo largo de ese eje).
+    if (this.dragTool && !this.simulating && event.button === 0) {
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hid = hits[0]?.object.userData.sceneObjectId as string | undefined;
+      const hobj = hid ? this.objects.get(hid) : undefined;
+      if (hobj && hits[0]) {
+        let ids: string[];
+        if (this.multiSel.has(hobj.id)) {
+          ids = [...this.multiSel];
+        } else if (this.objGroup.has(hobj.id)) {
+          const gid = this.objGroup.get(hobj.id)!;
+          ids = [...(this.groups.get(gid)?.ids ?? [hobj.id])];
+          if (this.selectedGroupId !== gid) this.selectGroup(gid);
+        } else {
+          if (this.selected !== hobj) this.select(hobj);
+          ids = [hobj.id];
+        }
+        const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
+        const starts = new Map<string, THREE.Vector3>();
+        for (const id of ids) {
+          const o = this.objects.get(id);
+          if (o) starts.set(id, o.mesh.position.clone());
+        }
+        this.dragMove = {
+          ids,
+          grabbed: hits[0].point.clone(),
+          plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hits[0].point),
+          starts,
+        };
+        this.orbit.enabled = false;
+        return;
+      }
+    }
+
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
@@ -2738,6 +2874,7 @@ export class Editor {
         this.bendDrag = {
           index: idx,
           plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, node),
+          origin: node.clone(),
         };
         this.orbit.enabled = false;
       } else {
@@ -2754,7 +2891,10 @@ export class Editor {
         this.linePendingA = pick.point.clone();
         this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
       } else {
-        this.createLinePiece(this.linePendingA, pick.point);
+        this.createLinePiece(
+          this.linePendingA,
+          this.constrainToAxisFrom(this.linePendingA, pick.point),
+        );
         this.linePendingA = null;
         if (this.placementLine) this.placementLine.visible = false;
         this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });
@@ -2897,6 +3037,13 @@ export class Editor {
       this.finishMarquee();
       return;
     }
+    if (this.dragMove) {
+      this.dragMove = null;
+      this.orbit.enabled = true;
+      this.refreshMultiGizmo();
+      this.scheduleAutosave();
+      return;
+    }
     if (this.simDrag || this.figureDrag) {
       this.endSimInteraction();
       return;
@@ -2957,6 +3104,18 @@ export class Editor {
       return;
     }
     switch (event.key.toLowerCase()) {
+      case "1":
+        this.setAxisLock("x");
+        break;
+      case "2":
+        this.setAxisLock("y");
+        break;
+      case "3":
+        this.setAxisLock("z");
+        break;
+      case "0":
+        if (this.axisLock) this.setAxisLock(this.axisLock); // libera
+        break;
       case "g":
       case "w":
         this.setMode("translate");
@@ -2973,6 +3132,7 @@ export class Editor {
         this.deleteSelection();
         break;
       case "escape":
+        if (this.axisLock) this.setAxisLock(this.axisLock); // libera el eje
         this.cancelConnect();
         this.cancelCable();
         this.cancelRope();
