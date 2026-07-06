@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { elegirYSubir } from "@/lib/imagenes";
 
 /**
  * Widgets funcionales de la página: CARRUSEL de imágenes (flechas, puntos y
@@ -72,7 +73,7 @@ export function nuevoAcordeon() {
   };
 }
 
-export default function Widgets({ widgets, editable = false, onCambiar = () => {} }) {
+export default function Widgets({ widgets, editable = false, clave = "", onCambiar = () => {} }) {
   const lista = widgets.lista || [];
   const cambiar = (nueva) => onCambiar(nueva);
   const cambiarW = (id, props) =>
@@ -122,7 +123,7 @@ export default function Widgets({ widgets, editable = false, onCambiar = () => {
             onCambiar={(t) => cambiarW(w.id, { titulo: t })}
           />
           {w.tipo === "carrusel" && (
-            <Carrusel w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
+            <Carrusel w={w} editable={editable} clave={clave} onCambiar={(p) => cambiarW(w.id, p)} />
           )}
           {w.tipo === "acordeon" && (
             <Acordeon w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
@@ -153,7 +154,7 @@ function Titulo({ valor, editable, onCambiar }) {
 
 /* ------------------------------------------------------------- carrusel */
 
-function Carrusel({ w, editable, onCambiar }) {
+function Carrusel({ w, editable, clave, onCambiar }) {
   const [i, setI] = useState(0);
   const n = w.diapositivas.length;
   const ir = (j) => setI(((j % n) + n) % n);
@@ -207,6 +208,17 @@ function Carrusel({ w, editable, onCambiar }) {
       {editable && (
         <div className="lienzo-barra" style={{ marginTop: 8 }}>
           <button
+            onClick={async () => {
+              const url = await elegirYSubir(clave);
+              if (url) {
+                onCambiar({ diapositivas: [...w.diapositivas, { imagen: url, pie: "" }] });
+                setI(n);
+              }
+            }}
+          >
+            + Foto (subir)
+          </button>
+          <button
             onClick={() => {
               const url = window.prompt("URL de la imagen:");
               if (url) {
@@ -215,7 +227,15 @@ function Carrusel({ w, editable, onCambiar }) {
               }
             }}
           >
-            + Diapositiva
+            + URL
+          </button>
+          <button
+            onClick={async () => {
+              const url = await elegirYSubir(clave);
+              if (url) editarDiapo({ imagen: url });
+            }}
+          >
+            Cambiar (subir)
           </button>
           <button
             onClick={() => {
@@ -223,7 +243,7 @@ function Carrusel({ w, editable, onCambiar }) {
               if (url) editarDiapo({ imagen: url.trim() });
             }}
           >
-            Cambiar imagen
+            Cambiar (URL)
           </button>
           <button
             disabled={n <= 1}

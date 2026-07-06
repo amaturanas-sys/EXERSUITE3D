@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { elegirYSubir } from "@/lib/imagenes";
 
 /**
- * Lienzo de composición libre estilo Canva: elementos de TEXTO (con fuente,
- * tamaño, color) e IMAGEN (URLs, ideal PNG con transparencia) posicionados
- * a mano, con capas (orden = z), arrastre, escalado por asa, rotación,
- * opacidad, duplicar, copiar/pegar y eliminar.
+ * Lienzo de composición libre estilo Canva.
  *
- * El diseño vive en un espacio fijo de 1200 px de ancho y se escala completo
- * al ancho real del contenedor: lo que compones es EXACTAMENTE lo que se ve
- * en cualquier pantalla.
+ * Modelo de interacción (pensado para táctil):
+ *  - Un toque selecciona; arrastrar MUEVE el elemento (también los textos).
+ *  - El texto se escribe con DOBLE toque o con el botón "Escribir" de la
+ *    barra; al salir (blur) vuelve a ser arrastrable.
+ *  - Asa grande en la esquina para escalar; X/Y/Ancho numéricos en la barra
+ *    para precisión; flechas del teclado mueven 1 px (con Shift, 10 px).
+ *  - Capas por orden de pintado; duplicar/copiar/pegar/eliminar.
  */
 
 export const ANCHO_DISENO = 1200;
@@ -32,7 +34,7 @@ export function nuevoTexto() {
   return {
     id: nuevoId(),
     tipo: "texto",
-    texto: "Doble clic para editar",
+    texto: "Tu texto aquí",
     x: 400,
     y: 160,
     w: 400,
@@ -49,17 +51,18 @@ export function nuevaImagen(url) {
   return { id: nuevoId(), tipo: "imagen", url, x: 450, y: 120, w: 300, rot: 0, opacidad: 1 };
 }
 
-export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} }) {
+export default function Lienzo({ lienzo, editable = false, clave = "", onCambiar = () => {} }) {
   const cont = useRef(null);
   const [escala, setEscala] = useState(1);
   const [selId, setSelId] = useState(null);
+  const [editandoTexto, setEditandoTexto] = useState(null);
   const [portapapeles, setPortapapeles] = useState(null);
-  const drag = useRef(null); // {modo:"mover"|"escalar", id, x0, y0, ex0, ey0, w0}
+  const drag = useRef(null);
 
   const elementos = lienzo.elementos || [];
   const sel = elementos.find((e) => e.id === selId) || null;
 
-  // Escala del lienzo al ancho real.
+  // Escala del lienzo al ancho real del contenedor.
   useEffect(() => {
     const medir = () => {
       if (cont.current) setEscala(cont.current.clientWidth / ANCHO_DISENO);
@@ -77,8 +80,11 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
   // ------------------------------------------------------------ interacción
   const alPulsar = (e, el) => {
     if (!editable) return;
+    if (editandoTexto === el.id) return; // escribiendo: deja trabajar al cursor
     e.stopPropagation();
+    e.preventDefault();
     setSelId(el.id);
+    if (editandoTexto) setEditandoTexto(null);
     drag.current = {
       modo: "mover",
       id: el.id,
@@ -87,42 +93,80 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
       ex0: el.x,
       ey0: el.y,
     };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
   const alPulsarAsa = (e, el) => {
     e.stopPropagation();
+    e.preventDefault();
     drag.current = { modo: "escalar", id: el.id, x0: e.clientX, w0: el.w, tam0: el.tam || 0 };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
-  const alMover = (e) => {
-    const d = drag.current;
-    if (!d) return;
-    const el = elementos.find((x) => x.id === d.id);
-    if (!el) return;
-    if (d.modo === "mover") {
-      cambiarEl(d.id, {
-        x: Math.round(d.ex0 + (e.clientX - d.x0) / escala),
-        y: Math.round(d.ey0 + (e.clientY - d.y0) / escala),
-      });
-    } else {
-      const w = Math.max(24, Math.round(d.w0 + (e.clientX - d.x0) / escala));
-      const props = { w };
-      // El texto escala también su tamaño de letra (proporcional al ancho).
-      if (el.tipo === "texto" && d.tam0) props.tam = Math.max(8, Math.round((d.tam0 * w) / d.w0));
-      cambiarEl(d.id, props);
-    }
-  };
+  // Los movimientos se escuchan en window: el arrastre no se pierde aunque
+  // el puntero salga del lienzo o el elemento se vuelva a renderizar.
+  useEffect(() => {
+    if (!editable) return;
+    const mover = (e) => {
+      const d = drag.current;
+      if (!d) return;
+      e.preventDefault();
+      const els = elementosRef.current;
+      const el = els.find((x) => x.id === d.id);
+      if (!el) return;
+      if (d.modo === "mover") {
+        cambiar(
+          els.map((x) =>
+            x.id === d.id
+              ? {
+                  ...x,
+                  x: Math.round(d.ex0 + (e.clientX - d.x0) / escalaRef.current),
+                  y: Math.round(d.ey0 + (e.clientY - d.y0) / escalaRef.current),
+                }
+              : x,
+          ),
+        );
+      } else {
+        const w = Math.max(24, Math.round(d.w0 + (e.clientX - d.x0) / escalaRef.current));
+        const props = { w };
+        if (el.tipo === "texto" && d.tam0) props.tam = Math.max(8, Math.round((d.tam0 * w) / d.w0));
+        cambiar(els.map((x) => (x.id === d.id ? { ...x, ...props } : x)));
+      }
+    };
+    const soltar = () => (drag.current = null);
+    window.addEventListener("pointermove", mover, { passive: false });
+    window.addEventListener("pointerup", soltar);
+    window.addEventListener("pointercancel", soltar);
+    return () => {
+      window.removeEventListener("pointermove", mover);
+      window.removeEventListener("pointerup", soltar);
+      window.removeEventListener("pointercancel", soltar);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable]);
 
-  const alSoltar = () => (drag.current = null);
+  // Refs vivas para el manejador global (evita listeners obsoletos).
+  const elementosRef = useRef(elementos);
+  elementosRef.current = elementos;
+  const escalaRef = useRef(escala);
+  escalaRef.current = escala;
 
-  // Atajos: Supr borra, Ctrl+C/V copia y pega, Ctrl+D duplica.
+  // Atajos: flechas mueven (Shift ×10), Supr borra, Ctrl+C/V/D.
   useEffect(() => {
     if (!editable) return;
     const alTeclar = (ev) => {
       if (ev.target.isContentEditable || /input|select|textarea/i.test(ev.target.tagName)) return;
       if (!sel) return;
+      const paso = ev.shiftKey ? 10 : 1;
+      const flechas = {
+        ArrowLeft: { x: sel.x - paso },
+        ArrowRight: { x: sel.x + paso },
+        ArrowUp: { y: sel.y - paso },
+        ArrowDown: { y: sel.y + paso },
+      };
+      if (flechas[ev.key]) {
+        ev.preventDefault();
+        cambiarEl(sel.id, flechas[ev.key]);
+        return;
+      }
       if (ev.key === "Delete" || ev.key === "Backspace") eliminar();
       else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "c") copiar();
       else if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "v") pegar();
@@ -141,7 +185,14 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
     cambiar([...elementos, t]);
     setSelId(t.id);
   };
-  const anadirImagen = () => {
+  const anadirImagenSubida = async () => {
+    const url = await elegirYSubir(clave);
+    if (!url) return;
+    const im = nuevaImagen(url);
+    cambiar([...elementos, im]);
+    setSelId(im.id);
+  };
+  const anadirImagenUrl = () => {
     const url = window.prompt("URL de la imagen (PNG con transparencia, JPG…):");
     if (!url) return;
     const im = nuevaImagen(url.trim());
@@ -163,14 +214,12 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
     setSelId(nuevo.id);
   };
   const duplicar = () => {
-    copiar();
-    if (sel) {
-      const nuevo = { ...structuredClone(sel), id: nuevoId(), x: sel.x + 30, y: sel.y + 30 };
-      cambiar([...elementos, nuevo]);
-      setSelId(nuevo.id);
-    }
+    if (!sel) return;
+    setPortapapeles(structuredClone(sel));
+    const nuevo = { ...structuredClone(sel), id: nuevoId(), x: sel.x + 30, y: sel.y + 30 };
+    cambiar([...elementos, nuevo]);
+    setSelId(nuevo.id);
   };
-  /** Capas: el orden del array ES el orden de pintado (última = delante). */
   const moverCapa = (delta) => {
     if (!sel) return;
     const i = elementos.findIndex((e) => e.id === sel.id);
@@ -181,13 +230,23 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
     cambiar(nuevos);
   };
 
+  const num = (valor, props) => (
+    <input
+      type="number"
+      style={{ width: 74 }}
+      value={valor}
+      onChange={(e) => sel && cambiarEl(sel.id, props(Number(e.target.value)))}
+    />
+  );
+
   // ------------------------------------------------------------- plantilla
   return (
     <div>
       {editable && (
         <div className="lienzo-barra">
           <button onClick={anadirTexto}>+ Texto</button>
-          <button onClick={anadirImagen}>+ Imagen</button>
+          <button onClick={anadirImagenSubida}>+ Foto (subir)</button>
+          <button onClick={anadirImagenUrl}>+ URL</button>
           <select
             value={selId ?? ""}
             onChange={(e) => setSelId(e.target.value || null)}
@@ -204,10 +263,16 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
             <>
               <button onClick={() => moverCapa(1)} title="Traer hacia delante">▲ capa</button>
               <button onClick={() => moverCapa(-1)} title="Enviar hacia atrás">▼ capa</button>
+              {sel.tipo === "texto" && (
+                <button onClick={() => setEditandoTexto(sel.id)}>✎ Escribir</button>
+              )}
               <button onClick={duplicar}>Duplicar</button>
               <button onClick={copiar}>Copiar</button>
               <button onClick={pegar} disabled={!portapapeles}>Pegar</button>
               <button onClick={eliminar} style={{ color: "#ef4444" }}>Eliminar</button>
+              <label>X {num(sel.x, (v) => ({ x: v }))}</label>
+              <label>Y {num(sel.y, (v) => ({ y: v }))}</label>
+              <label>Ancho {num(sel.w, (v) => ({ w: Math.max(24, v) }))}</label>
               {sel.tipo === "texto" && (
                 <>
                   <select
@@ -218,13 +283,7 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
                       <option key={nombre} value={css}>{nombre}</option>
                     ))}
                   </select>
-                  <input
-                    type="number"
-                    style={{ width: 64 }}
-                    value={sel.tam}
-                    title="Tamaño (px)"
-                    onChange={(e) => cambiarEl(sel.id, { tam: Number(e.target.value) })}
-                  />
+                  <label>Tam {num(sel.tam, (v) => ({ tam: Math.max(8, v) }))}</label>
                   <input
                     type="color"
                     value={sel.color}
@@ -270,9 +329,12 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
         ref={cont}
         className={`lienzo ${editable ? "editando" : ""}`}
         style={{ height: (lienzo.altura || 420) * escala }}
-        onPointerMove={alMover}
-        onPointerUp={alSoltar}
-        onPointerDown={() => editable && setSelId(null)}
+        onPointerDown={() => {
+          if (editable) {
+            setSelId(null);
+            setEditandoTexto(null);
+          }
+        }}
       >
         <div
           className="lienzo-espacio"
@@ -291,6 +353,13 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
                 zIndex: elementos.indexOf(el) + 1,
               }}
               onPointerDown={(e) => alPulsar(e, el)}
+              onDoubleClick={(e) => {
+                if (editable && el.tipo === "texto") {
+                  e.stopPropagation();
+                  setSelId(el.id);
+                  setEditandoTexto(el.id);
+                }
+              }}
             >
               {el.tipo === "texto" ? (
                 <div
@@ -302,11 +371,18 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
                     lineHeight: 1.2,
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
+                    cursor: editandoTexto === el.id ? "text" : undefined,
                   }}
-                  contentEditable={editable}
+                  contentEditable={editable && editandoTexto === el.id}
                   suppressContentEditableWarning
-                  onDoubleClick={(e) => editable && e.currentTarget.focus()}
-                  onBlur={(e) => editable && cambiarEl(el.id, { texto: e.currentTarget.textContent })}
+                  ref={(nodo) => {
+                    if (nodo && editable && editandoTexto === el.id) nodo.focus();
+                  }}
+                  onBlur={(e) => {
+                    if (!editable) return;
+                    cambiarEl(el.id, { texto: e.currentTarget.textContent });
+                    setEditandoTexto(null);
+                  }}
                 >
                   {el.texto}
                 </div>
@@ -320,6 +396,12 @@ export default function Lienzo({ lienzo, editable = false, onCambiar = () => {} 
           ))}
         </div>
       </div>
+      {editable && (
+        <p className="dim" style={{ fontSize: "0.85rem", marginTop: 6 }}>
+          Un toque selecciona y arrastra · doble toque (o "✎ Escribir") edita el texto ·
+          flechas del teclado mueven 1 px (Shift ×10)
+        </p>
+      )}
     </div>
   );
 }

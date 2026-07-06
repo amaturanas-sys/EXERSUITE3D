@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Landing from "@/components/Landing";
 
 /**
@@ -20,10 +20,10 @@ export default function Admin() {
       .then(setContenido);
   }, []);
 
-  if (!contenido) return <p style={{ padding: 40 }}>Cargando…</p>;
-
-  /** Aplica un cambio por ruta ("hero.titulo", "precio.incluye.2"…). */
-  const editar = (ruta, valor) => {
+  /** Aplica un cambio por ruta ("hero.titulo", "precio.incluye.2"…).
+   *  Identidad estable (useCallback) y SIEMPRE antes de cualquier return:
+   *  el orden de los hooks no puede variar entre renders. */
+  const editar = useCallback((ruta, valor) => {
     setContenido((prev) => {
       const nuevo = structuredClone(prev);
       if (ruta === "galeria.quitar") {
@@ -38,7 +38,9 @@ export default function Admin() {
     });
     setSucio(true);
     setEstado("");
-  };
+  }, []);
+
+  if (!contenido) return <p style={{ padding: 40 }}>Cargando…</p>;
 
   const guardar = async () => {
     setEstado("Guardando…");
@@ -54,11 +56,6 @@ export default function Admin() {
     } else {
       setEstado(`Error: ${data.error}`);
     }
-  };
-
-  const anadirImagen = () => {
-    const url = window.prompt("URL de la imagen (captura de la app):");
-    if (url) editar("galeria.imagenes", [...contenido.galeria.imagenes, url.trim()]);
   };
 
   return (
@@ -91,9 +88,6 @@ export default function Admin() {
             <option key={m}>{m}</option>
           ))}
         </select>
-        <button className="boton secundario" onClick={anadirImagen}>
-          + Imagen a la galería
-        </button>
         <span style={{ flex: 1 }} />
         <input
           type="password"
@@ -106,7 +100,7 @@ export default function Admin() {
         </button>
         {estado && <span className="dim">{estado}</span>}
       </div>
-      <Landing contenido={contenido} editable onEdit={editar} />
+      <Landing contenido={contenido} editable onEdit={editar} clave={clave} />
     </>
   );
 }

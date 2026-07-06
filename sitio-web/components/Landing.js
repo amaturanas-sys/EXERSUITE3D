@@ -3,46 +3,56 @@
 import { useState } from "react";
 import Lienzo from "./Lienzo";
 import Widgets from "./Widgets";
+import { elegirYSubir } from "@/lib/imagenes";
 
 /**
  * La página de presentación. Con `editable` (desde /admin) cada texto se
- * puede pinchar y editar en el sitio (contentEditable), las secciones se
- * muestran/ocultan y las listas admiten añadir/quitar elementos.
- * `onEdit(ruta, valor)` informa cada cambio al editor.
+ * puede pinchar y editar en el sitio, las secciones se muestran/ocultan y
+ * las imágenes se suben desde la galería del dispositivo.
+ *
+ * OJO: T y Seccion viven a nivel de módulo (identidad estable). Definirlos
+ * dentro del render remontaba TODO el subárbol en cada cambio de estado y
+ * rompía el arrastre del lienzo y el foco de los textos.
  */
-export default function Landing({ contenido, editable = false, onEdit = () => {} }) {
+
+function T({ editable, onEdit, ruta, valor, etiqueta: Tag = "span", ...props }) {
+  return editable ? (
+    <Tag
+      {...props}
+      data-editable
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={(e) => onEdit(ruta, e.currentTarget.textContent)}
+    >
+      {valor}
+    </Tag>
+  ) : (
+    <Tag {...props}>{valor}</Tag>
+  );
+}
+
+function Seccion({ editable, onEdit, id, visible, children }) {
+  if (!editable && !visible) return null;
+  return (
+    <section
+      className={`seccion ${editable ? "edit-seccion" : ""}`}
+      style={editable && !visible ? { opacity: 0.35 } : undefined}
+    >
+      {editable && (
+        <div className="edit-controles">
+          <button onClick={() => onEdit(`${id}.visible`, !visible)}>
+            {visible ? "Ocultar sección" : "Mostrar sección"}
+          </button>
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+export default function Landing({ contenido, editable = false, onEdit = () => {}, clave = "" }) {
   const c = contenido;
-
-  const T = ({ ruta, valor, etiqueta: Tag = "span", ...props }) =>
-    editable ? (
-      <Tag
-        {...props}
-        data-editable
-        contentEditable
-        suppressContentEditableWarning
-        onBlur={(e) => onEdit(ruta, e.currentTarget.textContent)}
-      >
-        {valor}
-      </Tag>
-    ) : (
-      <Tag {...props}>{valor}</Tag>
-    );
-
-  const Seccion = ({ id, visible, children }) => {
-    if (!editable && !visible) return null;
-    return (
-      <section className={`seccion ${editable ? "edit-seccion" : ""}`} style={editable && !visible ? { opacity: 0.35 } : undefined}>
-        {editable && (
-          <div className="edit-controles">
-            <button onClick={() => onEdit(`${id}.visible`, !visible)}>
-              {visible ? "Ocultar sección" : "Mostrar sección"}
-            </button>
-          </div>
-        )}
-        {children}
-      </section>
-    );
-  };
+  const ed = { editable, onEdit };
 
   return (
     <main style={{ "--accent": c.colorAcento }}>
@@ -50,11 +60,11 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
       <div className="contenedor">
         <div className="hero">
           <div>
-            <T ruta="hero.titulo" valor={c.hero.titulo} etiqueta="h1" />
-            <T ruta="hero.subtitulo" valor={c.hero.subtitulo} etiqueta="p" />
+            <T {...ed} ruta="hero.titulo" valor={c.hero.titulo} etiqueta="h1" />
+            <T {...ed} ruta="hero.subtitulo" valor={c.hero.subtitulo} etiqueta="p" />
             {editable ? (
               <span className="boton grande">
-                <T ruta="hero.botonTexto" valor={c.hero.botonTexto} />
+                <T {...ed} ruta="hero.botonTexto" valor={c.hero.botonTexto} />
               </span>
             ) : (
               <a className="boton grande" href="#precio">
@@ -68,24 +78,25 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
 
       {/* ----------------------------------------------- lienzo libre (Canva) */}
       {c.lienzo && (
-        <Seccion id="lienzo" visible={c.lienzo.visible}>
+        <Seccion {...ed} id="lienzo" visible={c.lienzo.visible}>
           <Lienzo
             lienzo={c.lienzo}
             editable={editable}
+            clave={clave}
             onCambiar={(elementos) => onEdit("lienzo.elementos", elementos)}
           />
         </Seccion>
       )}
 
       {/* -------------------------------------------------- características */}
-      <Seccion id="caracteristicas" visible={c.caracteristicas.visible}>
+      <Seccion {...ed} id="caracteristicas" visible={c.caracteristicas.visible}>
         <div className="contenedor">
-          <T ruta="caracteristicas.titulo" valor={c.caracteristicas.titulo} etiqueta="h2" />
+          <T {...ed} ruta="caracteristicas.titulo" valor={c.caracteristicas.titulo} etiqueta="h2" />
           <div className="tarjetas">
             {c.caracteristicas.items.map((item, i) => (
               <div className="tarjeta" key={i}>
-                <T ruta={`caracteristicas.items.${i}.titulo`} valor={item.titulo} etiqueta="h3" />
-                <T ruta={`caracteristicas.items.${i}.texto`} valor={item.texto} etiqueta="p" />
+                <T {...ed} ruta={`caracteristicas.items.${i}.titulo`} valor={item.titulo} etiqueta="h3" />
+                <T {...ed} ruta={`caracteristicas.items.${i}.texto`} valor={item.texto} etiqueta="p" />
               </div>
             ))}
           </div>
@@ -93,11 +104,28 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
       </Seccion>
 
       {/* ---------------------------------------------------------- galería */}
-      <Seccion id="galeria" visible={c.galeria.visible}>
+      <Seccion {...ed} id="galeria" visible={c.galeria.visible}>
         <div className="contenedor">
-          <T ruta="galeria.titulo" valor={c.galeria.titulo} etiqueta="h2" />
-          {c.galeria.imagenes.length === 0 && editable && (
-            <p className="dim">Añade URLs de capturas desde la barra del editor.</p>
+          <T {...ed} ruta="galeria.titulo" valor={c.galeria.titulo} etiqueta="h2" />
+          {editable && (
+            <div className="lienzo-barra" style={{ marginBottom: 12 }}>
+              <button
+                onClick={async () => {
+                  const url = await elegirYSubir(clave);
+                  if (url) onEdit("galeria.imagenes", [...c.galeria.imagenes, url]);
+                }}
+              >
+                + Subir foto de la galería
+              </button>
+              <button
+                onClick={() => {
+                  const url = window.prompt("URL de la imagen:");
+                  if (url) onEdit("galeria.imagenes", [...c.galeria.imagenes, url.trim()]);
+                }}
+              >
+                + Imagen por URL
+              </button>
+            </div>
           )}
           <div className="galeria">
             {c.galeria.imagenes.map((url, i) => (
@@ -115,35 +143,36 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
       </Seccion>
 
       {/* ----------------------------------------------------------- precio */}
-      <Seccion id="precio" visible={c.precio.visible}>
+      <Seccion {...ed} id="precio" visible={c.precio.visible}>
         <div className="contenedor" id="precio">
           <div className="precio-caja">
-            <T ruta="precio.titulo" valor={c.precio.titulo} etiqueta="h2" />
+            <T {...ed} ruta="precio.titulo" valor={c.precio.titulo} etiqueta="h2" />
             <div className="precio-monto">
-              <T ruta="precio.montoTexto" valor={c.precio.montoTexto} />
+              <T {...ed} ruta="precio.montoTexto" valor={c.precio.montoTexto} />
             </div>
             <ul>
               {c.precio.incluye.map((linea, i) => (
                 <li key={i}>
-                  <T ruta={`precio.incluye.${i}`} valor={linea} />
+                  <T {...ed} ruta={`precio.incluye.${i}`} valor={linea} />
                 </li>
               ))}
             </ul>
             <BotonComprar deshabilitado={editable} texto={c.hero.botonTexto} />
             <p className="nota">
-              <T ruta="precio.notaPago" valor={c.precio.notaPago} />
+              <T {...ed} ruta="precio.notaPago" valor={c.precio.notaPago} />
             </p>
           </div>
         </div>
       </Seccion>
 
-      {/* ---------------------------------- widgets: carruseles y desplegables */}
+      {/* ---------------------------------- widgets: carruseles, tabs, vídeo */}
       {c.widgets && (editable || (c.widgets.visible && (c.widgets.lista || []).length > 0)) && (
-        <Seccion id="widgets" visible={c.widgets.visible}>
+        <Seccion {...ed} id="widgets" visible={c.widgets.visible}>
           <div className="contenedor">
             <Widgets
               widgets={c.widgets}
               editable={editable}
+              clave={clave}
               onCambiar={(lista) => onEdit("widgets.lista", lista)}
             />
           </div>
@@ -151,10 +180,10 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
       )}
 
       {/* ------------------------------------------------------- newsletter */}
-      <Seccion id="newsletter" visible={c.newsletter.visible}>
+      <Seccion {...ed} id="newsletter" visible={c.newsletter.visible}>
         <div className="contenedor" style={{ textAlign: "center" }}>
-          <T ruta="newsletter.titulo" valor={c.newsletter.titulo} etiqueta="h2" />
-          <T ruta="newsletter.texto" valor={c.newsletter.texto} etiqueta="p" className="dim" />
+          <T {...ed} ruta="newsletter.titulo" valor={c.newsletter.titulo} etiqueta="h2" />
+          <T {...ed} ruta="newsletter.texto" valor={c.newsletter.texto} etiqueta="p" className="dim" />
           <FormNewsletter deshabilitado={editable} botonTexto={c.newsletter.botonTexto} />
         </div>
       </Seccion>
@@ -162,9 +191,9 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
       {/* -------------------------------------------------------------- pie */}
       <footer className="pie">
         <div className="contenedor">
-          <T ruta="pie.texto" valor={c.pie.texto} etiqueta="div" />
+          <T {...ed} ruta="pie.texto" valor={c.pie.texto} etiqueta="div" />
           {(c.pie.contacto || editable) && (
-            <T ruta="pie.contacto" valor={c.pie.contacto || "(contacto)"} etiqueta="div" />
+            <T {...ed} ruta="pie.contacto" valor={c.pie.contacto || "(contacto)"} etiqueta="div" />
           )}
           {!editable && (
             <div style={{ marginTop: 10 }}>
@@ -212,7 +241,7 @@ function BotonComprar({ deshabilitado, texto }) {
 /** Formulario del newsletter con validación en el servidor (sintaxis + MX). */
 function FormNewsletter({ deshabilitado, botonTexto }) {
   const [email, setEmail] = useState("");
-  const [estado, setEstado] = useState(null); // {ok, mensaje}
+  const [estado, setEstado] = useState(null);
   const [cargando, setCargando] = useState(false);
 
   const enviar = async (e) => {
