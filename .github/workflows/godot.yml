@@ -12,6 +12,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag de una release ya publicada a la que adjuntar los binarios (opcional)"
+        required: false
+        default: ""
 
 env:
   # 4.4+: Jolt Physics integrado e interpolación física 3D (anti-stuttering).
@@ -85,6 +90,10 @@ jobs:
     name: Exportar APK Android + EXE Windows
     needs: validar
     runs-on: ubuntu-latest
+    # Adjuntar binarios a la release requiere escritura (igual que build.yml;
+    # sin esto el paso final falla con "Resource not accessible").
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -147,10 +156,11 @@ jobs:
             EXERSUITE3D-godot.apk
             EXERSUITE3D-godot.exe
 
-      - name: Adjuntar a la Release (al publicarla)
-        if: github.event_name == 'release'
+      - name: Adjuntar a la Release (al publicarla o por tag manual)
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event_name == 'release' && github.ref_name || inputs.release_tag }}
           files: |
             EXERSUITE3D-godot.apk
             EXERSUITE3D-godot.exe
