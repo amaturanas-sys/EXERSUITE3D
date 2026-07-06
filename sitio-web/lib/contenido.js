@@ -95,6 +95,10 @@ export const CONTENIDO_DEFECTO = {
     ],
     notaPago: "Pago seguro procesado por Mercado Pago.",
   },
+  widgets: {
+    visible: true,
+    lista: [],
+  },
   newsletter: {
     visible: true,
     titulo: "Novedades del proyecto",

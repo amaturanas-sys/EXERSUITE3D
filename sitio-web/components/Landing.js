@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Lienzo from "./Lienzo";
+import Widgets from "./Widgets";
 
 /**
  * La página de presentación. Con `editable` (desde /admin) cada texto se
@@ -135,6 +136,19 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
           </div>
         </div>
       </Seccion>
+
+      {/* ---------------------------------- widgets: carruseles y desplegables */}
+      {c.widgets && (editable || (c.widgets.visible && (c.widgets.lista || []).length > 0)) && (
+        <Seccion id="widgets" visible={c.widgets.visible}>
+          <div className="contenedor">
+            <Widgets
+              widgets={c.widgets}
+              editable={editable}
+              onCambiar={(lista) => onEdit("widgets.lista", lista)}
+            />
+          </div>
+        </Seccion>
+      )}
 
       {/* ------------------------------------------------------- newsletter */}
       <Seccion id="newsletter" visible={c.newsletter.visible}>
