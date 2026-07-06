@@ -140,6 +140,13 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
           {(c.pie.contacto || editable) && (
             <T ruta="pie.contacto" valor={c.pie.contacto || "(contacto)"} etiqueta="div" />
           )}
+          {!editable && (
+            <div style={{ marginTop: 10 }}>
+              <a href="/admin" className="enlace-editar" title="Editar la página">
+                ✎ editar
+              </a>
+            </div>
+          )}
         </div>
       </footer>
     </main>

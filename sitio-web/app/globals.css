@@ -84,6 +84,10 @@ h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); margin-bottom: 18px; }
 
 /* ---- Pie */
 .pie { padding: 34px 0 44px; color: var(--text-dim); font-size: 0.9rem; text-align: center; }
+.enlace-editar {
+  color: var(--border); font-size: 0.78rem; text-decoration: none; opacity: 0.8;
+}
+.enlace-editar:hover { color: var(--text-dim); opacity: 1; }
 
 /* ---- Página de gracias */
 .gracias { max-width: 640px; margin: 0 auto; text-align: center; padding: 90px 20px; }
