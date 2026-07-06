@@ -66,7 +66,9 @@ export class PerformancePanel {
     const sm = this.editor.sceneManager;
     sm.setMaxPixelRatio(s.maxPixelRatio);
     sm.setShadowsEnabled(s.shadows);
+    sm.setShadowQuality(s.shadowMapSize, s.softShadows);
     sm.setEnvironmentEnabled(s.environment);
+    sm.setSimpleShading(s.simpleShading);
     this.render();
   }
 
@@ -87,10 +89,12 @@ export class PerformancePanel {
     // Ajustes finos.
     const resSel = el("select", { class: "select" });
     for (const [label, val] of [
-      ["Muy baja (×1)", 1],
-      ["Baja (×1.25)", 1.25],
-      ["Media (×1.5)", 1.5],
-      ["Alta (×2)", 2],
+      ["Mínima (×0.5)", 0.5],
+      ["Muy baja (×0.75)", 0.75],
+      ["Baja (×1)", 1],
+      ["Media (×1.25)", 1.25],
+      ["Alta (×1.5)", 1.5],
+      ["Máxima (×2)", 2],
     ] as [string, number][]) {
       const o = el("option", { value: String(val) }, [label]);
       if (Math.abs(s.maxPixelRatio - val) < 0.001) o.selected = true;
@@ -121,6 +125,9 @@ export class PerformancePanel {
       toggle("Reflejos de entorno", s.environment, (v) =>
         this.apply({ ...s, preset: "custom", environment: v }),
       ),
+      toggle("Sombras suaves", s.softShadows, (v) =>
+        this.apply({ ...s, preset: "custom", softShadows: v }),
+      ),
       toggle(
         "Antialias (suavizado)",
         s.antialias,
@@ -129,6 +136,12 @@ export class PerformancePanel {
           this.render();
         },
         "se aplica al abrir un proyecto",
+      ),
+      toggle(
+        "Sombreado simple (sin PBR)",
+        s.simpleShading,
+        (v) => this.apply({ ...s, preset: "custom", simpleShading: v }),
+        "los materiales cambian al reabrir el proyecto",
       ),
       el("div", { class: "perf-hint" }, [
         "Consejo: en equipos o tablets con poca potencia, usa el preset " +

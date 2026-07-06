@@ -44,6 +44,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Cambiado
 
+- **Rendimiento web, segunda ronda**: la **escala de render** admite ×0.75 y
+  ×0.5 (el preset **Bajo** pasa a ×0.75 — la palanca que usan las apps
+  nativas de tablet); **sombreado simple** opcional (Lambert sin tone
+  mapping ACES, una fracción del coste PBR por píxel, activo en Bajo);
+  sombras del preset **Medio** a mapa de 1024 con filtro duro (las suaves
+  PCF quedan para Alto, con conmutador propio); y la física se limita a
+  **2 sub-pasos por frame** para eliminar la espiral de tirones cuando el
+  equipo no llega a 60 fps (cámara ligeramente lenta en vez de saltos).
 - **Rendimiento web (app v0.1.6)**: **render bajo demanda** — fuera de la
   simulación solo se repinta con interacción (puntero/teclado/rueda),
   movimiento de cámara o cambios de escena, con latido de seguridad cada

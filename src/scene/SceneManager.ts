@@ -41,15 +41,19 @@ export class SceneManager {
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, perf.maxPixelRatio));
     this.renderer.shadowMap.enabled = perf.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = perf.softShadows ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    // Con sombreado simple se omite el tone mapping ACES (caro por píxel).
+    this.renderer.toneMapping = perf.simpleShading
+      ? THREE.NoToneMapping
+      : THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
 
     this.scene.add(this.content);
     if (perf.environment) this.setupEnvironment();
     this.setupLights();
     this.key.castShadow = perf.shadows;
+    this.key.shadow.mapSize.set(perf.shadowMapSize, perf.shadowMapSize);
     this.grid = this.setupGrid();
     this.setupGround();
 
@@ -74,6 +78,30 @@ export class SceneManager {
     this.renderer.shadowMap.enabled = on;
     this.key.castShadow = on;
     this.renderer.shadowMap.needsUpdate = true;
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((mm) => (mm.needsUpdate = true));
+      else if (m) m.needsUpdate = true;
+    });
+  }
+
+  /** Calidad de la sombra principal: tamaño del mapa y filtro suave/duro. */
+  setShadowQuality(mapSize: number, soft: boolean): void {
+    this.key.shadow.mapSize.set(mapSize, mapSize);
+    this.key.shadow.map?.dispose();
+    this.key.shadow.map = null;
+    this.renderer.shadowMap.type = soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    this.renderer.shadowMap.needsUpdate = true;
+    this.scene.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) m.forEach((mm) => (mm.needsUpdate = true));
+      else if (m) m.needsUpdate = true;
+    });
+  }
+
+  /** Tone mapping según el modo de sombreado (los materiales, al reabrir). */
+  setSimpleShading(on: boolean): void {
+    this.renderer.toneMapping = on ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
     this.scene.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
       if (Array.isArray(m)) m.forEach((mm) => (mm.needsUpdate = true));

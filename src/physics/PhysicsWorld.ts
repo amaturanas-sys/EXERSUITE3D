@@ -501,8 +501,10 @@ export class PhysicsWorld {
    */
   step(dtSeconds: number = PhysicsWorld.FIXED_DT): void {
     if (!this.world) return;
-    // Limita el dt (pestana en segundo plano, hipos) para no espiralar.
-    this.accumulator = Math.min(this.accumulator + dtSeconds, 4 * PhysicsWorld.FIXED_DT);
+    // Limita el dt (pestana en segundo plano, hipos) para no espiralar: como
+    // mucho 2 pasos por frame — si el equipo no llega, la simulacion va a
+    // camara ligeramente lenta pero SIN tirones (espiral de la muerte).
+    this.accumulator = Math.min(this.accumulator + dtSeconds, 2 * PhysicsWorld.FIXED_DT);
     while (this.accumulator >= PhysicsWorld.FIXED_DT) {
       this.accumulator -= PhysicsWorld.FIXED_DT;
       this.applyDrag(PhysicsWorld.FIXED_DT);

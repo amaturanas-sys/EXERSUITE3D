@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import { getPerf } from "../core/performance";
+
 // Libreria de materiales PBR de EXERSUITE3D.
 // Presets alineados con los materiales usados en los disenos de referencia
 // hechos en SketchUp (Steel Polished, Carpaint Black, Plastic Orange/White,
@@ -44,9 +46,21 @@ export function getMaterialPreset(id: string): MaterialPreset {
   return BY_ID.get(id) ?? BY_ID.get("generico")!;
 }
 
-/** Construye un MeshStandardMaterial a partir de un preset. */
+/**
+ * Construye el material de un preset. Con "sombreado simple" (preset Bajo)
+ * devuelve un MeshLambertMaterial —una fracción del coste por píxel del PBR
+ * en GPUs de tablet— tipado como estándar: el resto del código solo toca
+ * color/opacity/metalness/roughness, propiedades inocuas sobre Lambert.
+ */
 export function buildMaterial(id: string): THREE.MeshStandardMaterial {
   const p = getMaterialPreset(id);
+  if (getPerf().simpleShading) {
+    return new THREE.MeshLambertMaterial({
+      color: p.color,
+      transparent: p.opacity < 1,
+      opacity: p.opacity,
+    }) as unknown as THREE.MeshStandardMaterial;
+  }
   return new THREE.MeshStandardMaterial({
     color: p.color,
     metalness: p.metalness,

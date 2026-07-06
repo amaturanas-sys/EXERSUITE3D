@@ -7,20 +7,51 @@ export type PerfPreset = "alto" | "medio" | "bajo" | "custom";
 
 export interface PerfSettings {
   preset: PerfPreset;
-  /** Límite de densidad de píxeles (menor = más rápido). */
+  /** Límite de densidad de píxeles (menor = más rápido; admite <1). */
   maxPixelRatio: number;
   shadows: boolean;
+  /** Tamaño del mapa de sombra de la luz principal (1024 = mitad de coste). */
+  shadowMapSize: number;
+  /** Sombras suaves (PCF soft): más caras por píxel que las duras. */
+  softShadows: boolean;
   environment: boolean;
   /** Antialias del renderer: solo se aplica al abrir un proyecto. */
   antialias: boolean;
+  /** Sombreado simple (Lambert, sin tone mapping): mucho más barato por
+   *  píxel que el PBR. Los materiales se aplican al reabrir el proyecto. */
+  simpleShading: boolean;
 }
 
 const KEY = "exersuite.perf.v1";
 
 export const PERF_PRESETS: Record<Exclude<PerfPreset, "custom">, Omit<PerfSettings, "preset">> = {
-  alto: { maxPixelRatio: 2, shadows: true, environment: true, antialias: true },
-  medio: { maxPixelRatio: 1.25, shadows: true, environment: true, antialias: false },
-  bajo: { maxPixelRatio: 1, shadows: false, environment: false, antialias: false },
+  alto: {
+    maxPixelRatio: 2,
+    shadows: true,
+    shadowMapSize: 2048,
+    softShadows: true,
+    environment: true,
+    antialias: true,
+    simpleShading: false,
+  },
+  medio: {
+    maxPixelRatio: 1.25,
+    shadows: true,
+    shadowMapSize: 1024,
+    softShadows: false,
+    environment: true,
+    antialias: false,
+    simpleShading: false,
+  },
+  bajo: {
+    maxPixelRatio: 0.75,
+    shadows: false,
+    shadowMapSize: 1024,
+    softShadows: false,
+    environment: false,
+    antialias: false,
+    simpleShading: true,
+  },
 };
 
 function defaults(): PerfSettings {
