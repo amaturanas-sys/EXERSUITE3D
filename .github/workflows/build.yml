@@ -33,6 +33,12 @@ jobs:
 
       - name: Configurar Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Solo lo necesario para compilar el APK: el paquete "tools" por
+          # defecto arrastra el EMULADOR (~700 MB), que no usamos y cuya
+          # descarga corrupta tumbó el run 69. Gradle instala build-tools y
+          # platforms por sí mismo (las licencias ya quedan aceptadas).
+          packages: "platform-tools"
 
       - name: Instalar dependencias
         run: npm ci
