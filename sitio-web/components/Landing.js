@@ -142,8 +142,9 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
           )}
           {!editable && (
             <div style={{ marginTop: 10 }}>
-              <a href="/admin" className="enlace-editar" title="Editar la página">
-                ✎ editar
+              {/* Acceso discreto al editor, camuflado de número de build. */}
+              <a href="/admin" className="enlace-editar">
+                build 2b76c-r18
               </a>
             </div>
           )}
