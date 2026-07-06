@@ -1,0 +1,61 @@
+/**
+ * Integración con Mercado Pago (la plataforma de cobro de tu cuenta de
+ * Mercado Libre) por API REST directa: crear la preferencia de pago
+ * (Checkout Pro) y verificar el estado de un pago.
+ * Necesita MP_ACCESS_TOKEN (credenciales de producción del panel
+ * developers.mercadopago.com de tu cuenta de vendedor).
+ */
+const API = "https://api.mercadopago.com";
+
+function token() {
+  const t = process.env.MP_ACCESS_TOKEN;
+  if (!t) throw new Error("Falta MP_ACCESS_TOKEN");
+  return t;
+}
+
+/** Crea la preferencia de Checkout Pro y devuelve la URL de pago. */
+export async function crearPreferencia({ titulo, monto, moneda, urlBase }) {
+  const res = await fetch(`${API}/checkout/preferences`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      items: [
+        {
+          title: titulo,
+          quantity: 1,
+          currency_id: moneda,
+          unit_price: Number(monto),
+        },
+      ],
+      back_urls: {
+        success: `${urlBase}/gracias`,
+        pending: `${urlBase}/gracias`,
+        failure: `${urlBase}/?pago=fallido`,
+      },
+      auto_return: "approved",
+      statement_descriptor: "EXERSUITE3D",
+    }),
+  });
+  if (!res.ok) throw new Error(`Mercado Pago respondió ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.init_point;
+}
+
+/** Consulta un pago por id y devuelve su estado y monto. */
+export async function consultarPago(paymentId) {
+  const res = await fetch(`${API}/v1/payments/${encodeURIComponent(paymentId)}`, {
+    headers: { Authorization: `Bearer ${token()}` },
+  });
+  if (!res.ok) return null;
+  const p = await res.json();
+  return {
+    id: String(p.id),
+    estado: p.status, // approved | pending | rejected…
+    monto: p.transaction_amount,
+    moneda: p.currency_id,
+    email: p.payer?.email ?? "",
+  };
+}
