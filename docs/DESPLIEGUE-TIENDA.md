@@ -74,6 +74,19 @@ Visitante → Página (Vercel) → botón Comprar
 
 > Con cada release nueva, sube los binarios actualizados a `bin/` del Space.
 
+## Paso 4b — Webhook de Mercado Pago (recomendado)
+
+1. Panel de developers → tu aplicación → **Webhooks** → modo Productivo.
+2. URL: `https://TU-SITIO/api/webhook/mp` · Eventos: **Pagos**.
+3. Copia la **clave secreta** que muestra el panel y añádela en Vercel como
+   `MP_WEBHOOK_SECRET` → Redeploy. Cada notificación llega firmada
+   (x-signature) y el servidor rechaza imitaciones.
+4. Botón "Simular notificación" del panel → debe responder 200.
+
+Con esto, los pagos aprobados quedan registrados en Redis
+(`exersuite:compras`) aunque el comprador cierre el navegador sin volver a
+/gracias.
+
 ## Paso 5 — Probar el circuito completo
 
 1. En Mercado Pago developers activa el **modo de prueba** y usa las
