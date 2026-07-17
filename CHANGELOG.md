@@ -5,6 +5,33 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Corregido
+
+- **Biblioteca: "Sustituir por modelo…" no dejaba elegir archivos en
+  Android**: el selector del sistema filtra por tipo MIME y no conoce el de
+  los `.glb`/`.gltf` (los mostraba bloqueados). En la app nativa los
+  selectores se abren ahora sin filtro y el tipo se valida por extensión al
+  elegir — aplica también a abrir proyectos `.json` e importar modelos.
+- **Exportar/Importar ZIP de la biblioteca no funcionaba en el APK**: el
+  WebView de Android ignora las descargas por ancla con blobs. Todas las
+  descargas de la app (ZIP de biblioteca, guardar proyecto `.json`,
+  exportar `.glb`) usan ahora un mecanismo compatible: en Android se escribe
+  el archivo y se abre la hoja de compartir del sistema (guardar en
+  Archivos, Drive, enviar…); en web y Windows, descarga normal.
+- **Godot: los diálogos de archivo usan el selector NATIVO del sistema**
+  (`use_native_dialog`): en Android abre el selector con acceso real al
+  almacenamiento — sustituir modelos, abrir/guardar proyectos y el ZIP de la
+  biblioteca ya acceden a los directorios del dispositivo.
+
+### Añadido
+
+- **Botón "📖 Instructivo" en el inicio**: abre una ventana con la guía de
+  uso completa — primeros pasos, construcción, edición de precisión (ejes
+  1/2/3, área, copiar/pegar, deshacer), física y conexiones, maniquí,
+  simulación, biblioteca y rendimiento.
+
 ## [0.1.8] — 2026-07-06
 
 ### Añadido

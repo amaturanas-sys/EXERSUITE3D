@@ -437,6 +437,7 @@ func _labeled(text: String, control: Control) -> void:
 func _file_dialog(fm: int) -> FileDialog:
 	var dlg := FileDialog.new()
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
 	dlg.file_mode = fm
 	dlg.filters = PackedStringArray(["*.json ; Proyecto EXERSUITE3D"])
 	add_child(dlg)

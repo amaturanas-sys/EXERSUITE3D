@@ -1,4 +1,6 @@
 import type { ProjectData } from "../core/project";
+import { mostrarInstructivo } from "./Instructivo";
+import { acceptSeguro } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { clear, el } from "./dom";
 
@@ -30,7 +32,7 @@ export class Landing {
   constructor(private actions: LandingActions) {
     const base = import.meta.env.BASE_URL;
 
-    this.fileInput = el("input", { type: "file", accept: ".json,application/json" });
+    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".json,application/json") });
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => {
       const f = this.fileInput.files?.[0];
@@ -74,7 +76,11 @@ export class Landing {
     };
     builderBtn.addEventListener("click", () => setMode("builder"));
     simBtn.addEventListener("click", () => setMode("simulator"));
-    const modeRow = el("div", { class: "land-mode-row" }, [builderBtn, simBtn]);
+    const instrBtn = el("button", { class: "land-mode land-instr", title: "Instrucciones de uso" }, [
+      "📖 Instructivo",
+    ]);
+    instrBtn.addEventListener("click", () => mostrarInstructivo());
+    const modeRow = el("div", { class: "land-mode-row" }, [builderBtn, simBtn, instrBtn]);
 
     const actionsRow = el("div", { class: "land-actions" }, [newBtn, openBtn, libBtn]);
     if (this.actions.hasAutosave) {

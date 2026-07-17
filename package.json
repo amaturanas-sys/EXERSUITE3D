@@ -18,6 +18,8 @@
     "tauri:build": "tauri build"
   },
   "dependencies": {
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/share": "^6.0.4",
     "@dimforge/rapier3d-compat": "^0.19.3",
     "fflate": "^0.8.3",
     "three": "^0.169.0"

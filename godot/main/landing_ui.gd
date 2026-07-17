@@ -193,6 +193,7 @@ func _load_dedication() -> String:
 func _pick_file(kind: String) -> void:
 	var dlg := FileDialog.new()
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
 	dlg.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dlg.filters = PackedStringArray(["*.json ; Proyecto EXERSUITE3D"])
 	root_control.add_child(dlg)

@@ -257,6 +257,7 @@ func _assign() -> void:
 		return
 	var dlg := FileDialog.new()
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
 	dlg.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dlg.filters = PackedStringArray(["*.glb ; Modelo 3D glTF binario"])
 	add_child(dlg)
@@ -287,6 +288,7 @@ func _reset() -> void:
 func _export_zip() -> void:
 	var dlg := FileDialog.new()
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
 	dlg.file_mode = FileDialog.FILE_MODE_SAVE_FILE
 	dlg.filters = PackedStringArray(["*.zip ; Biblioteca EXERSUITE3D"])
 	add_child(dlg)
@@ -314,6 +316,7 @@ func _export_zip() -> void:
 func _import_zip() -> void:
 	var dlg := FileDialog.new()
 	dlg.access = FileDialog.ACCESS_FILESYSTEM
+	dlg.use_native_dialog = true
 	dlg.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dlg.filters = PackedStringArray(["*.zip ; Biblioteca EXERSUITE3D"])
 	add_child(dlg)

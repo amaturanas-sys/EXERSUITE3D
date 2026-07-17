@@ -1,4 +1,5 @@
 import "./ui/styles.css";
+import { descargarArchivo } from "./core/descargas";
 import * as THREE from "three";
 import { Editor } from "./core/Editor";
 import { ComponentPalette } from "./ui/ComponentPalette";
@@ -161,13 +162,7 @@ async function goHome(): Promise<void> {
         const project = editor.serialize();
         const clean = (name.trim() || "exersuite3d-proyecto");
         const file = clean.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
-        const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${file}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        await descargarArchivo(`${file}.json`, JSON.stringify(project, null, 2), "application/json");
         try {
           await addRecent(clean, project, Date.now());
         } catch {

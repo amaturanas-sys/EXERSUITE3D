@@ -1,4 +1,5 @@
 import type { Editor, TransformMode } from "../core/Editor";
+import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
 import { el } from "./dom";
 
@@ -207,7 +208,7 @@ export class Toolbar {
     ]);
     const fileInput = el("input", {
       type: "file",
-      accept: ".json,application/json",
+      accept: acceptSeguro(".json,application/json"),
     });
     fileInput.style.display = "none";
     fileInput.addEventListener("change", () => this.onLoadFile(fileInput));
@@ -231,7 +232,7 @@ export class Toolbar {
     const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
       "Importar",
     ]);
-    const importInput = el("input", { type: "file", accept: ".glb,.gltf,.obj" });
+    const importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj") });
     importInput.style.display = "none";
     importInput.addEventListener("change", () => this.onImportFile(importInput));
     importBtn.addEventListener("click", () => importInput.click());
@@ -289,13 +290,7 @@ export class Toolbar {
     const fileName = name.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
 
     const project = this.editor.serialize();
-    const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${fileName}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    void descargarArchivo(`${fileName}.json`, JSON.stringify(project, null, 2), "application/json");
     this.editor.markClean();
     void addRecent(name, project, Date.now()).catch(() => {});
   }
@@ -317,13 +312,7 @@ export class Toolbar {
   private async exportGLB(): Promise<void> {
     try {
       const buffer = await this.editor.exportGLB();
-      const blob = new Blob([buffer], { type: "model/gltf-binary" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "exersuite3d-prototipo.glb";
-      a.click();
-      URL.revokeObjectURL(url);
+      await descargarArchivo("exersuite3d-prototipo.glb", new Uint8Array(buffer), "model/gltf-binary");
     } catch (err) {
       console.error("No se pudo exportar:", err);
     }

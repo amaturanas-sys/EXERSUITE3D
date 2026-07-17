@@ -11,6 +11,7 @@ import { componentModels, type ImportEntry, type ImportStatus } from "../core/co
 import { figureSegments } from "../core/figureSegments";
 import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
+import { acceptSeguro, descargarArchivo } from "../core/descargas";
 
 interface LibItem {
   id: string;
@@ -97,7 +98,7 @@ export class LibraryView {
     this.previewBox = el("div", { class: "lib-preview" });
     this.detailEl = el("div", { class: "lib-detail-info" });
 
-    this.fileInput = el("input", { type: "file", accept: ".glb,.gltf,.obj" });
+    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj") });
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => void this.onFilePicked());
 
@@ -106,7 +107,7 @@ export class LibraryView {
 
     const exportBtn = el("button", { class: "tool", title: "Descargar todos los modelos en un ZIP" }, ["Exportar ZIP"]);
     exportBtn.addEventListener("click", () => void this.exportLibrary());
-    const zipInput = el("input", { type: "file", accept: ".zip,application/zip" });
+    const zipInput = el("input", { type: "file", accept: acceptSeguro(".zip,application/zip") });
     zipInput.style.display = "none";
     zipInput.addEventListener("change", () => void this.onImportZip(zipInput));
     const importBtn = el("button", { class: "tool", title: "Cargar un ZIP de modelos y fusionar" }, ["Importar ZIP"]);
@@ -267,13 +268,7 @@ export class LibraryView {
   private async exportLibrary(): Promise<void> {
     try {
       const zip = await componentModels.exportZip();
-      const blob = new Blob([zip as unknown as BlobPart], { type: "application/zip" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "exersuite3d-biblioteca.zip";
-      a.click();
-      URL.revokeObjectURL(url);
+      await descargarArchivo("exersuite3d-biblioteca.zip", zip, "application/zip");
     } catch (err) {
       console.error("No se pudo exportar la biblioteca:", err);
       window.alert("No se pudo exportar la biblioteca.");
@@ -284,6 +279,10 @@ export class LibraryView {
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
+    if (!/\.zip$/i.test(file.name)) {
+      window.alert("Elige un archivo .zip (la biblioteca exportada).");
+      return;
+    }
     let entries: ImportEntry[];
     try {
       entries = await componentModels.analyzeImport(await file.arrayBuffer());
