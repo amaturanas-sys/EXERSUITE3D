@@ -232,7 +232,7 @@ export class Toolbar {
     const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
       "Importar",
     ]);
-    const importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj") });
+    const importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
     importInput.style.display = "none";
     importInput.addEventListener("change", () => this.onImportFile(importInput));
     importBtn.addEventListener("click", () => importInput.click());

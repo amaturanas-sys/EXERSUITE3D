@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 /**
@@ -26,6 +27,12 @@ function gltfLoader(): GLTFLoader {
 
 /** Carga un modelo desde sus bytes y devuelve su raíz. */
 export async function loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
+  if (ext === "stl") {
+    // STL: geometría pura (sin materiales); parse directo desde los bytes.
+    const grupo = new THREE.Group();
+    grupo.add(new THREE.Mesh(new STLLoader().parse(bytes)));
+    return grupo;
+  }
   const url = URL.createObjectURL(new Blob([bytes]));
   try {
     if (ext === "obj") return await new OBJLoader().loadAsync(url);
@@ -77,7 +84,10 @@ export function bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometr
   const size = new THREE.Vector3();
   merged.boundingBox!.getSize(size);
   const maxDim = Math.max(size.x, size.y, size.z);
-  const scale = maxDim > 0 && maxDim < 5 ? 100 : 1;
+  // Heurística de unidades → cm: <5 se asume METROS (×100); >600 se asume
+  // MILÍMETROS (×0.1) — ninguna pieza de gimnasio supera los 6 m. Así los
+  // STL de CAD (mm) entran con sus dimensiones físicas reales.
+  const scale = maxDim > 0 && maxDim < 5 ? 100 : maxDim > 600 ? 0.1 : 1;
   if (scale !== 1) merged.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale));
 
   merged.computeBoundingBox();

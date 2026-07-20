@@ -98,7 +98,7 @@ export class LibraryView {
     this.previewBox = el("div", { class: "lib-preview" });
     this.detailEl = el("div", { class: "lib-detail-info" });
 
-    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj") });
+    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => void this.onFilePicked());
 
