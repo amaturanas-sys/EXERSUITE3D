@@ -10,6 +10,7 @@ export class MeasurementHUD {
   private simulating = false;
   private axisLock: "x" | "y" | "z" | null = null;
   private measure: string | null = null;
+  private fuera = 0;
 
   constructor(editor: Editor) {
     this.root = el("div", { id: "hud" }, ["1 celda = 10 cm · ejes en cm"]);
@@ -32,6 +33,10 @@ export class MeasurementHUD {
       this.measure = text;
       this.update();
     });
+    editor.bus.on("workspaceBounds", ({ fuera }) => {
+      this.fuera = fuera;
+      this.update();
+    });
   }
 
   private update(): void {
@@ -39,9 +44,13 @@ export class MeasurementHUD {
       this.root.textContent = "● Simulando fisica (gravedad 9.81 m/s²) — Espacio para detener";
       return;
     }
+    const aviso =
+      this.fuera > 0
+        ? `⛔ ${this.fuera} pieza${this.fuera > 1 ? "s" : ""} fuera del área  ·  `
+        : "";
     const eje = this.axisLock
-      ? `EJE ${this.axisLock.toUpperCase()} BLOQUEADO (0 libera)  ·  `
-      : "";
+      ? `${aviso}EJE ${this.axisLock.toUpperCase()} BLOQUEADO (0 libera)  ·  `
+      : aviso;
     if (this.measure) {
       this.root.textContent = eje + this.measure;
       return;

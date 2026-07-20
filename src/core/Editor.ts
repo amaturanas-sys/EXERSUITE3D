@@ -35,7 +35,7 @@ import {
 } from "../objects/poseLibrary";
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
-import { PROJECT_VERSION, type ProjectData } from "./project";
+import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
 import type { ComponentCategory, PrimitiveParams } from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
@@ -105,6 +105,10 @@ export type EditorEvents = {
   axisLockChanged: { axis: "x" | "y" | "z" | null };
   /** Contador de desplazamiento en vivo durante un arrastre/trazado (cm/°). */
   dragMeasure: { text: string | null };
+  /** Cambió el espacio de trabajo (asistente de Nuevo, v0.2.0). */
+  workspaceChanged: { workspace: WorkspaceData | null };
+  /** Nº de piezas fuera de los límites del canvas completo (marcadas en rojo). */
+  workspaceBounds: { fuera: number };
 };
 
 interface SavedTransform {
@@ -193,6 +197,15 @@ export class Editor {
     starts: Map<string, THREE.Vector3>;
   } | null = null;
   private gizmoDragStart: { pos: THREE.Vector3; quat: THREE.Quaternion } | null = null;
+  // ---- Espacio de trabajo (asistente de Nuevo, v0.2.0)
+  /** Configuración del espacio de trabajo del proyecto (o null = libre). */
+  private workspace: WorkspaceData | null = null;
+  /** Visual no serializable del área de suelo operable (canvas completo). */
+  private workspaceVisual: THREE.Group | null = null;
+  /** Piezas actualmente fuera de los límites del espacio (tinte rojo). */
+  private fueraIds = new Set<string>();
+  /** Transformaciones previas al arrastre para cancelar colocaciones fuera. */
+  private boundsRestore: Map<string, SavedTransform> | null = null;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private applyingHistory = false;
   private nextGroupId = 1;
@@ -241,9 +254,11 @@ export class Editor {
           pos: this.gizmo.object.position.clone(),
           quat: this.gizmo.object.quaternion.clone(),
         };
+        this.captureBoundsRestore();
       } else {
         this.gizmoDragStart = null;
         this.bus.emit("dragMeasure", { text: null });
+        this.enforceWorkspaceBounds();
       }
       if (!e.value) this.snap.hideIndicator();
     });
@@ -370,6 +385,8 @@ export class Editor {
   /** Programa un autoguardado diferido (debounce) tras el último cambio. */
   private scheduleAutosave(): void {
     if (this.autosaveSuspended || this.simulating) return;
+    // Revalida los límites del espacio de trabajo con cada cambio de escena.
+    this.checkWorkspaceBounds();
     // Todo cambio que autoguarda es también un cambio sin guardar a archivo
     // (posar el maniquí, tensar cuerdas, mover grupos… no emiten evento).
     this.dirty = true;
@@ -775,6 +792,284 @@ export class Editor {
     this.bus.emit("objectTransformed", { object: this.selected });
   }
 
+  // ------------------------------------------- espacio de trabajo (v0.2.0)
+  getWorkspace(): WorkspaceData | null {
+    return this.workspace;
+  }
+
+  /**
+   * Define el espacio de trabajo del proyecto (asistente de Nuevo). Con canvas
+   * "completo" dibuja el área de suelo operable y, con `crearPiezas`, genera el
+   * techo (capa oscura copia del suelo, con altura y pendiente propias) y las
+   * paredes como piezas ancladas REALES: sirven de superficie de anclaje para
+   * articulaciones, cables y cuerdas, y participan en la simulación.
+   */
+  setWorkspace(ws: WorkspaceData | null, opts: { crearPiezas?: boolean } = {}): void {
+    this.workspace = ws
+      ? {
+          ...ws,
+          techo: ws.techo ? { ...ws.techo } : null,
+          paredes: ws.paredes ? [...ws.paredes] : [],
+        }
+      : null;
+    this.rebuildWorkspaceVisual();
+    if (this.workspace?.canvas === "completo" && opts.crearPiezas) {
+      this.crearPiezasEntorno(this.workspace);
+    }
+    this.checkWorkspaceBounds();
+    this.bus.emit("workspaceChanged", { workspace: this.workspace });
+    this.requestRender();
+  }
+
+  /** Contorno + relleno translúcido del suelo operable (no se serializa). */
+  private rebuildWorkspaceVisual(): void {
+    if (this.workspaceVisual) {
+      this.sceneManager.scene.remove(this.workspaceVisual);
+      this.workspaceVisual.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose?.();
+        (m.material as THREE.Material | undefined)?.dispose?.();
+      });
+      this.workspaceVisual = null;
+    }
+    const ws = this.workspace;
+    if (!ws || ws.canvas !== "completo" || !ws.ancho || !ws.fondo) return;
+    const hx = ws.ancho / 2;
+    const hz = ws.fondo / 2;
+    const g = new THREE.Group();
+    g.name = "workspace-area";
+    const pts = [
+      new THREE.Vector3(-hx, 0.4, -hz),
+      new THREE.Vector3(hx, 0.4, -hz),
+      new THREE.Vector3(hx, 0.4, hz),
+      new THREE.Vector3(-hx, 0.4, hz),
+    ];
+    g.add(
+      new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0x12808c }),
+      ),
+    );
+    const fill = new THREE.Mesh(
+      new THREE.PlaneGeometry(ws.ancho, ws.fondo),
+      new THREE.MeshBasicMaterial({
+        color: 0x12808c,
+        transparent: true,
+        opacity: 0.07,
+        depthWrite: false,
+      }),
+    );
+    fill.rotation.x = -Math.PI / 2;
+    fill.position.y = 0.15;
+    g.add(fill);
+    this.sceneManager.scene.add(g);
+    this.workspaceVisual = g;
+  }
+
+  /** Crea techo y paredes como piezas ancladas reales del canvas completo. */
+  private crearPiezasEntorno(ws: WorkspaceData): void {
+    const ancho = ws.ancho ?? 600;
+    const fondo = ws.fondo ?? 400;
+    const GROSOR = 6;
+    const pieza = (
+      name: string,
+      w: number,
+      h: number,
+      d: number,
+      pos: THREE.Vector3,
+    ): SceneObject => {
+      const o = this.addComponent("prim-box", pos);
+      o.name = name;
+      o.mesh.name = name;
+      o.params = { kind: "box", width: w, height: h, depth: d };
+      o.physics = { massKg: 0, fixed: true };
+      o.rebuildGeometry();
+      o.setMaterial("acero-negro");
+      o.mesh.position.copy(pos);
+      return o;
+    };
+
+    const t = ws.techo;
+    if (t) {
+      const dh = t.alturaB - t.alturaA;
+      const L = t.eje === "x" ? ancho : fondo;
+      const largo = Math.hypot(L, dh);
+      const techo = pieza(
+        "Techo",
+        t.eje === "x" ? largo : ancho,
+        GROSOR,
+        t.eje === "x" ? fondo : largo,
+        new THREE.Vector3(0, (t.alturaA + t.alturaB) / 2 + GROSOR / 2, 0),
+      );
+      const ang = Math.atan2(dh, L);
+      // La pendiente sube hacia el extremo B (+X o +Z según el eje elegido).
+      if (t.eje === "x") techo.mesh.rotation.z = ang;
+      else techo.mesh.rotation.x = -ang;
+    }
+
+    const alturaPared = (lado: "N" | "S" | "E" | "O"): number => {
+      if (!t) return 250;
+      const min = Math.min(t.alturaA, t.alturaB);
+      if (t.eje === "z") return lado === "N" ? t.alturaB : lado === "S" ? t.alturaA : min;
+      return lado === "E" ? t.alturaB : lado === "O" ? t.alturaA : min;
+    };
+    for (const lado of ws.paredes ?? []) {
+      const h = alturaPared(lado);
+      if (lado === "N" || lado === "S") {
+        const z = (fondo / 2 - GROSOR / 2) * (lado === "N" ? 1 : -1);
+        pieza(
+          `Pared ${lado === "N" ? "Norte" : "Sur"}`,
+          ancho,
+          h,
+          GROSOR,
+          new THREE.Vector3(0, h / 2, z),
+        );
+      } else {
+        const x = (ancho / 2 - GROSOR / 2) * (lado === "E" ? 1 : -1);
+        pieza(
+          `Pared ${lado === "E" ? "Este" : "Oeste"}`,
+          GROSOR,
+          h,
+          fondo,
+          new THREE.Vector3(x, h / 2, 0),
+        );
+      }
+    }
+    this.select(null);
+  }
+
+  /** Techo y paredes generados: forman el espacio, no se validan contra él. */
+  private esPiezaEntorno(o: SceneObject): boolean {
+    return o.name === "Techo" || o.name.startsWith("Pared ");
+  }
+
+  /** Altura del plano del techo (con pendiente) en un punto del suelo. */
+  private techoYAt(x: number, z: number): number {
+    const ws = this.workspace;
+    if (!ws?.techo || !ws.ancho || !ws.fondo) return Infinity;
+    const t = ws.techo;
+    const L = t.eje === "x" ? ws.ancho : ws.fondo;
+    const c = t.eje === "x" ? x : z;
+    const f = THREE.MathUtils.clamp((c + L / 2) / L, 0, 1);
+    return t.alturaA + (t.alturaB - t.alturaA) * f;
+  }
+
+  /** Marca en rojo las piezas que sobresalen del área/techo del canvas completo. */
+  private checkWorkspaceBounds(): void {
+    const ws = this.workspace;
+    const activo = !!ws && ws.canvas === "completo" && !!ws.ancho && !!ws.fondo;
+    const antes = this.fueraIds.size;
+    const nuevas = new Set<string>();
+    if (activo) {
+      const hx = ws.ancho! / 2;
+      const hz = ws.fondo! / 2;
+      const EPS = 0.5;
+      const box = new THREE.Box3();
+      for (const o of this.objects.values()) {
+        if (this.esPiezaEntorno(o)) continue;
+        box.setFromObject(o.mesh);
+        if (box.isEmpty()) continue;
+        let fuera =
+          box.min.x < -hx - EPS ||
+          box.max.x > hx + EPS ||
+          box.min.z < -hz - EPS ||
+          box.max.z > hz + EPS ||
+          box.min.y < -EPS;
+        if (!fuera && ws.techo) {
+          const tope = Math.min(
+            this.techoYAt(box.min.x, box.min.z),
+            this.techoYAt(box.max.x, box.max.z),
+          );
+          fuera = box.max.y > tope + EPS;
+        }
+        if (fuera) nuevas.add(o.id);
+      }
+    }
+    const cambiadas = new Set<string>();
+    for (const id of this.fueraIds) if (!nuevas.has(id)) cambiadas.add(id);
+    for (const id of nuevas) if (!this.fueraIds.has(id)) cambiadas.add(id);
+    this.fueraIds = nuevas;
+    for (const id of cambiadas) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      const enGrupo = this.selectedGroupId
+        ? (this.groups.get(this.selectedGroupId)?.ids.includes(id) ?? false)
+        : false;
+      this.setHighlight(o, this.multiSel.has(id) || enGrupo);
+    }
+    if (antes !== nuevas.size || cambiadas.size > 0) {
+      this.bus.emit("workspaceBounds", { fuera: nuevas.size });
+      this.requestRender();
+    }
+  }
+
+  /** Ids de las piezas afectadas por el arrastre actual del gizmo. */
+  private gizmoAffectedIds(): string[] {
+    if (!this.gizmo.object) return [];
+    if (this.gizmo.object === this.groupProxy) {
+      if (this.multiSel.size > 0) return [...this.multiSel];
+      if (this.selectedGroupId) return [...(this.groups.get(this.selectedGroupId)?.ids ?? [])];
+      return [];
+    }
+    if (this.selected && this.gizmo.object === this.selected.mesh) return [this.selected.id];
+    return [];
+  }
+
+  /** Antes de un arrastre del gizmo: guarda dónde estaba cada pieza afectada. */
+  private captureBoundsRestore(): void {
+    this.boundsRestore = null;
+    if (this.workspace?.canvas !== "completo") return;
+    const map = new Map<string, SavedTransform>();
+    for (const id of this.gizmoAffectedIds()) {
+      const o = this.objects.get(id);
+      if (o && !this.esPiezaEntorno(o)) {
+        map.set(id, {
+          position: o.mesh.position.clone(),
+          quaternion: o.mesh.quaternion.clone(),
+          scale: o.mesh.scale.clone(),
+        });
+      }
+    }
+    if (map.size > 0) this.boundsRestore = map;
+  }
+
+  /**
+   * Al soltar un arrastre: si alguna pieza movida quedó fuera del espacio
+   * editable, la colocación se cancela y todo vuelve a su posición anterior.
+   */
+  private enforceWorkspaceBounds(): void {
+    const restore = this.boundsRestore;
+    this.boundsRestore = null;
+    if (!restore) return;
+    this.checkWorkspaceBounds();
+    const invadidas = [...restore.keys()].some((id) => this.fueraIds.has(id));
+    if (!invadidas) return;
+    for (const [id, s] of restore) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      o.mesh.position.copy(s.position);
+      o.mesh.quaternion.copy(s.quaternion);
+      o.mesh.scale.copy(s.scale);
+      this.bus.emit("objectTransformed", { object: o });
+    }
+    // Recoloca el proxy del grupo/multiselección para no arrastrar deltas falsos.
+    if (this.gizmo.object === this.groupProxy) {
+      if (this.multiSel.size > 0) this.refreshMultiGizmo();
+      else if (this.selectedGroupId) this.selectGroup(this.selectedGroupId);
+    }
+    this.checkWorkspaceBounds();
+    this.avisoFuera();
+    this.requestRender();
+  }
+
+  /** Aviso temporal en el HUD al cancelar una colocación fuera del área. */
+  private avisoFuera(): void {
+    this.bus.emit("dragMeasure", {
+      text: "⛔ Fuera del área de trabajo: colocación cancelada",
+    });
+    window.setTimeout(() => this.bus.emit("dragMeasure", { text: null }), 1800);
+  }
+
   // ---------------------------------------------------- guardar / cargar
   /** Serializa toda la escena a un objeto JSON. */
   serialize(): ProjectData {
@@ -782,6 +1077,7 @@ export class Editor {
     const q4 = (q: THREE.Quaternion): [number, number, number, number] => [q.x, q.y, q.z, q.w];
     return {
       version: PROJECT_VERSION,
+      workspace: this.workspace ?? undefined,
       objects: this.listObjects().filter((o) => !o.imported).map((o) => {
         // Durante la simulación se serializa el estado de DISEÑO (guardado al
         // arrancar la física), no las posiciones simuladas del momento.
@@ -920,6 +1216,7 @@ export class Editor {
     this.objGroup.clear();
     this.multiSel.clear();
     this.removeHumanFigure();
+    this.setWorkspace(null);
     this.refreshJointHelpers();
     this.bus.emit("objectsChanged", { objects: [] });
     this.bus.emit("jointsChanged", { joints: [] });
@@ -966,6 +1263,8 @@ export class Editor {
     }
     this.unsubModels?.();
     this.unsubSegments?.();
+    this.workspace = null;
+    this.rebuildWorkspaceVisual();
     this.gizmo.detach();
     // En three r0.169 TransformControls.dispose() puede fallar (el helper visual
     // está separado del control); no debe abortar la limpieza.
@@ -986,6 +1285,8 @@ export class Editor {
 
   private async loadProjectInner(data: ProjectData): Promise<void> {
     this.clearScene();
+    // Las piezas de entorno (techo/paredes) ya vienen en data.objects.
+    this.setWorkspace(data.workspace ?? null);
     const idMap = new Map<string, string>();
 
     for (const od of data.objects) {
@@ -1423,7 +1724,10 @@ export class Editor {
 
   private setHighlight(obj: SceneObject, on: boolean): void {
     const m = obj.mesh.material as THREE.MeshStandardMaterial;
-    if (m && m.emissive) m.emissive.setHex(on ? 0x14406a : 0x000000);
+    if (!m || !m.emissive) return;
+    // El rojo de error (fuera del espacio editable) prevalece sobre la selección.
+    if (this.fueraIds.has(obj.id)) m.emissive.setHex(0x9c1c1c);
+    else m.emissive.setHex(on ? 0x14406a : 0x000000);
   }
 
   private clearMultiSel(): void {
@@ -3097,10 +3401,26 @@ export class Editor {
       return;
     }
     if (this.dragMove) {
+      const starts = this.dragMove.starts;
       this.dragMove = null;
       this.orbit.enabled = true;
-      this.refreshMultiGizmo();
       this.bus.emit("dragMeasure", { text: null });
+      // Canvas completo: si el arrastre dejó piezas fuera del espacio editable,
+      // la colocación se cancela y vuelven a su posición anterior.
+      if (this.workspace?.canvas === "completo") {
+        this.checkWorkspaceBounds();
+        if ([...starts.keys()].some((id) => this.fueraIds.has(id))) {
+          for (const [id, p] of starts) {
+            const o = this.objects.get(id);
+            if (!o || this.esPiezaEntorno(o)) continue;
+            o.mesh.position.copy(p);
+            this.bus.emit("objectTransformed", { object: o });
+          }
+          this.checkWorkspaceBounds();
+          this.avisoFuera();
+        }
+      }
+      this.refreshMultiGizmo();
       this.scheduleAutosave();
       return;
     }

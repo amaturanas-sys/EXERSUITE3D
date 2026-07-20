@@ -1240,3 +1240,43 @@ body.simulating .dock-toggle {
   .land-nav-item { flex: 1 1 40%; text-align: center; }
   .land-nav-item::after { content: ""; }
 }
+
+/* ---- Asistente de Nuevo proyecto (v0.2.0) ---- */
+.wizard-overlay { z-index: 70; } /* por encima de la Landing (50) */
+.wizard-panel { max-width: 640px; width: min(94vw, 640px); }
+.wizard-paso { color: var(--text-dim, #9aa1ad); font-size: 0.92rem; margin: 4px 0 12px; }
+.wizard-cuerpo { display: flex; flex-direction: column; gap: 14px; }
+.wizard-cartas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.wizard-carta {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: var(--panel2, #262a33); border: 1px solid var(--border, #333845);
+  border-radius: 14px; padding: 20px 16px; cursor: pointer; text-align: center;
+  color: var(--text, #e6e8ec); font: inherit; transition: border-color 0.15s, transform 0.15s;
+}
+.wizard-carta:hover { border-color: #12808c; transform: translateY(-2px); }
+.wizard-icono { font-size: 2.2rem; }
+.wizard-nombre { font-weight: 700; font-size: 1.05rem; }
+.wizard-detalle { color: var(--text-dim, #9aa1ad); font-size: 0.86rem; line-height: 1.35; }
+.wizard-atras { align-self: flex-start; }
+.wizard-form { display: flex; flex-direction: column; gap: 10px; }
+.wizard-fila { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.wizard-fila input, .wizard-fila select {
+  background: var(--panel, #1e2128); color: var(--text, #e6e8ec);
+  border: 1px solid var(--border, #333845); border-radius: 6px; padding: 6px 8px; width: 150px;
+}
+.wizard-grupo {
+  border: 1px solid var(--border, #333845); border-radius: 10px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.wizard-grupo-titulo, .wizard-check-titulo { font-weight: 600; }
+.wizard-sub { display: flex; flex-direction: column; gap: 8px; padding-left: 8px; }
+.wizard-sub.wizard-off { opacity: 0.35; pointer-events: none; }
+.wizard-check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.wizard-paredes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.wizard-acciones { display: flex; justify-content: space-between; gap: 12px; }
+.wizard-crear { background: #12808c; border-color: #12808c; color: #fff; font-weight: 700; }
+.palette-modo {
+  color: var(--text-dim, #9aa1ad); font-size: 0.78rem; padding: 4px 6px;
+  border: 1px dashed var(--border, #333845); border-radius: 6px; margin-bottom: 6px;
+}
+@media (max-width: 560px) { .wizard-cartas { grid-template-columns: 1fr; } }

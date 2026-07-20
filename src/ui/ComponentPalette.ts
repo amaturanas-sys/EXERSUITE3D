@@ -10,6 +10,14 @@ import { componentModels } from "../core/componentModels";
 import { configureBeam, configureTube } from "./lineToolDialog";
 import { clear, el } from "./dom";
 
+/** Categorías visibles en el modo de trabajo Sencillo (asistente de Nuevo). */
+const CATS_SENCILLO: ComponentDefinition["category"][] = [
+  "primitiva",
+  "estructural",
+  "peso",
+  "ergonomico",
+];
+
 /**
  * Panel izquierdo: bandeja de "piezas disponibles" (estilo set de Lego). Cada
  * pieza se coloca en el diseño con el modelo 3D que le haya asignado la
@@ -19,6 +27,7 @@ export class ComponentPalette {
   readonly root: HTMLElement;
   private body: HTMLElement;
   private unsub: () => void;
+  private unsubWorkspace: () => void;
 
   constructor(private editor: Editor) {
     this.body = el("div", { class: "panel-body" });
@@ -30,10 +39,15 @@ export class ComponentPalette {
     ]);
     // Refresca los indicadores cuando cambia el repertorio de la biblioteca.
     this.unsub = componentModels.onChanged(() => this.renderGroups(this.body));
+    // El modo de trabajo (sencillo/profesional) filtra las categorías visibles.
+    this.unsubWorkspace = editor.bus.on("workspaceChanged", () =>
+      this.renderGroups(this.body),
+    );
   }
 
   dispose(): void {
     this.unsub();
+    this.unsubWorkspace();
   }
 
   /** Cabecera de marca EXERSUITE3D en la parte superior de la paleta. */
@@ -53,7 +67,13 @@ export class ComponentPalette {
 
   private renderGroups(body: HTMLElement): void {
     clear(body);
-    const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY];
+    const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
+    const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(
+      (d) => !sencillo || CATS_SENCILLO.includes(d.category),
+    );
+    if (sencillo) {
+      body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
+    }
     const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);

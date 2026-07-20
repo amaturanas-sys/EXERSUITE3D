@@ -16,7 +16,8 @@ import { confirmUnsavedChanges } from "./ui/confirmDialog";
 import { componentModels } from "./core/componentModels";
 import { figureSegments } from "./core/figureSegments";
 import { addRecent } from "./core/recentStore";
-import type { ProjectData } from "./core/project";
+import { elegirWorkspace } from "./ui/WizardNuevo";
+import type { ProjectData, WorkspaceData } from "./core/project";
 
 const app = document.getElementById("app")!;
 
@@ -120,10 +121,15 @@ function ensureModels(): Promise<void> {
   );
 }
 
-async function startNew(): Promise<void> {
+async function startNew(ws?: WorkspaceData): Promise<void> {
   const ed = bootEditor();
   await ensureModels();
   ed.clearScene();
+  if (ws) {
+    ed.setWorkspace(ws, { crearPiezas: true });
+    // El canvas completo se aprecia mejor entrando en perspectiva isométrica.
+    if (ws.canvas === "completo") ed.setViewPreset("isometrica");
+  }
   ed.select(null);
   ed.markClean();
 }
@@ -224,8 +230,13 @@ function showLanding(): void {
   landing = new Landing({
     hasAutosave,
     onNew: () => {
-      landing?.hide();
-      void startNew();
+      // Asistente de proyecto nuevo: modo de trabajo + espacio (v0.2.0). Si el
+      // usuario cancela, permanece en la Home.
+      void elegirWorkspace().then((ws) => {
+        if (!ws) return;
+        landing?.hide();
+        void startNew(ws);
+      });
     },
     onOpenFile: async (file) => {
       const sim = landing?.mode === "simulator";

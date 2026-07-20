@@ -11,6 +11,7 @@ const SECCIONES: [string, string[]][] = [
     [
       "En el inicio elige Builder (diseñar) o Simulador (solo correr la física de un proyecto).",
       "Crea un proyecto nuevo, abre un archivo .json o continúa una sesión reciente.",
+      "Al crear un proyecto el asistente pregunta el modo (Sencillo: piezas básicas · Profesional: todas las herramientas) y el espacio: canvas Libre (suelo infinito) o Completo (área con medidas reales, techo oscuro con pendiente y paredes de anclaje; lo que sobresale se marca en rojo y su colocación se cancela).",
       "La escena se autoguarda en el dispositivo cada pocos segundos mientras trabajas.",
     ],
   ],

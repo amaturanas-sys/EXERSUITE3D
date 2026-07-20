@@ -63,6 +63,21 @@ export interface HumanData {
   hands: { side: "L" | "R"; objectId: string; local: Vec3 }[];
 }
 
+/** Espacio de trabajo del proyecto (asistente de Nuevo, v0.2.0). */
+export interface WorkspaceData {
+  /** Canvas: libre (suelo infinito) o completo (área definida con límites). */
+  canvas: "libre" | "completo";
+  /** Modo de trabajo: sencillo (herramientas básicas) o profesional (todo). */
+  modo: "sencillo" | "profesional";
+  /** Dimensiones del área (cm), solo canvas completo. */
+  ancho?: number;
+  fondo?: number;
+  /** Techo: alturas en los extremos A y B (pendiente) a lo largo de un eje. */
+  techo?: { alturaA: number; alturaB: number; eje: "x" | "z" } | null;
+  /** Paredes creadas en los bordes (N=+Z, S=-Z, E=+X, O=-X). */
+  paredes?: ("N" | "S" | "E" | "O")[];
+}
+
 export interface ProjectData {
   version: number;
   objects: ObjData[];
@@ -71,4 +86,5 @@ export interface ProjectData {
   ropes?: RopeData[];
   groups: GroupData[];
   human: HumanData;
+  workspace?: WorkspaceData;
 }
