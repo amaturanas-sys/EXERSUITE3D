@@ -1294,3 +1294,65 @@ body.simulating .dock-toggle {
   display: flex; align-items: center; gap: 8px; cursor: pointer;
   font-size: 0.9rem; padding: 2px 0;
 }
+
+/* ---- Menús desplegables de la barra (F3 v0.2.0) ---- */
+.tool-menu {
+  display: none;
+  position: fixed;
+  z-index: 80; /* sobre la barra (10) y los paneles */
+  min-width: 220px;
+  background: rgba(30, 33, 40, 0.98);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  padding: 6px;
+  backdrop-filter: blur(10px);
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+}
+.tool-menu.open {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menu-item {
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-item:hover {
+  background: var(--panel-2);
+}
+.menu-item:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.menu-item.checked {
+  color: var(--accent);
+  font-weight: 600;
+}
+.menu-item.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+.menu-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 6px;
+}
+.menu-header {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 6px 10px 2px;
+}
+.menu-btn {
+  font-weight: 600;
+}

@@ -6,7 +6,7 @@ import { SceneManager } from "../scene/SceneManager";
 import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
-import { getDefinition } from "../objects/componentLibrary";
+import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
@@ -116,7 +116,12 @@ export type EditorEvents = {
   workspaceBounds: { fuera: number };
   /** Herramienta "agarrar maniquí" activada/desactivada. */
   grabFigureChanged: { on: boolean };
+  /** Modos de vista del Builder: color, aristas (menú Ver, v0.2.0). */
+  viewModesChanged: { color: ColorMode; edges: boolean };
 };
+
+/** Modo de color del visor: materiales reales, por categoría o neutro. */
+export type ColorMode = "material" | "categoria" | "neutro";
 
 interface SavedTransform {
   position: THREE.Vector3;
@@ -213,6 +218,10 @@ export class Editor {
   private fueraIds = new Set<string>();
   /** Transformaciones previas al arrastre para cancelar colocaciones fuera. */
   private boundsRestore: Map<string, SavedTransform> | null = null;
+  // ---- Modos de vista del Builder (menú Ver, v0.2.0)
+  private colorMode: ColorMode = "material";
+  private edgesOn = false;
+  private viewModesTimer: ReturnType<typeof setTimeout> | null = null;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private applyingHistory = false;
   private nextGroupId = 1;
@@ -412,6 +421,8 @@ export class Editor {
     if (this.autosaveSuspended || this.simulating) return;
     // Revalida los límites del espacio de trabajo con cada cambio de escena.
     this.checkWorkspaceBounds();
+    // Y reaplica los modos de vista (color/aristas) si están activos.
+    this.scheduleViewModes();
     // Todo cambio que autoguarda es también un cambio sin guardar a archivo
     // (posar el maniquí, tensar cuerdas, mover grupos… no emiten evento).
     this.dirty = true;
@@ -1279,14 +1290,26 @@ export class Editor {
 
   /** Exporta el prototipo (las piezas) como GLB binario para otras apps. */
   exportGLB(): Promise<ArrayBuffer> {
+    // Las aristas del modo Ver son ayudas visuales: fuera del GLB.
+    const teniaAristas = this.edgesOn;
+    if (teniaAristas) {
+      this.edgesOn = false;
+      this.applyViewModes();
+    }
     const exporter = new GLTFExporter();
-    return new Promise((resolve, reject) => {
+    return new Promise<ArrayBuffer>((resolve, reject) => {
       exporter.parse(
         this.sceneManager.content,
         (result) => resolve(result as ArrayBuffer),
         (err) => reject(err),
         { binary: true },
       );
+    }).finally(() => {
+      if (teniaAristas) {
+        this.edgesOn = true;
+        this.applyViewModes();
+        this.requestRender();
+      }
     });
   }
 
@@ -1391,6 +1414,7 @@ export class Editor {
   dispose(): void {
     this.running = false;
     if (this.simulating) this.stopSimulation();
+    if (this.viewModesTimer !== null) clearTimeout(this.viewModesTimer);
     if (this.autosaveTimer !== null) clearTimeout(this.autosaveTimer);
     if (this.autosaveInterval !== null) clearInterval(this.autosaveInterval);
     window.removeEventListener("beforeunload", this.onBeforeUnload);
@@ -3437,6 +3461,95 @@ export class Editor {
     cam.position.copy(center).add(dirs[view].clone().normalize().multiplyScalar(dist));
     this.orbit.target.copy(center);
     this.orbit.update();
+  }
+
+  // ------------------------------------- modos de vista (menú Ver, v0.2.0)
+
+  getColorMode(): ColorMode {
+    return this.colorMode;
+  }
+
+  /** Color del visor: materiales reales, por categoría funcional o neutro. */
+  setColorMode(mode: ColorMode): void {
+    this.colorMode = mode;
+    this.applyViewModes();
+    this.bus.emit("viewModesChanged", { color: this.colorMode, edges: this.edgesOn });
+    this.requestRender();
+  }
+
+  isEdges(): boolean {
+    return this.edgesOn;
+  }
+
+  /** Muestra/oculta las aristas (contorno de cada pieza) sobre el sombreado. */
+  setEdges(on: boolean): void {
+    this.edgesOn = on;
+    this.applyViewModes();
+    this.bus.emit("viewModesChanged", { color: this.colorMode, edges: this.edgesOn });
+    this.requestRender();
+  }
+
+  isGridVisible(): boolean {
+    return this.sceneManager.isGridVisible();
+  }
+
+  setGridVisible(on: boolean): void {
+    this.sceneManager.setGridVisible(on);
+    this.requestRender();
+  }
+
+  /** Reaplica color de vista y aristas a todas las piezas. */
+  private applyViewModes(): void {
+    const tinte = (mesh: THREE.Mesh, catColor: number | null): void => {
+      const m = mesh.material as THREE.MeshStandardMaterial;
+      if (m && m.color && catColor !== null) m.color.setHex(catColor);
+    };
+    for (const o of this.objects.values()) {
+      // Color.
+      if (this.colorMode === "material") {
+        o.setMaterial(o.materialId); // restaura el preset PBR real
+      } else {
+        const c =
+          this.colorMode === "categoria"
+            ? (CATEGORY_COLORS[o.category] ?? 0x94a3b8)
+            : 0xb8bcc4;
+        tinte(o.mesh, c);
+        for (const child of o.mesh.children) {
+          const cm = child as THREE.Mesh;
+          if (cm.isMesh && !cm.userData.edgesHelper) tinte(cm, c);
+        }
+      }
+      // Aristas.
+      const previas = o.mesh.children.filter((ch) => ch.userData.edgesHelper);
+      for (const ch of previas) {
+        o.mesh.remove(ch);
+        const lm = ch as THREE.LineSegments;
+        lm.geometry.dispose();
+        (lm.material as THREE.Material).dispose();
+      }
+      if (this.edgesOn) {
+        const linea = new THREE.LineSegments(
+          new THREE.EdgesGeometry(o.mesh.geometry, 30),
+          new THREE.LineBasicMaterial({ color: 0x14161b }),
+        );
+        linea.userData.edgesHelper = true;
+        o.mesh.add(linea);
+      }
+    }
+  }
+
+  /**
+   * Reaplica los modos de vista tras cualquier mutación de escena (nuevas
+   * piezas, cambios de material o geometría), con un pequeño debounce.
+   */
+  private scheduleViewModes(): void {
+    if (this.colorMode === "material" && !this.edgesOn) return;
+    if (this.viewModesTimer !== null) clearTimeout(this.viewModesTimer);
+    this.viewModesTimer = setTimeout(() => {
+      this.viewModesTimer = null;
+      this.applyViewModes();
+      this.requestRender();
+    }, 150);
   }
 
   /** Zoom por botones (además de la rueda): factor <1 acerca, >1 aleja. */

@@ -1,141 +1,80 @@
-import type { Editor, TransformMode } from "../core/Editor";
+import type { ColorMode, Editor, TransformMode } from "../core/Editor";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
-import { el } from "./dom";
+import { clear, el } from "./dom";
 
-/** Barra superior: modos de transformacion y acciones de escena. */
+/**
+ * Barra superior con menús agrupados (esquema v0.2.0): Archivo, Edición,
+ * Selección, Ver y Ejes. Los menús se despliegan bajo su botón (popover fijo,
+ * fuera del scroll de la barra) y muestran el estado vivo al abrirse.
+ */
 export class Toolbar {
   readonly root: HTMLElement;
-  private modeButtons = new Map<TransformMode, HTMLButtonElement>();
-  private gridOn = true;
-  private space: "local" | "world" = "local";
+  private menuEl: HTMLElement;
+  private menuOwner: HTMLButtonElement | null = null;
   private lastSaveName = "exersuite3d-proyecto";
+
+  // Estado vivo reflejado en los menús al abrirlos.
+  private mode: TransformMode = "translate";
+  private space: "local" | "world" = "local";
+  private canUndo = false;
+  private canRedo = false;
+  private multi = 0;
+  private groupSelected = false;
+  private axisLock: "x" | "y" | "z" | null = null;
+
+  private fileInput: HTMLInputElement;
+  private importInput: HTMLInputElement;
 
   constructor(
     private editor: Editor,
     private hooks: { onHome?: () => void; onPerformance?: () => void } = {},
   ) {
-    const mode = (m: TransformMode, label: string, key: string) => {
-      const b = el("button", { class: "tool", title: `${label} (${key})` }, [label]);
-      b.addEventListener("click", () => this.editor.setMode(m));
-      this.modeButtons.set(m, b);
-      return b;
-    };
+    this.menuEl = el("div", { class: "tool-menu" });
+    document.body.append(this.menuEl);
 
-    const spaceBtn = el("button", { class: "tool", title: "Espacio local/global" }, [
-      "Local",
-    ]);
-    spaceBtn.addEventListener("click", () => {
-      this.space = this.space === "local" ? "world" : "local";
-      this.editor.setGizmoSpace(this.space);
-      spaceBtn.textContent = this.space === "local" ? "Local" : "Global";
+    // Entradas de archivo ocultas (cargar proyecto / importar modelo).
+    this.fileInput = el("input", {
+      type: "file",
+      accept: acceptSeguro(".json,application/json"),
     });
+    this.fileInput.style.display = "none";
+    this.fileInput.addEventListener("change", () => void this.onLoadFile(this.fileInput));
+    this.importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
+    this.importInput.style.display = "none";
+    this.importInput.addEventListener("change", () => void this.onImportFile(this.importInput));
 
-    const gridBtn = el("button", { class: "tool active", title: "Mostrar/ocultar grid" }, [
-      "Grid",
+    // ---- Botones siempre visibles
+    const homeBtn = el("button", { class: "tool", title: "Volver a la pantalla de inicio" }, [
+      "⌂ Home",
     ]);
-    gridBtn.addEventListener("click", () => {
-      this.gridOn = !this.gridOn;
-      this.editor.sceneManager.setGridVisible(this.gridOn);
-      gridBtn.classList.toggle("active", this.gridOn);
-    });
+    homeBtn.addEventListener("click", () => this.hooks.onHome?.());
 
-    const snapBtn = el("button", { class: "tool active", title: "Encaje magnetico en puntos de anclaje" }, [
-      "Imán",
+    const simBtn = el("button", { class: "tool sim", title: "Simular fisica (Espacio)" }, [
+      "▶ Simular",
     ]);
-    snapBtn.classList.toggle("active", this.editor.isSnapEnabled());
-    snapBtn.addEventListener("click", () =>
-      this.editor.setSnapEnabled(!this.editor.isSnapEnabled()),
-    );
-    this.editor.bus.on("snapChanged", ({ enabled }) =>
-      snapBtn.classList.toggle("active", enabled),
-    );
+    simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
 
-    // Herramienta de arrastre directo de piezas.
-    const dragToolBtn = el("button", {
-      class: "tool",
-      title: "Arrastrar piezas directamente (con eje 1/2/3 bloqueado, solo por ese eje)",
-    }, ["Arrastrar"]);
-    dragToolBtn.addEventListener("click", () =>
-      this.editor.setDragTool(!this.editor.isDragTool()),
-    );
-    this.editor.bus.on("dragToolChanged", ({ on }) =>
-      dragToolBtn.classList.toggle("active", on),
-    );
+    // ---- Menús desplegables (esquema: Edición / Selección / Ver / Ejes)
+    const archivoBtn = this.menuBtn("Archivo", (m) => this.buildArchivo(m));
+    const edicionBtn = this.menuBtn("Edición", (m) => this.buildEdicion(m));
+    const seleccionBtn = this.menuBtn("Selección", (m) => this.buildSeleccion(m));
+    const verBtn = this.menuBtn("Ver", (m) => this.buildVer(m));
+    const ejesBtn = this.menuBtn("Ejes", (m) => this.buildEjes(m));
 
-    // Eje de trabajo bloqueado: 1=X, 2=Y, 3=Z (también botones para táctil).
-    const axisBtns = (["x", "y", "z"] as const).map((axis, i) => {
-      const b = el("button", {
-        class: "tool",
-        title: `Bloquear el eje ${axis.toUpperCase()} (tecla ${i + 1}; repetir libera)`,
-      }, [axis.toUpperCase()]);
-      b.addEventListener("click", () => this.editor.setAxisLock(axis));
-      return b;
-    });
+    // El botón Ejes muestra el eje bloqueado como distintivo.
     this.editor.bus.on("axisLockChanged", ({ axis }) => {
-      (["x", "y", "z"] as const).forEach((a, i) =>
-        axisBtns[i].classList.toggle("active", axis === a),
-      );
+      this.axisLock = axis;
+      ejesBtn.textContent = axis ? `Ejes: ${axis.toUpperCase()} ▾` : "Ejes ▾";
+      ejesBtn.classList.toggle("active", axis !== null);
+      if (this.menuOwner === ejesBtn) this.cerrarMenu();
     });
 
-    // Herramienta de selección de área (recuadro tipo Paint).
-    const areaBtn = el("button", {
-      class: "tool",
-      title: "Selección de área: arrastra un recuadro (Ctrl+clic añade a la selección)",
-    }, ["Área"]);
-    areaBtn.addEventListener("click", () =>
-      this.editor.setAreaSelect(!this.editor.isAreaSelect()),
-    );
-    this.editor.bus.on("areaSelectChanged", ({ on }) => areaBtn.classList.toggle("active", on));
-
-    // Deshacer / rehacer.
-    const undoBtn = el("button", { class: "tool", title: "Deshacer (Ctrl+Z)" }, ["↺"]);
-    undoBtn.disabled = true;
-    undoBtn.addEventListener("click", () => void this.editor.undo());
-    const redoBtn = el("button", { class: "tool", title: "Rehacer (Ctrl+Y)" }, ["↻"]);
-    redoBtn.disabled = true;
-    redoBtn.addEventListener("click", () => void this.editor.redo());
-    this.editor.bus.on("historyChanged", ({ canUndo, canRedo }) => {
-      undoBtn.disabled = !canUndo;
-      redoBtn.disabled = !canRedo;
-    });
-
-    const copyBtn = el("button", { class: "tool", title: "Copiar selección (Ctrl+C)" }, [
-      "Copiar",
-    ]);
-    copyBtn.addEventListener("click", () => this.editor.copySelection());
-    const pasteBtn = el("button", { class: "tool", title: "Pegar (Ctrl+V)" }, ["Pegar"]);
-    pasteBtn.addEventListener("click", () => this.editor.pasteClipboard());
-
-    const dupBtn = el("button", { class: "tool", title: "Duplicar (Ctrl+D)" }, ["Duplicar"]);
-    dupBtn.addEventListener("click", () => this.editor.duplicateSelected());
-
-    const delBtn = el("button", { class: "tool danger", title: "Eliminar (Supr)" }, [
-      "Eliminar",
-    ]);
-    delBtn.addEventListener("click", () => this.editor.deleteSelection());
-
-    // Agrupacion de piezas.
-    const groupBtn = el("button", { class: "tool", title: "Agrupar piezas (Shift+clic para multiseleccionar)" }, [
-      "Agrupar",
-    ]);
-    groupBtn.disabled = true;
-    groupBtn.addEventListener("click", () => this.editor.createGroup());
-    const ungroupBtn = el("button", { class: "tool", title: "Desagrupar" }, ["Desagrupar"]);
-    ungroupBtn.disabled = true;
-    ungroupBtn.addEventListener("click", () => this.editor.ungroupSelected());
-    this.editor.bus.on("groupingChanged", ({ multi, groupSelected }) => {
-      groupBtn.disabled = multi < 2;
-      groupBtn.textContent = multi >= 2 ? `Agrupar (${multi})` : "Agrupar";
-      ungroupBtn.disabled = !groupSelected;
-    });
-
-    // Figura humana de referencia (escala/ergonomia).
+    // ---- Figura humana de referencia (acceso directo frecuente)
     const figBtn = el("button", { class: "tool", title: "Mostrar/ocultar figura humana" }, [
       "Figura",
     ]);
     figBtn.addEventListener("click", () => this.editor.toggleHumanFigure());
-
     const figHeight = el("input", {
       class: "tool-input",
       type: "number",
@@ -155,38 +94,6 @@ export class Toolbar {
       figHeight.value = String(heightCm);
     });
 
-    const simBtn = el("button", { class: "tool sim", title: "Simular fisica (Espacio)" }, [
-      "▶ Simular",
-    ]);
-    simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
-
-    // Grupos de edición: durante la simulación se OCULTAN (clase edit-only)
-    // para dejar solo las herramientas de simulación.
-    const editGroups = [
-      el("div", { class: "tool-group edit-only" }, [
-        mode("translate", "Mover", "W"),
-        mode("rotate", "Rotar", "E"),
-        mode("scale", "Escalar", "S"),
-      ]),
-      el("div", { class: "tool-group edit-only" }, [spaceBtn, gridBtn, snapBtn]),
-      el("div", { class: "tool-group edit-only" }, [areaBtn, dragToolBtn, ...axisBtns]),
-      el("div", { class: "tool-group edit-only" }, [undoBtn, redoBtn]),
-      el("div", { class: "tool-group edit-only" }, [copyBtn, pasteBtn, dupBtn, delBtn]),
-      el("div", { class: "tool-group edit-only" }, [groupBtn, ungroupBtn]),
-      el("div", { class: "tool-group edit-only" }, [figBtn, figHeight]),
-    ];
-
-    // Nuevo proyecto: vacía la escena y descarta el autoguardado.
-    const newBtn = el("button", { class: "tool", title: "Vaciar la escena y empezar un proyecto nuevo" }, [
-      "Nuevo",
-    ]);
-    newBtn.addEventListener("click", () => {
-      if (window.confirm("¿Vaciar la escena y empezar un proyecto nuevo?")) {
-        this.editor.clearScene();
-        this.editor.clearAutosave();
-      }
-    });
-
     // Indicador de autoguardado (localStorage del navegador).
     const autosaveTag = el("span", { class: "autosave-tag", title: "Autoguardado en este navegador" }, [
       "Autoguardado activo",
@@ -198,87 +105,248 @@ export class Toolbar {
       autosaveTag.textContent = `Guardado ✓ ${hh}:${mm}`;
     });
 
-    // Guardar / cargar proyecto (a archivo .json).
-    const saveBtn = el("button", { class: "tool", title: "Guardar el proyecto a un archivo" }, [
-      "Guardar",
-    ]);
-    saveBtn.addEventListener("click", () => this.saveProject());
-    const loadBtn = el("button", { class: "tool", title: "Cargar un proyecto desde archivo" }, [
-      "Cargar",
-    ]);
-    const fileInput = el("input", {
-      type: "file",
-      accept: acceptSeguro(".json,application/json"),
-    });
-    fileInput.style.display = "none";
-    fileInput.addEventListener("change", () => this.onLoadFile(fileInput));
-    loadBtn.addEventListener("click", () => fileInput.click());
-
-    const exportBtn = el("button", { class: "tool", title: "Exportar el prototipo a glTF (.glb)" }, [
-      "Exportar",
-    ]);
-    exportBtn.addEventListener("click", () => this.exportGLB());
-
-    const homeBtn = el("button", { class: "tool", title: "Volver a la pantalla de inicio" }, [
-      "⌂ Home",
-    ]);
-    homeBtn.addEventListener("click", () => this.hooks.onHome?.());
-
-    const perfBtn = el("button", { class: "tool", title: "Opciones de rendimiento" }, [
-      "Rendimiento",
-    ]);
-    perfBtn.addEventListener("click", () => this.hooks.onPerformance?.());
-
-    const importBtn = el("button", { class: "tool", title: "Importar un modelo 3D (.glb/.gltf/.obj)" }, [
-      "Importar",
-    ]);
-    const importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
-    importInput.style.display = "none";
-    importInput.addEventListener("change", () => this.onImportFile(importInput));
-    importBtn.addEventListener("click", () => importInput.click());
+    const editGroups = [
+      el("div", { class: "tool-group edit-only" }, [
+        archivoBtn,
+        edicionBtn,
+        seleccionBtn,
+        verBtn,
+        ejesBtn,
+      ]),
+      el("div", { class: "tool-group edit-only" }, [figBtn, figHeight]),
+    ];
 
     this.root = el("div", { id: "toolbar" }, [
       el("div", { class: "tool-group" }, [homeBtn, simBtn]),
       ...editGroups,
-      el("div", { class: "tool-group edit-only" }, [newBtn, saveBtn, loadBtn]),
-      el("div", { class: "tool-group edit-only" }, [exportBtn, importBtn]),
-      el("div", { class: "tool-group edit-only" }, [perfBtn]),
       el("div", { class: "tool-group" }, [autosaveTag]),
-      fileInput,
-      importInput,
+      this.fileInput,
+      this.importInput,
     ]);
 
-    this.editor.bus.on("modeChanged", ({ mode }) => this.highlight(mode));
-    this.highlight("translate");
+    // Estado vivo para pintar los menús al abrirlos.
+    this.editor.bus.on("modeChanged", ({ mode }) => {
+      this.mode = mode;
+    });
+    this.editor.bus.on("historyChanged", ({ canUndo, canRedo }) => {
+      this.canUndo = canUndo;
+      this.canRedo = canRedo;
+    });
+    this.editor.bus.on("groupingChanged", ({ multi, groupSelected }) => {
+      this.multi = multi;
+      this.groupSelected = groupSelected;
+    });
 
     // Durante la simulacion, las herramientas de edicion se desactivan.
-    const editButtons = editGroups.flatMap((g) =>
-      [...g.querySelectorAll("button")] as HTMLButtonElement[],
+    const editButtons = editGroups.flatMap(
+      (g) => [...g.querySelectorAll("button")] as HTMLButtonElement[],
     );
     this.editor.bus.on("simulationChanged", ({ running }) => {
       simBtn.textContent = running ? "■ Detener" : "▶ Simular";
       simBtn.classList.toggle("active", running);
       editButtons.forEach((b) => (b.disabled = running));
       document.body.classList.toggle("simulating", running);
+      if (running) this.cerrarMenu();
     });
 
     window.addEventListener("keydown", this.onKeyDown);
+    document.addEventListener("pointerdown", this.onDocPointerDown, true);
   }
+
+  // ------------------------------------------------------------- menús
+
+  /** Botón que abre/cierra su menú desplegable (popover bajo el botón). */
+  private menuBtn(label: string, build: (menu: HTMLElement) => void): HTMLButtonElement {
+    const btn = el("button", { class: "tool menu-btn" }, [`${label} ▾`]);
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (this.menuOwner === btn) {
+        this.cerrarMenu();
+        return;
+      }
+      this.menuOwner = btn;
+      clear(this.menuEl);
+      build(this.menuEl);
+      this.menuEl.classList.add("open");
+      const r = btn.getBoundingClientRect();
+      this.menuEl.style.top = `${r.bottom + 6}px`;
+      // Que no se salga por la derecha de la pantalla.
+      const w = Math.max(this.menuEl.offsetWidth, 200);
+      this.menuEl.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
+    });
+    return btn;
+  }
+
+  private cerrarMenu(): void {
+    this.menuEl.classList.remove("open");
+    this.menuOwner = null;
+  }
+
+  private onDocPointerDown = (e: Event): void => {
+    if (!this.menuEl.contains(e.target as Node)) this.cerrarMenu();
+  };
+
+  private item(
+    label: string,
+    onClick: () => void,
+    opts: { check?: boolean; disabled?: boolean; danger?: boolean; keep?: boolean } = {},
+  ): HTMLElement {
+    const b = el(
+      "button",
+      { class: `menu-item${opts.danger ? " danger" : ""}${opts.check ? " checked" : ""}` },
+      [`${opts.check ? "✓ " : ""}${label}`],
+    );
+    (b as HTMLButtonElement).disabled = !!opts.disabled;
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onClick();
+      if (opts.keep && this.menuOwner) {
+        // Repinta el menú en el sitio para seguir ajustando (toggles).
+        const owner = this.menuOwner;
+        this.cerrarMenu();
+        owner.click();
+      } else {
+        this.cerrarMenu();
+      }
+    });
+    return b;
+  }
+
+  private sep(): HTMLElement {
+    return el("div", { class: "menu-sep" });
+  }
+
+  private header(text: string): HTMLElement {
+    return el("div", { class: "menu-header" }, [text]);
+  }
+
+  private buildArchivo(m: HTMLElement): void {
+    m.append(
+      this.item("Nuevo proyecto…", () => {
+        if (window.confirm("¿Vaciar la escena y empezar un proyecto nuevo?")) {
+          this.editor.clearScene();
+          this.editor.clearAutosave();
+        }
+      }),
+      this.item("Guardar proyecto (.json)…", () => this.saveProject()),
+      this.item("Cargar proyecto…", () => this.fileInput.click()),
+      this.sep(),
+      this.item("Importar modelo 3D…", () => this.importInput.click()),
+      this.item("Exportar prototipo (.glb)", () => void this.exportGLB()),
+      this.sep(),
+      this.item("Rendimiento…", () => this.hooks.onPerformance?.()),
+    );
+  }
+
+  private buildEdicion(m: HTMLElement): void {
+    m.append(
+      this.item("↺ Deshacer (Ctrl+Z)", () => void this.editor.undo(), { disabled: !this.canUndo }),
+      this.item("↻ Rehacer (Ctrl+Y)", () => void this.editor.redo(), { disabled: !this.canRedo }),
+      this.sep(),
+      this.item("Copiar (Ctrl+C)", () => this.editor.copySelection()),
+      this.item("Pegar (Ctrl+V)", () => this.editor.pasteClipboard()),
+      this.item("Duplicar (Ctrl+D)", () => this.editor.duplicateSelected()),
+      this.item("Eliminar (Supr)", () => this.editor.deleteSelection(), { danger: true }),
+      this.sep(),
+      this.item(this.multi >= 2 ? `Agrupar (${this.multi})` : "Agrupar", () => this.editor.createGroup(), {
+        disabled: this.multi < 2,
+      }),
+      this.item("Desagrupar", () => this.editor.ungroupSelected(), {
+        disabled: !this.groupSelected,
+      }),
+    );
+  }
+
+  private buildSeleccion(m: HTMLElement): void {
+    const modo = (mm: TransformMode, label: string, key: string) =>
+      this.item(`${label} (${key})`, () => this.editor.setMode(mm), { check: this.mode === mm });
+    m.append(
+      this.header("Gizmo"),
+      modo("translate", "Mover", "W"),
+      modo("rotate", "Rotar", "E"),
+      modo("scale", "Escalar", "S"),
+      this.sep(),
+      this.item("Selección de área", () => this.editor.setAreaSelect(!this.editor.isAreaSelect()), {
+        check: this.editor.isAreaSelect(),
+        keep: true,
+      }),
+      this.item("Arrastrar piezas", () => this.editor.setDragTool(!this.editor.isDragTool()), {
+        check: this.editor.isDragTool(),
+        keep: true,
+      }),
+      this.sep(),
+      this.item(`Espacio: ${this.space === "local" ? "Local" : "Global"}`, () => {
+        this.space = this.space === "local" ? "world" : "local";
+        this.editor.setGizmoSpace(this.space);
+      }, { keep: true }),
+      this.item("Imán (encaje magnético)", () => this.editor.setSnapEnabled(!this.editor.isSnapEnabled()), {
+        check: this.editor.isSnapEnabled(),
+        keep: true,
+      }),
+    );
+  }
+
+  private buildVer(m: HTMLElement): void {
+    const color = (c: ColorMode, label: string) =>
+      this.item(label, () => this.editor.setColorMode(c), {
+        check: this.editor.getColorMode() === c,
+        keep: true,
+      });
+    m.append(
+      this.item("Grid del suelo", () => this.editor.setGridVisible(!this.editor.isGridVisible()), {
+        check: this.editor.isGridVisible(),
+        keep: true,
+      }),
+      this.item("Aristas de las piezas", () => this.editor.setEdges(!this.editor.isEdges()), {
+        check: this.editor.isEdges(),
+        keep: true,
+      }),
+      this.sep(),
+      this.header("Modo de color"),
+      color("material", "Materiales reales"),
+      color("categoria", "Por categoría funcional"),
+      color("neutro", "Neutro (arcilla)"),
+      this.sep(),
+      this.header("Perspectiva"),
+      this.item("Frontal", () => this.editor.setViewPreset("frontal")),
+      this.item("Lateral", () => this.editor.setViewPreset("lateral")),
+      this.item("Superior", () => this.editor.setViewPreset("superior")),
+      this.item("Isométrica", () => this.editor.setViewPreset("isometrica")),
+    );
+  }
+
+  private buildEjes(m: HTMLElement): void {
+    const eje = (a: "x" | "y" | "z", key: string) =>
+      this.item(`Bloquear eje ${a.toUpperCase()} (tecla ${key})`, () => this.editor.setAxisLock(a), {
+        check: this.axisLock === a,
+      });
+    m.append(
+      this.header("Todo el trazado se circunscribe al eje"),
+      eje("x", "1"),
+      eje("y", "2"),
+      eje("z", "3"),
+      this.sep(),
+      this.item("Liberar (0 / Esc)", () => this.editor.setAxisLock(null), {
+        disabled: this.axisLock === null,
+      }),
+    );
+  }
+
+  // ----------------------------------------------------------- acciones
 
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.ctrlKey && e.key.toLowerCase() === "d") {
       e.preventDefault();
       this.editor.duplicateSelected();
     }
+    if (e.key === "Escape") this.cerrarMenu();
   };
 
   /** Da de baja los listeners globales (al volver a la Home). */
   dispose(): void {
     window.removeEventListener("keydown", this.onKeyDown);
-  }
-
-  private highlight(active: TransformMode): void {
-    this.modeButtons.forEach((btn, m) => btn.classList.toggle("active", m === active));
+    document.removeEventListener("pointerdown", this.onDocPointerDown, true);
+    this.menuEl.remove();
   }
 
   private saveProject(): void {

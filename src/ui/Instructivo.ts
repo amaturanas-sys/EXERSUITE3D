@@ -28,12 +28,13 @@ const SECCIONES: [string, string[]][] = [
   [
     "Editar con precisión",
     [
-      "Toca para seleccionar; Ctrl+clic (o Shift) añade a la selección; el botón Área dibuja un recuadro que selecciona todo lo que abarca.",
-      "Mover/Rotar/Escalar cambian el gizmo; Arrastrar lleva las piezas directamente con el dedo.",
-      "Teclas 1/2/3 (o botones X/Y/Z): bloquean TODO el trazado a un eje; 0 o Esc lo libera. La línea inferior muestra el desplazamiento en cm.",
-      "Copiar/Pegar/Duplicar/Eliminar desde la barra o con Ctrl+C/V/D y Supr.",
+      "La barra agrupa las herramientas en menús: Archivo, Edición, Selección, Ver y Ejes.",
+      "Toca para seleccionar; Ctrl+clic (o Shift) añade a la selección; Área (menú Selección) dibuja un recuadro que selecciona todo lo que abarca.",
+      "Mover/Rotar/Escalar cambian el gizmo y Arrastrar lleva las piezas con el dedo (menú Selección).",
+      "Teclas 1/2/3 (o el menú Ejes): bloquean TODO el trazado a un eje; 0 o Esc lo libera. La línea inferior muestra el desplazamiento en cm.",
+      "Copiar/Pegar/Duplicar/Eliminar y Agrupar/Desagrupar viven en el menú Edición (Ctrl+C/V/D y Supr).",
       "↺/↻ o Ctrl+Z/Ctrl+Y deshacen y rehacen (hasta 60 pasos).",
-      "Agrupar une varias piezas en un subensamblaje que se mueve como bloque.",
+      "Menú Ver: grid, aristas de las piezas, modo de color (materiales reales · por categoría · neutro) y perspectivas Frontal/Lateral/Superior/Isométrica.",
     ],
   ],
   [

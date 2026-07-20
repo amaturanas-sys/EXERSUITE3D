@@ -212,6 +212,14 @@ export class SceneObject {
       p.mesh.geometry.dispose();
       (p.mesh.material as THREE.Material).dispose();
     }
+    // Ayudas de aristas del modo Ver (si están activas).
+    for (const ch of [...this.mesh.children]) {
+      if (ch.userData.edgesHelper) {
+        const l = ch as THREE.LineSegments;
+        l.geometry.dispose();
+        (l.material as THREE.Material).dispose();
+      }
+    }
     this.mesh.geometry.dispose();
     (this.mesh.material as THREE.Material).dispose();
   }

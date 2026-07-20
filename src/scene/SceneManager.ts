@@ -243,6 +243,10 @@ export class SceneManager {
     this.grid.visible = visible;
   }
 
+  isGridVisible(): boolean {
+    return this.grid.visible;
+  }
+
   resize(): void {
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
