@@ -5,6 +5,58 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.0] — 2026-07-20
+
+Rediseño mayor de la interfaz y del flujo de trabajo (esquemas del usuario),
+en la app web/APK/Windows. El kit Godot mantiene la paridad v0.1.9; el
+rediseño v0.2.0 se portará en una iteración posterior.
+
+### Añadido
+
+- **Home maestro-detalle**: navegación Builder · Simulador · Instructivo ·
+  Settings con panel de contenido y leyenda contextual; galería de capturas
+  del Simulador y ajustes de rendimiento integrados en la Home.
+- **Asistente de proyecto nuevo**: modo de trabajo **Sencillo** (piezas
+  básicas y máquinas estándar, para plantear la distribución de una sala) o
+  **Profesional** (todas las herramientas), y espacio de trabajo **Libre**
+  (suelo infinito) o **Completo**.
+- **Canvas Completo — definir área de trabajo**: el suelo se define como
+  rectángulo con medidas o **dibujando su planta en metros** (lienzo con
+  rejilla, imán a 0,5 m y cota por segmento; admite salas en L o
+  irregulares). **Techumbre** opcional como capa oscura copia FIEL de la
+  planta, con alturas A/B y pendiente (slope en ° y % calculado en vivo), y
+  **paredes N/S/E/O** generadas borde a borde del contorno. Techo y paredes
+  son piezas ancladas reales: admiten bisagras, cables y cuerdas y
+  participan en la simulación.
+- **Límites del espacio editable**: lo que sobresale de la planta, del suelo
+  o del plano inclinado del techo se tiñe de rojo, el HUD cuenta las piezas
+  fuera y la colocación se cancela al soltar el arrastre.
+- **Barra con menús agrupados**: Archivo · Edición · Selección · **Ver**
+  (grid, aristas de las piezas, modo de color materiales/por
+  categoría/neutro y perspectivas Frontal/Lateral/Superior/Isométrica) ·
+  Ejes (bloqueo X/Y/Z con distintivo). Barra compacta ideal para tablet.
+- **Ergonomía del maniquí**: **candado por articulación** (las bloqueadas no
+  se posan; persistido en el proyecto), **Simetría L↔R** (cada cambio se
+  replica espejado) y **✋ Agarrar maniquí** (arrastra un segmento del cuerpo
+  y rota la articulación libre más cercana; 1/2/3 restringe a un eje;
+  agarrar la pelvis mueve la figura).
+- **Máquinas estándar** en la paleta: rack de sentadillas (142×199×120 cm),
+  jaula de potencia, banco plano y torre de polea alta/baja — prefabricados
+  con componentes reales, agrupados y con medidas comerciales.
+- **Arrastrar y soltar desde la paleta**: las piezas (y máquinas) se sueltan
+  en el punto del suelo elegido; en táctil, mantener pulsado ~0,3 s.
+- **Paneles plegables**: tocar el título de cualquier panel lo colapsa a su
+  cabecera.
+- **Modelos CAD integrados**: barra olímpica (2,20 m) y disco de 45 lb con
+  malla real y colisionador primitivo a dimensiones reales.
+
+### Corregido
+
+- **Biblioteca del maniquí**: cada segmento muestra ahora su primitiva real
+  (cabeza=esfera, torso=caja, muslo=cilindro…) en lugar del mismo cilindro
+  para todos, compartiendo la geometría con el rig para que la sustitución
+  por modelos mapee correctamente.
+
 ## [0.1.9] — 2026-07-17
 
 ### Corregido
