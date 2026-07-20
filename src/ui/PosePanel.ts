@@ -45,6 +45,30 @@ export class PosePanel {
     ]);
     resetBtn.addEventListener("click", () => this.editor.restoreDefaultPoses());
 
+    // Herramienta "agarrar maniquí" (esquema Ergonómico): llevar un segmento
+    // con el puntero; 1/2/3 restringe el movimiento a un eje.
+    const grabBtn = el(
+      "button",
+      { class: "tool", title: "Agarra un segmento del cuerpo y muévelo (1/2/3 lo restringe a un eje)" },
+      ["✋ Agarrar maniquí"],
+    );
+    grabBtn.addEventListener("click", () => this.editor.setGrabFigure(!this.editor.isGrabFigure()));
+    this.editor.bus.on("grabFigureChanged", ({ on }) => {
+      grabBtn.classList.toggle("active", on);
+      this.hint.textContent = on
+        ? "Agarrar maniquí: arrastra un segmento del cuerpo; el candado 🔒 fija articulaciones y 1/2/3 restringe a un eje."
+        : this.defaultHint;
+    });
+
+    // Simetría L↔R: replicar cada cambio de pose espejado al otro lado.
+    const symChk = el("input", { type: "checkbox" }) as HTMLInputElement;
+    symChk.addEventListener("change", () => this.editor.setPoseSymmetry(symChk.checked));
+    this.symChk = symChk;
+    const symRow = el("label", { class: "pose-sym", title: "Cada cambio en un lado del cuerpo se replica espejado en el otro" }, [
+      symChk,
+      "Simetría L↔R",
+    ]);
+
     const attachBtn = el("button", { class: "tool", title: "Apoyar una mano en un agarre (IK)" }, [
       "Apoyar mano",
     ]);
@@ -67,9 +91,18 @@ export class PosePanel {
       this.jointInputs[axis] = input;
       return el("div", { class: "sub" }, [el("label", {}, [axis.toUpperCase()]), input]);
     };
+    // Candado de la articulación seleccionada (esquema Ergonómico).
+    this.lockBtn = el(
+      "button",
+      { class: "tool", title: "Bloquear/liberar esta articulación (las bloqueadas no se posan)" },
+      ["🔒 Bloquear"],
+    ) as HTMLButtonElement;
+    this.lockBtn.addEventListener("click", () => this.editor.toggleJointLock());
+
     this.jointBox = el("div", { class: "field" }, [
       this.jointLabel,
       el("div", { class: "row" }, [angInput("x"), angInput("y"), angInput("z")]),
+      el("div", { class: "pose-actions" }, [this.lockBtn]),
     ]);
     this.jointBox.style.display = "none";
 
@@ -80,6 +113,8 @@ export class PosePanel {
         el("div", { class: "pose-actions" }, [applyBtn, updateBtn]),
         el("div", { class: "pose-actions" }, [saveBtn, delBtn]),
         el("div", { class: "pose-actions" }, [resetBtn]),
+        el("div", { class: "pose-actions" }, [grabBtn]),
+        symRow,
         this.jointBox,
         el("div", { class: "field" }, [el("label", {}, ["Manos (IK)"])]),
         el("div", { class: "pose-actions" }, [attachBtn, detachBtn]),
@@ -88,18 +123,20 @@ export class PosePanel {
     ]);
     this.root.style.display = "none";
 
-    this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
+    this.editor.bus.on("jointSelectionChanged", ({ name, angles, locked }) => {
       if (name) {
         this.jointBox.style.display = "block";
-        this.jointLabel.textContent = `Articulación: ${name} (grados)`;
-        // Solo los ejes naturales de la articulación quedan editables.
+        this.jointLabel.textContent = `Articulación: ${name} (grados)${locked ? " · 🔒" : ""}`;
+        this.lockBtn.textContent = locked ? "🔓 Liberar" : "🔒 Bloquear";
+        this.lockBtn.classList.toggle("active", locked);
+        // Solo los ejes naturales (y sin candado) quedan editables.
         const axes = this.editor.getSelectedJointAxes();
         const idx = { x: 0, y: 1, z: 2 } as const;
         for (const ax of ["x", "y", "z"] as const) {
           const input = this.jointInputs[ax];
           input.value = String(angles[idx[ax]]);
-          input.disabled = !axes[ax];
-          input.closest(".sub")?.classList.toggle("axis-off", !axes[ax]);
+          input.disabled = !axes[ax] || locked;
+          input.closest(".sub")?.classList.toggle("axis-off", !axes[ax] || locked);
         }
       } else {
         this.jointBox.style.display = "none";
@@ -118,12 +155,16 @@ export class PosePanel {
     });
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
       this.root.style.display = present && mode === "mannequin" ? "flex" : "none";
+      // Reasienta el estado persistido (cargar proyecto restaura la simetría).
+      this.symChk.checked = this.editor.getPoseSymmetry();
     });
   }
 
   private hint!: HTMLElement;
   private jointBox!: HTMLElement;
   private jointLabel!: HTMLElement;
+  private lockBtn!: HTMLButtonElement;
+  private symChk!: HTMLInputElement;
   private jointInputs = {} as { x: HTMLInputElement; y: HTMLInputElement; z: HTMLInputElement };
   private readonly defaultHint =
     "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.";

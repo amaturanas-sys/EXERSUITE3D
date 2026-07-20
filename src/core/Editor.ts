@@ -22,6 +22,7 @@ const PULLEY_IDS = new Set(["polea", "roldana", "bloque-poleas"]);
 import {
   DEFAULT_HUMAN_HEIGHT,
   JOINT_DOF,
+  PARENT_JOINT,
   buildHumanFigure,
   disposeHumanFigure,
 } from "../objects/humanFigure";
@@ -83,7 +84,11 @@ export type EditorEvents = {
   /** Grupo seleccionado (para editar nombre/duplicar). */
   groupSelectionChanged: { id: string | null; name: string };
   /** Articulacion del personaje seleccionada (para editar angulos). */
-  jointSelectionChanged: { name: string | null; angles: [number, number, number] };
+  jointSelectionChanged: {
+    name: string | null;
+    angles: [number, number, number];
+    locked: boolean;
+  };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
     present: boolean;
@@ -109,6 +114,8 @@ export type EditorEvents = {
   workspaceChanged: { workspace: WorkspaceData | null };
   /** Nº de piezas fuera de los límites del canvas completo (marcadas en rojo). */
   workspaceBounds: { fuera: number };
+  /** Herramienta "agarrar maniquí" activada/desactivada. */
+  grabFigureChanged: { on: boolean };
 };
 
 interface SavedTransform {
@@ -221,6 +228,22 @@ export class Editor {
   private handTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
   private attachMode = false;
   private attachSide: HandSide | null = null;
+
+  // ---- Ergonomía del maniquí (esquema v0.2.0)
+  /** Articulaciones bloqueadas con el candado: no se posan hasta liberarlas. */
+  private jointLocks = new Set<string>();
+  /** Simetría de pose: los cambios de un lado se replican espejados al otro. */
+  private poseSymmetry = false;
+  /** Herramienta "agarrar maniquí": llevar un segmento con el puntero. */
+  private grabFigureTool = false;
+  private grabDrag: {
+    /** Articulación que rota ("" = mover la figura entera). */
+    joint: string;
+    /** Punto agarrado en coords locales de la articulación (u offset raíz). */
+    grabLocal: THREE.Vector3;
+    origin: THREE.Vector3;
+    plane: THREE.Plane;
+  } | null = null;
 
   // Cambios sin guardar (para sugerir guardar al volver a la Home).
   private dirty = false;
@@ -340,6 +363,8 @@ export class Editor {
   /** Reaplica la geometría del repertorio a las instancias afectadas. */
   private onComponentModelsChanged(): void {
     for (const o of this.objects.values()) {
+      // Las piezas de entorno (ws-techo) tienen geometría propia del workspace.
+      if (o.componentId.startsWith("ws-")) continue;
       const geo = componentModels.geometryClone(o.componentId);
       if (geo) o.applyCustomGeometry(geo);
       else if (o.customModel) o.revertToPrimitive();
@@ -719,7 +744,7 @@ export class Editor {
   /** Crea una copia de `src` (sin seleccionarla) con un desplazamiento opcional. */
   private duplicateObject(src: SceneObject, offset: THREE.Vector3): SceneObject {
     let obj: SceneObject;
-    if (src.imported) {
+    if (src.imported || src.componentId.startsWith("ws-")) {
       // Las piezas importadas no existen en la biblioteca: se clona su malla.
       obj = new SceneObject({
         name: `${src.name} copia`,
@@ -810,8 +835,24 @@ export class Editor {
           ...ws,
           techo: ws.techo ? { ...ws.techo } : null,
           paredes: ws.paredes ? [...ws.paredes] : [],
+          planta: ws.planta ? ws.planta.map((p) => [...p] as [number, number]) : undefined,
         }
       : null;
+    // Con planta poligonal: céntrala en el origen y deriva ancho/fondo del bbox
+    // (los usan el techo con pendiente y el descarte rápido de límites).
+    const planta = this.workspace?.planta;
+    if (planta && planta.length >= 3) {
+      let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+      for (const [x, z] of planta) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
+      }
+      const cx = (minX + maxX) / 2;
+      const cz = (minZ + maxZ) / 2;
+      for (const p of planta) { p[0] -= cx; p[1] -= cz; }
+      this.workspace!.ancho = maxX - minX;
+      this.workspace!.fondo = maxZ - minZ;
+    }
     this.rebuildWorkspaceVisual();
     if (this.workspace?.canvas === "completo" && opts.crearPiezas) {
       this.crearPiezasEntorno(this.workspace);
@@ -819,6 +860,55 @@ export class Editor {
     this.checkWorkspaceBounds();
     this.bus.emit("workspaceChanged", { workspace: this.workspace });
     this.requestRender();
+  }
+
+  /**
+   * Contorno del suelo operable (cm, plano XZ). Con planta dibujada es ese
+   * polígono; si no, el rectángulo ancho×fondo. Null si el canvas es libre.
+   */
+  private wsPlanta(): [number, number][] | null {
+    const ws = this.workspace;
+    if (!ws || ws.canvas !== "completo") return null;
+    if (ws.planta && ws.planta.length >= 3) return ws.planta;
+    if (!ws.ancho || !ws.fondo) return null;
+    const hx = ws.ancho / 2;
+    const hz = ws.fondo / 2;
+    return [
+      [-hx, -hz],
+      [hx, -hz],
+      [hx, hz],
+      [-hx, hz],
+    ];
+  }
+
+  /** ¿El punto XZ cae dentro de la planta (con tolerancia eps hacia fuera)? */
+  private dentroPlanta(
+    planta: [number, number][],
+    x: number,
+    z: number,
+    eps: number,
+  ): boolean {
+    // Ray casting par-impar.
+    let dentro = false;
+    for (let i = 0, j = planta.length - 1; i < planta.length; j = i++) {
+      const [xi, zi] = planta[i];
+      const [xj, zj] = planta[j];
+      if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) dentro = !dentro;
+    }
+    if (dentro || eps <= 0) return dentro;
+    // Tolerancia: distancia mínima del punto a los bordes del polígono.
+    for (let i = 0, j = planta.length - 1; i < planta.length; j = i++) {
+      const [ax, az] = planta[j];
+      const [bx, bz] = planta[i];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const l2 = dx * dx + dz * dz;
+      const t = l2 > 0 ? THREE.MathUtils.clamp(((x - ax) * dx + (z - az) * dz) / l2, 0, 1) : 0;
+      const px = ax + t * dx;
+      const pz = az + t * dz;
+      if (Math.hypot(x - px, z - pz) <= eps) return true;
+    }
+    return false;
   }
 
   /** Contorno + relleno translúcido del suelo operable (no se serializa). */
@@ -832,107 +922,157 @@ export class Editor {
       });
       this.workspaceVisual = null;
     }
-    const ws = this.workspace;
-    if (!ws || ws.canvas !== "completo" || !ws.ancho || !ws.fondo) return;
-    const hx = ws.ancho / 2;
-    const hz = ws.fondo / 2;
+    const planta = this.wsPlanta();
+    if (!planta) return;
     const g = new THREE.Group();
     g.name = "workspace-area";
-    const pts = [
-      new THREE.Vector3(-hx, 0.4, -hz),
-      new THREE.Vector3(hx, 0.4, -hz),
-      new THREE.Vector3(hx, 0.4, hz),
-      new THREE.Vector3(-hx, 0.4, hz),
-    ];
+    const pts = planta.map(([x, z]) => new THREE.Vector3(x, 0.4, z));
     g.add(
       new THREE.LineLoop(
         new THREE.BufferGeometry().setFromPoints(pts),
         new THREE.LineBasicMaterial({ color: 0x12808c }),
       ),
     );
+    // Relleno: la forma se construye en XY y se tumba al plano XZ.
+    const shape = new THREE.Shape(planta.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const fillGeo = new THREE.ShapeGeometry(shape);
+    fillGeo.rotateX(-Math.PI / 2);
     const fill = new THREE.Mesh(
-      new THREE.PlaneGeometry(ws.ancho, ws.fondo),
+      fillGeo,
       new THREE.MeshBasicMaterial({
         color: 0x12808c,
         transparent: true,
         opacity: 0.07,
         depthWrite: false,
+        side: THREE.DoubleSide,
       }),
     );
-    fill.rotation.x = -Math.PI / 2;
     fill.position.y = 0.15;
     g.add(fill);
     this.sceneManager.scene.add(g);
     this.workspaceVisual = g;
   }
 
+  private static readonly GROSOR_ENTORNO = 6;
+
+  /** Bloque del techo: copia fiel de la planta extruida (grosor en Y). */
+  private geometriaTecho(): THREE.BufferGeometry | null {
+    const planta = this.wsPlanta();
+    if (!planta) return null;
+    const shape = new THREE.Shape(planta.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: Editor.GROSOR_ENTORNO,
+      bevelEnabled: false,
+    });
+    geo.rotateX(-Math.PI / 2); // extrusión vertical: planta en XZ, grosor en +Y
+    geo.center(); // pivote en el centro del bloque (colocación e inclinación)
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  /**
+   * Crea la pieza "Techo" (componentId ws-techo): geometría propia regenerable
+   * desde el workspace, anclada y anclable como cualquier otra pieza.
+   */
+  private crearTechoBase(): SceneObject {
+    const geo = this.geometriaTecho();
+    const ws = this.workspace;
+    if (!geo || !ws) throw new Error("Sin planta de suelo para el techo");
+    const obj = new SceneObject({
+      name: "Techo",
+      componentId: "ws-techo",
+      category: "estructural",
+      params: {
+        kind: "box",
+        width: ws.ancho ?? 100,
+        height: Editor.GROSOR_ENTORNO,
+        depth: ws.fondo ?? 100,
+      },
+      physics: { massKg: 0, fixed: true },
+      materialId: "acero-negro",
+    });
+    obj.mesh.geometry.dispose();
+    obj.mesh.geometry = geo;
+    obj.customModel = true; // geometría propia: params no la reconstruye
+    obj.mesh.name = "Techo";
+    this.sceneManager.content.add(obj.mesh);
+    this.objects.set(obj.id, obj);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    return obj;
+  }
+
   /** Crea techo y paredes como piezas ancladas reales del canvas completo. */
   private crearPiezasEntorno(ws: WorkspaceData): void {
-    const ancho = ws.ancho ?? 600;
-    const fondo = ws.fondo ?? 400;
-    const GROSOR = 6;
-    const pieza = (
-      name: string,
-      w: number,
-      h: number,
-      d: number,
-      pos: THREE.Vector3,
-    ): SceneObject => {
-      const o = this.addComponent("prim-box", pos);
-      o.name = name;
-      o.mesh.name = name;
-      o.params = { kind: "box", width: w, height: h, depth: d };
-      o.physics = { massKg: 0, fixed: true };
-      o.rebuildGeometry();
-      o.setMaterial("acero-negro");
-      o.mesh.position.copy(pos);
-      return o;
-    };
-
+    const planta = this.wsPlanta();
+    if (!planta) return;
+    const GROSOR = Editor.GROSOR_ENTORNO;
     const t = ws.techo;
+
     if (t) {
+      const techo = this.crearTechoBase();
       const dh = t.alturaB - t.alturaA;
-      const L = t.eje === "x" ? ancho : fondo;
-      const largo = Math.hypot(L, dh);
-      const techo = pieza(
-        "Techo",
-        t.eje === "x" ? largo : ancho,
-        GROSOR,
-        t.eje === "x" ? fondo : largo,
-        new THREE.Vector3(0, (t.alturaA + t.alturaB) / 2 + GROSOR / 2, 0),
-      );
+      const L = (t.eje === "x" ? ws.ancho : ws.fondo) || 1;
       const ang = Math.atan2(dh, L);
       // La pendiente sube hacia el extremo B (+X o +Z según el eje elegido).
       if (t.eje === "x") techo.mesh.rotation.z = ang;
       else techo.mesh.rotation.x = -ang;
+      techo.mesh.position.set(0, (t.alturaA + t.alturaB) / 2 + GROSOR / 2, 0);
     }
 
-    const alturaPared = (lado: "N" | "S" | "E" | "O"): number => {
-      if (!t) return 250;
-      const min = Math.min(t.alturaA, t.alturaB);
-      if (t.eje === "z") return lado === "N" ? t.alturaB : lado === "S" ? t.alturaA : min;
-      return lado === "E" ? t.alturaB : lado === "O" ? t.alturaA : min;
-    };
-    for (const lado of ws.paredes ?? []) {
-      const h = alturaPared(lado);
-      if (lado === "N" || lado === "S") {
-        const z = (fondo / 2 - GROSOR / 2) * (lado === "N" ? 1 : -1);
-        pieza(
-          `Pared ${lado === "N" ? "Norte" : "Sur"}`,
-          ancho,
-          h,
-          GROSOR,
-          new THREE.Vector3(0, h / 2, z),
+    // Paredes: una por cada borde de la planta cuya orientación exterior
+    // coincida con un lado marcado (N=+Z, S=−Z, E=+X, O=−X).
+    const lados = new Set(ws.paredes ?? []);
+    if (lados.size > 0) {
+      const usados = new Map<string, number>();
+      const NOMBRES: Record<"N" | "S" | "E" | "O", string> = {
+        N: "Norte",
+        S: "Sur",
+        E: "Este",
+        O: "Oeste",
+      };
+      for (let i = 0; i < planta.length; i++) {
+        const a = planta[i];
+        const b = planta[(i + 1) % planta.length];
+        const dx = b[0] - a[0];
+        const dz = b[1] - a[1];
+        const len = Math.hypot(dx, dz);
+        if (len < 20) continue; // bordes minúsculos: sin pared
+        // Normal exterior del borde (comprobada contra la propia planta).
+        let nx = dz / len;
+        let nz = -dx / len;
+        const mx = (a[0] + b[0]) / 2;
+        const mz = (a[1] + b[1]) / 2;
+        if (this.dentroPlanta(planta, mx + nx * 2, mz + nz * 2, 0)) {
+          nx = -nx;
+          nz = -nz;
+        }
+        const lado: "N" | "S" | "E" | "O" =
+          Math.abs(nx) >= Math.abs(nz) ? (nx > 0 ? "E" : "O") : (nz > 0 ? "N" : "S");
+        if (!lados.has(lado)) continue;
+
+        const h = t
+          ? Math.max(
+              50,
+              Math.min(this.techoYAt(a[0], a[1]), this.techoYAt(b[0], b[1])),
+            )
+          : 250;
+        const n = (usados.get(lado) ?? 0) + 1;
+        usados.set(lado, n);
+        const nombre = `Pared ${NOMBRES[lado]}${n > 1 ? ` ${n}` : ""}`;
+        const pos = new THREE.Vector3(
+          mx - (nx * GROSOR) / 2,
+          h / 2,
+          mz - (nz * GROSOR) / 2,
         );
-      } else {
-        const x = (ancho / 2 - GROSOR / 2) * (lado === "E" ? 1 : -1);
-        pieza(
-          `Pared ${lado === "E" ? "Este" : "Oeste"}`,
-          GROSOR,
-          h,
-          fondo,
-          new THREE.Vector3(x, h / 2, 0),
-        );
+        const o = this.addComponent("prim-box", pos);
+        o.name = nombre;
+        o.mesh.name = nombre;
+        o.params = { kind: "box", width: len, height: h, depth: GROSOR };
+        o.physics = { massKg: 0, fixed: true };
+        o.rebuildGeometry();
+        o.setMaterial("acero-negro");
+        o.mesh.position.copy(pos);
+        o.mesh.rotation.y = Math.atan2(-dz, dx);
       }
     }
     this.select(null);
@@ -940,7 +1080,11 @@ export class Editor {
 
   /** Techo y paredes generados: forman el espacio, no se validan contra él. */
   private esPiezaEntorno(o: SceneObject): boolean {
-    return o.name === "Techo" || o.name.startsWith("Pared ");
+    return (
+      o.componentId.startsWith("ws-") ||
+      o.name === "Techo" ||
+      o.name.startsWith("Pared ")
+    );
   }
 
   /** Altura del plano del techo (con pendiente) en un punto del suelo. */
@@ -957,24 +1101,23 @@ export class Editor {
   /** Marca en rojo las piezas que sobresalen del área/techo del canvas completo. */
   private checkWorkspaceBounds(): void {
     const ws = this.workspace;
-    const activo = !!ws && ws.canvas === "completo" && !!ws.ancho && !!ws.fondo;
+    const planta = this.wsPlanta();
     const antes = this.fueraIds.size;
     const nuevas = new Set<string>();
-    if (activo) {
-      const hx = ws.ancho! / 2;
-      const hz = ws.fondo! / 2;
+    if (ws && planta) {
       const EPS = 0.5;
       const box = new THREE.Box3();
       for (const o of this.objects.values()) {
         if (this.esPiezaEntorno(o)) continue;
         box.setFromObject(o.mesh);
         if (box.isEmpty()) continue;
+        // Las cuatro esquinas XZ del bbox deben caer dentro de la planta.
         let fuera =
-          box.min.x < -hx - EPS ||
-          box.max.x > hx + EPS ||
-          box.min.z < -hz - EPS ||
-          box.max.z > hz + EPS ||
-          box.min.y < -EPS;
+          box.min.y < -EPS ||
+          !this.dentroPlanta(planta, box.min.x, box.min.z, EPS) ||
+          !this.dentroPlanta(planta, box.min.x, box.max.z, EPS) ||
+          !this.dentroPlanta(planta, box.max.x, box.min.z, EPS) ||
+          !this.dentroPlanta(planta, box.max.x, box.max.z, EPS);
         if (!fuera && ws.techo) {
           const tope = Math.min(
             this.techoYAt(box.min.x, box.min.z),
@@ -1064,10 +1207,7 @@ export class Editor {
 
   /** Aviso temporal en el HUD al cancelar una colocación fuera del área. */
   private avisoFuera(): void {
-    this.bus.emit("dragMeasure", {
-      text: "⛔ Fuera del área de trabajo: colocación cancelada",
-    });
-    window.setTimeout(() => this.bus.emit("dragMeasure", { text: null }), 1800);
+    this.avisoTemporal("⛔ Fuera del área de trabajo: colocación cancelada");
   }
 
   // ---------------------------------------------------- guardar / cargar
@@ -1131,6 +1271,8 @@ export class Editor {
           objectId: t.objectId,
           local: [t.local.x, t.local.y, t.local.z] as [number, number, number],
         })),
+        locks: [...this.jointLocks],
+        symmetry: this.poseSymmetry,
       },
     };
   }
@@ -1216,6 +1358,9 @@ export class Editor {
     this.objGroup.clear();
     this.multiSel.clear();
     this.removeHumanFigure();
+    this.jointLocks.clear();
+    this.poseSymmetry = false;
+    this.grabDrag = null;
     this.setWorkspace(null);
     this.refreshJointHelpers();
     this.bus.emit("objectsChanged", { objects: [] });
@@ -1293,7 +1438,9 @@ export class Editor {
       // Un componente desconocido (proyecto de otra versión, JSON editado) no
       // debe abortar la carga del resto de la escena.
       try {
-        const obj = this.addComponent(od.componentId);
+        // El techo del canvas completo regenera su geometría desde el workspace.
+        const obj =
+          od.componentId === "ws-techo" ? this.crearTechoBase() : this.addComponent(od.componentId);
         obj.name = od.name;
         obj.mesh.name = od.name;
         obj.params = { ...od.params };
@@ -1356,6 +1503,10 @@ export class Editor {
 
     this.select(null);
 
+    // Ergonomía del maniquí: candados y simetría persistidos.
+    this.jointLocks = new Set(data.human?.locks ?? []);
+    this.poseSymmetry = !!data.human?.symmetry;
+
     if (data.human?.present) {
       this.humanMode = "mannequin"; // el modo esqueleto se retiró en 0.1.7
       await this.addHumanFigure(data.human.heightCm);
@@ -1411,7 +1562,7 @@ export class Editor {
     this.bus.emit("selectionChanged", { selected: obj });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
     this.bus.emit("groupSelectionChanged", { id: null, name: "" });
-    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0] });
+    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0], locked: false });
   }
 
   getSelected(): SceneObject | null {
@@ -1570,10 +1721,13 @@ export class Editor {
       const o = this.objects.get(id);
       const data = all.find((d) => d.id === id);
       if (!o || !data) continue;
+      // Las piezas de entorno con geometría propia (techo de planta) se copian
+      // clonando su malla, como las importadas.
       this.clipboard.push({
         data: JSON.parse(JSON.stringify(data)) as ProjectData["objects"][number],
         category: o.category,
-        importedGeometry: o.imported ? o.mesh.geometry.clone() : null,
+        importedGeometry:
+          o.imported || o.componentId.startsWith("ws-") ? o.mesh.geometry.clone() : null,
       });
     }
   }
@@ -1900,7 +2054,7 @@ export class Editor {
     this.bus.emit("selectionChanged", { selected: null });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: true });
     this.bus.emit("groupSelectionChanged", { id: gid, name: g.name });
-    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0] });
+    this.bus.emit("jointSelectionChanged", { name: null, angles: [0, 0, 0], locked: false });
   }
 
   /** Aplica el delta del proxy a todos los miembros del grupo. */
@@ -2098,15 +2252,93 @@ export class Editor {
     this.select(null);
     this.selectedFigure = true;
     this.selectedJointName = name;
-    this.gizmo.attach(joints[name]);
-    // Posar sobre los ejes locales de la articulación y solo los naturales.
-    this.gizmo.setSpace("local");
-    const dof = JOINT_DOF[name] ?? { x: undefined, y: undefined, z: undefined };
-    this.gizmo.showX = dof.x !== undefined;
-    this.gizmo.showY = dof.y !== undefined;
-    this.gizmo.showZ = dof.z !== undefined;
-    this.setMode("rotate"); // posar = rotar la articulacion
+    if (this.jointLocks.has(name)) {
+      // Bloqueada con el candado: se selecciona (para poder liberarla desde
+      // Posturas) pero no se posa.
+      this.gizmo.detach();
+      this.avisoTemporal("🔒 Articulación bloqueada — libérala en Posturas");
+    } else {
+      this.gizmo.attach(joints[name]);
+      // Posar sobre los ejes locales de la articulación y solo los naturales.
+      this.gizmo.setSpace("local");
+      const dof = JOINT_DOF[name] ?? { x: undefined, y: undefined, z: undefined };
+      this.gizmo.showX = dof.x !== undefined;
+      this.gizmo.showY = dof.y !== undefined;
+      this.gizmo.showZ = dof.z !== undefined;
+      this.setMode("rotate"); // posar = rotar la articulacion
+    }
     this.emitJointSelection();
+  }
+
+  // ------------------------------------ ergonomía del maniquí (v0.2.0)
+
+  isJointLocked(name: string): boolean {
+    return this.jointLocks.has(name);
+  }
+
+  getJointLocks(): string[] {
+    return [...this.jointLocks];
+  }
+
+  /** Bloquea/libera la articulación (la seleccionada si no se indica). */
+  toggleJointLock(name?: string): void {
+    const jn = name ?? this.selectedJointName;
+    if (!jn) return;
+    if (this.jointLocks.has(jn)) this.jointLocks.delete(jn);
+    else this.jointLocks.add(jn);
+    // Reengancha (o suelta) el gizmo según el nuevo estado del candado.
+    if (this.selectedJointName === jn) this.selectJoint(jn);
+    else this.emitJointSelection();
+    this.scheduleAutosave();
+  }
+
+  getPoseSymmetry(): boolean {
+    return this.poseSymmetry;
+  }
+
+  /** Simetría L↔R: replicar cada cambio de pose espejado al otro lado. */
+  setPoseSymmetry(on: boolean): void {
+    this.poseSymmetry = on;
+    this.scheduleAutosave();
+  }
+
+  isGrabFigure(): boolean {
+    return this.grabFigureTool;
+  }
+
+  /** Herramienta "agarrar maniquí" (mover segmentos libremente o por eje). */
+  setGrabFigure(on: boolean): void {
+    this.grabFigureTool = on;
+    if (on) {
+      this.setDragTool(false);
+      this.setAreaSelect(false);
+    }
+    this.bus.emit("grabFigureChanged", { on });
+  }
+
+  /** Contraparte espejada de una articulación (shoulderL ↔ shoulderR). */
+  private mirrorJointName(jn: string): string | null {
+    if (jn.endsWith("L")) return `${jn.slice(0, -1)}R`;
+    if (jn.endsWith("R")) return `${jn.slice(0, -1)}L`;
+    return null;
+  }
+
+  /** Con simetría activa, replica la pose de jn espejada en su contraparte. */
+  private applyPoseSymmetry(jn: string): void {
+    if (!this.poseSymmetry) return;
+    const joints = this.figureJoints();
+    const otro = this.mirrorJointName(jn);
+    if (!joints || !otro || !joints[otro] || !joints[jn]) return;
+    if (this.jointLocks.has(otro)) return; // el candado manda
+    const r = joints[jn].rotation;
+    joints[otro].rotation.set(r.x, -r.y, -r.z);
+    this.clampJoint(otro);
+  }
+
+  /** Aviso breve en el HUD (se borra solo). */
+  private avisoTemporal(text: string): void {
+    this.bus.emit("dragMeasure", { text });
+    window.setTimeout(() => this.bus.emit("dragMeasure", { text: null }), 1800);
   }
 
   /** Restaura los tres ejes del gizmo (para piezas/grupos/figura completa). */
@@ -2191,11 +2423,10 @@ export class Editor {
     return this.dragTool;
   }
 
-  /** Limita la articulación seleccionada a su eje/rango natural. */
-  private clampSelectedJoint(): void {
+  /** Limita una articulación a su eje/rango natural. */
+  private clampJoint(jn: string): void {
     const joints = this.figureJoints();
-    const jn = this.selectedJointName;
-    if (!joints || !jn || !joints[jn]) return;
+    if (!joints || !joints[jn]) return;
     const dof = JOINT_DOF[jn];
     if (!dof) return;
     const j = joints[jn];
@@ -2211,6 +2442,14 @@ export class Editor {
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
   }
 
+  /** Limita la articulación seleccionada y aplica la simetría si procede. */
+  private clampSelectedJoint(): void {
+    const jn = this.selectedJointName;
+    if (!jn) return;
+    this.clampJoint(jn);
+    this.applyPoseSymmetry(jn);
+  }
+
   private emitJointSelection(): void {
     const joints = this.figureJoints();
     const jn = this.selectedJointName;
@@ -2224,6 +2463,7 @@ export class Editor {
             roundTo(radToDeg(j.rotation.z), 1),
           ]
         : [0, 0, 0],
+      locked: !!jn && this.jointLocks.has(jn),
     });
   }
 
@@ -2237,10 +2477,16 @@ export class Editor {
     const joints = this.figureJoints();
     const jn = this.selectedJointName;
     if (!joints || !jn || !joints[jn]) return;
+    if (this.jointLocks.has(jn)) {
+      this.avisoTemporal("🔒 Articulación bloqueada — libérala en Posturas");
+      this.emitJointSelection();
+      return;
+    }
     // Respeta el rango natural del eje (y bloquea los ejes no articulables).
     const lim = JOINT_DOF[jn]?.[axis];
     const value = lim ? Math.max(lim[0], Math.min(lim[1], deg)) : 0;
     joints[jn].rotation[axis] = degToRad(value);
+    this.applyPoseSymmetry(jn);
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
     this.emitJointSelection();
     this.scheduleAutosave();
@@ -2899,6 +3145,41 @@ export class Editor {
       this.cablesDirty = true;
       return;
     }
+    // Agarre del maniquí: la articulación rota para que el punto agarrado siga
+    // al puntero (o la figura entera se traslada si se agarró la pelvis).
+    if (this.grabDrag) {
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      const target = new THREE.Vector3();
+      if (!this.dragPoint(this.grabDrag.origin, this.grabDrag.plane, target)) return;
+      if (this.grabDrag.joint === "") {
+        this.humanFigure?.position.copy(target.clone().add(this.grabDrag.grabLocal));
+        this.bus.emit("dragMeasure", { text: "✋ Figura completa" });
+        this.requestRender();
+        return;
+      }
+      const joints = this.figureJoints();
+      const j = joints?.[this.grabDrag.joint];
+      if (!j || !j.parent) return;
+      j.updateMatrixWorld(true);
+      const pivot = j.getWorldPosition(new THREE.Vector3());
+      const grabWorld = j.localToWorld(this.grabDrag.grabLocal.clone());
+      const v1 = grabWorld.sub(pivot);
+      const v2 = target.clone().sub(pivot);
+      if (v1.lengthSq() < 1e-4 || v2.lengthSq() < 1e-4) return;
+      const q = new THREE.Quaternion().setFromUnitVectors(v1.normalize(), v2.normalize());
+      const pq = j.parent.getWorldQuaternion(new THREE.Quaternion());
+      const lq = pq.clone().invert().multiply(q).multiply(pq);
+      j.quaternion.premultiply(lq);
+      this.clampJoint(this.grabDrag.joint);
+      this.applyPoseSymmetry(this.grabDrag.joint);
+      this.emitJointSelection();
+      this.bus.emit("dragMeasure", { text: `✋ ${this.grabDrag.joint}` });
+      this.requestRender();
+      return;
+    }
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
     if (
       (this.simulating && !simInteract) ||
@@ -3216,6 +3497,51 @@ export class Editor {
       }
     }
 
+    // Herramienta "agarrar maniquí": toma un segmento del cuerpo y lo lleva;
+    // rota la articulación libre más cercana de la cadena (las bloqueadas con
+    // el candado se saltan). Con eje bloqueado (1/2/3) el destino se
+    // restringe a ese eje.
+    if (this.grabFigureTool && !this.simulating && event.button === 0 && this.humanFigure) {
+      const hits = this.raycaster.intersectObjects([this.humanFigure], true);
+      const hit = hits[0];
+      if (hit) {
+        const jn0 = hit.object.userData.jointName as string | undefined;
+        const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
+        if (jn0 === "" || jn0 === undefined) {
+          // Pelvis/raíz: arrastrar la figura completa.
+          this.grabDrag = {
+            joint: "",
+            grabLocal: this.humanFigure.position.clone().sub(hit.point),
+            origin: hit.point.clone(),
+            plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+          };
+          this.orbit.enabled = false;
+          return;
+        }
+        let jn: string | null = jn0;
+        while (jn && this.jointLocks.has(jn)) jn = PARENT_JOINT[jn] ?? null;
+        if (!jn) {
+          this.avisoTemporal("🔒 Cadena bloqueada: libera alguna articulación");
+          return;
+        }
+        const joints = this.figureJoints();
+        const j = joints?.[jn];
+        if (j) {
+          j.updateMatrixWorld(true);
+          this.grabDrag = {
+            joint: jn,
+            grabLocal: j.worldToLocal(hit.point.clone()),
+            origin: hit.point.clone(),
+            plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+          };
+          this.selectJoint(jn); // muestra la articulación activa en Posturas
+          this.gizmo.detach(); // durante el agarre manda el puntero, no el gizmo
+          this.orbit.enabled = false;
+        }
+      }
+      return;
+    }
+
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
@@ -3398,6 +3724,14 @@ export class Editor {
   private onPointerUp = (): void => {
     if (this.marquee) {
       this.finishMarquee();
+      return;
+    }
+    if (this.grabDrag) {
+      this.grabDrag = null;
+      this.orbit.enabled = true;
+      this.bus.emit("dragMeasure", { text: null });
+      (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+      this.scheduleAutosave();
       return;
     }
     if (this.dragMove) {

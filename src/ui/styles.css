@@ -1280,3 +1280,17 @@ body.simulating .dock-toggle {
   border: 1px dashed var(--border, #333845); border-radius: 6px; margin-bottom: 6px;
 }
 @media (max-width: 560px) { .wizard-cartas { grid-template-columns: 1fr; } }
+
+/* ---- Planta dibujable del asistente + ergonomía del maniquí (v0.2.0) ---- */
+.wizard-tabs { display: flex; gap: 8px; }
+.wizard-tab.active { background: #12808c; border-color: #12808c; color: #fff; }
+.wizard-lienzo {
+  width: 100%; max-width: 520px; border: 1px solid var(--border, #333845);
+  border-radius: 8px; touch-action: none; cursor: crosshair; display: block;
+}
+.wizard-nota { color: var(--text-dim, #9aa1ad); font-size: 0.82rem; }
+.wizard-acciones-lienzo { display: flex; gap: 8px; flex-wrap: wrap; }
+.pose-sym {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  font-size: 0.9rem; padding: 2px 0;
+}

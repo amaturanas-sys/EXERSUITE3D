@@ -71,6 +71,61 @@ export const SEGMENT_DEFS: SegmentDef[] = [
 /** Proveedor de geometría de segmento (modelo baked: cm, centrado en origen). */
 export type SegmentProvider = (segmentId: string) => THREE.BufferGeometry | null;
 
+/**
+ * Primitiva REAL de cada segmento (misma que usa el rig al construirse), en
+ * función de la altura H. Fuente única para el maniquí y para la vista previa
+ * de la Biblioteca: así cada segmento se ve como lo que es (cabeza=esfera,
+ * torso=caja, muslo=cilindro…) y la sustitución por un modelo se entiende.
+ */
+export const SEGMENT_PRIMITIVES: Record<string, (H: number) => THREE.BufferGeometry> = {
+  cabeza: (H) => new THREE.SphereGeometry(0.066 * H, 18, 12),
+  cuello: (H) => new THREE.CylinderGeometry(0.035 * H, 0.035 * H, 0.05 * H, 14),
+  torso: (H) => new THREE.BoxGeometry(0.24 * H, 0.3 * H, 0.15 * H),
+  pelvis: (H) => new THREE.BoxGeometry(0.2 * H, 0.1 * H, 0.13 * H),
+  "brazo-sup-L": (H) => new THREE.CylinderGeometry(0.035 * H, 0.035 * H, 0.16 * H, 14),
+  "brazo-sup-R": (H) => new THREE.CylinderGeometry(0.035 * H, 0.035 * H, 0.16 * H, 14),
+  "antebrazo-L": (H) => new THREE.CylinderGeometry(0.03 * H, 0.03 * H, 0.15 * H, 14),
+  "antebrazo-R": (H) => new THREE.CylinderGeometry(0.03 * H, 0.03 * H, 0.15 * H, 14),
+  "mano-L": (H) => new THREE.SphereGeometry(0.035 * H, 18, 12),
+  "mano-R": (H) => new THREE.SphereGeometry(0.035 * H, 18, 12),
+  "muslo-L": (H) => new THREE.CylinderGeometry(0.05 * H, 0.05 * H, 0.23 * H, 14),
+  "muslo-R": (H) => new THREE.CylinderGeometry(0.05 * H, 0.05 * H, 0.23 * H, 14),
+  "pierna-L": (H) => new THREE.CylinderGeometry(0.04 * H, 0.04 * H, 0.23 * H, 14),
+  "pierna-R": (H) => new THREE.CylinderGeometry(0.04 * H, 0.04 * H, 0.23 * H, 14),
+  "pie-L": (H) => new THREE.BoxGeometry(0.07 * H, 0.04 * H, 0.16 * H),
+  "pie-R": (H) => new THREE.BoxGeometry(0.07 * H, 0.04 * H, 0.16 * H),
+};
+
+/** Geometría por defecto de un segmento (para previews y como hueco del rig). */
+export function defaultSegmentGeometry(
+  segmentId: string,
+  H = DEFAULT_HUMAN_HEIGHT,
+): THREE.BufferGeometry {
+  const make = SEGMENT_PRIMITIVES[segmentId];
+  return make ? make(H) : new THREE.CapsuleGeometry(0.03 * H, 0.12 * H, 4, 12);
+}
+
+/**
+ * Articulación "madre" de cada pivote, para escalar la cadena al agarrar el
+ * maniquí: si una articulación está bloqueada, se busca la anterior libre.
+ */
+export const PARENT_JOINT: Record<string, string | null> = {
+  spine: null,
+  neck: "spine",
+  shoulderL: "spine",
+  elbowL: "shoulderL",
+  wristL: "elbowL",
+  shoulderR: "spine",
+  elbowR: "shoulderR",
+  wristR: "elbowR",
+  hipL: null,
+  kneeL: "hipL",
+  ankleL: "kneeL",
+  hipR: null,
+  kneeR: "hipR",
+  ankleR: "kneeR",
+};
+
 export function buildHumanFigure(
   heightCm: number,
   segments?: SegmentProvider,
@@ -86,16 +141,18 @@ export function buildHumanFigure(
     return m;
   };
 
-  const cyl = (len: number, r: number, jointName: string, segmentId: string) => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 14), mat());
+  // Las dimensiones viven en SEGMENT_PRIMITIVES (fuente única con la
+  // Biblioteca); aquí solo se colocan en la jerarquía articulada.
+  const cyl = (len: number, _r: number, jointName: string, segmentId: string) => {
+    const m = new THREE.Mesh(defaultSegmentGeometry(segmentId, H), mat());
     m.position.y = -len / 2;
     return tag(m, jointName, segmentId);
   };
-  const box = (w: number, h: number, d: number, jointName: string, segmentId: string) => {
-    return tag(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat()), jointName, segmentId);
+  const box = (_w: number, _h: number, _d: number, jointName: string, segmentId: string) => {
+    return tag(new THREE.Mesh(defaultSegmentGeometry(segmentId, H), mat()), jointName, segmentId);
   };
-  const ball = (r: number, jointName: string, segmentId: string) => {
-    return tag(new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), mat()), jointName, segmentId);
+  const ball = (_r: number, jointName: string, segmentId: string) => {
+    return tag(new THREE.Mesh(defaultSegmentGeometry(segmentId, H), mat()), jointName, segmentId);
   };
   const pivot = (name: string, parent: THREE.Object3D, x: number, y: number, z: number) => {
     const g = new THREE.Group();

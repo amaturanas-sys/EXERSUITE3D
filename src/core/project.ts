@@ -61,6 +61,10 @@ export interface HumanData {
   /** Rotaciones de las articulaciones en grados (solo maniqui). */
   pose: Record<string, Vec3> | null;
   hands: { side: "L" | "R"; objectId: string; local: Vec3 }[];
+  /** Articulaciones bloqueadas con el candado (esquema Ergonómico v0.2.0). */
+  locks?: string[];
+  /** Simetría de pose activa (los cambios de un lado se replican al otro). */
+  symmetry?: boolean;
 }
 
 /** Espacio de trabajo del proyecto (asistente de Nuevo, v0.2.0). */
@@ -69,9 +73,15 @@ export interface WorkspaceData {
   canvas: "libre" | "completo";
   /** Modo de trabajo: sencillo (herramientas básicas) o profesional (todo). */
   modo: "sencillo" | "profesional";
-  /** Dimensiones del área (cm), solo canvas completo. */
+  /** Dimensiones del área (cm), solo canvas completo (bbox si hay planta). */
   ancho?: number;
   fondo?: number;
+  /**
+   * Planta del suelo dibujada como polígono libre (cm, plano XZ, centrada en
+   * el origen). Si existe, define la superficie operable; si no, se usa el
+   * rectángulo ancho×fondo.
+   */
+  planta?: [number, number][];
   /** Techo: alturas en los extremos A y B (pendiente) a lo largo de un eje. */
   techo?: { alturaA: number; alturaB: number; eje: "x" | "z" } | null;
   /** Paredes creadas en los bordes (N=+Z, S=-Z, E=+X, O=-X). */

@@ -11,7 +11,8 @@ const SECCIONES: [string, string[]][] = [
     [
       "En el inicio elige Builder (diseñar) o Simulador (solo correr la física de un proyecto).",
       "Crea un proyecto nuevo, abre un archivo .json o continúa una sesión reciente.",
-      "Al crear un proyecto el asistente pregunta el modo (Sencillo: piezas básicas · Profesional: todas las herramientas) y el espacio: canvas Libre (suelo infinito) o Completo (área con medidas reales, techo oscuro con pendiente y paredes de anclaje; lo que sobresale se marca en rojo y su colocación se cancela).",
+      "Al crear un proyecto el asistente pregunta el modo (Sencillo: piezas básicas · Profesional: todas las herramientas) y el espacio: canvas Libre (suelo infinito) o Completo, donde defines el suelo como rectángulo o DIBUJANDO su planta en metros (vértice a vértice, ideal para salas en L).",
+      "En el canvas Completo la techumbre es una capa oscura copia fiel del suelo con sus alturas A/B y pendiente; las paredes N/S/E/O siguen el contorno y sirven de anclaje. Lo que sobresale del espacio se marca en rojo y su colocación se cancela.",
       "La escena se autoguarda en el dispositivo cada pocos segundos mientras trabajas.",
     ],
   ],
@@ -48,6 +49,8 @@ const SECCIONES: [string, string[]][] = [
     [
       "Figura muestra el maniquí a escala; ajusta su altura en cm.",
       "Posa sus articulaciones arrastrando los ejes, guarda posturas y usa Apoyar mano para fijar las manos a un agarre (IK).",
+      "✋ Agarrar maniquí (en Posturas): arrastra directamente un segmento del cuerpo; con 1/2/3 el movimiento se restringe a un eje.",
+      "🔒 Candado: bloquea articulaciones para que no se muevan al posar (representa técnica y ejercicio con precisión); Simetría L↔R replica cada cambio espejado en el otro lado.",
     ],
   ],
   [

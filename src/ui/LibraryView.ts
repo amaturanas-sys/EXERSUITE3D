@@ -4,7 +4,7 @@ import {
   COMPONENT_LIBRARY,
   PRIMITIVE_DEFS,
 } from "../objects/componentLibrary";
-import { SEGMENT_DEFS } from "../objects/humanFigure";
+import { SEGMENT_DEFS, defaultSegmentGeometry } from "../objects/humanFigure";
 import { buildGeometry } from "../objects/geometryFactory";
 import { buildMaterial } from "../objects/materials";
 import { componentModels, type ImportEntry, type ImportStatus } from "../core/componentModels";
@@ -66,8 +66,9 @@ const segmentSource: LibrarySource = {
   fileName: (id) => figureSegments.fileName(id),
   isUser: (id) => figureSegments.has(id),
   isFile: () => false,
-  previewGeometry: (id) =>
-    figureSegments.geometryClone(id) ?? new THREE.CapsuleGeometry(5, 22, 4, 12),
+  // Sin modelo del usuario, muestra la primitiva REAL del segmento (la misma
+  // que usa el maniquí): cabeza=esfera, torso=caja, muslo=cilindro…
+  previewGeometry: (id) => figureSegments.geometryClone(id) ?? defaultSegmentGeometry(id),
   previewMaterial: () => figureMat(),
   setUserModel: (id, f) => figureSegments.setUserModel(id, f),
   clearUserModel: (id) => figureSegments.clearUserModel(id),
