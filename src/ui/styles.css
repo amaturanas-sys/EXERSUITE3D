@@ -1356,3 +1356,46 @@ body.simulating .dock-toggle {
 .menu-btn {
   font-weight: 600;
 }
+
+/* ---- F4: paneles plegables, drag&drop y máquinas estándar ---- */
+.panel-title {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.panel-title .plegar {
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.panel.colapsado {
+  bottom: auto;
+  max-height: none;
+  height: auto;
+  flex: 0 0 auto;
+}
+.panel.colapsado > :not(.panel-title):not(.brand-header) {
+  display: none;
+}
+.drag-ghost {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  background: rgba(30, 33, 40, 0.95);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+}
+.maquina-btn {
+  font-weight: 600;
+}
+.maquina-icon {
+  background: none !important;
+  width: auto;
+  height: auto;
+  font-size: 15px;
+}

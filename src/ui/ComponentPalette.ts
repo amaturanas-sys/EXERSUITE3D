@@ -7,6 +7,7 @@ import {
 } from "../objects/componentLibrary";
 import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
+import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { configureBeam, configureTube } from "./lineToolDialog";
 import { clear, el } from "./dom";
 
@@ -74,6 +75,20 @@ export class ComponentPalette {
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }
+    // Máquinas estándar (prefabs agrupados): clave para plantear la sala.
+    body.append(el("div", { class: "cat-label" }, ["Máquinas estándar"]));
+    for (const m of STANDARD_MACHINES) {
+      const btn = el("button", { class: "comp-btn maquina-btn", title: m.description }, [
+        el("span", { class: "swatch maquina-icon" }, [m.icon]),
+        m.label,
+      ]);
+      btn.addEventListener("click", () => {
+        if (this.consumeDragClick()) return;
+        this.editor.insertarMaquina(m.id);
+      });
+      this.habilitarArrastre(btn, (suelo) => this.editor.insertarMaquina(m.id, suelo));
+      body.append(btn);
+    }
     const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);
@@ -84,6 +99,94 @@ export class ComponentPalette {
         body.append(this.componentButton(def));
       }
     }
+  }
+
+  // ----------------------------------------------- arrastrar y soltar (F4)
+  /** True (y consume) si el click viene de terminar un arrastre. */
+  private dragJustEnded = false;
+  private consumeDragClick(): boolean {
+    const was = this.dragJustEnded;
+    this.dragJustEnded = false;
+    return was;
+  }
+
+  /**
+   * Arrastrar una pieza de la paleta al visor la coloca donde se suelta.
+   * Ratón: basta con moverse unos px. Táctil: mantén pulsado ~0,3 s (para no
+   * pelear con el scroll de la paleta) y arrastra.
+   */
+  private habilitarArrastre(
+    btn: HTMLElement,
+    colocar: (suelo: import("three").Vector3) => void,
+  ): void {
+    btn.addEventListener("pointerdown", (down) => {
+      if (down.button !== 0) return;
+      let dragging = false;
+      let ghost: HTMLElement | null = null;
+      const startX = down.clientX;
+      const startY = down.clientY;
+      const esTactil = down.pointerType !== "mouse";
+
+      const empezar = (): void => {
+        if (dragging) return;
+        dragging = true;
+        try {
+          btn.setPointerCapture(down.pointerId);
+        } catch {
+          /* sin captura */
+        }
+        ghost = el("div", { class: "drag-ghost" }, [btn.textContent ?? ""]);
+        document.body.append(ghost);
+        moverGhost(startX, startY);
+      };
+      const moverGhost = (x: number, y: number): void => {
+        if (ghost) {
+          ghost.style.left = `${x + 12}px`;
+          ghost.style.top = `${y + 12}px`;
+        }
+      };
+      // Táctil: mantener pulsado activa el arrastre (el scroll no lo hace).
+      const timer = esTactil ? window.setTimeout(empezar, 300) : null;
+
+      const onMove = (e: PointerEvent): void => {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (!dragging && !esTactil && Math.hypot(dx, dy) > 6) empezar();
+        if (dragging) {
+          e.preventDefault();
+          moverGhost(e.clientX, e.clientY);
+        }
+      };
+      const onUp = (e: PointerEvent): void => {
+        if (timer !== null) clearTimeout(timer);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
+        ghost?.remove();
+        if (!dragging) return;
+        this.dragJustEnded = true;
+        // Suelta sobre el visor: coloca la pieza en ese punto del suelo.
+        const viewport = document.getElementById("viewport");
+        const r = viewport?.getBoundingClientRect();
+        const sobreVisor =
+          !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        const fueraPaleta = !this.root.contains(document.elementFromPoint(e.clientX, e.clientY));
+        if (sobreVisor && fueraPaleta) {
+          const suelo = this.editor.screenToGround(e.clientX, e.clientY);
+          if (suelo) colocar(suelo);
+        }
+      };
+      const onCancel = (): void => {
+        if (timer !== null) clearTimeout(timer);
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onCancel);
+        ghost?.remove();
+      };
+      window.addEventListener("pointermove", onMove, { passive: false });
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onCancel);
+    });
   }
 
   private componentButton(def: ComponentDefinition): HTMLElement {
@@ -99,6 +202,7 @@ export class ComponentPalette {
     if (modeled) children.push(el("span", { class: "comp-modeled", title: "Modelo 3D" }, []));
     const btn = el("button", { class: "comp-btn", title }, children);
     btn.addEventListener("click", () => {
+      if (this.consumeDragClick()) return;
       if (def.placement === "rope-chain") this.editor.beginRope("chain");
       else if (def.placement === "rope-strap") this.editor.beginRope("strap");
       else if (def.placement === "beam") {
@@ -107,6 +211,10 @@ export class ComponentPalette {
         void configureTube().then((p) => p && this.editor.beginLine("tube", p));
       } else this.editor.addComponent(def.id);
     });
+    // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
+    if (!def.placement) {
+      this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
+    }
     return btn;
   }
 }

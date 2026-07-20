@@ -7,6 +7,7 @@ import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
+import { construirMaquina } from "../objects/standardMachines";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
@@ -681,6 +682,41 @@ export class Editor {
   }
 
   // -------------------------------------------------------------- objetos
+
+  /** Punto del suelo (y=0) bajo unas coordenadas de pantalla, o null. */
+  screenToGround(clientX: number, clientY: number): THREE.Vector3 | null {
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+    const p = new THREE.Vector3();
+    const suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    return this.raycaster.ray.intersectPlane(suelo, p) ? p : null;
+  }
+
+  /** Crea el componente apoyado en el suelo sobre el punto dado (drag&drop). */
+  addComponentAt(componentId: string, suelo: THREE.Vector3): SceneObject {
+    const obj = this.addComponent(componentId);
+    const s = obj.effectiveSize();
+    obj.mesh.position.set(suelo.x, s.y / 2, suelo.z);
+    this.bus.emit("objectTransformed", { object: obj });
+    return obj;
+  }
+
+  /**
+   * Inserta una máquina estándar (prefab de componentes agrupado) con su
+   * centro en `at` (o en el origen). El grupo resultante se mueve en bloque.
+   */
+  insertarMaquina(prefabId: string, at = new THREE.Vector3()): void {
+    const { ids, label } = construirMaquina(this, prefabId, at);
+    if (ids.length >= 2) {
+      const gid = this.createGroupFromIds(ids);
+      if (gid) this.renameGroup(gid, label);
+    }
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
   addComponent(componentId: string, position?: THREE.Vector3): SceneObject {
     const def = getDefinition(componentId);
     if (!def) throw new Error(`Componente desconocido: ${componentId}`);

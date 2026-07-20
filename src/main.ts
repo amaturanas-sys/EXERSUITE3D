@@ -21,6 +21,23 @@ import type { ProjectData, WorkspaceData } from "./core/project";
 
 const app = document.getElementById("app")!;
 
+/**
+ * Panel plegable (F4 v0.2.0): tocar su título lo colapsa a solo la cabecera
+ * (y lo reexpande), en cualquier tamaño de pantalla.
+ */
+function hacerPlegable(panel: HTMLElement): void {
+  const title = panel.querySelector(".panel-title");
+  if (!title) return;
+  const chev = document.createElement("span");
+  chev.className = "plegar";
+  chev.textContent = "▾";
+  title.append(chev);
+  title.addEventListener("click", () => {
+    const on = panel.classList.toggle("colapsado");
+    chev.textContent = on ? "▸" : "▾";
+  });
+}
+
 let editor: Editor | null = null;
 let editorNodes: HTMLElement[] = [];
 let editorDisposables: Array<() => void> = [];
@@ -96,6 +113,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Piezas disponibles");
   const toggleRight = dockToggle("toggle-right", "🧰", "show-right", "Propiedades y conexiones");
   const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
+
+  // Paneles plegables desde su título (esquema F4).
+  for (const p of [palette.root, inspector.root, joints.root, posePanel.root]) hacerPlegable(p);
 
   editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses];
   editorDisposables = [
