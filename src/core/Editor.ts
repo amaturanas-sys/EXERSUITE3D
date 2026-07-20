@@ -461,6 +461,12 @@ export class Editor {
   private canvasDragging = false;
   private lastMotionAt = 0;
 
+  /** Fotografía el visor tal cual se ve (render inmediato + PNG). */
+  captureViewportPNG(): string {
+    this.sceneManager.render();
+    return this.sceneManager.renderer.domElement.toDataURL("image/png");
+  }
+
   /** Pide repintar los próximos frames (interacción, cambios de escena…). */
   requestRender(frames = 3): void {
     this.renderDemand = Math.max(this.renderDemand, frames);

@@ -1,4 +1,6 @@
 import type { Editor } from "../core/Editor";
+import { guardarCaptura } from "../core/capturas";
+import { descargarArchivo } from "../core/descargas";
 import { el } from "./dom";
 
 /**
@@ -9,6 +11,31 @@ import { el } from "./dom";
  */
 export class SimulatorBar {
   readonly root: HTMLElement;
+
+  /** 📷 Fotografía el visor: guarda en la galería de la Home y descarga. */
+  private botonCaptura(): HTMLElement {
+    const b = el("button", { class: "tool", title: "Capturar imagen del visor (galería + descarga)" }, [
+      "📷 Captura",
+    ]);
+    b.addEventListener("click", () => {
+      void (async () => {
+        try {
+          const dataUrl = this.editor.captureViewportPNG();
+          await guardarCaptura(dataUrl);
+          const base64 = dataUrl.split(",")[1];
+          const bin = atob(base64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          await descargarArchivo(`exersuite3d-captura-${Date.now()}.png`, bytes, "image/png");
+          b.textContent = "✓ Guardada";
+          setTimeout(() => (b.textContent = "📷 Captura"), 1600);
+        } catch (err) {
+          console.error("No se pudo capturar:", err);
+        }
+      })();
+    });
+    return b;
+  }
 
   constructor(
     private editor: Editor,
@@ -54,6 +81,7 @@ export class SimulatorBar {
         zoom("＋", 0.8, "Acercar"),
         zoom("－", 1.25, "Alejar"),
       ]),
+      el("div", { class: "tool-group" }, [this.botonCaptura()]),
       el("div", { class: "sim-hint" }, [
         "🖐 Arrastra una pieza móvil para moverla con la mano · arrastra el maniquí para situarlo",
       ]),

@@ -65,6 +65,15 @@ const SECCIONES: [string, string[]][] = [
     ],
   ],
   [
+    "Tipos de archivo",
+    [
+      "Proyecto .json: tu diseño completo (piezas, física, cables, maniquí); interoperable entre la app web, Windows y la versión Godot.",
+      "Modelo .glb/.gltf/.obj: modelos 3D para sustituir componentes o segmentos del maniquí en la Biblioteca.",
+      "Biblioteca .zip: tu colección completa de modelos, exportable e importable entre dispositivos.",
+      "Captura .png: fotografías del visor tomadas en el Simulador (galería en la Home).",
+    ],
+  ],
+  [
     "Guardar y rendimiento",
     [
       "Guardar descarga el proyecto .json (interoperable con la versión de escritorio y Godot); Exportar genera un .glb del prototipo.",
@@ -73,16 +82,21 @@ const SECCIONES: [string, string[]][] = [
   ],
 ];
 
+/** Vuelca el contenido del instructivo dentro de un contenedor dado. */
+export function renderInstructivo(contenedor: HTMLElement): void {
+  for (const [titulo, puntos] of SECCIONES) {
+    contenedor.append(el("h3", {}, [titulo]));
+    const ul = el("ul", {});
+    for (const p of puntos) ul.append(el("li", {}, [p]));
+    contenedor.append(ul);
+  }
+}
+
 export function mostrarInstructivo(): void {
   const cerrar = (): void => overlay.remove();
 
   const cuerpo = el("div", { class: "instr-cuerpo" });
-  for (const [titulo, puntos] of SECCIONES) {
-    cuerpo.append(el("h3", {}, [titulo]));
-    const ul = el("ul", {});
-    for (const p of puntos) ul.append(el("li", {}, [p]));
-    cuerpo.append(ul);
-  }
+  renderInstructivo(cuerpo);
 
   const cerrarBtn = el("button", { class: "tool" }, ["Cerrar"]);
   cerrarBtn.addEventListener("click", cerrar);

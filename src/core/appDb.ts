@@ -7,7 +7,7 @@
  */
 
 export const APP_DB_NAME = "exersuite3d";
-export const APP_DB_VERSION = 3;
+export const APP_DB_VERSION = 4;
 
 export const STORE_MODELS = "componentModels";
 export const STORE_RECENT = "recentProjects";
@@ -16,6 +16,8 @@ export const STORE_RECENT = "recentProjects";
  * completo: listar la Home o podar no deserializa hasta 12 proyectos enteros.
  */
 export const STORE_RECENT_META = "recentMeta";
+/** Capturas de pantalla tomadas en el Simulador (galería de la Home). */
+export const STORE_CAPTURAS = "capturas";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -30,6 +32,9 @@ export function openAppDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_RECENT)) {
         db.createObjectStore(STORE_RECENT, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_CAPTURAS)) {
+        db.createObjectStore(STORE_CAPTURAS, { keyPath: "id" });
       }
       if (!db.objectStoreNames.contains(STORE_RECENT_META)) {
         db.createObjectStore(STORE_RECENT_META, { keyPath: "id" });

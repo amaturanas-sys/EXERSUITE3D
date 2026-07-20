@@ -1186,3 +1186,57 @@ body.simulating .dock-toggle {
 .instr-cuerpo h3 { margin: 16px 0 6px; font-size: 1rem; color: var(--accent, #efede8); }
 .instr-cuerpo ul { margin: 0 0 4px 18px; padding: 0; }
 .instr-cuerpo li { margin: 4px 0; color: var(--text-dim, #9aa1ad); line-height: 1.45; }
+
+
+/* ---- Landing maestro-detalle v0.2.0 ---- */
+.land-grid2 {
+  display: grid; grid-template-columns: 340px 1fr; gap: 26px;
+  max-width: 1100px; margin: 0 auto; padding: 40px 20px;
+  min-height: 100dvh; align-content: start;
+}
+.land-col-nav { display: flex; flex-direction: column; gap: 18px; }
+.land-nav { display: flex; flex-direction: column; gap: 8px; }
+.land-nav-item {
+  text-align: left; padding: 14px 18px; border-radius: 10px;
+  background: var(--panel, #1e2128); color: var(--text, #e6e8ec);
+  border: 1px solid var(--border, #333845); font-size: 1.02rem; font-weight: 600;
+  letter-spacing: 0.04em; cursor: pointer;
+  /* flecha tipo pestaña del esquema */
+  position: relative;
+}
+.land-nav-item::after { content: "›"; position: absolute; right: 14px; opacity: 0.5; }
+.land-nav-item:hover { border-color: var(--accent, #efede8); }
+.land-nav-item.active {
+  background: var(--accent, #efede8); color: var(--on-accent, #14161b);
+}
+.land-nav-item.active::after { content: "▸"; opacity: 1; }
+.land-col-content { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.land-content {
+  background: var(--panel, #1e2128); border: 1px solid var(--border, #333845);
+  border-radius: 14px; padding: 22px; flex: 1; min-height: 380px;
+  display: flex; flex-direction: column; gap: 16px; overflow: auto;
+}
+.land-leyenda {
+  color: var(--text-dim, #9aa1ad); font-size: 0.92rem; text-align: center;
+  border: 1px dashed var(--border, #333845); border-radius: 10px; padding: 10px 14px;
+}
+.land-recientes { display: flex; flex-direction: column; gap: 8px; }
+.land-instr-embed { max-height: none; }
+.land-settings { display: flex; flex-direction: column; gap: 8px; max-width: 460px; }
+.land-set-fila {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  background: var(--panel2, #262a33); border: 1px solid var(--border, #333845);
+  border-radius: 8px; padding: 9px 12px;
+}
+.land-set-fila select { background: var(--panel, #1e2128); color: var(--text, #e6e8ec);
+  border: 1px solid var(--border, #333845); border-radius: 6px; padding: 4px 8px; }
+.land-caps { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.land-cap { position: relative; border: 1px solid var(--border, #333845); border-radius: 10px; overflow: hidden; }
+.land-cap img { width: 100%; display: block; }
+.land-cap-acts { position: absolute; top: 6px; right: 6px; display: flex; gap: 6px; }
+@media (max-width: 860px) {
+  .land-grid2 { grid-template-columns: 1fr; }
+  .land-nav { flex-direction: row; flex-wrap: wrap; }
+  .land-nav-item { flex: 1 1 40%; text-align: center; }
+  .land-nav-item::after { content: ""; }
+}

@@ -1,7 +1,15 @@
 import type { ProjectData } from "../core/project";
-import { mostrarInstructivo } from "./Instructivo";
-import { acceptSeguro } from "../core/descargas";
+import { renderInstructivo } from "./Instructivo";
+import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
+import { borrarCaptura, listarCapturas } from "../core/capturas";
+import {
+  applyPreset,
+  getPerf,
+  setPerf,
+  type PerfPreset,
+  type PerfSettings,
+} from "../core/performance";
 import { clear, el } from "./dom";
 
 export interface LandingActions {
@@ -13,20 +21,32 @@ export interface LandingActions {
   hasAutosave: boolean;
 }
 
+type Vista = "builder" | "simulator" | "instructivo" | "settings";
+
+const LEYENDAS: Record<Vista, string> = {
+  builder:
+    "Builder: el taller completo — construye máquinas desde piezas, edita con precisión y guarda tus proyectos.",
+  simulator:
+    "Simulador: abre un proyecto solo para correr su física e interactuar con él, sin herramientas de edición.",
+  instructivo:
+    "Instructivo: recorrido por las herramientas, los modelos, las funciones y los tipos de archivo.",
+  settings: "Ajustes: calidad gráfica y rendimiento; se aplican al abrir un proyecto.",
+};
+
 /**
- * Pantalla de inicio (launcher) ligera que se muestra antes de inicializar el
- * editor 3D, para no consumir recursos (WebGL/física) hasta que el usuario
- * elige qué hacer: nuevo, abrir archivo o un proyecto reciente.
+ * Pantalla de inicio en maestro-detalle (esquema v0.2.0): logotipo + cuatro
+ * accesos (BUILDER, SIMULADOR, INSTRUCTIVO, SETTINGS) a la izquierda y un
+ * panel de contenido que cambia según el modo, con leyenda contextual.
+ * Ligera: el editor 3D no se inicializa hasta elegir qué hacer.
  */
 export class Landing {
   readonly root: HTMLElement;
-  /**
-   * Modo de apertura: **builder** (edición completa) o **simulator** (solo
-   * corre la física del proyecto, sin herramientas de edición — para mostrar
-   * un diseño gastando el mínimo de recursos).
-   */
+  /** Modo de apertura del editor (lo consulta main.ts al abrir proyectos). */
   mode: "builder" | "simulator" = "builder";
-  private recentList: HTMLElement;
+
+  private contenido: HTMLElement;
+  private leyenda: HTMLElement;
+  private navBtns = new Map<Vista, HTMLButtonElement>();
   private fileInput: HTMLInputElement;
 
   constructor(private actions: LandingActions) {
@@ -36,88 +56,278 @@ export class Landing {
     this.fileInput.style.display = "none";
     this.fileInput.addEventListener("change", () => {
       const f = this.fileInput.files?.[0];
-      // Resetea el value para poder reintentar con el MISMO archivo (si el
-      // primer intento falló, change no se dispararía de nuevo).
       this.fileInput.value = "";
       if (f) this.actions.onOpenFile(f);
     });
 
-    const logo = el("img", { class: "land-logo", src: `${base}brand/logo-full-light.png`, alt: "EXERSUITE3D" });
-
+    const logo = el("img", {
+      class: "land-logo",
+      src: `${base}brand/logo-full-light.png`,
+      alt: "EXERSUITE3D",
+    });
     const tagline = el("div", { class: "land-tagline" }, [
       "Diseño y simulación 3D de máquinas de gimnasio",
     ]);
 
-    const newBtn = el("button", { class: "land-btn primary" }, ["✦  Crear nuevo proyecto"]);
-    newBtn.addEventListener("click", () => this.actions.onNew());
-
-    const openBtn = el("button", { class: "land-btn" }, ["📂  Abrir archivo…"]);
-    openBtn.addEventListener("click", () => this.fileInput.click());
-
-    const libBtn = el("button", { class: "land-btn" }, ["🧩  Explorar biblioteca"]);
-    libBtn.addEventListener("click", () => this.actions.onExploreLibrary());
-
-    // Selector Builder / Simulador: en modo Simulador, abrir un archivo o un
-    // reciente solo corre la física (crear/biblioteca son cosa del Builder).
-    const builderBtn = el("button", { class: "land-mode active" }, ["🛠 Builder"]);
-    const simBtn = el("button", { class: "land-mode" }, ["▶ Simulador"]);
-    const modeHint = el("div", { class: "land-mode-hint" }, [""]);
-    const setMode = (m: "builder" | "simulator") => {
-      this.mode = m;
-      builderBtn.classList.toggle("active", m === "builder");
-      simBtn.classList.toggle("active", m === "simulator");
-      const sim = m === "simulator";
-      newBtn.style.display = sim ? "none" : "";
-      libBtn.style.display = sim ? "none" : "";
-      openBtn.textContent = sim ? "📂  Simular archivo…" : "📂  Abrir archivo…";
-      modeHint.textContent = sim
-        ? "Simulador: abre un proyecto solo para correr su física e interactuar con él (sin herramientas de edición)."
-        : "";
-    };
-    builderBtn.addEventListener("click", () => setMode("builder"));
-    simBtn.addEventListener("click", () => setMode("simulator"));
-    const instrBtn = el("button", { class: "land-mode land-instr", title: "Instrucciones de uso" }, [
-      "📖 Instructivo",
-    ]);
-    instrBtn.addEventListener("click", () => mostrarInstructivo());
-    const modeRow = el("div", { class: "land-mode-row" }, [builderBtn, simBtn, instrBtn]);
-
-    const actionsRow = el("div", { class: "land-actions" }, [newBtn, openBtn, libBtn]);
-    if (this.actions.hasAutosave) {
-      const cont = el("button", { class: "land-btn ghost" }, ["↻  Continuar sesión anterior"]);
-      cont.addEventListener("click", () => this.actions.onContinue());
-      actionsRow.append(cont);
+    // ---- Navegación (los cuatro accesos del esquema)
+    const nav = el("nav", { class: "land-nav" });
+    const navDefs: [Vista, string][] = [
+      ["builder", "🛠 BUILDER"],
+      ["simulator", "▶ SIMULADOR"],
+      ["instructivo", "📖 INSTRUCTIVO"],
+      ["settings", "⚙ SETTINGS"],
+    ];
+    for (const [vista, etiqueta] of navDefs) {
+      const b = el("button", { class: "land-nav-item" }, [etiqueta]);
+      b.addEventListener("click", () => this.setVista(vista));
+      this.navBtns.set(vista, b);
+      nav.append(b);
     }
+
+    this.contenido = el("div", { class: "land-content" });
+    this.leyenda = el("div", { class: "land-leyenda" }, [LEYENDAS.builder]);
 
     const dedication = el("div", { class: "land-dedication" }, ["…"]);
     void this.loadDedication(dedication, `${base}dedicatoria.txt`);
 
-    const left = el("div", { class: "land-main" }, [
-      el("div", { class: "land-brand" }, [logo, tagline]),
-      modeRow,
-      modeHint,
-      actionsRow,
-      dedication,
+    this.root = el("div", { class: "landing" }, [
+      el("div", { class: "land-grid2" }, [
+        el("div", { class: "land-col-nav" }, [
+          el("div", { class: "land-brand" }, [logo, tagline]),
+          nav,
+          dedication,
+        ]),
+        el("div", { class: "land-col-content" }, [this.contenido, this.leyenda]),
+      ]),
       this.fileInput,
     ]);
 
-    this.recentList = el("div", { class: "land-recent-list" }, [
-      el("div", { class: "land-empty" }, ["Cargando…"]),
-    ]);
-    const aside = el("aside", { class: "land-aside" }, [
-      el("div", { class: "land-aside-title" }, ["Proyectos recientes"]),
-      this.recentList,
-    ]);
-
-    this.root = el("div", { class: "landing" }, [
-      el("div", { class: "land-grid" }, [left, aside]),
-    ]);
-
-    void this.loadRecent();
+    this.setVista("builder");
   }
 
   hide(): void {
     this.root.remove();
+  }
+
+  // ------------------------------------------------------------- navegación
+
+  private setVista(v: Vista): void {
+    this.mode = v === "simulator" ? "simulator" : "builder";
+    for (const [key, btn] of this.navBtns) btn.classList.toggle("active", key === v);
+    this.leyenda.textContent = LEYENDAS[v];
+    clear(this.contenido);
+    if (v === "builder") this.renderBuilder();
+    else if (v === "simulator") this.renderSimulador();
+    else if (v === "instructivo") this.renderInstructivoVista();
+    else this.renderSettings();
+  }
+
+  private accion(texto: string, primary: boolean, fn: () => void): HTMLElement {
+    const b = el("button", { class: primary ? "land-btn primary" : "land-btn" }, [texto]);
+    b.addEventListener("click", fn);
+    return b;
+  }
+
+  // ----------------------------------------------------------- vista Builder
+
+  private renderBuilder(): void {
+    const acciones = el("div", { class: "land-actions" }, [
+      this.accion("✦  Crear nuevo proyecto", true, () => this.actions.onNew()),
+      this.accion("📂  Abrir archivo…", false, () => this.fileInput.click()),
+      this.accion("🧩  Explorar biblioteca", false, () => this.actions.onExploreLibrary()),
+    ]);
+    if (this.actions.hasAutosave) {
+      acciones.append(
+        this.accion("↻  Continuar sesión anterior", false, () => this.actions.onContinue()),
+      );
+    }
+    this.contenido.append(acciones, this.seccionRecientes());
+  }
+
+  // --------------------------------------------------------- vista Simulador
+
+  private renderSimulador(): void {
+    const acciones = el("div", { class: "land-actions" }, [
+      this.accion("📂  Simular archivo…", true, () => this.fileInput.click()),
+      this.accion("🖼  Capturas", false, () => this.renderCapturas()),
+    ]);
+    if (this.actions.hasAutosave) {
+      acciones.append(this.accion("↻  Sesión anterior", false, () => this.actions.onContinue()));
+    }
+    this.contenido.append(acciones, this.seccionRecientes());
+  }
+
+  /** Galería de capturas tomadas en el Simulador (📷). */
+  private renderCapturas(): void {
+    clear(this.contenido);
+    const volver = this.accion("← Volver", false, () => this.setVista("simulator"));
+    const titulo = el("div", { class: "land-aside-title" }, ["Capturas del Simulador"]);
+    const grid = el("div", { class: "land-caps" }, [
+      el("div", { class: "land-empty" }, ["Cargando…"]),
+    ]);
+    this.contenido.append(el("div", { class: "land-actions" }, [volver]), titulo, grid);
+
+    void (async () => {
+      const caps = await listarCapturas().catch(() => []);
+      clear(grid);
+      if (!caps.length) {
+        grid.append(
+          el("div", { class: "land-empty" }, [
+            "Aún no hay capturas. En el Simulador, usa el botón 📷 Captura.",
+          ]),
+        );
+        return;
+      }
+      for (const cap of caps) {
+        const img = el("img", { src: cap.dataUrl, alt: "captura" });
+        const dl = el("button", { class: "tool", title: "Descargar" }, ["⬇"]);
+        dl.addEventListener("click", () => {
+          const b64 = cap.dataUrl.split(",")[1];
+          const bin = atob(b64);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          void descargarArchivo(`exersuite3d-captura-${cap.tomadaEn}.png`, bytes, "image/png");
+        });
+        const del = el("button", { class: "tool danger", title: "Borrar" }, ["✕"]);
+        del.addEventListener("click", () => {
+          void borrarCaptura(cap.id).then(() => this.renderCapturas());
+        });
+        grid.append(
+          el("div", { class: "land-cap" }, [img, el("div", { class: "land-cap-acts" }, [dl, del])]),
+        );
+      }
+    })();
+  }
+
+  // ------------------------------------------------------- vista Instructivo
+
+  private renderInstructivoVista(): void {
+    const cuerpo = el("div", { class: "instr-cuerpo land-instr-embed" });
+    renderInstructivo(cuerpo);
+    this.contenido.append(cuerpo);
+  }
+
+  // ---------------------------------------------------------- vista Settings
+
+  private renderSettings(): void {
+    const fila = (etiqueta: string, control: HTMLElement) =>
+      el("label", { class: "land-set-fila" }, [el("span", {}, [etiqueta]), control]);
+
+    // Presets Bajo / Medio / Alto (como el esquema)
+    const presetRow = el("div", { class: "land-actions" });
+    const marcar = (activo: PerfPreset) => {
+      presetRow.querySelectorAll("button").forEach((b) => {
+        b.classList.toggle("primary", (b as HTMLElement).dataset.preset === activo);
+      });
+    };
+    for (const p of ["bajo", "medio", "alto"] as const) {
+      const b = el("button", { class: "land-btn" }, [p[0].toUpperCase() + p.slice(1)]);
+      b.dataset.preset = p;
+      b.addEventListener("click", () => {
+        applyPreset(p);
+        marcar(p);
+        pintarDetalles();
+      });
+      presetRow.append(b);
+    }
+    marcar(getPerf().preset);
+
+    const detalles = el("div", { class: "land-settings" });
+    const pintarDetalles = () => {
+      clear(detalles);
+      const s = getPerf();
+      const toggle = (
+        texto: string,
+        valor: boolean,
+        aplicar: (v: boolean) => Partial<PerfSettings>,
+      ) => {
+        const cb = el("input", { type: "checkbox" });
+        cb.checked = valor;
+        cb.addEventListener("change", () => {
+          setPerf({ ...getPerf(), preset: "custom", ...aplicar(cb.checked) });
+          marcar("custom");
+        });
+        return fila(texto, cb);
+      };
+      const res = el("select", {});
+      for (const [lbl, val] of [
+        ["Mínima (×0.5)", 0.5],
+        ["Muy baja (×0.75)", 0.75],
+        ["Baja (×1)", 1],
+        ["Media (×1.25)", 1.25],
+        ["Alta (×1.5)", 1.5],
+        ["Máxima (×2)", 2],
+      ] as [string, number][]) {
+        const o = el("option", { value: String(val) }, [lbl]);
+        if (Math.abs(s.maxPixelRatio - val) < 0.001) o.selected = true;
+        res.append(o);
+      }
+      res.addEventListener("change", () => {
+        setPerf({ ...getPerf(), preset: "custom", maxPixelRatio: parseFloat(res.value) });
+        marcar("custom");
+      });
+      detalles.append(
+        fila("Resolución de render", res),
+        toggle("Sombras", s.shadows, (v) => ({ shadows: v })),
+        toggle("Sombras suaves", s.softShadows, (v) => ({ softShadows: v })),
+        toggle("Reflejos de entorno", s.environment, (v) => ({ environment: v })),
+        toggle("Antialias (suavizado)", s.antialias, (v) => ({ antialias: v })),
+        toggle("Sombreado simple (sin PBR)", s.simpleShading, (v) => ({ simpleShading: v })),
+        toggle("Resolución dinámica", s.dynamicResolution, (v) => ({ dynamicResolution: v })),
+      );
+    };
+    pintarDetalles();
+
+    this.contenido.append(
+      el("div", { class: "land-aside-title" }, ["Calidad gráfica"]),
+      presetRow,
+      detalles,
+      el("div", { class: "land-empty" }, [
+        "Los ajustes se guardan en este dispositivo y se aplican al abrir un proyecto.",
+      ]),
+    );
+  }
+
+  // ------------------------------------------------------------- recientes
+
+  private seccionRecientes(): HTMLElement {
+    const lista = el("div", { class: "land-recent-list" }, [
+      el("div", { class: "land-empty" }, ["Cargando…"]),
+    ]);
+    void this.loadRecent(lista);
+    return el("div", { class: "land-recientes" }, [
+      el("div", { class: "land-aside-title" }, ["Proyectos recientes"]),
+      lista,
+    ]);
+  }
+
+  private async loadRecent(destino: HTMLElement): Promise<void> {
+    let recents: RecentMeta[];
+    try {
+      recents = await listRecent();
+    } catch {
+      recents = [];
+    }
+    clear(destino);
+    if (!recents.length) {
+      destino.append(
+        el("div", { class: "land-empty" }, [
+          "Aún no hay proyectos. Crea uno nuevo o abre un archivo.",
+        ]),
+      );
+      return;
+    }
+    for (const r of recents) {
+      const item = el("button", { class: "land-recent" }, [
+        el("div", { class: "land-recent-name" }, [r.name]),
+        el("div", { class: "land-recent-date" }, [formatDate(r.savedAt)]),
+      ]);
+      item.addEventListener("click", async () => {
+        const data = await getRecent(r.id);
+        if (data) this.actions.onOpenRecent(data, r.name);
+      });
+      destino.append(item);
+    }
   }
 
   private async loadDedication(box: HTMLElement, url: string): Promise<void> {
@@ -136,7 +346,6 @@ export class Landing {
     box.append(el("div", { class: "land-dedication-label" }, ["Dedicatoria"]));
     for (const block of text.split(/\n\s*\n/)) {
       const lines = block.trim().split("\n");
-      // Un bloque puede empezar con un marcador de idioma, p. ej. "[English]".
       const m = lines[0].match(/^\[(.+)\]$/);
       if (m) {
         box.append(el("div", { class: "land-ded-lang" }, [m[1]]));
@@ -145,35 +354,6 @@ export class Landing {
       } else {
         box.append(el("p", {}, [block.trim()]));
       }
-    }
-  }
-
-  private async loadRecent(): Promise<void> {
-    let recents: RecentMeta[];
-    try {
-      recents = await listRecent();
-    } catch {
-      recents = [];
-    }
-    clear(this.recentList);
-    if (!recents.length) {
-      this.recentList.append(
-        el("div", { class: "land-empty" }, [
-          "Aún no hay proyectos. Crea uno nuevo o abre un archivo.",
-        ]),
-      );
-      return;
-    }
-    for (const r of recents) {
-      const item = el("button", { class: "land-recent" }, [
-        el("div", { class: "land-recent-name" }, [r.name]),
-        el("div", { class: "land-recent-date" }, [formatDate(r.savedAt)]),
-      ]);
-      item.addEventListener("click", async () => {
-        const data = await getRecent(r.id);
-        if (data) this.actions.onOpenRecent(data, r.name);
-      });
-      this.recentList.append(item);
     }
   }
 }
