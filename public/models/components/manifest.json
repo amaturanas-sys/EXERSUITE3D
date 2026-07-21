@@ -52,5 +52,19 @@
   "tubo-guia-ttp": "tubo-guia-ttp.obj",
   "brazo-ttp": "brazo-ttp.obj",
   "riel-base-ttp": "riel-base-ttp.obj",
-  "barra-lat-ttp": "barra-lat-ttp.obj"
+  "barra-lat-ttp": "barra-lat-ttp.obj",
+  "travesano-frontal-ttp": "travesano-frontal-ttp.obj",
+  "placa-polea-ttp": "placa-polea-ttp.obj",
+  "soporte-polea-ttp": "soporte-polea-ttp.obj",
+  "bastidor-sup-ttp": "bastidor-sup-ttp.obj",
+  "pletina-ttp": "pletina-ttp.obj",
+  "manguito-guia-ttp": "manguito-guia-ttp.obj",
+  "montante-pr": "montante-pr.obj",
+  "travesano-pr": "travesano-pr.obj",
+  "larguero-pr": "larguero-pr.obj",
+  "liston-pr": "liston-pr.obj",
+  "barra-pr": "barra-pr.obj",
+  "jota-pr": "jota-pr.obj",
+  "jota-rodillo-pr": "jota-rodillo-pr.obj",
+  "riel-base-pr": "riel-base-pr.obj"
 }

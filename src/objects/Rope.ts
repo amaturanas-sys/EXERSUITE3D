@@ -122,10 +122,12 @@ export class Rope {
     this.setSegmentCount(n);
 
     const segLen = ropeLen / n;
-    // INTERLOCKING de eslabones: cada eslabón mide 1,5 pasos y alterna 90°
-    // sobre el eje de la cadena, de modo que atraviesa al anterior y al
-    // siguiente (y los extremos quedan enhebrados en la argolla de anclaje).
-    const escala = this.kind === "chain" ? segLen * 1.5 : segLen;
+    // INTERLOCKING de eslabones. Con la plantilla oficial (segmento de DOS
+    // eslabones entrelazados a 90°, paso real 6,1 → largo/paso = 16,1/12,2)
+    // cada segmento ya alterna internamente: se colocan al paso con solape
+    // 1,32 y encajan con el anterior y el siguiente. Sin plantilla (toro
+    // genérico), cada segmento es un eslabón y alterna 90° explícitamente.
+    const escala = this.kind === "chain" ? segLen * (segTemplate ? 1.32 : 1.5) : segLen;
     const up = new THREE.Vector3(0, 1, 0);
     const p0 = new THREE.Vector3();
     const p1 = new THREE.Vector3();
@@ -141,7 +143,7 @@ export class Rope {
       m.position.addVectors(p0, p1).multiplyScalar(0.5);
       m.scale.setScalar(escala);
       m.quaternion.setFromUnitVectors(up, dir.subVectors(p1, p0).normalize());
-      if (this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
+      if (!segTemplate && this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
     }
 
     // Herrajes de anclaje: la argolla queda EN el punto de anclaje, contiene

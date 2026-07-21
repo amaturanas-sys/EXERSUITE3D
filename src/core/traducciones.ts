@@ -444,4 +444,46 @@ export const TRADUCCIONES: Record<string, string> = {
     "Real vertical TTP001L guide tube (4×4×214): the pulley-system carriage rides along it.",
   "Travesaño real del TTP001L (104 cm) que cruza el marco a lo ancho: superior (corona trasera) e inferior (al suelo).":
     "Real TTP001L crossmember (104 cm) spanning the frame widthwise: upper (rear crown) and lower (at the floor).",
+  "Travesaño frontal TTP (118)": "TTP front crossmember (118)",
+  "Travesaño frontal real del TTP001L (118 cm) que corona el marco a lo ancho.":
+    "Real TTP001L front crossmember (118 cm) crowning the frame widthwise.",
+  "Soporte de polea baja TTP": "TTP low pulley bracket",
+  "Puente real que sostiene la polea baja del TTP001L.":
+    "Real bridge that holds the TTP001L low pulley.",
+  "Placa de polea baja TTP": "TTP low pulley plate",
+  "Placa base real del soporte de polea baja del TTP001L (19×26).":
+    "Real base plate of the TTP001L low pulley bracket (19×26).",
+  "Bastidor superior TTP": "TTP top frame tray",
+  "Bastidor superior real del TTP001L (106×32): bandeja del techo del sistema de poleas.":
+    "Real TTP001L top frame (106×32): roof tray of the pulley system.",
+  "Pletina TTP (45)": "TTP flat bar (45)",
+  "Pletina de unión real del kit TTP001L (45 cm).": "Real joining flat bar of the TTP001L kit (45 cm).",
+  "Manguito de guía TTP (54)": "TTP guide sleeve (54)",
+  "Manguito real del carro del TTP001L: se desliza por el tubo de guía del sistema de poleas.":
+    "Real TTP001L carriage sleeve: slides along the pulley-system guide tube.",
+  "Media columna POWERRACK (110)": "POWERRACK half column (110)",
+  "Tramo real de columna perforada del POWERRACK (7×7×110): dos apilados forman cada poste de 220.":
+    "Real perforated POWERRACK column section (7×7×110): two stacked form each 220 post.",
+  "Travesaño lateral POWERRACK (106)": "POWERRACK side crossmember (106)",
+  "Travesaño lateral superior real del POWERRACK (106 cm, perforado).":
+    "Real POWERRACK upper side crossmember (106 cm, perforated).",
+  "Larguero POWERRACK (106)": "POWERRACK side rail (106)",
+  "Larguero lateral real del POWERRACK (106 cm) que une los postes por la base.":
+    "Real POWERRACK side rail (106 cm) joining the posts at the base.",
+  "Listón POWERRACK (106)": "POWERRACK flat rail (106)",
+  "Listón plano real del POWERRACK (106 cm).": "Real flat POWERRACK rail (106 cm).",
+  "Barra pullups POWERRACK (70)": "POWERRACK pull-up bar (70)",
+  "Barra superior real del POWERRACK (70 cm): frontal y trasera, para dominadas.":
+    "Real POWERRACK top bar (70 cm): front and rear, for pull-ups.",
+  "Jota POWERRACK": "POWERRACK J-cup",
+  "Jota de seguridad real del POWERRACK: calza en los agujeros de la columna.":
+    "Real POWERRACK safety J-cup: keys into the column holes.",
+  "Jota con rodillo POWERRACK": "POWERRACK roller J-cup",
+  "Jota con rodillo real del POWERRACK, para recibir la barra con suavidad.":
+    "Real POWERRACK roller J-cup, receives the bar smoothly.",
+  "Riel de base POWERRACK (118)": "POWERRACK base rail (118)",
+  "Riel de base real del POWERRACK (118 cm) que arriostra los postes al suelo.":
+    "Real POWERRACK base rail (118 cm) bracing the posts to the floor.",
+  "POWERRACK pieza a pieza (118×220×122): postes de dos tramos perforados, doble barra de pullups, jotas de calce con y sin rodillo, pipes de seguridad y rieles de base.":
+    "POWERRACK piece by piece (118×220×122): two-section perforated posts, double pull-up bar, keyed J-cups with and without roller, safety pipes and base rails.",
 };

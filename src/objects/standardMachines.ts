@@ -28,7 +28,8 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     id: "jaula-potencia",
     label: "Jaula de potencia",
     icon: "🗼",
-    description: "Power cage 120×204×120 cm con montantes de calce, dominadas y pipes de seguridad.",
+    description:
+      "POWERRACK pieza a pieza (118×220×122): postes de dos tramos perforados, doble barra de pullups, jotas de calce con y sin rodillo, pipes de seguridad y rieles de base.",
   },
   {
     id: "banco-plano",
@@ -100,29 +101,37 @@ const RACK: PiezaSpec[] = [
   { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [67, 70, 0] },
 ];
 
+// Jaula = POWERRACK real pieza a pieza (posiciones medidas en el STL armado,
+// 118×220×122): postes de DOS TRAMOS apilados (110+110), travesaños laterales
+// superiores perforados, largueros de base, doble barra de pullups (70),
+// rieles de base de 118, jotas de calce y pipes con collares.
 const JAULA: PiezaSpec[] = [
-  // 4 MONTANTES REALES con agujeros de calce (5×7×204).
-  ...([[-56, -56], [56, -56], [-56, 56], [56, 56]] as const).map(
-    ([x, z], i): PiezaSpec => ({
-      comp: "montante-ttp",
-      nombre: `Montante ${i + 1}`,
-      pos: [x, 102, z],
-    }),
+  // 4 postes × 2 tramos de media columna perforada (7×7×110).
+  ...([[-36.8, -57], [36.8, -57], [-36.8, 57], [36.8, 57]] as const).flatMap(
+    ([x, z], i): PiezaSpec[] => [
+      { comp: "montante-pr", nombre: `Poste ${i + 1} tramo inf.`, pos: [x, 55, z] },
+      { comp: "montante-pr", nombre: `Poste ${i + 1} tramo sup.`, pos: [x, 165, z] },
+    ],
   ),
-  { comp: "prim-box", nombre: "Marco sup. izq.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [-56, 200, 0] },
-  { comp: "prim-box", nombre: "Marco sup. der.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [56, 200, 0] },
-  { comp: "prim-box", nombre: "Marco sup. frontal", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 200, 56] },
-  { comp: "prim-box", nombre: "Marco sup. trasero", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 200, -56] },
-  // Rieles de base frontal/trasero: arriostran los 4 montantes al suelo.
-  { comp: "prim-box", nombre: "Riel base frontal", params: { width: 124, height: 4, depth: 10 }, material: "acero-negro", pos: [0, 2, 56] },
-  { comp: "prim-box", nombre: "Riel base trasero", params: { width: 124, height: 4, depth: 10 }, material: "acero-negro", pos: [0, 2, -56] },
-  { comp: "barra-dominadas", params: { height: 104 }, pos: [0, 200, 0], rot: [0, 0, Math.PI / 2] },
-  // Pipes de seguridad: los collares de los extremos abrazan los montantes.
-  { comp: "brazo-seguridad", nombre: "Seguridad izq.", pos: [-56, 60, 0] },
-  { comp: "brazo-seguridad", nombre: "Seguridad der.", pos: [56, 60, 0] },
-  // Ganchos J ABRAZANDO los montantes frontales (manguito alrededor del perfil).
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-56, 110, 56 + CALCE_J] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [56, 110, 56 + CALCE_J] },
+  // Travesaños laterales superiores (106, perforados) y largueros de base.
+  { comp: "travesano-pr", nombre: "Travesaño lateral izq.", pos: [-36.8, 212, 0] },
+  { comp: "travesano-pr", nombre: "Travesaño lateral der.", pos: [36.8, 212, 0] },
+  { comp: "larguero-pr", nombre: "Larguero base izq.", pos: [-36.8, 3.5, 0] },
+  { comp: "larguero-pr", nombre: "Larguero base der.", pos: [36.8, 3.5, 0] },
+  // Doble barra de pullups real (70) al frente y atrás, a 192.
+  { comp: "barra-pr", nombre: "Barra pullups frontal", pos: [0, 192, 57] },
+  { comp: "barra-pr", nombre: "Barra pullups trasera", pos: [0, 192, -57] },
+  // Rieles de base reales (118) que arriostran los postes al suelo.
+  { comp: "riel-base-pr", nombre: "Riel base frontal", pos: [0, 2.5, 57] },
+  { comp: "riel-base-pr", nombre: "Riel base trasero", pos: [0, 2.5, -57] },
+  // Jotas reales calzadas en los agujeros de los postes frontales.
+  { comp: "jota-pr", nombre: "Jota izq.", pos: [-36.8, 110, 64.2] },
+  { comp: "jota-pr", nombre: "Jota der.", pos: [36.8, 110, 64.2] },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo izq.", pos: [-36.8, 70, 64.9] },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo der.", pos: [36.8, 70, 64.9] },
+  // Pipes de seguridad: los collares de los extremos abrazan los postes.
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-36.8, 75, 0] },
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [36.8, 75, 0] },
 ];
 
 const BANCO: PiezaSpec[] = [
@@ -179,8 +188,8 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "pie-ttp", nombre: "Travesaño superior", pos: [0, 206.5, -34.7], rot: [0, Math.PI / 2, 0] },
   // 5) TRAVESAÑO INFERIOR (104 a lo ancho, al suelo bajo el sistema de poleas).
   { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -52.5], rot: [0, Math.PI / 2, 0] },
-  // Puentes menores del techo del marco (65, del modelo armado).
-  { comp: "prim-box", nombre: "Puente superior frontal", params: { width: 65, height: 3.8, depth: 6 }, material: "acero-negro", pos: [0, 211.6, 64.1] },
+  // TRAVESAÑO FRONTAL real (118) coronando el marco + puente menor del techo.
+  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", pos: [0, 203.5, 64.1] },
   { comp: "prim-box", nombre: "Puente superior medio", params: { width: 65, height: 3.8, depth: 6 }, material: "acero-negro", pos: [0, 211.6, 41.9] },
   // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214, por ellos corre el carro).
   { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -85.5] },
@@ -208,7 +217,8 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -56.5], rot: [0, 0, Math.PI / 2] },
   { comp: "prim-box", nombre: "Puente del carro", params: { width: 3.5, height: 20.4, depth: 7.2 }, material: "acero-negro", pos: [0, 129, -56.5] },
   { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -52.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "prim-box", nombre: "Soporte polea baja", params: { width: 19, height: 13.3, depth: 33.2 }, material: "acero-negro", pos: [0, 7, -65.5] },
+  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -52.4] },
+  { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -69.1] },
   // 10) REMO DE POLEA ALTA (tubular) real, colgando junto a la polea alta.
   { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 0.8] },
   // Placa estabilizadora trasera real (86,6×60).

@@ -77,6 +77,22 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   cuelga la cadena (sugerencia automática según la distancia); los anclajes
   admiten cualquier cara de una pieza, pared o techumbre.
 
+- **Biblioteca con los archivos OFICIALES por pieza** (TTP001L1…19 y
+  POWERRACKP1…P10 aportados por el diseñador): cada componente usa ahora la
+  malla auténtica de su archivo. Nuevos en la paleta — del TTP: travesaño
+  frontal (118), soporte y placa de polea baja, bastidor superior, pletina y
+  manguito de guía del carro; del POWERRACK: media columna perforada (110,
+  dos apiladas forman el poste de 220), travesaño lateral (106), larguero,
+  listón, barra de pullups (70), jota de calce, jota con rodillo y riel de
+  base (118). La **Jaula de potencia** se reconstruyó pieza a pieza como el
+  POWERRACK real (118×220×122, posiciones medidas del armado): postes de dos
+  tramos, doble barra de pullups, jotas con y sin rodillo, pipes y rieles.
+- **Cadena con el segmento oficial de DOS eslabones**: del modelo de cadenas
+  del POWERRACK (catenaria articulada + sección del segmento) se construyó la
+  plantilla con el eslabón real y su copia entrelazada a 90° al paso real de
+  6,1 cm — cada segmento de la catenaria encaja con el anterior y el
+  siguiente exactamente como en el modelo.
+
 ### Corregido
 
 - **Deshacer/Rehacer no respondía de forma encadenada**: al aplicar un paso
