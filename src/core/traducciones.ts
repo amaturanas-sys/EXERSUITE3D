@@ -409,10 +409,10 @@ export const TRADUCCIONES: Record<string, string> = {
     "Plate storage post with 6 horns at 3 heights and a cross base.",
   "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (construido con las piezas REALES del despiece: montantes con agujeros de calce, ganchos J de pin+giro, rieles porta-discos, multi-agarre y patines) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.":
     "Standard machines (top of the palette): squat rack, power cage, flat bench, cable tower, TTP tower rack (built from the REAL breakdown parts: uprights with keying holes, pin+twist J-hooks, plate storage rails, multi-grip and floor skids) and plate tree — with commercial dimensions, ready as a group to plan the room.",
-  "Montante TTP (5×7×204)": "TTP upright (5×7×204)",
+  "Pilar vertical TTP (5×7×204)": "TTP vertical post (5×7×204)",
   "Riel porta-discos TTP": "TTP plate storage rail",
   "Multi-agarre dominadas TTP": "TTP multi-grip pull-up",
-  "Patín de suelo TTP": "TTP floor skid",
+  "Travesaño TTP (104)": "TTP crossmember (104)",
   "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).":
     "Real TTP001L rack upright with keying holes (the J-hook seats with pin and twist).",
   "Riel lateral de almacenamiento de discos del TTP001L, con manguitos y cuernos.":
@@ -421,22 +421,27 @@ export const TRADUCCIONES: Record<string, string> = {
     "Real TTP001L multi-grip pull-up station (92×32 cm).",
   "Patín/pie de suelo real del TTP001L (104 cm) que estabiliza cada marco.":
     "Real TTP001L floor skid (104 cm) stabilizing each frame.",
-  "Marco soldado TTP": "TTP welded frame",
-  "Marco soldado completo del TTP001L: montantes, travesaños con placas de encuadre y base.":
-    "Complete welded TTP001L frame: uprights, crossmembers with gusset plates and base.",
   "Brazo de seguridad TTP": "TTP safety arm",
   "Brazo de seguridad perforado real del TTP001L (86 cm), calza entre montantes.":
     "Real perforated TTP001L safety arm (86 cm), keys in between uprights.",
-  "Riel de base TTP": "TTP base rail",
-  "Riel de base real con placas de encuadre en los extremos (141 cm): arriostra los marcos al suelo.":
-    "Real base rail with gusset plates at the ends (141 cm): braces the frames to the floor.",
-  "Barra lat TTP": "TTP lat bar",
-  "Barra de jalón (lat) real del TTP001L, cuelga del cable de la polea alta.":
-    "Real TTP001L lat pulldown bar, hangs from the high pulley cable.",
+  "Columna horizontal inferior TTP": "TTP lower horizontal column",
+  "Columna horizontal inferior real del TTP001L (141 cm), con placas de encuadre: la base de cada lado del marco.":
+    "Real TTP001L lower horizontal column (141 cm), with gusset plates: the base of each side of the frame.",
+  "Remo de polea alta TTP": "TTP high-pulley row bar",
+  "Remo tubular real del TTP001L para la polea alta (jalón/remo), cuelga del cable.":
+    "Real tubular TTP001L row bar for the high pulley (pulldown/row), hangs from the cable.",
   "Rack abierto 142×204×120 cm: montantes reales con agujeros de calce, ganchos J que abrazan el pilar y rieles de base con placas de encuadre.":
     "Open rack 142×204×120 cm: real uprights with keying holes, J-hooks that wrap the upright and base rails with gusset plates.",
   "Power cage 120×204×120 cm con montantes de calce, dominadas y pipes de seguridad.":
     "Power cage 120×204×120 cm with keyed uprights, pull-up bar and safety pipes.",
-  "TTP001L fiel al armado: marco soldado con placas de encuadre, doble polea alta, polea de torre, carro de poleas, polea baja con barra lat, ganchos J, brazos de seguridad y porta-discos.":
-    "TTP001L true to the assembly: welded frame with gusset plates, double high pulley, tower pulley, pulley carriage, low pulley with lat bar, J-hooks, safety arms and plate storage.",
+  "TTP001L pieza a pieza: 4 pilares, columnas inferiores y superiores, travesaños, 2 tubos de guía, 2 brazos de seguridad, 4 jotas, set de roldanas, remo de polea alta y pullups multigrip.":
+    "TTP001L piece by piece: 4 posts, lower and upper columns, crossmembers, 2 guide tubes, 2 safety arms, 4 J-cups, pulley set, high-pulley row bar and multigrip pull-ups.",
+  "Columna horizontal superior TTP": "TTP upper horizontal column",
+  "Columna horizontal superior real del TTP001L (94 cm): corona los pilares de cada lado, con placas de encuadre.":
+    "Real TTP001L upper horizontal column (94 cm): crowns the posts on each side, with gusset plates.",
+  "Tubo guía de poleas TTP": "TTP pulley guide tube",
+  "Tubo de guía vertical real del TTP001L (4×4×214): por él corre el carro del sistema de poleas.":
+    "Real vertical TTP001L guide tube (4×4×214): the pulley-system carriage rides along it.",
+  "Travesaño real del TTP001L (104 cm) que cruza el marco a lo ancho: superior (corona trasera) e inferior (al suelo).":
+    "Real TTP001L crossmember (104 cm) spanning the frame widthwise: upper (rear crown) and lower (at the floor).",
 };

@@ -49,14 +49,16 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   INTERLOCKING de verdad (cada uno alterna 90° sobre el eje y atraviesa al
   anterior y al siguiente) y cada anclaje instala su herraje: una argolla con
   espárrago sobre la superficie, de la que se enhebra el primer eslabón.
-- **TTP001L fiel al modelo armado**: el Rack con torre se reconstruyó pieza a
-  pieza en las posiciones medidas en el STL ensamblado — marco SOLDADO
-  completo (118×214×141, montantes con agujeros + travesaños con PLACAS DE
-  ENCUADRE + base), torre de poleas, y el sistema de poleas ÍNTEGRO: doble
-  polea alta, polea de reenvío en la torre, carro de dos poleas con su puente,
-  polea baja con soporte y barra lat real colgando junto a la polea alta.
-  Nuevos componentes de biblioteca con malla real: marco soldado, brazo de
-  seguridad TTP (86,6 perforado), riel de base con placas (141) y barra lat.
+- **TTP001L reconocido pieza a pieza** (posiciones medidas en el STL armado):
+  el Rack con torre se compone de sus piezas REALES individuales — 4 pilares
+  verticales con agujeros de calce, 2 columnas horizontales inferiores (141,
+  con placas de encuadre), 2 columnas horizontales superiores (94), travesaño
+  superior e inferior (104 a lo ancho), 2 tubos de guía del sistema de poleas
+  (4×4×214), 2 brazos de seguridad perforados, 4 jotas de seguridad abrazando
+  los pilares, el set de roldanas completo (doble polea alta, polea de torre,
+  carro de dos poleas, polea baja), el remo tubular de polea alta y la barra
+  de pullups multigrip. Todas disponibles también como componentes sueltos de
+  la paleta con su malla auténtica.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su

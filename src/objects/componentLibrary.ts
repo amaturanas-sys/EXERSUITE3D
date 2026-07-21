@@ -113,7 +113,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
   {
     id: "montante-ttp",
-    label: "Montante TTP (5×7×204)",
+    label: "Pilar vertical TTP (5×7×204)",
     category: "estructural",
     materialId: "acero-negro",
     defaults: { kind: "box", width: 5, height: 204, depth: 7 },
@@ -141,24 +141,33 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "pie-ttp",
-    label: "Patín de suelo TTP",
+    label: "Travesaño TTP (104)",
     category: "estructural",
     materialId: "acero-negro",
     defaults: { kind: "box", width: 15, height: 5, depth: 104 },
     physics: { massKg: 0, fixed: true },
-    description: "Patín/pie de suelo real del TTP001L (104 cm) que estabiliza cada marco.",
+    description:
+      "Travesaño real del TTP001L (104 cm) que cruza el marco a lo ancho: superior (corona trasera) e inferior (al suelo).",
   },
   {
-    id: "marco-ttp",
-    label: "Marco soldado TTP",
+    id: "columna-sup-ttp",
+    label: "Columna horizontal superior TTP",
     category: "estructural",
     materialId: "acero-negro",
-    // Estructura soldada COMPLETA del TTP001L armado: 4 montantes con
-    // agujeros + travesaños con placas de encuadre + base (118×214×141).
-    defaults: { kind: "box", width: 118, height: 214, depth: 141 },
+    defaults: { kind: "box", width: 94, height: 20, depth: 7 },
     physics: { massKg: 0, fixed: true },
     description:
-      "Marco soldado completo del TTP001L: montantes, travesaños con placas de encuadre y base.",
+      "Columna horizontal superior real del TTP001L (94 cm): corona los pilares de cada lado, con placas de encuadre.",
+  },
+  {
+    id: "tubo-guia-ttp",
+    label: "Tubo guía de poleas TTP",
+    category: "estructural",
+    materialId: "acero-pulido",
+    defaults: { kind: "box", width: 4, height: 214, depth: 4 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Tubo de guía vertical real del TTP001L (4×4×214): por él corre el carro del sistema de poleas.",
   },
   {
     id: "brazo-ttp",
@@ -171,22 +180,22 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "riel-base-ttp",
-    label: "Riel de base TTP",
+    label: "Columna horizontal inferior TTP",
     category: "estructural",
     materialId: "acero-negro",
     defaults: { kind: "box", width: 141, height: 20, depth: 7 },
     physics: { massKg: 0, fixed: true },
     description:
-      "Riel de base real con placas de encuadre en los extremos (141 cm): arriostra los marcos al suelo.",
+      "Columna horizontal inferior real del TTP001L (141 cm), con placas de encuadre: la base de cada lado del marco.",
   },
   {
     id: "barra-lat-ttp",
-    label: "Barra lat TTP",
+    label: "Remo de polea alta TTP",
     category: "transmision",
     materialId: "cromo",
     defaults: { kind: "box", width: 75, height: 7, depth: 2 },
     physics: { massKg: 4, fixed: false },
-    description: "Barra de jalón (lat) real del TTP001L, cuelga del cable de la polea alta.",
+    description: "Remo tubular real del TTP001L para la polea alta (jalón/remo), cuelga del cable.",
   },
   {
     id: "correa-seguridad",

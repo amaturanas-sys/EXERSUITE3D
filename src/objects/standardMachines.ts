@@ -47,7 +47,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     label: "Rack con torre (TTP)",
     icon: "🏗️",
     description:
-      "TTP001L fiel al armado: marco soldado con placas de encuadre, doble polea alta, polea de torre, carro de poleas, polea baja con barra lat, ganchos J, brazos de seguridad y porta-discos.",
+      "TTP001L pieza a pieza: 4 pilares, columnas inferiores y superiores, travesaños, 2 tubos de guía, 2 brazos de seguridad, 4 jotas, set de roldanas, remo de polea alta y pullups multigrip.",
   },
   {
     id: "arbol-discos",
@@ -155,33 +155,52 @@ const TORRE: PiezaSpec[] = [
  * seguridad baja, rieles porta-discos laterales a 65 cm con cuernos y
  * placa estabilizadora trasera de 87×60 cm.
  */
-// Reconstrucción FIEL del TTP001L armado: cada pieza en la posición medida en
-// el STL ensamblado (transformación STL→app: x−60, z como altura, 89,5−y como
-// fondo; frente de la máquina en +Z, torre de poleas en −Z).
+// Reconstrucción FIEL del TTP001L armado, DESGLOSADA en sus piezas: cada una
+// en la posición medida en el STL ensamblado (transformación STL→app: x−60,
+// z como altura, 89,5−y como fondo; frente en +Z, sistema de poleas en −Z).
 const RACK_TORRE: PiezaSpec[] = [
-  // MARCO SOLDADO COMPLETO (118×214×141): 4 montantes con agujeros de calce
-  // (frontales z=66,5 · traseros z=−31,5) + travesaños con PLACAS DE ENCUADRE
-  // + base, tal cual el modelo armado.
-  { comp: "marco-ttp", pos: [0, 106.8, 8.9] },
-  // Torre trasera de la polea: 2 columnas 4×4×214.
-  { comp: "montante-rack", nombre: "Columna torre izq.", params: { width: 4, height: 213.8, depth: 4 }, pos: [-6, 106.9, -85.5] },
-  { comp: "montante-rack", nombre: "Columna torre der.", params: { width: 4, height: 213.8, depth: 4 }, pos: [7, 106.9, -85.5] },
-  // MULTI-AGARRE REAL de dominadas (92×32) puenteando marco y torre.
-  { comp: "multiagarre-ttp", pos: [0, 207, -42.5] },
-  // GANCHOS J reales ABRAZANDO los montantes traseros (a 127, como el armado).
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-55, 127, -22.5] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [56, 127, -22.5] },
-  // Ganchos J bajos en los montantes frontales (a 41, como el armado).
-  { comp: "j-hook", nombre: "Gancho J bajo izq.", pos: [-55, 41, 76.5] },
-  { comp: "j-hook", nombre: "Gancho J bajo der.", pos: [56, 41, 76.5] },
-  // BRAZOS DE SEGURIDAD TTP (86,6 perforados) calzados entre montantes.
+  // 1) 4 PILARES VERTICALES (5×7×204, con agujeros de calce): frontales en
+  // z=66,5 y traseros en z=−31,5.
+  ...([[-55, 66.5], [56, 66.5], [-55, -31.5], [56, -31.5]] as const).map(
+    ([x, z], i): PiezaSpec => ({
+      comp: "montante-ttp",
+      nombre: `Pilar vertical ${i + 1}`,
+      pos: [x, 107, z],
+    }),
+  ),
+  // 2) 2 COLUMNAS HORIZONTALES INFERIORES (141, con placas de encuadre),
+  // a lo fondo bajo cada lado del marco.
+  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-55, 10, 8.9], rot: [0, Math.PI / 2, 0] },
+  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 8.9], rot: [0, Math.PI / 2, 0] },
+  // 3) 2 COLUMNAS HORIZONTALES SUPERIORES (94) coronando los pilares.
+  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-55, 199, 17.3], rot: [0, Math.PI / 2, 0] },
+  { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 17.3], rot: [0, Math.PI / 2, 0] },
+  // 4) TRAVESAÑO SUPERIOR (104 a lo ancho, corona trasera del marco).
+  { comp: "pie-ttp", nombre: "Travesaño superior", pos: [0, 206.5, -34.7], rot: [0, Math.PI / 2, 0] },
+  // 5) TRAVESAÑO INFERIOR (104 a lo ancho, al suelo bajo el sistema de poleas).
+  { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -52.5], rot: [0, Math.PI / 2, 0] },
+  // Puentes menores del techo del marco (65, del modelo armado).
+  { comp: "prim-box", nombre: "Puente superior frontal", params: { width: 65, height: 3.8, depth: 6 }, material: "acero-negro", pos: [0, 211.6, 64.1] },
+  { comp: "prim-box", nombre: "Puente superior medio", params: { width: 65, height: 3.8, depth: 6 }, material: "acero-negro", pos: [0, 211.6, 41.9] },
+  // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214, por ellos corre el carro).
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -85.5] },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -85.5] },
+  // 11) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -42.5] },
+  // 8) 4 JOTAS DE SEGURIDAD reales ABRAZANDO los pilares: altas en los
+  // traseros (127) y bajas en los frontales (41), como el armado.
+  { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-55, 127, -22.5] },
+  { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -22.5] },
+  { comp: "j-hook", nombre: "Jota baja izq.", pos: [-55, 41, 76.5] },
+  { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 76.5] },
+  // 7) 2 BRAZOS DE SEGURIDAD TTP (86,6 perforados) calzados entre pilares.
   { comp: "brazo-ttp", nombre: "Brazo seguridad izq.", pos: [-55, 102, 17.5] },
   { comp: "brazo-ttp", nombre: "Brazo seguridad der.", pos: [56, 102, 17.5] },
-  // RIELES PORTA-DISCOS REALES (106) por fuera de cada marco lateral.
+  // Rieles porta-discos reales (106) por fuera de cada lado.
   { comp: "riel-discos-ttp", nombre: "Riel discos izq.", pos: [-55, 65, 17.5] },
   { comp: "riel-discos-ttp", nombre: "Riel discos der.", pos: [56, 65, 17.5] },
-  // SISTEMA DE POLEAS COMPLETO del armado: doble polea alta bajo el techo del
-  // marco, polea de reenvío en la torre, carro de dos poleas y polea baja.
+  // 9) SET DE ROLDANAS completo del armado: doble polea alta bajo el techo
+  // del marco, polea de reenvío en la torre, carro de dos poleas y polea baja.
   { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 211, -6.5], rot: [0, 0, Math.PI / 2] },
   { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 211, -51.5], rot: [0, 0, Math.PI / 2] },
   { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -79.5], rot: [0, 0, Math.PI / 2] },
@@ -190,10 +209,9 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "prim-box", nombre: "Puente del carro", params: { width: 3.5, height: 20.4, depth: 7.2 }, material: "acero-negro", pos: [0, 129, -56.5] },
   { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -52.5], rot: [0, 0, Math.PI / 2] },
   { comp: "prim-box", nombre: "Soporte polea baja", params: { width: 19, height: 13.3, depth: 33.2 }, material: "acero-negro", pos: [0, 7, -65.5] },
-  // BARRA LAT real colgando junto a la polea alta.
-  { comp: "barra-lat-ttp", pos: [-1.6, 205.5, 0.8] },
-  // Base: patín transversal real + placa estabilizadora trasera (86,6×60).
-  { comp: "pie-ttp", nombre: "Patín transversal", pos: [0, 3, -52.5], rot: [0, Math.PI / 2, 0] },
+  // 10) REMO DE POLEA ALTA (tubular) real, colgando junto a la polea alta.
+  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 0.8] },
+  // Placa estabilizadora trasera real (86,6×60).
   { comp: "prim-box", nombre: "Placa estabilizadora", params: { width: 86.6, height: 60, depth: 7 }, material: "acero-negro", pos: [0, 30, -85.5] },
 ];
 
