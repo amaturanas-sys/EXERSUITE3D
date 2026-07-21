@@ -257,8 +257,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "peso",
     materialId: "acero-negro",
     // Sostenedor de discos real del sistema de poleas del TTP001L: placa
-    // cuadrada 55×55 con pin vertical de 88 donde se cargan los discos.
-    defaults: { kind: "box", width: 55, height: 98, depth: 55 },
+    // vertical 55×55 al extremo y PIN HORIZONTAL de 88 que pasa por el hueco
+    // entre los tubos de guía; los discos se cargan en el tramo libre.
+    defaults: { kind: "box", width: 55, height: 55, depth: 98 },
     physics: { massKg: 8, fixed: false },
     description:
       "Sostenedor de discos real del TTP001L: el cable del sistema de poleas lo eleva con los discos cargados en su pin.",

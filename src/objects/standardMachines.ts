@@ -194,9 +194,15 @@ const RACK_TORRE: PiezaSpec[] = [
   // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214, por ellos corre el carro).
   { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -85.5] },
   { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -85.5] },
-  // SOSTENEDOR DE DISCOS real: el soporte móvil del sistema de poleas
-  // (placa 55×55 + pin de carga); el cable lo eleva con los discos.
-  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea", pos: [0.5, 115, -85.5] },
+  // SOSTENEDOR DE DISCOS real (modelo WEIGHTCARRIERANDRAIL): monta sobre los
+  // tubos de guía mediante los MANGUITOS; la placa queda vertical al extremo
+  // trasero y el pin HORIZONTAL cruza el hueco entre tubos — los discos de
+  // fierro se cargan en su tramo libre.
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 115, -85.5] },
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 115, -85.5] },
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea", pos: [0.5, 115, -46.5] },
+  { comp: "disco-peso", nombre: "Disco cargado 1", pos: [0.5, 115, -58], rot: [Math.PI / 2, 0, 0] },
+  { comp: "disco-peso", nombre: "Disco cargado 2", pos: [0.5, 115, -70], rot: [Math.PI / 2, 0, 0] },
   // 11) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
   { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -42.5] },
   // 8) 4 JOTAS DE SEGURIDAD reales ABRAZANDO los pilares: altas en los

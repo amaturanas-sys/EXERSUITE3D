@@ -92,10 +92,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   (largo/paso = 60,5/40,3 = 1,500 medido) y alterna 90° sobre el eje,
   atravesando al anterior y al siguiente. La plantilla de la herramienta de
   cadena es ahora ese eslabón oficial.
-- **Sostenedor de discos del sistema de poleas (WEIGHTCARRIER)**: el
-  portadiscos real del TTP001L (placa 55×55 con pin de carga de 88) es un
-  componente móvil nuevo y va montado entre los tubos de guía del Rack con
-  torre — el cable del sistema de poleas lo eleva con los discos.
+- **Sostenedor de discos del sistema de poleas (WEIGHTCARRIER +
+  WEIGHTCARRIERANDRAIL)**: el portadiscos real del TTP001L es un componente
+  móvil nuevo montado COMO en el modelo de interacción — sobre los tubos de
+  guía mediante los manguitos, con la placa de 55×55 vertical al extremo y el
+  PIN HORIZONTAL de 88 cruzando el hueco entre los tubos; los discos de
+  fierro se cargan en el tramo libre del pin (el Rack con torre trae dos
+  discos cargados de muestra) y el cable del sistema lo eleva.
 - **Piezas TTP001L6–9 incorporadas**: el riel porta-discos quedó confirmado
   como oficial, la ROLDANA real (rueda de 7,2) sustituye el visual de todas
   las roldanas, el puente del carro con sus dos poleas es pieza real y el
