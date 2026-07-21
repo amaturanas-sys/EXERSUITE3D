@@ -17,7 +17,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   biblioteca (ZIP), GLB o capturas, la app ofrece descargar DIRECTAMENTE a
   Documentos/EXERSUITE3D (visible en la app Archivos) además de la hoja de
   compartir (Drive, enviar…), que queda como alternativa y como respaldo.
-- Nueva dedicatoria (5 idiomas) orientada a la nueva audiencia.
+- **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
+  origen del proyecto — del niño que construía con bloques digitales porque
+  los juguetes no llegaban a su país, al profesional de la salud que ve a su
+  gente perder movimiento por falta de espacio, tiempo y presupuesto — y la
+  visión: involucrar al usuario final, el hub/marketplace y el sueño del
+  diseñador pionero. En ES y EN; se muestra el idioma activo de la interfaz.
 - **Roldanas configurables antes del cable** (diagrama Cables y Poleas): el
   botón Roldana de la paleta pregunta la configuración — **interna**
   (embutida en el eje del pilar/travesaño; la rueda asoma por la apertura) o

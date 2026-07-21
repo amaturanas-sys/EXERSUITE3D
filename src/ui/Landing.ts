@@ -356,17 +356,23 @@ export class Landing {
       box.remove();
       return;
     }
-    box.append(el("div", { class: "land-dedication-label" }, ["Dedicatoria"]));
+    box.append(el("div", { class: "land-dedication-label" }, ["Nuestra historia"]));
+    // Bloques [Idioma] con un párrafo por línea. Si existe el bloque del
+    // idioma activo de la interfaz, se muestra SOLO ese (la historia completa
+    // en tu idioma); si no, se apilan todos.
+    const bloques: { lang: string | null; parrafos: string[] }[] = [];
     for (const block of text.split(/\n\s*\n/)) {
       const lines = block.trim().split("\n");
       const m = lines[0].match(/^\[(.+)\]$/);
-      if (m) {
-        box.append(el("div", { class: "land-ded-lang" }, [m[1]]));
-        const body = lines.slice(1).join(" ").trim();
-        if (body) box.append(el("p", {}, [body]));
-      } else {
-        box.append(el("p", {}, [block.trim()]));
-      }
+      const parrafos = (m ? lines.slice(1) : lines).map((l) => l.trim()).filter(Boolean);
+      if (parrafos.length) bloques.push({ lang: m ? m[1] : null, parrafos });
+    }
+    const preferido = getIdioma() === "en" ? "english" : "español";
+    const propio = bloques.find((b) => b.lang?.toLowerCase() === preferido);
+    const mostrar = propio ? [propio] : bloques;
+    for (const b of mostrar) {
+      if (!propio && b.lang) box.append(el("div", { class: "land-ded-lang" }, [b.lang]));
+      for (const p of b.parrafos) box.append(el("p", {}, [p]));
     }
   }
 }

@@ -400,4 +400,5 @@ export const TRADUCCIONES: Record<string, string> = {
     "Cable terminal (palette): place anchor eyelets on any face; a cable in ERROR turns red if it crosses solid material or meets a sheave misaligned.",
   "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.":
     "Lock switch on every hinge/slider (Connections): locked it becomes rigid in its pose — turning a horizontal-push machine into a vertical one with one click.",
+  "Nuestra historia": "Our story",
 };
