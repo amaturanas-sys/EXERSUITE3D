@@ -69,6 +69,8 @@ export type EditorEvents = {
   cableModeChanged: { active: boolean; count: number; hint?: string };
   /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
+  /** Modo "colocar roldana" (interna/externa) sobre la cara de una pieza. */
+  roldanaModeChanged: { active: boolean; config: "interna" | "externa" | null };
   /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
   lineModeChanged: { active: boolean; kind: "beam" | "tube" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
@@ -167,6 +169,14 @@ export class Editor {
   private ropeMode: RopeKind | null = null;
   private ropePendingA: RopeEnd | null = null;
   private selectedRopeId: string | null = null;
+
+  /**
+   * Colocación de roldanas (diagrama Cables y Poleas): los puntos de
+   * deslizamiento del cable se definen ANTES de trazarlo, tocando la cara de
+   * una pieza. Config interna = embutida en el pilar/travesaño (la rueda
+   * asoma por la apertura); externa = montada fuera de la cara.
+   */
+  private roldanaMode: "interna" | "externa" | null = null;
 
   // Piezas de línea (pilar/travesaño/tubo): trazado por dos puntos + bending.
   private lineMode: "beam" | "tube" | null = null;
@@ -2916,12 +2926,116 @@ export class Editor {
     }
   }
 
+  // -------------------------------------------------------------- roldanas
+  /**
+   * Entra en modo "colocar roldana": el siguiente toque sobre la cara de una
+   * pieza coloca ahí la roldana (interna: embutida en el eje central del
+   * pilar/travesaño con la rueda asomando por la apertura; externa: montada
+   * fuera de la cara). El modo permanece activo para colocar varias; Esc sale.
+   */
+  beginRoldana(config: "interna" | "externa"): void {
+    if (this.simulating) return;
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.select(null);
+    this.roldanaMode = config;
+    this.bus.emit("roldanaModeChanged", { active: true, config });
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `Roldana ${config}: toca la cara de una pieza donde colocarla (Esc termina)`,
+        `${config === "interna" ? "Internal" : "External"} sheave: tap the face of a part to place it (Esc ends)`,
+      ),
+    });
+  }
+
+  cancelRoldana(): void {
+    if (!this.roldanaMode) return;
+    this.roldanaMode = null;
+    this.bus.emit("roldanaModeChanged", { active: false, config: null });
+    this.bus.emit("dragMeasure", { text: null });
+  }
+
+  /** Coloca la roldana sobre la pieza tocada, según la configuración. */
+  private colocarRoldana(
+    config: "interna" | "externa",
+    host: SceneObject,
+    punto: THREE.Vector3,
+    normal: THREE.Vector3,
+  ): void {
+    const rold = this.addComponent("roldana");
+    const previas = [...this.objects.values()].filter(
+      (o) => o !== rold && o.name.startsWith(`Roldana ${config}`),
+    ).length;
+    rold.name = `Roldana ${config}${previas > 0 ? ` ${previas + 1}` : ""}`;
+    rold.mesh.name = rold.name;
+    // Punto de deslizamiento del cable: fija (el cable resbala por ella).
+    rold.physics = { ...rold.physics, fixed: true };
+
+    // Orientación: el plano de la rueda contiene el eje largo de la pieza y
+    // la normal de la cara (el cable corre a lo largo de la pieza).
+    host.mesh.updateMatrixWorld(true);
+    const ls = host.localSize();
+    const ejeLocal =
+      ls.x >= ls.y && ls.x >= ls.z
+        ? new THREE.Vector3(1, 0, 0)
+        : ls.y >= ls.z
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(0, 0, 1);
+    const ejeMundo = ejeLocal
+      .clone()
+      .applyQuaternion(host.mesh.getWorldQuaternion(new THREE.Quaternion()))
+      .normalize();
+    let ejeRueda = new THREE.Vector3().crossVectors(normal, ejeMundo);
+    if (ejeRueda.lengthSq() < 0.01) {
+      // Cara perpendicular al eje largo (extremo): rueda con eje horizontal.
+      ejeRueda = new THREE.Vector3().crossVectors(normal, new THREE.Vector3(0, 1, 0));
+      if (ejeRueda.lengthSq() < 0.01) ejeRueda.set(1, 0, 0);
+    }
+    ejeRueda.normalize();
+    rold.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
+
+    const radio = rold.effectiveSize().x / 2 || 4;
+    if (config === "externa") {
+      // Montada fuera de la cara, separada el radio de la rueda.
+      rold.mesh.position.copy(punto).addScaledVector(normal, radio + 0.5);
+    } else {
+      // Embutida: centrada en el eje de la pieza a la altura del toque; la
+      // rueda asoma por las caras como apertura del reenvío interno.
+      const local = host.mesh.worldToLocal(punto.clone());
+      if (ejeLocal.x === 1) {
+        local.y = 0;
+        local.z = 0;
+      } else if (ejeLocal.y === 1) {
+        local.x = 0;
+        local.z = 0;
+      } else {
+        local.x = 0;
+        local.y = 0;
+      }
+      rold.mesh.position.copy(host.mesh.localToWorld(local));
+    }
+    this.bus.emit("objectTransformed", { object: rold });
+    this.select(null);
+    // El modo sigue activo para colocar la siguiente (como en el diagrama).
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `✓ ${rold.name} colocada — toca otra cara o Esc para terminar`,
+        `✓ ${rold.name} placed — tap another face or Esc to finish`,
+      ),
+    });
+    this.requestRender();
+  }
+
   // ---------------------------------------------------------------- cuerdas
   /** Entra en modo "colocar cuerda": clic en el extremo A y luego en el B. */
   beginRope(kind: RopeKind): void {
     this.cancelCable();
     this.cancelConnect();
     this.cancelAttachHand();
+    this.cancelRoldana();
     this.select(null);
     this.ropeMode = kind;
     this.ropePendingA = null;
@@ -3776,7 +3890,23 @@ export class Editor {
         this.ropePendingA = end;
         this.bus.emit("ropeModeChanged", { active: true, kind: this.ropeMode, count: 1 });
       } else {
-        const rope = this.createRope(this.ropeMode, this.ropePendingA, end);
+        // Diagrama Simulación Cadenas: al fijar el anclaje final se define la
+        // CAÍDA (catenaria) en cm con la que cuelga la cadena/correa.
+        const aW = this.ropeEndWorld(this.ropePendingA);
+        const bW = this.ropeEndWorld(end);
+        const D = Math.max(1, aW.distanceTo(bW));
+        const sugerida = Math.round(D * 0.12);
+        const resp = window.prompt(
+          tt(
+            "Caída o catenaria (cm): cuánto cuelga la cadena respecto de la recta entre anclajes",
+            "Sag / catenary (cm): how much the chain hangs below the straight line between anchors",
+          ),
+          String(sugerida),
+        );
+        const caida = resp === null ? sugerida : Math.max(0, Number(resp) || 0);
+        // sag = slack · D · 0.45 (ver Rope) → slack = caída / (0.45·D).
+        const slack = Math.max(0, Math.min(1, caida / (0.45 * D)));
+        const rope = this.createRope(this.ropeMode, this.ropePendingA, end, slack);
         this.cancelRope();
         this.selectRope(rope.id);
       }
@@ -3802,6 +3932,19 @@ export class Editor {
         // Pieza no-polea: extremo final (ancla B). Cierra el cable.
         this.cablePending.push({ object: pick.object, local: pick.local });
         this.finishCable();
+      }
+      return;
+    }
+
+    // Modo "colocar roldana": el toque sobre una cara la coloca ahí.
+    if (this.roldanaMode) {
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hit = hits[0];
+      const hid = hit?.object.userData.sceneObjectId as string | undefined;
+      const hostR = hid ? this.objects.get(hid) : undefined;
+      if (hit && hostR && hit.face) {
+        const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+        this.colocarRoldana(this.roldanaMode, hostR, hit.point.clone(), normal);
       }
       return;
     }
@@ -3999,6 +4142,7 @@ export class Editor {
         this.cancelCable();
         this.cancelRope();
         this.cancelLine();
+        this.cancelRoldana();
         this.cancelAttachHand();
         this.endBendNodes();
         this.select(null);

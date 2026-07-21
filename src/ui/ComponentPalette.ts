@@ -11,6 +11,59 @@ import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { configureBeam, configureTube } from "./lineToolDialog";
 import { clear, el } from "./dom";
 
+/**
+ * Configuración de la roldana antes de colocarla (diagrama Cables y Poleas):
+ * interna (embutida en el pilar/travesaño, la rueda asoma por la apertura) o
+ * externa (montada con soporte fuera de la cara).
+ */
+function elegirConfigRoldana(): Promise<"interna" | "externa" | null> {
+  return new Promise((resolve) => {
+    const terminar = (v: "interna" | "externa" | null): void => {
+      overlay.remove();
+      resolve(v);
+    };
+    const carta = (icono: string, titulo: string, detalle: string, v: "interna" | "externa") => {
+      const c = el("button", { class: "wizard-carta" }, [
+        el("div", { class: "wizard-icono" }, [icono]),
+        el("div", { class: "wizard-nombre" }, [titulo]),
+        el("div", { class: "wizard-detalle" }, [detalle]),
+      ]);
+      c.addEventListener("click", () => terminar(v));
+      return c;
+    };
+    const cerrar = el("button", { class: "tool" }, ["✕"]);
+    cerrar.addEventListener("click", () => terminar(null));
+    const panel = el("div", { class: "perf-panel wizard-panel" }, [
+      el("div", { class: "lib-header" }, [
+        el("div", { class: "lib-title" }, ["Roldana: configuración"]),
+        cerrar,
+      ]),
+      el("div", { class: "wizard-paso" }, [
+        "Después, toca la cara de la pieza donde colocarla.",
+      ]),
+      el("div", { class: "wizard-cartas" }, [
+        carta(
+          "🅐",
+          "Roldana externa",
+          "Montada fuera de la cara de la pieza: el cable pasa por fuera.",
+          "externa",
+        ),
+        carta(
+          "🅑",
+          "Roldana interna",
+          "Embutida dentro del pilar/travesaño: la rueda asoma por la apertura y el cable se reenvía por dentro.",
+          "interna",
+        ),
+      ]),
+    ]);
+    const overlay = el("div", { class: "lib-overlay wizard-overlay" }, [panel]);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) terminar(null);
+    });
+    document.body.append(overlay);
+  });
+}
+
 /** Categorías visibles en el modo de trabajo Sencillo (asistente de Nuevo). */
 const CATS_SENCILLO: ComponentDefinition["category"][] = [
   "primitiva",
@@ -209,10 +262,14 @@ export class ComponentPalette {
         void configureBeam().then((p) => p && this.editor.beginLine("beam", p));
       } else if (def.placement === "tube") {
         void configureTube().then((p) => p && this.editor.beginLine("tube", p));
+      } else if (def.id === "roldana") {
+        // Punto de deslizamiento del cable: se configura y se coloca sobre
+        // la cara de una pieza existente (diagrama Cables y Poleas).
+        void elegirConfigRoldana().then((c) => c && this.editor.beginRoldana(c));
       } else this.editor.addComponent(def.id);
     });
     // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
-    if (!def.placement) {
+    if (!def.placement && def.id !== "roldana") {
       this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
     }
     return btn;

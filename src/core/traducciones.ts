@@ -373,4 +373,20 @@ export const TRADUCCIONES: Record<string, string> = {
     "Save downloads the .json project (interoperable with the desktop and Godot versions); Export generates a .glb of the prototype.",
   "En Rendimiento elige preset Alto/Medio/Bajo, resolución de render y resolución dinámica según tu dispositivo.":
     "In Performance choose the High/Medium/Low preset, render resolution and dynamic resolution to match your device.",
+  // ---- Roldanas y cadenas (diagramas Cables/Poleas y Cadenas)
+  "Roldana: configuración": "Sheave: configuration",
+  "Después, toca la cara de la pieza donde colocarla.":
+    "Then tap the face of the part where it should go.",
+  "Roldana externa": "External sheave",
+  "Roldana interna": "Internal sheave",
+  "Montada fuera de la cara de la pieza: el cable pasa por fuera.":
+    "Mounted outside the part's face: the cable runs on the outside.",
+  "Embutida dentro del pilar/travesaño: la rueda asoma por la apertura y el cable se reenvía por dentro.":
+    "Embedded inside the post/crossbar: the wheel shows through the opening and the cable is routed inside.",
+  "Cuerdas (cadena/correa): toca los dos anclajes (cualquier cara de una pieza, pared o techumbre) y define la CAÍDA en cm — la catenaria con la que cuelga.":
+    "Ropes (chain/strap): tap the two anchors (any face of a part, wall or ceiling) and set the SAG in cm — the catenary it hangs with.",
+  "Roldana (paleta): elige configuración interna (embutida en el pilar, la rueda asoma por la apertura) o externa (fuera de la cara) y tócala sobre la pieza — así defines ANTES los puntos de deslizamiento del cable.":
+    "Sheave (palette): choose internal (embedded in the post, the wheel shows through the opening) or external (outside the face) and tap it onto the part — defining the cable's sliding points FIRST.",
+  "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).":
+    "+ Cable routes an inextensible cable point to point: anchor A → passing sheaves → anchor B (Finish cable). Pulleys give real mechanical advantage (2:1…).",
 };

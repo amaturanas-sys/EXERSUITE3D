@@ -24,7 +24,7 @@ const SECCIONES: [string, string[]][] = [
       "Los paneles se pliegan tocando su título (⯆/⯈), para despejar el visor en pantallas pequeñas.",
       "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.",
       "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.",
-      "Cuerdas (cadena/correa): toca los dos extremos; quedan colgando con su catenaria.",
+      "Cuerdas (cadena/correa): toca los dos anclajes (cualquier cara de una pieza, pared o techumbre) y define la CAÍDA en cm — la catenaria con la que cuelga.",
     ],
   ],
   [
@@ -44,7 +44,8 @@ const SECCIONES: [string, string[]][] = [
     [
       "En Propiedades: material, masa (kg) y Anclado (las piezas ancladas o sin masa no caen).",
       "+ Bisagra y + Corredera articulan dos piezas (toca una y luego la otra).",
-      "+ Cable traza un cable inextensible por poleas: toca los puntos de paso y Finalizar cable. Las poleas dan ventaja mecánica real (2:1…).",
+      "Roldana (paleta): elige configuración interna (embutida en el pilar, la rueda asoma por la apertura) o externa (fuera de la cara) y tócala sobre la pieza — así defines ANTES los puntos de deslizamiento del cable.",
+      "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).",
     ],
   ],
   [

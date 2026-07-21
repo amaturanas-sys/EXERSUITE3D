@@ -18,6 +18,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   Documentos/EXERSUITE3D (visible en la app Archivos) además de la hoja de
   compartir (Drive, enviar…), que queda como alternativa y como respaldo.
 - Nueva dedicatoria (5 idiomas) orientada a la nueva audiencia.
+- **Roldanas configurables antes del cable** (diagrama Cables y Poleas): el
+  botón Roldana de la paleta pregunta la configuración — **interna**
+  (embutida en el eje del pilar/travesaño; la rueda asoma por la apertura) o
+  **externa** (montada fuera de la cara) — y se coloca tocando la cara de la
+  pieza, orientada según su eje largo y anclada. Así se definen PRIMERO los
+  puntos de deslizamiento y luego el + Cable se traza punto a punto por
+  ellas (ancla A → roldanas → ancla B).
+- **Caída de la catenaria en cadenas/correas** (diagrama Simulación
+  Cadenas): al fijar el anclaje final se pregunta la caída en cm con la que
+  cuelga la cadena (sugerencia automática según la distancia); los anclajes
+  admiten cualquier cara de una pieza, pared o techumbre.
 
 ### Corregido
 
