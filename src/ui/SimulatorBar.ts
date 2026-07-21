@@ -1,6 +1,7 @@
 import type { Editor } from "../core/Editor";
 import { guardarCaptura } from "../core/capturas";
 import { descargarArchivo } from "../core/descargas";
+import { tt } from "../core/i18n";
 import { el } from "./dom";
 
 /**
@@ -27,7 +28,7 @@ export class SimulatorBar {
           const bytes = new Uint8Array(bin.length);
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
           await descargarArchivo(`exersuite3d-captura-${Date.now()}.png`, bytes, "image/png");
-          b.textContent = "✓ Guardada";
+          b.textContent = tt("✓ Guardada", "✓ Saved");
           setTimeout(() => (b.textContent = "📷 Captura"), 1600);
         } catch (err) {
           console.error("No se pudo capturar:", err);
@@ -60,11 +61,11 @@ export class SimulatorBar {
       ]);
       homeBtn.addEventListener("click", () => opts.onHome?.());
       const simBtn = el("button", { class: "tool sim", title: "Pausar/reanudar la física (Espacio)" }, [
-        "■ Pausar",
+        tt("■ Pausar", "■ Pause"),
       ]);
       simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
       this.editor.bus.on("simulationChanged", ({ running }) => {
-        simBtn.textContent = running ? "■ Pausar" : "▶ Reanudar";
+        simBtn.textContent = running ? tt("■ Pausar", "■ Pause") : tt("▶ Reanudar", "▶ Resume");
         simBtn.classList.toggle("active", running);
       });
       children.push(el("div", { class: "tool-group" }, [homeBtn, simBtn]));

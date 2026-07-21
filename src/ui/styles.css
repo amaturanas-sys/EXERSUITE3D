@@ -1242,8 +1242,25 @@ body.simulating .dock-toggle {
 }
 
 /* ---- Asistente de Nuevo proyecto (v0.2.0) ---- */
-.wizard-overlay { z-index: 70; } /* por encima de la Landing (50) */
-.wizard-panel { max-width: 640px; width: min(94vw, 640px); }
+.wizard-overlay {
+  z-index: 70; /* por encima de la Landing (50) */
+  align-items: flex-start; /* el panel alto no debe quedar cortado arriba */
+  overflow-y: auto;
+  padding: 12px 0;
+}
+.wizard-panel {
+  max-width: 640px;
+  width: min(94vw, 640px);
+  max-height: calc(100vh - 24px - var(--safe-t) - var(--safe-b));
+  display: flex;
+  flex-direction: column;
+  margin: auto; /* centrado, pero con scroll si no cabe */
+}
+.wizard-cuerpo {
+  overflow-y: auto; /* corredera: el paso Dibujar planta es alto */
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
 .wizard-paso { color: var(--text-dim, #9aa1ad); font-size: 0.92rem; margin: 4px 0 12px; }
 .wizard-cuerpo { display: flex; flex-direction: column; gap: 14px; }
 .wizard-cartas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

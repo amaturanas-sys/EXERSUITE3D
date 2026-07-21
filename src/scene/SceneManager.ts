@@ -17,6 +17,13 @@ export class SceneManager {
   private grid: THREE.GridHelper;
   private key!: THREE.DirectionalLight;
   private envTex: THREE.Texture | null = null;
+  /** Suelo estándar infinito (canvas libre). */
+  private ground!: THREE.Mesh;
+  /** Suelo recortado a la planta del canvas completo (mismo aspecto). */
+  private customGround: THREE.Group | null = null;
+  private plantaActual: [number, number][] | null = null;
+  /** Preferencia de rejilla (aplica al GridHelper o al suelo personalizado). */
+  private gridPref = true;
 
   constructor(private canvas: HTMLCanvasElement) {
     const perf = getPerf();
@@ -203,6 +210,134 @@ export class SceneManager {
     ground.receiveShadow = true;
     ground.name = "ground";
     this.scene.add(ground);
+    this.ground = ground;
+  }
+
+  /**
+   * Canvas completo (v0.2.1): el suelo personalizado tiene el MISMO aspecto
+   * que el estándar — plano gris neutro con rejilla (1 celda = 10 cm, mayores
+   * cada 1 m) y el logotipo como marca de agua — pero recortado exactamente a
+   * la planta definida por el usuario. Con null vuelve al suelo infinito.
+   */
+  setCustomGround(planta: [number, number][] | null): void {
+    this.plantaActual = planta && planta.length >= 3 ? planta.map((p) => [...p] as [number, number]) : null;
+    if (this.customGround) {
+      this.scene.remove(this.customGround);
+      this.customGround.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose?.();
+        const mm = m.material as THREE.MeshStandardMaterial | undefined;
+        mm?.map?.dispose?.();
+        mm?.dispose?.();
+      });
+      this.customGround = null;
+    }
+    const activa = this.plantaActual !== null;
+    this.ground.visible = !activa;
+    this.grid.visible = !activa && this.gridPref;
+    if (!this.plantaActual) return;
+
+    const pts = this.plantaActual;
+    const g = new THREE.Group();
+    g.name = "custom-ground";
+
+    // Suelo con la forma de la planta; la rejilla va horneada en un mosaico
+    // de 1 m (los UVs de ShapeGeometry son las coordenadas del plano en cm).
+    const shape = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const geo = new THREE.ShapeGeometry(shape);
+    geo.rotateX(-Math.PI / 2);
+    const tex = this.buildFloorTileTexture(this.gridPref);
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex,
+      color: 0xffffff,
+      roughness: 0.96,
+      metalness: 0,
+    });
+    const suelo = new THREE.Mesh(geo, mat);
+    suelo.position.y = -0.05;
+    suelo.receiveShadow = true;
+    g.add(suelo);
+
+    // Marca de agua del logo en el centroide de la planta (igual de tenue).
+    let cx = 0;
+    let cz = 0;
+    let area2 = 0;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const f = pts[j][0] * pts[i][1] - pts[i][0] * pts[j][1];
+      area2 += f;
+      cx += (pts[j][0] + pts[i][0]) * f;
+      cz += (pts[j][1] + pts[i][1]) * f;
+    }
+    if (Math.abs(area2) > 1e-6) {
+      cx /= 3 * area2;
+      cz /= 3 * area2;
+    }
+    const xs = pts.map((p) => p[0]);
+    const zs = pts.map((p) => p[1]);
+    const lado = Math.min(
+      Math.max(...xs) - Math.min(...xs),
+      Math.max(...zs) - Math.min(...zs),
+    ) * 0.55;
+    const logoCanvas = document.createElement("canvas");
+    logoCanvas.width = logoCanvas.height = 512;
+    const logoTex = new THREE.CanvasTexture(logoCanvas);
+    logoTex.colorSpace = THREE.SRGBColorSpace;
+    const img = new Image();
+    img.onload = () => {
+      const ctx = logoCanvas.getContext("2d")!;
+      const w = 512;
+      const h = (w * img.height) / img.width;
+      ctx.globalAlpha = 0.13;
+      ctx.drawImage(img, 0, (512 - h) / 2, w, h);
+      logoTex.needsUpdate = true;
+    };
+    img.src = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
+    const logo = new THREE.Mesh(
+      new THREE.PlaneGeometry(lado, lado),
+      new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, depthWrite: false }),
+    );
+    logo.rotation.x = -Math.PI / 2;
+    logo.position.set(cx, 0.02, cz);
+    g.add(logo);
+
+    this.scene.add(g);
+    this.customGround = g;
+  }
+
+  /**
+   * Mosaico de 1 m del suelo estándar: gris neutro y, si procede, la rejilla
+   * con celdas de 10 cm y línea mayor de 1 m (mismos tonos que el GridHelper).
+   */
+  private buildFloorTileTexture(conGrid: boolean): THREE.CanvasTexture {
+    const S = 256; // 256 px = 100 cm
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#e4e6e8"; // mismo gris del suelo estándar
+    ctx.fillRect(0, 0, S, S);
+    if (conGrid) {
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = "#c4c4c8"; // líneas menores (10 cm)
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 10; i++) {
+        const p = (S / 10) * i + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(p, 0);
+        ctx.lineTo(p, S);
+        ctx.moveTo(0, p);
+        ctx.lineTo(S, p);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = "#9a9a9e"; // línea mayor (1 m) en el borde del mosaico
+      ctx.strokeRect(0.5, 0.5, S - 1, S - 1);
+      ctx.globalAlpha = 1;
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1 / 100, 1 / 100); // UVs en cm → un mosaico por metro
+    tex.anisotropy = 8;
+    return tex;
   }
 
   /**
@@ -240,11 +375,17 @@ export class SceneManager {
   }
 
   setGridVisible(visible: boolean): void {
-    this.grid.visible = visible;
+    this.gridPref = visible;
+    if (this.plantaActual) {
+      // El suelo personalizado lleva la rejilla horneada: se reconstruye.
+      this.setCustomGround(this.plantaActual);
+    } else {
+      this.grid.visible = visible;
+    }
   }
 
   isGridVisible(): boolean {
-    return this.grid.visible;
+    return this.gridPref;
   }
 
   resize(): void {

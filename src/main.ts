@@ -18,6 +18,7 @@ import { figureSegments } from "./core/figureSegments";
 import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
+import { tt } from "./core/i18n";
 
 const app = document.getElementById("app")!;
 
@@ -183,7 +184,7 @@ async function goHome(): Promise<void> {
       const choice = await confirmUnsavedChanges();
       if (choice === "cancel") return;
       if (choice === "save") {
-        const name = window.prompt("Nombre del proyecto:", "exersuite3d-proyecto");
+        const name = window.prompt(tt("Nombre del proyecto:", "Project name:"), "exersuite3d-proyecto");
         if (name === null) return; // cancela la salida
         const project = editor.serialize();
         const clean = (name.trim() || "exersuite3d-proyecto");
@@ -267,7 +268,7 @@ function showLanding(): void {
         await (sim ? startSimulator(data, name) : startWithProject(data, name));
       } catch (err) {
         console.error("No se pudo abrir el archivo:", err);
-        window.alert("Archivo de proyecto no válido.");
+        window.alert(tt("Archivo de proyecto no válido.", "Invalid project file."));
       }
     },
     onOpenRecent: (data, name) => {

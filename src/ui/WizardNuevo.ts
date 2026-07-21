@@ -1,4 +1,5 @@
 import type { WorkspaceData } from "../core/project";
+import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
 /**
@@ -46,7 +47,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
     };
 
     const paso1 = (): void => {
-      pasoTag.textContent = "Paso 1 · ¿Cómo quieres trabajar?";
+      pasoTag.textContent = tt("Paso 1 · ¿Cómo quieres trabajar?", "Step 1 · How do you want to work?");
       clear(cuerpo);
       cuerpo.append(
         el("div", { class: "wizard-cartas" }, [
@@ -73,7 +74,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
     };
 
     const paso2 = (): void => {
-      pasoTag.textContent = "Paso 2 · Espacio de trabajo";
+      pasoTag.textContent = tt("Paso 2 · Espacio de trabajo", "Step 2 · Workspace");
       clear(cuerpo);
       cuerpo.append(
         el("div", { class: "wizard-cartas" }, [
@@ -95,7 +96,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
     };
 
     const paso3 = (): void => {
-      pasoTag.textContent = "Paso 3 · Definir área de trabajo (metros)";
+      pasoTag.textContent = tt("Paso 3 · Definir área de trabajo (metros)", "Step 3 · Define the work area (meters)");
       clear(cuerpo);
 
       const num = (valor: number, min: number, max: number): HTMLInputElement =>
@@ -168,7 +169,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
         }
         ctx.fillStyle = "#9aa1ad";
         ctx.font = "11px sans-serif";
-        ctx.fillText("N ↑ (+Z) · 1 celda grande = 1 m", 8, 14);
+        ctx.fillText(tt("N ↑ (+Z) · 1 celda grande = 1 m", "N ↑ (+Z) · 1 big cell = 1 m"), 8, 14);
 
         if (puntos.length > 0) {
           // Relleno si está cerrada.
@@ -311,7 +312,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
         const dh = v(alturaB, 2.8) - v(alturaA, 2.8);
         const L = Math.max(0.1, largoEje());
         const grados = (Math.atan2(dh, L) * 180) / Math.PI;
-        pendienteInfo.textContent = `Slope: ${grados.toFixed(1)}° (${((dh / L) * 100).toFixed(1)} %) de A a B`;
+        pendienteInfo.textContent = `Slope: ${grados.toFixed(1)}° (${((dh / L) * 100).toFixed(1)} %) ${tt("de A a B", "from A to B")}`;
       };
       for (const c of [alturaA, alturaB, ancho, fondo]) {
         c.addEventListener("input", actualizarPendiente);
@@ -349,7 +350,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
         let planta: [number, number][] | undefined;
         if (modoPlanta === "dibujo") {
           if (puntos.length < 3) {
-            window.alert("Dibuja la planta del suelo (al menos 3 vértices) o usa el rectángulo.");
+            window.alert(tt("Dibuja la planta del suelo (al menos 3 vértices) o usa el rectángulo.", "Draw the floor plan (at least 3 vertices) or use the rectangle."));
             return;
           }
           planta = puntos.map(([x, z]) => [x * 100, z * 100]); // m → cm

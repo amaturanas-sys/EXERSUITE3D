@@ -8,6 +8,7 @@ import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
 import { construirMaquina } from "../objects/standardMachines";
+import { tt } from "./i18n";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
@@ -307,7 +308,7 @@ export class Editor {
             .clone()
             .multiply(this.gizmoDragStart.quat.clone().invert());
           const ang = THREE.MathUtils.radToDeg(2 * Math.acos(Math.min(1, Math.abs(dq.w))));
-          this.bus.emit("dragMeasure", { text: `Giro: ${ang.toFixed(1)}°` });
+          this.bus.emit("dragMeasure", { text: `${tt("Giro", "Turn")}: ${ang.toFixed(1)}°` });
         } else if (mode === "translate") {
           this.emitDragMeasure(
             this.gizmo.object.position.clone().sub(this.gizmoDragStart.pos),
@@ -970,7 +971,11 @@ export class Editor {
       this.workspaceVisual = null;
     }
     const planta = this.wsPlanta();
+    // El suelo del canvas completo tiene el MISMO aspecto que el estándar
+    // (gris + rejilla + logo) pero recortado a la planta (v0.2.1).
+    this.sceneManager.setCustomGround(planta);
     if (!planta) return;
+    // Contorno fino del área operable como única señal adicional.
     const g = new THREE.Group();
     g.name = "workspace-area";
     const pts = planta.map(([x, z]) => new THREE.Vector3(x, 0.4, z));
@@ -980,22 +985,6 @@ export class Editor {
         new THREE.LineBasicMaterial({ color: 0x12808c }),
       ),
     );
-    // Relleno: la forma se construye en XY y se tumba al plano XZ.
-    const shape = new THREE.Shape(planta.map(([x, z]) => new THREE.Vector2(x, -z)));
-    const fillGeo = new THREE.ShapeGeometry(shape);
-    fillGeo.rotateX(-Math.PI / 2);
-    const fill = new THREE.Mesh(
-      fillGeo,
-      new THREE.MeshBasicMaterial({
-        color: 0x12808c,
-        transparent: true,
-        opacity: 0.07,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      }),
-    );
-    fill.position.y = 0.15;
-    g.add(fill);
     this.sceneManager.scene.add(g);
     this.workspaceVisual = g;
   }
@@ -1254,7 +1243,7 @@ export class Editor {
 
   /** Aviso temporal en el HUD al cancelar una colocación fuera del área. */
   private avisoFuera(): void {
-    this.avisoTemporal("⛔ Fuera del área de trabajo: colocación cancelada");
+    this.avisoTemporal(tt("⛔ Fuera del área de trabajo: colocación cancelada", "⛔ Outside the work area: placement cancelled"));
   }
 
   // ---------------------------------------------------- guardar / cargar
@@ -1932,7 +1921,16 @@ export class Editor {
       this.applyingHistory = false;
     }
     this.emitHistory();
-    this.scheduleAutosave();
+    // OJO: aquí NO se programa historyPush (scheduleAutosave lo haría): al
+    // recargar cambian los ids internos y la instantánea "nueva" truncaría la
+    // rama de rehacer — era el fallo de Ctrl+Z/Ctrl+Y encadenados (v0.2.1).
+    // Solo se persiste el autoguardado con el estado recién aplicado.
+    this.dirty = true;
+    if (this.autosaveTimer !== null) {
+      clearTimeout(this.autosaveTimer);
+      this.autosaveTimer = null;
+    }
+    this.writeAutosave();
     this.requestRender();
   }
 
@@ -2316,7 +2314,7 @@ export class Editor {
       // Bloqueada con el candado: se selecciona (para poder liberarla desde
       // Posturas) pero no se posa.
       this.gizmo.detach();
-      this.avisoTemporal("🔒 Articulación bloqueada — libérala en Posturas");
+      this.avisoTemporal(tt("🔒 Articulación bloqueada — libérala en Posturas", "🔒 Joint locked — release it in Poses"));
     } else {
       this.gizmo.attach(joints[name]);
       // Posar sobre los ejes locales de la articulación y solo los naturales.
@@ -2538,7 +2536,7 @@ export class Editor {
     const jn = this.selectedJointName;
     if (!joints || !jn || !joints[jn]) return;
     if (this.jointLocks.has(jn)) {
-      this.avisoTemporal("🔒 Articulación bloqueada — libérala en Posturas");
+      this.avisoTemporal(tt("🔒 Articulación bloqueada — libérala en Posturas", "🔒 Joint locked — release it in Poses"));
       this.emitJointSelection();
       return;
     }
@@ -3216,7 +3214,7 @@ export class Editor {
       if (!this.dragPoint(this.grabDrag.origin, this.grabDrag.plane, target)) return;
       if (this.grabDrag.joint === "") {
         this.humanFigure?.position.copy(target.clone().add(this.grabDrag.grabLocal));
-        this.bus.emit("dragMeasure", { text: "✋ Figura completa" });
+        this.bus.emit("dragMeasure", { text: tt("✋ Figura completa", "✋ Whole figure") });
         this.requestRender();
         return;
       }
@@ -3670,7 +3668,7 @@ export class Editor {
         let jn: string | null = jn0;
         while (jn && this.jointLocks.has(jn)) jn = PARENT_JOINT[jn] ?? null;
         if (!jn) {
-          this.avisoTemporal("🔒 Cadena bloqueada: libera alguna articulación");
+          this.avisoTemporal(tt("🔒 Cadena bloqueada: libera alguna articulación", "🔒 Chain locked: release some joint"));
           return;
         }
         const joints = this.figureJoints();

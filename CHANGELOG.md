@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.1] — 2026-07-21
+
+### Añadido
+
+- **Interfaz bilingüe Español/English**: selector de idioma en SETTINGS
+  (persiste en el dispositivo). Toda la interfaz — Home, asistente, menús,
+  paneles, paleta, HUD, Instructivo y diálogos — se muestra en el idioma
+  elegido; pensado para presentar el proyecto a una audiencia más amplia.
+- **Descarga directa en Android**: al guardar proyectos, exportar la
+  biblioteca (ZIP), GLB o capturas, la app ofrece descargar DIRECTAMENTE a
+  Documentos/EXERSUITE3D (visible en la app Archivos) además de la hoja de
+  compartir (Drive, enviar…), que queda como alternativa y como respaldo.
+- Nueva dedicatoria (5 idiomas) orientada a la nueva audiencia.
+
+### Corregido
+
+- **Deshacer/Rehacer no respondía de forma encadenada**: al aplicar un paso
+  de historial se re-apilaba una instantánea espuria (los ids internos
+  cambian al recargar la escena) que truncaba la rama de rehacer y absorbía
+  los deshacer siguientes. Ctrl+Z/Ctrl+Y y los ítems del menú Edición ya
+  avanzan y retroceden paso a paso.
+- **El asistente de Nuevo no cabía en pantallas bajas**: el panel limita su
+  altura y el contenido (incluido el paso Dibujar planta) se desplaza con
+  scroll; el botón Crear proyecto siempre queda alcanzable.
+- **El área de trabajo personalizada ahora LUCE como la estándar**: el suelo
+  del canvas completo es el mismo plano gris neutro con rejilla (celda de
+  10 cm, mayores cada 1 m) y el logotipo como marca de agua, recortado
+  exactamente a la planta definida (rectángulo o dibujada); fuera de ella no
+  hay suelo. Se retiró el relleno turquesa; queda solo el contorno fino.
+
 ## [0.2.0] — 2026-07-20
 
 Rediseño mayor de la interfaz y del flujo de trabajo (esquemas del usuario),

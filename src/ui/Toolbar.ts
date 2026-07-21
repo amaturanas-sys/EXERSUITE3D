@@ -1,6 +1,7 @@
 import type { ColorMode, Editor, TransformMode } from "../core/Editor";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
+import { t, tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
 /**
@@ -65,7 +66,7 @@ export class Toolbar {
     // El botón Ejes muestra el eje bloqueado como distintivo.
     this.editor.bus.on("axisLockChanged", ({ axis }) => {
       this.axisLock = axis;
-      ejesBtn.textContent = axis ? `Ejes: ${axis.toUpperCase()} ▾` : "Ejes ▾";
+      ejesBtn.textContent = axis ? `${t("Ejes")}: ${axis.toUpperCase()} ▾` : `${t("Ejes")} ▾`;
       ejesBtn.classList.toggle("active", axis !== null);
       if (this.menuOwner === ejesBtn) this.cerrarMenu();
     });
@@ -90,7 +91,7 @@ export class Toolbar {
     });
     this.editor.bus.on("humanFigureChanged", ({ present, heightCm, loading }) => {
       figBtn.classList.toggle("active", present);
-      figBtn.textContent = loading ? "Cargando…" : "Figura";
+      figBtn.textContent = loading ? tt("Cargando…", "Loading…") : t("Figura");
       figHeight.value = String(heightCm);
     });
 
@@ -102,7 +103,7 @@ export class Toolbar {
       const d = new Date(at);
       const hh = String(d.getHours()).padStart(2, "0");
       const mm = String(d.getMinutes()).padStart(2, "0");
-      autosaveTag.textContent = `Guardado ✓ ${hh}:${mm}`;
+      autosaveTag.textContent = `${tt("Guardado", "Saved")} ✓ ${hh}:${mm}`;
     });
 
     const editGroups = [
@@ -142,7 +143,7 @@ export class Toolbar {
       (g) => [...g.querySelectorAll("button")] as HTMLButtonElement[],
     );
     this.editor.bus.on("simulationChanged", ({ running }) => {
-      simBtn.textContent = running ? "■ Detener" : "▶ Simular";
+      simBtn.textContent = running ? tt("■ Detener", "■ Stop") : tt("▶ Simular", "▶ Simulate");
       simBtn.classList.toggle("active", running);
       editButtons.forEach((b) => (b.disabled = running));
       document.body.classList.toggle("simulating", running);
@@ -157,7 +158,7 @@ export class Toolbar {
 
   /** Botón que abre/cierra su menú desplegable (popover bajo el botón). */
   private menuBtn(label: string, build: (menu: HTMLElement) => void): HTMLButtonElement {
-    const btn = el("button", { class: "tool menu-btn" }, [`${label} ▾`]);
+    const btn = el("button", { class: "tool menu-btn" }, [`${t(label)} ▾`]);
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       if (this.menuOwner === btn) {
@@ -194,7 +195,7 @@ export class Toolbar {
     const b = el(
       "button",
       { class: `menu-item${opts.danger ? " danger" : ""}${opts.check ? " checked" : ""}` },
-      [`${opts.check ? "✓ " : ""}${label}`],
+      [`${opts.check ? "✓ " : ""}${t(label)}`],
     );
     (b as HTMLButtonElement).disabled = !!opts.disabled;
     b.addEventListener("click", (e) => {
@@ -223,7 +224,7 @@ export class Toolbar {
   private buildArchivo(m: HTMLElement): void {
     m.append(
       this.item("Nuevo proyecto…", () => {
-        if (window.confirm("¿Vaciar la escena y empezar un proyecto nuevo?")) {
+        if (window.confirm(tt("¿Vaciar la escena y empezar un proyecto nuevo?", "Clear the scene and start a new project?"))) {
           this.editor.clearScene();
           this.editor.clearAutosave();
         }
@@ -248,7 +249,7 @@ export class Toolbar {
       this.item("Duplicar (Ctrl+D)", () => this.editor.duplicateSelected()),
       this.item("Eliminar (Supr)", () => this.editor.deleteSelection(), { danger: true }),
       this.sep(),
-      this.item(this.multi >= 2 ? `Agrupar (${this.multi})` : "Agrupar", () => this.editor.createGroup(), {
+      this.item(this.multi >= 2 ? `${t("Agrupar")} (${this.multi})` : "Agrupar", () => this.editor.createGroup(), {
         disabled: this.multi < 2,
       }),
       this.item("Desagrupar", () => this.editor.ungroupSelected(), {
@@ -275,7 +276,7 @@ export class Toolbar {
         keep: true,
       }),
       this.sep(),
-      this.item(`Espacio: ${this.space === "local" ? "Local" : "Global"}`, () => {
+      this.item(this.space === "local" ? "Espacio: Local" : "Espacio: Global", () => {
         this.space = this.space === "local" ? "world" : "local";
         this.editor.setGizmoSpace(this.space);
       }, { keep: true }),
@@ -350,7 +351,7 @@ export class Toolbar {
   }
 
   private saveProject(): void {
-    const raw = window.prompt("Nombre del proyecto:", this.lastSaveName);
+    const raw = window.prompt(tt("Nombre del proyecto:", "Project name:"), this.lastSaveName);
     if (raw === null) return; // cancelado
     // Nombre legible para los recientes y nombre de archivo saneado.
     const name = raw.trim() || "exersuite3d-proyecto";

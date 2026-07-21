@@ -6,6 +6,8 @@
  *   la hoja de COMPARTIR del sistema (guardar en Archivos, Drive, enviar…).
  */
 
+import { tt } from "./i18n";
+
 function esAndroidNativo(): boolean {
   const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
     .Capacitor;
@@ -31,10 +33,41 @@ export async function descargarArchivo(
 
   if (esAndroidNativo()) {
     const { Filesystem, Directory } = await import("@capacitor/filesystem");
+    const b64 = aBase64(datos);
+
+    // v0.2.1: descarga DIRECTA al dispositivo (visible en la app Archivos,
+    // carpeta Documentos/EXERSUITE3D), con la hoja de compartir como
+    // alternativa (Drive, enviar…) o como respaldo si el sistema la bloquea.
+    const directo = window.confirm(
+      tt(
+        `Guardar ${nombre}\n\nAceptar: descargar a Documentos/EXERSUITE3D (app Archivos).\nCancelar: elegir destino con la hoja de compartir (Drive, enviar…).`,
+        `Save ${nombre}\n\nOK: download to Documents/EXERSUITE3D (Files app).\nCancel: pick a destination with the share sheet (Drive, send…).`,
+      ),
+    );
+    if (directo) {
+      try {
+        try {
+          await Filesystem.requestPermissions();
+        } catch {
+          /* API moderna: sin permiso explícito */
+        }
+        await Filesystem.writeFile({
+          path: `EXERSUITE3D/${nombre}`,
+          data: b64,
+          directory: Directory.Documents,
+          recursive: true,
+        });
+        window.alert(tt(`✓ Guardado en Documentos/EXERSUITE3D/${nombre}`, `✓ Saved to Documents/EXERSUITE3D/${nombre}`));
+        return;
+      } catch (err) {
+        console.warn("Descarga directa no disponible, se abre compartir:", err);
+      }
+    }
+
     const { Share } = await import("@capacitor/share");
     const escrito = await Filesystem.writeFile({
       path: nombre,
-      data: aBase64(datos),
+      data: b64,
       directory: Directory.Cache,
     });
     await Share.share({

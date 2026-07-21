@@ -10,6 +10,7 @@ import {
   type PerfPreset,
   type PerfSettings,
 } from "../core/performance";
+import { getIdioma, setIdioma, t } from "../core/i18n";
 import { clear, el } from "./dom";
 
 export interface LandingActions {
@@ -114,7 +115,7 @@ export class Landing {
   private setVista(v: Vista): void {
     this.mode = v === "simulator" ? "simulator" : "builder";
     for (const [key, btn] of this.navBtns) btn.classList.toggle("active", key === v);
-    this.leyenda.textContent = LEYENDAS[v];
+    this.leyenda.textContent = t(LEYENDAS[v]);
     clear(this.contenido);
     if (v === "builder") this.renderBuilder();
     else if (v === "simulator") this.renderSimulador();
@@ -278,7 +279,19 @@ export class Landing {
     };
     pintarDetalles();
 
+    // Idioma de la interfaz (v0.2.1): cambiarlo recarga la app.
+    const idioma = el("select", {}, [
+      el("option", { value: "es" }, ["Español"]),
+      el("option", { value: "en" }, ["English"]),
+    ]) as HTMLSelectElement;
+    idioma.value = getIdioma();
+    idioma.addEventListener("change", () => {
+      setIdioma(idioma.value === "en" ? "en" : "es");
+    });
+
     this.contenido.append(
+      el("div", { class: "land-aside-title" }, ["Idioma / Language"]),
+      el("div", { class: "land-settings" }, [fila("Idioma / Language", idioma)]),
       el("div", { class: "land-aside-title" }, ["Calidad gráfica"]),
       presetRow,
       detalles,

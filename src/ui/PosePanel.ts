@@ -1,4 +1,5 @@
 import type { Editor } from "../core/Editor";
+import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
 /**
@@ -28,7 +29,7 @@ export class PosePanel {
       "Guardar como…",
     ]);
     saveBtn.addEventListener("click", () => {
-      const name = window.prompt("Nombre de la nueva postura:");
+      const name = window.prompt(tt("Nombre de la nueva postura:", "New pose name:"));
       if (name && name.trim()) {
         this.editor.savePose(name);
         this.select.value = name.trim();
@@ -56,7 +57,7 @@ export class PosePanel {
     this.editor.bus.on("grabFigureChanged", ({ on }) => {
       grabBtn.classList.toggle("active", on);
       this.hint.textContent = on
-        ? "Agarrar maniquí: arrastra un segmento del cuerpo; el candado 🔒 fija articulaciones y 1/2/3 restringe a un eje."
+        ? tt("Agarrar maniquí: arrastra un segmento del cuerpo; el candado 🔒 fija articulaciones y 1/2/3 restringe a un eje.", "Grab mannequin: drag a body segment; the 🔒 lock pins joints and 1/2/3 restricts to one axis.")
         : this.defaultHint;
     });
 
@@ -126,8 +127,8 @@ export class PosePanel {
     this.editor.bus.on("jointSelectionChanged", ({ name, angles, locked }) => {
       if (name) {
         this.jointBox.style.display = "block";
-        this.jointLabel.textContent = `Articulación: ${name} (grados)${locked ? " · 🔒" : ""}`;
-        this.lockBtn.textContent = locked ? "🔓 Liberar" : "🔒 Bloquear";
+        this.jointLabel.textContent = `${tt("Articulación", "Joint")}: ${name} (${tt("grados", "degrees")})${locked ? " · 🔒" : ""}`;
+        this.lockBtn.textContent = locked ? tt("🔓 Liberar", "🔓 Unlock") : tt("🔒 Bloquear", "🔒 Lock");
         this.lockBtn.classList.toggle("active", locked);
         // Solo los ejes naturales (y sin candado) quedan editables.
         const axes = this.editor.getSelectedJointAxes();
@@ -150,8 +151,8 @@ export class PosePanel {
       this.hint.textContent = !active
         ? this.defaultHint
         : stage === "hand"
-          ? "Apoyar mano: haz clic en una mano/brazo de la figura."
-          : "Ahora haz clic en el agarre donde apoyar la mano.";
+          ? tt("Apoyar mano: haz clic en una mano/brazo de la figura.", "Rest hand: click a hand/arm of the figure.")
+          : tt("Ahora haz clic en el agarre donde apoyar la mano.", "Now click the grip where the hand should rest.");
     });
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
       this.root.style.display = present && mode === "mannequin" ? "flex" : "none";
@@ -166,8 +167,10 @@ export class PosePanel {
   private lockBtn!: HTMLButtonElement;
   private symChk!: HTMLInputElement;
   private jointInputs = {} as { x: HTMLInputElement; y: HTMLInputElement; z: HTMLInputElement };
-  private readonly defaultHint =
-    "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.";
+  private readonly defaultHint = tt(
+    "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.",
+    "Pose the figure (click a limb and rotate it) and press Update or Save as…. With Rest hand, pin a hand to a grip.",
+  );
 
   private refresh(): void {
     const current = this.select.value;
