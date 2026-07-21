@@ -407,6 +407,18 @@ export const TRADUCCIONES: Record<string, string> = {
     "Home rack 120×215×179 cm (TTP001L breakdown): 40×40 profile, multi-grip pull-up tower, J-hooks at 127, side plate storage and stabilizer plate.",
   "Poste porta-discos con 6 cuernos a 3 alturas y base en cruz.":
     "Plate storage post with 6 horns at 3 heights and a cross base.",
-  "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (despiece real 120×215×179, perfil 40×40) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.":
-    "Standard machines (top of the palette): squat rack, power cage, flat bench, cable tower, TTP tower rack (real breakdown 120×215×179, 40×40 profile) and plate tree — with commercial dimensions, ready as a group to plan the room.",
+  "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (construido con las piezas REALES del despiece: montantes con agujeros de calce, ganchos J de pin+giro, rieles porta-discos, multi-agarre y patines) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.":
+    "Standard machines (top of the palette): squat rack, power cage, flat bench, cable tower, TTP tower rack (built from the REAL breakdown parts: uprights with keying holes, pin+twist J-hooks, plate storage rails, multi-grip and floor skids) and plate tree — with commercial dimensions, ready as a group to plan the room.",
+  "Montante TTP (5×7×204)": "TTP upright (5×7×204)",
+  "Riel porta-discos TTP": "TTP plate storage rail",
+  "Multi-agarre dominadas TTP": "TTP multi-grip pull-up",
+  "Patín de suelo TTP": "TTP floor skid",
+  "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).":
+    "Real TTP001L rack upright with keying holes (the J-hook seats with pin and twist).",
+  "Riel lateral de almacenamiento de discos del TTP001L, con manguitos y cuernos.":
+    "TTP001L side plate-storage rail, with sleeves and horns.",
+  "Estación de dominadas multi-agarre real del TTP001L (92×32 cm).":
+    "Real TTP001L multi-grip pull-up station (92×32 cm).",
+  "Patín/pie de suelo real del TTP001L (104 cm) que estabiliza cada marco.":
+    "Real TTP001L floor skid (104 cm) stabilizing each frame.",
 };

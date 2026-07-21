@@ -22,7 +22,7 @@
   "bloque-poleas": "",
   "engranaje": "",
   "cable": "",
-  "cadena-eslabones": "",
+  "cadena-eslabones": "cadena-eslabones.obj",
   "cadena-seguridad": "",
   "liston-kevlar": "",
   "resorte": "",
@@ -43,5 +43,9 @@
   "correa-tobillo": "",
   "prim-box": "",
   "prim-cylinder": "",
-  "prim-sphere": ""
+  "prim-sphere": "",
+  "montante-ttp": "montante-ttp.obj",
+  "riel-discos-ttp": "riel-discos-ttp.obj",
+  "multiagarre-ttp": "multiagarre-ttp.obj",
+  "pie-ttp": "pie-ttp.obj"
 }

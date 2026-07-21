@@ -27,7 +27,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     id: "jaula-potencia",
     label: "Jaula de potencia",
     icon: "🗼",
-    description: "Power cage 120×220×140 cm con barra de dominadas y seguridad.",
+    description: "Power cage 120×220×120 cm con barra de dominadas y seguridad.",
   },
   {
     id: "banco-plano",
@@ -84,14 +84,14 @@ const RACK: PiezaSpec[] = [
   // Barra de dominadas trasera (tumbada a lo ancho).
   { comp: "barra-dominadas", params: { height: 134 }, pos: [0, 195, -56], rot: [0, 0, Math.PI / 2] },
   // Ganchos J y brazos de seguridad.
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-60, 110, 49] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [60, 110, 49] },
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-60, 70, 0] },
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [60, 70, 0] },
+  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-67, 110, 71] },
+  { comp: "j-hook", nombre: "Gancho J der.", pos: [67, 110, 71] },
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-67, 70, 0] },
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [67, 70, 0] },
 ];
 
 const JAULA: PiezaSpec[] = [
-  ...([[-56, -66], [56, -66], [-56, 66], [56, 66]] as const).map(
+  ...([[-56, -56], [56, -56], [-56, 56], [56, 56]] as const).map(
     ([x, z], i): PiezaSpec => ({
       comp: "montante-rack",
       nombre: `Montante ${i + 1}`,
@@ -99,15 +99,15 @@ const JAULA: PiezaSpec[] = [
       pos: [x, 110, z],
     }),
   ),
-  { comp: "prim-box", nombre: "Marco sup. izq.", params: { width: 7.6, height: 7.6, depth: 124 }, material: "acero-negro", pos: [-56, 216, 0] },
-  { comp: "prim-box", nombre: "Marco sup. der.", params: { width: 7.6, height: 7.6, depth: 124 }, material: "acero-negro", pos: [56, 216, 0] },
-  { comp: "prim-box", nombre: "Marco sup. frontal", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, 66] },
-  { comp: "prim-box", nombre: "Marco sup. trasero", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, -66] },
+  { comp: "prim-box", nombre: "Marco sup. izq.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [-56, 216, 0] },
+  { comp: "prim-box", nombre: "Marco sup. der.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [56, 216, 0] },
+  { comp: "prim-box", nombre: "Marco sup. frontal", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, 56] },
+  { comp: "prim-box", nombre: "Marco sup. trasero", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, -56] },
   { comp: "barra-dominadas", params: { height: 104 }, pos: [0, 216, 0], rot: [0, 0, Math.PI / 2] },
   { comp: "brazo-seguridad", nombre: "Seguridad izq.", pos: [-52, 60, 0] },
   { comp: "brazo-seguridad", nombre: "Seguridad der.", pos: [52, 60, 0] },
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-52, 105, 60] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [52, 105, 60] },
+  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-56, 105, 71] },
+  { comp: "j-hook", nombre: "Gancho J der.", pos: [56, 105, 71] },
 ];
 
 const BANCO: PiezaSpec[] = [
@@ -141,46 +141,45 @@ const TORRE: PiezaSpec[] = [
  * placa estabilizadora trasera de 87×60 cm.
  */
 const RACK_TORRE: PiezaSpec[] = [
-  // Marco delantero/medio: 4 montantes de perfil 40×40 a 215 cm.
+  // Marco delantero/medio: 4 MONTANTES REALES del despiece (5×7×204, con
+  // agujeros de calce para el pin de los ganchos).
   ...([[-55, 50], [55, 50], [-55, -50], [55, -50]] as const).map(
     ([x, z], i): PiezaSpec => ({
-      comp: "montante-rack",
-      nombre: `Montante 40×40 ${i + 1}`,
-      params: { width: 4, height: 215, depth: 4 },
-      pos: [x, 107.5, z],
+      comp: "montante-ttp",
+      nombre: `Montante TTP ${i + 1}`,
+      pos: [x, 102, z],
     }),
   ),
-  // Torre trasera de dominadas: 2 columnas centrales.
+  // Torre trasera de dominadas: 2 columnas 4×4 a 215 (despiece).
   { comp: "montante-rack", nombre: "Columna torre izq.", params: { width: 4, height: 215, depth: 4 }, pos: [-6, 107.5, -83] },
   { comp: "montante-rack", nombre: "Columna torre der.", params: { width: 4, height: 215, depth: 4 }, pos: [6, 107.5, -83] },
-  // Travesaños superiores que arriostran los marcos.
-  { comp: "prim-box", nombre: "Travesaño sup. izq.", params: { width: 4, height: 4, depth: 96 }, material: "acero-negro", pos: [-55, 213, 0] },
-  { comp: "prim-box", nombre: "Travesaño sup. der.", params: { width: 4, height: 4, depth: 96 }, material: "acero-negro", pos: [55, 213, 0] },
-  { comp: "prim-box", nombre: "Travesaño sup. frontal", params: { width: 106, height: 4, depth: 4 }, material: "acero-negro", pos: [0, 213, 50] },
-  // Multi-agarre de dominadas (32×92 a 207 cm, entre marco medio y torre).
-  { comp: "prim-box", nombre: "Multi-agarre dominadas", params: { width: 32, height: 6, depth: 92 }, material: "acero-negro", pos: [0, 207, -41] },
-  { comp: "barra-dominadas", params: { height: 106 }, pos: [0, 204, -50], rot: [0, 0, Math.PI / 2] },
-  // Ganchos J a 127 cm (altura de barra del despiece) en el marco frontal.
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-51, 127, 46] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [51, 127, 46] },
-  // Brazos de seguridad bajos entre marcos.
-  { comp: "brazo-seguridad", nombre: "Seguridad izq.", pos: [-51, 60, 0] },
-  { comp: "brazo-seguridad", nombre: "Seguridad der.", pos: [51, 60, 0] },
-  // Rieles porta-discos laterales a 65 cm con cuernos de carga.
-  { comp: "prim-box", nombre: "Riel discos izq.", params: { width: 6, height: 6, depth: 100 }, material: "acero-negro", pos: [-60, 65, 0] },
-  { comp: "prim-box", nombre: "Riel discos der.", params: { width: 6, height: 6, depth: 100 }, material: "acero-negro", pos: [60, 65, 0] },
-  { comp: "cuerno-carga", nombre: "Cuerno izq. A", pos: [-75, 65, 25], rot: [0, 0, Math.PI / 2] },
-  { comp: "cuerno-carga", nombre: "Cuerno izq. B", pos: [-75, 65, -25], rot: [0, 0, Math.PI / 2] },
-  { comp: "cuerno-carga", nombre: "Cuerno der. A", pos: [75, 65, 25], rot: [0, 0, -Math.PI / 2] },
-  { comp: "cuerno-carga", nombre: "Cuerno der. B", pos: [75, 65, -25], rot: [0, 0, -Math.PI / 2] },
+  // Travesaños superiores que arriostran los marcos (tope del marco: 204).
+  { comp: "prim-box", nombre: "Travesaño sup. izq.", params: { width: 4, height: 4, depth: 96 }, material: "acero-negro", pos: [-55, 202, 0] },
+  { comp: "prim-box", nombre: "Travesaño sup. der.", params: { width: 4, height: 4, depth: 96 }, material: "acero-negro", pos: [55, 202, 0] },
+  { comp: "prim-box", nombre: "Travesaño sup. frontal", params: { width: 106, height: 4, depth: 4 }, material: "acero-negro", pos: [0, 202, 50] },
+  // MULTI-AGARRE REAL de dominadas (92×32 a 207, entre marco medio y torre).
+  { comp: "multiagarre-ttp", pos: [0, 207, -41] },
+  // Ganchos J calzados en la cara frontal del marco (pin −Z al agujero).
+  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-55, 127, 63] },
+  { comp: "j-hook", nombre: "Gancho J der.", pos: [55, 127, 63] },
+  // Soportes bajos del despiece: mismo gancho de calce en el marco trasero,
+  // brazo hacia el interior (posición de seguridad a 41 cm).
+  { comp: "j-hook", nombre: "Soporte bajo izq.", pos: [-55, 41, -35] },
+  { comp: "j-hook", nombre: "Soporte bajo der.", pos: [55, 41, -35] },
+  // RIELES PORTA-DISCOS REALES (106, con manguitos y cuernos integrados).
+  { comp: "riel-discos-ttp", nombre: "Riel discos izq.", pos: [-60, 65, 0] },
+  { comp: "riel-discos-ttp", nombre: "Riel discos der.", pos: [60, 65, 0] },
   // Sistema de poleas del despiece (lado izquierdo): roldana alta en la
   // montura superior, roldana baja y guías verticales del carro de peso.
   { comp: "roldana", nombre: "Roldana alta", pos: [-55, 211, 0], rot: [0, 0, Math.PI / 2] },
+  { comp: "prim-box", nombre: "Travesaño inf. izq.", params: { width: 4, height: 4, depth: 96 }, material: "acero-negro", pos: [-55, 16, 0] },
   { comp: "roldana", nombre: "Roldana baja", pos: [-55, 25, 0], rot: [0, 0, Math.PI / 2] },
   { comp: "prim-box", nombre: "Guía de carro A", params: { width: 3, height: 50, depth: 3 }, material: "cromo", pos: [-55, 94, 7] },
   { comp: "prim-box", nombre: "Guía de carro B", params: { width: 3, height: 50, depth: 3 }, material: "cromo", pos: [-55, 94, -7] },
-  // Base: travesaño de suelo y placa estabilizadora trasera (87×60).
-  { comp: "prim-box", nombre: "Travesaño base", params: { width: 104, height: 5, depth: 15 }, material: "acero-negro", pos: [0, 2.5, 50] },
+  // Base: PATINES DE SUELO REALES (104) bajo cada marco lateral y placa
+  // estabilizadora trasera (87×60).
+  { comp: "pie-ttp", nombre: "Patín izq.", pos: [-55, 2.5, 0] },
+  { comp: "pie-ttp", nombre: "Patín der.", pos: [55, 2.5, 0] },
   { comp: "prim-box", nombre: "Placa estabilizadora", params: { width: 87, height: 60, depth: 3 }, material: "acero-negro", pos: [0, 30, -88] },
 ];
 

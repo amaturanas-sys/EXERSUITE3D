@@ -34,6 +34,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   máquinas estándar. El Rack con torre (TTP) incorpora además su sistema de
   poleas del despiece: roldana alta en la montura superior, roldana baja y
   guías de carro cromadas.
+- **Sustitución MAYORITARIA del despiece TTP** (usando el modelo armado como
+  referencia): cuatro componentes nuevos en la paleta con su malla real —
+  **Montante TTP** (5×204×7, con los agujeros de calce del gancho J),
+  **Riel porta-discos TTP** (9×24×106, con manguitos y cuernos), **Multi-agarre
+  de dominadas TTP** (32×15×92) y **Patín de suelo TTP** (15×5×104). El Rack
+  con torre (TTP) se reconstruyó con ellos: 4 montantes reales, multi-agarre a
+  207, ganchos J calzados a 127, soportes bajos, rieles porta-discos, sistema
+  de poleas con travesaños de montura y patines + placa estabilizadora.
+- **Eslabones de cadena reales del POWERRACK en la biblioteca**: la malla del
+  eslabón auténtico (10×4,3 cm, extraída del despiece) es ahora la plantilla
+  de la cuerda tipo **cadena** — cada catenaria se renderiza con eslabones
+  encadenados reales en lugar de segmentos genéricos.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su
@@ -67,6 +79,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   10 cm, mayores cada 1 m) y el logotipo como marca de agua, recortado
   exactamente a la planta definida (rectángulo o dibujada); fuera de ella no
   hay suelo. Se retiró el relleno turquesa; queda solo el contorno fino.
+- **Ganchos J y brazos de seguridad desalineados en rack y jaula**: el gancho
+  J es de tipo CALCE (pin al agujero del montante + giro; las superficies
+  fijan la posición) y ahora asienta con el pin contra la cara frontal de los
+  pilares, a la altura de un agujero. Los brazos de seguridad (pipes) tienen
+  en sus extremos collares que ABRAZAN el pilar: se reposicionaron sobre el
+  eje de los montantes para que cada collar rodee su pilar a la altura de
+  anclaje (el fondo de la jaula pasa a 120 cm para casar con el pipe real).
 
 ## [0.2.0] — 2026-07-20
 
