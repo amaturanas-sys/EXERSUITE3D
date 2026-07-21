@@ -19,6 +19,8 @@ export interface ObjData {
   position: Vec3;
   quaternion: Quat;
   scale: Vec3;
+  /** Clave `maquina:<id>` si el objeto es una máquina estándar sustituida. */
+  modeloMaquina?: string;
 }
 
 export interface JointData {

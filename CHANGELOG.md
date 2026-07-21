@@ -104,6 +104,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   las roldanas, el puente del carro con sus dos poleas es pieza real y el
   brazo de seguridad se rehorneó CON su collar de calce.
 
+- **Máquinas estándar exportables y sustituibles** (pestaña Máquinas de la
+  Biblioteca): cada prefab del modo Sencillo se puede EXPORTAR como STL u OBJ
+  (el ensamblaje completo horneado con las mallas reales) para editarlo fuera,
+  y SUSTITUIR por el modelo corregido (.stl/.obj/.glb/.gltf). La máquina
+  sustituida se inserta como una sola pieza anclada con ese modelo, se guarda
+  en el proyecto, viaja en el ZIP de la biblioteca y puede venir de fábrica
+  vía manifest (claves maquina:<id>).
+- **Emojis como SILUETA monocroma en toda la interfaz**: los pictogramas de
+  Home, asistente, menús, paleta, paneles e Instructivo se muestran como
+  figura (solo la silueta, al tono de la interfaz) en lugar del glifo a color
+  que varía entre plataformas — estética consistente en todas las ventanas.
+
 ### Corregido
 
 - **Deshacer/Rehacer no respondía de forma encadenada**: al aplicar un paso

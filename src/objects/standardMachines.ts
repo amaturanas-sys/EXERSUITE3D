@@ -58,7 +58,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
   },
 ];
 
-interface PiezaSpec {
+export interface PiezaSpec {
   comp: string;
   nombre?: string;
   params?: Partial<PrimitiveParams>;
@@ -253,6 +253,11 @@ const SPECS: Record<string, { label: string; piezas: PiezaSpec[] }> = {
   "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
+
+/** Especificación de piezas de una máquina estándar (para hornear/exportar). */
+export function piezasDeMaquina(prefabId: string): { label: string; piezas: PiezaSpec[] } | null {
+  return SPECS[prefabId] ?? null;
+}
 
 /**
  * Construye la máquina apoyada en el suelo con su centro en `at` y devuelve

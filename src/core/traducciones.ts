@@ -492,4 +492,14 @@ export const TRADUCCIONES: Record<string, string> = {
   "Puente del carro TTP": "TTP carriage bridge",
   "Puente real del carro de poleas del TTP001L: une las dos poleas del carro.":
     "Real TTP001L pulley-carriage bridge: joins the carriage's two pulleys.",
+  "Máquinas": "Machines",
+  "Exportar OBJ": "Export OBJ",
+  "Exportar STL": "Export STL",
+  "Descargar el ensamblaje como OBJ": "Download the assembly as OBJ",
+  "Descargar el ensamblaje como STL": "Download the assembly as STL",
+  "No se pudo exportar la máquina.": "The machine could not be exported.",
+  "Pestaña Máquinas: cada máquina estándar del modo Sencillo se puede EXPORTAR como STL u OBJ (el ensamblaje completo), editar fuera y SUSTITUIR por tu versión corregida — al insertarla usará tu modelo.":
+    "Machines tab: every Simple-mode standard machine can be EXPORTED as STL or OBJ (the full assembly), edited elsewhere and REPLACED with your corrected version — inserting it will use your model.",
+  "Exportar ZIP descarga toda tu colección (incluidas las máquinas sustituidas); Importar ZIP la restaura o fusiona en otro dispositivo.":
+    "Export ZIP downloads your whole collection (replaced machines included); Import ZIP restores or merges it on another device.",
 };

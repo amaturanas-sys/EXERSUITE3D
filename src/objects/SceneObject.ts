@@ -28,6 +28,8 @@ export class SceneObject {
   imported = false;
   /** True si un modelo 3D personalizado sustituye a la primitiva del componente. */
   customModel = false;
+  /** Clave `maquina:<id>` si este objeto ES una máquina estándar sustituida. */
+  modeloMaquina: string | null = null;
   readonly mesh: THREE.Mesh;
 
   constructor(opts: {

@@ -71,7 +71,8 @@ const SECCIONES: [string, string[]][] = [
     "Biblioteca de modelos",
     [
       "Sustituye cualquier componente o segmento del maniquí por tu propio modelo 3D (.glb/.gltf/.obj/.stl).",
-      "Exportar ZIP descarga toda tu colección; Importar ZIP la restaura o fusiona en otro dispositivo.",
+      "Pestaña Máquinas: cada máquina estándar del modo Sencillo se puede EXPORTAR como STL u OBJ (el ensamblaje completo), editar fuera y SUSTITUIR por tu versión corregida — al insertarla usará tu modelo.",
+      "Exportar ZIP descarga toda tu colección (incluidas las máquinas sustituidas); Importar ZIP la restaura o fusiona en otro dispositivo.",
     ],
   ],
   [

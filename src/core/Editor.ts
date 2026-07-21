@@ -7,7 +7,8 @@ import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
-import { construirMaquina } from "../objects/standardMachines";
+import { construirMaquina, STANDARD_MACHINES } from "../objects/standardMachines";
+import { claveMaquina } from "./maquinasModelo";
 import { tt } from "./i18n";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
@@ -388,6 +389,12 @@ export class Editor {
     for (const o of this.objects.values()) {
       // Las piezas de entorno (ws-techo) tienen geometría propia del workspace.
       if (o.componentId.startsWith("ws-")) continue;
+      // Máquinas estándar sustituidas: su geometría viene de su propia clave.
+      if (o.modeloMaquina) {
+        const g = componentModels.geometryClone(o.modeloMaquina);
+        if (g) o.applyCustomGeometry(g);
+        continue;
+      }
       const geo = componentModels.geometryClone(o.componentId);
       if (geo) o.applyCustomGeometry(geo);
       else if (o.customModel) o.revertToPrimitive();
@@ -721,6 +728,26 @@ export class Editor {
    * centro en `at` (o en el origen). El grupo resultante se mueve en bloque.
    */
   insertarMaquina(prefabId: string, at = new THREE.Vector3()): void {
+    // Máquina SUSTITUIDA en la biblioteca: se inserta el modelo del usuario
+    // como una sola pieza anclada (misma mecánica que los componentes).
+    const clave = claveMaquina(prefabId);
+    const custom = componentModels.geometryClone(clave);
+    if (custom) {
+      custom.computeBoundingBox();
+      const size = custom.boundingBox!.getSize(new THREE.Vector3());
+      const obj = this.addComponent("prim-box");
+      obj.params = { kind: "box", width: size.x, height: size.y, depth: size.z };
+      obj.name = STANDARD_MACHINES.find((m) => m.id === prefabId)?.label ?? prefabId;
+      obj.mesh.name = obj.name;
+      obj.setMaterial("acero-negro");
+      obj.physics = { ...obj.physics, fixed: true };
+      obj.modeloMaquina = clave;
+      obj.applyCustomGeometry(custom);
+      obj.mesh.position.set(at.x, size.y / 2, at.z);
+      this.scheduleAutosave();
+      this.requestRender();
+      return;
+    }
     const { ids, label } = construirMaquina(this, prefabId, at);
     if (ids.length >= 2) {
       const gid = this.createGroupFromIds(ids);
@@ -1281,6 +1308,7 @@ export class Editor {
           position: v3(s?.position ?? o.mesh.position),
           quaternion: q4(s?.quaternion ?? o.mesh.quaternion),
           scale: v3(s?.scale ?? o.mesh.scale),
+          modeloMaquina: o.modeloMaquina ?? undefined,
         };
       }),
       joints: this.listJoints().map((j) => ({
@@ -1511,6 +1539,12 @@ export class Editor {
         obj.physics = { ...od.physics };
         obj.rebuildGeometry();
         obj.setMaterial(od.materialId);
+        // Máquina estándar sustituida: recupera su modelo de la biblioteca.
+        if (od.modeloMaquina) {
+          obj.modeloMaquina = od.modeloMaquina;
+          const g = componentModels.geometryClone(od.modeloMaquina);
+          if (g) obj.applyCustomGeometry(g);
+        }
         obj.mesh.position.fromArray(od.position);
         obj.mesh.quaternion.fromArray(od.quaternion);
         obj.mesh.scale.fromArray(od.scale);

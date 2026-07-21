@@ -6,6 +6,33 @@ type ElProps<K extends keyof HTMLElementTagNameMap> = Partial<
   Omit<HTMLElementTagNameMap[K], "style">
 > & { class?: string; style?: string };
 
+/**
+ * Estética consistente (v0.2.1): TODO emoji de la interfaz se muestra como
+ * SILUETA monocroma (filtro CSS en .emoji-sil), en lugar del glifo a color
+ * que varía entre plataformas. Detecta rachas de pictogramas (con selectores
+ * de variación, ZWJ y modificadores) y las envuelve en un span.
+ */
+const EMOJI_RE = /(?:\p{Extended_Pictographic}(?:[️‍]|\p{Emoji_Modifier})*)+/gu;
+
+function conEmojisSilueta(texto: string): (Node | string)[] {
+  EMOJI_RE.lastIndex = 0;
+  if (!EMOJI_RE.test(texto)) return [texto];
+  EMOJI_RE.lastIndex = 0;
+  const partes: (Node | string)[] = [];
+  let ultimo = 0;
+  for (const m of texto.matchAll(EMOJI_RE)) {
+    const i = m.index ?? 0;
+    if (i > ultimo) partes.push(texto.slice(ultimo, i));
+    const span = document.createElement("span");
+    span.className = "emoji-sil";
+    span.textContent = m[0];
+    partes.push(span);
+    ultimo = i + m[0].length;
+  }
+  if (ultimo < texto.length) partes.push(texto.slice(ultimo));
+  return partes;
+}
+
 export function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   props: ElProps<K> = {},
@@ -22,7 +49,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   }
   Object.assign(node, rest);
   for (const child of children) {
-    node.append(typeof child === "string" ? document.createTextNode(t(child)) : child);
+    if (typeof child === "string") node.append(...conEmojisSilueta(t(child)));
+    else node.append(child);
   }
   return node;
 }

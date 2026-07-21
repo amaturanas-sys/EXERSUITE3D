@@ -1416,3 +1416,11 @@ body.simulating .dock-toggle {
   height: auto;
   font-size: 15px;
 }
+
+/* ---- Estética consistente: emojis como SILUETA monocroma (v0.2.1). El
+   filtro apaga el color del glifo y lo lleva al tono claro de la interfaz,
+   de modo que los pictogramas se integran como iconografía uniforme. */
+.emoji-sil {
+  display: inline-block;
+  filter: grayscale(1) brightness(0) invert(0.82);
+}

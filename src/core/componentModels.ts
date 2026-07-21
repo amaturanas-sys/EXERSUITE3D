@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { getDefinition } from "../objects/componentLibrary";
+import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { deleteModel, getAllModels, putModel } from "./modelStore";
 import { bakeComponentGeometry, loadModelRoot } from "./modelLoading";
 
@@ -138,7 +139,11 @@ class ComponentModelManager {
     for (const [componentId, value] of Object.entries(manifest)) {
       const fileName = typeof value === "string" ? value.trim() : "";
       if (!fileName) continue;
-      if (!getDefinition(componentId)) {
+      // Se admiten componentes de biblioteca y máquinas estándar (maquina:<id>).
+      const esMaquina =
+        componentId.startsWith("maquina:") &&
+        STANDARD_MACHINES.some((m) => `maquina:${m.id}` === componentId);
+      if (!getDefinition(componentId) && !esMaquina) {
         console.warn(`manifest.json: componente desconocido "${componentId}"`);
         continue;
       }
@@ -222,16 +227,20 @@ class ComponentModelManager {
       const bytes = files[meta.path];
       if (!bytes) continue;
       const def = getDefinition(componentId);
+      // Las máquinas estándar sustituidas viajan con clave `maquina:<id>`.
+      const maquina = componentId.startsWith("maquina:")
+        ? STANDARD_MACHINES.find((m) => `maquina:${m.id}` === componentId)
+        : undefined;
       const loc = local.get(componentId);
       let status: ImportStatus;
-      if (!def) status = "unknown";
+      if (!def && !maquina) status = "unknown";
       else if (!loc) status = "new";
       else if (hashU8(bytes) === hashU8(new Uint8Array(loc.bytes))) status = "unchanged";
       else status = (meta.updatedAt ?? 0) > (loc.updatedAt ?? 0) ? "newer" : "older";
 
       entries.push({
         componentId,
-        label: def?.label ?? componentId,
+        label: def?.label ?? maquina?.label ?? componentId,
         fileName: meta.fileName,
         ext: meta.ext,
         bytes,

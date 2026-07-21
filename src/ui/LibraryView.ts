@@ -9,6 +9,8 @@ import { buildGeometry } from "../objects/geometryFactory";
 import { buildMaterial } from "../objects/materials";
 import { componentModels, type ImportEntry, type ImportStatus } from "../core/componentModels";
 import { figureSegments } from "../core/figureSegments";
+import { STANDARD_MACHINES } from "../objects/standardMachines";
+import { claveMaquina, geometriaAOBJ, geometriaASTL, hornearMaquina } from "../core/maquinasModelo";
 import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
@@ -33,6 +35,8 @@ interface LibrarySource {
   clearUserModel(id: string): Promise<void>;
   onChanged(fn: () => void): () => void;
   supportsZip: boolean;
+  /** Acciones adicionales del detalle (p. ej. exportar la máquina a OBJ/STL). */
+  extraActions?(id: string): HTMLElement[];
 }
 
 const COMPONENT_DEFS = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY];
@@ -57,6 +61,60 @@ const componentSource: LibrarySource = {
   clearUserModel: (id) => componentModels.clearUserModel(id),
   onChanged: (fn) => componentModels.onChanged(fn),
   supportsZip: true,
+};
+
+// ---- Máquinas estándar del modo Sencillo: exportables (STL/OBJ) y
+// sustituibles por un modelo del usuario, como cualquier componente.
+const maquinaPorClave = (clave: string) =>
+  STANDARD_MACHINES.find((m) => claveMaquina(m.id) === clave);
+
+async function exportarMaquina(clave: string, formato: "obj" | "stl"): Promise<void> {
+  const m = maquinaPorClave(clave);
+  if (!m) return;
+  try {
+    const geo = componentModels.geometryClone(clave) ?? hornearMaquina(m.id);
+    if (formato === "obj") {
+      await descargarArchivo(`${m.id}.obj`, geometriaAOBJ(geo, m.label), "model/obj");
+    } else {
+      await descargarArchivo(`${m.id}.stl`, geometriaASTL(geo), "model/stl");
+    }
+    geo.dispose();
+  } catch (err) {
+    console.error("No se pudo exportar la máquina:", err);
+    window.alert("No se pudo exportar la máquina.");
+  }
+}
+
+const machineSource: LibrarySource = {
+  items: () =>
+    STANDARD_MACHINES.map((m) => ({
+      id: claveMaquina(m.id),
+      label: m.label,
+      category: "Máquinas estándar",
+      description: m.description,
+    })),
+  has: (id) => componentModels.has(id),
+  fileName: (id) => componentModels.fileName(id),
+  isUser: (id) => componentModels.source(id) === "user",
+  isFile: (id) => componentModels.source(id) === "file",
+  previewGeometry: (id) => {
+    const propia = componentModels.geometryClone(id);
+    if (propia) return propia;
+    const m = maquinaPorClave(id);
+    return m ? hornearMaquina(m.id) : new THREE.BoxGeometry(50, 50, 50);
+  },
+  previewMaterial: () => buildMaterial("acero-negro"),
+  setUserModel: (id, f) => componentModels.setUserModel(id, f),
+  clearUserModel: (id) => componentModels.clearUserModel(id),
+  onChanged: (fn) => componentModels.onChanged(fn),
+  supportsZip: true,
+  extraActions: (id) => {
+    const obj = el("button", { class: "tool", title: "Descargar el ensamblaje como OBJ" }, ["Exportar OBJ"]);
+    obj.addEventListener("click", () => void exportarMaquina(id, "obj"));
+    const stl = el("button", { class: "tool", title: "Descargar el ensamblaje como STL" }, ["Exportar STL"]);
+    stl.addEventListener("click", () => void exportarMaquina(id, "stl"));
+    return [obj, stl];
+  },
 };
 
 const figureMat = () => new THREE.MeshStandardMaterial({ color: 0x2f7dd1, roughness: 0.6 });
@@ -92,7 +150,7 @@ export class LibraryView {
   private selectedId: string | null = null;
   private src: LibrarySource = componentSource;
   private unsub: () => void;
-  private tabs: { comp: HTMLButtonElement; seg: HTMLButtonElement };
+  private tabs: { comp: HTMLButtonElement; maq: HTMLButtonElement; seg: HTMLButtonElement };
 
   constructor(private onHome: () => void) {
     this.listEl = el("div", { class: "lib-list" });
@@ -117,9 +175,11 @@ export class LibraryView {
 
     this.tabs = {
       comp: el("button", { class: "lib-tab active" }, ["Componentes"]) as HTMLButtonElement,
+      maq: el("button", { class: "lib-tab" }, ["Máquinas"]) as HTMLButtonElement,
       seg: el("button", { class: "lib-tab" }, ["Maniquí"]) as HTMLButtonElement,
     };
     this.tabs.comp.addEventListener("click", () => this.setSource(componentSource));
+    this.tabs.maq.addEventListener("click", () => this.setSource(machineSource));
     this.tabs.seg.addEventListener("click", () => this.setSource(segmentSource));
 
     const panel = el("div", { class: "lib-panel lib-view" }, [
@@ -127,7 +187,7 @@ export class LibraryView {
         el("div", { class: "lib-title" }, ["Biblioteca de modelos"]),
         el("div", { class: "lib-header-actions" }, [this.zipActions, backBtn]),
       ]),
-      el("div", { class: "lib-tabs" }, [this.tabs.comp, this.tabs.seg]),
+      el("div", { class: "lib-tabs" }, [this.tabs.comp, this.tabs.maq, this.tabs.seg]),
       el("div", { class: "lib-intro" }, [
         "Revisa cada pieza por separado y sustitúyela por un modelo 3D " +
           "(.glb, .gltf u .obj). Se guarda en este navegador. En “Maniquí” puedes " +
@@ -172,6 +232,7 @@ export class LibraryView {
     if (this.src === src) return;
     this.src = src;
     this.tabs.comp.classList.toggle("active", src === componentSource);
+    this.tabs.maq.classList.toggle("active", src === machineSource);
     this.tabs.seg.classList.toggle("active", src === segmentSource);
     this.zipActions.style.display = src.supportsZip ? "flex" : "none";
     this.selectedId = null;
@@ -242,6 +303,7 @@ export class LibraryView {
       reset.addEventListener("click", () => void this.src.clearUserModel(it.id));
       actions.append(reset);
     }
+    for (const extra of this.src.extraActions?.(it.id) ?? []) actions.append(extra);
 
     this.detailEl.append(
       el("div", { class: "lib-detail-name" }, [it.label]),
