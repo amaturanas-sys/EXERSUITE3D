@@ -389,4 +389,15 @@ export const TRADUCCIONES: Record<string, string> = {
     "Sheave (palette): choose internal (embedded in the post, the wheel shows through the opening) or external (outside the face) and tap it onto the part — defining the cable's sliding points FIRST.",
   "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).":
     "+ Cable routes an inextensible cable point to point: anchor A → passing sheaves → anchor B (Finish cable). Pulleys give real mechanical advantage (2:1…).",
+  "Terminal de cable": "Cable terminal",
+  "Ojal terminal: punto de anclaje de cable colocable sobre cualquier cara de una pieza.":
+    "Terminal eyelet: a cable anchor point placeable on any face of a part.",
+  "🔒 Lock switch: bloqueada": "🔒 Lock switch: locked",
+  "🔓 Lock switch: libre": "🔓 Lock switch: free",
+  "Bloqueada: la articulación queda RÍGIDA en su pose actual (la máquina cambia de configuración con un clic)":
+    "Locked: the joint becomes RIGID in its current pose (the machine changes configuration in one click)",
+  "Terminal de cable (paleta): coloca ojales de anclaje sobre cualquier cara; el cable en ERROR se pinta en rojo si atraviesa material o entra torcido a una roldana.":
+    "Cable terminal (palette): place anchor eyelets on any face; a cable in ERROR turns red if it crosses solid material or meets a sheave misaligned.",
+  "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.":
+    "Lock switch on every hinge/slider (Connections): locked it becomes rigid in its pose — turning a horizontal-push machine into a vertical one with one click.",
 };

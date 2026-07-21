@@ -260,7 +260,11 @@ export class PhysicsWorld {
       handle.setLimits(min, max);
     }
 
-    if (joint.motor.enabled) {
+    // Lock switch (diagrama Versatilidad): bloqueada = rígida en la pose de
+    // diseño (el frame del joint nace en cero), sin motor.
+    if (joint.locked) {
+      handle.setLimits(0, 0);
+    } else if (joint.motor.enabled) {
       const vel =
         joint.kind === "revolute"
           ? joint.motor.targetVel * DEG2RAD

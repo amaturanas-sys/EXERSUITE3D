@@ -237,6 +237,16 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Bloque de doble polea de reenvio (swivel) atornillado al montante.",
   },
   {
+    id: "terminal-cable",
+    label: "Terminal de cable",
+    category: "transmision",
+    materialId: "acero-pulido",
+    defaults: { kind: "torus", radius: 2.2, tubeRadius: 0.7 },
+    physics: { massKg: 0.1, fixed: true },
+    description:
+      "Ojal terminal: punto de anclaje de cable colocable sobre cualquier cara de una pieza.",
+  },
+  {
     id: "engranaje",
     label: "Engranaje",
     category: "transmision",

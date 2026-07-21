@@ -266,10 +266,13 @@ export class ComponentPalette {
         // Punto de deslizamiento del cable: se configura y se coloca sobre
         // la cara de una pieza existente (diagrama Cables y Poleas).
         void elegirConfigRoldana().then((c) => c && this.editor.beginRoldana(c));
+      } else if (def.id === "terminal-cable") {
+        // Punto de anclaje de cable sobre una cara (ojal terminal).
+        this.editor.beginTerminalCable();
       } else this.editor.addComponent(def.id);
     });
     // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
-    if (!def.placement && def.id !== "roldana") {
+    if (!def.placement && def.id !== "roldana" && def.id !== "terminal-cable") {
       this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
     }
     return btn;

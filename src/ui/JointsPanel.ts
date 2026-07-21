@@ -197,7 +197,10 @@ export class JointsPanel {
       const a = this.editor.getById(j.bodyAId)?.name ?? "?";
       const b = this.editor.getById(j.bodyBId)?.name ?? "?";
       const icon = j.kind === "revolute" ? "⟲" : "↔";
-      const row = el("div", { class: "joint-row" }, [`${icon} ${j.name}`, el("span", { class: "joint-sub" }, [`${a} → ${b}`])]);
+      const row = el("div", { class: "joint-row" }, [
+        `${icon} ${j.name}${j.locked ? " 🔒" : ""}`,
+        el("span", { class: "joint-sub" }, [`${a} → ${b}`]),
+      ]);
       if (j.id === this.selectedId) row.classList.add("selected");
       row.addEventListener("click", () => {
         this.selectedId = this.selectedId === j.id ? null : j.id;
@@ -258,7 +261,26 @@ export class JointsPanel {
       this.editor.removeJoint(j);
     });
 
+    // Lock switch (diagrama Versatilidad): un clic la deja rígida en su pose
+    // de diseño — transforma la máquina (empuje horizontal ↔ vertical) sin
+    // rehacer las conexiones.
+    const lockBtn = el(
+      "button",
+      {
+        class: `tool${j.locked ? " active" : ""}`,
+        title:
+          "Bloqueada: la articulación queda RÍGIDA en su pose actual (la máquina cambia de configuración con un clic)",
+      },
+      [j.locked ? "🔒 Lock switch: bloqueada" : "🔓 Lock switch: libre"],
+    );
+    lockBtn.addEventListener("click", () => {
+      j.locked = !j.locked;
+      this.editor.jointUpdated();
+      this.render();
+    });
+
     return el("div", { class: "joint-editor" }, [
+      el("div", { class: "field" }, [lockBtn]),
       el("div", { class: "field" }, [el("label", {}, ["Eje de la articulacion"]), axisSel]),
       el("div", { class: "field" }, [
         el("label", { style: "display:flex;gap:6px;align-items:center;" }, [limOn, "Limitar recorrido"]),

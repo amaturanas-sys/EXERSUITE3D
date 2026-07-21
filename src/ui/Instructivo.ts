@@ -45,6 +45,8 @@ const SECCIONES: [string, string[]][] = [
       "En Propiedades: material, masa (kg) y Anclado (las piezas ancladas o sin masa no caen).",
       "+ Bisagra y + Corredera articulan dos piezas (toca una y luego la otra).",
       "Roldana (paleta): elige configuración interna (embutida en el pilar, la rueda asoma por la apertura) o externa (fuera de la cara) y tócala sobre la pieza — así defines ANTES los puntos de deslizamiento del cable.",
+      "Terminal de cable (paleta): coloca ojales de anclaje sobre cualquier cara; el cable en ERROR se pinta en rojo si atraviesa material o entra torcido a una roldana.",
+      "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.",
       "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).",
     ],
   ],

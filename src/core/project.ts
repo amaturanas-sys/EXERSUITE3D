@@ -32,6 +32,8 @@ export interface JointData {
   min: number;
   max: number;
   motor: JointMotor;
+  /** Lock switch: la articulación queda rígida en su pose de diseño. */
+  locked?: boolean;
 }
 
 export interface CableData {

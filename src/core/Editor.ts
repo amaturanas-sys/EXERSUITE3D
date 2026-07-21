@@ -177,6 +177,8 @@ export class Editor {
    * asoma por la apertura); externa = montada fuera de la cara.
    */
   private roldanaMode: "interna" | "externa" | null = null;
+  /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
+  private terminalMode = false;
 
   // Piezas de línea (pilar/travesaño/tubo): trazado por dos puntos + bending.
   private lineMode: "beam" | "tube" | null = null;
@@ -1292,6 +1294,7 @@ export class Editor {
         min: j.min,
         max: j.max,
         motor: { ...j.motor },
+        locked: j.locked,
       })),
       cables: this.listCables().map((c) => ({
         name: c.name,
@@ -1419,6 +1422,7 @@ export class Editor {
     this.jointLocks.clear();
     this.poseSymmetry = false;
     this.grabDrag = null;
+    this.cablesInvalidos.clear();
     this.setWorkspace(null);
     this.refreshJointHelpers();
     this.bus.emit("objectsChanged", { objects: [] });
@@ -1528,6 +1532,7 @@ export class Editor {
       j.min = jd.min;
       j.max = jd.max;
       j.motor = { ...jd.motor };
+      j.locked = jd.locked ?? false;
     }
 
     for (const cd of data.cables) {
@@ -2923,7 +2928,71 @@ export class Editor {
         this.cableVisuals.add(line);
       }
       line.geometry.setFromPoints(pts);
+      // Validación del diagrama Cables/Poleas: rojo si el trazado atraviesa
+      // material sólido o entra desalineado al plano de una roldana.
+      const valido = this.validarCable(cable, pts);
+      (line.material as THREE.LineBasicMaterial).color.setHex(valido ? 0xd8dee9 : 0xef4444);
+      const invalidoAntes = this.cablesInvalidos.has(cable.id);
+      if (!valido && !invalidoAntes) {
+        this.cablesInvalidos.add(cable.id);
+        this.avisoTemporal(
+          tt(
+            "⛔ Cable en error: atraviesa material o entra torcido a una roldana",
+            "⛔ Cable error: it crosses solid material or meets a sheave misaligned",
+          ),
+        );
+      } else if (valido && invalidoAntes) {
+        this.cablesInvalidos.delete(cable.id);
+      }
     }
+  }
+
+  /** Cables actualmente en error (rojos), para no repetir el aviso. */
+  private cablesInvalidos = new Set<string>();
+
+  /**
+   * Reglas del diagrama Cables/Poleas:
+   *  (a) ningún tramo puede atravesar una pieza ajena — salvo la que aloja a
+   *      AMBOS extremos del tramo (roldanas internas del mismo pilar: el
+   *      cable corre por dentro, entre aperturas);
+   *  (b) el cable debe entrar y salir en el plano de la rueda de cada
+   *      roldana intermedia (±30° aprox.); torcido = error.
+   */
+  private validarCable(cable: Cable, pts: THREE.Vector3[]): boolean {
+    const propios = new Set(cable.nodes.map((n) => n.objectId));
+    const ray = new THREE.Raycaster();
+    const caja = new THREE.Box3();
+    for (let i = 0; i < pts.length - 1; i++) {
+      const dir = pts[i + 1].clone().sub(pts[i]);
+      const len = dir.length();
+      if (len < 2) continue;
+      ray.set(pts[i], dir.normalize());
+      ray.near = 1;
+      ray.far = len - 1;
+      for (const h of ray.intersectObjects(this.sceneManager.content.children, false)) {
+        const id = h.object.userData.sceneObjectId as string | undefined;
+        if (!id || propios.has(id)) continue;
+        const o = this.objects.get(id);
+        if (!o) continue;
+        caja.setFromObject(o.mesh).expandByScalar(3);
+        // La pieza que contiene ambos extremos es la anfitriona del reenvío
+        // interno: no cuenta como colisión.
+        if (caja.containsPoint(pts[i]) && caja.containsPoint(pts[i + 1])) continue;
+        return false;
+      }
+    }
+    for (let i = 1; i < pts.length - 1; i++) {
+      const obj = this.objects.get(cable.nodes[i].objectId);
+      if (!obj || !this.isPulley(obj)) continue;
+      const eje = new THREE.Vector3(0, 1, 0)
+        .applyQuaternion(obj.mesh.getWorldQuaternion(new THREE.Quaternion()))
+        .normalize();
+      const dIn = pts[i].clone().sub(pts[i - 1]);
+      const dOut = pts[i + 1].clone().sub(pts[i]);
+      if (dIn.lengthSq() > 4 && Math.abs(dIn.normalize().dot(eje)) > 0.5) return false;
+      if (dOut.lengthSq() > 4 && Math.abs(dOut.normalize().dot(eje)) > 0.5) return false;
+    }
+    return true;
   }
 
   // -------------------------------------------------------------- roldanas
@@ -2952,10 +3021,64 @@ export class Editor {
   }
 
   cancelRoldana(): void {
-    if (!this.roldanaMode) return;
+    if (!this.roldanaMode && !this.terminalMode) return;
     this.roldanaMode = null;
+    this.terminalMode = false;
     this.bus.emit("roldanaModeChanged", { active: false, config: null });
     this.bus.emit("dragMeasure", { text: null });
+  }
+
+  /**
+   * Entra en modo "colocar terminal de cable": el siguiente toque sobre la
+   * cara de una pieza coloca ahí el ojal de anclaje (diagrama Punto de
+   * anclaje de cable en caras). Esc termina.
+   */
+  beginTerminalCable(): void {
+    if (this.simulating) return;
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.select(null);
+    this.roldanaMode = null;
+    this.terminalMode = true;
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        "Terminal de cable: toca la cara donde anclar el ojal (Esc termina)",
+        "Cable terminal: tap the face where the eyelet should anchor (Esc ends)",
+      ),
+    });
+  }
+
+  /** Coloca el ojal terminal sobre la cara tocada, asomando de ella. */
+  private colocarTerminal(host: SceneObject, punto: THREE.Vector3, normal: THREE.Vector3): void {
+    const term = this.addComponent("terminal-cable");
+    const previas = [...this.objects.values()].filter(
+      (o) => o !== term && o.name.startsWith("Terminal de cable"),
+    ).length;
+    term.name = `Terminal de cable${previas > 0 ? ` ${previas + 1}` : ""}`;
+    term.mesh.name = term.name;
+    term.physics = { ...term.physics, fixed: true };
+    // El plano del ojal contiene la normal (el cable pasa por el ojo); su eje
+    // queda tangente a la cara.
+    let ejeOjal = new THREE.Vector3().crossVectors(normal, new THREE.Vector3(0, 1, 0));
+    if (ejeOjal.lengthSq() < 0.01) ejeOjal.set(1, 0, 0);
+    ejeOjal.normalize();
+    // El toro se genera en el plano XY (eje +Z).
+    term.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ejeOjal);
+    const radio = term.effectiveSize().x / 2 || 2.2;
+    term.mesh.position.copy(punto).addScaledVector(normal, radio * 0.8);
+    void host;
+    this.bus.emit("objectTransformed", { object: term });
+    this.select(null);
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `✓ ${term.name} colocado — toca otra cara o Esc para terminar`,
+        `✓ ${term.name} placed — tap another face or Esc to finish`,
+      ),
+    });
+    this.requestRender();
   }
 
   /** Coloca la roldana sobre la pieza tocada, según la configuración. */
@@ -2974,8 +3097,10 @@ export class Editor {
     // Punto de deslizamiento del cable: fija (el cable resbala por ella).
     rold.physics = { ...rold.physics, fixed: true };
 
-    // Orientación: el plano de la rueda contiene el eje largo de la pieza y
-    // la normal de la cara (el cable corre a lo largo de la pieza).
+    // Orientación (diagrama): el plano de la rueda es VERTICAL y contiene el
+    // eje largo de la pieza — así el cable corre a lo largo de la viga y se
+    // reenvía hacia arriba/abajo (interna: visible por la apertura frontal;
+    // externa: rueda de canto sobre la cara).
     host.mesh.updateMatrixWorld(true);
     const ls = host.localSize();
     const ejeLocal =
@@ -2988,11 +3113,11 @@ export class Editor {
       .clone()
       .applyQuaternion(host.mesh.getWorldQuaternion(new THREE.Quaternion()))
       .normalize();
-    let ejeRueda = new THREE.Vector3().crossVectors(normal, ejeMundo);
+    let ejeRueda = new THREE.Vector3().crossVectors(ejeMundo, new THREE.Vector3(0, 1, 0));
     if (ejeRueda.lengthSq() < 0.01) {
-      // Cara perpendicular al eje largo (extremo): rueda con eje horizontal.
-      ejeRueda = new THREE.Vector3().crossVectors(normal, new THREE.Vector3(0, 1, 0));
-      if (ejeRueda.lengthSq() < 0.01) ejeRueda.set(1, 0, 0);
+      // Pieza vertical (pilar): plano de rueda contiene el pilar y la normal.
+      ejeRueda = new THREE.Vector3().crossVectors(normal, ejeMundo);
+      if (ejeRueda.lengthSq() < 0.01) ejeRueda.copy(normal);
     }
     ejeRueda.normalize();
     rold.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
@@ -3936,15 +4061,16 @@ export class Editor {
       return;
     }
 
-    // Modo "colocar roldana": el toque sobre una cara la coloca ahí.
-    if (this.roldanaMode) {
+    // Modos "colocar roldana"/"colocar terminal": el toque sobre una cara.
+    if (this.roldanaMode || this.terminalMode) {
       const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
       const hit = hits[0];
       const hid = hit?.object.userData.sceneObjectId as string | undefined;
       const hostR = hid ? this.objects.get(hid) : undefined;
       if (hit && hostR && hit.face) {
         const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
-        this.colocarRoldana(this.roldanaMode, hostR, hit.point.clone(), normal);
+        if (this.roldanaMode) this.colocarRoldana(this.roldanaMode, hostR, hit.point.clone(), normal);
+        else this.colocarTerminal(hostR, hit.point.clone(), normal);
       }
       return;
     }

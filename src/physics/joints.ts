@@ -35,6 +35,12 @@ export class Joint {
   /** Limite maximo: grados (revolute) o cm (prismatic). */
   max: number;
   motor: JointMotor;
+  /**
+   * Lock switch (diagrama Versatilidad): bloqueada mantiene el ángulo/posición
+   * de diseño como unión rígida — un clic transforma la máquina (p. ej. de
+   * empuje horizontal a vertical) sin rehacer las conexiones.
+   */
+  locked = false;
 
   constructor(opts: {
     kind: JointKind;
