@@ -83,7 +83,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Gancho J / soporte barra",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 6, height: 10, depth: 14 },
+    // Dimensiones tomadas del despiece del rack TTP001L (soporte ~9×26×24 cm
+    // incluyendo la placa de montaje; el gancho útil ronda 8×14×22).
+    defaults: { kind: "box", width: 8, height: 14, depth: 22 },
     physics: { massKg: 0, fixed: true },
     description: "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW).",
   },

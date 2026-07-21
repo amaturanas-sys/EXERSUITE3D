@@ -17,6 +17,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   biblioteca (ZIP), GLB o capturas, la app ofrece descargar DIRECTAMENTE a
   Documentos/EXERSUITE3D (visible en la app Archivos) además de la hoja de
   compartir (Drive, enviar…), que queda como alternativa y como respaldo.
+- **Conocimiento de estructuras reales en el motor** (despiece STL TTP001L
+  y POWERRACK, analizado por componentes conexos): dos máquinas estándar
+  nuevas — **Rack con torre (TTP)** fiel al despiece (120×215×179 cm, perfil
+  40×40, multi-agarre de dominadas a 207, ganchos J a 127, rieles
+  porta-discos laterales con cuernos y placa estabilizadora trasera 87×60) y
+  **Árbol de discos** (poste con 6 cuernos a 3 alturas y base en cruz, como
+  en las salas de referencia); gancho J redimensionado a su tamaño real
+  (8×14×22). Los cuernos sostienen los discos en la simulación.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su

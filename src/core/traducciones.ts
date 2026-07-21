@@ -401,4 +401,12 @@ export const TRADUCCIONES: Record<string, string> = {
   "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.":
     "Lock switch on every hinge/slider (Connections): locked it becomes rigid in its pose — turning a horizontal-push machine into a vertical one with one click.",
   "Nuestra historia": "Our story",
+  "Rack con torre (TTP)": "Rack with tower (TTP)",
+  "Árbol de discos": "Plate tree",
+  "Rack doméstico 120×215×179 cm (despiece TTP001L): perfil 40×40, torre de dominadas multi-agarre, ganchos J a 127, porta-discos laterales y placa estabilizadora.":
+    "Home rack 120×215×179 cm (TTP001L breakdown): 40×40 profile, multi-grip pull-up tower, J-hooks at 127, side plate storage and stabilizer plate.",
+  "Poste porta-discos con 6 cuernos a 3 alturas y base en cruz.":
+    "Plate storage post with 6 horns at 3 heights and a cross base.",
+  "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (despiece real 120×215×179, perfil 40×40) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.":
+    "Standard machines (top of the palette): squat rack, power cage, flat bench, cable tower, TTP tower rack (real breakdown 120×215×179, 40×40 profile) and plate tree — with commercial dimensions, ready as a group to plan the room.",
 };

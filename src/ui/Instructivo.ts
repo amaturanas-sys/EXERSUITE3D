@@ -20,7 +20,7 @@ const SECCIONES: [string, string[]][] = [
     "Construir",
     [
       "Toca una pieza de la paleta para añadirla, o ARRÁSTRALA al visor para colocarla donde la sueltes (en táctil: mantén pulsado ~medio segundo y arrastra).",
-      "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano y torre de polea con medidas comerciales, listas como grupo para plantear la sala.",
+      "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (despiece real 120×215×179, perfil 40×40) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.",
       "Los paneles se pliegan tocando su título (⯆/⯈), para despejar el visor en pantallas pequeñas.",
       "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.",
       "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.",
