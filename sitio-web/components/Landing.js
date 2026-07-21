@@ -142,6 +142,26 @@ export default function Landing({ contenido, editable = false, onEdit = () => {}
         </div>
       </Seccion>
 
+      {/* --------------------------------------------------------- historia */}
+      {c.historia && (
+        <Seccion {...ed} id="historia" visible={c.historia.visible}>
+          <div className="contenedor historia">
+            <T {...ed} ruta="historia.titulo" valor={c.historia.titulo} etiqueta="h2" />
+            {c.historia.parrafos.map((p, i) => (
+              <T key={i} {...ed} ruta={`historia.parrafos.${i}`} valor={p} etiqueta="p" />
+            ))}
+            <details className="historia-en">
+              <summary>
+                <T {...ed} ruta="historia.tituloEn" valor={c.historia.tituloEn} />
+              </summary>
+              {c.historia.parrafosEn.map((p, i) => (
+                <T key={i} {...ed} ruta={`historia.parrafosEn.${i}`} valor={p} etiqueta="p" />
+              ))}
+            </details>
+          </div>
+        </Seccion>
+      )}
+
       {/* ----------------------------------------------------------- precio */}
       <Seccion {...ed} id="precio" visible={c.precio.visible}>
         <div className="contenedor" id="precio">

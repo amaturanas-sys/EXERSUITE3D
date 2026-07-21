@@ -194,3 +194,38 @@ h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); margin-bottom: 18px; }
   border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 0.8rem;
 }
 .edit-controles button:hover { background: var(--accent); color: var(--on-accent); }
+
+/* ---- Nuestra historia ---- */
+.historia { max-width: 780px; }
+.historia p {
+  color: var(--text-dim);
+  line-height: 1.75;
+  margin: 0 0 16px;
+  font-size: 1.02rem;
+}
+.historia p:first-of-type::first-letter {
+  font-size: 2.6em;
+  line-height: 1;
+  float: left;
+  padding-right: 8px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.historia p:last-of-type {
+  color: var(--accent);
+  font-weight: 600;
+}
+.historia-en {
+  margin-top: 22px;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+.historia-en summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 8px 0 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+}
+.historia-en summary:hover { color: var(--accent); }

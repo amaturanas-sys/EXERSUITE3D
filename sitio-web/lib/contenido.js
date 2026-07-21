@@ -82,6 +82,25 @@ export const CONTENIDO_DEFECTO = {
       },
     ],
   },
+  historia: {
+    visible: true,
+    titulo: "Nuestra historia",
+    parrafos: [
+      "Cuando era muy niño, los computadores eran mi entretención. Ahí conocí una herramienta que me pareció maravillosa: dejaba construir con bloques, pieza a pieza, dentro de un mundo digital. Los juguetes de verdad no llegaban hasta mi país — \"sin envíos fuera de EE. UU.\", decía la letra chica — y aquella aplicación era gratuita. Construir ahí era posible, conveniente y feliz.",
+      "Veinte años más tarde volví a acordarme de ese pasatiempo, pero esta vez por una necesidad que reconocí en mí y en los demás. Soy culturista amateur y profesional del área de la salud: he sido testigo y partícipe de lo que el deporte y la actividad física hacen por una persona. Y soy el primero en admitir mi privilegio, porque tuve los recursos para perseguir mi afán deportivo. Por eso mismo veo con preocupación el abandono y la desventaja en que está la participación deportiva en mi comunidad y en mi país: gente que se muere de debilidad, por falta de movimiento, atrapada entre el \"no tengo espacio\", el \"no tengo tiempo\" y el \"no me alcanza\".",
+      "EXERSUITE3D nace como respuesta. Su primera fachada es la herramienta creativa, disponible para diseñadores profesionales, dueños de gimnasios e incluso constructores aficionados: involucrar al consumidor final en la toma de decisiones, para que sea libre de satisfacer su necesidad de movimiento en el espacio, el tiempo y el presupuesto que tenga disponible.",
+      "Imagina un hub — un mercado — donde puedas armar el espacio de entrenamiento ideal para ti, estés donde estés hoy. Imagina ofrecer a tus clientes soluciones personalizadas sin invertir en formatos obsoletos; vender y competir con otras marcas por ese nicho que tanto cuesta encontrar. Imagina que tu diseño sea tan bueno que una marca lo construya para ti — y para muchos más — y seas, por siempre, un pionero.",
+      "Ese es el sueño. AMST (2026)",
+    ],
+    tituloEn: "Read our story in English",
+    parrafosEn: [
+      "When I was a little kid, computers were my entertainment. There I found a tool that seemed wonderful to me: it let you build with blocks, piece by piece, inside a digital world. Real toys never made it to my country — \"no shipping outside the US\", read the fine print — and that application was free. Building there was possible, affordable and joyful.",
+      "Twenty years later I remembered that pastime, but this time because of a need I recognized in myself and in the people around me. I am an amateur bodybuilder and a healthcare professional: I have witnessed, and lived, what sport and physical activity do for a person. And I am the first to admit my privilege, because I had the resources to pursue my passion for training. That is exactly why it worries me to see how neglected and disadvantaged sports participation is in my community and my country: people dying of weakness, of lack of movement, trapped between \"I have no space\", \"I have no time\" and \"I can't afford it\".",
+      "EXERSUITE3D was born as an answer. Its first face is the creative tool, available to professional designers, gym owners and even amateur builders: bringing the end consumer into the decision-making, so they are free to meet their need for movement within whatever space, time and budget they have.",
+      "Imagine a hub — a marketplace — where you can put together the ideal training space for you, wherever you are today. Imagine offering your clients personalized solutions without investing in obsolete formats; selling and competing with other brands for that niche that is so hard to find. Imagine your design being so good that a brand builds it for you — and for many more — and you remain, forever, a pioneer.",
+      "That is the dream. AMST (2026)",
+    ],
+  },
   precio: {
     visible: true,
     titulo: "Licencia personal",
