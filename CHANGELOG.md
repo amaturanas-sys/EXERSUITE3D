@@ -24,7 +24,16 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   porta-discos laterales con cuernos y placa estabilizadora trasera 87×60) y
   **Árbol de discos** (poste con 6 cuernos a 3 alturas y base en cruz, como
   en las salas de referencia); gancho J redimensionado a su tamaño real
-  (8×14×22). Los cuernos sostienen los discos en la simulación.
+  real. Los cuernos sostienen los discos en la simulación.
+- **Sustitución en biblioteca con las partes reales de los despieces**
+  (versiones armadas con ejemplares por tipo + explosionadas): el **gancho J**
+  usa ahora la malla real del TTP001L (manguito sobre el montante + brazo con
+  tope y rodillo, 9×24×26) y el **brazo de seguridad** es el pipe perforado
+  real del POWERRACK (8×8×120, cruza el fondo completo del rack) — colisión
+  primitiva a dimensiones reales, visual con la pieza auténtica, en todas las
+  máquinas estándar. El Rack con torre (TTP) incorpora además su sistema de
+  poleas del despiece: roldana alta en la montura superior, roldana baja y
+  guías de carro cromadas.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su

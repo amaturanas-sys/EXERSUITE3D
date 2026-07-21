@@ -86,8 +86,8 @@ const RACK: PiezaSpec[] = [
   // Ganchos J y brazos de seguridad.
   { comp: "j-hook", nombre: "Gancho J izq.", pos: [-60, 110, 49] },
   { comp: "j-hook", nombre: "Gancho J der.", pos: [60, 110, 49] },
-  { comp: "brazo-seguridad", nombre: "Brazo seg. izq.", pos: [-60, 70, 20] },
-  { comp: "brazo-seguridad", nombre: "Brazo seg. der.", pos: [60, 70, 20] },
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-60, 70, 0] },
+  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [60, 70, 0] },
 ];
 
 const JAULA: PiezaSpec[] = [
@@ -104,8 +104,8 @@ const JAULA: PiezaSpec[] = [
   { comp: "prim-box", nombre: "Marco sup. frontal", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, 66] },
   { comp: "prim-box", nombre: "Marco sup. trasero", params: { width: 104, height: 7.6, depth: 7.6 }, material: "acero-negro", pos: [0, 216, -66] },
   { comp: "barra-dominadas", params: { height: 104 }, pos: [0, 216, 0], rot: [0, 0, Math.PI / 2] },
-  { comp: "brazo-seguridad", nombre: "Seguridad izq.", params: { depth: 124 }, pos: [-52, 60, 0] },
-  { comp: "brazo-seguridad", nombre: "Seguridad der.", params: { depth: 124 }, pos: [52, 60, 0] },
+  { comp: "brazo-seguridad", nombre: "Seguridad izq.", pos: [-52, 60, 0] },
+  { comp: "brazo-seguridad", nombre: "Seguridad der.", pos: [52, 60, 0] },
   { comp: "j-hook", nombre: "Gancho J izq.", pos: [-52, 105, 60] },
   { comp: "j-hook", nombre: "Gancho J der.", pos: [52, 105, 60] },
 ];
@@ -164,8 +164,8 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "j-hook", nombre: "Gancho J izq.", pos: [-51, 127, 46] },
   { comp: "j-hook", nombre: "Gancho J der.", pos: [51, 127, 46] },
   // Brazos de seguridad bajos entre marcos.
-  { comp: "brazo-seguridad", nombre: "Seguridad izq.", params: { depth: 90 }, pos: [-51, 60, 0] },
-  { comp: "brazo-seguridad", nombre: "Seguridad der.", params: { depth: 90 }, pos: [51, 60, 0] },
+  { comp: "brazo-seguridad", nombre: "Seguridad izq.", pos: [-51, 60, 0] },
+  { comp: "brazo-seguridad", nombre: "Seguridad der.", pos: [51, 60, 0] },
   // Rieles porta-discos laterales a 65 cm con cuernos de carga.
   { comp: "prim-box", nombre: "Riel discos izq.", params: { width: 6, height: 6, depth: 100 }, material: "acero-negro", pos: [-60, 65, 0] },
   { comp: "prim-box", nombre: "Riel discos der.", params: { width: 6, height: 6, depth: 100 }, material: "acero-negro", pos: [60, 65, 0] },
@@ -173,6 +173,12 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "cuerno-carga", nombre: "Cuerno izq. B", pos: [-75, 65, -25], rot: [0, 0, Math.PI / 2] },
   { comp: "cuerno-carga", nombre: "Cuerno der. A", pos: [75, 65, 25], rot: [0, 0, -Math.PI / 2] },
   { comp: "cuerno-carga", nombre: "Cuerno der. B", pos: [75, 65, -25], rot: [0, 0, -Math.PI / 2] },
+  // Sistema de poleas del despiece (lado izquierdo): roldana alta en la
+  // montura superior, roldana baja y guías verticales del carro de peso.
+  { comp: "roldana", nombre: "Roldana alta", pos: [-55, 211, 0], rot: [0, 0, Math.PI / 2] },
+  { comp: "roldana", nombre: "Roldana baja", pos: [-55, 25, 0], rot: [0, 0, Math.PI / 2] },
+  { comp: "prim-box", nombre: "Guía de carro A", params: { width: 3, height: 50, depth: 3 }, material: "cromo", pos: [-55, 94, 7] },
+  { comp: "prim-box", nombre: "Guía de carro B", params: { width: 3, height: 50, depth: 3 }, material: "cromo", pos: [-55, 94, -7] },
   // Base: travesaño de suelo y placa estabilizadora trasera (87×60).
   { comp: "prim-box", nombre: "Travesaño base", params: { width: 104, height: 5, depth: 15 }, material: "acero-negro", pos: [0, 2.5, 50] },
   { comp: "prim-box", nombre: "Placa estabilizadora", params: { width: 87, height: 60, depth: 3 }, material: "acero-negro", pos: [0, 30, -88] },

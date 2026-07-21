@@ -83,9 +83,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Gancho J / soporte barra",
     category: "estructural",
     materialId: "acero-negro",
-    // Dimensiones tomadas del despiece del rack TTP001L (soporte ~9×26×24 cm
-    // incluyendo la placa de montaje; el gancho útil ronda 8×14×22).
-    defaults: { kind: "box", width: 8, height: 14, depth: 22 },
+    // Dimensiones del gancho REAL del despiece TTP001L (manguito sobre el
+    // montante + brazo con tope y rodillo); el modelo 3D de biblioteca
+    // sustituye la primitiva con esa malla.
+    defaults: { kind: "box", width: 9, height: 24, depth: 26 },
     physics: { massKg: 0, fixed: true },
     description: "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW).",
   },
@@ -103,9 +104,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Brazo de seguridad",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 8, height: 8, depth: 55 },
+    // Pipe de seguridad real del despiece POWERRACK: 8×8×120 perforado, con
+    // pop-pins (cruza el fondo completo del rack de 120).
+    defaults: { kind: "box", width: 8, height: 8, depth: 120 },
     physics: { massKg: 0, fixed: true },
-    description: "Spotter arm que detiene la barra a una altura dada.",
+    description: "Pipe/spotter de seguridad que detiene la barra a una altura dada.",
   },
   {
     id: "correa-seguridad",
