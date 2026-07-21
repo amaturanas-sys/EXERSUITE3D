@@ -47,5 +47,9 @@
   "montante-ttp": "montante-ttp.obj",
   "riel-discos-ttp": "riel-discos-ttp.obj",
   "multiagarre-ttp": "multiagarre-ttp.obj",
-  "pie-ttp": "pie-ttp.obj"
+  "pie-ttp": "pie-ttp.obj",
+  "marco-ttp": "marco-ttp.obj",
+  "brazo-ttp": "brazo-ttp.obj",
+  "riel-base-ttp": "riel-base-ttp.obj",
+  "barra-lat-ttp": "barra-lat-ttp.obj"
 }

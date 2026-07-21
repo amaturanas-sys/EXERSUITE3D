@@ -421,4 +421,22 @@ export const TRADUCCIONES: Record<string, string> = {
     "Real TTP001L multi-grip pull-up station (92×32 cm).",
   "Patín/pie de suelo real del TTP001L (104 cm) que estabiliza cada marco.":
     "Real TTP001L floor skid (104 cm) stabilizing each frame.",
+  "Marco soldado TTP": "TTP welded frame",
+  "Marco soldado completo del TTP001L: montantes, travesaños con placas de encuadre y base.":
+    "Complete welded TTP001L frame: uprights, crossmembers with gusset plates and base.",
+  "Brazo de seguridad TTP": "TTP safety arm",
+  "Brazo de seguridad perforado real del TTP001L (86 cm), calza entre montantes.":
+    "Real perforated TTP001L safety arm (86 cm), keys in between uprights.",
+  "Riel de base TTP": "TTP base rail",
+  "Riel de base real con placas de encuadre en los extremos (141 cm): arriostra los marcos al suelo.":
+    "Real base rail with gusset plates at the ends (141 cm): braces the frames to the floor.",
+  "Barra lat TTP": "TTP lat bar",
+  "Barra de jalón (lat) real del TTP001L, cuelga del cable de la polea alta.":
+    "Real TTP001L lat pulldown bar, hangs from the high pulley cable.",
+  "Rack abierto 142×204×120 cm: montantes reales con agujeros de calce, ganchos J que abrazan el pilar y rieles de base con placas de encuadre.":
+    "Open rack 142×204×120 cm: real uprights with keying holes, J-hooks that wrap the upright and base rails with gusset plates.",
+  "Power cage 120×204×120 cm con montantes de calce, dominadas y pipes de seguridad.":
+    "Power cage 120×204×120 cm with keyed uprights, pull-up bar and safety pipes.",
+  "TTP001L fiel al armado: marco soldado con placas de encuadre, doble polea alta, polea de torre, carro de poleas, polea baja con barra lat, ganchos J, brazos de seguridad y porta-discos.":
+    "TTP001L true to the assembly: welded frame with gusset plates, double high pulley, tower pulley, pulley carriage, low pulley with lat bar, J-hooks, safety arms and plate storage.",
 };

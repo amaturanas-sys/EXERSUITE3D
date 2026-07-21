@@ -149,6 +149,46 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Patín/pie de suelo real del TTP001L (104 cm) que estabiliza cada marco.",
   },
   {
+    id: "marco-ttp",
+    label: "Marco soldado TTP",
+    category: "estructural",
+    materialId: "acero-negro",
+    // Estructura soldada COMPLETA del TTP001L armado: 4 montantes con
+    // agujeros + travesaños con placas de encuadre + base (118×214×141).
+    defaults: { kind: "box", width: 118, height: 214, depth: 141 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Marco soldado completo del TTP001L: montantes, travesaños con placas de encuadre y base.",
+  },
+  {
+    id: "brazo-ttp",
+    label: "Brazo de seguridad TTP",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 6, height: 8, depth: 86 },
+    physics: { massKg: 0, fixed: true },
+    description: "Brazo de seguridad perforado real del TTP001L (86 cm), calza entre montantes.",
+  },
+  {
+    id: "riel-base-ttp",
+    label: "Riel de base TTP",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 141, height: 20, depth: 7 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Riel de base real con placas de encuadre en los extremos (141 cm): arriostra los marcos al suelo.",
+  },
+  {
+    id: "barra-lat-ttp",
+    label: "Barra lat TTP",
+    category: "transmision",
+    materialId: "cromo",
+    defaults: { kind: "box", width: 75, height: 7, depth: 2 },
+    physics: { massKg: 4, fixed: false },
+    description: "Barra de jalón (lat) real del TTP001L, cuelga del cable de la polea alta.",
+  },
+  {
     id: "correa-seguridad",
     label: "Correa de seguridad",
     category: "estructural",

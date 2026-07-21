@@ -45,7 +45,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 - **Eslabones de cadena reales del POWERRACK en la biblioteca**: la malla del
   eslabón auténtico (10×4,3 cm, extraída del despiece) es ahora la plantilla
   de la cuerda tipo **cadena** — cada catenaria se renderiza con eslabones
-  encadenados reales en lugar de segmentos genéricos.
+  encadenados reales en lugar de segmentos genéricos. Los eslabones hacen
+  INTERLOCKING de verdad (cada uno alterna 90° sobre el eje y atraviesa al
+  anterior y al siguiente) y cada anclaje instala su herraje: una argolla con
+  espárrago sobre la superficie, de la que se enhebra el primer eslabón.
+- **TTP001L fiel al modelo armado**: el Rack con torre se reconstruyó pieza a
+  pieza en las posiciones medidas en el STL ensamblado — marco SOLDADO
+  completo (118×214×141, montantes con agujeros + travesaños con PLACAS DE
+  ENCUADRE + base), torre de poleas, y el sistema de poleas ÍNTEGRO: doble
+  polea alta, polea de reenvío en la torre, carro de dos poleas con su puente,
+  polea baja con soporte y barra lat real colgando junto a la polea alta.
+  Nuevos componentes de biblioteca con malla real: marco soldado, brazo de
+  seguridad TTP (86,6 perforado), riel de base con placas (141) y barra lat.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su
@@ -86,6 +97,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   en sus extremos collares que ABRAZAN el pilar: se reposicionaron sobre el
   eje de los montantes para que cada collar rodee su pilar a la altura de
   anclaje (el fondo de la jaula pasa a 120 cm para casar con el pipe real).
+- **El gancho J ahora ABRAZA el montante** (no se apoya delante): su manguito
+  queda alrededor del perfil 5×7, con el centro 9,6 cm por delante del eje del
+  pilar, tal como se midió en el TTP001L armado. El rack y la jaula usan
+  MONTANTES REALES con agujeros de calce (montante-ttp) en vez de pilares
+  lisos, y ganan rieles de base con placas de encuadre que arriostran ambos
+  marcos al suelo (antes solo los unía la barra de dominadas y la estructura
+  colapsaría al cargar las J).
 
 ## [0.2.0] — 2026-07-20
 

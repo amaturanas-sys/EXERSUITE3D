@@ -27,6 +27,12 @@ export class Rope {
   slack: number;
   readonly group = new THREE.Group();
   private segMat: THREE.Material;
+  private endMat: THREE.Material;
+  /** Meshes de los segmentos (separados de los herrajes de anclaje). */
+  private segs: THREE.Mesh[] = [];
+  /** Herrajes de anclaje: argolla + espárrago de los que cuelga el primer eslabón. */
+  private endA: THREE.Group;
+  private endB: THREE.Group;
 
   constructor(opts: { kind: RopeKind; a: RopeEnd; b: RopeEnd; slack?: number; name?: string }) {
     this.id = `rope_${nextId++}`;
@@ -37,7 +43,47 @@ export class Rope {
     this.name =
       opts.name ?? (this.kind === "chain" ? "Cadena de seguridad" : "Correa de seguridad");
     this.segMat = buildMaterial(this.kind === "chain" ? "acero-negro" : "kevlar");
+    this.endMat = buildMaterial("acero-pulido");
     this.group.userData.ropeId = this.id;
+    this.endA = this.buildEndFitting();
+    this.endB = this.buildEndFitting();
+    this.group.add(this.endA, this.endB);
+  }
+
+  /**
+   * Herraje de anclaje del extremo: argolla (por la que se enhebra el primer
+   * eslabón) + espárrago que la une a la superficie de anclaje. En el espacio
+   * local, la argolla queda en el plano XY (eje del toro en Z) y el espárrago
+   * sale por +X hacia la pieza anfitriona.
+   */
+  private buildEndFitting(): THREE.Group {
+    const g = new THREE.Group();
+    const argolla = new THREE.Mesh(new THREE.TorusGeometry(2.3, 0.65, 8, 16), this.endMat);
+    const esparrago = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 4.2, 8), this.endMat);
+    esparrago.rotation.z = Math.PI / 2;
+    esparrago.position.x = 2.2;
+    const placa = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.7, 10), this.endMat);
+    placa.rotation.z = Math.PI / 2;
+    placa.position.x = 4.4;
+    for (const m of [argolla, esparrago, placa]) {
+      m.castShadow = true;
+      m.userData.ropeId = this.id;
+      g.add(m);
+    }
+    g.userData.ropeId = this.id;
+    return g;
+  }
+
+  /** Orienta un herraje: P punto de anclaje, dirIn dirección HACIA la pieza. */
+  private placeEndFitting(g: THREE.Group, P: THREE.Vector3, dirIn: THREE.Vector3): void {
+    g.position.copy(P);
+    const x = dirIn.clone().normalize();
+    const up = new THREE.Vector3(0, 1, 0);
+    let z = new THREE.Vector3().crossVectors(x, up);
+    if (z.lengthSq() < 1e-4) z = new THREE.Vector3(1, 0, 0).cross(x);
+    z.normalize();
+    const y = new THREE.Vector3().crossVectors(z, x);
+    g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
   }
 
   /** Geometría unitaria (longitud 1) COMPARTIDA por todos los segmentos. */
@@ -55,6 +101,7 @@ export class Rope {
     const D = A.distanceTo(B);
     if (D < 0.01) {
       this.setSegmentCount(0);
+      this.endA.visible = this.endB.visible = false;
       return;
     }
 
@@ -64,7 +111,7 @@ export class Rope {
       this.unitGeo?.dispose();
       this.unitGeo = this.segmentGeometry(segTemplate, 1);
       this.unitTemplate = segTemplate;
-      for (const c of this.group.children) (c as THREE.Mesh).geometry = this.unitGeo;
+      for (const m of this.segs) m.geometry = this.unitGeo;
     }
 
     const sag = this.slack * D * 0.45; // profundidad de la catenaria
@@ -75,6 +122,10 @@ export class Rope {
     this.setSegmentCount(n);
 
     const segLen = ropeLen / n;
+    // INTERLOCKING de eslabones: cada eslabón mide 1,5 pasos y alterna 90°
+    // sobre el eje de la cadena, de modo que atraviesa al anterior y al
+    // siguiente (y los extremos quedan enhebrados en la argolla de anclaje).
+    const escala = this.kind === "chain" ? segLen * 1.5 : segLen;
     const up = new THREE.Vector3(0, 1, 0);
     const p0 = new THREE.Vector3();
     const p1 = new THREE.Vector3();
@@ -86,24 +137,36 @@ export class Rope {
       p0.y -= 4 * sag * t0 * (1 - t0); // parábola: máxima caída al centro
       p1.lerpVectors(A, B, t1);
       p1.y -= 4 * sag * t1 * (1 - t1);
-      const m = this.group.children[i] as THREE.Mesh;
+      const m = this.segs[i];
       m.position.addVectors(p0, p1).multiplyScalar(0.5);
-      m.scale.setScalar(segLen);
+      m.scale.setScalar(escala);
       m.quaternion.setFromUnitVectors(up, dir.subVectors(p1, p0).normalize());
-      // Cadena por defecto: alterna 90° para simular eslabones entrelazados.
-      if (!segTemplate && this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
+      if (this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
     }
+
+    // Herrajes de anclaje: la argolla queda EN el punto de anclaje, contiene
+    // la dirección de salida de la cadena, y su espárrago apunta hacia la
+    // pieza (opuesto a la catenaria).
+    this.endA.visible = this.endB.visible = true;
+    const tanA = dir.subVectors(B, A).multiplyScalar(1 / D);
+    tanA.y -= (4 * sag) / D;
+    this.placeEndFitting(this.endA, A, tanA.clone().multiplyScalar(-1));
+    const tanB = dir.subVectors(B, A).multiplyScalar(1 / D);
+    tanB.y += (4 * sag) / D;
+    this.placeEndFitting(this.endB, B, tanB);
   }
 
   /** Ajusta el pool de meshes al número de segmentos (geometría compartida). */
   private setSegmentCount(n: number): void {
-    while (this.group.children.length > n) {
-      this.group.remove(this.group.children[this.group.children.length - 1]);
+    while (this.segs.length > n) {
+      const m = this.segs.pop()!;
+      this.group.remove(m);
     }
-    while (this.group.children.length < n) {
+    while (this.segs.length < n) {
       const m = new THREE.Mesh(this.unitGeo ?? undefined, this.segMat);
       m.castShadow = true;
       m.userData.ropeId = this.id;
+      this.segs.push(m);
       this.group.add(m);
     }
   }
@@ -124,6 +187,10 @@ export class Rope {
     this.unitGeo?.dispose();
     this.unitGeo = null;
     (this.segMat as THREE.Material).dispose?.();
+    for (const g of [this.endA, this.endB]) {
+      for (const c of g.children) (c as THREE.Mesh).geometry.dispose();
+    }
+    (this.endMat as THREE.Material).dispose?.();
   }
 }
 
