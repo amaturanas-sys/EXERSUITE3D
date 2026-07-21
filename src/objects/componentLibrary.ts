@@ -243,6 +243,27 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Pletina de unión real del kit TTP001L (45 cm).",
   },
   {
+    id: "puente-carro-ttp",
+    label: "Puente del carro TTP",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 3.5, height: 20.4, depth: 7.2 },
+    physics: { massKg: 0, fixed: true },
+    description: "Puente real del carro de poleas del TTP001L: une las dos poleas del carro.",
+  },
+  {
+    id: "portadiscos-ttp",
+    label: "Portadiscos de polea TTP",
+    category: "peso",
+    materialId: "acero-negro",
+    // Sostenedor de discos real del sistema de poleas del TTP001L: placa
+    // cuadrada 55×55 con pin vertical de 88 donde se cargan los discos.
+    defaults: { kind: "box", width: 55, height: 98, depth: 55 },
+    physics: { massKg: 8, fixed: false },
+    description:
+      "Sostenedor de discos real del TTP001L: el cable del sistema de poleas lo eleva con los discos cargados en su pin.",
+  },
+  {
     id: "manguito-guia-ttp",
     label: "Manguito de guía TTP (54)",
     category: "movimiento",

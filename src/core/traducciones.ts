@@ -486,4 +486,10 @@ export const TRADUCCIONES: Record<string, string> = {
     "Real POWERRACK base rail (118 cm) bracing the posts to the floor.",
   "POWERRACK pieza a pieza (118×220×122): postes de dos tramos perforados, doble barra de pullups, jotas de calce con y sin rodillo, pipes de seguridad y rieles de base.":
     "POWERRACK piece by piece (118×220×122): two-section perforated posts, double pull-up bar, keyed J-cups with and without roller, safety pipes and base rails.",
+  "Portadiscos de polea TTP": "TTP pulley weight carrier",
+  "Sostenedor de discos real del TTP001L: el cable del sistema de poleas lo eleva con los discos cargados en su pin.":
+    "Real TTP001L weight carrier: the pulley-system cable lifts it with the plates loaded on its pin.",
+  "Puente del carro TTP": "TTP carriage bridge",
+  "Puente real del carro de poleas del TTP001L: une las dos poleas del carro.":
+    "Real TTP001L pulley-carriage bridge: joins the carriage's two pulleys.",
 };

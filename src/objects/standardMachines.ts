@@ -194,6 +194,9 @@ const RACK_TORRE: PiezaSpec[] = [
   // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214, por ellos corre el carro).
   { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -85.5] },
   { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -85.5] },
+  // SOSTENEDOR DE DISCOS real: el soporte móvil del sistema de poleas
+  // (placa 55×55 + pin de carga); el cable lo eleva con los discos.
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea", pos: [0.5, 115, -85.5] },
   // 11) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
   { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -42.5] },
   // 8) 4 JOTAS DE SEGURIDAD reales ABRAZANDO los pilares: altas en los
@@ -215,7 +218,7 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -79.5], rot: [0, 0, Math.PI / 2] },
   { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -56.5], rot: [0, 0, Math.PI / 2] },
   { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -56.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "prim-box", nombre: "Puente del carro", params: { width: 3.5, height: 20.4, depth: 7.2 }, material: "acero-negro", pos: [0, 129, -56.5] },
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -56.5] },
   { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -52.5], rot: [0, 0, Math.PI / 2] },
   { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -52.4] },
   { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -69.1] },

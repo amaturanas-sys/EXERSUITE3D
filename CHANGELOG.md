@@ -87,11 +87,19 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   base (118). La **Jaula de potencia** se reconstruyó pieza a pieza como el
   POWERRACK real (118×220×122, posiciones medidas del armado): postes de dos
   tramos, doble barra de pullups, jotas con y sin rodillo, pipes y rieles.
-- **Cadena con el segmento oficial de DOS eslabones**: del modelo de cadenas
-  del POWERRACK (catenaria articulada + sección del segmento) se construyó la
-  plantilla con el eslabón real y su copia entrelazada a 90° al paso real de
-  6,1 cm — cada segmento de la catenaria encaja con el anterior y el
-  siguiente exactamente como en el modelo.
+- **Cadena lineal según el modelo CHAIN del diseñador**: la fila de eslabones
+  del modelo define la interacción exacta — cada eslabón mide 1,5 pasos
+  (largo/paso = 60,5/40,3 = 1,500 medido) y alterna 90° sobre el eje,
+  atravesando al anterior y al siguiente. La plantilla de la herramienta de
+  cadena es ahora ese eslabón oficial.
+- **Sostenedor de discos del sistema de poleas (WEIGHTCARRIER)**: el
+  portadiscos real del TTP001L (placa 55×55 con pin de carga de 88) es un
+  componente móvil nuevo y va montado entre los tubos de guía del Rack con
+  torre — el cable del sistema de poleas lo eleva con los discos.
+- **Piezas TTP001L6–9 incorporadas**: el riel porta-discos quedó confirmado
+  como oficial, la ROLDANA real (rueda de 7,2) sustituye el visual de todas
+  las roldanas, el puente del carro con sus dos poleas es pieza real y el
+  brazo de seguridad se rehorneó CON su collar de calce.
 
 ### Corregido
 
