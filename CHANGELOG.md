@@ -5,6 +5,72 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.2] — 2026-07-21
+
+Los despieces reales del diseñador (TTP001L y POWERRACK) pasan a ser el
+corazón de la biblioteca: cada pieza con su malla oficial, las máquinas
+estándar reconstruidas fieles a los modelos armados, y el flujo completo de
+exportar/corregir/sustituir prefabs.
+
+### Añadido
+
+- **Conocimiento de estructuras reales en el motor** (despieces STL TTP001L
+  y POWERRACK, analizados por componentes conexos): dos máquinas estándar
+  nuevas — **Rack con torre (TTP)** y **Árbol de discos** — construidas con
+  las piezas reales y sus posiciones medidas en los modelos armados.
+- **TTP001L reconocido pieza a pieza** (11 clases): 4 pilares verticales con
+  agujeros de calce, 2 columnas horizontales inferiores (141, con placas de
+  encuadre) y 2 superiores (94), travesaño superior e inferior (104), 2
+  tubos de guía del sistema de poleas (4×4×214), 2 brazos de seguridad
+  perforados con collar, 4 jotas, el set de roldanas completo (doble polea
+  alta, polea de torre, carro de dos poleas con su puente, polea baja con
+  soporte y placa), el remo tubular de polea alta y la barra de pullups
+  multigrip — todas también como componentes sueltos de la paleta.
+- **Biblioteca con los archivos OFICIALES por pieza** aportados por el
+  diseñador (TTP001L1…19, POWERRACKP1…P10, WEIGHTCARRIER, CHAIN): cada
+  componente usa la malla auténtica de su archivo; la ROLDANA real (rueda
+  de 7,2) es el visual de todas las roldanas de la app.
+- **Jaula de potencia = POWERRACK pieza a pieza** (118×220×122, posiciones
+  medidas del armado): postes de DOS tramos perforados apilados (110+110),
+  travesaños laterales superiores, largueros de base, doble barra de
+  pullups (70), jotas de calce con y sin rodillo, pipes de seguridad con
+  collares y rieles de base de 118.
+- **Portadiscos del sistema de poleas** (WEIGHTCARRIER +
+  WEIGHTCARRIERANDRAIL): componente móvil real montado como en el modelo de
+  interacción — sobre los tubos de guía mediante los manguitos, placa
+  vertical de 55×55 al extremo y pin HORIZONTAL de 88 cruzando el hueco
+  entre tubos; los discos de fierro se cargan en el tramo libre (el Rack
+  con torre trae dos de muestra) y el cable del sistema lo eleva.
+- **Cadena lineal según el modelo CHAIN**: el eslabón oficial es la
+  plantilla y la interacción es exacta — cada eslabón mide 1,5 pasos
+  (largo/paso = 60,5/40,3 medido) y alterna 90° sobre el eje, atravesando
+  al anterior y al siguiente; cada anclaje instala su herraje (argolla con
+  espárrago) del que se enhebra el primer eslabón.
+- **Máquinas estándar exportables y sustituibles** (pestaña Máquinas de la
+  Biblioteca): cada prefab del modo Sencillo se EXPORTA como STL u OBJ (el
+  ensamblaje completo) para editarlo fuera y se SUSTITUYE por el modelo
+  corregido (.stl/.obj/.glb/.gltf); la máquina sustituida se inserta como
+  una sola pieza anclada, persiste en el proyecto, viaja en el ZIP de la
+  biblioteca y puede venir de fábrica vía manifest (claves maquina:<id>).
+- **Emojis como SILUETA monocroma en toda la interfaz**: los pictogramas se
+  muestran como figura (solo la silueta, al tono de la interfaz) en Home,
+  asistente, menús, paleta, paneles, Biblioteca, Instructivo y diálogos —
+  estética consistente entre ventanas y plataformas.
+
+### Corregido
+
+- **El gancho J tipo calce ABRAZA el montante**: manguito alrededor del
+  perfil 5×7 con el centro a 9,6 cm del eje del pilar (medido en el
+  armado), pin al agujero; el rack y la jaula usan montantes reales con
+  agujeros en lugar de pilares lisos.
+- **Bases arriostradas**: rack y jaula ganan rieles de base reales con
+  placas de encuadre uniendo los marcos al suelo (antes solo la barra de
+  pullups los conectaba y la estructura colapsaría al cargar las J).
+- **Brazos de seguridad con collares** que abrazan los pilares a la altura
+  de anclaje, sobre el eje de los montantes.
+- **Eslabones de cadena con interlocking real** (antes los últimos
+  eslabones no se entrelazaban y los anclajes no tenían sitio de colgado).
+
 ## [0.2.1] — 2026-07-21
 
 ### Añadido
@@ -17,48 +83,6 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   biblioteca (ZIP), GLB o capturas, la app ofrece descargar DIRECTAMENTE a
   Documentos/EXERSUITE3D (visible en la app Archivos) además de la hoja de
   compartir (Drive, enviar…), que queda como alternativa y como respaldo.
-- **Conocimiento de estructuras reales en el motor** (despiece STL TTP001L
-  y POWERRACK, analizado por componentes conexos): dos máquinas estándar
-  nuevas — **Rack con torre (TTP)** fiel al despiece (120×215×179 cm, perfil
-  40×40, multi-agarre de dominadas a 207, ganchos J a 127, rieles
-  porta-discos laterales con cuernos y placa estabilizadora trasera 87×60) y
-  **Árbol de discos** (poste con 6 cuernos a 3 alturas y base en cruz, como
-  en las salas de referencia); gancho J redimensionado a su tamaño real
-  real. Los cuernos sostienen los discos en la simulación.
-- **Sustitución en biblioteca con las partes reales de los despieces**
-  (versiones armadas con ejemplares por tipo + explosionadas): el **gancho J**
-  usa ahora la malla real del TTP001L (manguito sobre el montante + brazo con
-  tope y rodillo, 9×24×26) y el **brazo de seguridad** es el pipe perforado
-  real del POWERRACK (8×8×120, cruza el fondo completo del rack) — colisión
-  primitiva a dimensiones reales, visual con la pieza auténtica, en todas las
-  máquinas estándar. El Rack con torre (TTP) incorpora además su sistema de
-  poleas del despiece: roldana alta en la montura superior, roldana baja y
-  guías de carro cromadas.
-- **Sustitución MAYORITARIA del despiece TTP** (usando el modelo armado como
-  referencia): cuatro componentes nuevos en la paleta con su malla real —
-  **Montante TTP** (5×204×7, con los agujeros de calce del gancho J),
-  **Riel porta-discos TTP** (9×24×106, con manguitos y cuernos), **Multi-agarre
-  de dominadas TTP** (32×15×92) y **Patín de suelo TTP** (15×5×104). El Rack
-  con torre (TTP) se reconstruyó con ellos: 4 montantes reales, multi-agarre a
-  207, ganchos J calzados a 127, soportes bajos, rieles porta-discos, sistema
-  de poleas con travesaños de montura y patines + placa estabilizadora.
-- **Eslabones de cadena reales del POWERRACK en la biblioteca**: la malla del
-  eslabón auténtico (10×4,3 cm, extraída del despiece) es ahora la plantilla
-  de la cuerda tipo **cadena** — cada catenaria se renderiza con eslabones
-  encadenados reales en lugar de segmentos genéricos. Los eslabones hacen
-  INTERLOCKING de verdad (cada uno alterna 90° sobre el eje y atraviesa al
-  anterior y al siguiente) y cada anclaje instala su herraje: una argolla con
-  espárrago sobre la superficie, de la que se enhebra el primer eslabón.
-- **TTP001L reconocido pieza a pieza** (posiciones medidas en el STL armado):
-  el Rack con torre se compone de sus piezas REALES individuales — 4 pilares
-  verticales con agujeros de calce, 2 columnas horizontales inferiores (141,
-  con placas de encuadre), 2 columnas horizontales superiores (94), travesaño
-  superior e inferior (104 a lo ancho), 2 tubos de guía del sistema de poleas
-  (4×4×214), 2 brazos de seguridad perforados, 4 jotas de seguridad abrazando
-  los pilares, el set de roldanas completo (doble polea alta, polea de torre,
-  carro de dos poleas, polea baja), el remo tubular de polea alta y la barra
-  de pullups multigrip. Todas disponibles también como componentes sueltos de
-  la paleta con su malla auténtica.
 - **"Nuestra historia"** en la Home (sustituye la dedicatoria): el relato del
   origen del proyecto — del niño que construía con bloques digitales porque
   los juguetes no llegaban a su país, al profesional de la salud que ve a su
@@ -77,45 +101,6 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   cuelga la cadena (sugerencia automática según la distancia); los anclajes
   admiten cualquier cara de una pieza, pared o techumbre.
 
-- **Biblioteca con los archivos OFICIALES por pieza** (TTP001L1…19 y
-  POWERRACKP1…P10 aportados por el diseñador): cada componente usa ahora la
-  malla auténtica de su archivo. Nuevos en la paleta — del TTP: travesaño
-  frontal (118), soporte y placa de polea baja, bastidor superior, pletina y
-  manguito de guía del carro; del POWERRACK: media columna perforada (110,
-  dos apiladas forman el poste de 220), travesaño lateral (106), larguero,
-  listón, barra de pullups (70), jota de calce, jota con rodillo y riel de
-  base (118). La **Jaula de potencia** se reconstruyó pieza a pieza como el
-  POWERRACK real (118×220×122, posiciones medidas del armado): postes de dos
-  tramos, doble barra de pullups, jotas con y sin rodillo, pipes y rieles.
-- **Cadena lineal según el modelo CHAIN del diseñador**: la fila de eslabones
-  del modelo define la interacción exacta — cada eslabón mide 1,5 pasos
-  (largo/paso = 60,5/40,3 = 1,500 medido) y alterna 90° sobre el eje,
-  atravesando al anterior y al siguiente. La plantilla de la herramienta de
-  cadena es ahora ese eslabón oficial.
-- **Sostenedor de discos del sistema de poleas (WEIGHTCARRIER +
-  WEIGHTCARRIERANDRAIL)**: el portadiscos real del TTP001L es un componente
-  móvil nuevo montado COMO en el modelo de interacción — sobre los tubos de
-  guía mediante los manguitos, con la placa de 55×55 vertical al extremo y el
-  PIN HORIZONTAL de 88 cruzando el hueco entre los tubos; los discos de
-  fierro se cargan en el tramo libre del pin (el Rack con torre trae dos
-  discos cargados de muestra) y el cable del sistema lo eleva.
-- **Piezas TTP001L6–9 incorporadas**: el riel porta-discos quedó confirmado
-  como oficial, la ROLDANA real (rueda de 7,2) sustituye el visual de todas
-  las roldanas, el puente del carro con sus dos poleas es pieza real y el
-  brazo de seguridad se rehorneó CON su collar de calce.
-
-- **Máquinas estándar exportables y sustituibles** (pestaña Máquinas de la
-  Biblioteca): cada prefab del modo Sencillo se puede EXPORTAR como STL u OBJ
-  (el ensamblaje completo horneado con las mallas reales) para editarlo fuera,
-  y SUSTITUIR por el modelo corregido (.stl/.obj/.glb/.gltf). La máquina
-  sustituida se inserta como una sola pieza anclada con ese modelo, se guarda
-  en el proyecto, viaja en el ZIP de la biblioteca y puede venir de fábrica
-  vía manifest (claves maquina:<id>).
-- **Emojis como SILUETA monocroma en toda la interfaz**: los pictogramas de
-  Home, asistente, menús, paleta, paneles e Instructivo se muestran como
-  figura (solo la silueta, al tono de la interfaz) en lugar del glifo a color
-  que varía entre plataformas — estética consistente en todas las ventanas.
-
 ### Corregido
 
 - **Deshacer/Rehacer no respondía de forma encadenada**: al aplicar un paso
@@ -131,20 +116,6 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   10 cm, mayores cada 1 m) y el logotipo como marca de agua, recortado
   exactamente a la planta definida (rectángulo o dibujada); fuera de ella no
   hay suelo. Se retiró el relleno turquesa; queda solo el contorno fino.
-- **Ganchos J y brazos de seguridad desalineados en rack y jaula**: el gancho
-  J es de tipo CALCE (pin al agujero del montante + giro; las superficies
-  fijan la posición) y ahora asienta con el pin contra la cara frontal de los
-  pilares, a la altura de un agujero. Los brazos de seguridad (pipes) tienen
-  en sus extremos collares que ABRAZAN el pilar: se reposicionaron sobre el
-  eje de los montantes para que cada collar rodee su pilar a la altura de
-  anclaje (el fondo de la jaula pasa a 120 cm para casar con el pipe real).
-- **El gancho J ahora ABRAZA el montante** (no se apoya delante): su manguito
-  queda alrededor del perfil 5×7, con el centro 9,6 cm por delante del eje del
-  pilar, tal como se midió en el TTP001L armado. El rack y la jaula usan
-  MONTANTES REALES con agujeros de calce (montante-ttp) en vez de pilares
-  lisos, y ganan rieles de base con placas de encuadre que arriostran ambos
-  marcos al suelo (antes solo los unía la barra de dominadas y la estructura
-  colapsaría al cargar las J).
 
 ## [0.2.0] — 2026-07-20
 
