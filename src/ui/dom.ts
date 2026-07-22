@@ -14,7 +14,7 @@ type ElProps<K extends keyof HTMLElementTagNameMap> = Partial<
  */
 const EMOJI_RE = /(?:\p{Extended_Pictographic}(?:[️‍]|\p{Emoji_Modifier})*)+/gu;
 
-function conEmojisSilueta(texto: string): (Node | string)[] {
+export function conEmojisSilueta(texto: string): (Node | string)[] {
   EMOJI_RE.lastIndex = 0;
   if (!EMOJI_RE.test(texto)) return [texto];
   EMOJI_RE.lastIndex = 0;

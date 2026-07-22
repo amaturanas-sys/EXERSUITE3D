@@ -65,6 +65,21 @@ prefabs corregidos.
   palabra cuando no caben y las filas de botones (Voltear X/Y/Z, acciones de
   la Biblioteca, diálogos) envuelven a la línea siguiente en lugar de
   cortarse.
+- **La píldora de medidas ya no queda debajo de la barra de zoom**: ahora
+  comparte la fila inferior arrancando a la derecha de la barra, siempre
+  legible.
+- **El imán del cable ya no "roba" el clic de cierre**: si se toca una pieza
+  real y la roldana imantada ya es el nodo anterior, gana la pieza tocada —
+  el cable se cierra con normalidad aunque haya una roldana pegada.
+- **Radio de captura del imán adaptativo al zoom**: escala con la distancia
+  de la cámara (~3 %), para que apuntar a una roldana se sienta igual de
+  fácil de cerca que de lejos.
+- **Siluetas en TODOS los emojis**: también en los botones flotantes de
+  pantallas pequeñas (piezas, propiedades, posturas) y en el botón 📷
+  Captura después de usarlo.
+- **Barra superior compacta en pantallas estrechas** (≤680 px): botones y
+  huecos aprietan para que el indicador «Guardado ✓» quede a la vista sin
+  desplazar.
 
 ## [0.2.2] — 2026-07-22
 

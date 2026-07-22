@@ -1,5 +1,6 @@
 import "./ui/styles.css";
 import { descargarArchivo } from "./core/descargas";
+import { el } from "./ui/dom";
 import * as THREE from "three";
 import { Editor } from "./core/Editor";
 import { ComponentPalette } from "./ui/ComponentPalette";
@@ -184,10 +185,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   // Pestañas para plegar/desplegar los paneles en pantallas pequeñas (las
   // muestra el CSS solo cuando los paneles pasan a ser cajones ocultables).
   const dockToggle = (id: string, label: string, cls: string, title: string) => {
-    const b = document.createElement("button");
+    // Vía el() para que el emoji pase por el envoltorio de siluetas (v0.2.3).
+    const b = el("button", { class: "dock-toggle" }, [label]);
     b.id = id;
-    b.className = "dock-toggle";
-    b.textContent = label;
     b.title = title;
     b.addEventListener("click", () => {
       const on = document.body.classList.toggle(cls);

@@ -2,7 +2,7 @@ import type { Editor } from "../core/Editor";
 import { guardarCaptura } from "../core/capturas";
 import { descargarArchivo } from "../core/descargas";
 import { tt } from "../core/i18n";
-import { el } from "./dom";
+import { conEmojisSilueta, el } from "./dom";
 
 /**
  * Barra de herramientas de SIMULACIÓN: perspectivas, zoom y las pistas de la
@@ -29,7 +29,8 @@ export class SimulatorBar {
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
           await descargarArchivo(`exersuite3d-captura-${Date.now()}.png`, bytes, "image/png");
           b.textContent = tt("✓ Guardada", "✓ Saved");
-          setTimeout(() => (b.textContent = "📷 Captura"), 1600);
+          // Restaura con el envoltorio de siluetas (textContent lo perdería).
+          setTimeout(() => b.replaceChildren(...conEmojisSilueta(tt("📷 Captura", "📷 Capture"))), 1600);
         } catch (err) {
           console.error("No se pudo capturar:", err);
         }

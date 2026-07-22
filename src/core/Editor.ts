@@ -3523,7 +3523,12 @@ export class Editor {
     // seleccionarlas como punto de recorrido.
     if (this.cableMode) {
       const iman = this.roldanaCercanaAlRay();
-      if (iman && (!obj || !this.isPulley(obj))) {
+      // Anti-robo: si el rayo tocó una pieza real y la roldana imantada ya es
+      // el nodo anterior del cable, gana la pieza tocada — así el cable puede
+      // CERRARSE en una pieza pegada a la roldana sin que el imán lo impida.
+      const prev = this.cablePending[this.cablePending.length - 1];
+      const imanEsPrevio = !!iman && !!prev && iman === prev.object;
+      if (iman && (!obj || (!this.isPulley(obj) && !imanEsPrevio))) {
         obj = iman;
         punto = iman.mesh.getWorldPosition(new THREE.Vector3());
       }
@@ -3558,7 +3563,11 @@ export class Editor {
       if (!this.isPulley(o)) continue;
       o.mesh.getWorldPosition(c);
       const d = this.raycaster.ray.distanceToPoint(c);
-      const captura = Math.max(14, o.effectiveSize().x * 1.6);
+      // Radio adaptativo: con la cámara lejos, 14 cm de mundo son muy pocos
+      // píxeles — se escala con la distancia (~3 %) para que la captura se
+      // sienta igual a cualquier zoom.
+      const distCam = this.sceneManager.camera.position.distanceTo(c);
+      const captura = Math.max(14, o.effectiveSize().x * 1.6, distCam * 0.03);
       if (d < captura && d < mejorD) {
         mejorD = d;
         mejor = o;
