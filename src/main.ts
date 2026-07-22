@@ -105,11 +105,46 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   }
 
   // Modo Sencillo (v0.2.3): la clase en <body> acota la interfaz por CSS
-  // (sin Conexiones ni bloqueo de Ejes; la paleta ya filtra sus piezas).
+  // (sin bloqueo de Ejes; la paleta ya filtra sus piezas).
   const aplicarModo = () =>
     document.body.classList.toggle("modo-sencillo", ed.getWorkspace()?.modo === "sencillo");
   aplicarModo();
   ed.bus.on("workspaceChanged", aplicarModo);
+
+  // PESTAÑAS LATERALES (v0.2.3): Propiedades, Conexiones y Arrastre preciso
+  // se muestran on demand desde etiquetas verticales en el costado izquierdo
+  // — un click abre la ventana, otro click la esconde.
+  const tabStrip = document.createElement("div");
+  tabStrip.id = "tab-strip";
+  const mkTab = (etiqueta: string, isOn: () => boolean, alternar: () => void) => {
+    const b = document.createElement("button");
+    b.className = "side-tab";
+    b.textContent = etiqueta;
+    b.classList.toggle("active", isOn());
+    b.addEventListener("click", () => {
+      alternar();
+      b.classList.toggle("active", isOn());
+    });
+    return b;
+  };
+  document.body.classList.add("show-prop"); // Propiedades visible al entrar
+  const tabProp = mkTab(
+    tt("Propiedades", "Properties"),
+    () => document.body.classList.contains("show-prop"),
+    () => document.body.classList.toggle("show-prop"),
+  );
+  const tabConx = mkTab(
+    tt("Conexiones", "Connections"),
+    () => document.body.classList.contains("show-conx"),
+    () => document.body.classList.toggle("show-conx"),
+  );
+  const tabArr = mkTab(
+    tt("Arrastre preciso", "Precise drag"),
+    () => precise.isActiva(),
+    () => precise.toggle(),
+  );
+  precise.onCambio = () => tabArr.classList.toggle("active", precise.isActiva());
+  tabStrip.append(tabProp, tabConx, tabArr);
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
   const posePanel = new PosePanel(ed);
@@ -144,7 +179,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   // Paneles plegables desde su título (esquema F4).
   for (const p of [palette.root, inspector.root, joints.root, posePanel.root]) hacerPlegable(p);
 
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, precise.root];
+  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, precise.root, tabStrip];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),

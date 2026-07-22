@@ -11,6 +11,8 @@ import { tt } from "../core/i18n";
  */
 export class PreciseDrag {
   readonly root: HTMLElement;
+  /** Aviso de cambio de visibilidad (mantiene sincronizadas pestaña y menú). */
+  onCambio: (() => void) | null = null;
   /** true: ▲▼ = arriba/abajo (Y) · false: ▲▼ = adelante/atrás (Z). */
   private ejeVertical = true;
   private activa = false;
@@ -94,6 +96,7 @@ export class PreciseDrag {
     this.root.style.display = on ? "flex" : "none";
     if (on) window.addEventListener("keydown", this.onKey, true);
     else window.removeEventListener("keydown", this.onKey, true);
+    this.onCambio?.();
   }
 
   dispose(): void {

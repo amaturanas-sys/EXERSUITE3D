@@ -25,11 +25,18 @@ prefabs corregidos.
   También responden las flechas del teclado (la tecla C cambia el eje y
   Shift da pasos de 10 cm); el HUD muestra el desplazamiento en cm.
 
+- **Pestañas laterales verticales**: las ventanas de Propiedades, Conexiones
+  y Arrastre preciso se muestran ON DEMAND desde una tira de etiquetas
+  verticales en el costado izquierdo del visor — un click abre la ventana y
+  otro click en la pestaña la vuelve a esconder. Disponibles en ambos modos
+  de trabajo.
+
 ### Cambiado
 
 - **Modo Sencillo acotado a lo rudimentario** (lo que lo distingue del modo
   Profesional): paleta con solo las máquinas estándar, las primitivas y unas
-  pocas piezas básicas; sin panel de Conexiones ni bloqueo de Ejes.
+  pocas piezas básicas, y sin bloqueo de Ejes (las ventanas de Propiedades y
+  Conexiones siguen disponibles desde sus pestañas).
 
 ### Corregido
 

@@ -1460,8 +1460,8 @@ body.simulating .dock-toggle {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* ---- v0.2.3 · Modo Sencillo acotado: sin Conexiones ni bloqueo de Ejes */
-.modo-sencillo #joints { display: none !important; }
+/* ---- v0.2.3 · Modo Sencillo acotado: sin bloqueo de Ejes (las ventanas
+   de Propiedades/Conexiones siguen disponibles desde sus pestañas). */
 .modo-sencillo .menu-ejes { display: none !important; }
 
 /* ---- v0.2.3 · Barra de zoom del visor */
@@ -1534,3 +1534,46 @@ body.simulating .arrastre-panel { display: none !important; }
 /* Las filas de botones de los paneles envuelven en lugar de cortarse. */
 .field .row { flex-wrap: wrap; }
 .field .row .tool { flex: 1 1 auto; min-width: 0; }
+
+/* ---- v0.2.3 · Pestañas laterales verticales (costado izquierdo): abren y
+   cierran on demand las ventanas de Propiedades, Conexiones y Arrastre
+   preciso. En pantallas anchas la tira queda junto a la paleta; cuando la
+   paleta pasa a cajón, la tira se pega al borde. */
+#tab-strip {
+  position: fixed;
+  left: calc(16px + var(--safe-l) + var(--panel-w));
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 24;
+}
+.side-tab {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding: 12px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cdd3dd;
+  background: #1c212b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px 0 0 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.side-tab.active {
+  background: #2f7dd1;
+  color: #fff;
+  border-color: #2f7dd1;
+}
+body.simulating #tab-strip { display: none; }
+@media (max-width: 680px) {
+  #tab-strip { left: 0; }
+}
+
+/* Las ventanas responden a su pestaña (un click muestra, otro esconde). */
+body:not(.show-prop) #inspector { display: none; }
+body:not(.show-conx) #joints { display: none; }
