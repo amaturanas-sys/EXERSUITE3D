@@ -26,11 +26,21 @@ prefabs corregidos.
   punto real de contacto del GROOVE (la garganta de la rueda) orientado
   hacia el tramo entrante.
 - **SOLDADOR de nodos**: en modo Doblar, el nodo arrastrado se imanta a los
-  puntos de conexión de OTRAS figuras (extremos, nodos y puntos medios) con
-  indicador visual — permite unir estructuras nodo con nodo, como si fuese
-  un soldador. Botón «+ Nodo» en Propiedades para añadir un nodo a la
-  trayectoria (subdivide el tramo más largo), en piezas poligonales
-  (pilares/travesaños) y tubulares.
+  puntos de conexión de OTRAS figuras (extremos, nodos, puntos medios y
+  esquinas de las cajas) con indicador visual — permite unir estructuras
+  nodo con nodo, como si fuese un soldador. Botón «+ Nodo» en Propiedades
+  para añadir un nodo a la trayectoria (subdivide el tramo más largo), en
+  piezas poligonales (pilares/travesaños) y tubulares.
+- **Soldadura REAL nodo-nodo** (esquema Deformación por nodos): al soltar el
+  nodo imantado sobre otra figura se crea una unión rígida persistente
+  («Soldadura», un joint bloqueado en Conexiones, sin duplicados) — las
+  piezas quedan soldadas también en la simulación física, y la unión puede
+  desbloquearse o borrarse.
+- **Nodo ACTIVO + deformación multi-eje**: el último nodo tocado queda
+  resaltado y los cursores del Arrastre preciso (y las flechas del teclado)
+  lo mueven eje por eje — deformaciones en varios ejes dentro de un mismo
+  ítem, con el imán del soldador también en los pasos precisos. «+ Nodo»
+  deja el nodo nuevo activo al instante.
 - **Contacto tangente real del groove** (esquema Cables III): el nodo de
   cada roldana intermedia se ancla en el punto de CONTACTO físico del
   cable — la tangente donde el radio queda a 90° del cable, calculada con

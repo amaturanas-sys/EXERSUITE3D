@@ -188,6 +188,10 @@ export class Editor {
   private bendTarget: SceneObject | null = null;
   private bendHandles: THREE.Group | null = null;
   private bendDrag: { index: number; plane: THREE.Plane; origin: THREE.Vector3 } | null = null;
+  /** Soldadura pendiente mientras el nodo arrastrado está imantado a otra figura. */
+  private bendWeld: { objetoId: string; punto: THREE.Vector3 } | null = null;
+  /** Nodo ACTIVO del modo Doblar (el último tocado): lo mueven los cursores del Arrastre preciso. */
+  private bendNodeIndex: number | null = null;
 
   private snap: SnapManager;
   // Línea elástica de previsualización al colocar cable/cuerda (línea recta).
@@ -783,6 +787,12 @@ export class Editor {
    * grupo) un paso exacto en cm, desde los cursores en pantalla o el teclado.
    */
   nudgeSelection(dx: number, dy: number, dz: number): void {
+    // Modo Doblar: los cursores mueven el NODO ACTIVO, no la pieza — así la
+    // deformación puede operar en varios ejes con exactitud en un mismo ítem.
+    if (this.bendTarget && this.bendNodeIndex !== null) {
+      this.nudgeBendNode(dx, dy, dz);
+      return;
+    }
     const ids = this.getSelectionIds();
     if (ids.length === 0) return;
     const delta = new THREE.Vector3(dx, dy, dz);
@@ -801,6 +811,37 @@ export class Editor {
     }
     this.checkWorkspaceBounds();
     this.emitDragMeasure(delta);
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
+  /** Desplaza el nodo activo del modo Doblar en un delta de MUNDO (cm). */
+  private nudgeBendNode(dx: number, dy: number, dz: number): void {
+    const obj = this.bendTarget;
+    const idx = this.bendNodeIndex;
+    if (!obj || idx === null) return;
+    const path = obj.params.path;
+    if (!path || !path[idx]) return;
+    obj.mesh.updateMatrixWorld(true);
+    const world = new THREE.Vector3(path[idx][0], path[idx][1], path[idx][2]).applyMatrix4(
+      obj.mesh.matrixWorld,
+    );
+    world.add(new THREE.Vector3(dx, dy, dz));
+    // Imán del soldador también con los cursores (misma regla que al arrastrar).
+    const soldadura = this.puntoSoldadura(world, obj);
+    if (soldadura && soldadura.punto.distanceTo(world) < 1.5) {
+      world.copy(soldadura.punto);
+      this.snap.showIndicator(soldadura.punto);
+      this.crearSoldadura(obj, soldadura.objeto.id, soldadura.punto);
+    } else {
+      this.snap.hideIndicator();
+    }
+    const local = world.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
+    path[idx] = [local.x, local.y, local.z];
+    obj.rebuildGeometry();
+    this.refreshBendHandles();
+    this.bus.emit("objectTransformed", { object: obj });
+    this.emitDragMeasure(new THREE.Vector3(dx, dy, dz));
     this.scheduleAutosave();
     this.requestRender();
   }
@@ -3430,22 +3471,77 @@ export class Editor {
   }
 
   /** Punto de conexión de OTRA pieza más cercano (imán del soldador), o null. */
-  private puntoSoldadura(punto: THREE.Vector3, excluir: SceneObject): THREE.Vector3 | null {
+  private puntoSoldadura(
+    punto: THREE.Vector3,
+    excluir: SceneObject,
+  ): { punto: THREE.Vector3; objeto: SceneObject } | null {
     let mejor: THREE.Vector3 | null = null;
+    let mejorObj: SceneObject | null = null;
     let mejorD = 8; // cm de captura del imán
     for (const o of this.objects.values()) {
       if (o === excluir || o.componentId.startsWith("ws-")) continue;
       o.mesh.updateMatrixWorld(true);
-      for (const lp of localSnapPoints(o)) {
+      for (const lp of this.puntosSoldables(o)) {
         const wp = lp.clone().applyMatrix4(o.mesh.matrixWorld);
         const d = wp.distanceTo(punto);
         if (d < mejorD) {
           mejorD = d;
           mejor = wp;
+          mejorObj = o;
         }
       }
     }
-    return mejor;
+    return mejor && mejorObj ? { punto: mejor, objeto: mejorObj } : null;
+  }
+
+  /**
+   * Puntos donde puede morder el soldador: los de conexión estándar más las
+   * ESQUINAS de las cajas (el esquema suelda el nodo de un tubo al vértice
+   * del perfil de una viga) — solo para el soldador, sin tocar el snapping
+   * general de colocación.
+   */
+  private puntosSoldables(o: SceneObject): THREE.Vector3[] {
+    const pts = localSnapPoints(o);
+    if (o.params.kind === "box") {
+      const geo = o.mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const bb = geo.boundingBox!;
+      for (const sx of [-1, 1])
+        for (const sy of [-1, 1])
+          for (const sz of [-1, 1])
+            pts.push(new THREE.Vector3(sx * bb.max.x, sy * bb.max.y, sz * bb.max.z));
+    }
+    return pts;
+  }
+
+  /**
+   * SOLDADURA nodo-nodo (esquema Deformación por nodos): al soltar un nodo
+   * imantado sobre el punto de conexión de OTRA figura se crea una unión
+   * RÍGIDA (joint bloqueado) entre ambas — las piezas quedan soldadas y se
+   * gestionan desde la ventana de Conexiones (se puede desbloquear o borrar).
+   */
+  private crearSoldadura(a: SceneObject, objetoId: string, punto: THREE.Vector3): void {
+    const b = this.objects.get(objetoId);
+    if (!b || b === a) return;
+    // Evita duplicados: si ya hay una unión del mismo par cerca del punto.
+    for (const j of this.joints.values()) {
+      const mismoPar =
+        (j.bodyAId === a.id && j.bodyBId === b.id) ||
+        (j.bodyAId === b.id && j.bodyBId === a.id);
+      if (mismoPar && j.anchor.distanceTo(punto) < 4) return;
+    }
+    const joint = this.connect(b.id, a.id, "revolute", punto.clone());
+    if (!joint) return;
+    joint.locked = true;
+    joint.name = `Soldadura ${joint.id.split("_")[1]}`;
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
+    this.avisoTemporal(
+      tt(
+        "🔩 Nodos soldados: unión rígida creada (ver Conexiones)",
+        "🔩 Nodes welded: rigid union created (see Connections)",
+      ),
+    );
   }
 
   /**
@@ -3477,6 +3573,9 @@ export class Editor {
       this.endBendNodes();
       this.select(objetivo);
       this.beginBendNodes();
+      // El nodo recién añadido queda ACTIVO: los cursores lo mueven al tiro.
+      this.bendNodeIndex = peor + 1;
+      this.refreshBendHandles();
     }
     this.scheduleAutosave();
     this.requestRender();
@@ -3491,6 +3590,10 @@ export class Editor {
       const i = h.userData.bendIndex as number;
       const n = obj.params.path![i];
       h.position.set(n[0], n[1], n[2]).applyMatrix4(obj.mesh.matrixWorld);
+      // El nodo ACTIVO (el que mueven los cursores) se pinta distinto.
+      ((h as THREE.Mesh).material as THREE.MeshBasicMaterial).color.setHex(
+        i === this.bendNodeIndex ? 0xf59e0b : 0x22d3ee,
+      );
     }
   }
 
@@ -3507,6 +3610,9 @@ export class Editor {
     const obj = this.bendTarget;
     this.bendTarget = null;
     this.bendDrag = null;
+    this.bendWeld = null;
+    this.bendNodeIndex = null;
+    this.snap.hideIndicator();
     this.orbit.enabled = true;
     // Reengancha el gizmo si la pieza sigue seleccionada.
     if (this.selected === obj) this.gizmo.attach(obj.mesh);
@@ -3793,10 +3899,13 @@ export class Editor {
       // — así se arman estructuras complejas uniendo nodo con nodo.
       const soldadura = this.puntoSoldadura(hit, obj);
       if (soldadura) {
-        hit.copy(soldadura);
-        this.snap.showIndicator(soldadura);
+        hit.copy(soldadura.punto);
+        this.snap.showIndicator(soldadura.punto);
+        // Candidato a soldadura: se consuma al SOLTAR el nodo sobre el imán.
+        this.bendWeld = { objetoId: soldadura.objeto.id, punto: soldadura.punto.clone() };
       } else {
         this.snap.hideIndicator();
+        this.bendWeld = null;
       }
       this.emitDragMeasure(hit.clone().sub(this.bendDrag.origin));
       obj.mesh.updateMatrixWorld(true);
@@ -4238,6 +4347,10 @@ export class Editor {
           plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, node),
           origin: node.clone(),
         };
+        // El nodo tocado pasa a ser el ACTIVO: los cursores del Arrastre
+        // preciso lo moverán en cualquier eje (deformación multi-eje).
+        this.bendNodeIndex = idx;
+        this.refreshBendHandles();
         this.orbit.enabled = false;
       } else {
         this.endBendNodes();
@@ -4470,6 +4583,13 @@ export class Editor {
       return;
     }
     if (!this.bendDrag) return;
+    // Soldadura nodo-nodo: si el nodo se soltó imantado a otra figura, la
+    // unión rígida se consuma aquí (esquema Deformación por nodos).
+    if (this.bendWeld && this.bendTarget) {
+      this.crearSoldadura(this.bendTarget, this.bendWeld.objetoId, this.bendWeld.punto);
+    }
+    this.bendWeld = null;
+    this.snap.hideIndicator();
     this.bendDrag = null;
     this.orbit.enabled = true;
     this.bus.emit("dragMeasure", { text: null });
