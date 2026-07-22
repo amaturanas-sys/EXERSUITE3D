@@ -537,4 +537,9 @@ export const TRADUCCIONES: Record<string, string> = {
   "¿Cómo guardo mi trabajo y ajusto el rendimiento?": "How do I save my work and tune performance?",
   Acercar: "Zoom in",
   Alejar: "Zoom out",
+  "+ Nodo": "+ Node",
+  "Subdivide el tramo más largo en su punto medio": "Subdivides the longest segment at its midpoint",
+  "Doblar: arrastra los nodos (curva suave); al acercar un nodo al de OTRA pieza se suelda (imán). + Nodo añade un punto a la trayectoria.":
+    "Bend: drag the nodes (smooth curve); bringing a node close to ANOTHER piece's node welds them (magnet). + Node adds a point to the path.",
+  "Dudas y soporte técnico: ": "Questions and technical support: ",
 };

@@ -759,9 +759,20 @@ export class Editor {
 
   /** Barra de zoom (v0.2.3): factor <1 acerca la cámara, >1 la aleja. */
   zoomCamara(factor: number): void {
+    this.setZoomDistancia(this.getZoomDistancia() * factor);
+  }
+
+  /** Distancia actual de la cámara al objetivo de órbita (cm). */
+  getZoomDistancia(): number {
+    return this.sceneManager.camera.position.distanceTo(this.orbit.target);
+  }
+
+  /** Fija la distancia de la cámara (barra de continuum del zoom). */
+  setZoomDistancia(distancia: number): void {
     const cam = this.sceneManager.camera;
     const dir = new THREE.Vector3().subVectors(cam.position, this.orbit.target);
-    const d = THREE.MathUtils.clamp(dir.length() * factor, 25, 4000);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1);
+    const d = THREE.MathUtils.clamp(distancia, 25, 4000);
     cam.position.copy(this.orbit.target).addScaledVector(dir.normalize(), d);
     this.orbit.update();
     this.requestRender();
@@ -2895,6 +2906,9 @@ export class Editor {
     this.cableMode = true;
     this.cablePending = [];
     this.select(null);
+    // Aim assist (v0.2.3): las roldanas se RESALTAN para reconocerlas como
+    // puntos de recorrido mientras se traza el cable.
+    for (const o of this.objects.values()) if (this.isPulley(o)) this.setHighlight(o, true);
     this.emitCableMode();
   }
 
@@ -2918,6 +2932,12 @@ export class Editor {
     this.cableMode = false;
     this.cablePending = [];
     this.clearPlacementPreview();
+    // Apaga el resaltado de roldanas del aim assist.
+    for (const o of this.objects.values()) {
+      if (this.isPulley(o) && this.selected !== o && !this.multiSel.has(o.id)) {
+        this.setHighlight(o, false);
+      }
+    }
     this.bus.emit("cableModeChanged", { active: false, count: 0 });
   }
 
@@ -3402,6 +3422,59 @@ export class Editor {
     return this.bendTarget !== null;
   }
 
+  /** Punto de conexión de OTRA pieza más cercano (imán del soldador), o null. */
+  private puntoSoldadura(punto: THREE.Vector3, excluir: SceneObject): THREE.Vector3 | null {
+    let mejor: THREE.Vector3 | null = null;
+    let mejorD = 8; // cm de captura del imán
+    for (const o of this.objects.values()) {
+      if (o === excluir || o.componentId.startsWith("ws-")) continue;
+      o.mesh.updateMatrixWorld(true);
+      for (const lp of localSnapPoints(o)) {
+        const wp = lp.clone().applyMatrix4(o.mesh.matrixWorld);
+        const d = wp.distanceTo(punto);
+        if (d < mejorD) {
+          mejorD = d;
+          mejor = wp;
+        }
+      }
+    }
+    return mejor;
+  }
+
+  /**
+   * Añade 1 nodo a la pieza en modo Doblar: subdivide el tramo más largo de
+   * la trayectoria en su punto medio (esquema "añade 1 nodo").
+   */
+  agregarNodoBend(): void {
+    const obj = this.bendTarget ?? this.selected;
+    if (!obj?.params.path || obj.params.path.length < 2) return;
+    const path = obj.params.path;
+    let peor = 0;
+    let dMax = -1;
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i];
+      const b = path[i + 1];
+      const d = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+      if (d > dMax) {
+        dMax = d;
+        peor = i;
+      }
+    }
+    const a = path[peor];
+    const b = path[peor + 1];
+    path.splice(peor + 1, 0, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+    obj.rebuildGeometry();
+    // Reconstruye las asas si el modo Doblar está activo.
+    if (this.bendTarget === obj) {
+      const objetivo = obj;
+      this.endBendNodes();
+      this.select(objetivo);
+      this.beginBendNodes();
+    }
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
   /** Coloca las asas sobre los nodos del path (en coordenadas de mundo). */
   private refreshBendHandles(): void {
     const obj = this.bendTarget;
@@ -3443,17 +3516,65 @@ export class Editor {
     const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
     const hit = hits[0];
     const id = hit?.object.userData.sceneObjectId as string | undefined;
-    const obj = id ? this.objects.get(id) : undefined;
-    if (!obj || !hit) return null;
+    let obj = id ? this.objects.get(id) : undefined;
+    let punto = hit ? hit.point.clone() : null;
+    // AIM ASSIST del cable (v0.2.3): una roldana cercana al ray CAPTURA el
+    // toque aunque el dedo no caiga exactamente sobre ella — facilita
+    // seleccionarlas como punto de recorrido.
+    if (this.cableMode) {
+      const iman = this.roldanaCercanaAlRay();
+      if (iman && (!obj || !this.isPulley(obj))) {
+        obj = iman;
+        punto = iman.mesh.getWorldPosition(new THREE.Vector3());
+      }
+    }
+    if (!obj || !punto) return null;
     obj.mesh.updateMatrixWorld(true);
+    // Roldana con nodo previo: el cable se une al punto del GROOVE más
+    // cercano al tramo entrante (el groove es el punto de contacto real).
+    if (this.cableMode && this.isPulley(obj) && this.cablePending.length > 0) {
+      const prev = this.cablePending[this.cablePending.length - 1];
+      prev.object.mesh.updateMatrixWorld(true);
+      const prevW = prev.local.clone().applyMatrix4(prev.object.mesh.matrixWorld);
+      const g = this.anclaEnGroove(obj, prevW);
+      return { object: obj, local: g, world: g.clone().applyMatrix4(obj.mesh.matrixWorld) };
+    }
     let best = new THREE.Vector3();
     let bestD = Infinity;
     for (const lp of localSnapPoints(obj)) {
       const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
-      const d = wp.distanceTo(hit.point);
+      const d = wp.distanceTo(punto);
       if (d < bestD) { bestD = d; best = lp; }
     }
     return { object: obj, local: best, world: best.clone().applyMatrix4(obj.mesh.matrixWorld) };
+  }
+
+  /** Roldana más cercana al ray del puntero (magnetismo del trazado). */
+  private roldanaCercanaAlRay(): SceneObject | null {
+    let mejor: SceneObject | null = null;
+    let mejorD = Infinity;
+    const c = new THREE.Vector3();
+    for (const o of this.objects.values()) {
+      if (!this.isPulley(o)) continue;
+      o.mesh.getWorldPosition(c);
+      const d = this.raycaster.ray.distanceToPoint(c);
+      const captura = Math.max(14, o.effectiveSize().x * 1.6);
+      if (d < captura && d < mejorD) {
+        mejorD = d;
+        mejor = o;
+      }
+    }
+    return mejor;
+  }
+
+  /** Punto LOCAL del groove de la roldana más cercano a un punto de mundo. */
+  private anclaEnGroove(roldana: SceneObject, haciaWorld: THREE.Vector3): THREE.Vector3 {
+    roldana.mesh.updateMatrixWorld(true);
+    const local = haciaWorld.clone().applyMatrix4(roldana.mesh.matrixWorld.clone().invert());
+    local.y = 0; // el eje de la rueda es Y local: el groove vive en su plano
+    const radio = roldana.effectiveSize().x / 2;
+    if (local.lengthSq() < 1e-6) return new THREE.Vector3();
+    return local.normalize().multiplyScalar(radio);
   }
 
   /** Posición de mundo del último punto colocado (para la línea elástica). */
@@ -3588,8 +3709,18 @@ export class Editor {
     if (this.bendDrag && this.bendTarget) {
       const hit = new THREE.Vector3();
       if (!this.dragPoint(this.bendDrag.origin, this.bendDrag.plane, hit)) return;
-      this.emitDragMeasure(hit.clone().sub(this.bendDrag.origin));
       const obj = this.bendTarget;
+      // SOLDADOR de nodos (v0.2.3): el nodo arrastrado se IMANTA al punto de
+      // conexión más cercano de OTRA figura (extremos, nodos, puntos medios)
+      // — así se arman estructuras complejas uniendo nodo con nodo.
+      const soldadura = this.puntoSoldadura(hit, obj);
+      if (soldadura) {
+        hit.copy(soldadura);
+        this.snap.showIndicator(soldadura);
+      } else {
+        this.snap.hideIndicator();
+      }
+      this.emitDragMeasure(hit.clone().sub(this.bendDrag.origin));
       obj.mesh.updateMatrixWorld(true);
       const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
       obj.params.path![this.bendDrag.index] = [local.x, local.y, local.z];

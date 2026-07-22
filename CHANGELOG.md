@@ -17,8 +17,25 @@ prefabs corregidos.
   preguntas frecuentes desplegables. Cada respuesta admite CAPTURAS
   demostrativas (imágenes en public/instructivo/) que se mostrarán bajo el
   texto cuando existan.
-- **Barra de ZOOM del visor**: botones +/− junto al visor 3D para acercar y
-  alejar la cámara con pasos suaves (además del gesto de pellizco/rueda).
+- **Barra de ZOOM de continuo**: selector horizontal discreto y sencillo en
+  la esquina inferior izquierda del visor — un deslizador entre − y + que
+  recorre todo el rango de la cámara (además del gesto de pellizco/rueda).
+- **Asistencia de puntería del CABLE**: al trazar un cable las roldanas se
+  RESALTAN como puntos de recorrido y un imán captura el toque cercano
+  aunque el dedo no caiga exactamente sobre ellas; el ancla se coloca en el
+  punto real de contacto del GROOVE (la garganta de la rueda) orientado
+  hacia el tramo entrante.
+- **SOLDADOR de nodos**: en modo Doblar, el nodo arrastrado se imanta a los
+  puntos de conexión de OTRAS figuras (extremos, nodos y puntos medios) con
+  indicador visual — permite unir estructuras nodo con nodo, como si fuese
+  un soldador. Botón «+ Nodo» en Propiedades para añadir un nodo a la
+  trayectoria (subdivide el tramo más largo), en piezas poligonales
+  (pilares/travesaños) y tubulares.
+- **Sonido de click**: todos los botones de la interfaz emiten un tic corto
+  y discreto (WebAudio, sin archivos de audio).
+- **Pie de página de la Home**: versión instalada de la app, crédito
+  «Brought to you by A. Maturana Steinbrugge» y canal de soporte técnico
+  (amaturanas@uft.edu).
 - **ARRASTRE PRECISO** (menú Selección): ventana flotante con cursores en
   pantalla para movilizar la selección con exactitud — ◀ ▶ mueven a los
   lados y ▲ ▼ suben/bajan o, con el SWITCH de ejes, van adelante/atrás.
@@ -29,7 +46,8 @@ prefabs corregidos.
   y Arrastre preciso se muestran ON DEMAND desde una tira de etiquetas
   verticales en el costado izquierdo del visor — un click abre la ventana y
   otro click en la pestaña la vuelve a esconder. Disponibles en ambos modos
-  de trabajo.
+  de trabajo y OCULTAS por defecto al entrar al editor (más espacio de
+  visor desde el primer momento).
 
 ### Cambiado
 

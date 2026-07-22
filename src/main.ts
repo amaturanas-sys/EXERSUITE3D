@@ -20,8 +20,11 @@ import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
+import { instalarSonidoUI } from "./ui/sonido";
 
 const app = document.getElementById("app")!;
+// Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.
+instalarSonidoUI();
 
 /**
  * Panel plegable (F4 v0.2.0): tocar su título lo colapsa a solo la cabecera
@@ -89,20 +92,40 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     isPreciseOn: () => precise.isActiva(),
   });
 
-  // Barra de ZOOM del visor (v0.2.3): acercar/alejar con botones.
+  // Barra de ZOOM del visor (v0.2.3): continuum discreto y sencillo en la
+  // región inferior izquierda — botones − / + con barra deslizante entre ambos.
   const zoomBar = document.createElement("div");
   zoomBar.id = "zoom-bar";
-  for (const [txt, factor, titulo] of [
-    ["+", 0.8, tt("Acercar", "Zoom in")],
-    ["−", 1.25, tt("Alejar", "Zoom out")],
-  ] as const) {
+  const D_MIN = 25;
+  const D_MAX = 4000;
+  const distAValor = (d: number) =>
+    Math.round((100 * Math.log(D_MAX / d)) / Math.log(D_MAX / D_MIN));
+  const valorADist = (v: number) => D_MAX * Math.pow(D_MIN / D_MAX, v / 100);
+  const zoomSlider = document.createElement("input");
+  zoomSlider.type = "range";
+  zoomSlider.min = "0";
+  zoomSlider.max = "100";
+  zoomSlider.step = "1";
+  zoomSlider.className = "zoom-slider";
+  zoomSlider.title = tt("Zoom", "Zoom");
+  zoomSlider.value = String(distAValor(ed.getZoomDistancia()));
+  zoomSlider.addEventListener("input", () => ed.setZoomDistancia(valorADist(+zoomSlider.value)));
+  const mkZoomBtn = (txt: string, factor: number, titulo: string) => {
     const b = document.createElement("button");
     b.className = "tool zoom-btn";
     b.textContent = txt;
     b.title = titulo;
-    b.addEventListener("click", () => ed.zoomCamara(factor));
-    zoomBar.append(b);
-  }
+    b.addEventListener("click", () => {
+      ed.zoomCamara(factor);
+      zoomSlider.value = String(distAValor(ed.getZoomDistancia()));
+    });
+    return b;
+  };
+  zoomBar.append(
+    mkZoomBtn("−", 1.25, tt("Alejar", "Zoom out")),
+    zoomSlider,
+    mkZoomBtn("+", 0.8, tt("Acercar", "Zoom in")),
+  );
 
   // Modo Sencillo (v0.2.3): la clase en <body> acota la interfaz por CSS
   // (sin bloqueo de Ejes; la paleta ya filtra sus piezas).
@@ -127,7 +150,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     });
     return b;
   };
-  document.body.classList.add("show-prop"); // Propiedades visible al entrar
+  // Las tres ventanas arrancan ESCONDIDAS: se llaman desde sus pestañas.
   const tabProp = mkTab(
     tt("Propiedades", "Properties"),
     () => document.body.classList.contains("show-prop"),

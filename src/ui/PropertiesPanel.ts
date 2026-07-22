@@ -167,13 +167,17 @@ export class PropertiesPanel {
       "✎ Doblar (nodos)",
     ]);
     bendBtn.addEventListener("click", () => this.editor.beginBendNodes());
+    const addNodeBtn = el("button", { class: "tool", title: "Subdivide el tramo más largo en su punto medio" }, [
+      "+ Nodo",
+    ]);
+    addNodeBtn.addEventListener("click", () => this.editor.agregarNodoBend());
 
     return el("div", { class: "field" }, [
       el("label", {}, [isTube ? "Tubo de acero" : "Perfil de acero"]),
       ...rows,
-      bendBtn,
+      el("div", { class: "row" }, [bendBtn, addNodeBtn]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
-        "Doblar: arrastra los nodos de la trayectoria (curva suave). En piezas dobladas no aplican agujeros ni extremos diagonales.",
+        "Doblar: arrastra los nodos (curva suave); al acercar un nodo al de OTRA pieza se suelda (imán). + Nodo añade un punto a la trayectoria.",
       ]),
     ]);
   }

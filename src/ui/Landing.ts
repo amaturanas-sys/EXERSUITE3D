@@ -1,4 +1,5 @@
 import type { ProjectData } from "../core/project";
+import { version as VERSION_APP } from "../../package.json";
 import { renderInstructivo } from "./Instructivo";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
@@ -93,12 +94,23 @@ export class Landing {
     const dedication = el("div", { class: "land-dedication" }, ["…"]);
     void this.loadDedication(dedication, `${base}dedicatoria.txt`);
 
+    // Pie de la Home (v0.2.3): versión instalada, crédito y canal de soporte.
+    const soporte = el("a", { class: "land-soporte", href: "mailto:amaturanas@uft.edu" }, [
+      "amaturanas@uft.edu",
+    ]);
+    const pie = el("div", { class: "land-footer" }, [
+      el("div", {}, [`EXERSUITE3D v${VERSION_APP}`]),
+      el("div", {}, ["Brought to you by A. Maturana Steinbrugge"]),
+      el("div", {}, [el("span", {}, ["Dudas y soporte técnico: "]), soporte]),
+    ]);
+
     this.root = el("div", { class: "landing" }, [
       el("div", { class: "land-grid2" }, [
         el("div", { class: "land-col-nav" }, [
           el("div", { class: "land-brand" }, [logo, tagline]),
           nav,
           dedication,
+          pie,
         ]),
         el("div", { class: "land-col-content" }, [this.contenido, this.leyenda]),
       ]),
