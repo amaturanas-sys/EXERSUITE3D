@@ -23,6 +23,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   del sistema de polea alta corre a lo largo, puenteando el marco con la
   torre: su ménsula trasera queda sobre la polea de torre y las poleas
   altas cuelgan bajo su vano.
+- **Multiagarre en su posición real** (3.ª ronda CAD): la barra de pullups
+  multigrip atornilla sus placas SOBRE el travesaño frontal y sus asas
+  vuelan hacia adelante por encima de la jaula (terminan antes de los
+  pilares frontales), con los agarres colgando — antes cruzaba suelta por
+  el medio del techo.
 
 ## [0.2.3] — 2026-07-22
 

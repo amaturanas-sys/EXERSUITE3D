@@ -201,8 +201,11 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -80.95] },
   { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 33.79, -80.95] },
   { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 33.12, -80.95] },
-  // 7) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
-  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -36.95] },
+  // 7) BARRA DE PULLUPS MULTIGRIP real (92×32, CAD): sus placas de montaje
+  // (un solo extremo de la malla) atornillan SOBRE el travesaño frontal
+  // (z=−28,24) y las asas vuelan hacia adelante sobre la jaula, terminando
+  // en z≈61 antes de los pilares frontales, con los agarres colgando.
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, 15.3], rot: [0, Math.PI, 0] },
   // 8) 4 JOTAS DE SEGURIDAD abrazando los pilares: altas atrás, bajas delante.
   { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-56, 127, -17.95] },
   { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.95] },
