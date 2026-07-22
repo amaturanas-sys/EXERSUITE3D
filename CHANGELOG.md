@@ -7,8 +7,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.2.3] — 2026-07-22
 
-Release intermedia de estética y usabilidad, previa a la incorporación de los
-prefabs corregidos.
+Release de estética, usabilidad e interacción del motor de diseño, previa a
+la incorporación de los prefabs corregidos: Home con Instructivo-FAQ y pie de
+soporte, ventanas colapsables ocultas por defecto, zoom de continuo, Arrastre
+preciso, y los dos esquemas del diseñador incorporados — trazado de cable con
+aim assist y contacto tangente real del groove, y deformación por nodos con
+soldadura nodo-nodo entre figuras.
 
 ### Añadido
 
@@ -58,7 +62,6 @@ prefabs corregidos.
   lados y ▲ ▼ suben/bajan o, con el SWITCH de ejes, van adelante/atrás.
   También responden las flechas del teclado (la tecla C cambia el eje y
   Shift da pasos de 10 cm); el HUD muestra el desplazamiento en cm.
-
 - **Pestañas laterales verticales**: las ventanas de Propiedades, Conexiones
   y Arrastre preciso se muestran ON DEMAND desde una tira de etiquetas
   verticales en el costado izquierdo del visor — un click abre la ventana y
