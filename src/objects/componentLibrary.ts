@@ -256,13 +256,13 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Portadiscos de polea TTP",
     category: "peso",
     materialId: "acero-negro",
-    // Sostenedor de discos real del sistema de poleas del TTP001L: placa
-    // vertical 55×55 al extremo y PIN HORIZONTAL de 88 que pasa por el hueco
-    // entre los tubos de guía; los discos se cargan en el tramo libre.
-    defaults: { kind: "box", width: 55, height: 55, depth: 98 },
+    // WEIGHTCARRIER real del TTP001L (archivo oficial del diseñador): barra
+    // deslizante VERTICAL de 88 (sección 6×8) con collarín a media altura —
+    // soporta los discos y corre guiada por los rieles del sistema de poleas.
+    defaults: { kind: "box", width: 6.1, height: 88, depth: 8.1 },
     physics: { massKg: 8, fixed: false },
     description:
-      "Sostenedor de discos real del TTP001L: el cable del sistema de poleas lo eleva con los discos cargados en su pin.",
+      "Portadiscos real del TTP001L: barra deslizante que soporta los discos y corre guiada por los rieles; el cable del sistema de poleas la eleva.",
   },
   {
     id: "manguito-guia-ttp",

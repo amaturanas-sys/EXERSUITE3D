@@ -23,6 +23,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   del sistema de polea alta corre a lo largo, puenteando el marco con la
   torre: su ménsula trasera queda sobre la polea de torre y las poleas
   altas cuelgan bajo su vano.
+- **Portadiscos con la pieza REAL** (WEIGHTCARRIER_1.stl oficial): la malla
+  del portadiscos es ahora la barra deslizante vertical auténtica del
+  TTP001L — 88 cm de alto, sección 6×8, con collarín a media altura — que
+  soporta los discos y corre guiada por los rieles del sistema de poleas
+  (sigue siendo pieza móvil en el rack).
 - **Techo del rack según el CAD** (3.ª y 4.ª ronda): el TRAVESAÑO FRONTAL
   vuelve al FRENTE del techo (tras los pilares frontales) y el MULTIAGARRE
   cruza A LO ANCHO montado sobre él — placas apoyadas en la cara superior
