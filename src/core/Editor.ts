@@ -7,7 +7,7 @@ import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
-import { construirMaquina, STANDARD_MACHINES } from "../objects/standardMachines";
+import { construirMaquina, construirPiezas, STANDARD_MACHINES, type PiezaSpec } from "../objects/standardMachines";
 import { claveMaquina } from "./maquinasModelo";
 import { tt } from "./i18n";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
@@ -752,6 +752,17 @@ export class Editor {
     if (ids.length >= 2) {
       const gid = this.createGroupFromIds(ids);
       if (gid) this.renameGroup(gid, label);
+    }
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
+  /** Inserta un prefab ESTRUCTURADO del usuario (.json exportado desde la app). */
+  insertarPrefab(data: { label: string; piezas: PiezaSpec[] }, at = new THREE.Vector3()): void {
+    const ids = construirPiezas(this, data.piezas, data.label, at);
+    if (ids.length >= 2) {
+      const gid = this.createGroupFromIds(ids);
+      if (gid) this.renameGroup(gid, data.label);
     }
     this.scheduleAutosave();
     this.requestRender();

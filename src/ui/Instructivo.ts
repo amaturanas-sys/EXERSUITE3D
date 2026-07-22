@@ -79,6 +79,7 @@ const SECCIONES: [string, string[]][] = [
     "Tipos de archivo",
     [
       "Proyecto .json: tu diseño completo (piezas, física, cables, maniquí); interoperable entre la app web, Windows y la versión Godot.",
+      "Prefab .prefab.json (Archivo → Exportar prefab de la selección): una máquina editada como archivo ESTRUCTURADO que reconoce cada parte y su función (componente, nombre, medidas, material y pose); se reinserta con Archivo → Insertar prefab.",
       "Modelo .glb/.gltf/.obj/.stl: modelos 3D para sustituir componentes o segmentos del maniquí en la Biblioteca (los STL de CAD en milímetros se convierten solos a cm).",
       "Biblioteca .zip: tu colección completa de modelos, exportable e importable entre dispositivos.",
       "Captura .png: fotografías del visor tomadas en el Simulador (galería en la Home).",

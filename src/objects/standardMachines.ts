@@ -270,11 +270,21 @@ export function construirMaquina(
 ): { ids: string[]; label: string } {
   const spec = SPECS[prefabId];
   if (!spec) throw new Error(`Máquina desconocida: ${prefabId}`);
+  return { ids: construirPiezas(editor, spec.piezas, spec.label, at), label: spec.label };
+}
+
+/** Construye una lista de piezas (de una máquina estándar o de un prefab del usuario). */
+export function construirPiezas(
+  editor: Editor,
+  piezas: PiezaSpec[],
+  label: string,
+  at: THREE.Vector3,
+): string[] {
   const ids: string[] = [];
-  for (const p of spec.piezas) {
+  for (const p of piezas) {
     const obj = editor.addComponent(p.comp);
     if (p.nombre) {
-      obj.name = `${p.nombre} (${spec.label})`;
+      obj.name = `${p.nombre} (${label})`;
       obj.mesh.name = obj.name;
     }
     if (p.params) {
@@ -288,5 +298,5 @@ export function construirMaquina(
     if (p.rot) obj.mesh.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
     ids.push(obj.id);
   }
-  return { ids, label: spec.label };
+  return ids;
 }

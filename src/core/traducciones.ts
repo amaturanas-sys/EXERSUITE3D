@@ -502,4 +502,8 @@ export const TRADUCCIONES: Record<string, string> = {
     "Machines tab: every Simple-mode standard machine can be EXPORTED as STL or OBJ (the full assembly), edited elsewhere and REPLACED with your corrected version — inserting it will use your model.",
   "Exportar ZIP descarga toda tu colección (incluidas las máquinas sustituidas); Importar ZIP la restaura o fusiona en otro dispositivo.":
     "Export ZIP downloads your whole collection (replaced machines included); Import ZIP restores or merges it on another device.",
+  "Exportar prefab de la selección (.json)…": "Export selection as prefab (.json)…",
+  "Insertar prefab (.json)…": "Insert prefab (.json)…",
+  "Prefab .prefab.json (Archivo → Exportar prefab de la selección): una máquina editada como archivo ESTRUCTURADO que reconoce cada parte y su función (componente, nombre, medidas, material y pose); se reinserta con Archivo → Insertar prefab.":
+    "Prefab .prefab.json (File → Export selection as prefab): an edited machine as a STRUCTURED file that recognizes every part and its function (component, name, measurements, material and pose); reinsert it with File → Insert prefab.",
 };

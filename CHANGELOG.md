@@ -56,6 +56,13 @@ exportar/corregir/sustituir prefabs.
   muestran como figura (solo la silueta, al tono de la interfaz) en Home,
   asistente, menús, paleta, paneles, Biblioteca, Instructivo y diálogos —
   estética consistente entre ventanas y plataformas.
+- **Prefabs ESTRUCTURADOS (.prefab.json)**: edita una máquina estándar con
+  las herramientas nativas y usa Archivo → "Exportar prefab de la selección"
+  para descargarla como archivo que reconoce cada parte y su FUNCIÓN
+  (componente de biblioteca, nombre, medidas, material, pose y anclaje);
+  "Insertar prefab" la reconstruye pieza a pieza como grupo. Es el formato
+  de intercambio para corregir prefabs e incorporarlos a la biblioteca en
+  releases futuras.
 
 ### Corregido
 

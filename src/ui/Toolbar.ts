@@ -1,6 +1,7 @@
 import type { ColorMode, Editor, TransformMode } from "../core/Editor";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
+import { parsearPrefab, serializarPrefab } from "../core/prefabIO";
 import { t, tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
@@ -26,6 +27,7 @@ export class Toolbar {
 
   private fileInput: HTMLInputElement;
   private importInput: HTMLInputElement;
+  private prefabInput!: HTMLInputElement;
 
   constructor(
     private editor: Editor,
@@ -44,6 +46,9 @@ export class Toolbar {
     this.importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
     this.importInput.style.display = "none";
     this.importInput.addEventListener("change", () => void this.onImportFile(this.importInput));
+    this.prefabInput = el("input", { type: "file", accept: acceptSeguro(".json,application/json") });
+    this.prefabInput.style.display = "none";
+    this.prefabInput.addEventListener("change", () => void this.onPrefabFile(this.prefabInput));
 
     // ---- Botones siempre visibles
     const homeBtn = el("button", { class: "tool", title: "Volver a la pantalla de inicio" }, [
@@ -123,6 +128,7 @@ export class Toolbar {
       el("div", { class: "tool-group" }, [autosaveTag]),
       this.fileInput,
       this.importInput,
+      this.prefabInput,
     ]);
 
     // Estado vivo para pintar los menús al abrirlos.
@@ -235,8 +241,52 @@ export class Toolbar {
       this.item("Importar modelo 3D…", () => this.importInput.click()),
       this.item("Exportar prototipo (.glb)", () => void this.exportGLB()),
       this.sep(),
+      this.item("Exportar prefab de la selección (.json)…", () => void this.exportPrefab()),
+      this.item("Insertar prefab (.json)…", () => this.prefabInput.click()),
+      this.sep(),
       this.item("Rendimiento…", () => this.hooks.onPerformance?.()),
     );
+  }
+
+  /**
+   * Exporta la selección (máquina editada, grupo o piezas) como PREFAB
+   * ESTRUCTURADO: un .json que reconoce cada parte y su función (componente
+   * de biblioteca, nombre, dimensiones, material, pose y anclaje).
+   */
+  private async exportPrefab(): Promise<void> {
+    if (this.editor.getSelectionIds().length === 0) {
+      window.alert(
+        tt(
+          "Selecciona primero la máquina (o sus piezas) que quieres exportar como prefab.",
+          "First select the machine (or its parts) you want to export as a prefab.",
+        ),
+      );
+      return;
+    }
+    const label = window.prompt(tt("Nombre del prefab", "Prefab name"), "Prefab");
+    if (label === null) return;
+    const json = serializarPrefab(this.editor, label || "Prefab");
+    if (!json) return;
+    const archivo = `${(label || "prefab").toLowerCase().replace(/[^a-z0-9]+/gi, "-")}.prefab.json`;
+    await descargarArchivo(archivo, json, "application/json");
+  }
+
+  private async onPrefabFile(input: HTMLInputElement): Promise<void> {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    try {
+      const data = parsearPrefab(await file.text());
+      this.editor.insertarPrefab(data);
+    } catch (err) {
+      console.error("Prefab no válido:", err);
+      window.alert(
+        tt(
+          "El archivo no es un prefab válido de EXERSUITE3D.",
+          "The file is not a valid EXERSUITE3D prefab.",
+        ),
+      );
+    }
   }
 
   private buildEdicion(m: HTMLElement): void {
