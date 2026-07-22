@@ -31,6 +31,13 @@ prefabs corregidos.
   un soldador. Botón «+ Nodo» en Propiedades para añadir un nodo a la
   trayectoria (subdivide el tramo más largo), en piezas poligonales
   (pilares/travesaños) y tubulares.
+- **Contacto tangente real del groove** (esquema Cables III): el nodo de
+  cada roldana intermedia se ancla en el punto de CONTACTO físico del
+  cable — la tangente donde el radio queda a 90° del cable, calculada con
+  los tramos entrante y saliente (el cable pasa por encima de una roldana
+  con ambos vecinos abajo, o por debajo si cuelga de ella). El contacto se
+  recalcula al mover las piezas, y funciona igual con roldanas externas e
+  internas (todas reconocidas como objeto de recorrido).
 - **Sonido de click**: todos los botones de la interfaz emiten un tic corto
   y discreto (WebAudio, sin archivos de audio).
 - **Pie de página de la Home**: versión instalada de la app, crédito

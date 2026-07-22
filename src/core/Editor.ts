@@ -2959,6 +2959,9 @@ export class Editor {
   createCable(nodes: CableNode[]): Cable | null {
     if (nodes.length < 2) return null;
     const cable = new Cable({ nodes });
+    // Esquema Cables III: cada roldana intermedia ancla en el punto de
+    // CONTACTO tangente real de su groove (radio a 90° del cable).
+    this.refinarContactosCable(cable);
     this.cables.set(cable.id, cable);
     this.bus.emit("cablesChanged", { cables: this.listCables() });
     return cable;
@@ -3007,6 +3010,10 @@ export class Editor {
     }
 
     for (const cable of this.cables.values()) {
+      // El contacto del groove SIGUE a las piezas: al mover un extremo o la
+      // propia roldana, la tangencia se recalcula (fuera de simulación, donde
+      // los anclajes del solver ya quedaron fijados al construir el mundo).
+      if (!this.simulating) this.refinarContactosCable(cable);
       const pts: THREE.Vector3[] = [];
       for (const node of cable.nodes) {
         const obj = this.objects.get(node.objectId);
@@ -3584,6 +3591,68 @@ export class Editor {
     const radio = roldana.effectiveSize().x / 2;
     if (local.lengthSq() < 1e-6) return new THREE.Vector3();
     return local.normalize().multiplyScalar(radio);
+  }
+
+  /**
+   * Contacto FÍSICO del cable en el groove (esquema Cables III): el punto de
+   * tangencia real, donde el radio queda a 90° del cable. Con los dos tramos
+   * (entrante y saliente) el punto de contacto del abrazo es el opuesto a la
+   * bisectriz de las direcciones hacia los vecinos: el cable pasa POR ENCIMA
+   * de una roldana con ambos vecinos abajo, o POR DEBAJO si cuelga de él.
+   */
+  private contactoGroove(
+    roldana: SceneObject,
+    prevW: THREE.Vector3,
+    nextW: THREE.Vector3,
+    anclaActual?: THREE.Vector3,
+  ): THREE.Vector3 | null {
+    roldana.mesh.updateMatrixWorld(true);
+    const inv = roldana.mesh.matrixWorld.clone().invert();
+    const d1 = prevW.clone().applyMatrix4(inv);
+    const d2 = nextW.clone().applyMatrix4(inv);
+    d1.y = 0;
+    d2.y = 0; // proyectadas al plano de la rueda (eje Y local)
+    if (d1.lengthSq() < 1e-6 || d2.lengthSq() < 1e-6) return null;
+    d1.normalize();
+    d2.normalize();
+    const radio = roldana.effectiveSize().x / 2;
+    const suma = d1.clone().add(d2);
+    if (suma.lengthSq() < 1e-4) {
+      // Paso recto (los vecinos quedan opuestos): roza tangente por un lado —
+      // se conserva el lado del ancla actual (dot con el local vigente).
+      const perp = new THREE.Vector3(-d1.z, 0, d1.x);
+      const actual = anclaActual ?? perp;
+      if (perp.dot(actual) < 0) perp.negate();
+      return perp.multiplyScalar(radio);
+    }
+    return suma.normalize().multiplyScalar(-radio);
+  }
+
+  /**
+   * Reafina los nodos-roldana de un cable al punto de contacto tangente del
+   * groove usando sus dos vecinos. Dos pasadas para que roldanas consecutivas
+   * converjan (cada contacto depende del vecino ya refinado).
+   */
+  private refinarContactosCable(cable: Cable): void {
+    for (let pasada = 0; pasada < 2; pasada++) {
+      for (let i = 1; i < cable.nodes.length - 1; i++) {
+        const obj = this.objects.get(cable.nodes[i].objectId);
+        if (!obj || !this.isPulley(obj)) continue;
+        const vecino = (j: number): THREE.Vector3 | null => {
+          const o = this.objects.get(cable.nodes[j].objectId);
+          if (!o) return null;
+          o.mesh.updateMatrixWorld();
+          const l = cable.nodes[j].local;
+          return new THREE.Vector3(l.x, l.y, l.z).applyMatrix4(o.mesh.matrixWorld);
+        };
+        const prevW = vecino(i - 1);
+        const nextW = vecino(i + 1);
+        if (!prevW || !nextW) continue;
+        const l = cable.nodes[i].local;
+        const c = this.contactoGroove(obj, prevW, nextW, new THREE.Vector3(l.x, 0, l.z));
+        if (c) cable.nodes[i].local = { x: c.x, y: c.y, z: c.z };
+      }
+    }
   }
 
   /** Posición de mundo del último punto colocado (para la línea elástica). */
