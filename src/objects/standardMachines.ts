@@ -185,8 +185,10 @@ const RACK_TORRE: PiezaSpec[] = [
     }),
   ),
   // 2) 2 COLUMNAS HORIZONTALES INFERIORES (141, con placas de encuadre).
-  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-56, 10, 13.45], rot: [0, Math.PI / 2, 0] },
-  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 13.45], rot: [0, Math.PI / 2, 0] },
+  // Giro −90° (CAD): la placa de encuadre queda en los pilares traseros
+  // (z≈−26…−17) y la curva que sube al pie, en los frontales (z≈63…83).
+  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-56, 10, 13.45], rot: [0, -Math.PI / 2, 0] },
+  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 13.45], rot: [0, -Math.PI / 2, 0] },
   // 3) 2 COLUMNAS HORIZONTALES SUPERIORES (94) coronando los pilares.
   { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
   { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
@@ -224,8 +226,11 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 7.35] },
   // Pletina de unión al pie de la torre.
   { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.05] },
-  // Bastidor superior real coronando el frente del marco.
-  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, 57.18], rot: [0, Math.PI / 2, 0] },
+  // Bastidor superior real PUENTEANDO el marco con la torre (CAD): corre a lo
+  // largo de Z sin girar; su ménsula trasera queda sobre la polea de torre
+  // (z≈−74) y el frente ancla sobre el marco — las poleas altas cuelgan bajo
+  // su vano.
+  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, -27.75] },
   // 11) PORTADISCOS del sistema de poleas: MÓVIL, montado en los tubos de guía.
   { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [-4.66, 67, -80.95], rot: [0, Math.PI / 2, 0], fija: false },
 ];

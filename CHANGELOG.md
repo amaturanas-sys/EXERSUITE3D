@@ -17,6 +17,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   la placa estabilizadora, manguitos de guía al pie de los tubos, sin
   brazos de seguridad ni discos precargados, y el PORTADISCOS ahora es
   pieza MÓVIL montada en los tubos de guía (34 piezas en total).
+- **Orientaciones corregidas contra el CAD** (2.ª ronda): los laterales
+  inferiores van girados a −90° — la placa de encuadre calza en los
+  pilares traseros y la curva con el pie queda al frente — y el BASTIDOR
+  del sistema de polea alta corre a lo largo, puenteando el marco con la
+  torre: su ménsula trasera queda sobre la polea de torre y las poleas
+  altas cuelgan bajo su vano.
 
 ## [0.2.3] — 2026-07-22
 
