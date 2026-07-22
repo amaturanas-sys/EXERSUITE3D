@@ -23,11 +23,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   del sistema de polea alta corre a lo largo, puenteando el marco con la
   torre: su ménsula trasera queda sobre la polea de torre y las poleas
   altas cuelgan bajo su vano.
-- **Multiagarre en su posición real** (3.ª ronda CAD): la barra de pullups
-  multigrip atornilla sus placas SOBRE el travesaño frontal y sus asas
-  vuelan hacia adelante por encima de la jaula (terminan antes de los
-  pilares frontales), con los agarres colgando — antes cruzaba suelta por
-  el medio del techo.
+- **Techo del rack según el CAD** (3.ª y 4.ª ronda): el TRAVESAÑO FRONTAL
+  vuelve al FRENTE del techo (tras los pilares frontales) y el MULTIAGARRE
+  cruza A LO ANCHO montado sobre él — placas apoyadas en la cara superior
+  de la viga, abanico arqueándose hacia arriba con leve voladizo por
+  delante y agarres del centro colgando. Se repone el TRAVESAÑO SUPERIOR
+  (104) cerrando el techo por atrás, donde descansa la placa media del
+  bastidor (35 piezas).
 
 ## [0.2.3] — 2026-07-22
 
