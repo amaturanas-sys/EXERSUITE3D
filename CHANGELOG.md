@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.3] — 2026-07-22
+
+Release intermedia de estética y usabilidad, previa a la incorporación de los
+prefabs corregidos.
+
+### Añadido
+
+- **Instructivo primero y en formato FAQ**: el INSTRUCTIVO es ahora la
+  primera vista de la Home (y la que se abre por defecto), reorganizado como
+  preguntas frecuentes desplegables. Cada respuesta admite CAPTURAS
+  demostrativas (imágenes en public/instructivo/) que se mostrarán bajo el
+  texto cuando existan.
+- **Barra de ZOOM del visor**: botones +/− junto al visor 3D para acercar y
+  alejar la cámara con pasos suaves (además del gesto de pellizco/rueda).
+- **ARRASTRE PRECISO** (menú Selección): ventana flotante con cursores en
+  pantalla para movilizar la selección con exactitud — ◀ ▶ mueven a los
+  lados y ▲ ▼ suben/bajan o, con el SWITCH de ejes, van adelante/atrás.
+  También responden las flechas del teclado (la tecla C cambia el eje y
+  Shift da pasos de 10 cm); el HUD muestra el desplazamiento en cm.
+
+### Cambiado
+
+- **Modo Sencillo acotado a lo rudimentario** (lo que lo distingue del modo
+  Profesional): paleta con solo las máquinas estándar, las primitivas y unas
+  pocas piezas básicas; sin panel de Conexiones ni bloqueo de Ejes.
+
+### Corregido
+
+- **Caras transparentes por un lado y sólidas por el otro**: los modelos de
+  la biblioteca con normales invertidas se renderizan ahora a DOBLE CARA en
+  todos los materiales — el bug desaparece en toda la app.
+- **Márgenes y botones cortados**: los textos de paneles y ventanas parten
+  palabra cuando no caben y las filas de botones (Voltear X/Y/Z, acciones de
+  la Biblioteca, diálogos) envuelven a la línea siguiente en lugar de
+  cortarse.
+
 ## [0.2.2] — 2026-07-22
 
 Los despieces reales del diseñador (TTP001L y POWERRACK) pasan a ser el

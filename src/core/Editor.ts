@@ -757,6 +757,43 @@ export class Editor {
     this.requestRender();
   }
 
+  /** Barra de zoom (v0.2.3): factor <1 acerca la cámara, >1 la aleja. */
+  zoomCamara(factor: number): void {
+    const cam = this.sceneManager.camera;
+    const dir = new THREE.Vector3().subVectors(cam.position, this.orbit.target);
+    const d = THREE.MathUtils.clamp(dir.length() * factor, 25, 4000);
+    cam.position.copy(this.orbit.target).addScaledVector(dir.normalize(), d);
+    this.orbit.update();
+    this.requestRender();
+  }
+
+  /**
+   * Arrastre preciso (v0.2.3): mueve la selección (pieza, multiselección o
+   * grupo) un paso exacto en cm, desde los cursores en pantalla o el teclado.
+   */
+  nudgeSelection(dx: number, dy: number, dz: number): void {
+    const ids = this.getSelectionIds();
+    if (ids.length === 0) return;
+    const delta = new THREE.Vector3(dx, dy, dz);
+    for (const id of ids) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      o.mesh.position.add(delta);
+      this.bus.emit("objectTransformed", { object: o });
+    }
+    // Reubica el gizmo colectivo para que siga a las piezas desplazadas.
+    if (this.multiSel.size > 0) this.refreshMultiGizmo(true);
+    else if (this.selectedGroupId) {
+      this.groupProxy.position.add(delta);
+      this.groupProxy.updateMatrixWorld(true);
+      this.groupPrev.copy(this.groupProxy.matrixWorld);
+    }
+    this.checkWorkspaceBounds();
+    this.emitDragMeasure(delta);
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
   /** Inserta un prefab ESTRUCTURADO del usuario (.json exportado desde la app). */
   insertarPrefab(data: { label: string; piezas: PiezaSpec[] }, at = new THREE.Vector3()): void {
     const ids = construirPiezas(this, data.piezas, data.label, at);

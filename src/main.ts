@@ -10,6 +10,7 @@ import { PosePanel } from "./ui/PosePanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
 import { PerformancePanel } from "./ui/PerformancePanel";
 import { SimulatorBar } from "./ui/SimulatorBar";
+import { PreciseDrag } from "./ui/PreciseDrag";
 import { Landing } from "./ui/Landing";
 import { LibraryView } from "./ui/LibraryView";
 import { confirmUnsavedChanges } from "./ui/confirmDialog";
@@ -80,10 +81,35 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
 
   const palette = new ComponentPalette(ed);
   const perfPanel = new PerformancePanel(ed);
+  const precise = new PreciseDrag(ed);
   const toolbar = new Toolbar(ed, {
     onHome: () => void goHome(),
     onPerformance: () => perfPanel.toggle(),
+    onPreciseToggle: () => precise.toggle(),
+    isPreciseOn: () => precise.isActiva(),
   });
+
+  // Barra de ZOOM del visor (v0.2.3): acercar/alejar con botones.
+  const zoomBar = document.createElement("div");
+  zoomBar.id = "zoom-bar";
+  for (const [txt, factor, titulo] of [
+    ["+", 0.8, tt("Acercar", "Zoom in")],
+    ["−", 1.25, tt("Alejar", "Zoom out")],
+  ] as const) {
+    const b = document.createElement("button");
+    b.className = "tool zoom-btn";
+    b.textContent = txt;
+    b.title = titulo;
+    b.addEventListener("click", () => ed.zoomCamara(factor));
+    zoomBar.append(b);
+  }
+
+  // Modo Sencillo (v0.2.3): la clase en <body> acota la interfaz por CSS
+  // (sin Conexiones ni bloqueo de Ejes; la paleta ya filtra sus piezas).
+  const aplicarModo = () =>
+    document.body.classList.toggle("modo-sencillo", ed.getWorkspace()?.modo === "sencillo");
+  aplicarModo();
+  ed.bus.on("workspaceChanged", aplicarModo);
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
   const posePanel = new PosePanel(ed);
@@ -118,8 +144,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   // Paneles plegables desde su título (esquema F4).
   for (const p of [palette.root, inspector.root, joints.root, posePanel.root]) hacerPlegable(p);
 
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses];
+  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, precise.root];
   editorDisposables = [
+    () => precise.dispose(),
     () => palette.dispose(),
     () => toolbar.dispose(),
     () => perfPanel.dispose(),

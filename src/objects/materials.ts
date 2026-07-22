@@ -54,11 +54,15 @@ export function getMaterialPreset(id: string): MaterialPreset {
  */
 export function buildMaterial(id: string): THREE.MeshStandardMaterial {
   const p = getMaterialPreset(id);
+  // DOBLE CARA (v0.2.3): los modelos importados/despieces traen caras con
+  // normales invertidas y se veían transparentes por un lado y sólidas por
+  // el otro; renderizar ambos lados corrige el bug en toda la biblioteca.
   if (getPerf().simpleShading) {
     return new THREE.MeshLambertMaterial({
       color: p.color,
       transparent: p.opacity < 1,
       opacity: p.opacity,
+      side: THREE.DoubleSide,
     }) as unknown as THREE.MeshStandardMaterial;
   }
   return new THREE.MeshStandardMaterial({
@@ -67,6 +71,7 @@ export function buildMaterial(id: string): THREE.MeshStandardMaterial {
     roughness: p.roughness,
     transparent: p.opacity < 1,
     opacity: p.opacity,
+    side: THREE.DoubleSide,
   });
 }
 

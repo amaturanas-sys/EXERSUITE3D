@@ -31,7 +31,12 @@ export class Toolbar {
 
   constructor(
     private editor: Editor,
-    private hooks: { onHome?: () => void; onPerformance?: () => void } = {},
+    private hooks: {
+      onHome?: () => void;
+      onPerformance?: () => void;
+      onPreciseToggle?: () => void;
+      isPreciseOn?: () => boolean;
+    } = {},
   ) {
     this.menuEl = el("div", { class: "tool-menu" });
     document.body.append(this.menuEl);
@@ -67,6 +72,7 @@ export class Toolbar {
     const seleccionBtn = this.menuBtn("Selección", (m) => this.buildSeleccion(m));
     const verBtn = this.menuBtn("Ver", (m) => this.buildVer(m));
     const ejesBtn = this.menuBtn("Ejes", (m) => this.buildEjes(m));
+    ejesBtn.classList.add("menu-ejes");
 
     // El botón Ejes muestra el eje bloqueado como distintivo.
     this.editor.bus.on("axisLockChanged", ({ axis }) => {
@@ -320,6 +326,9 @@ export class Toolbar {
       this.item("Selección de área", () => this.editor.setAreaSelect(!this.editor.isAreaSelect()), {
         check: this.editor.isAreaSelect(),
         keep: true,
+      }),
+      this.item("Arrastre preciso", () => this.hooks.onPreciseToggle?.(), {
+        check: this.hooks.isPreciseOn?.() ?? false,
       }),
       this.item("Arrastrar piezas", () => this.editor.setDragTool(!this.editor.isDragTool()), {
         check: this.editor.isDragTool(),

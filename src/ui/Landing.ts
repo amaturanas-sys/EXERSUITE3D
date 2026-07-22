@@ -72,10 +72,12 @@ export class Landing {
 
     // ---- Navegación (los cuatro accesos del esquema)
     const nav = el("nav", { class: "land-nav" });
+    // El INSTRUCTIVO va primero (v0.2.3): es la puerta de entrada, en
+    // formato de preguntas frecuentes.
     const navDefs: [Vista, string][] = [
+      ["instructivo", "📖 INSTRUCTIVO"],
       ["builder", "🛠 BUILDER"],
       ["simulator", "▶ SIMULADOR"],
-      ["instructivo", "📖 INSTRUCTIVO"],
       ["settings", "⚙ SETTINGS"],
     ];
     for (const [vista, etiqueta] of navDefs) {
@@ -103,7 +105,7 @@ export class Landing {
       this.fileInput,
     ]);
 
-    this.setVista("builder");
+    this.setVista("instructivo");
   }
 
   hide(): void {

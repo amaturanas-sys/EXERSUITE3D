@@ -64,13 +64,23 @@ function elegirConfigRoldana(): Promise<"interna" | "externa" | null> {
   });
 }
 
-/** Categorías visibles en el modo de trabajo Sencillo (asistente de Nuevo). */
-const CATS_SENCILLO: ComponentDefinition["category"][] = [
-  "primitiva",
-  "estructural",
-  "peso",
-  "ergonomico",
-];
+/**
+ * Piezas visibles en el modo Sencillo (v0.2.3): SOLO lo rudimentario — es lo
+ * que lo distingue del modo Profesional del Builder. Máquinas estándar
+ * completas + primitivas + un puñado de piezas básicas.
+ */
+const COMPS_SENCILLO = new Set([
+  "prim-box",
+  "prim-cylinder",
+  "prim-sphere",
+  "pilar",
+  "base-soporte",
+  "barra-dominadas",
+  "disco-peso",
+  "barra-olimpica",
+  "asiento",
+  "respaldo",
+]);
 
 /**
  * Panel izquierdo: bandeja de "piezas disponibles" (estilo set de Lego). Cada
@@ -123,7 +133,7 @@ export class ComponentPalette {
     clear(body);
     const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
     const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(
-      (d) => !sencillo || CATS_SENCILLO.includes(d.category),
+      (d) => !sencillo || COMPS_SENCILLO.has(d.id),
     );
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));

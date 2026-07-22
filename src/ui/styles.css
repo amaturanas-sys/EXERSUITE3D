@@ -1424,3 +1424,113 @@ body.simulating .dock-toggle {
   display: inline-block;
   filter: grayscale(1) brightness(0) invert(0.82);
 }
+
+/* ---- v0.2.3 · Instructivo en formato FAQ */
+.faq-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  margin: 8px 0;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+.faq-pregunta {
+  cursor: pointer;
+  padding: 11px 14px;
+  font-weight: 600;
+  list-style: none;
+  position: relative;
+  padding-right: 34px;
+}
+.faq-pregunta::-webkit-details-marker { display: none; }
+.faq-pregunta::after {
+  content: "▾";
+  position: absolute;
+  right: 14px;
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+.faq-item[open] .faq-pregunta::after { transform: rotate(180deg); }
+.faq-cuerpo { padding: 0 14px 12px; }
+.faq-cuerpo ul { margin: 0; padding-left: 18px; }
+.faq-cuerpo li { margin: 6px 0; }
+.faq-img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ---- v0.2.3 · Modo Sencillo acotado: sin Conexiones ni bloqueo de Ejes */
+.modo-sencillo #joints { display: none !important; }
+.modo-sencillo .menu-ejes { display: none !important; }
+
+/* ---- v0.2.3 · Barra de zoom del visor */
+#zoom-bar {
+  position: fixed;
+  right: 12px;
+  bottom: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 30;
+}
+#zoom-bar .zoom-btn {
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 10px;
+}
+body.simulating #zoom-bar { display: none; }
+
+/* ---- v0.2.3 · Arrastre preciso (cursores en pantalla) */
+.arrastre-panel {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 64px;
+  z-index: 30;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #1c212b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.arr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.arr-titulo { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; opacity: 0.85; }
+.arr-cerrar { width: 26px; height: 26px; padding: 0; font-size: 12px; }
+.arr-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 46px);
+  gap: 6px;
+  justify-items: center;
+}
+.arr-btn, .arr-switch {
+  width: 46px;
+  height: 40px;
+  font-size: 16px;
+  padding: 0;
+}
+.arr-switch.active { background: #2f7dd1; }
+.arr-hint { font-size: 10.5px; opacity: 0.55; text-align: center; max-width: 210px; }
+body.simulating .arrastre-panel { display: none !important; }
+
+/* ---- v0.2.3 · Márgenes y botones completos en paneles/ventanas */
+.panel, .perf-panel, .lib-panel, .tool-menu, .confirm-dialog, .wizard-panel {
+  overflow-wrap: break-word;
+}
+.lib-detail-actions, .lib-header-actions, .confirm-actions, .wizard-acciones {
+  flex-wrap: wrap;
+}
+.lib-detail-actions .tool, .confirm-actions .land-btn { max-width: 100%; }
+.panel-body, .lib-detail-info { min-width: 0; }
+/* Las filas de botones de los paneles envuelven en lugar de cortarse. */
+.field .row { flex-wrap: wrap; }
+.field .row .tool { flex: 1 1 auto; min-width: 0; }

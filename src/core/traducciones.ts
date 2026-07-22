@@ -506,4 +506,35 @@ export const TRADUCCIONES: Record<string, string> = {
   "Insertar prefab (.json)…": "Insert prefab (.json)…",
   "Prefab .prefab.json (Archivo → Exportar prefab de la selección): una máquina editada como archivo ESTRUCTURADO que reconoce cada parte y su función (componente, nombre, medidas, material y pose); se reinserta con Archivo → Insertar prefab.":
     "Prefab .prefab.json (File → Export selection as prefab): an edited machine as a STRUCTURED file that recognizes every part and its function (component, name, measurements, material and pose); reinsert it with File → Insert prefab.",
+  "Arrastre preciso": "Precise drag",
+  "Flechas del teclado · C cambia el eje de ▲▼ · Shift: pasos de 10 cm":
+    "Keyboard arrows · C switches the ▲▼ axis · Shift: 10 cm steps",
+  "Cambiar el eje de ▲▼ (tecla C)": "Switch the ▲▼ axis (key C)",
+  "Arriba (flecha ↑)": "Up (↑ arrow)",
+  "Abajo (flecha ↓)": "Down (↓ arrow)",
+  "Izquierda (flecha ←)": "Left (← arrow)",
+  "Derecha (flecha →)": "Right (→ arrow)",
+  "¿Cómo empiezo un proyecto?": "How do I start a project?",
+  "¿Qué diferencia al modo Sencillo del Profesional?": "What sets Simple mode apart from Professional?",
+  "El modo Sencillo acota las herramientas a lo esencial: máquinas estándar completas, primitivas y unas pocas piezas básicas — ideal para plantear la distribución de una sala sin distracciones.":
+    "Simple mode narrows the tools down to the essentials: complete standard machines, primitives and a few basic parts — ideal for planning a room layout without distractions.",
+  "El modo Profesional muestra la paleta completa (despieces reales, roldanas, terminales), las conexiones (bisagras, correderas, cables) y el bloqueo de ejes.":
+    "Professional mode shows the full palette (real breakdowns, sheaves, terminals), the joints (hinges, sliders, cables) and axis locking.",
+  "El modo se elige al crear el proyecto y queda guardado con él.":
+    "The mode is chosen when creating the project and is saved with it.",
+  "¿Cómo funciona el canvas Completo (planta, techo y paredes)?": "How does the Full canvas work (floor plan, ceiling and walls)?",
+  "¿Cómo construyo una máquina?": "How do I build a machine?",
+  "¿Cómo edito con precisión?": "How do I edit precisely?",
+  "ARRASTRE PRECISO (menú Selección): abre una ventana con cursores en pantalla (◀ ▶ mueven a los lados; ▲ ▼ suben/bajan o, con el switch de ejes, adelante/atrás). También sirven las flechas del teclado, la tecla C cambia el eje y Shift da pasos de 10 cm.":
+    "PRECISE DRAG (Select menu): opens a window with on-screen cursors (◀ ▶ move sideways; ▲ ▼ go up/down or, with the axis switch, forward/back). Keyboard arrows also work, key C switches the axis and Shift gives 10 cm steps.",
+  "Menú Ver: grid, aristas de las piezas, modo de color (materiales reales · por categoría · neutro) y perspectivas Frontal/Lateral/Superior/Isométrica. Los botones +/− junto al visor ajustan el zoom.":
+    "View menu: grid, part edges, color mode (real materials · by category · neutral) and Front/Side/Top/Isometric perspectives. The +/− buttons next to the viewport adjust the zoom.",
+  "¿Cómo funcionan la física y las conexiones (cables y poleas)?": "How do physics and connections work (cables and pulleys)?",
+  "¿Cómo uso el maniquí?": "How do I use the mannequin?",
+  "¿Cómo simulo la máquina?": "How do I simulate the machine?",
+  "¿Qué es la Biblioteca de modelos y cómo sustituyo piezas o máquinas?": "What is the model Library and how do I replace parts or machines?",
+  "¿Qué tipos de archivo maneja la app?": "Which file types does the app handle?",
+  "¿Cómo guardo mi trabajo y ajusto el rendimiento?": "How do I save my work and tune performance?",
+  Acercar: "Zoom in",
+  Alejar: "Zoom out",
 };
