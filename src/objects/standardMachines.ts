@@ -48,7 +48,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     label: "Rack con torre (TTP)",
     icon: "🏗️",
     description:
-      "TTP001L pieza a pieza: 4 pilares, columnas inferiores y superiores, travesaños, 2 tubos de guía, 2 brazos de seguridad, 4 jotas, set de roldanas, remo de polea alta y pullups multigrip.",
+      "TTP001L corregido por el diseñador: 4 pilares girados al calce, columnas inferiores y superiores, travesaños y bastidor superior, 2 tubos de guía con manguitos y portadiscos móvil, 4 jotas, set de roldanas, remo de polea alta y pullups multigrip.",
   },
   {
     id: "arbol-discos",
@@ -167,71 +167,67 @@ const TORRE: PiezaSpec[] = [
 // Reconstrucción FIEL del TTP001L armado, DESGLOSADA en sus piezas: cada una
 // en la posición medida en el STL ensamblado (transformación STL→app: x−60,
 // z como altura, 89,5−y como fondo; frente en +Z, sistema de poleas en −Z).
+// PREFAB CORREGIDO POR EL DISEÑADOR (rackcontorre.prefab.json, v0.2.3): las
+// posiciones, giros y sustituciones vienen del archivo editado en la app —
+// pilares girados 90° para el calce, travesaño frontal a la línea trasera,
+// bastidor superior en lugar del travesaño superior y el puente medio,
+// pletina TTP en lugar de la placa estabilizadora, sin brazos ni discos, y
+// portadiscos MÓVIL montado abajo en los tubos de guía.
 const RACK_TORRE: PiezaSpec[] = [
-  // 1) 4 PILARES VERTICALES (5×7×204, con agujeros de calce): frontales en
-  // z=66,5 y traseros en z=−31,5.
-  ...([[-55, 66.5], [56, 66.5], [-55, -31.5], [56, -31.5]] as const).map(
+  // 1) 4 PILARES VERTICALES (5×7×204) girados 90°: frontales en z=71,05 y
+  // traseros en z=−27,95.
+  ...([[-56, 71.05], [56, 71.05], [-56, -27.95], [56, -27.95]] as const).map(
     ([x, z], i): PiezaSpec => ({
       comp: "montante-ttp",
       nombre: `Pilar vertical ${i + 1}`,
       pos: [x, 107, z],
+      rot: [0, Math.PI / 2, 0],
     }),
   ),
-  // 2) 2 COLUMNAS HORIZONTALES INFERIORES (141, con placas de encuadre),
-  // a lo fondo bajo cada lado del marco.
-  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-55, 10, 8.9], rot: [0, Math.PI / 2, 0] },
-  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 8.9], rot: [0, Math.PI / 2, 0] },
+  // 2) 2 COLUMNAS HORIZONTALES INFERIORES (141, con placas de encuadre).
+  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-56, 10, 13.45], rot: [0, Math.PI / 2, 0] },
+  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 13.45], rot: [0, Math.PI / 2, 0] },
   // 3) 2 COLUMNAS HORIZONTALES SUPERIORES (94) coronando los pilares.
-  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-55, 199, 17.3], rot: [0, Math.PI / 2, 0] },
-  { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 17.3], rot: [0, Math.PI / 2, 0] },
-  // 4) TRAVESAÑO SUPERIOR (104 a lo ancho, corona trasera del marco).
-  { comp: "pie-ttp", nombre: "Travesaño superior", pos: [0, 206.5, -34.7], rot: [0, Math.PI / 2, 0] },
-  // 5) TRAVESAÑO INFERIOR (104 a lo ancho, al suelo bajo el sistema de poleas).
-  { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -52.5], rot: [0, Math.PI / 2, 0] },
-  // TRAVESAÑO FRONTAL real (118) coronando el marco + puente menor del techo.
-  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", pos: [0, 203.5, 64.1] },
-  { comp: "prim-box", nombre: "Puente superior medio", params: { width: 65, height: 3.8, depth: 6 }, material: "acero-negro", pos: [0, 211.6, 41.9] },
-  // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214, por ellos corre el carro).
-  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -85.5] },
-  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -85.5] },
-  // SOSTENEDOR DE DISCOS real (modelo WEIGHTCARRIERANDRAIL): monta sobre los
-  // tubos de guía mediante los MANGUITOS; la placa queda vertical al extremo
-  // trasero y el pin HORIZONTAL cruza el hueco entre tubos — los discos de
-  // fierro se cargan en su tramo libre.
-  { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 115, -85.5] },
-  { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 115, -85.5] },
-  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea", pos: [0.5, 115, -46.5] },
-  { comp: "disco-peso", nombre: "Disco cargado 1", pos: [0.5, 115, -58], rot: [Math.PI / 2, 0, 0] },
-  { comp: "disco-peso", nombre: "Disco cargado 2", pos: [0.5, 115, -70], rot: [Math.PI / 2, 0, 0] },
-  // 11) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
-  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -42.5] },
-  // 8) 4 JOTAS DE SEGURIDAD reales ABRAZANDO los pilares: altas en los
-  // traseros (127) y bajas en los frontales (41), como el armado.
-  { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-55, 127, -22.5] },
-  { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -22.5] },
-  { comp: "j-hook", nombre: "Jota baja izq.", pos: [-55, 41, 76.5] },
-  { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 76.5] },
-  // 7) 2 BRAZOS DE SEGURIDAD TTP (86,6 perforados) calzados entre pilares.
-  { comp: "brazo-ttp", nombre: "Brazo seguridad izq.", pos: [-55, 102, 17.5] },
-  { comp: "brazo-ttp", nombre: "Brazo seguridad der.", pos: [56, 102, 17.5] },
+  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
+  { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
+  // 4) TRAVESAÑO INFERIOR (104 a lo ancho, al suelo bajo el sistema de poleas).
+  { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -47.95], rot: [0, Math.PI / 2, 0] },
+  // 5) TRAVESAÑO FRONTAL real (118) en la línea de los pilares traseros.
+  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", pos: [0, 198.96, -28.24] },
+  // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214) con sus MANGUITOS al pie.
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -80.95] },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -80.95] },
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 33.79, -80.95] },
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 33.12, -80.95] },
+  // 7) BARRA DE PULLUPS MULTIGRIP real (92×32) puenteando marco y torre.
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 207, -36.95] },
+  // 8) 4 JOTAS DE SEGURIDAD abrazando los pilares: altas atrás, bajas delante.
+  { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-56, 127, -17.95] },
+  { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.95] },
+  { comp: "j-hook", nombre: "Jota baja izq.", pos: [-56, 40.91, 81.05] },
+  { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 81.05] },
   // Rieles porta-discos reales (106) por fuera de cada lado.
-  { comp: "riel-discos-ttp", nombre: "Riel discos izq.", pos: [-55, 65, 17.5] },
-  { comp: "riel-discos-ttp", nombre: "Riel discos der.", pos: [56, 65, 17.5] },
-  // 9) SET DE ROLDANAS completo del armado: doble polea alta bajo el techo
-  // del marco, polea de reenvío en la torre, carro de dos poleas y polea baja.
-  { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 211, -6.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 211, -51.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -79.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -56.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -56.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -56.5] },
-  { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -52.5], rot: [0, 0, Math.PI / 2] },
-  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -52.4] },
-  { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -69.1] },
+  { comp: "riel-discos-ttp", nombre: "Riel discos izq.", pos: [-56, 65, 22.05] },
+  { comp: "riel-discos-ttp", nombre: "Riel discos der.", pos: [56, 65, 22.05] },
+  // 9) SET DE ROLDANAS completo: doble polea alta, polea de torre, carro de
+  // dos poleas con su puente y polea baja con soporte y placa.
+  { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 212, -0.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 212, -45.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -73.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.95] },
+  { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -47.95], rot: [0, 0, Math.PI / 2] },
+  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -47.85] },
+  { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -64.55] },
   // 10) REMO DE POLEA ALTA (tubular) real, colgando junto a la polea alta.
-  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 0.8] },
-  // Placa estabilizadora trasera real (86,6×60).
-  { comp: "prim-box", nombre: "Placa estabilizadora", params: { width: 86.6, height: 60, depth: 7 }, material: "acero-negro", pos: [0, 30, -85.5] },
+  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 7.35] },
+  // Pletina de unión al pie de la torre.
+  { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.05] },
+  // Bastidor superior real coronando el frente del marco.
+  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, 57.18], rot: [0, Math.PI / 2, 0] },
+  // 11) PORTADISCOS del sistema de poleas: MÓVIL, montado en los tubos de guía.
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [-4.66, 67, -80.95], rot: [0, Math.PI / 2, 0], fija: false },
 ];
 
 /** Árbol de discos (renders de sala): poste con 6 cuernos a 3 alturas. */

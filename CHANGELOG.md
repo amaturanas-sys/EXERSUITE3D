@@ -5,6 +5,19 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Cambiado
+
+- **Rack con torre (TTP) según el prefab CORREGIDO del diseñador**
+  (rackcontorre.prefab.json, editado en la app y reincorporado como modelo
+  de fábrica): los 4 pilares girados 90° para el calce, travesaño frontal
+  reubicado a la línea de los pilares traseros, BASTIDOR SUPERIOR real en
+  lugar del travesaño superior y el puente medio, PLETINA TTP en lugar de
+  la placa estabilizadora, manguitos de guía al pie de los tubos, sin
+  brazos de seguridad ni discos precargados, y el PORTADISCOS ahora es
+  pieza MÓVIL montada en los tubos de guía (34 piezas en total).
+
 ## [0.2.3] — 2026-07-22
 
 Release de estética, usabilidad e interacción del motor de diseño, previa a
