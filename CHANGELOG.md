@@ -5,6 +5,30 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.5] — 2026-07-23
+
+Física del sistema de poleas del TTP: el prefab ideal del diseñador queda de
+fábrica VERBATIM y la simulación con cable y polea se vuelve estable — el
+portadiscos corre circunscrito a los tubos de guía y el remo ya no se acuña.
+
+### Añadido
+
+- **UNIONES en los prefabs**: el formato v2 ahora transporta correderas y
+  bisagras entre piezas (tipo, pieza fija/móvil, eje, límites, ancla) — se
+  exportan con la selección, se validan y remapean al importar, y se crean
+  automáticamente al armar la máquina o insertar el prefab.
+- **Rack con torre según el prefab v2 ideal del diseñador** (VERBATIM, sin
+  transcripción) + **corredera de fábrica del portadiscos**: el carrier
+  queda CIRCUNSCRITO a los tubos de guía (corredera vertical con límites)
+  — ya no se columpia fuera de la torre durante la simulación con cable.
+
+### Corregido
+
+- **El remo de lat pulldown ya no se acuña en el pilar del bastidor**: los
+  cuerpos dinámicos simulan con CCD (las piezas delgadas y rápidas no
+  atraviesan la estructura entre pasos del solver) y una amortiguación
+  angular suave que frena el bamboleo sin alterar la caída libre.
+
 ## [0.2.4] — 2026-07-23
 
 La release de la FIDELIDAD: el ciclo de corrección de prefabs se vuelve
@@ -17,14 +41,6 @@ oficial como portadiscos.
 
 ### Añadido
 
-- **UNIONES en los prefabs**: el formato v2 ahora transporta correderas y
-  bisagras entre piezas (tipo, pieza fija/móvil, eje, límites, ancla) — se
-  exportan con la selección, se validan y remapean al importar, y se crean
-  automáticamente al armar la máquina o insertar el prefab.
-- **Rack con torre según el prefab v2 ideal del diseñador** (VERBATIM, sin
-  transcripción) + **corredera de fábrica del portadiscos**: el carrier
-  queda CIRCUNSCRITO a los tubos de guía (corredera vertical con límites)
-  — ya no se columpia fuera de la torre durante la simulación con cable.
 - **Ciclo ROBUSTO de prefabs (formato v2)**: cada pieza exporta sus
   atributos exhaustivos — componente, nombre, dimensiones completas,
   material, posición, CUATERNIÓN exacto (sin ambigüedad de Euler), anclaje,
@@ -43,10 +59,6 @@ oficial como portadiscos.
 
 ### Corregido
 
-- **El remo de lat pulldown ya no se acuña en el pilar del bastidor**: los
-  cuerpos dinámicos simulan con CCD (las piezas delgadas y rápidas no
-  atraviesan la estructura entre pasos del solver) y una amortiguación
-  angular suave que frena el bamboleo sin alterar la caída libre.
 - **Auditoría definitiva de la biblioteca — pasada 2 (ítem por ítem con el
   diseñador)**: identidades corregidas — barra-pr ↔ travesano-pr (la barra
   de pullups real es la pieza de 106 con placas; el travesaño es la de 70);
