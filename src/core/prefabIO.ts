@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Editor } from "./Editor";
-import type { PiezaSpec } from "../objects/standardMachines";
+import type { PiezaSpec, UnionSpec } from "../objects/standardMachines";
 import { piezasDeMaquina, STANDARD_MACHINES } from "../objects/standardMachines";
 import { getDefinition } from "../objects/componentLibrary";
 import { version as VERSION_APP } from "../../package.json";
@@ -21,6 +21,8 @@ export interface PrefabArchivo {
   app?: string;
   label: string;
   piezas: PiezaSpec[];
+  /** Uniones entre piezas (corredera/bisagra) que viajan con el prefab. */
+  uniones?: UnionSpec[];
 }
 
 /**
@@ -76,6 +78,28 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
     return pieza;
   });
 
+  // UNIONES entre piezas de la selección (correderas/bisagras): viajan con
+  // el prefab para que la reconstrucción conserve la mecánica guiada.
+  const indicePorId = new Map<string, number>();
+  datos.forEach((d, i) => indicePorId.set(d.id, i));
+  const uniones: UnionSpec[] = [];
+  for (const j of editor.listJoints()) {
+    const ia = indicePorId.get(j.bodyAId);
+    const ib = indicePorId.get(j.bodyBId);
+    if (ia === undefined || ib === undefined) continue;
+    uniones.push({
+      tipo: j.kind === "revolute" ? "bisagra" : "corredera",
+      fija: ia,
+      movil: ib,
+      eje: j.axis,
+      ancla: [r4(j.anchor.x - cx), r4(j.anchor.y), r4(j.anchor.z - cz)],
+      min: j.min,
+      max: j.max,
+      limites: j.limitsEnabled,
+      bloqueada: j.locked || undefined,
+    });
+  }
+
   const archivo: PrefabArchivo = {
     formato: "exersuite3d-prefab",
     version: 2,
@@ -83,6 +107,7 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
     label,
     piezas,
   };
+  if (uniones.length > 0) archivo.uniones = uniones;
   return JSON.stringify(archivo, null, 2);
 }
 
@@ -115,13 +140,15 @@ export function prefabDeFabrica(prefabId: string): PrefabArchivo | null {
       masaKg: p.masaKg ?? def?.physics.massKg,
     };
   });
-  return {
+  const archivo: PrefabArchivo = {
     formato: "exersuite3d-prefab",
     version: 2,
     app: VERSION_APP,
     label: maquina.label,
     piezas: piezasV2,
   };
+  if (spec.uniones) archivo.uniones = spec.uniones.map((u) => ({ ...u }));
+  return archivo;
 }
 
 /** Resultado de validar un prefab entrante contra la biblioteca actual. */
@@ -141,13 +168,17 @@ export function parsearPrefab(texto: string): ReportePrefab {
   }
   const desconocidas: string[] = [];
   const advertencias: string[] = [];
-  const piezas = (data.piezas as PiezaSpec[]).filter((p) => {
-    if (!p || typeof p.comp !== "string" || !Array.isArray(p.pos)) return false;
+  const originales = data.piezas as PiezaSpec[];
+  const nuevoIndice = new Map<number, number>();
+  const piezas: PiezaSpec[] = [];
+  originales.forEach((p, i) => {
+    if (!p || typeof p.comp !== "string" || !Array.isArray(p.pos)) return;
     if (!getDefinition(p.comp)) {
       desconocidas.push(`${p.nombre ?? "(sin nombre)"} [${p.comp}]`);
-      return false;
+      return;
     }
-    return true;
+    nuevoIndice.set(i, piezas.length);
+    piezas.push(p);
   });
   if (piezas.length === 0) {
     throw new Error(
@@ -165,6 +196,23 @@ export function parsearPrefab(texto: string): ReportePrefab {
       "Prefab v1 (sin cuaterniones ni dims de control): se importa con la fidelidad antigua.",
     );
   }
+  // Uniones: se remapean a los índices tras el filtrado; las que tocaban una
+  // pieza excluida se descartan con aviso.
+  let uniones: UnionSpec[] | undefined;
+  if (Array.isArray(data.uniones)) {
+    uniones = [];
+    for (const u of data.uniones as UnionSpec[]) {
+      if (!u || typeof u.fija !== "number" || typeof u.movil !== "number") continue;
+      const fi = nuevoIndice.get(u.fija);
+      const mi = nuevoIndice.get(u.movil);
+      if (fi === undefined || mi === undefined) {
+        advertencias.push("Una unión del prefab tocaba una pieza excluida y quedó fuera.");
+        continue;
+      }
+      uniones.push({ ...u, fija: fi, movil: mi });
+    }
+    if (uniones.length === 0) uniones = undefined;
+  }
   return {
     archivo: {
       formato: "exersuite3d-prefab",
@@ -172,6 +220,7 @@ export function parsearPrefab(texto: string): ReportePrefab {
       app: typeof data.app === "string" ? data.app : undefined,
       label: typeof data.label === "string" && data.label ? data.label : "Prefab",
       piezas,
+      uniones,
     },
     desconocidas,
     advertencias,

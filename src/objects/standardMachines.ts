@@ -77,6 +77,26 @@ export interface PiezaSpec {
   dims?: [number, number, number];
 }
 
+/**
+ * UNIÓN entre dos piezas de un prefab (v0.2.4): corredera o bisagra que
+ * CIRCUNSCRIBE el movimiento de una pieza móvil (p. ej. el portadiscos del
+ * TTP corre solo verticalmente por los tubos de guía). Los índices refieren
+ * al arreglo `piezas`; `fija` es el cuerpo ancla y `movil` el guiado.
+ */
+export interface UnionSpec {
+  tipo: "bisagra" | "corredera";
+  fija: number;
+  movil: number;
+  eje?: "x" | "y" | "z";
+  /** Ancla en coordenadas del prefab (mismas que `pos`); por defecto, la posición de la pieza móvil. */
+  ancla?: [number, number, number];
+  min?: number;
+  max?: number;
+  /** Con límites activos (por defecto sí cuando hay min/max). */
+  limites?: boolean;
+  bloqueada?: boolean;
+}
+
 // El gancho J real ABRAZA el montante: su manguito queda alrededor del perfil
 // 5×7 y el centro del gancho cae 9,6 cm por delante del eje del pilar (medido
 // en el TTP001L armado). Mismo x que el pilar; brazo hacia +Z.
@@ -180,84 +200,45 @@ const TORRE: PiezaSpec[] = [
 // Reconstrucción FIEL del TTP001L armado, DESGLOSADA en sus piezas: cada una
 // en la posición medida en el STL ensamblado (transformación STL→app: x−60,
 // z como altura, 89,5−y como fondo; frente en +Z, sistema de poleas en −Z).
-// PREFAB CORREGIDO POR EL DISEÑADOR (rackcontorre.prefab.json, v0.2.3): las
-// posiciones, giros y sustituciones vienen del archivo editado en la app —
-// pilares girados 90° para el calce, travesaño frontal a la línea trasera,
-// bastidor superior en lugar del travesaño superior y el puente medio,
-// pletina TTP en lugar de la placa estabilizadora, sin brazos ni discos, y
-// portadiscos MÓVIL montado abajo en los tubos de guía.
+// PREFAB CORREGIDO POR EL DISEÑADOR — rackcontorrettp.prefab.json v2
+// (v0.2.4): posiciones ideales VERBATIM del archivo, con cuaterniones
+// exactos. No editar a mano: ante una nueva corrección, reemplazar por
+// el contenido del .prefab.json siguiente.
 const RACK_TORRE: PiezaSpec[] = [
-  // 1) 4 PILARES VERTICALES (5×7×204) girados 90°: frontales en z=71,05 y
-  // traseros en z=−27,95.
-  ...([[-56, 71.05], [56, 71.05], [-56, -27.95], [56, -27.95]] as const).map(
-    ([x, z], i): PiezaSpec => ({
-      comp: "montante-ttp",
-      nombre: `Pilar vertical ${i + 1}`,
-      pos: [x, 107, z],
-      rot: [0, Math.PI / 2, 0],
-    }),
-  ),
-  // 2) 2 COLUMNAS HORIZONTALES INFERIORES (141, con placas de encuadre).
-  // Giro −90° (CAD): la placa de encuadre queda en los pilares traseros
-  // (z≈−26…−17) y la curva que sube al pie, en los frontales (z≈63…83).
-  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-56, 10, 13.45], rot: [0, -Math.PI / 2, 0] },
-  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 13.45], rot: [0, -Math.PI / 2, 0] },
-  // 3) 2 COLUMNAS HORIZONTALES SUPERIORES (94) coronando los pilares.
-  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
-  { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 21.85], rot: [0, Math.PI / 2, 0] },
-  // 4) TRAVESAÑO INFERIOR (104 a lo ancho, al suelo bajo el sistema de poleas).
-  { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -47.95], rot: [0, Math.PI / 2, 0] },
-  // 4b) TRAVESAÑO SUPERIOR (104) cerrando el techo por atrás (CAD: el
-  // rectángulo superior es cerrado y la placa media del bastidor descansa
-  // sobre esta viga).
-  { comp: "pie-ttp", nombre: "Travesaño superior", pos: [0, 206.5, -30.15], rot: [0, Math.PI / 2, 0] },
-  // 5) TRAVESAÑO FRONTAL real (118, con placas de encuadre) al FRENTE del
-  // techo, justo tras los pilares frontales — sostiene el multiagarre (CAD).
-  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", pos: [0, 198.96, 68.65] },
-  // 6) 2 TUBOS DE GUÍA del sistema de poleas (4×4×214) con sus MANGUITOS al pie.
-  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6, 106.9, -80.95] },
-  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -80.95] },
-  { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 33.79, -80.95] },
-  { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 33.12, -80.95] },
-  // 7) BARRA DE PULLUPS MULTIGRIP real (abanico ARQUEADO de 106,5 — malla
-  // corregida en la auditoría): cruza A LO ANCHO casi de pilar a pilar,
-  // montada sobre el travesaño frontal con sus placas de ambos extremos
-  // apoyadas en la cara superior y el arco elevándose por encima del techo.
-  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 213.8, 68.65], rot: [0, Math.PI / 2, 0] },
-  // 8) 4 JOTAS DE SEGURIDAD abrazando los pilares: altas atrás, bajas delante.
-  { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-56, 127, -17.95] },
-  { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.95] },
-  { comp: "j-hook", nombre: "Jota baja izq.", pos: [-56, 40.91, 81.05] },
-  { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 81.05] },
-  // 7b) 2 BRAZOS DE SEGURIDAD (auditoría: el brazo en L con gancho) por
-  // fuera de cada lado.
-  { comp: "brazo-seguridad", nombre: "Brazo de seguridad izq.", pos: [-56, 65, 22.05] },
-  { comp: "brazo-seguridad", nombre: "Brazo de seguridad der.", pos: [56, 65, 22.05] },
-  // 9) SET DE ROLDANAS completo: doble polea alta, polea de torre, carro de
-  // dos poleas con su puente y polea baja con soporte y placa.
-  { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 212, -0.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 212, -45.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -73.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.95] },
-  { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -47.95], rot: [0, 0, Math.PI / 2] },
-  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -47.85] },
-  { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -64.55] },
-  // 10) REMO DE POLEA ALTA (tubular) real, colgando junto a la polea alta.
-  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 7.35] },
-  // Pletina de unión al pie de la torre.
-  { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.05] },
-  // Bastidor superior real (viga con T de 92,3 — malla corregida en la
-  // auditoría) PUENTEANDO el marco con la torre: girado 180° para que la T
-  // corone los tubos de guía (z=−81) con el gancho de polea colgando bajo
-  // ella, la placa media descansando en el travesaño superior y las
-  // pestañas del extremo libre hacia el marco.
-  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, -34.85], rot: [0, Math.PI, 0] },
-  // 11) PORTADISCOS del sistema de poleas: MÓVIL, pin HORIZONTAL que cruza
-  // el hueco entre los tubos de guía con el collarín hacia la torre; los
-  // discos (verticales) se cargan en su tramo libre.
-  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [0.5, 67, -37], fija: false },
+  { comp: "montante-ttp", nombre: "Pilar vertical 1", pos: [-56, 107, 71.0762], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 2", pos: [56, 107, 71.0762], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 3", pos: [-56, 107, -27.9238], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 4", pos: [56, 107, -27.9238], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", pos: [-56, 10, 13.4762], rotq: [0, -0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "riel-base-ttp", nombre: "Columna inferior der.", pos: [56, 10, 13.4762], rotq: [0, -0.707107, 0, 0.707107], fija: true, masaKg: 0, escala: [1, 1, -1] },
+  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", pos: [-56, 199, 21.8762], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "columna-sup-ttp", nombre: "Columna superior der.", pos: [56, 199, 21.8762], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pie-ttp", nombre: "Travesaño inferior", pos: [0, 3, -47.9238], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", pos: [-0.12, 199.35, -28.2158], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", pos: [-6.3108, 106.9, -80.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -80.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6.2946, 33.79, -80.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 2 },
+  { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 33.12, -80.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 2 },
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 208.8, 57.6762], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-56, 127, -17.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota baja izq.", pos: [-56, 40.91, 81.0762], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 81.0762], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad izq.", pos: [-56, 65, 22.0762], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad der.", pos: [56, 65, 22.0762], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 211, -1.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 211, -46.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -74.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -47.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -47.8238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -64.5238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-0.12, 210.247, 8.3062], rotq: [0, 0, 0, 1], fija: false, masaKg: 4 },
+  { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.0238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 206.85, -37.8238], rotq: [0, 1, 0, 0], fija: true, masaKg: 0 },
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [0.3542, 67, -81.0762], rotq: [0, 0.707107, 0, 0.707107], fija: false, masaKg: 8 },
 ];
 
 /** Árbol de discos (renders de sala): poste con 6 cuernos a 3 alturas. */
@@ -271,17 +252,30 @@ const ARBOL: PiezaSpec[] = [
   ]),
 ];
 
-const SPECS: Record<string, { label: string; piezas: PiezaSpec[] }> = {
+// La CORREDERA que circunscribe el portadiscos a los tubos de guía: pieza 33
+// (portadiscos) guiada por la 10 (tubo guía izq.), eje Y con límites — sin
+// esta unión el carrier es un cuerpo libre y se columpia fuera de la torre.
+const RACK_TORRE_UNIONES: UnionSpec[] = [
+  { tipo: "corredera", fija: 10, movil: 33, eje: "y", min: -45, max: 130 },
+];
+
+export interface MaquinaSpec {
+  label: string;
+  piezas: PiezaSpec[];
+  uniones?: UnionSpec[];
+}
+
+const SPECS: Record<string, MaquinaSpec> = {
   "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK },
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
   "banco-plano": { label: "Banco plano", piezas: BANCO },
   "torre-polea": { label: "Torre de polea", piezas: TORRE },
-  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE },
+  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, uniones: RACK_TORRE_UNIONES },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
 
 /** Especificación de piezas de una máquina estándar (para hornear/exportar). */
-export function piezasDeMaquina(prefabId: string): { label: string; piezas: PiezaSpec[] } | null {
+export function piezasDeMaquina(prefabId: string): MaquinaSpec | null {
   return SPECS[prefabId] ?? null;
 }
 
@@ -296,7 +290,37 @@ export function construirMaquina(
 ): { ids: string[]; label: string } {
   const spec = SPECS[prefabId];
   if (!spec) throw new Error(`Máquina desconocida: ${prefabId}`);
-  return { ids: construirPiezas(editor, spec.piezas, spec.label, at), label: spec.label };
+  const ids = construirPiezas(editor, spec.piezas, spec.label, at);
+  if (spec.uniones) aplicarUniones(editor, ids, spec.uniones, at);
+  return { ids, label: spec.label };
+}
+
+/**
+ * Crea las UNIONES de un prefab recién armado: correderas/bisagras entre las
+ * piezas por índice, con eje, límites y ancla del spec (v0.2.4).
+ */
+export function aplicarUniones(
+  editor: Editor,
+  ids: string[],
+  uniones: UnionSpec[],
+  at: THREE.Vector3,
+): void {
+  for (const u of uniones) {
+    const aId = ids[u.fija];
+    const bId = ids[u.movil];
+    if (!aId || !bId) continue;
+    const ancla = u.ancla
+      ? new THREE.Vector3(at.x + u.ancla[0], u.ancla[1], at.z + u.ancla[2])
+      : editor.getObject(bId)?.mesh.position.clone();
+    const joint = editor.connect(aId, bId, u.tipo === "bisagra" ? "revolute" : "prismatic", ancla);
+    if (!joint) continue;
+    if (u.eje) joint.axis = u.eje;
+    if (u.min !== undefined) joint.min = u.min;
+    if (u.max !== undefined) joint.max = u.max;
+    joint.limitsEnabled = u.limites ?? (u.min !== undefined || u.max !== undefined);
+    if (u.bloqueada) joint.locked = true;
+  }
+  editor.refreshJointHelpers();
 }
 
 /** Construye una lista de piezas (de una máquina estándar o de un prefab del usuario). */

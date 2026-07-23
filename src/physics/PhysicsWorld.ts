@@ -369,6 +369,14 @@ export class PhysicsWorld {
     desc.setTranslation(p.x * S, p.y * S, p.z * S);
     const q = obj.mesh.quaternion;
     desc.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+    if (dynamic) {
+      // Estabilidad (v0.2.4): CCD evita que piezas delgadas y rápidas (remo,
+      // portadiscos) atraviesen o se ACUÑEN en la estructura entre pasos del
+      // solver, y una amortiguación angular suave frena el bamboleo del
+      // péndulo sin alterar la caída libre.
+      desc.setCcdEnabled(true);
+      desc.setAngularDamping(0.4);
+    }
 
     const body = this.world.createRigidBody(desc);
     this.world.createCollider(this.colliderDesc(obj), body);

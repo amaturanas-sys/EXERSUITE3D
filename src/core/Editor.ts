@@ -7,7 +7,7 @@ import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
-import { construirMaquina, construirPiezas, STANDARD_MACHINES, type PiezaSpec } from "../objects/standardMachines";
+import { aplicarUniones, construirMaquina, construirPiezas, STANDARD_MACHINES, type PiezaSpec, type UnionSpec } from "../objects/standardMachines";
 import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
@@ -739,6 +739,7 @@ export class Editor {
     const prefabUsuario = prefabsMaquina.get(prefabId);
     if (prefabUsuario) {
       const ids = construirPiezas(this, prefabUsuario.piezas, prefabUsuario.label, at);
+      if (prefabUsuario.uniones) aplicarUniones(this, ids, prefabUsuario.uniones, at);
       if (ids.length >= 2) {
         const gid = this.createGroupFromIds(ids);
         if (gid) this.renameGroup(gid, prefabUsuario.label);
@@ -866,8 +867,12 @@ export class Editor {
    * y devuelve las ADVERTENCIAS de fidelidad: piezas cuyas dimensiones ya no
    * coinciden con la biblioteca actual (control `dims` del formato v2).
    */
-  insertarPrefab(data: { label: string; piezas: PiezaSpec[] }, at = new THREE.Vector3()): string[] {
+  insertarPrefab(
+    data: { label: string; piezas: PiezaSpec[]; uniones?: UnionSpec[] },
+    at = new THREE.Vector3(),
+  ): string[] {
     const ids = construirPiezas(this, data.piezas, data.label, at);
+    if (data.uniones) aplicarUniones(this, ids, data.uniones, at);
     const avisos: string[] = [];
     for (let i = 0; i < data.piezas.length && i < ids.length; i++) {
       const p = data.piezas[i];
