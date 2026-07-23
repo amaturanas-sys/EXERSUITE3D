@@ -5,7 +5,15 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [0.2.4] — 2026-07-23
+
+La release de la FIDELIDAD: el ciclo de corrección de prefabs se vuelve
+robusto (formato v2 con atributos exhaustivos, validación al importar y
+máquinas sustituibles por prefab directamente en la app), la biblioteca de
+elementos pasa por su auditoría definitiva ítem por ítem con el diseñador
+(identidades, mallas y orientaciones corregidas), y el Rack con torre queda
+reconstruido fiel al CAD desde el prefab corregido, con el WEIGHTCARRIER
+oficial como portadiscos.
 
 ### Añadido
 
