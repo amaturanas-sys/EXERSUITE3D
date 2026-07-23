@@ -14,6 +14,9 @@ import { claveMaquina, geometriaAOBJ, geometriaASTL, hornearMaquina } from "../c
 import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
 import { acceptSeguro, descargarArchivo } from "../core/descargas";
+import { parsearPrefab, prefabDeFabrica } from "../core/prefabIO";
+import { prefabsMaquina } from "../core/prefabsMaquina";
+import { tt } from "../core/i18n";
 
 interface LibItem {
   id: string;
@@ -106,14 +109,87 @@ const machineSource: LibrarySource = {
   previewMaterial: () => buildMaterial("acero-negro"),
   setUserModel: (id, f) => componentModels.setUserModel(id, f),
   clearUserModel: (id) => componentModels.clearUserModel(id),
-  onChanged: (fn) => componentModels.onChanged(fn),
+  onChanged: (fn) => {
+    const off = componentModels.onChanged(fn);
+    prefabsMaquina.onChanged(fn);
+    return off;
+  },
   supportsZip: true,
   extraActions: (id) => {
     const obj = el("button", { class: "tool", title: "Descargar el ensamblaje como OBJ" }, ["Exportar OBJ"]);
     obj.addEventListener("click", () => void exportarMaquina(id, "obj"));
     const stl = el("button", { class: "tool", title: "Descargar el ensamblaje como STL" }, ["Exportar STL"]);
     stl.addEventListener("click", () => void exportarMaquina(id, "stl"));
-    return [obj, stl];
+
+    // ---- Ciclo ROBUSTO de prefabs (v0.2.4): exportar la definición exacta,
+    // corregirla en la app y reimportarla como sustituto — sin transcripción.
+    const maquinaId = maquinaPorClave(id)?.id ?? id;
+    const acciones: HTMLElement[] = [obj, stl];
+
+    const expPrefab = el(
+      "button",
+      { class: "tool", title: "Descargar la definición por piezas (.prefab.json) para corregirla" },
+      ["Exportar prefab (.json)"],
+    );
+    expPrefab.addEventListener("click", () => {
+      const archivo = prefabsMaquina.get(maquinaId) ?? prefabDeFabrica(maquinaId);
+      if (!archivo) return;
+      void descargarArchivo(
+        `${maquinaId}.prefab.json`,
+        JSON.stringify(archivo, null, 2),
+        "application/json",
+      );
+    });
+    acciones.push(expPrefab);
+
+    const subPrefab = el(
+      "button",
+      { class: "tool", title: "El .prefab.json pasa a ser la definición de esta máquina (persistente)" },
+      ["Sustituir por prefab (.json)…"],
+    );
+    subPrefab.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = ".json,application/json";
+      input.addEventListener("change", () => {
+        const f = input.files?.[0];
+        if (!f) return;
+        void f.text().then((texto) => {
+          try {
+            const { archivo, advertencias } = parsearPrefab(texto);
+            if (advertencias.length > 0) console.warn("Prefab con avisos:", advertencias);
+            void prefabsMaquina.set(maquinaId, archivo);
+            window.alert(
+              tt(
+                `«${archivo.label}» sustituye ahora a la máquina (${archivo.piezas.length} piezas).` +
+                  (advertencias.length ? `\n⚠ ${advertencias.join("\n⚠ ")}` : ""),
+                `"${archivo.label}" now replaces the machine (${archivo.piezas.length} pieces).` +
+                  (advertencias.length ? `\n⚠ ${advertencias.join("\n⚠ ")}` : ""),
+              ),
+            );
+          } catch (err) {
+            console.error("Prefab no válido:", err);
+            window.alert(String(err instanceof Error ? err.message : err));
+          }
+        });
+      });
+      input.click();
+    });
+    acciones.push(subPrefab);
+
+    if (prefabsMaquina.has(maquinaId)) {
+      const quitar = el(
+        "button",
+        { class: "tool danger", title: "Vuelve a la definición de fábrica" },
+        ["Quitar prefab del usuario"],
+      );
+      quitar.addEventListener("click", () => void prefabsMaquina.remove(maquinaId));
+      acciones.push(quitar);
+      acciones.push(
+        el("span", { class: "lib-badge" }, ["Prefab del usuario ACTIVO — define esta máquina."]),
+      );
+    }
+    return acciones;
   },
 };
 

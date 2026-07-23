@@ -66,6 +66,15 @@ export interface PiezaSpec {
   pos: [number, number, number];
   rot?: [number, number, number];
   fija?: boolean;
+  // ---- Prefab v2 (v0.2.4): atributos exhaustivos para reconstrucción exacta.
+  /** Rotación como CUATERNIÓN [x,y,z,w] — exacta, sin ambigüedad de Euler. */
+  rotq?: [number, number, number, number];
+  /** Masa explícita (kg) si difiere de la del componente. */
+  masaKg?: number;
+  /** Escala si la pieza fue escalada (≠ 1). */
+  escala?: [number, number, number];
+  /** Dimensiones locales al exportar: CONTROL de fidelidad al reimportar. */
+  dims?: [number, number, number];
 }
 
 // El gancho J real ABRAZA el montante: su manguito queda alrededor del perfil
@@ -311,8 +320,13 @@ export function construirPiezas(
     if (p.material) obj.setMaterial(p.material);
     // Piezas de estructura ancladas salvo que se indique lo contrario.
     obj.physics = { ...obj.physics, fixed: p.fija ?? true };
+    if (p.masaKg !== undefined) obj.physics = { ...obj.physics, massKg: p.masaKg };
     obj.mesh.position.set(at.x + p.pos[0], p.pos[1], at.z + p.pos[2]);
-    if (p.rot) obj.mesh.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
+    // Pose exacta: el CUATERNIÓN del prefab v2 manda; si no, los Euler; si
+    // tampoco, se conserva la orientación de inserción del componente.
+    if (p.rotq) obj.mesh.quaternion.set(p.rotq[0], p.rotq[1], p.rotq[2], p.rotq[3]);
+    else if (p.rot) obj.mesh.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
+    if (p.escala) obj.mesh.scale.set(p.escala[0], p.escala[1], p.escala[2]);
     ids.push(obj.id);
   }
   return ids;

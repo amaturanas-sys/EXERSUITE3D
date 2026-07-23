@@ -3,6 +3,7 @@ import { getDefinition } from "../objects/componentLibrary";
 import { buildGeometry } from "../objects/geometryFactory";
 import { piezasDeMaquina } from "../objects/standardMachines";
 import { componentModels } from "./componentModels";
+import { prefabsMaquina } from "./prefabsMaquina";
 
 /**
  * Modelos de MÁQUINA ESTÁNDAR completa (v0.2.1): las máquinas del modo
@@ -24,11 +25,14 @@ export const esClaveMaquina = (id: string): boolean => id.startsWith(MAQUINA_PRE
  * su malla real de biblioteca si existe, o su primitiva paramétrica.
  */
 export function hornearMaquina(prefabId: string): THREE.BufferGeometry {
-  const spec = piezasDeMaquina(prefabId);
+  // El prefab del USUARIO (si sustituyó la máquina) manda sobre la fábrica.
+  const propio = prefabsMaquina.get(prefabId);
+  const spec = propio ? { piezas: propio.piezas } : piezasDeMaquina(prefabId);
   if (!spec) throw new Error(`Máquina desconocida: ${prefabId}`);
   const posiciones: number[] = [];
   const m = new THREE.Matrix4();
   const e = new THREE.Euler();
+  const q = new THREE.Quaternion();
   const v = new THREE.Vector3();
   for (const p of spec.piezas) {
     const def = getDefinition(p.comp);
@@ -36,9 +40,16 @@ export function hornearMaquina(prefabId: string): THREE.BufferGeometry {
     let geo = componentModels.geometryClone(p.comp);
     if (!geo) geo = buildGeometry({ ...def.defaults, ...p.params });
     const noIdx = geo.index ? geo.toNonIndexed() : geo;
-    if (p.rot) e.set(p.rot[0], p.rot[1], p.rot[2]);
-    else e.set(0, 0, 0);
-    m.makeRotationFromEuler(e);
+    // Pose exacta v2: cuaternión si existe; si no, Euler.
+    if (p.rotq) {
+      q.set(p.rotq[0], p.rotq[1], p.rotq[2], p.rotq[3]);
+      m.makeRotationFromQuaternion(q);
+    } else {
+      if (p.rot) e.set(p.rot[0], p.rot[1], p.rot[2]);
+      else e.set(0, 0, 0);
+      m.makeRotationFromEuler(e);
+    }
+    if (p.escala) m.scale(new THREE.Vector3(p.escala[0], p.escala[1], p.escala[2]));
     m.setPosition(p.pos[0], p.pos[1], p.pos[2]);
     const attr = noIdx.getAttribute("position");
     for (let i = 0; i < attr.count; i++) {

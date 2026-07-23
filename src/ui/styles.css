@@ -1468,6 +1468,14 @@ body.simulating .dock-toggle {
    de Propiedades/Conexiones siguen disponibles desde sus pestañas). */
 .modo-sencillo .menu-ejes { display: none !important; }
 
+/* ---- v0.2.4 · Insignia de prefab del usuario activo (Biblioteca). */
+.lib-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: #7fd18a;
+  padding: 4px 6px;
+}
+
 /* ---- v0.2.3 · Barra de zoom: continuum horizontal, inferior izquierda */
 #zoom-bar {
   position: fixed;

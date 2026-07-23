@@ -17,6 +17,8 @@ import { LibraryView } from "./ui/LibraryView";
 import { confirmUnsavedChanges } from "./ui/confirmDialog";
 import { componentModels } from "./core/componentModels";
 import { figureSegments } from "./core/figureSegments";
+import { prefabsMaquina } from "./core/prefabsMaquina";
+import { parsearPrefab, prefabDeFabrica, serializarPrefab } from "./core/prefabIO";
 import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
@@ -222,9 +224,11 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
 }
 
 function ensureModels(): Promise<void> {
-  return Promise.all([componentModels.ensureLoaded(), figureSegments.ensureLoaded()]).then(
-    () => undefined,
-  );
+  return Promise.all([
+    componentModels.ensureLoaded(),
+    figureSegments.ensureLoaded(),
+    prefabsMaquina.init(),
+  ]).then(() => undefined);
 }
 
 async function startNew(ws?: WorkspaceData): Promise<void> {
@@ -394,5 +398,12 @@ function showLanding(): void {
 }).exersuiteModels = componentModels;
 (window as unknown as { exersuiteSegments: typeof figureSegments }).exersuiteSegments =
   figureSegments;
+// Utilidades del ciclo de prefabs v2 (depuración y pruebas automatizadas).
+(window as unknown as { exersuitePrefabs: unknown }).exersuitePrefabs = {
+  serializarPrefab,
+  parsearPrefab,
+  prefabDeFabrica,
+  prefabsMaquina,
+};
 
 showLanding();

@@ -282,8 +282,10 @@ export class Toolbar {
     input.value = "";
     if (!file) return;
     try {
-      const data = parsearPrefab(await file.text());
-      this.editor.insertarPrefab(data);
+      const { archivo, advertencias } = parsearPrefab(await file.text());
+      const fidelidad = this.editor.insertarPrefab(archivo);
+      const avisos = [...advertencias, ...fidelidad];
+      if (avisos.length > 0) console.warn("Prefab importado con avisos:", avisos);
     } catch (err) {
       console.error("Prefab no válido:", err);
       window.alert(

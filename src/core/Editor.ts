@@ -9,6 +9,7 @@ import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
 import { construirMaquina, construirPiezas, STANDARD_MACHINES, type PiezaSpec } from "../objects/standardMachines";
 import { claveMaquina } from "./maquinasModelo";
+import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type JointKind, axisVector } from "../physics/joints";
@@ -732,6 +733,20 @@ export class Editor {
    * centro en `at` (o en el origen). El grupo resultante se mueve en bloque.
    */
   insertarMaquina(prefabId: string, at = new THREE.Vector3()): void {
+    // PREFAB del usuario (v0.2.4): si la máquina fue sustituida por un
+    // .prefab.json corregido, ese archivo ES la definición — se arma pieza a
+    // pieza con fidelidad v2, sin transcripción de por medio.
+    const prefabUsuario = prefabsMaquina.get(prefabId);
+    if (prefabUsuario) {
+      const ids = construirPiezas(this, prefabUsuario.piezas, prefabUsuario.label, at);
+      if (ids.length >= 2) {
+        const gid = this.createGroupFromIds(ids);
+        if (gid) this.renameGroup(gid, prefabUsuario.label);
+      }
+      this.scheduleAutosave();
+      this.requestRender();
+      return;
+    }
     // Máquina SUSTITUIDA en la biblioteca: se inserta el modelo del usuario
     // como una sola pieza anclada (misma mecánica que los componentes).
     const clave = claveMaquina(prefabId);
@@ -846,15 +861,53 @@ export class Editor {
     this.requestRender();
   }
 
-  /** Inserta un prefab ESTRUCTURADO del usuario (.json exportado desde la app). */
-  insertarPrefab(data: { label: string; piezas: PiezaSpec[] }, at = new THREE.Vector3()): void {
+  /**
+   * Inserta un prefab ESTRUCTURADO del usuario (.json exportado desde la app)
+   * y devuelve las ADVERTENCIAS de fidelidad: piezas cuyas dimensiones ya no
+   * coinciden con la biblioteca actual (control `dims` del formato v2).
+   */
+  insertarPrefab(data: { label: string; piezas: PiezaSpec[] }, at = new THREE.Vector3()): string[] {
     const ids = construirPiezas(this, data.piezas, data.label, at);
+    const avisos: string[] = [];
+    for (let i = 0; i < data.piezas.length && i < ids.length; i++) {
+      const p = data.piezas[i];
+      if (!p.dims) continue;
+      const obj = this.objects.get(ids[i]);
+      if (!obj) continue;
+      const s = obj.effectiveSize();
+      const esperado = p.dims;
+      const tol = Math.max(1.5, 0.05 * Math.max(...esperado));
+      if (
+        Math.abs(s.x - esperado[0]) > tol ||
+        Math.abs(s.y - esperado[1]) > tol ||
+        Math.abs(s.z - esperado[2]) > tol
+      ) {
+        avisos.push(
+          `${p.nombre ?? p.comp}: mide ${s.x.toFixed(1)}×${s.y.toFixed(1)}×${s.z.toFixed(1)} y el prefab esperaba ${esperado[0]}×${esperado[1]}×${esperado[2]}`,
+        );
+      }
+    }
+    if (avisos.length > 0) {
+      this.avisoTemporal(
+        tt(
+          `⚠ ${avisos.length} pieza(s) difieren de la biblioteca actual (ver consola)`,
+          `⚠ ${avisos.length} piece(s) differ from the current library (see console)`,
+        ),
+      );
+      console.warn("Prefab: discrepancias de fidelidad:", avisos);
+    }
     if (ids.length >= 2) {
       const gid = this.createGroupFromIds(ids);
       if (gid) this.renameGroup(gid, data.label);
     }
     this.scheduleAutosave();
     this.requestRender();
+    return avisos;
+  }
+
+  /** Acceso de solo lectura a una pieza por id (prefabs v2, herramientas). */
+  getObject(id: string): SceneObject | undefined {
+    return this.objects.get(id);
   }
 
   addComponent(componentId: string, position?: THREE.Vector3): SceneObject {

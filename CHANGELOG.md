@@ -7,6 +7,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+
+- **Ciclo ROBUSTO de prefabs (formato v2)**: cada pieza exporta sus
+  atributos exhaustivos — componente, nombre, dimensiones completas,
+  material, posición, CUATERNIÓN exacto (sin ambigüedad de Euler), anclaje,
+  masa, escala y unas dimensiones de CONTROL. Al importar, la app valida
+  contra la biblioteca actual: los componentes desconocidos se excluyen con
+  aviso y las piezas cuyas medidas ya no coinciden se reportan — la
+  reconstrucción verificada es EXACTA (error cero en posición, rotación y
+  dimensiones en la ida y vuelta de las 35 piezas del rack).
+- **Máquinas estándar sustituibles por prefab EN la app**: en la Biblioteca
+  (pestaña Máquinas), «Exportar prefab (.json)» descarga la definición de
+  fábrica por piezas, y «Sustituir por prefab (.json)…» hace que el archivo
+  corregido pase a ser LA definición de esa máquina — persistente en el
+  navegador, usada por la paleta, el preview y las exportaciones OBJ/STL,
+  sin transcripción manual de por medio. «Quitar prefab del usuario»
+  devuelve la de fábrica.
+
 ### Corregido
 
 - **Auditoría definitiva de la biblioteca — pasada 2 (ítem por ítem con el

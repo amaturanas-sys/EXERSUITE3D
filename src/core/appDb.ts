@@ -7,7 +7,7 @@
  */
 
 export const APP_DB_NAME = "exersuite3d";
-export const APP_DB_VERSION = 4;
+export const APP_DB_VERSION = 5;
 
 export const STORE_MODELS = "componentModels";
 export const STORE_RECENT = "recentProjects";
@@ -18,6 +18,12 @@ export const STORE_RECENT = "recentProjects";
 export const STORE_RECENT_META = "recentMeta";
 /** Capturas de pantalla tomadas en el Simulador (galería de la Home). */
 export const STORE_CAPTURAS = "capturas";
+/**
+ * Prefabs del usuario que SUSTITUYEN a las máquinas estándar (v0.2.4): el
+ * .prefab.json corregido pasa a ser la definición literal de la máquina —
+ * sin transcripción manual de por medio.
+ */
+export const STORE_PREFABS = "prefabsMaquina";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -35,6 +41,9 @@ export function openAppDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_CAPTURAS)) {
         db.createObjectStore(STORE_CAPTURAS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_PREFABS)) {
+        db.createObjectStore(STORE_PREFABS, { keyPath: "prefabId" });
       }
       if (!db.objectStoreNames.contains(STORE_RECENT_META)) {
         db.createObjectStore(STORE_RECENT_META, { keyPath: "id" });
