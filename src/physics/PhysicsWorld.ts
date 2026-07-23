@@ -46,6 +46,7 @@ export class PhysicsWorld {
     this.world?.free();
     this.bodies.clear();
     this.cables = [];
+    this.guias = [];
     this.drag = null;
     this.world = new RAPIER.World(GRAVITY);
 
@@ -59,6 +60,99 @@ export class PhysicsWorld {
     for (const obj of objects) this.addBody(obj);
     for (const joint of joints) this.addJoint(joint);
     for (const cable of cables) this.addCable(cable);
+    this.detectarGuias();
+  }
+
+  /**
+   * GUÍAS TUBULARES reconocidas por el MOTOR (v0.2.5): si una pieza fija y
+   * esbelta (tubo/pilar de guía) ATRAVIESA el volumen de una pieza móvil —
+   * los cilindros huecos del carrier la abrazan — el movimiento de la móvil
+   * queda CIRCUNSCRITO al eje de la guía: solo se traslada a lo largo del
+   * tubo (con límites en sus extremos), sin deriva lateral ni vuelco. Se
+   * aplica como clamp cinemático duro tras cada paso del solver, de modo que
+   * ninguna tensión de cable ni colisión puede sacarla de su guía.
+   */
+  private guias: {
+    body: R.RigidBody;
+    /** Punto de la recta de deslizamiento (el centro inicial de la móvil), en m. */
+    origen: { x: number; y: number; z: number };
+    /** Dirección unitaria del eje de la guía (mundo). */
+    eje: { x: number; y: number; z: number };
+    /** Rotación de diseño (se mantiene clavada). */
+    rot: { x: number; y: number; z: number; w: number };
+    /** Recorrido permitido a lo largo del eje, relativo al origen (m). */
+    sMin: number;
+    sMax: number;
+  }[] = [];
+
+  private detectarGuias(): void {
+    const dinamicas = [...this.bodies.values()].filter(({ body }) => !body.isFixed());
+    const fijas = [...this.bodies.values()].filter(({ body }) => body.isFixed());
+    const bbox = new THREE.Box3();
+    for (const d of dinamicas) {
+      d.obj.mesh.updateMatrixWorld(true);
+      bbox.setFromObject(d.obj.mesh);
+      bbox.expandByScalar(1); // cm de tolerancia del abrazo
+      const centroD = d.obj.mesh.position;
+      let eje: THREE.Vector3 | null = null;
+      let sMin = -Infinity;
+      let sMax = Infinity;
+      for (const f of fijas) {
+        const s = f.obj.effectiveSize();
+        const dims: [number, "x" | "y" | "z"][] = [[s.x, "x"], [s.y, "y"], [s.z, "z"]];
+        dims.sort((a, b) => b[0] - a[0]);
+        const [largo, ejeLocal] = dims[0];
+        // Guía = pieza ESBELTA: larga (≥40) y al menos 5× sus otras medidas.
+        if (largo < 40 || largo < 5 * dims[1][0]) continue;
+        const ejeW = axisVector(ejeLocal).applyQuaternion(f.obj.mesh.quaternion).normalize();
+        const centroF = f.obj.mesh.position;
+        // Punto de la recta de la guía más cercano al centro de la móvil.
+        const delta = centroD.clone().sub(centroF);
+        const p = centroF.clone().addScaledVector(ejeW, delta.dot(ejeW));
+        // ¿La guía atraviesa el volumen de la móvil? (el manguito la abraza)
+        if (!bbox.containsPoint(p)) continue;
+        if (eje && Math.abs(eje.dot(ejeW)) < 0.99) continue; // dirección discordante
+        if (!eje) eje = ejeW.clone();
+        // Recorrido del CENTRO de la móvil: dentro del tramo del tubo (con
+        // margen), medido a lo largo del eje respecto a su posición inicial.
+        const s0 = centroD.dot(eje);
+        const sF = centroF.dot(eje);
+        sMin = Math.max(sMin, sF - largo / 2 + 5 - s0);
+        sMax = Math.min(sMax, sF + largo / 2 - 5 - s0);
+      }
+      if (!eje || sMin > sMax) continue;
+      const q = d.obj.mesh.quaternion;
+      this.guias.push({
+        body: d.body,
+        origen: { x: centroD.x * S, y: centroD.y * S, z: centroD.z * S },
+        eje: { x: eje.x, y: eje.y, z: eje.z },
+        rot: { x: q.x, y: q.y, z: q.z, w: q.w },
+        sMin: sMin * S,
+        sMax: sMax * S,
+      });
+    }
+  }
+
+  /** Aplica el clamp de cada guía: la móvil solo vive sobre su recta. */
+  private aplicarGuias(): void {
+    for (const g of this.guias) {
+      const t = g.body.translation();
+      const dx = t.x - g.origen.x;
+      const dy = t.y - g.origen.y;
+      const dz = t.z - g.origen.z;
+      let s = dx * g.eje.x + dy * g.eje.y + dz * g.eje.z;
+      if (s < g.sMin) s = g.sMin;
+      else if (s > g.sMax) s = g.sMax;
+      g.body.setTranslation(
+        { x: g.origen.x + g.eje.x * s, y: g.origen.y + g.eje.y * s, z: g.origen.z + g.eje.z * s },
+        true,
+      );
+      const v = g.body.linvel();
+      const va = v.x * g.eje.x + v.y * g.eje.y + v.z * g.eje.z;
+      g.body.setLinvel({ x: g.eje.x * va, y: g.eje.y * va, z: g.eje.z * va }, true);
+      g.body.setRotation(g.rot, true);
+      g.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
   }
 
   private addCable(cable: Cable): void {
@@ -521,6 +615,7 @@ export class PhysicsWorld {
       this.accumulator -= PhysicsWorld.FIXED_DT;
       this.applyDrag(PhysicsWorld.FIXED_DT);
       this.world.step();
+      this.aplicarGuias();
       // Cable: primero corrige velocidades, luego proyecta posiciones para
       // conservar la longitud de forma dura (cable inextensible).
       if (this.cables.length > 0) {
@@ -530,6 +625,8 @@ export class PhysicsWorld {
         for (let it = 0; it < 6; it++) {
           for (const c of this.cables) this.solveCablePosition(c);
         }
+        // La corrección del cable no puede sacar a las guiadas de su riel.
+        this.aplicarGuias();
       }
     }
     for (const { body, obj } of this.bodies.values()) {
@@ -546,6 +643,7 @@ export class PhysicsWorld {
     this.world = null;
     this.bodies.clear();
     this.cables = [];
+    this.guias = [];
     this.drag = null;
   }
 }

@@ -5,6 +5,21 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Corregido
+
+- **GUÍAS TUBULARES reconocidas por el MOTOR**: al construir el mundo
+  físico, el motor detecta qué piezas fijas y esbeltas (tubos/pilares de
+  guía) ATRAVIESAN el volumen de una pieza móvil — los cilindros huecos del
+  carrier abrazan los tubos — y circunscribe su movimiento al eje de la
+  guía: solo se desliza a lo largo del tubo, con límites en sus extremos,
+  sin deriva lateral ni vuelco (clamp cinemático duro que ninguna tensión
+  de cable ni colisión puede vencer; se aplica tras el solver y tras la
+  corrección del cable). Funciona con cualquier prefab, sin necesidad de
+  uniones manuales — verificado: deriva lateral 0,0002 cm y rotación 0 en
+  8 s de simulación con el cable del lat pulldown.
+
 ## [0.2.5] — 2026-07-23
 
 Física del sistema de poleas del TTP: el prefab ideal del diseñador queda de

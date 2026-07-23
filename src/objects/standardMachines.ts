@@ -252,13 +252,6 @@ const ARBOL: PiezaSpec[] = [
   ]),
 ];
 
-// La CORREDERA que circunscribe el portadiscos a los tubos de guía: pieza 33
-// (portadiscos) guiada por la 10 (tubo guía izq.), eje Y con límites — sin
-// esta unión el carrier es un cuerpo libre y se columpia fuera de la torre.
-const RACK_TORRE_UNIONES: UnionSpec[] = [
-  { tipo: "corredera", fija: 10, movil: 33, eje: "y", min: -45, max: 130 },
-];
-
 export interface MaquinaSpec {
   label: string;
   piezas: PiezaSpec[];
@@ -270,7 +263,9 @@ const SPECS: Record<string, MaquinaSpec> = {
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
   "banco-plano": { label: "Banco plano", piezas: BANCO },
   "torre-polea": { label: "Torre de polea", piezas: TORRE },
-  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, uniones: RACK_TORRE_UNIONES },
+  // Las guías del carrier las RECONOCE el motor físico (tubos que atraviesan
+  // los manguitos) — no necesitan unión manual.
+  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
 
