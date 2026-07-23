@@ -9,7 +9,21 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Corregido
 
-- **Auditoría definitiva de la biblioteca (en curso)**: las mallas del
+- **Auditoría definitiva de la biblioteca — pasada 2 (ítem por ítem con el
+  diseñador)**: identidades corregidas — barra-pr ↔ travesano-pr (la barra
+  de pullups real es la pieza de 106 con placas; el travesaño es la de 70);
+  jota-pr re-rotulada como ANCLAJE DE CADENA (no es una jota);
+  brazo-seguridad adopta el modelo correcto (brazo en L con gancho de
+  9×24×106) y se ELIMINAN riel-discos-ttp y brazo-ttp (redundantes).
+  Orientaciones de inserción naturales: barra de dominadas y barra de
+  fondos nacen HORIZONTALES, el disco de peso nace VERTICAL (de pie como
+  rueda), la correa de seguridad gira 90° sobre su eje largo, la jota con
+  rodillo queda orientada como el gancho J, y el portadiscos (WEIGHTCARRIER
+  oficial) se hornea HORIZONTAL — pin de 88 a lo largo, con el collarín
+  hacia la torre, cruzando el hueco entre los tubos de guía del rack. La
+  jaula POWERRACK y el Rack con torre se recolocan con las identidades
+  correctas.
+- **Auditoría de la biblioteca — pasada 1**: las mallas del
   BASTIDOR SUPERIOR y del MULTIAGARRE TTP estaban INTERCAMBIADAS desde el
   despiece original — el bastidor real es la viga con T (92×32×15, T que
   corona la torre, gancho de polea y pestañas) y el multiagarre real es el

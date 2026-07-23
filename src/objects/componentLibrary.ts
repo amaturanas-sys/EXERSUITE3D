@@ -104,11 +104,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Brazo de seguridad",
     category: "estructural",
     materialId: "acero-negro",
-    // Pipe de seguridad real del despiece POWERRACK: 8×8×120 perforado, con
-    // pop-pins (cruza el fondo completo del rack de 120).
-    defaults: { kind: "box", width: 8, height: 8, depth: 120 },
+    // Auditoría de biblioteca: el modelo correcto es el brazo en L con
+    // gancho del despiece TTP (9×24×106) — sustituye al pipe recto antiguo.
+    defaults: { kind: "box", width: 9, height: 24, depth: 106 },
     physics: { massKg: 0, fixed: true },
-    description: "Pipe/spotter de seguridad que detiene la barra a una altura dada.",
+    description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada.",
   },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
   {
@@ -120,15 +120,6 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 0, fixed: true },
     description:
       "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).",
-  },
-  {
-    id: "riel-discos-ttp",
-    label: "Riel porta-discos TTP",
-    category: "estructural",
-    materialId: "acero-negro",
-    defaults: { kind: "box", width: 9, height: 24, depth: 106 },
-    physics: { massKg: 0, fixed: true },
-    description: "Riel lateral de almacenamiento de discos del TTP001L, con manguitos y cuernos.",
   },
   {
     id: "multiagarre-ttp",
@@ -171,15 +162,6 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 0, fixed: true },
     description:
       "Tubo de guía vertical real del TTP001L (4×4×214): por él corre el carro del sistema de poleas.",
-  },
-  {
-    id: "brazo-ttp",
-    label: "Brazo de seguridad TTP",
-    category: "estructural",
-    materialId: "acero-negro",
-    defaults: { kind: "box", width: 6, height: 8, depth: 86 },
-    physics: { massKg: 0, fixed: true },
-    description: "Brazo de seguridad perforado real del TTP001L (86 cm), calza entre montantes.",
   },
   {
     id: "riel-base-ttp",
@@ -262,10 +244,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Portadiscos de polea TTP",
     category: "peso",
     materialId: "acero-negro",
-    // WEIGHTCARRIER real del TTP001L (archivo oficial del diseñador): barra
-    // deslizante VERTICAL de 88 (sección 6×8) con collarín a media altura —
-    // soporta los discos y corre guiada por los rieles del sistema de poleas.
-    defaults: { kind: "box", width: 6.1, height: 88, depth: 8.1 },
+    // WEIGHTCARRIER real del TTP001L (archivo oficial): pin HORIZONTAL de 88
+    // (sección 6×8, collarín hacia −Z) — soporta los discos y corre guiado
+    // por los rieles del sistema de poleas (auditoría: horneado horizontal).
+    defaults: { kind: "box", width: 6.1, height: 8.1, depth: 88 },
     physics: { massKg: 8, fixed: false },
     description:
       "Portadiscos real del TTP001L: barra deslizante que soporta los discos y corre guiada por los rieles; el cable del sistema de poleas la eleva.",
@@ -292,12 +274,15 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "travesano-pr",
-    label: "Travesaño lateral POWERRACK (106)",
+    label: "Travesaño POWERRACK (70)",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 7, height: 12, depth: 106 },
+    // Auditoría de biblioteca: identidad corregida — este es el travesaño
+    // corto (70) que cruza a lo ancho; la pieza de 106 con placas es la
+    // barra de pullups (barra-pr).
+    defaults: { kind: "box", width: 70, height: 7, depth: 7 },
     physics: { massKg: 0, fixed: true },
-    description: "Travesaño lateral superior real del POWERRACK (106 cm, perforado).",
+    description: "Travesaño superior real del POWERRACK (70 cm): cruza el marco a lo ancho.",
   },
   {
     id: "larguero-pr",
@@ -319,28 +304,33 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-pr",
-    label: "Barra pullups POWERRACK (70)",
+    label: "Barra pullups POWERRACK (106)",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 70, height: 7, depth: 7 },
+    // Auditoría de biblioteca: identidad corregida — la barra de dominadas
+    // real es la pieza de 106 con placas de montaje en los extremos.
+    defaults: { kind: "box", width: 7, height: 12, depth: 106 },
     physics: { massKg: 0, fixed: true },
-    description: "Barra superior real del POWERRACK (70 cm): frontal y trasera, para dominadas.",
+    description: "Barra de pullups real del POWERRACK (106 cm) con placas de montaje en ambos extremos.",
   },
   {
     id: "jota-pr",
-    label: "Jota POWERRACK",
+    label: "Anclaje de cadena POWERRACK",
     category: "estructural",
     materialId: "acero-negro",
+    // Auditoría de biblioteca: rótulo corregido — no es una jota, es el
+    // punto de ANCLAJE de las cadenas de seguridad (calza en los agujeros).
     defaults: { kind: "box", width: 13.2, height: 13, depth: 7.4 },
     physics: { massKg: 0, fixed: true },
-    description: "Jota de seguridad real del POWERRACK: calza en los agujeros de la columna.",
+    description: "Punto de anclaje real para las cadenas de seguridad del POWERRACK: calza en los agujeros de la columna.",
   },
   {
     id: "jota-rodillo-pr",
     label: "Jota con rodillo POWERRACK",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 15.4, height: 13, depth: 7.4 },
+    // Auditoría: malla reorientada con el brazo a lo largo de Z, como j-hook.
+    defaults: { kind: "box", width: 7.4, height: 13, depth: 15.4 },
     physics: { massKg: 0, fixed: true },
     description: "Jota con rodillo real del POWERRACK, para recibir la barra con suavidad.",
   },
@@ -358,7 +348,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Correa de seguridad",
     category: "estructural",
     materialId: "nylon",
-    defaults: { kind: "box", width: 120, height: 4, depth: 0.6 },
+    defaults: { kind: "box", width: 120, height: 0.6, depth: 4 },
     physics: { massKg: 0.3, fixed: false },
     placement: "rope-strap",
     description: "Strap de nylon de 3\" entre montantes: cuélgalo con la herramienta de línea (dos extremos).",
@@ -370,6 +360,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.6, radiusBottom: 1.6, height: 120 },
     physics: { massKg: 0, fixed: true },
+    orientacion: [0, 0, Math.PI / 2],
     description: "Barra superior de pull-ups (gruesa/fina).",
   },
   {
@@ -379,6 +370,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "cylinder", radiusTop: 2, radiusBottom: 2, height: 40 },
     physics: { massKg: 0, fixed: true },
+    orientacion: [0, 0, Math.PI / 2],
     description: "Agarre paralelo para fondos (dips).",
   },
   {
@@ -576,6 +568,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "hierro-fundido",
     defaults: { kind: "cylinder", radiusTop: 22, radiusBottom: 22, height: 3 },
     physics: { massKg: 20, fixed: false },
+    orientacion: [Math.PI / 2, 0, 0],
     description: "Disco olimpico para barras o ejes.",
   },
   {

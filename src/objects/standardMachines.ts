@@ -103,7 +103,7 @@ const RACK: PiezaSpec[] = [
 
 // Jaula = POWERRACK real pieza a pieza (posiciones medidas en el STL armado,
 // 118×220×122): postes de DOS TRAMOS apilados (110+110), travesaños laterales
-// superiores perforados, largueros de base, doble barra de pullups (70),
+// superiores perforados, largueros de base, doble barra de pullups (106),
 // rieles de base de 118, jotas de calce y pipes con collares.
 const JAULA: PiezaSpec[] = [
   // 4 postes × 2 tramos de media columna perforada (7×7×110).
@@ -113,22 +113,26 @@ const JAULA: PiezaSpec[] = [
       { comp: "montante-pr", nombre: `Poste ${i + 1} tramo sup.`, pos: [x, 165, z] },
     ],
   ),
-  // Travesaños laterales superiores (106, perforados) y largueros de base.
-  { comp: "travesano-pr", nombre: "Travesaño lateral izq.", pos: [-36.8, 212, 0] },
-  { comp: "travesano-pr", nombre: "Travesaño lateral der.", pos: [36.8, 212, 0] },
+  // Barras de pullups reales (106, con placas en los extremos) corriendo a
+  // lo fondo sobre cada lado (auditoría: identidad corregida).
+  { comp: "barra-pr", nombre: "Barra pullups lateral izq.", pos: [-36.8, 212, 0] },
+  { comp: "barra-pr", nombre: "Barra pullups lateral der.", pos: [36.8, 212, 0] },
   { comp: "larguero-pr", nombre: "Larguero base izq.", pos: [-36.8, 3.5, 0] },
   { comp: "larguero-pr", nombre: "Larguero base der.", pos: [36.8, 3.5, 0] },
-  // Doble barra de pullups real (70) al frente y atrás, a 192.
-  { comp: "barra-pr", nombre: "Barra pullups frontal", pos: [0, 192, 57] },
-  { comp: "barra-pr", nombre: "Barra pullups trasera", pos: [0, 192, -57] },
+  // Travesaños reales (70) cruzando a lo ancho al frente y atrás, a 192
+  // (auditoría: identidad corregida).
+  { comp: "travesano-pr", nombre: "Travesaño frontal", pos: [0, 192, 57] },
+  { comp: "travesano-pr", nombre: "Travesaño trasero", pos: [0, 192, -57] },
   // Rieles de base reales (118) que arriostran los postes al suelo.
   { comp: "riel-base-pr", nombre: "Riel base frontal", pos: [0, 2.5, 57] },
   { comp: "riel-base-pr", nombre: "Riel base trasero", pos: [0, 2.5, -57] },
-  // Jotas reales calzadas en los agujeros de los postes frontales.
-  { comp: "jota-pr", nombre: "Jota izq.", pos: [-36.8, 110, 64.2] },
-  { comp: "jota-pr", nombre: "Jota der.", pos: [36.8, 110, 64.2] },
-  { comp: "jota-rodillo-pr", nombre: "Jota rodillo izq.", pos: [-36.8, 70, 64.9] },
-  { comp: "jota-rodillo-pr", nombre: "Jota rodillo der.", pos: [36.8, 70, 64.9] },
+  // Anclajes de cadena (auditoría: no son jotas) y jotas con rodillo
+  // calzadas en los agujeros de los postes frontales (la malla de la jota
+  // con rodillo quedó horneada como j-hook: rot y90 conserva su pose aquí).
+  { comp: "jota-pr", nombre: "Anclaje de cadena izq.", pos: [-36.8, 110, 64.2] },
+  { comp: "jota-pr", nombre: "Anclaje de cadena der.", pos: [36.8, 110, 64.2] },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo izq.", pos: [-36.8, 70, 64.9], rot: [0, Math.PI / 2, 0] },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo der.", pos: [36.8, 70, 64.9], rot: [0, Math.PI / 2, 0] },
   // Pipes de seguridad: los collares de los extremos abrazan los postes.
   { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-36.8, 75, 0] },
   { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [36.8, 75, 0] },
@@ -216,9 +220,10 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.95] },
   { comp: "j-hook", nombre: "Jota baja izq.", pos: [-56, 40.91, 81.05] },
   { comp: "j-hook", nombre: "Jota baja der.", pos: [56, 41, 81.05] },
-  // Rieles porta-discos reales (106) por fuera de cada lado.
-  { comp: "riel-discos-ttp", nombre: "Riel discos izq.", pos: [-56, 65, 22.05] },
-  { comp: "riel-discos-ttp", nombre: "Riel discos der.", pos: [56, 65, 22.05] },
+  // 7b) 2 BRAZOS DE SEGURIDAD (auditoría: el brazo en L con gancho) por
+  // fuera de cada lado.
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad izq.", pos: [-56, 65, 22.05] },
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad der.", pos: [56, 65, 22.05] },
   // 9) SET DE ROLDANAS completo: doble polea alta, polea de torre, carro de
   // dos poleas con su puente y polea baja con soporte y placa.
   { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 212, -0.95], rot: [0, 0, Math.PI / 2] },
@@ -240,8 +245,10 @@ const RACK_TORRE: PiezaSpec[] = [
   // ella, la placa media descansando en el travesaño superior y las
   // pestañas del extremo libre hacia el marco.
   { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, -34.85], rot: [0, Math.PI, 0] },
-  // 11) PORTADISCOS del sistema de poleas: MÓVIL, montado en los tubos de guía.
-  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [-4.66, 67, -80.95], rot: [0, Math.PI / 2, 0], fija: false },
+  // 11) PORTADISCOS del sistema de poleas: MÓVIL, pin HORIZONTAL que cruza
+  // el hueco entre los tubos de guía con el collarín hacia la torre; los
+  // discos (verticales) se cargan en su tramo libre.
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [0.5, 67, -37], fija: false },
 ];
 
 /** Árbol de discos (renders de sala): poste con 6 cuernos a 3 alturas. */

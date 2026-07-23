@@ -101,6 +101,12 @@ export interface ComponentDefinition {
    * (cadena/correa de seguridad) o piezas trazadas (perfil/tubo de acero).
    */
   placement?: "rope-chain" | "rope-strap" | "beam" | "tube";
+  /**
+   * Rotación de INSERCIÓN (auditoría de biblioteca): algunas piezas nacen
+   * giradas para quedar en su orientación natural (p. ej. barras de
+   * dominadas horizontales, discos de pie como rueda).
+   */
+  orientacion?: [number, number, number];
   /** Descripcion corta para tooltips. */
   description: string;
 }

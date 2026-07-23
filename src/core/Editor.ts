@@ -881,7 +881,15 @@ export class Editor {
 
     // Apoya la base del objeto sobre el suelo (y=0).
     const size = obj.effectiveSize();
-    obj.mesh.position.copy(position ?? new THREE.Vector3(0, size.y / 2, 0));
+    let alturaBase = size.y / 2;
+    if (def.orientacion) {
+      // Orientación natural de inserción (auditoría de biblioteca).
+      obj.mesh.rotation.set(def.orientacion[0], def.orientacion[1], def.orientacion[2]);
+      obj.mesh.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(obj.mesh);
+      alturaBase = (bb.max.y - bb.min.y) / 2;
+    }
+    obj.mesh.position.copy(position ?? new THREE.Vector3(0, alturaBase, 0));
 
     this.sceneManager.content.add(obj.mesh);
     this.objects.set(obj.id, obj);
