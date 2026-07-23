@@ -206,11 +206,11 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", pos: [7, 106.9, -80.95] },
   { comp: "manguito-guia-ttp", nombre: "Manguito guía izq.", pos: [-6, 33.79, -80.95] },
   { comp: "manguito-guia-ttp", nombre: "Manguito guía der.", pos: [7, 33.12, -80.95] },
-  // 7) BARRA DE PULLUPS MULTIGRIP real (92, CAD): cruza A LO ANCHO montada
-  // SOBRE el travesaño frontal — placas hacia abajo apoyadas en la cara
-  // superior de la viga, el abanico arqueándose hacia arriba con un leve
-  // voladizo por delante de los pilares y los agarres del centro colgando.
-  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 206.5, 68.65], rot: [0, Math.PI / 2, 0] },
+  // 7) BARRA DE PULLUPS MULTIGRIP real (abanico ARQUEADO de 106,5 — malla
+  // corregida en la auditoría): cruza A LO ANCHO casi de pilar a pilar,
+  // montada sobre el travesaño frontal con sus placas de ambos extremos
+  // apoyadas en la cara superior y el arco elevándose por encima del techo.
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", pos: [0, 213.8, 68.65], rot: [0, Math.PI / 2, 0] },
   // 8) 4 JOTAS DE SEGURIDAD abrazando los pilares: altas atrás, bajas delante.
   { comp: "j-hook", nombre: "Jota de seguridad izq.", pos: [-56, 127, -17.95] },
   { comp: "j-hook", nombre: "Jota de seguridad der.", pos: [56, 127, -17.95] },
@@ -234,11 +234,12 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-1.6, 205.5, 7.35] },
   // Pletina de unión al pie de la torre.
   { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.05] },
-  // Bastidor superior real PUENTEANDO el marco con la torre (CAD): corre a lo
-  // largo de Z sin girar; su ménsula trasera queda sobre la polea de torre
-  // (z≈−74) y el frente ancla sobre el marco — las poleas altas cuelgan bajo
-  // su vano.
-  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, -27.75] },
+  // Bastidor superior real (viga con T de 92,3 — malla corregida en la
+  // auditoría) PUENTEANDO el marco con la torre: girado 180° para que la T
+  // corone los tubos de guía (z=−81) con el gancho de polea colgando bajo
+  // ella, la placa media descansando en el travesaño superior y las
+  // pestañas del extremo libre hacia el marco.
+  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 208.85, -34.85], rot: [0, Math.PI, 0] },
   // 11) PORTADISCOS del sistema de poleas: MÓVIL, montado en los tubos de guía.
   { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [-4.66, 67, -80.95], rot: [0, Math.PI / 2, 0], fija: false },
 ];

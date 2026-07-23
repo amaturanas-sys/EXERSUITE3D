@@ -7,6 +7,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Corregido
+
+- **Auditoría definitiva de la biblioteca (en curso)**: las mallas del
+  BASTIDOR SUPERIOR y del MULTIAGARRE TTP estaban INTERCAMBIADAS desde el
+  despiece original — el bastidor real es la viga con T (92×32×15, T que
+  corona la torre, gancho de polea y pestañas) y el multiagarre real es el
+  abanico ARQUEADO de 106,5 con placas en ambos extremos. Mallas, medidas,
+  descripciones y el techo del Rack con torre corregidos: el arco cruza el
+  frente casi de pilar a pilar sobre el travesaño frontal y la viga con T
+  puentea el marco con la torre (la T corona los tubos con su polea).
+
 ### Cambiado
 
 - **Rack con torre (TTP) según el prefab CORREGIDO del diseñador**

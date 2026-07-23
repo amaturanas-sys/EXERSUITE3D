@@ -135,9 +135,12 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Multi-agarre dominadas TTP",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 32, height: 15, depth: 92 },
+    // Abanico ARQUEADO real de pullups (106×32): placas de montaje en ambos
+    // extremos, rieles gemelos con travesaños y sección de agarre estriada
+    // (malla corregida en la auditoría v0.2.4).
+    defaults: { kind: "box", width: 32, height: 9.6, depth: 106.5 },
     physics: { massKg: 0, fixed: true },
-    description: "Estación de dominadas multi-agarre real del TTP001L (92×32 cm).",
+    description: "Estación de dominadas multi-agarre real del TTP001L: abanico arqueado de 106 cm con placas en ambos extremos.",
   },
   {
     id: "pie-ttp",
@@ -229,9 +232,12 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Bastidor superior TTP",
     category: "estructural",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 32, height: 9.6, depth: 106.5 },
+    // Viga real del sistema de polea alta (92×32): T que corona los tubos de
+    // guía en un extremo, gancho de polea colgando bajo la T, placa media y
+    // pestañas de anclaje al marco (malla corregida en la auditoría v0.2.4).
+    defaults: { kind: "box", width: 32, height: 15, depth: 92.3 },
     physics: { massKg: 0, fixed: true },
-    description: "Bastidor superior real del TTP001L (106×32): bandeja del techo del sistema de poleas.",
+    description: "Bastidor superior real del TTP001L: viga con T que corona la torre y puente del sistema de polea alta.",
   },
   {
     id: "pletina-ttp",
