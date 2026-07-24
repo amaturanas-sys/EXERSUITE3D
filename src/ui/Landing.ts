@@ -1,7 +1,7 @@
 import type { ProjectData } from "../core/project";
 import { version as VERSION_APP } from "../../package.json";
 import { renderInstructivo } from "./Instructivo";
-import { acceptSeguro, descargarArchivo } from "../core/descargas";
+import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { borrarCaptura, listarCapturas } from "../core/capturas";
 import {
@@ -49,18 +49,17 @@ export class Landing {
   private contenido: HTMLElement;
   private leyenda: HTMLElement;
   private navBtns = new Map<Vista, HTMLButtonElement>();
-  private fileInput: HTMLInputElement;
+  private abrirProyecto: () => void;
 
   constructor(private actions: LandingActions) {
     const base = import.meta.env.BASE_URL;
 
-    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".json,application/json") });
-    this.fileInput.style.display = "none";
-    this.fileInput.addEventListener("change", () => {
-      const f = this.fileInput.files?.[0];
-      this.fileInput.value = "";
-      if (f) this.actions.onOpenFile(f);
-    });
+    // Búsqueda con el selector NATIVO del dispositivo (elige dónde buscar).
+    this.abrirProyecto = () => {
+      void elegirArchivo(".json", "Proyecto EXERSUITE3D (.json)").then((f) => {
+        if (f) this.actions.onOpenFile(f);
+      });
+    };
 
     const logo = el("img", {
       class: "land-logo",
@@ -114,7 +113,6 @@ export class Landing {
         ]),
         el("div", { class: "land-col-content" }, [this.contenido, this.leyenda]),
       ]),
-      this.fileInput,
     ]);
 
     this.setVista("instructivo");
@@ -148,7 +146,7 @@ export class Landing {
   private renderBuilder(): void {
     const acciones = el("div", { class: "land-actions" }, [
       this.accion("✦  Crear nuevo proyecto", true, () => this.actions.onNew()),
-      this.accion("📂  Abrir archivo…", false, () => this.fileInput.click()),
+      this.accion("📂  Abrir archivo…", false, () => this.abrirProyecto()),
       this.accion("🧩  Explorar biblioteca", false, () => this.actions.onExploreLibrary()),
     ]);
     if (this.actions.hasAutosave) {
@@ -163,7 +161,7 @@ export class Landing {
 
   private renderSimulador(): void {
     const acciones = el("div", { class: "land-actions" }, [
-      this.accion("📂  Simular archivo…", true, () => this.fileInput.click()),
+      this.accion("📂  Simular archivo…", true, () => this.abrirProyecto()),
       this.accion("🖼  Capturas", false, () => this.renderCapturas()),
     ]);
     if (this.actions.hasAutosave) {

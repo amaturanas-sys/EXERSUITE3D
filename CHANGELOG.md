@@ -9,7 +9,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 El motor reconoce por geometría el sistema de polea tubular guiada del TTP
 (taxonomía de 5 piezas del diseñador) — validado en tablet: el carrier corre
-por sus guías y se detiene sobre los stoppers, sin uniones manuales.
+por sus guías y se detiene sobre los stoppers, sin uniones manuales. Además,
+guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
+
+### Añadido
+
+- **Archivos con el gestor NATIVO del dispositivo, eligiendo el destino**:
+  todos los flujos de exportar (proyectos, prefabs, GLB/OBJ/STL, ZIP de la
+  biblioteca, capturas) y de importar (proyectos, modelos 3D, prefabs, ZIP)
+  pasan por un sistema unificado.
+  - **Android (APK)**: plugin nativo propio sobre el Storage Access
+    Framework — al guardar se abre el "Guardar como…" de la app Archivos
+    (se navega y elige carpeta y nombre: Descargas, SD, Drive…) y al abrir,
+    el selector de documentos del sistema con búsqueda en cualquier
+    ubicación. El flujo clásico (Documentos/EXERSUITE3D o compartir) queda
+    solo como respaldo de binarios antiguos.
+  - **Web y Windows**: diálogos nativos del sistema operativo (File System
+    Access API) con caída automática al ancla/`<input>` clásicos si el
+    navegador no la trae.
 
 ### Corregido
 

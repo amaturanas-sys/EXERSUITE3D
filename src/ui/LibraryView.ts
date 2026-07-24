@@ -13,7 +13,7 @@ import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { claveMaquina, geometriaAOBJ, geometriaASTL, hornearMaquina } from "../core/maquinasModelo";
 import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
-import { acceptSeguro, descargarArchivo } from "../core/descargas";
+import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { parsearPrefab, prefabDeFabrica } from "../core/prefabIO";
 import { prefabsMaquina } from "../core/prefabsMaquina";
 import { tt } from "../core/i18n";
@@ -148,11 +148,7 @@ const machineSource: LibrarySource = {
       ["Sustituir por prefab (.json)…"],
     );
     subPrefab.addEventListener("click", () => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = ".json,application/json";
-      input.addEventListener("change", () => {
-        const f = input.files?.[0];
+      void elegirArchivo(".json", "Prefab EXERSUITE3D (.json)").then((f) => {
         if (!f) return;
         void f.text().then((texto) => {
           try {
@@ -173,7 +169,6 @@ const machineSource: LibrarySource = {
           }
         });
       });
-      input.click();
     });
     acciones.push(subPrefab);
 
@@ -219,10 +214,8 @@ export class LibraryView {
   private listEl: HTMLElement;
   private detailEl: HTMLElement;
   private previewBox: HTMLElement;
-  private fileInput: HTMLInputElement;
   private zipActions: HTMLElement;
   private preview: ComponentPreview;
-  private pendingId: string | null = null;
   private selectedId: string | null = null;
   private src: LibrarySource = componentSource;
   private unsub: () => void;
@@ -233,20 +226,13 @@ export class LibraryView {
     this.previewBox = el("div", { class: "lib-preview" });
     this.detailEl = el("div", { class: "lib-detail-info" });
 
-    this.fileInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
-    this.fileInput.style.display = "none";
-    this.fileInput.addEventListener("change", () => void this.onFilePicked());
-
     const backBtn = el("button", { class: "tool" }, ["← Volver a Home"]);
     backBtn.addEventListener("click", () => this.onHome());
 
     const exportBtn = el("button", { class: "tool", title: "Descargar todos los modelos en un ZIP" }, ["Exportar ZIP"]);
     exportBtn.addEventListener("click", () => void this.exportLibrary());
-    const zipInput = el("input", { type: "file", accept: acceptSeguro(".zip,application/zip") });
-    zipInput.style.display = "none";
-    zipInput.addEventListener("change", () => void this.onImportZip(zipInput));
     const importBtn = el("button", { class: "tool", title: "Cargar un ZIP de modelos y fusionar" }, ["Importar ZIP"]);
-    importBtn.addEventListener("click", () => zipInput.click());
+    importBtn.addEventListener("click", () => void this.onImportZip());
     this.zipActions = el("div", { class: "lib-header-actions" }, [exportBtn, importBtn]);
 
     this.tabs = {
@@ -273,8 +259,6 @@ export class LibraryView {
         this.listEl,
         el("div", { class: "lib-detail" }, [this.previewBox, this.detailEl]),
       ]),
-      this.fileInput,
-      zipInput,
     ]);
     this.root = el("div", { class: "landing lib-view-overlay" }, [panel]);
 
@@ -368,11 +352,7 @@ export class LibraryView {
       : "Forma por defecto";
 
     const replace = el("button", { class: "tool" }, [has ? "Cambiar modelo…" : "Sustituir por modelo…"]);
-    replace.addEventListener("click", () => {
-      this.pendingId = it.id;
-      this.fileInput.value = "";
-      this.fileInput.click();
-    });
+    replace.addEventListener("click", () => void this.sustituirModelo(it.id));
     const actions = el("div", { class: "lib-detail-actions" }, [replace]);
     if (has && this.src.isUser(it.id)) {
       const reset = el("button", { class: "tool danger" }, ["Restablecer"]);
@@ -389,18 +369,15 @@ export class LibraryView {
     );
   }
 
-  private async onFilePicked(): Promise<void> {
-    const file = this.fileInput.files?.[0];
-    const id = this.pendingId;
-    this.pendingId = null;
-    if (!file || !id) return;
+  private async sustituirModelo(id: string): Promise<void> {
+    const file = await elegirArchivo(".glb,.gltf,.obj,.stl", "Modelo 3D");
+    if (!file) return;
     try {
       await this.src.setUserModel(id, file);
     } catch (err) {
       console.error("No se pudo asignar el modelo:", err);
       window.alert("No se pudo cargar el modelo 3D.");
     }
-    this.fileInput.value = "";
   }
 
   // ------------------------------------------------ exportar / importar bulk
@@ -414,9 +391,8 @@ export class LibraryView {
     }
   }
 
-  private async onImportZip(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
-    input.value = "";
+  private async onImportZip(): Promise<void> {
+    const file = await elegirArchivo(".zip", "Biblioteca EXERSUITE3D (.zip)");
     if (!file) return;
     if (!/\.zip$/i.test(file.name)) {
       window.alert("Elige un archivo .zip (la biblioteca exportada).");

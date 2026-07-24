@@ -1,5 +1,5 @@
 import type { ColorMode, Editor, TransformMode } from "../core/Editor";
-import { acceptSeguro, descargarArchivo } from "../core/descargas";
+import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
 import { parsearPrefab, serializarPrefab } from "../core/prefabIO";
 import { t, tt } from "../core/i18n";
@@ -25,10 +25,6 @@ export class Toolbar {
   private groupSelected = false;
   private axisLock: "x" | "y" | "z" | null = null;
 
-  private fileInput: HTMLInputElement;
-  private importInput: HTMLInputElement;
-  private prefabInput!: HTMLInputElement;
-
   constructor(
     private editor: Editor,
     private hooks: {
@@ -40,20 +36,6 @@ export class Toolbar {
   ) {
     this.menuEl = el("div", { class: "tool-menu" });
     document.body.append(this.menuEl);
-
-    // Entradas de archivo ocultas (cargar proyecto / importar modelo).
-    this.fileInput = el("input", {
-      type: "file",
-      accept: acceptSeguro(".json,application/json"),
-    });
-    this.fileInput.style.display = "none";
-    this.fileInput.addEventListener("change", () => void this.onLoadFile(this.fileInput));
-    this.importInput = el("input", { type: "file", accept: acceptSeguro(".glb,.gltf,.obj,.stl") });
-    this.importInput.style.display = "none";
-    this.importInput.addEventListener("change", () => void this.onImportFile(this.importInput));
-    this.prefabInput = el("input", { type: "file", accept: acceptSeguro(".json,application/json") });
-    this.prefabInput.style.display = "none";
-    this.prefabInput.addEventListener("change", () => void this.onPrefabFile(this.prefabInput));
 
     // ---- Botones siempre visibles
     const homeBtn = el("button", { class: "tool", title: "Volver a la pantalla de inicio" }, [
@@ -132,9 +114,6 @@ export class Toolbar {
       el("div", { class: "tool-group" }, [homeBtn, simBtn]),
       ...editGroups,
       el("div", { class: "tool-group" }, [autosaveTag]),
-      this.fileInput,
-      this.importInput,
-      this.prefabInput,
     ]);
 
     // Estado vivo para pintar los menús al abrirlos.
@@ -242,13 +221,13 @@ export class Toolbar {
         }
       }),
       this.item("Guardar proyecto (.json)…", () => this.saveProject()),
-      this.item("Cargar proyecto…", () => this.fileInput.click()),
+      this.item("Cargar proyecto…", () => void this.cargarProyecto()),
       this.sep(),
-      this.item("Importar modelo 3D…", () => this.importInput.click()),
+      this.item("Importar modelo 3D…", () => void this.importarModelo()),
       this.item("Exportar prototipo (.glb)", () => void this.exportGLB()),
       this.sep(),
       this.item("Exportar prefab de la selección (.json)…", () => void this.exportPrefab()),
-      this.item("Insertar prefab (.json)…", () => this.prefabInput.click()),
+      this.item("Insertar prefab (.json)…", () => void this.insertarPrefab()),
       this.sep(),
       this.item("Rendimiento…", () => this.hooks.onPerformance?.()),
     );
@@ -277,9 +256,8 @@ export class Toolbar {
     await descargarArchivo(archivo, json, "application/json");
   }
 
-  private async onPrefabFile(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
-    input.value = "";
+  private async insertarPrefab(): Promise<void> {
+    const file = await elegirArchivo(".json", "Prefab EXERSUITE3D (.json)");
     if (!file) return;
     try {
       const { archivo, advertencias } = parsearPrefab(await file.text());
@@ -425,8 +403,8 @@ export class Toolbar {
     void addRecent(name, project, Date.now()).catch(() => {});
   }
 
-  private async onLoadFile(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
+  private async cargarProyecto(): Promise<void> {
+    const file = await elegirArchivo(".json", "Proyecto EXERSUITE3D (.json)");
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
@@ -436,7 +414,6 @@ export class Toolbar {
       console.error("No se pudo cargar el proyecto:", err);
       window.alert("Archivo de proyecto no válido.");
     }
-    input.value = "";
   }
 
   private async exportGLB(): Promise<void> {
@@ -448,8 +425,8 @@ export class Toolbar {
     }
   }
 
-  private async onImportFile(input: HTMLInputElement): Promise<void> {
-    const file = input.files?.[0];
+  private async importarModelo(): Promise<void> {
+    const file = await elegirArchivo(".glb,.gltf,.obj,.stl", "Modelo 3D");
     if (!file) return;
     try {
       await this.editor.importModelFile(file);
@@ -457,6 +434,5 @@ export class Toolbar {
       console.error("No se pudo importar:", err);
       window.alert("No se pudo importar el modelo.");
     }
-    input.value = "";
   }
 }
