@@ -831,12 +831,86 @@ export class Editor {
     this.requestRender();
   }
 
+  /** Cache del punto de ensamble por geometría (ver puntoCalceLocal). */
+  private cacheCalce = new Map<string, THREE.Vector3 | null>();
+
+  /**
+   * MANGUITO DE ENSAMBLE de una pieza de calce: las jotas y brazos de
+   * seguridad tienen un espacio DISEÑADO para abrazar el pilar (como los
+   * orificios de los bloques de peso calzan con las guías). Se detecta en
+   * la propia malla: es la CAVIDAD vertical pasante — celdas del plano XZ
+   * por las que un rayo vertical atraviesa sin tocar material, encerradas
+   * por material (un flood-fill desde el borde separa el exterior).
+   * Devuelve el centro local (XZ) de la cavidad, o null si la malla no
+   * tiene manguito.
+   */
+  private puntoCalceLocal(obj: SceneObject): THREE.Vector3 | null {
+    // Punto CALIBRADO en la definición (manguitos abiertos o tapados que la
+    // detección geométrica no ve); la detección queda para mallas sustituidas.
+    const def = getDefinition(obj.componentId);
+    if (def?.calceLocal && componentModels.source(obj.componentId) !== "user") {
+      return new THREE.Vector3(def.calceLocal[0], 0, def.calceLocal[1]);
+    }
+    const key = `${obj.componentId}:${obj.mesh.geometry.uuid}`;
+    const cacheado = this.cacheCalce.get(key);
+    if (cacheado !== undefined) return cacheado ? cacheado.clone() : null;
+
+    const geo = obj.mesh.geometry;
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    const sx = bb.max.x - bb.min.x;
+    const sz = bb.max.z - bb.min.z;
+    const nx = Math.max(8, Math.min(48, Math.round(sx / 1.2)));
+    const nz = Math.max(8, Math.min(48, Math.round(sz / 1.2)));
+    const tmp = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    const ray = new THREE.Raycaster();
+    const solido: boolean[] = new Array((nx + 1) * (nz + 1)).fill(false);
+    const celda = (i: number, j: number) => i * (nz + 1) + j;
+    const px = (i: number) => bb.min.x + ((i + 0.5) * sx) / (nx + 1);
+    const pz = (j: number) => bb.min.z + ((j + 0.5) * sz) / (nz + 1);
+    for (let i = 0; i <= nx; i++) {
+      for (let j = 0; j <= nz; j++) {
+        ray.set(new THREE.Vector3(px(i), bb.max.y + 5, pz(j)), new THREE.Vector3(0, -1, 0));
+        solido[celda(i, j)] = ray.intersectObject(tmp).length > 0;
+      }
+    }
+    // Flood fill desde el borde: lo vacío conectado al borde es exterior.
+    const exterior = new Array<boolean>(solido.length).fill(false);
+    const cola: [number, number][] = [];
+    for (let i = 0; i <= nx; i++) for (const j of [0, nz]) cola.push([i, j]);
+    for (let j = 0; j <= nz; j++) for (const i of [0, nx]) cola.push([i, j]);
+    while (cola.length) {
+      const [i, j] = cola.pop()!;
+      const c = celda(i, j);
+      if (i < 0 || j < 0 || i > nx || j > nz || exterior[c] || solido[c]) continue;
+      exterior[c] = true;
+      cola.push([i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]);
+    }
+    // Cavidad = vacío NO exterior → centroide.
+    let cx = 0, cz = 0, n = 0;
+    for (let i = 0; i <= nx; i++) {
+      for (let j = 0; j <= nz; j++) {
+        const c = celda(i, j);
+        if (!solido[c] && !exterior[c]) {
+          cx += px(i);
+          cz += pz(j);
+          n++;
+        }
+      }
+    }
+    const punto = n >= 2 ? new THREE.Vector3(cx / n, 0, cz / n) : null;
+    this.cacheCalce.set(key, punto);
+    return punto ? punto.clone() : null;
+  }
+
   /**
    * CALCE POR AGUJEROS: sube o baja una pieza de calce (gancho J, brazo de
    * seguridad) por su poste AGUJERO POR AGUJERO. Busca el poste con grilla
-   * de agujeros (holeStepCm) más cercano, ajusta la pieza a la grilla y la
-   * desplaza un paso a lo largo del eje del poste, sin salirse de sus
-   * extremos. Devuelve un aviso si no puede; null si el calce se hizo.
+   * de agujeros (holeStepCm) más cercano, ENSAMBLA la pieza a la estructura
+   * (su manguito abraza el pilar: el eje del poste pasa por la cavidad de
+   * ensamble — no queda flotando en el aire), ajusta a la grilla y da un
+   * paso a lo largo del eje sin salirse de sus extremos. Devuelve un aviso
+   * si no puede; null si el calce se hizo.
    */
   calcePorAgujero(objId: string, dir: 1 | -1): string | null {
     const obj = this.objects.get(objId);
@@ -863,7 +937,9 @@ export class Editor {
       const delta = centro.clone().sub(o.mesh.position);
       const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
       const axial = Math.abs(delta.dot(eje));
-      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 4;
+      // Radio de búsqueda generoso: una pieza "flotando en el aire" cerca
+      // del poste también se ensambla (el más cercano gana).
+      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 30;
       if (lateral > tol || axial > largo / 2 + 10) continue;
       if (lateral < mejorLateral) {
         mejorLateral = lateral;
@@ -877,6 +953,17 @@ export class Editor {
       );
     }
     const { poste, eje, paso, largo } = mejor;
+    // ENSAMBLE: el manguito de la pieza abraza el pilar — se corrige el
+    // desvío lateral para que el eje del poste pase por la cavidad de
+    // ensamble de la malla. Sin cavidad (primitiva maciza) no se fuerza.
+    const pc = this.puntoCalceLocal(obj);
+    if (pc) {
+      obj.mesh.updateMatrixWorld(true);
+      const manguito = obj.mesh.localToWorld(pc.clone());
+      const desvio = manguito.sub(poste.mesh.position);
+      const lateralManguito = desvio.clone().addScaledVector(eje, -desvio.dot(eje));
+      centro.sub(lateralManguito);
+    }
     const delta = centro.clone().sub(poste.mesh.position);
     const s = delta.dot(eje);
     // Se ajusta a la grilla de agujeros y da UN paso en la dirección pedida.

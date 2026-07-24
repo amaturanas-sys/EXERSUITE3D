@@ -51,11 +51,16 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
   y, con el cable del lat pulldown, deriva lateral 0 durante 6 s.
 
 - **Interacciones de máquina real en el simulador**:
-  - **Calce AGUJERO POR AGUJERO**: los ganchos J y los brazos de seguridad
-    suben y bajan por su poste siguiendo la grilla de agujeros del montante
-    (paso 5 cm en rack 3×3, 10 cm en el TTP, 7,5 cm en el POWERRACK), con
-    ajuste automático a la grilla, tope en los extremos y botones ▲/▼ en el
-    panel de Propiedades.
+  - **Calce AGUJERO POR AGUJERO con ENSAMBLE real**: los ganchos J y los
+    brazos de seguridad suben y bajan por su poste siguiendo la grilla de
+    agujeros del montante (paso 5 cm en rack 3×3, 10 cm en el TTP, 7,5 cm
+    en el POWERRACK), con ajuste automático a la grilla, tope en los
+    extremos y botones ▲/▼ en el panel de Propiedades. Al calzar, el
+    MANGUITO de la pieza (su espacio diseñado para el ensamble, como los
+    orificios de los bloques con las guías) ABRAZA el pilar: el accesorio
+    queda colocado EN la estructura, nunca flotando en el aire — el punto
+    de ensamble está calibrado por pieza y, en mallas sustituidas, se
+    detecta la cavidad en la propia geometría.
   - **Pin del selector del stack**: botones que mueven el pin placa a placa
     — el cable toma SOLO las placas seleccionadas (masa efectiva y carriage
     ya respondían a la selección; ahora el pin se maneja como en la máquina).

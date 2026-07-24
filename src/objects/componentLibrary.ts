@@ -90,6 +90,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // sustituye la primitiva con esa malla.
     defaults: { kind: "box", width: 9, height: 24, depth: 26 },
     physics: { massKg: 0, fixed: true },
+    calceLocal: [0, -9.7],
     description: "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW).",
   },
   {
@@ -111,6 +112,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // gancho del despiece TTP (9×24×106) — sustituye al pipe recto antiguo.
     defaults: { kind: "box", width: 9, height: 24, depth: 106 },
     physics: { massKg: 0, fixed: true },
+    calceLocal: [0, -49.3],
     description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada.",
   },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
@@ -338,6 +340,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // Auditoría: malla reorientada con el brazo a lo largo de Z, como j-hook.
     defaults: { kind: "box", width: 7.4, height: 13, depth: 15.4 },
     physics: { massKg: 0, fixed: true },
+    calceLocal: [0, -4.1],
     description: "Jota con rodillo real del POWERRACK, para recibir la barra con suavidad.",
   },
   {

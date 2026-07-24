@@ -127,6 +127,14 @@ export interface ComponentDefinition {
    */
   holeStepCm?: number;
   /**
+   * Punto local [x, z] del MANGUITO DE ENSAMBLE (cm): el espacio de la pieza
+   * diseñado para abrazar el pilar (jotas, brazos de seguridad). Al calzar,
+   * el eje del poste pasa por este punto — la pieza queda COLOCADA en la
+   * estructura, no flotando. Sin él, se intenta detectar la cavidad en la
+   * malla.
+   */
+  calceLocal?: [number, number];
+  /**
    * La pieza CARGA DISCOS por su eje (se ensamblan por el orificio central
    * del disco y quedan suspendidos): lados de carga (1 = un extremo,
    * 2 = ambos), diametro/grosor del disco (cm) y masa por disco (kg).
