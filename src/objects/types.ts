@@ -127,6 +127,19 @@ export interface ComponentDefinition {
    */
   holeStepCm?: number;
   /**
+   * Eje LOCAL horizontal por el que atraviesan los PINHOLES estandarizados
+   * del poste (diámetro y paso nominales, presentes en AMBAS caras): el pin
+   * de las jotas/brazos solo articula con estos orificios — no con los
+   * agujeros accesorios de otras caras.
+   */
+  ejeCalce?: "x" | "z";
+  /**
+   * Fase de la grilla de pinholes (cm): desplazamiento de la fila más
+   * cercana al centro del poste a lo largo de su eje largo (medido en la
+   * malla real). La grilla es fase + k·holeStepCm.
+   */
+  calceFase?: number;
+  /**
    * Punto local [x, z] del MANGUITO DE ENSAMBLE (cm): el espacio de la pieza
    * diseñado para abrazar el pilar (jotas, brazos de seguridad). Al calzar,
    * el eje del poste pasa por este punto — la pieza queda COLOCADA en la

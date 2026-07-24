@@ -101,6 +101,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 7.6, height: 230, depth: 7.6 },
     physics: { massKg: 0, fixed: true },
     holeStepCm: 5,
+    ejeCalce: "x",
     description: "Columna perforada de power rack (3x3\", grilla de pin).",
   },
   {
@@ -123,7 +124,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 5, height: 204, depth: 7 },
     physics: { massKg: 0, fixed: true },
-    holeStepCm: 10,
+    // Sonda de la malla real: 30 filas de pinholes pasantes por el eje X,
+    // paso 5,0 cm, fila mas cercana al centro en y=-1,13.
+    holeStepCm: 5,
+    ejeCalce: "x",
+    calceFase: -1.13,
     description:
       "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).",
   },
@@ -276,7 +281,12 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 7, height: 110, depth: 7 },
     physics: { massKg: 0, fixed: true },
-    holeStepCm: 7.5,
+    // Sonda de la malla real: 10 filas de pinholes pasantes por el eje X,
+    // paso 5,5 cm, fila mas cercana al centro en y=+1,13. Los dos agujeros
+    // del eje Z (paso 7,5, solo abajo) son ACCESORIOS de union: no calzan.
+    holeStepCm: 5.5,
+    ejeCalce: "x",
+    calceFase: 1.13,
     description:
       "Tramo real de columna perforada del POWERRACK (7×7×110): dos apilados forman cada poste de 220.",
   },

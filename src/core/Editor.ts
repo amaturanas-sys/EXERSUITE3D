@@ -917,13 +917,19 @@ export class Editor {
     if (!obj) return "Pieza no encontrada";
     const centro = obj.mesh.position;
     const tam = obj.effectiveSize();
-    let mejor: { poste: SceneObject; eje: THREE.Vector3; paso: number; largo: number } | null =
-      null;
+    let mejor: {
+      poste: SceneObject;
+      eje: THREE.Vector3;
+      paso: number;
+      largo: number;
+      def: NonNullable<ReturnType<typeof getDefinition>>;
+    } | null = null;
     let mejorLateral = Infinity;
     for (const o of this.objects.values()) {
       if (o === obj) continue;
-      const paso = getDefinition(o.componentId)?.holeStepCm;
-      if (!paso) continue;
+      const defPoste = getDefinition(o.componentId);
+      const paso = defPoste?.holeStepCm;
+      if (!defPoste || !paso) continue;
       const s = o.effectiveSize();
       const dims: [number, THREE.Vector3][] = [
         [s.x, new THREE.Vector3(1, 0, 0)],
@@ -943,7 +949,7 @@ export class Editor {
       if (lateral > tol || axial > largo / 2 + 10) continue;
       if (lateral < mejorLateral) {
         mejorLateral = lateral;
-        mejor = { poste: o, eje, paso, largo };
+        mejor = { poste: o, eje, paso, largo, def: defPoste };
       }
     }
     if (!mejor) {
@@ -952,7 +958,29 @@ export class Editor {
         "There is no drilled post next to the piece: move it closer to an upright.",
       );
     }
-    const { poste, eje, paso, largo } = mejor;
+    const { poste, eje, paso, largo, def: defPoste } = mejor;
+    // ARTICULACIÓN CON LOS PINHOLES: el pin de calce solo articula con los
+    // orificios ESTANDARIZADOS pasantes por ambas caras del poste (ejeCalce)
+    // — no con los agujeros accesorios de otras caras. Se gira la pieza
+    // alrededor del poste hasta encarar ese eje (respetando el lado en que
+    // la dejó el usuario).
+    if (defPoste.ejeCalce) {
+      const ejePin = (defPoste.ejeCalce === "x"
+        ? new THREE.Vector3(1, 0, 0)
+        : new THREE.Vector3(0, 0, 1)
+      )
+        .applyQuaternion(poste.mesh.quaternion)
+        .normalize();
+      const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(obj.mesh.quaternion);
+      frente.addScaledVector(eje, -frente.dot(eje)); // ⊥ al poste
+      if (frente.lengthSq() > 1e-6) {
+        frente.normalize();
+        const objetivo = ejePin.clone().multiplyScalar(frente.dot(ejePin) >= 0 ? 1 : -1);
+        const giro = new THREE.Quaternion().setFromUnitVectors(frente, objetivo);
+        obj.mesh.quaternion.premultiply(giro);
+        obj.mesh.updateMatrixWorld(true);
+      }
+    }
     // ENSAMBLE: el manguito de la pieza abraza el pilar — se corrige el
     // desvío lateral para que el eje del poste pase por la cavidad de
     // ensamble de la malla. Sin cavidad (primitiva maciza) no se fuerza.
@@ -966,8 +994,10 @@ export class Editor {
     }
     const delta = centro.clone().sub(poste.mesh.position);
     const s = delta.dot(eje);
-    // Se ajusta a la grilla de agujeros y da UN paso en la dirección pedida.
-    let sNuevo = Math.round(s / paso) * paso + dir * paso;
+    // Se ajusta a la grilla REAL de pinholes (paso y fase medidos en la
+    // malla) y da UN paso en la dirección pedida.
+    const fase = defPoste.calceFase ?? 0;
+    let sNuevo = fase + Math.round((s - fase) / paso) * paso + dir * paso;
     const lim = largo / 2 - 2;
     sNuevo = Math.max(-lim, Math.min(lim, sNuevo));
     if (Math.abs(sNuevo - s) < 1e-3) {

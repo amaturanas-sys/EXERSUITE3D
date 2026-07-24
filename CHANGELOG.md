@@ -53,9 +53,12 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
 - **Interacciones de máquina real en el simulador**:
   - **Calce AGUJERO POR AGUJERO con ENSAMBLE real**: los ganchos J y los
     brazos de seguridad suben y bajan por su poste siguiendo la grilla de
-    agujeros del montante (paso 5 cm en rack 3×3, 10 cm en el TTP, 7,5 cm
-    en el POWERRACK), con ajuste automático a la grilla, tope en los
-    extremos y botones ▲/▼ en el panel de Propiedades. Al calzar, el
+    PINHOLES ESTANDARIZADOS del montante — los orificios pasantes por ambas
+    caras, con paso y fase MEDIDOS en la malla real (5,0 cm en el TTP,
+    5,5 cm en el POWERRACK, 5 cm en el rack 3×3) —, con ajuste automático a
+    la grilla, tope en los extremos y botones ▲/▼ en el panel de
+    Propiedades. Al calzar, la pieza GIRA alrededor del poste hasta encarar
+    el eje de los pinholes (nunca los agujeros accesorios de otras caras). Al calzar, el
     MANGUITO de la pieza (su espacio diseñado para el ensamble, como los
     orificios de los bloques con las guías) ABRAZA el pilar: el accesorio
     queda colocado EN la estructura, nunca flotando en el aire — el punto
