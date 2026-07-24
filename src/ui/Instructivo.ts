@@ -76,6 +76,34 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     ],
   },
   {
+    id: "calce",
+    pregunta: "¿Cómo calzo ganchos J, brazos de seguridad y anclajes en los pilares?",
+    puntos: [
+      "Selecciona el gancho J, la jota con rodillo, el brazo de seguridad o el anclaje de cadena y usa Calce en el poste (Propiedades): los botones ▲/▼ lo suben y bajan AGUJERO POR AGUJERO siguiendo la grilla real de pinholes del montante (paso 5 cm en el TTP, 5,5 cm en el POWERRACK).",
+      "Al calzar, la pieza se ENSAMBLA a la estructura: su manguito abraza el pilar y el pin articula con los pinholes estandarizados — los orificios pasantes por ambas caras —, nunca con agujeros accesorios, y nunca queda flotando en el aire.",
+      "También vale para los postes TRAZADOS con la herramienta de línea: el diámetro y la distancia de sus pinholes (del diálogo de trazado) definen la grilla, y la pieza se detiene en la última fila de agujeros.",
+    ],
+  },
+  {
+    id: "pesos",
+    pregunta: "¿Cómo funcionan los pesos: pila selectorizada, bloques guiados y discos?",
+    puntos: [
+      "La pila de pesos es selectorizada: mueve el PIN placa a placa (Propiedades) y el cable toma SOLO las placas seleccionadas, como en la máquina real.",
+      "El bloque de peso y la pila llevan DOS ORIFICIOS verticales que calzan con los tubos guía: colócalos entre dos tubos verticales y en la simulación se deslizan circunscritos a ellos, deteniéndose en los topes.",
+      "El portadiscos (carrier), las barras olímpicas, los cuernos de carga y los atriles aceptan DISCOS MONTADOS (Propiedades): se ensamblan introduciendo el cilindro por el orificio central del disco, quedan suspendidos por la estructura y suman su masa.",
+      "El motor reconoce solo el sistema de polea tubular guiada — carrier, 2 tubos guía y 2 espaciadores/stoppers — y circunscribe el carro a sus tubos sin uniones manuales.",
+    ],
+  },
+  {
+    id: "brazos",
+    pregunta: "¿Cómo creo brazos móviles (jammer arms)?",
+    puntos: [
+      "Calza un Anclaje de cadena POWERRACK al pilar: su pin posterior entra en los pinholes y su cilindro perpendicular queda libre como PIVOTE.",
+      "Selecciona una estructura tubular o tipo pilar, acércala al anclaje y pulsa Articular como brazo (sección Brazo móvil de Propiedades): la pieza se vuelve móvil y gira alrededor del cilindro, cayendo en el plano frontal del pilar como un jammer arm real.",
+      "El brazo puede portar roldanas (soldador de nodos), cables/piolas, cuernos de carga con discos, o calzar piezas en sus propios pinholes — todo se mueve con él y expande la máquina.",
+    ],
+  },
+  {
     id: "maniqui",
     pregunta: "¿Cómo uso el maniquí?",
     puntos: [
@@ -100,6 +128,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     puntos: [
       "Sustituye cualquier componente o segmento del maniquí por tu propio modelo 3D (.glb/.gltf/.obj/.stl).",
       "Pestaña Máquinas: cada máquina estándar del modo Sencillo se puede EXPORTAR como STL u OBJ (el ensamblaje completo), editar fuera y SUSTITUIR por tu versión corregida — al insertarla usará tu modelo.",
+      "Ciclo de PREFABS por máquina: Exportar prefab (.json) descarga su definición pieza a pieza (componente, medidas, pose, uniones), la corriges en la app y con Sustituir por prefab pasa a ser la definición PERSISTENTE de esa máquina.",
       "Exportar ZIP descarga toda tu colección (incluidas las máquinas sustituidas); Importar ZIP la restaura o fusiona en otro dispositivo.",
     ],
   },
@@ -107,6 +136,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     id: "archivos",
     pregunta: "¿Qué tipos de archivo maneja la app?",
     puntos: [
+      "Guardar y abrir usan los diálogos NATIVOS del dispositivo: tú eliges dónde buscar y dónde guardar cada archivo (en Android se abre la app Archivos del sistema: memoria, Descargas, SD, Drive…).",
       "Proyecto .json: tu diseño completo (piezas, física, cables, maniquí); interoperable entre la app web, Windows y la versión Godot.",
       "Prefab .prefab.json (Archivo → Exportar prefab de la selección): una máquina editada como archivo ESTRUCTURADO que reconoce cada parte y su función (componente, nombre, medidas, material y pose); se reinserta con Archivo → Insertar prefab.",
       "Modelo .glb/.gltf/.obj/.stl: modelos 3D para sustituir componentes o segmentos del maniquí en la Biblioteca (los STL de CAD en milímetros se convierten solos a cm).",
@@ -131,7 +161,9 @@ export function renderInstructivo(contenedor: HTMLElement): void {
     for (const p of item.puntos) ul.append(el("li", {}, [p]));
     const cuerpo = el("div", { class: "faq-cuerpo" }, [ul]);
     // Capturas demostrativas opcionales (public/instructivo/<id>-1.png, -2…):
-    // se añaden si existen, sin romper nada cuando no están.
+    // visibles por defecto; si el archivo no existe, la imagen se retira
+    // sola (ocultarlas con display:none impediría que el lazy-load las
+    // descargue jamás).
     for (let n = 1; n <= 4; n++) {
       const img = el("img", {
         class: "faq-img",
@@ -139,8 +171,7 @@ export function renderInstructivo(contenedor: HTMLElement): void {
         alt: item.pregunta,
         loading: "lazy",
       });
-      img.style.display = "none";
-      img.addEventListener("load", () => (img.style.display = "block"));
+      img.addEventListener("error", () => img.remove());
       cuerpo.append(img);
     }
     contenedor.append(
