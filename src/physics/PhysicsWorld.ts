@@ -88,39 +88,92 @@ export class PhysicsWorld {
   private detectarGuias(): void {
     const dinamicas = [...this.bodies.values()].filter(({ body }) => !body.isFixed());
     const fijas = [...this.bodies.values()].filter(({ body }) => body.isFixed());
+
+    // 1) Candidatas: piezas fijas ESBELTAS (tubulares) con su recta axial.
+    interface Esbelta {
+      centro: THREE.Vector3;
+      eje: THREE.Vector3;
+      largo: number;
+      esStopper: boolean;
+    }
+    const esbeltas: Esbelta[] = [];
+    for (const f of fijas) {
+      const s = f.obj.effectiveSize();
+      const dims: [number, "x" | "y" | "z"][] = [[s.x, "x"], [s.y, "y"], [s.z, "z"]];
+      dims.sort((a, b) => b[0] - a[0]);
+      const [largo, ejeLocal] = dims[0];
+      if (largo < 20 || largo < 4 * dims[1][0]) continue;
+      const eje = axisVector(ejeLocal).applyQuaternion(f.obj.mesh.quaternion).normalize();
+      esbeltas.push({ centro: f.obj.mesh.position.clone(), eje, largo, esStopper: false });
+    }
+    // 2) Taxonomía del sistema tubular guiado (5 piezas, según el diseñador):
+    //    de cada FAMILIA COAXIAL (misma recta), la pieza MÁS LARGA es la GUÍA
+    //    (tubo vertical largo) y las cortas montadas sobre ella son
+    //    ESPACIADORES/STOPPERS que limitan el recorrido del carrier.
+    for (const a of esbeltas) {
+      for (const b of esbeltas) {
+        if (a === b || a.largo >= b.largo) continue;
+        if (Math.abs(a.eje.dot(b.eje)) < 0.99) continue;
+        // Distancia lateral entre rectas (coaxialidad).
+        const d = a.centro.clone().sub(b.centro);
+        const lateral = d.clone().addScaledVector(b.eje, -d.dot(b.eje)).length();
+        if (lateral < 3) {
+          a.esStopper = true;
+          break;
+        }
+      }
+    }
+    // Guía de verdad = tubo LARGO (≥60); las cortas solo pueden ser stoppers.
+    const guiasTubo = esbeltas.filter((e) => !e.esStopper && e.largo >= 60);
+    const stoppers = esbeltas.filter((e) => e.esStopper);
+
+    // 3) Móviles guiadas: la recta de una guía ATRAVIESA su volumen (los
+    //    cilindros huecos del carrier abrazan el tubo).
     const bbox = new THREE.Box3();
     for (const d of dinamicas) {
       d.obj.mesh.updateMatrixWorld(true);
       bbox.setFromObject(d.obj.mesh);
+      const tam = bbox.getSize(new THREE.Vector3());
       bbox.expandByScalar(1); // cm de tolerancia del abrazo
       const centroD = d.obj.mesh.position;
       let eje: THREE.Vector3 | null = null;
       let sMin = -Infinity;
       let sMax = Infinity;
-      for (const f of fijas) {
-        const s = f.obj.effectiveSize();
-        const dims: [number, "x" | "y" | "z"][] = [[s.x, "x"], [s.y, "y"], [s.z, "z"]];
-        dims.sort((a, b) => b[0] - a[0]);
-        const [largo, ejeLocal] = dims[0];
-        // Guía = pieza ESBELTA: larga (≥40) y al menos 5× sus otras medidas.
-        if (largo < 40 || largo < 5 * dims[1][0]) continue;
-        const ejeW = axisVector(ejeLocal).applyQuaternion(f.obj.mesh.quaternion).normalize();
-        const centroF = f.obj.mesh.position;
-        // Punto de la recta de la guía más cercano al centro de la móvil.
-        const delta = centroD.clone().sub(centroF);
-        const p = centroF.clone().addScaledVector(ejeW, delta.dot(ejeW));
-        // ¿La guía atraviesa el volumen de la móvil? (el manguito la abraza)
+      let halfD = 0;
+      for (const g of guiasTubo) {
+        const delta = centroD.clone().sub(g.centro);
+        const p = g.centro.clone().addScaledVector(g.eje, delta.dot(g.eje));
         if (!bbox.containsPoint(p)) continue;
-        if (eje && Math.abs(eje.dot(ejeW)) < 0.99) continue; // dirección discordante
-        if (!eje) eje = ejeW.clone();
-        // Recorrido del CENTRO de la móvil: dentro del tramo del tubo (con
-        // margen), medido a lo largo del eje respecto a su posición inicial.
+        if (eje && Math.abs(eje.dot(g.eje)) < 0.99) continue;
+        if (!eje) {
+          eje = g.eje.clone();
+          // Semiextensión de la móvil a lo largo del eje (soporte del AABB).
+          halfD =
+            (tam.x * Math.abs(eje.x) + tam.y * Math.abs(eje.y) + tam.z * Math.abs(eje.z)) / 2;
+        }
+        // Recorrido del CENTRO: la móvil completa se queda sobre el tubo.
         const s0 = centroD.dot(eje);
-        const sF = centroF.dot(eje);
-        sMin = Math.max(sMin, sF - largo / 2 + 5 - s0);
-        sMax = Math.min(sMax, sF + largo / 2 - 5 - s0);
+        const sG = g.centro.dot(eje);
+        sMin = Math.max(sMin, sG - g.largo / 2 + halfD - s0);
+        sMax = Math.min(sMax, sG + g.largo / 2 - halfD - s0);
       }
       if (!eje || sMin > sMax) continue;
+      // 4) STOPPERS: los espaciadores asentados en la guía acotan la caída
+      //    (o el ascenso) — el carrier se DETIENE al tocarlos, sin llegar a
+      //    la platina inferior.
+      const s0 = centroD.dot(eje);
+      for (const st of stoppers) {
+        if (Math.abs(st.eje.dot(eje)) < 0.99) continue;
+        const delta = centroD.clone().sub(st.centro);
+        const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
+        if (lateral > Math.max(tam.x, tam.y, tam.z) / 2 + 3) continue; // no está en su línea
+        const sSt = st.centro.dot(eje);
+        const stTop = sSt + st.largo / 2;
+        const stBot = sSt - st.largo / 2;
+        if (stTop <= s0) sMin = Math.max(sMin, stTop + halfD - s0);
+        else if (stBot >= s0) sMax = Math.min(sMax, stBot - halfD - s0);
+      }
+      if (sMin > sMax) continue;
       const q = d.obj.mesh.quaternion;
       this.guias.push({
         body: d.body,

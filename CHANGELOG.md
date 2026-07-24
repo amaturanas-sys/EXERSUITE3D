@@ -9,16 +9,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Corregido
 
-- **GUÍAS TUBULARES reconocidas por el MOTOR**: al construir el mundo
-  físico, el motor detecta qué piezas fijas y esbeltas (tubos/pilares de
-  guía) ATRAVIESAN el volumen de una pieza móvil — los cilindros huecos del
-  carrier abrazan los tubos — y circunscribe su movimiento al eje de la
-  guía: solo se desliza a lo largo del tubo, con límites en sus extremos,
-  sin deriva lateral ni vuelco (clamp cinemático duro que ninguna tensión
-  de cable ni colisión puede vencer; se aplica tras el solver y tras la
-  corrección del cable). Funciona con cualquier prefab, sin necesidad de
-  uniones manuales — verificado: deriva lateral 0,0002 cm y rotación 0 en
-  8 s de simulación con el cable del lat pulldown.
+- **Sistema de polea tubular guiada reconocido por el MOTOR (5 piezas)**:
+  al construir el mundo físico, el motor clasifica el sistema según la
+  taxonomía del diseñador — el CARRIER (soporta discos a cada lado y abraza
+  con sus cilindros huecos), las 2 GUÍAS TUBULARES (los tubos verticales
+  largos: la pieza más larga de cada familia coaxial) y los 2 ESPACIADORES/
+  STOPPERS (los tubos huecos cortos asentados al pie de cada guía). El
+  movimiento del carrier queda CIRCUNSCRITO al eje de las guías (clamp
+  cinemático duro tras el solver y tras la corrección del cable: sin deriva
+  lateral ni vuelco) y los stoppers LIMITAN su caída — se detiene sobre
+  ellos sin llegar a la platina inferior. Independiente del prefab, sin
+  uniones manuales. Verificado: caída libre detenida en el stop (67→66,4)
+  y, con el cable del lat pulldown, deriva lateral 0 durante 6 s.
 
 ## [0.2.5] — 2026-07-23
 
