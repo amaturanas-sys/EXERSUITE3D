@@ -557,9 +557,13 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Bloque de peso",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 30, height: 4, depth: 18 },
+    // Los dos orificios verticales abrazan los tubos guia de un sistema de
+    // poleas (separacion de los tubos guia del TTP: 13.3 cm): el bloque se
+    // desliza por las guias como el carrier.
+    defaults: { kind: "box", width: 30, height: 4, depth: 18, holeDiameter: 6, holeSpacing: 13.3 },
     physics: { massKg: 5, fixed: false },
-    description: "Placa de la pila de pesos seleccionable.",
+    description:
+      "Placa de la pila de pesos seleccionable, con dos orificios verticales que abrazan los tubos guía (se desliza por ellos como el carrier del TTP).",
   },
   {
     id: "disco-peso",
@@ -594,10 +598,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Pila de pesos",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 25, height: 90, depth: 18 },
+    defaults: { kind: "box", width: 25, height: 90, depth: 18, holeDiameter: 6, holeSpacing: 13.3 },
     physics: { massKg: 102, fixed: false },
     stack: { plateCount: 15, plateMassKg: 6.8, selected: 5 },
-    description: "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba.",
+    description:
+      "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas.",
   },
   {
     id: "cuerno-carga",

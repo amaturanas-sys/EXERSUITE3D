@@ -95,6 +95,7 @@ export class PhysicsWorld {
       eje: THREE.Vector3;
       largo: number;
       esStopper: boolean;
+      cuerpo: R.RigidBody;
     }
     const esbeltas: Esbelta[] = [];
     for (const f of fijas) {
@@ -104,7 +105,13 @@ export class PhysicsWorld {
       const [largo, ejeLocal] = dims[0];
       if (largo < 20 || largo < 4 * dims[1][0]) continue;
       const eje = axisVector(ejeLocal).applyQuaternion(f.obj.mesh.quaternion).normalize();
-      esbeltas.push({ centro: f.obj.mesh.position.clone(), eje, largo, esStopper: false });
+      esbeltas.push({
+        centro: f.obj.mesh.position.clone(),
+        eje,
+        largo,
+        esStopper: false,
+        cuerpo: f.body,
+      });
     }
     // 2) Taxonomía del sistema tubular guiado (5 piezas, según el diseñador):
     //    de cada FAMILIA COAXIAL (misma recta), la pieza MÁS LARGA es la GUÍA
@@ -129,6 +136,13 @@ export class PhysicsWorld {
 
     // 3) Móviles guiadas: la recta de una guía ATRAVIESA su volumen (los
     //    cilindros huecos del carrier abrazan el tubo).
+    //    Las guías y stoppers de una móvil guiada NO COLISIONAN con ella: el
+    //    tubo pasa por dentro de sus orificios y el clamp cinemático (con el
+    //    stop de los espaciadores) es quien gobierna ese movimiento — sin la
+    //    exclusión, la fricción del contacto permanente collider-tubo frena
+    //    o atasca el deslizamiento.
+    const usadas = new Set<R.RigidBody>();
+    const guiados = new Set<R.RigidBody>();
     const bbox = new THREE.Box3();
     for (const d of dinamicas) {
       d.obj.mesh.updateMatrixWorld(true);
@@ -145,6 +159,7 @@ export class PhysicsWorld {
         const p = g.centro.clone().addScaledVector(g.eje, delta.dot(g.eje));
         if (!bbox.containsPoint(p)) continue;
         if (eje && Math.abs(eje.dot(g.eje)) < 0.99) continue;
+        usadas.add(g.cuerpo);
         if (!eje) {
           eje = g.eje.clone();
           // Semiextensión de la móvil a lo largo del eje (soporte del AABB).
@@ -172,8 +187,10 @@ export class PhysicsWorld {
         const stBot = sSt - st.largo / 2;
         if (stTop <= s0) sMin = Math.max(sMin, stTop + halfD - s0);
         else if (stBot >= s0) sMax = Math.min(sMax, stBot - halfD - s0);
+        usadas.add(st.cuerpo);
       }
       if (sMin > sMax) continue;
+      guiados.add(d.body);
       const q = d.obj.mesh.quaternion;
       this.guias.push({
         body: d.body,
@@ -183,6 +200,19 @@ export class PhysicsWorld {
         sMin: sMin * S,
         sMax: sMax * S,
       });
+    }
+
+    // Exclusión de contacto guiado↔guía: las guías/stoppers EN USO quedan
+    // con membresía exclusiva (bit 2) y los cuerpos guiados la filtran. El
+    // resto del mundo sigue colisionando con todo (una barra suelta no
+    // atraviesa los tubos; el guiado sí "los abraza" sin rozamiento).
+    const GRUPO_GUIA = (0x0002 << 16) | 0xffff;
+    const FILTRO_GUIADO = (0xffff << 16) | 0xfffd;
+    for (const c of usadas) {
+      for (let i = 0; i < c.numColliders(); i++) c.collider(i).setCollisionGroups(GRUPO_GUIA);
+    }
+    for (const c of guiados) {
+      for (let i = 0; i < c.numColliders(); i++) c.collider(i).setCollisionGroups(FILTRO_GUIADO);
     }
   }
 

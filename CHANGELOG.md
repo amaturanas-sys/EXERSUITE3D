@@ -50,6 +50,16 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
   uniones manuales. Verificado: caída libre detenida en el stop (67→66,4)
   y, con el cable del lat pulldown, deriva lateral 0 durante 6 s.
 
+- **Bloque de peso y pila de pesos GUIADOS por tubos verticales** (como el
+  carrier del TTP): ambos llevan ahora DOS ORIFICIOS cilíndricos pasantes
+  (separación de fábrica 13,3 cm — la de los tubos guía del TTP, editable
+  por parámetros) que describen el espacio justo para deslizarse por las
+  guías. Cada placa de la pila va perforada y sus varillas pasan POR los
+  orificios. En el motor, un cuerpo guiado ya NO ROZA con sus guías ni
+  stoppers (el tubo corre por dentro del orificio): el clamp cinemático y
+  los stops gobiernan el movimiento — verificado: el bloque y la pila caen
+  circunscritos (deriva 0) y se detienen exactamente al final de la guía.
+
 ### Cambiado
 
 - **El APK viaja como `EXERSUITE3D.APK`** dentro del artefacto de CI y de la

@@ -21,6 +21,33 @@ function baseGeometry(p: PrimitiveParams, deform: boolean): THREE.BufferGeometry
   const d = p.depth ?? 10;
   switch (p.kind) {
     case "box": {
+      // Dos orificios verticales pasantes (bloques/pilas de sistemas de
+      // poleas guiadas): el bloque se extruye como placa con agujeros y se
+      // levanta para que los orificios queden a lo largo del eje Y.
+      const holeR = (p.holeDiameter ?? 0) / 2;
+      if (holeR > 0.01 && !deform) {
+        const sep = p.holeSpacing ?? 0;
+        const forma = new THREE.Shape();
+        forma.moveTo(-w / 2, -d / 2);
+        forma.lineTo(w / 2, -d / 2);
+        forma.lineTo(w / 2, d / 2);
+        forma.lineTo(-w / 2, d / 2);
+        forma.closePath();
+        for (const cx of sep > 0.01 ? [-sep / 2, sep / 2] : [0]) {
+          const agujero = new THREE.Path();
+          agujero.absarc(cx, 0, Math.min(holeR, w / 2 - 0.1, d / 2 - 0.1), 0, Math.PI * 2, true);
+          forma.holes.push(agujero);
+        }
+        const geo = new THREE.ExtrudeGeometry(forma, {
+          depth: h,
+          bevelEnabled: false,
+          curveSegments: 24,
+        });
+        geo.rotateX(-Math.PI / 2); // la extrusion (Z) pasa a ser la altura (Y)
+        geo.translate(0, -h / 2, 0);
+        geo.computeVertexNormals();
+        return geo;
+      }
       const bevel = p.bevel ?? 0;
       if (bevel > 0.01) {
         const r = Math.min(bevel, Math.min(w, h, d) / 2 - 0.01);

@@ -46,9 +46,15 @@ export interface PrimitiveParams {
   path?: [number, number, number][];
   /** Extremos del perfil: corte plano o diagonal (solo beam recto). */
   ends?: "plano" | "diagonal";
-  /** Diametro de los pinholes (cm); 0 o ausente = sin agujeros (solo beam recto). */
+  /**
+   * Diametro de los agujeros (cm); 0 o ausente = sin agujeros.
+   * - beam recto: pinholes laterales a lo largo de la pieza.
+   * - box: DOS ORIFICIOS VERTICALES pasantes (eje Y) que abrazan los tubos
+   *   guia de un sistema de poleas — como los cilindros huecos del carrier
+   *   del TTP: la pieza se desliza por las guias verticales.
+   */
   holeDiameter?: number;
-  /** Distancia entre centros de pinholes (cm). */
+  /** Distancia entre centros de los agujeros (cm). */
   holeSpacing?: number;
 }
 

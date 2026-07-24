@@ -143,13 +143,28 @@ export class SceneObject {
     };
 
     // Placas (de abajo a arriba). Las SEL de arriba forman el carriage.
+    // Si el componente define orificios verticales (sistema de poleas
+    // guiadas), cada placa se perfora con ellos — como el carrier del TTP.
+    const holeDia = this.customModel ? 0 : this.params.holeDiameter ?? 0;
+    const holeSep = this.params.holeSpacing ?? 0;
     for (let i = 0; i < P; i++) {
       const y = -H / 2 + (i + 0.5) * (H / P);
-      const m = new THREE.Mesh(new THREE.BoxGeometry(W, plateH, D), buildMaterial(this.materialId));
+      const placa = buildGeometry({
+        kind: "box",
+        width: W,
+        height: plateH,
+        depth: D,
+        holeDiameter: holeDia,
+        holeSpacing: holeSep,
+      });
+      const m = new THREE.Mesh(placa, buildMaterial(this.materialId));
       add(m, y, i >= P - SEL);
     }
-    // Varillas guia (estaticas).
-    for (const sx of [-(W / 2 + 1.5), W / 2 + 1.5]) {
+    // Varillas guia (estaticas): si hay orificios, pasan POR ellos.
+    const varillas = holeDia > 0.01 && holeSep > 0.01
+      ? [-holeSep / 2, holeSep / 2]
+      : [-(W / 2 + 1.5), W / 2 + 1.5];
+    for (const sx of varillas) {
       const r = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, H, 12), buildMaterial("cromo"));
       r.position.x = sx;
       add(r, 0, false);
