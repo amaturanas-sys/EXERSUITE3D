@@ -148,6 +148,18 @@ export interface ComponentDefinition {
    */
   calceLocal?: [number, number];
   /**
+   * Eje LOCAL horizontal con el que la pieza ENCARA el poste al calzar (el
+   * pin/mordaza mira en esta dirección). Por defecto "z" (jotas y brazos);
+   * el anclaje de cadena monta por "x".
+   */
+  frenteCalce?: "x" | "z";
+  /**
+   * Punto local [x, z] del CILINDRO-PIVOTE (cm): el eje horizontal del que
+   * cuelgan cadenas o se articulan BRAZOS móviles (jammer arms). Si falta,
+   * el pivote es el centro de la pieza.
+   */
+  pivoteLocal?: [number, number];
+  /**
    * La pieza CARGA DISCOS por su eje (se ensamblan por el orificio central
    * del disco y quedan suspendidos): lados de carga (1 = un extremo,
    * 2 = ambos), diametro/grosor del disco (cm) y masa por disco (kg).

@@ -338,9 +338,17 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     // Auditoría de biblioteca: rótulo corregido — no es una jota, es el
     // punto de ANCLAJE de las cadenas de seguridad (calza en los agujeros).
+    // Anatomía (sonda de la malla): el CUERPO/mordaza está en +X local (ese
+    // lado articula con los pinholes del pilar, como las jhooks) y el
+    // CILINDRO horizontal corre a lo largo de X con centro en x=-3.8 — es
+    // el EJE-PIVOTE del que cuelgan cadenas o se articulan brazos móviles.
     defaults: { kind: "box", width: 13.2, height: 13, depth: 7.4 },
     physics: { massKg: 0, fixed: true },
-    description: "Punto de anclaje real para las cadenas de seguridad del POWERRACK: calza en los agujeros de la columna.",
+    calceLocal: [4.3, 0],
+    frenteCalce: "x",
+    pivoteLocal: [-3.8, 0],
+    description:
+      "Anclaje real del POWERRACK: el cuerpo calza en los pinholes de la columna y su cilindro horizontal es el pivote de cadenas y brazos móviles.",
   },
   {
     id: "jota-rodillo-pr",

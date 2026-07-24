@@ -1013,7 +1013,13 @@ export class Editor {
       )
         .applyQuaternion(poste.mesh.quaternion)
         .normalize();
-      const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(obj.mesh.quaternion);
+      // Cada pieza ENCARA el poste por su propio eje local (frenteCalce):
+      // las jotas/brazos por Z; el anclaje de cadena monta por X.
+      const frenteLocal =
+        getDefinition(obj.componentId)?.frenteCalce === "x"
+          ? new THREE.Vector3(1, 0, 0)
+          : new THREE.Vector3(0, 0, 1);
+      const frente = frenteLocal.applyQuaternion(obj.mesh.quaternion);
       frente.addScaledVector(eje, -frente.dot(eje)); // ⊥ al poste
       if (frente.lengthSq() > 1e-6) {
         frente.normalize();
@@ -1079,18 +1085,22 @@ export class Editor {
       obj.mesh.position.clone().addScaledVector(ejeLargo, -medio),
     ];
 
-    // Anclaje de cadena más cercano a cualquiera de los dos extremos.
+    // Anclaje de cadena más cercano a cualquiera de los dos extremos. El
+    // pivote es su CILINDRO horizontal (pivoteLocal), no el centro del cuerpo.
     let anclaje: SceneObject | null = null;
     let puntoPivote: THREE.Vector3 | null = null;
     let mejorDist = 40; // alcance del trazado (cm)
     for (const o of this.objects.values()) {
       if (o === obj || o.componentId !== "jota-pr") continue;
+      const piv = getDefinition(o.componentId)?.pivoteLocal ?? [0, 0];
+      o.mesh.updateMatrixWorld(true);
+      const cilindro = o.mesh.localToWorld(new THREE.Vector3(piv[0], 0, piv[1]));
       for (const ext of extremos) {
-        const d = ext.distanceTo(o.mesh.position);
+        const d = ext.distanceTo(cilindro);
         if (d < mejorDist) {
           mejorDist = d;
           anclaje = o;
-          puntoPivote = o.mesh.position.clone();
+          puntoPivote = cilindro.clone();
         }
       }
     }
@@ -1108,15 +1118,23 @@ export class Editor {
       massKg: obj.physics.massKg > 0 ? obj.physics.massKg : 4,
     };
 
-    // Pivote en el anclaje; el eje de giro sigue el PIN del anclaje
-    // (horizontal): el eje global más próximo a su frente local Z.
-    const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(anclaje.mesh.quaternion);
+    // Pivote en el CILINDRO del anclaje; el eje de giro es el del cilindro
+    // (su frente de calce): el eje global más próximo a esa dirección.
+    const frenteLocal =
+      getDefinition(anclaje.componentId)?.frenteCalce === "x"
+        ? new THREE.Vector3(1, 0, 0)
+        : new THREE.Vector3(0, 0, 1);
+    const frente = frenteLocal.applyQuaternion(anclaje.mesh.quaternion);
     const eje: AxisName = Math.abs(frente.x) >= Math.abs(frente.z) ? "x" : "z";
     const joint = this.connect(anclaje.id, obj.id, "revolute", puntoPivote);
     if (!joint) return "No se pudo crear la articulación";
     joint.axis = eje;
     joint.name = tt("Brazo articulado", "Articulated arm");
     joint.locked = false;
+    // Péndulo LIBRE alrededor del cilindro (los límites por defecto de las
+    // bisagras acotan a [-90°, 0°] y forzarían el brazo fuera de su caída);
+    // el usuario puede acotar el recorrido después en Conexiones.
+    joint.limitsEnabled = false;
     this.refreshJointHelpers();
     this.bus.emit("jointsChanged", { joints: this.listJoints() });
     this.scheduleAutosave();
