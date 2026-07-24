@@ -3,7 +3,11 @@ import type { SceneObject } from "../objects/SceneObject";
 import type { PrimitiveParams } from "../objects/types";
 import { MATERIAL_PRESETS } from "../objects/materials";
 import { degToRad, radToDeg, roundTo } from "../core/units";
+import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
+
+/** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
+const PIEZAS_CALCE = new Set(["j-hook", "jota-pr", "jota-rodillo-pr", "brazo-seguridad"]);
 
 type DimField = { key: keyof PrimitiveParams; label: string };
 
@@ -123,7 +127,70 @@ export class PropertiesPanel {
     }
     this.body.append(this.flipSection());
     if (obj.stack) this.body.append(this.stackSection(obj));
+    if (obj.carga) this.body.append(this.cargaSection(obj));
+    if (PIEZAS_CALCE.has(obj.componentId)) this.body.append(this.calceSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  /**
+   * Calce en el poste (jotas y brazos de seguridad): la pieza sube o baja
+   * por su montante AGUJERO POR AGUJERO, como en el rack real.
+   */
+  private calceSection(obj: SceneObject): HTMLElement {
+    const aviso = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const paso = (dir: 1 | -1) => {
+      const err = this.editor.calcePorAgujero(obj.id, dir);
+      aviso.textContent = err ?? "";
+    };
+    const subir = el("button", { class: "tool" }, ["▲ ", tt("Subir un agujero", "Up one hole")]);
+    subir.addEventListener("click", () => paso(1));
+    const bajar = el("button", { class: "tool" }, ["▼ ", tt("Bajar un agujero", "Down one hole")]);
+    bajar.addEventListener("click", () => paso(-1));
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Calce en el poste (agujero a agujero)", "Post catch (hole by hole)")]),
+      el("div", { class: "row" }, [subir, bajar]),
+      aviso,
+    ]);
+  }
+
+  /**
+   * Discos montados: cuántos discos se ensamblan introduciendo el cilindro
+   * de la pieza por el orificio central — quedan suspendidos y suman masa.
+   */
+  private cargaSection(obj: SceneObject): HTMLElement {
+    const carga = obj.carga!;
+    const total = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const cuenta = el("input", {
+      type: "number",
+      value: String(obj.discosMontados()),
+      step: "1",
+      min: "0",
+    });
+    const aplicar = (n: number) => {
+      obj.params.discCount = Math.max(0, Math.round(n));
+      obj.rebuildCargaVisual();
+      cuenta.value = String(obj.discosMontados());
+      const kg = roundTo(obj.effectiveMassKg(), 1);
+      total.textContent = tt(
+        `Masa total con discos: ${kg} kg (${carga.masaKg} kg por disco)`,
+        `Total mass with plates: ${kg} kg (${carga.masaKg} kg per plate)`,
+      );
+      this.editor.bus.emit("objectTransformed", { object: obj });
+    };
+    cuenta.addEventListener("change", () => {
+      const v = parseFloat(cuenta.value);
+      if (Number.isFinite(v)) aplicar(v);
+    });
+    const menos = el("button", { class: "tool" }, ["− 1"]);
+    menos.addEventListener("click", () => aplicar(obj.discosMontados() - 1));
+    const mas = el("button", { class: "tool" }, ["+ 1"]);
+    mas.addEventListener("click", () => aplicar(obj.discosMontados() + 1));
+    aplicar(obj.discosMontados());
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Discos montados (por el orificio central)", "Mounted plates (through the center hole)")]),
+      el("div", { class: "row" }, [menos, cuenta, mas]),
+      total,
+    ]);
   }
 
   /** Sección de piezas de línea (pilar/travesaño/tubo): medidas y doblado. */
@@ -252,6 +319,20 @@ export class PropertiesPanel {
       return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
     };
 
+    // Pin del selector: mueve la selección placa a placa, como al cambiar el
+    // pin de sitio en la máquina real — el cable solo toma las seleccionadas.
+    const moverPin = (delta: number) => {
+      st.selected = Math.max(0, Math.min(Math.round(st.selected) + delta, Math.round(st.plateCount)));
+      obj.rebuildStackVisual();
+      updateEff();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      this.show(obj); // refresca el campo "Seleccion"
+    };
+    const pinMas = el("button", { class: "tool" }, ["▼ ", tt("Pin +1 placa", "Pin +1 plate")]);
+    pinMas.addEventListener("click", () => moverPin(1));
+    const pinMenos = el("button", { class: "tool" }, ["▲ ", tt("Pin −1 placa", "Pin −1 plate")]);
+    pinMenos.addEventListener("click", () => moverPin(-1));
+
     updateEff();
     return el("div", {}, [
       el("div", { class: "field" }, [
@@ -261,6 +342,10 @@ export class PropertiesPanel {
           numField("kg/placa", st.plateMassKg, "0.5", (v) => (st.plateMassKg = v)),
           numField("Seleccion", st.selected, "1", (v) => (st.selected = Math.round(v))),
         ]),
+      ]),
+      el("div", { class: "field" }, [
+        el("label", {}, [tt("Pin del selector (el cable toma las placas seleccionadas)", "Selector pin (the cable takes the selected plates)")]),
+        el("div", { class: "row" }, [pinMenos, pinMas]),
       ]),
       el("div", { class: "field" }, [effective]),
     ]);

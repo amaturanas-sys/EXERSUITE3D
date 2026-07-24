@@ -17,6 +17,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 8, height: 200, depth: 8 },
     physics: { massKg: 0, fixed: true },
+    holeStepCm: 10,
     description: "Columna vertical de soporte de carga.",
   },
   {
@@ -76,7 +77,8 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 30, height: 8, depth: 12 },
     physics: { massKg: 0, fixed: true },
-    description: "Brazo o repisa que sostiene la pila de pesos.",
+    cargaDiscos: { lados: 1, diamCm: 44, grosorCm: 3, masaKg: 20 },
+    description: "Atril/repisa de discos: los discos se ensamblan por su orificio central y quedan suspendidos.",
   },
   {
     id: "j-hook",
@@ -97,6 +99,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 7.6, height: 230, depth: 7.6 },
     physics: { massKg: 0, fixed: true },
+    holeStepCm: 5,
     description: "Columna perforada de power rack (3x3\", grilla de pin).",
   },
   {
@@ -118,6 +121,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 5, height: 204, depth: 7 },
     physics: { massKg: 0, fixed: true },
+    holeStepCm: 10,
     description:
       "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).",
   },
@@ -249,8 +253,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // por los rieles del sistema de poleas (auditoría: horneado horizontal).
     defaults: { kind: "box", width: 6.1, height: 8.1, depth: 88 },
     physics: { massKg: 8, fixed: false },
+    cargaDiscos: { lados: 2, diamCm: 34, grosorCm: 3, masaKg: 10 },
     description:
-      "Portadiscos real del TTP001L: barra deslizante que soporta los discos y corre guiada por los rieles; el cable del sistema de poleas la eleva.",
+      "Portadiscos real del TTP001L: barra deslizante que soporta los discos A CADA LADO (se ensamblan por el orificio central) y corre guiada por los rieles; el cable la eleva.",
   },
   {
     id: "manguito-guia-ttp",
@@ -269,6 +274,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: { kind: "box", width: 7, height: 110, depth: 7 },
     physics: { massKg: 0, fixed: true },
+    holeStepCm: 7.5,
     description:
       "Tramo real de columna perforada del POWERRACK (7×7×110): dos apilados forman cada poste de 220.",
   },
@@ -591,7 +597,8 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.45, radiusBottom: 1.45, height: 220, radialSegments: 24 },
     physics: { massKg: 20, fixed: false },
-    description: "Barra olimpica de 2.2 m (barbell).",
+    cargaDiscos: { lados: 2, diamCm: 44, grosorCm: 3, masaKg: 20 },
+    description: "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.",
   },
   {
     id: "pila-pesos",
@@ -611,7 +618,8 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 2.5, radiusBottom: 2.5, height: 25 },
     physics: { massKg: 0.5, fixed: false },
-    description: "Manguito olimpico donde se cargan los discos (plate-loaded).",
+    cargaDiscos: { lados: 1, diamCm: 44, grosorCm: 3, masaKg: 20 },
+    description: "Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central.",
   },
   {
     id: "micro-disco",

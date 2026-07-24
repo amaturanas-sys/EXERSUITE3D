@@ -56,6 +56,13 @@ export interface PrimitiveParams {
   holeDiameter?: number;
   /** Distancia entre centros de los agujeros (cm). */
   holeSpacing?: number;
+  /**
+   * DISCOS MONTADOS en la pieza (carrier, barra olimpica, cuerno de carga,
+   * atril): cantidad de discos ensamblados introduciendo el cilindro por el
+   * orificio central — quedan suspendidos por la estructura y se mueven con
+   * ella. La definicion del componente (cargaDiscos) fija lados y medidas.
+   */
+  discCount?: number;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */
@@ -113,6 +120,26 @@ export interface ComponentDefinition {
    * dominadas horizontales, discos de pie como rueda).
    */
   orientacion?: [number, number, number];
+  /**
+   * Paso de la grilla de agujeros de calce (cm) en postes verticales: las
+   * jotas y brazos de seguridad suben/bajan por el poste AGUJERO POR AGUJERO
+   * con este paso.
+   */
+  holeStepCm?: number;
+  /**
+   * La pieza CARGA DISCOS por su eje (se ensamblan por el orificio central
+   * del disco y quedan suspendidos): lados de carga (1 = un extremo,
+   * 2 = ambos), diametro/grosor del disco (cm) y masa por disco (kg).
+   */
+  cargaDiscos?: CargaDiscosDef;
   /** Descripcion corta para tooltips. */
   description: string;
+}
+
+/** Definicion de la carga de discos de una pieza (ver ComponentDefinition). */
+export interface CargaDiscosDef {
+  lados: 1 | 2;
+  diamCm: number;
+  grosorCm: number;
+  masaKg: number;
 }

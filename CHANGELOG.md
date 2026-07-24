@@ -50,6 +50,22 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
   uniones manuales. Verificado: caída libre detenida en el stop (67→66,4)
   y, con el cable del lat pulldown, deriva lateral 0 durante 6 s.
 
+- **Interacciones de máquina real en el simulador**:
+  - **Calce AGUJERO POR AGUJERO**: los ganchos J y los brazos de seguridad
+    suben y bajan por su poste siguiendo la grilla de agujeros del montante
+    (paso 5 cm en rack 3×3, 10 cm en el TTP, 7,5 cm en el POWERRACK), con
+    ajuste automático a la grilla, tope en los extremos y botones ▲/▼ en el
+    panel de Propiedades.
+  - **Pin del selector del stack**: botones que mueven el pin placa a placa
+    — el cable toma SOLO las placas seleccionadas (masa efectiva y carriage
+    ya respondían a la selección; ahora el pin se maneja como en la máquina).
+  - **DISCOS MONTADOS**: el portadiscos (carrier), las barras olímpicas, los
+    cuernos de carga y los atriles aceptan una cantidad de discos que se
+    ensamblan introduciendo el cilindro por el orificio central del disco —
+    quedan suspendidos por la estructura, se mueven con ella en la
+    simulación y suman su masa (20 kg por disco olímpico, 10 kg en el
+    carrier). La cantidad se recorta a lo que cabe en el largo de la pieza
+    y persiste en proyectos y prefabs.
 - **Bloque de peso y pila de pesos GUIADOS por tubos verticales** (como el
   carrier del TTP): ambos llevan ahora DOS ORIFICIOS cilíndricos pasantes
   (separación de fábrica 13,3 cm — la de los tubos guía del TTP, editable

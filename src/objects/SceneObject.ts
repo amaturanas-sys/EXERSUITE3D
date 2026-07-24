@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type {
+  CargaDiscosDef,
   ComponentCategory,
   PhysicalAttributes,
   PrimitiveParams,
@@ -24,6 +25,8 @@ export class SceneObject {
   physics: PhysicalAttributes;
   /** Pila selectorizada (solo en componentes tipo stack). */
   stack?: StackInfo;
+  /** Carga de discos (carrier/barra/cuerno/atril): lados y medidas del disco. */
+  carga?: CargaDiscosDef;
   /** True si la geometria proviene de un modelo importado (no parametrica). */
   imported = false;
   /** True si un modelo 3D personalizado sustituye a la primitiva del componente. */
@@ -40,6 +43,7 @@ export class SceneObject {
     physics: PhysicalAttributes;
     materialId: string;
     stack?: StackInfo;
+    carga?: CargaDiscosDef;
     importedGeometry?: THREE.BufferGeometry;
   }) {
     this.id = `obj_${nextId++}`;
@@ -50,6 +54,7 @@ export class SceneObject {
     this.params = { ...opts.params };
     this.physics = { ...opts.physics };
     this.stack = opts.stack ? { ...opts.stack } : undefined;
+    this.carga = opts.carga ? { ...opts.carga } : undefined;
 
     this.imported = !!opts.importedGeometry;
     const geometry = opts.importedGeometry ?? buildGeometry(this.params);
@@ -61,6 +66,7 @@ export class SceneObject {
     this.mesh.name = this.name;
 
     if (this.stack) this.rebuildStackVisual();
+    if (this.carga) this.rebuildCargaVisual();
   }
 
   /** Partes visuales de la pila (placas/varillas/tubo) para animarlas. */
@@ -78,6 +84,7 @@ export class SceneObject {
     this.mesh.geometry = buildGeometry(this.params);
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
+    if (this.carga) this.rebuildCargaVisual();
   }
 
   /**
@@ -93,6 +100,7 @@ export class SceneObject {
     // Las placas/varillas/pin de la pila se dimensionan con el bbox de la
     // geometria: hay que reconstruirlas con la nueva.
     if (this.stack) this.rebuildStackVisual();
+    if (this.carga) this.rebuildCargaVisual();
   }
 
   /** Vuelve a la primitiva parametrica del componente. */
@@ -103,6 +111,7 @@ export class SceneObject {
     this.mesh.geometry = buildGeometry(this.params);
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
+    if (this.carga) this.rebuildCargaVisual();
   }
 
   /**
@@ -184,6 +193,81 @@ export class SceneObject {
     }
   }
 
+  /** Discos ensamblados (visual) y cuántos caben realmente montados. */
+  private cargaParts: THREE.Mesh[] = [];
+  private cargaMontada = 0;
+
+  /** Cantidad de discos pedida por el usuario (params.discCount). */
+  discosMontados(): number {
+    return Math.max(0, Math.round(this.params.discCount ?? 0));
+  }
+
+  /**
+   * Reconstruye los DISCOS MONTADOS: se ensamblan introduciendo el cilindro
+   * de la pieza por el orificio central del disco y quedan suspendidos por
+   * la estructura (hijos del mesh: se mueven con ella en la simulación).
+   * En piezas de dos lados (barra olímpica, carrier) se reparten
+   * alternadamente; en las de un lado (cuerno, atril) se apilan desde la
+   * base. La cantidad se recorta a lo que cabe en el largo de la pieza.
+   */
+  rebuildCargaVisual(): void {
+    if (!this.carga) return;
+    for (const m of this.cargaParts) {
+      this.mesh.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+    }
+    this.cargaParts = [];
+    this.cargaMontada = 0;
+    const n = this.discosMontados();
+    if (n === 0) return;
+
+    // Eje de carga = eje local MÁS LARGO de la pieza (por él entran los discos).
+    const geo = this.mesh.geometry;
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    const dims = [bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z];
+    const ejeIdx = dims.indexOf(Math.max(...dims));
+    const L = dims[ejeIdx];
+    const eje = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+    ][ejeIdx];
+    const centro = bb.getCenter(new THREE.Vector3());
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
+
+    const paso = this.carga.grosorCm + 0.4;
+    // Dos lados: desde el collarín interior hacia la punta; un lado: desde la base.
+    const s0 = this.carga.lados === 2 ? L * 0.3 : 0;
+    const maxPorLado =
+      this.carga.lados === 2
+        ? Math.max(0, Math.floor((L / 2 - s0) / paso))
+        : Math.max(0, Math.floor((L - 2) / paso));
+
+    for (let i = 0; i < n; i++) {
+      const lado = this.carga.lados === 2 ? (i % 2 === 0 ? 1 : -1) : 1;
+      const idx = this.carga.lados === 2 ? Math.floor(i / 2) : i;
+      if (idx >= maxPorLado) break; // ya no caben más en la pieza
+      const s =
+        this.carga.lados === 2
+          ? s0 + (idx + 0.5) * paso
+          : -L / 2 + 1 + (idx + 0.5) * paso;
+      const disco = new THREE.Mesh(
+        new THREE.CylinderGeometry(this.carga.diamCm / 2, this.carga.diamCm / 2, this.carga.grosorCm, 28),
+        buildMaterial("hierro-fundido"),
+      );
+      disco.quaternion.copy(quat);
+      disco.position.copy(centro).addScaledVector(eje, lado * s);
+      disco.castShadow = true;
+      disco.receiveShadow = true;
+      disco.userData.sceneObjectId = this.id;
+      this.mesh.add(disco);
+      this.cargaParts.push(disco);
+      this.cargaMontada++;
+    }
+  }
+
   get color(): number {
     return (this.mesh.material as THREE.MeshStandardMaterial).color.getHex();
   }
@@ -198,13 +282,17 @@ export class SceneObject {
     }
   }
 
-  /** Masa que realmente se mueve (kg): si es pila, las placas seleccionadas. */
+  /**
+   * Masa que realmente se mueve (kg): si es pila, las placas seleccionadas;
+   * si carga discos, la pieza más los discos montados.
+   */
   effectiveMassKg(): number {
+    const discos = this.carga ? this.cargaMontada * this.carga.masaKg : 0;
     if (this.stack) {
       const sel = Math.max(0, Math.min(this.stack.selected, this.stack.plateCount));
-      return sel * this.stack.plateMassKg;
+      return sel * this.stack.plateMassKg + discos;
     }
-    return this.physics.massKg;
+    return this.physics.massKg + discos;
   }
 
   /** Dimensiones efectivas en cm (bounding box mundial * escala del mesh). */

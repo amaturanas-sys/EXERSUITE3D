@@ -831,6 +831,68 @@ export class Editor {
     this.requestRender();
   }
 
+  /**
+   * CALCE POR AGUJEROS: sube o baja una pieza de calce (gancho J, brazo de
+   * seguridad) por su poste AGUJERO POR AGUJERO. Busca el poste con grilla
+   * de agujeros (holeStepCm) más cercano, ajusta la pieza a la grilla y la
+   * desplaza un paso a lo largo del eje del poste, sin salirse de sus
+   * extremos. Devuelve un aviso si no puede; null si el calce se hizo.
+   */
+  calcePorAgujero(objId: string, dir: 1 | -1): string | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return "Pieza no encontrada";
+    const centro = obj.mesh.position;
+    const tam = obj.effectiveSize();
+    let mejor: { poste: SceneObject; eje: THREE.Vector3; paso: number; largo: number } | null =
+      null;
+    let mejorLateral = Infinity;
+    for (const o of this.objects.values()) {
+      if (o === obj) continue;
+      const paso = getDefinition(o.componentId)?.holeStepCm;
+      if (!paso) continue;
+      const s = o.effectiveSize();
+      const dims: [number, THREE.Vector3][] = [
+        [s.x, new THREE.Vector3(1, 0, 0)],
+        [s.y, new THREE.Vector3(0, 1, 0)],
+        [s.z, new THREE.Vector3(0, 0, 1)],
+      ];
+      dims.sort((a, b) => b[0] - a[0]);
+      const largo = dims[0][0];
+      const eje = dims[0][1].applyQuaternion(o.mesh.quaternion).normalize();
+      if (eje.y < 0) eje.negate(); // "subir" = hacia arriba del poste
+      const delta = centro.clone().sub(o.mesh.position);
+      const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
+      const axial = Math.abs(delta.dot(eje));
+      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 4;
+      if (lateral > tol || axial > largo / 2 + 10) continue;
+      if (lateral < mejorLateral) {
+        mejorLateral = lateral;
+        mejor = { poste: o, eje, paso, largo };
+      }
+    }
+    if (!mejor) {
+      return tt(
+        "No hay un poste con agujeros junto a la pieza: acércala a un montante.",
+        "There is no drilled post next to the piece: move it closer to an upright.",
+      );
+    }
+    const { poste, eje, paso, largo } = mejor;
+    const delta = centro.clone().sub(poste.mesh.position);
+    const s = delta.dot(eje);
+    // Se ajusta a la grilla de agujeros y da UN paso en la dirección pedida.
+    let sNuevo = Math.round(s / paso) * paso + dir * paso;
+    const lim = largo / 2 - 2;
+    sNuevo = Math.max(-lim, Math.min(lim, sNuevo));
+    if (Math.abs(sNuevo - s) < 1e-3) {
+      return tt("La pieza ya está en el último agujero del poste.", "The piece is already at the post's last hole.");
+    }
+    centro.addScaledVector(eje, sNuevo - s);
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
+    return null;
+  }
+
   /** Desplaza el nodo activo del modo Doblar en un delta de MUNDO (cm). */
   private nudgeBendNode(dx: number, dy: number, dz: number): void {
     const obj = this.bendTarget;
@@ -930,6 +992,7 @@ export class Editor {
       physics: def.physics,
       materialId: def.materialId,
       stack: def.stack,
+      carga: def.cargaDiscos,
     });
 
     // Si la biblioteca tiene un modelo 3D para este componente, sustituye la
