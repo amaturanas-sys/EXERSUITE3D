@@ -921,15 +921,25 @@ export class Editor {
       poste: SceneObject;
       eje: THREE.Vector3;
       paso: number;
-      largo: number;
-      def: NonNullable<ReturnType<typeof getDefinition>>;
+      fase: number;
+      lim: number;
+      ejePinLocal: "x" | "z" | null;
     } | null = null;
     let mejorLateral = Infinity;
+    // ¿Path recto? (los pinholes de una viga doblada no forman grilla)
+    const esRecto = (path?: [number, number, number][]): boolean => {
+      if (!path || path.length < 2) return true;
+      const a = new THREE.Vector3(...path[0]);
+      const dirP = new THREE.Vector3(...path[path.length - 1]).sub(a);
+      if (dirP.lengthSq() < 1e-6) return false;
+      dirP.normalize();
+      return path.every((p) => {
+        const v = new THREE.Vector3(...p).sub(a);
+        return v.clone().addScaledVector(dirP, -v.dot(dirP)).length() < 0.5;
+      });
+    };
     for (const o of this.objects.values()) {
       if (o === obj) continue;
-      const defPoste = getDefinition(o.componentId);
-      const paso = defPoste?.holeStepCm;
-      if (!defPoste || !paso) continue;
       const s = o.effectiveSize();
       const dims: [number, THREE.Vector3][] = [
         [s.x, new THREE.Vector3(1, 0, 0)],
@@ -938,6 +948,38 @@ export class Editor {
       ];
       dims.sort((a, b) => b[0] - a[0]);
       const largo = dims[0][0];
+
+      // Grilla de pinholes del candidato: de BIBLIOTECA (paso/fase medidos
+      // en la malla) o TRAZADO con la herramienta lineal (paso/fase según
+      // sus parámetros de pinholes configurables — misma validez).
+      const defPoste = getDefinition(o.componentId);
+      let paso: number;
+      let fase: number;
+      let lim: number;
+      let ejePinLocal: "x" | "z" | null;
+      if (defPoste?.holeStepCm) {
+        paso = defPoste.holeStepCm;
+        fase = defPoste.calceFase ?? 0;
+        lim = largo / 2 - 2;
+        ejePinLocal = defPoste.ejeCalce ?? null;
+      } else if (o.params.kind === "beam" && (o.params.holeDiameter ?? 0) > 0.1) {
+        if (!esRecto(o.params.path)) continue;
+        const holeR = (o.params.holeDiameter ?? 0) / 2;
+        const spacing = Math.max(o.params.holeSpacing ?? 5, holeR * 2 + 0.5);
+        const ancho = o.params.width ?? 5;
+        const margen = (o.params.ends === "diagonal" ? ancho : ancho / 2) + holeR;
+        const usable = largo - 2 * margen;
+        const count = Math.floor(usable / spacing) + 1;
+        if (count < 1 || usable < 0) continue; // sin filas de pinholes
+        paso = spacing;
+        // Filas simétricas al centro: fila central (impar) o a ±paso/2 (par).
+        fase = count % 2 === 1 ? 0 : spacing / 2;
+        lim = ((count - 1) / 2) * spacing + 0.01;
+        ejePinLocal = "z"; // la viga extruye el fondo en Z: los pinholes lo atraviesan
+      } else {
+        continue;
+      }
+
       const eje = dims[0][1].applyQuaternion(o.mesh.quaternion).normalize();
       if (eje.y < 0) eje.negate(); // "subir" = hacia arriba del poste
       const delta = centro.clone().sub(o.mesh.position);
@@ -949,7 +991,7 @@ export class Editor {
       if (lateral > tol || axial > largo / 2 + 10) continue;
       if (lateral < mejorLateral) {
         mejorLateral = lateral;
-        mejor = { poste: o, eje, paso, largo, def: defPoste };
+        mejor = { poste: o, eje, paso, fase, lim, ejePinLocal };
       }
     }
     if (!mejor) {
@@ -958,14 +1000,14 @@ export class Editor {
         "There is no drilled post next to the piece: move it closer to an upright.",
       );
     }
-    const { poste, eje, paso, largo, def: defPoste } = mejor;
+    const { poste, eje, paso, fase, lim, ejePinLocal } = mejor;
     // ARTICULACIÓN CON LOS PINHOLES: el pin de calce solo articula con los
-    // orificios ESTANDARIZADOS pasantes por ambas caras del poste (ejeCalce)
-    // — no con los agujeros accesorios de otras caras. Se gira la pieza
-    // alrededor del poste hasta encarar ese eje (respetando el lado en que
-    // la dejó el usuario).
-    if (defPoste.ejeCalce) {
-      const ejePin = (defPoste.ejeCalce === "x"
+    // orificios ESTANDARIZADOS pasantes por ambas caras del poste — no con
+    // los agujeros accesorios de otras caras. Se gira la pieza alrededor
+    // del poste hasta encarar ese eje (respetando el lado en que la dejó
+    // el usuario).
+    if (ejePinLocal) {
+      const ejePin = (ejePinLocal === "x"
         ? new THREE.Vector3(1, 0, 0)
         : new THREE.Vector3(0, 0, 1)
       )
@@ -994,11 +1036,9 @@ export class Editor {
     }
     const delta = centro.clone().sub(poste.mesh.position);
     const s = delta.dot(eje);
-    // Se ajusta a la grilla REAL de pinholes (paso y fase medidos en la
-    // malla) y da UN paso en la dirección pedida.
-    const fase = defPoste.calceFase ?? 0;
+    // Se ajusta a la grilla REAL de pinholes (paso y fase del poste) y da
+    // UN paso en la dirección pedida, sin salirse de las filas existentes.
     let sNuevo = fase + Math.round((s - fase) / paso) * paso + dir * paso;
-    const lim = largo / 2 - 2;
     sNuevo = Math.max(-lim, Math.min(lim, sNuevo));
     if (Math.abs(sNuevo - s) < 1e-3) {
       return tt("La pieza ya está en el último agujero del poste.", "The piece is already at the post's last hole.");

@@ -58,7 +58,11 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
     5,5 cm en el POWERRACK, 5 cm en el rack 3×3) —, con ajuste automático a
     la grilla, tope en los extremos y botones ▲/▼ en el panel de
     Propiedades. Al calzar, la pieza GIRA alrededor del poste hasta encarar
-    el eje de los pinholes (nunca los agujeros accesorios de otras caras). Al calzar, el
+    el eje de los pinholes (nunca los agujeros accesorios de otras caras).
+    Vale IGUAL para los postes de biblioteca que para los TRAZADOS con la
+    herramienta lineal: sus pinholes configurables (diámetro y paso del
+    diálogo de trazado) definen la grilla — la pieza calza fila a fila y se
+    detiene en la última fila de pinholes, no en el extremo del perfil. Al calzar, el
     MANGUITO de la pieza (su espacio diseñado para el ensamble, como los
     orificios de los bloques con las guías) ABRAZA el pilar: el accesorio
     queda colocado EN la estructura, nunca flotando en el aire — el punto
