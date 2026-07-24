@@ -52,11 +52,18 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
+      # El APK viaja con el nombre EXERSUITE3D.APK (lo espera el alojamiento
+      # en HuggingFace: sin renombrados manuales).
+      - name: Renombrar APK a EXERSUITE3D.APK
+        run: |
+          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -n 1)
+          mv "$APK" android/app/build/outputs/apk/debug/EXERSUITE3D.APK
+
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: exersuite3d-android-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: android/app/build/outputs/apk/debug/EXERSUITE3D.APK
           if-no-files-found: error
 
   windows-exe:
