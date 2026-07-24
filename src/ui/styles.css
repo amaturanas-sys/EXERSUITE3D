@@ -1263,9 +1263,13 @@ body.simulating .dock-toggle {
 .wizard-cuerpo {
   overflow-y: auto; /* corredera: el paso Dibujar planta es alto */
   -webkit-overflow-scrolling: touch;
-  padding-right: 2px;
+  /* v0.2.6: margen interior — las cartas y botones nunca tocan el borde
+     del panel (antes iban a ras y se veían recortados). */
+  padding: 4px 16px 16px;
 }
-.wizard-paso { color: var(--text-dim, #9aa1ad); font-size: 0.92rem; margin: 4px 0 12px; }
+.wizard-paso { color: var(--text-dim, #9aa1ad); font-size: 0.92rem; margin: 10px 16px 12px; }
+/* Diálogos que ponen las cartas directamente en el panel (sin cuerpo). */
+.wizard-panel > .wizard-cartas { margin: 0 16px 16px; }
 .wizard-cuerpo { display: flex; flex-direction: column; gap: 14px; }
 .wizard-cartas { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .wizard-carta {

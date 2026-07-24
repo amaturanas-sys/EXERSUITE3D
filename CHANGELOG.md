@@ -30,6 +30,13 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
 
 ### Corregido
 
+- **Botones completos en las ventanas del asistente**: las cartas y botones
+  de «Nuevo proyecto» y del diálogo de la roldana iban a ras del borde del
+  panel y se veían recortados — ahora todo el contenido tiene margen
+  interior respecto de la ventana que lo contiene.
+- **El sonido de los botones es un "click" de ratón analógico**: chasquido
+  seco de microinterruptor (ráfaga de ruido filtrado) más el golpecito grave
+  del plástico, en lugar del pitido electrónico anterior.
 - **Sistema de polea tubular guiada reconocido por el MOTOR (5 piezas)**:
   al construir el mundo físico, el motor clasifica el sistema según la
   taxonomía del diseñador — el CARRIER (soporta discos a cada lado y abraza
