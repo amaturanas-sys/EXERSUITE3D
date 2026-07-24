@@ -1118,14 +1118,16 @@ export class Editor {
       massKg: obj.physics.massKg > 0 ? obj.physics.massKg : 4,
     };
 
-    // Pivote en el CILINDRO del anclaje; el eje de giro es el del cilindro
-    // (su frente de calce): el eje global más próximo a esa dirección.
-    const frenteLocal =
-      getDefinition(anclaje.componentId)?.frenteCalce === "x"
+    // Pivote en el CILINDRO-PIVOTE del anclaje; el eje de giro es el del
+    // cilindro (ejePivote, PERPENDICULAR al pin de calce): el eje global más
+    // próximo a esa dirección.
+    const defAnclaje = getDefinition(anclaje.componentId);
+    const ejePivoteLocal =
+      (defAnclaje?.ejePivote ?? defAnclaje?.frenteCalce ?? "z") === "x"
         ? new THREE.Vector3(1, 0, 0)
         : new THREE.Vector3(0, 0, 1);
-    const frente = frenteLocal.applyQuaternion(anclaje.mesh.quaternion);
-    const eje: AxisName = Math.abs(frente.x) >= Math.abs(frente.z) ? "x" : "z";
+    const dirPivote = ejePivoteLocal.applyQuaternion(anclaje.mesh.quaternion);
+    const eje: AxisName = Math.abs(dirPivote.x) >= Math.abs(dirPivote.z) ? "x" : "z";
     const joint = this.connect(anclaje.id, obj.id, "revolute", puntoPivote);
     if (!joint) return "No se pudo crear la articulación";
     joint.axis = eje;

@@ -160,6 +160,12 @@ export interface ComponentDefinition {
    */
   pivoteLocal?: [number, number];
   /**
+   * Eje LOCAL del cilindro-pivote. En el anclaje de cadena es PERPENDICULAR
+   * al pin de calce: el pin (frenteCalce) entra en los pinholes del pilar y
+   * el brazo gira alrededor del cilindro perpendicular.
+   */
+  ejePivote?: "x" | "z";
+  /**
    * La pieza CARGA DISCOS por su eje (se ensamblan por el orificio central
    * del disco y quedan suspendidos): lados de carga (1 = un extremo,
    * 2 = ambos), diametro/grosor del disco (cm) y masa por disco (kg).
