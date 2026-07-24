@@ -5,6 +5,27 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.7] — 2026-07-24
+
+La actualización del APK sobre una versión instalada vuelve a funcionar —
+y de aquí en adelante funcionará SIEMPRE.
+
+### Corregido
+
+- **Firma CONSISTENTE del APK**: cada build de CI firmaba con un keystore
+  de debug generado al vuelo en el runner, así que cada release traía una
+  FIRMA DISTINTA y Android rechazaba actualizar sobre la versión instalada
+  ("error al instalar/actualizar"). Ahora el proyecto firma todos sus
+  builds (debug y release, local y CI) con un keystore PROPIO que viaja en
+  el repositorio: las actualizaciones futuras instalan directo, sin
+  desinstalar.
+- **Nota de transición (una sola vez)**: la versión que ya tengas instalada
+  quedó firmada con una llave vieja, así que ESTA actualización aún pide
+  desinstalar la anterior. Antes de hacerlo, guarda lo que quieras
+  conservar (Guardar proyecto y Exportar ZIP de la biblioteca — el
+  desinstalado borra los datos locales de la app). Desde la v0.2.7 en
+  adelante, nunca más.
+
 ## [0.2.6] — 2026-07-24
 
 El motor reconoce por geometría el sistema de polea tubular guiada del TTP

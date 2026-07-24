@@ -7,8 +7,8 @@ android {
         applicationId "com.exersuite.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 17
-        versionName "0.2.6"
+        versionCode 18
+        versionName "0.2.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +16,28 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // FIRMA CONSISTENTE (v0.2.7): el keystore del proyecto viaja en el repo
+    // para que TODOS los builds (CI incluido) firmen con la MISMA llave.
+    // Sin esto, cada runner de CI generaba un debug.keystore nuevo y Android
+    // rechazaba actualizar sobre una versión instalada (conflicto de firma).
+    // La app se distribuye por sideload (GitHub/HuggingFace), no por Play
+    // Store: mantener las credenciales junto al código es deliberado.
+    signingConfigs {
+        exersuite {
+            storeFile file('exersuite.keystore')
+            storePassword 'exersuite3d'
+            keyAlias 'exersuite'
+            keyPassword 'exersuite3d'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.exersuite
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.exersuite
         }
     }
 }
