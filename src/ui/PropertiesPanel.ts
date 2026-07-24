@@ -9,6 +9,19 @@ import { clear, el } from "./dom";
 /** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
 const PIEZAS_CALCE = new Set(["j-hook", "jota-pr", "jota-rodillo-pr", "brazo-seguridad"]);
 
+/**
+ * ¿Estructura tubular o tipo pilar? (candidata a BRAZO MÓVIL articulado):
+ * primitiva esbelta — su dimensión mayor domina claramente a las demás.
+ */
+function esTubularOPilar(obj: SceneObject): boolean {
+  const k = obj.params.kind;
+  if (k !== "box" && k !== "cylinder" && k !== "beam" && k !== "tube") return false;
+  if (PIEZAS_CALCE.has(obj.componentId)) return false;
+  const s = obj.localSize();
+  const dims = [s.x, s.y, s.z].sort((a, b) => b - a);
+  return dims[0] >= 25 && dims[0] >= 2.5 * dims[1];
+}
+
 type DimField = { key: keyof PrimitiveParams; label: string };
 
 /** Campos dimensionales editables segun el tipo de primitiva. */
@@ -129,7 +142,39 @@ export class PropertiesPanel {
     if (obj.stack) this.body.append(this.stackSection(obj));
     if (obj.carga) this.body.append(this.cargaSection(obj));
     if (PIEZAS_CALCE.has(obj.componentId)) this.body.append(this.calceSection(obj));
+    if (esTubularOPilar(obj)) this.body.append(this.brazoSection(obj));
     this.body.append(this.physicsSection(obj));
+  }
+
+  /**
+   * Brazo móvil (péndulo): una estructura tubular o tipo pilar se articula
+   * como brazo accesorio en un «Anclaje de cadena» calzado al pilar de la
+   * máquina — el trazado del pivote va del extremo más cercano del brazo al
+   * anclaje. El brazo puede portar roldanas, piolas/cables o cuernos de
+   * carga para expandir la máquina.
+   */
+  private brazoSection(obj: SceneObject): HTMLElement {
+    const aviso = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const btn = el("button", { class: "tool" }, [
+      tt("⛓ Articular como brazo en un anclaje de cadena", "⛓ Articulate as an arm on a chain anchor"),
+    ]);
+    btn.addEventListener("click", () => {
+      const err = this.editor.articularBrazo(obj.id);
+      if (err) {
+        aviso.textContent = err;
+        return;
+      }
+      aviso.textContent = tt(
+        "✓ Brazo articulado (péndulo): gira en el pin del anclaje. Añádele roldanas (soldador), cables o cuernos de carga.",
+        "✓ Arm articulated (pendulum): it swings on the anchor pin. Add pulleys (welder), cables or loading horns to it.",
+      );
+      this.show(obj); // refresca (la pieza pasó a ser móvil)
+    });
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Brazo móvil (péndulo)", "Mobile arm (pendulum)")]),
+      el("div", { class: "row" }, [btn]),
+      aviso,
+    ]);
   }
 
   /**

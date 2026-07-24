@@ -78,6 +78,16 @@ guardar y abrir archivos pasa a usar el GESTOR NATIVO del dispositivo.
     simulación y suman su masa (20 kg por disco olímpico, 10 kg en el
     carrier). La cantidad se recorta a lo que cabe en el largo de la pieza
     y persiste en proyectos y prefabs.
+- **BRAZOS MÓVILES articulados (jammer arms)**: cualquier estructura tubular
+  o tipo pilar (de biblioteca o trazada) puede convertirse en BRAZO/PÉNDULO
+  accesorio, anclado INDIRECTAMENTE al pilar de la máquina a través del
+  «Anclaje de cadena» (que calza en los pinholes y hace de PIVOTE). En
+  Propiedades, la sección "Brazo móvil (péndulo)" traza la articulación
+  desde el extremo del brazo más cercano al anclaje: la pieza pasa a ser
+  móvil y gira alrededor del eje del pin del anclaje. El brazo puede portar
+  roldanas (soldador), piolas/cables, cuernos de carga o cualquier otro
+  mecanismo para expandir la máquina — verificado: un brazo horizontal
+  pendulea 90° hasta colgar del pin, como los jammer arms reales.
 - **Bloque de peso y pila de pesos GUIADOS por tubos verticales** (como el
   carrier del TTP): ambos llevan ahora DOS ORIFICIOS cilíndricos pasantes
   (separación de fábrica 13,3 cm — la de los tubos guía del TTP, editable

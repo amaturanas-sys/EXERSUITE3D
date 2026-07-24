@@ -12,7 +12,7 @@ import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
 import { PhysicsWorld } from "../physics/PhysicsWorld";
-import { Joint, type JointKind, axisVector } from "../physics/joints";
+import { Joint, type AxisName, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { straightPath } from "../objects/linePieces";
@@ -1045,6 +1045,80 @@ export class Editor {
     }
     centro.addScaledVector(eje, sNuevo - s);
     this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
+    return null;
+  }
+
+  /**
+   * BRAZO MÓVIL articulado a un ANCLAJE DE CADENA (jota-pr): una estructura
+   * tubular o tipo pilar se convierte en brazo/péndulo accesorio, anclado
+   * INDIRECTAMENTE al pilar de la máquina a través del anclaje (que calza en
+   * los pinholes). El pivote se traza desde el nodo del extremo del brazo
+   * más cercano al anclaje elegido; el eje de giro es el del pin del
+   * anclaje. El brazo puede portar roldanas (soldador), cables/piolas,
+   * cuernos de carga o cualquier mecanismo — se mueven con él.
+   * Devuelve un aviso si no puede; null si la articulación quedó creada.
+   */
+  articularBrazo(objId: string): string | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return "Pieza no encontrada";
+
+    // Extremos del brazo a lo largo de su eje más largo.
+    const tam = obj.localSize();
+    const dims: [number, THREE.Vector3][] = [
+      [tam.x, new THREE.Vector3(1, 0, 0)],
+      [tam.y, new THREE.Vector3(0, 1, 0)],
+      [tam.z, new THREE.Vector3(0, 0, 1)],
+    ];
+    dims.sort((a, b) => b[0] - a[0]);
+    const ejeLargo = dims[0][1].applyQuaternion(obj.mesh.quaternion).normalize();
+    const medio = dims[0][0] / 2;
+    const extremos = [
+      obj.mesh.position.clone().addScaledVector(ejeLargo, medio),
+      obj.mesh.position.clone().addScaledVector(ejeLargo, -medio),
+    ];
+
+    // Anclaje de cadena más cercano a cualquiera de los dos extremos.
+    let anclaje: SceneObject | null = null;
+    let puntoPivote: THREE.Vector3 | null = null;
+    let mejorDist = 40; // alcance del trazado (cm)
+    for (const o of this.objects.values()) {
+      if (o === obj || o.componentId !== "jota-pr") continue;
+      for (const ext of extremos) {
+        const d = ext.distanceTo(o.mesh.position);
+        if (d < mejorDist) {
+          mejorDist = d;
+          anclaje = o;
+          puntoPivote = o.mesh.position.clone();
+        }
+      }
+    }
+    if (!anclaje || !puntoPivote) {
+      return tt(
+        "No hay un «Anclaje de cadena POWERRACK» cerca de los extremos del brazo: coloca uno (calzado al pilar) junto al extremo que quieres articular.",
+        "There is no POWERRACK chain anchor near the arm's ends: place one (latched to the post) next to the end you want to articulate.",
+      );
+    }
+
+    // El brazo pasa a ser MÓVIL (péndulo) si aún era fijo.
+    obj.physics = {
+      ...obj.physics,
+      fixed: false,
+      massKg: obj.physics.massKg > 0 ? obj.physics.massKg : 4,
+    };
+
+    // Pivote en el anclaje; el eje de giro sigue el PIN del anclaje
+    // (horizontal): el eje global más próximo a su frente local Z.
+    const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(anclaje.mesh.quaternion);
+    const eje: AxisName = Math.abs(frente.x) >= Math.abs(frente.z) ? "x" : "z";
+    const joint = this.connect(anclaje.id, obj.id, "revolute", puntoPivote);
+    if (!joint) return "No se pudo crear la articulación";
+    joint.axis = eje;
+    joint.name = tt("Brazo articulado", "Articulated arm");
+    joint.locked = false;
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
     this.scheduleAutosave();
     this.requestRender();
     return null;
