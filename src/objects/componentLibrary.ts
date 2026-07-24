@@ -338,10 +338,16 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "estructural",
     materialId: "acero-negro",
     // Auditoría: malla reorientada con el brazo a lo largo de Z, como j-hook.
+    // Anatomía (corrección del diseñador): el CILINDRO horizontal (+Z) es el
+    // pin de ACOPLE que entra en los orificios del pilar; las placas a ambos
+    // lados son la ABRAZADERA que rodea el poste; la superficie horizontal
+    // POSTERIOR (−Z) con tope es la que soporta el peso (la barra) y evita
+    // que caiga.
     defaults: { kind: "box", width: 7.4, height: 13, depth: 15.4 },
     physics: { massKg: 0, fixed: true },
-    calceLocal: [0, -4.1],
-    description: "Jota con rodillo real del POWERRACK, para recibir la barra con suavidad.",
+    calceLocal: [0, 4],
+    description:
+      "Jota con rodillo real del POWERRACK: el cilindro es el pin de acople a los orificios del pilar, las placas laterales lo abrazan y la superficie posterior con tope recibe la barra.",
   },
   {
     id: "riel-base-pr",
