@@ -5,7 +5,11 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [0.2.6] — 2026-07-24
+
+El motor reconoce por geometría el sistema de polea tubular guiada del TTP
+(taxonomía de 5 piezas del diseñador) — validado en tablet: el carrier corre
+por sus guías y se detiene sobre los stoppers, sin uniones manuales.
 
 ### Corregido
 
@@ -21,6 +25,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   ellos sin llegar a la platina inferior. Independiente del prefab, sin
   uniones manuales. Verificado: caída libre detenida en el stop (67→66,4)
   y, con el cable del lat pulldown, deriva lateral 0 durante 6 s.
+
+### Cambiado
+
+- **El APK viaja como `EXERSUITE3D.APK`** dentro del artefacto de CI y de la
+  Release: sin renombrados manuales antes de alojarlo en HuggingFace.
 
 ## [0.2.5] — 2026-07-23
 
