@@ -45,6 +45,13 @@ Instructivo ilustrado queda con imágenes fieles a cada pestaña.
   inclinado con paredes al ras) y física (cable azul por roldana y cable
   en error), y los textos de esas pestañas describen las propiedades
   nuevas.
+- **construir-1 y maniqui-1 del FAQ re-capturadas del build actual**: la
+  imagen de construir reciclaba una captura del 21-jul con el rack TTP en
+  su ensamblaje ANTERIOR a las correcciones del prefab de fábrica (torre,
+  multiagarre, techo del rack), y la del maniquí mostraba las paredes y el
+  techo del espacio en vez de la figura. Ahora: rack con torre insertado
+  tal como lo produce la app hoy, y maniquí en pie con el panel de
+  Posturas abierto.
 
 ## [0.2.7] — 2026-07-24
 

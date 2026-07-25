@@ -301,9 +301,9 @@ v0.2.6: márgenes del asistente, bloques/pila de pesos guiados por tubos con ori
 - [`z2-3-sim-inicio.png`](2026-07-24/z2-3-sim-inicio.png)
 - [`z2-4-sim-final.png`](2026-07-24/z2-4-sim-final.png)
 
-## 2026-07-25 — 14 capturas
+## 2026-07-25 — 17 capturas
 
-v0.2.8: paredes del canvas completo como caras suelo-techo (trapezoidales bajo techumbre inclinada, altura de usuario sin techo), techo como CARA PLANA sin espesor, cables de poleas en azul oscuro y re-escenificación de las imágenes del FAQ (calce, pesos, discos montados, espacio y física).
+v0.2.8: paredes del canvas completo como caras suelo-techo (trapezoidales bajo techumbre inclinada, altura de usuario sin techo), techo como CARA PLANA sin espesor, cables de poleas en azul oscuro y re-escenificación de las imágenes del FAQ (calce, pesos, discos montados, espacio, física, construir y maniquí — construir-1 usaba una captura del 21-jul anterior a las correcciones del rack TTP, y maniqui-1 mostraba paredes/techo en vez del maniquí).
 
 - [`faq-1-calce.png`](2026-07-25/faq-1-calce.png)
 - [`faq-2-pesos.png`](2026-07-25/faq-2-pesos.png)
@@ -319,3 +319,6 @@ v0.2.8: paredes del canvas completo como caras suelo-techo (trapezoidales bajo t
 - [`v28-espacio-1.png`](2026-07-25/v28-espacio-1.png)
 - [`v28-fisica-1.png`](2026-07-25/v28-fisica-1.png)
 - [`v28-fisica-2.png`](2026-07-25/v28-fisica-2.png)
+- [`v28-construir-1.png`](2026-07-25/v28-construir-1.png)
+- [`v28-construir-2.png`](2026-07-25/v28-construir-2.png)
+- [`v28-maniqui-1.png`](2026-07-25/v28-maniqui-1.png)
