@@ -5,11 +5,10 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.2.8] — 2026-07-25
+## [0.2.9] — 2026-07-25
 
-Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo,
-el techo pasa a ser una cara plana, los cables se ven en azul oscuro y el
-Instructivo ilustrado queda con imágenes fieles a cada pestaña.
+El sistema de poleas cobra vida: las roldanas se empotran en su estructura
+y el puente del carro del TTP sube y baja según la tensión de los cables.
 
 ### Añadido
 
@@ -31,6 +30,12 @@ Instructivo ilustrado queda con imágenes fieles a cada pestaña.
   de poleas quedan QUIETOS en reposo (antes el contrapeso "reptaba" solo) y
   el cable se mantiene azul durante la simulación (la validación roja es
   una herramienta de diseño).
+
+## [0.2.8] — 2026-07-25
+
+Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo,
+el techo pasa a ser una cara plana, los cables se ven en azul oscuro y el
+Instructivo ilustrado queda con imágenes fieles a cada pestaña.
 
 ### Cambiado
 

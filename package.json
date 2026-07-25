@@ -1,6 +1,6 @@
 {
   "name": "exersuite3d",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "EXERSUITE3D - Plataforma de diseno 3D y simulacion de fisicas para prototipar maquinas de gimnasio (Android + Windows).",
   "type": "module",
   "scripts": {
