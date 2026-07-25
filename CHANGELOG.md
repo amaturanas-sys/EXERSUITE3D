@@ -7,8 +7,20 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.2.8] — 2026-07-25
 
-Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo
-y el Instructivo ilustrado queda con imágenes fieles a cada pestaña.
+Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo,
+el techo pasa a ser una cara plana, los cables se ven en azul oscuro y el
+Instructivo ilustrado queda con imágenes fieles a cada pestaña.
+
+### Cambiado
+
+- **Techo como CARA PLANA**: la techumbre del canvas completo deja de ser
+  un prisma con espesor y pasa a ser una única cara plana (con su
+  pendiente A/B) — geometría más simple y uniforme con las paredes, que
+  hacen contacto exacto con ella.
+- **Cables en AZUL OSCURO**: los cables de los sistemas de poleas y
+  roldanas se dibujan en azul oscuro para destacar sobre el fondo claro
+  del visor (antes, gris claro casi invisible); el estado de ERROR sigue
+  siendo rojo.
 
 ### Corregido
 
@@ -29,7 +41,10 @@ y el Instructivo ilustrado queda con imágenes fieles a cada pestaña.
   limpias y encuadradas: ganchos calzados de cerca (montante y poste
   trazado), bloque y pila ensartados en sus guías, discos montados en
   carrier/barra/cuerno, validación de cables y simulación con el bloque en
-  sus topes.
+  sus topes. En esta ronda se re-escenifican además espacio (techo plano
+  inclinado con paredes al ras) y física (cable azul por roldana y cable
+  en error), y los textos de esas pestañas describen las propiedades
+  nuevas.
 
 ## [0.2.7] — 2026-07-24
 

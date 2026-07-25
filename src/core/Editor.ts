@@ -1514,13 +1514,12 @@ export class Editor {
   private geometriaTecho(): THREE.BufferGeometry | null {
     const planta = this.wsPlanta();
     if (!planta) return null;
+    // El techo es una CARA PLANA (no un prisma): geometría simple y
+    // homogénea con las paredes — copia fiel de la planta, sin grosor.
     const shape = new THREE.Shape(planta.map(([x, z]) => new THREE.Vector2(x, -z)));
-    const geo = new THREE.ExtrudeGeometry(shape, {
-      depth: Editor.GROSOR_ENTORNO,
-      bevelEnabled: false,
-    });
-    geo.rotateX(-Math.PI / 2); // extrusión vertical: planta en XZ, grosor en +Y
-    geo.center(); // pivote en el centro del bloque (colocación e inclinación)
+    const geo = new THREE.ShapeGeometry(shape);
+    geo.rotateX(-Math.PI / 2); // la planta queda en el plano XZ
+    geo.center(); // pivote en el centro (colocación e inclinación)
     geo.computeVertexNormals();
     return geo;
   }
@@ -1569,9 +1568,11 @@ export class Editor {
       const L = (t.eje === "x" ? ws.ancho : ws.fondo) || 1;
       const ang = Math.atan2(dh, L);
       // La pendiente sube hacia el extremo B (+X o +Z según el eje elegido).
+      // La CARA del techo se posa exactamente en el plano alturaA→alturaB:
+      // el mismo plano de techoYAt, así las paredes lo tocan sin holgura.
       if (t.eje === "x") techo.mesh.rotation.z = ang;
       else techo.mesh.rotation.x = -ang;
-      techo.mesh.position.set(0, (t.alturaA + t.alturaB) / 2 + GROSOR / 2, 0);
+      techo.mesh.position.set(0, (t.alturaA + t.alturaB) / 2, 0);
     }
 
     // Paredes: una por cada borde de la planta cuya orientación exterior
@@ -3457,9 +3458,11 @@ export class Editor {
       if (pts.length < 2) continue;
       let line = existing.get(cable.id);
       if (!line) {
+        // AZUL OSCURO: el cable destaca contra el fondo claro del visor y
+        // se distingue de las piezas, vértices y nodos.
         line = new THREE.Line(
           new THREE.BufferGeometry(),
-          new THREE.LineBasicMaterial({ color: 0xd8dee9 }),
+          new THREE.LineBasicMaterial({ color: 0x1e3a8a }),
         );
         line.userData.cableId = cable.id;
         this.cableVisuals.add(line);
@@ -3468,7 +3471,7 @@ export class Editor {
       // Validación del diagrama Cables/Poleas: rojo si el trazado atraviesa
       // material sólido o entra desalineado al plano de una roldana.
       const valido = this.validarCable(cable, pts);
-      (line.material as THREE.LineBasicMaterial).color.setHex(valido ? 0xd8dee9 : 0xef4444);
+      (line.material as THREE.LineBasicMaterial).color.setHex(valido ? 0x1e3a8a : 0xef4444);
       const invalidoAntes = this.cablesInvalidos.has(cable.id);
       if (!valido && !invalidoAntes) {
         this.cablesInvalidos.add(cable.id);
