@@ -24,6 +24,18 @@ Instructivo ilustrado queda con imágenes fieles a cada pestaña.
 
 ### Corregido
 
+- **Los prefabs preservan sus CABLES**: el ciclo de prefabs ignoraba los
+  cables configurados en el modelo — un sistema de poleas exportado volvía
+  sin su cable y perdía la función móvil. Ahora el .prefab.json lleva un
+  bloque `cables` (recorrido nodo a nodo por índice de pieza + anclaje
+  LOCAL) que se exporta con la selección, se valida/remapea al importar y
+  se reconstruye al insertar — también en las máquinas sustituidas por
+  prefab. Los anclajes locales garantizan el mismo recorrido en cualquier
+  posición de inserción.
+- **El panel de Posturas ya no obstruye las pestañas laterales**: la
+  ventana flotante del maniquí se dibujaba encima de las pestañas
+  Propiedades/Conexiones/Arrastre preciso; ahora se abre a la derecha de
+  la tira, sin solapamiento de ventanas.
 - **Paredes del canvas completo como CARAS suelo-techo**: cada pared es
   ahora una cara plana que hace contacto entre la superficie del suelo y el
   techo — bajo una techumbre INCLINADA, su tope sigue la pendiente (prisma

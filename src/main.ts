@@ -216,9 +216,12 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   ed.setMode("translate");
   ed.start();
 
-  (window as unknown as { exersuite: { editor: Editor; THREE: typeof THREE } }).exersuite = {
+  (window as unknown as { exersuite: unknown }).exersuite = {
     editor: ed,
     THREE,
+    // Utilidades del ciclo de prefabs expuestas en el gancho de depuración
+    // (las suites de verificación ejercitan exportar→validar→insertar).
+    prefabIO: { serializarPrefab, parsearPrefab },
   };
   return ed;
 }

@@ -97,6 +97,17 @@ export interface UnionSpec {
   bloqueada?: boolean;
 }
 
+/**
+ * CABLE de un prefab (v0.2.8): recorrido punto a punto del sistema de poleas
+ * — extremo A, roldanas de paso, extremo B. Cada nodo referencia una pieza
+ * por ÍNDICE del arreglo `piezas` y su anclaje en coordenadas LOCALES de esa
+ * pieza (cm), por lo que el cable se reconstruye idéntico en cualquier
+ * posición de inserción y la máquina conserva su función móvil.
+ */
+export interface CableSpec {
+  nodos: { pieza: number; local: [number, number, number] }[];
+}
+
 // El gancho J real ABRAZA el montante: su manguito queda alrededor del perfil
 // 5×7 y el centro del gancho cae 9,6 cm por delante del eje del pilar (medido
 // en el TTP001L armado). Mismo x que el pilar; brazo hacia +Z.
@@ -256,6 +267,7 @@ export interface MaquinaSpec {
   label: string;
   piezas: PiezaSpec[];
   uniones?: UnionSpec[];
+  cables?: CableSpec[];
 }
 
 const SPECS: Record<string, MaquinaSpec> = {
@@ -287,7 +299,30 @@ export function construirMaquina(
   if (!spec) throw new Error(`Máquina desconocida: ${prefabId}`);
   const ids = construirPiezas(editor, spec.piezas, spec.label, at);
   if (spec.uniones) aplicarUniones(editor, ids, spec.uniones, at);
+  if (spec.cables) aplicarCables(editor, ids, spec.cables);
   return { ids, label: spec.label };
+}
+
+/**
+ * Reconstruye los CABLES de un prefab recién armado: cada nodo se re-ancla a
+ * la pieza creada (por índice) en su punto local original, así los sistemas
+ * de poleas conservan su recorrido y su función móvil.
+ */
+export function aplicarCables(editor: Editor, ids: string[], cables: CableSpec[]): void {
+  for (const c of cables) {
+    if (!c || !Array.isArray(c.nodos)) continue;
+    const nodes: { objectId: string; local: { x: number; y: number; z: number } }[] = [];
+    let completo = true;
+    for (const n of c.nodos) {
+      const id = ids[n.pieza];
+      if (!id || !Array.isArray(n.local)) {
+        completo = false;
+        break;
+      }
+      nodes.push({ objectId: id, local: { x: n.local[0], y: n.local[1], z: n.local[2] } });
+    }
+    if (completo && nodes.length >= 2) editor.createCable(nodes);
+  }
 }
 
 /**

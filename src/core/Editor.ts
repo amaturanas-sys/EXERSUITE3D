@@ -7,7 +7,7 @@ import { getPerf } from "./performance";
 import { formatCm } from "./units";
 import { SceneObject } from "../objects/SceneObject";
 import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
-import { aplicarUniones, construirMaquina, construirPiezas, STANDARD_MACHINES, type PiezaSpec, type UnionSpec } from "../objects/standardMachines";
+import { aplicarCables, aplicarUniones, construirMaquina, construirPiezas, STANDARD_MACHINES, type CableSpec, type PiezaSpec, type UnionSpec } from "../objects/standardMachines";
 import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
@@ -740,6 +740,7 @@ export class Editor {
     if (prefabUsuario) {
       const ids = construirPiezas(this, prefabUsuario.piezas, prefabUsuario.label, at);
       if (prefabUsuario.uniones) aplicarUniones(this, ids, prefabUsuario.uniones, at);
+      if (prefabUsuario.cables) aplicarCables(this, ids, prefabUsuario.cables);
       if (ids.length >= 2) {
         const gid = this.createGroupFromIds(ids);
         if (gid) this.renameGroup(gid, prefabUsuario.label);
@@ -1181,11 +1182,12 @@ export class Editor {
    * coinciden con la biblioteca actual (control `dims` del formato v2).
    */
   insertarPrefab(
-    data: { label: string; piezas: PiezaSpec[]; uniones?: UnionSpec[] },
+    data: { label: string; piezas: PiezaSpec[]; uniones?: UnionSpec[]; cables?: CableSpec[] },
     at = new THREE.Vector3(),
   ): string[] {
     const ids = construirPiezas(this, data.piezas, data.label, at);
     if (data.uniones) aplicarUniones(this, ids, data.uniones, at);
+    if (data.cables) aplicarCables(this, ids, data.cables);
     const avisos: string[] = [];
     for (let i = 0; i < data.piezas.length && i < ids.length; i++) {
       const p = data.piezas[i];

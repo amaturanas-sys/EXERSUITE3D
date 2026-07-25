@@ -306,10 +306,11 @@ body.simulator-mode #viewport {
   border-radius: 6px;
 }
 
-/* Panel de posturas (flotante, junto a la paleta). */
+/* Panel de posturas (flotante, junto a la paleta). Se corre a la DERECHA de
+   la tira de pestañas laterales (~34 px) para no obstruirlas jamás. */
 #poses {
   top: auto;
-  left: calc(var(--panel-w) + 24px + var(--safe-l));
+  left: calc(var(--panel-w) + 58px + var(--safe-l));
   bottom: calc(48px + var(--safe-b));
   width: 262px;
   max-height: min(340px, 46vh);

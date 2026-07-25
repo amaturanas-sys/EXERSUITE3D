@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import type { Editor } from "./Editor";
-import type { PiezaSpec, UnionSpec } from "../objects/standardMachines";
+import type { CableSpec, PiezaSpec, UnionSpec } from "../objects/standardMachines";
 import { piezasDeMaquina, STANDARD_MACHINES } from "../objects/standardMachines";
 import { getDefinition } from "../objects/componentLibrary";
 import { version as VERSION_APP } from "../../package.json";
@@ -23,6 +23,9 @@ export interface PrefabArchivo {
   piezas: PiezaSpec[];
   /** Uniones entre piezas (corredera/bisagra) que viajan con el prefab. */
   uniones?: UnionSpec[];
+  /** Cables del sistema de poleas (v0.2.8): nodos por índice de pieza +
+   *  anclaje LOCAL — preservan la función móvil del modelo al reinsertar. */
+  cables?: CableSpec[];
 }
 
 /**
@@ -100,6 +103,24 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
     });
   }
 
+  // CABLES cuyo recorrido queda COMPLETO dentro de la selección: viajan con
+  // el prefab (nodos por índice de pieza + anclaje local) para que los
+  // sistemas de poleas conserven su función móvil al reinsertar.
+  const cables: CableSpec[] = [];
+  for (const c of editor.listCables()) {
+    const nodos: CableSpec["nodos"] = [];
+    let dentro = true;
+    for (const n of c.nodes) {
+      const idx = indicePorId.get(n.objectId);
+      if (idx === undefined) {
+        dentro = false;
+        break;
+      }
+      nodos.push({ pieza: idx, local: [r4(n.local.x), r4(n.local.y), r4(n.local.z)] });
+    }
+    if (dentro && nodos.length >= 2) cables.push({ nodos });
+  }
+
   const archivo: PrefabArchivo = {
     formato: "exersuite3d-prefab",
     version: 2,
@@ -108,6 +129,7 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
     piezas,
   };
   if (uniones.length > 0) archivo.uniones = uniones;
+  if (cables.length > 0) archivo.cables = cables;
   return JSON.stringify(archivo, null, 2);
 }
 
@@ -148,6 +170,11 @@ export function prefabDeFabrica(prefabId: string): PrefabArchivo | null {
     piezas: piezasV2,
   };
   if (spec.uniones) archivo.uniones = spec.uniones.map((u) => ({ ...u }));
+  if (spec.cables) {
+    archivo.cables = spec.cables.map((c) => ({
+      nodos: c.nodos.map((n) => ({ pieza: n.pieza, local: [...n.local] as [number, number, number] })),
+    }));
+  }
   return archivo;
 }
 
@@ -213,6 +240,28 @@ export function parsearPrefab(texto: string): ReportePrefab {
     }
     if (uniones.length === 0) uniones = undefined;
   }
+  // Cables: mismos remapeos que las uniones; un cable que tocaba una pieza
+  // excluida se descarta completo (su recorrido ya no tiene sentido).
+  let cables: CableSpec[] | undefined;
+  if (Array.isArray(data.cables)) {
+    cables = [];
+    for (const c of data.cables as CableSpec[]) {
+      if (!c || !Array.isArray(c.nodos) || c.nodos.length < 2) continue;
+      const nodos: CableSpec["nodos"] = [];
+      let valido = true;
+      for (const n of c.nodos) {
+        const ni = typeof n?.pieza === "number" ? nuevoIndice.get(n.pieza) : undefined;
+        if (ni === undefined || !Array.isArray(n.local) || n.local.length !== 3) {
+          valido = false;
+          break;
+        }
+        nodos.push({ pieza: ni, local: [n.local[0], n.local[1], n.local[2]] });
+      }
+      if (valido) cables.push({ nodos });
+      else advertencias.push("Un cable del prefab tocaba una pieza excluida y quedó fuera.");
+    }
+    if (cables.length === 0) cables = undefined;
+  }
   return {
     archivo: {
       formato: "exersuite3d-prefab",
@@ -221,6 +270,7 @@ export function parsearPrefab(texto: string): ReportePrefab {
       label: typeof data.label === "string" && data.label ? data.label : "Prefab",
       piezas,
       uniones,
+      cables,
     },
     desconocidas,
     advertencias,
