@@ -5,6 +5,32 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.8] — 2026-07-25
+
+Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo
+y el Instructivo ilustrado queda con imágenes fieles a cada pestaña.
+
+### Corregido
+
+- **Paredes del canvas completo como CARAS suelo-techo**: cada pared es
+  ahora una cara plana que hace contacto entre la superficie del suelo y el
+  techo — bajo una techumbre INCLINADA, su tope sigue la pendiente (prisma
+  trapezoidal con la altura del techo en cada extremo del borde), sin
+  espacios vacíos en la base ni en la porción superior. Antes eran cajas de
+  tope plano a la altura mínima del techo: quedaba un triángulo abierto en
+  el lado alto.
+- **Altura de paredes SIN techumbre definida por el usuario**: el asistente
+  de Nuevo proyecto muestra el campo "Altura de las paredes (m)" cuando la
+  techumbre está desactivada — las paredes quedan circunscritas a esa
+  altura (antes, 2,5 m fijos).
+- **Imágenes del FAQ re-escenificadas**: las capturas de las pestañas de
+  calce, pesos, física y simulación no representaban bien su texto (tomas
+  lejanas o escenas de prueba abarrotadas) — se sustituyen por escenas
+  limpias y encuadradas: ganchos calzados de cerca (montante y poste
+  trazado), bloque y pila ensartados en sus guías, discos montados en
+  carrier/barra/cuerno, validación de cables y simulación con el bloque en
+  sus topes.
+
 ## [0.2.7] — 2026-07-24
 
 La actualización del APK sobre una versión instalada vuelve a funcionar —

@@ -37,6 +37,13 @@ export interface PrimitiveParams {
   twistDeg?: number;
   /** Bisel/redondeo de aristas (cm), solo cajas. */
   bevel?: number;
+  /**
+   * Altura del extremo +X (cm), solo cajas: si difiere de `height`, la caja
+   * se vuelve un PRISMA TRAPEZOIDAL cuyo tope va de height (−X) a height2
+   * (+X) — los muros bajo una techumbre inclinada tocan el techo en toda su
+   * longitud, sin triángulos vacíos.
+   */
+  height2?: number;
   // piezas de linea (beam / tube)
   /**
    * Trayectoria de la pieza en coordenadas locales (cm). Los nodos describen la

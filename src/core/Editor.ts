@@ -1605,24 +1605,31 @@ export class Editor {
           Math.abs(nx) >= Math.abs(nz) ? (nx > 0 ? "E" : "O") : (nz > 0 ? "N" : "S");
         if (!lados.has(lado)) continue;
 
-        const h = t
-          ? Math.max(
-              50,
-              Math.min(this.techoYAt(a[0], a[1]), this.techoYAt(b[0], b[1])),
-            )
-          : 250;
+        // La pared es una CARA plana del suelo al techo: su tope sigue la
+        // inclinación de la techumbre (altura del techo en CADA extremo del
+        // borde — prisma trapezoidal, sin huecos arriba ni abajo). Sin
+        // techumbre, queda circunscrita a la altura elegida por el usuario.
+        const hA = t
+          ? Math.max(30, this.techoYAt(a[0], a[1]))
+          : ws.alturaParedes ?? 250;
+        const hB = t
+          ? Math.max(30, this.techoYAt(b[0], b[1]))
+          : ws.alturaParedes ?? 250;
+        const hMax = Math.max(hA, hB);
         const n = (usados.get(lado) ?? 0) + 1;
         usados.set(lado, n);
         const nombre = `Pared ${NOMBRES[lado]}${n > 1 ? ` ${n}` : ""}`;
         const pos = new THREE.Vector3(
           mx - (nx * GROSOR) / 2,
-          h / 2,
+          hMax / 2,
           mz - (nz * GROSOR) / 2,
         );
         const o = this.addComponent("prim-box", pos);
         o.name = nombre;
         o.mesh.name = nombre;
-        o.params = { kind: "box", width: len, height: h, depth: GROSOR };
+        // El extremo −X local de la pared cae en el punto a y el +X en b
+        // (la rotación Y de abajo mapea +X local a la dirección a→b).
+        o.params = { kind: "box", width: len, height: hA, height2: hB, depth: GROSOR };
         o.physics = { massKg: 0, fixed: true };
         o.rebuildGeometry();
         o.setMaterial("acero-negro");

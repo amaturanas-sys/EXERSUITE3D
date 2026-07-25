@@ -344,6 +344,15 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
         paredes.set(lado, cb);
         paredesRow.append(el("label", { class: "wizard-check" }, [cb, nombres[lado]]));
       }
+      // Sin techumbre, las paredes quedan circunscritas a esta altura; con
+      // techumbre suben exactamente hasta el techo (con su inclinación).
+      const alturaParedes = num(2.5, 1, 20);
+      const filaAlturaParedes = fila("Altura de las paredes (m, sin techumbre)", alturaParedes);
+      const refrescarAlturaParedes = (): void => {
+        filaAlturaParedes.style.display = conTecho.checked ? "none" : "";
+      };
+      conTecho.addEventListener("change", refrescarAlturaParedes);
+      refrescarAlturaParedes();
 
       const crear = el("button", { class: "tool wizard-crear" }, ["Crear proyecto"]);
       crear.addEventListener("click", () => {
@@ -369,6 +378,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
               }
             : null,
           paredes: [...paredes].filter(([, cb]) => cb.checked).map(([l]) => l),
+          alturaParedes: Math.round(v(alturaParedes, 2.5) * 100),
         });
       });
 
@@ -390,6 +400,7 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
           el("div", { class: "wizard-grupo" }, [
             el("div", { class: "wizard-grupo-titulo" }, ["Paredes (superficies de anclaje)"]),
             paredesRow,
+            filaAlturaParedes,
           ]),
         ]),
         el("div", { class: "wizard-acciones" }, [botonAtras(paso2), crear]),

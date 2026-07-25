@@ -21,6 +21,24 @@ function baseGeometry(p: PrimitiveParams, deform: boolean): THREE.BufferGeometry
   const d = p.depth ?? 10;
   switch (p.kind) {
     case "box": {
+      // Muro TRAPEZOIDAL (height2 ≠ height): prisma cuyo tope sube de la
+      // altura del extremo −X a la del extremo +X — la pared toca una
+      // techumbre inclinada en toda su longitud, sin huecos.
+      const h2 = p.height2;
+      if (h2 !== undefined && Math.abs(h2 - h) > 0.01) {
+        const forma = new THREE.Shape();
+        forma.moveTo(-w / 2, 0);
+        forma.lineTo(w / 2, 0);
+        forma.lineTo(w / 2, h2);
+        forma.lineTo(-w / 2, h);
+        forma.closePath();
+        const geo = new THREE.ExtrudeGeometry(forma, { depth: d, bevelEnabled: false });
+        geo.translate(0, 0, -d / 2);
+        // Centrado vertical como cualquier primitiva (base en −hMax/2).
+        geo.translate(0, -Math.max(h, h2) / 2, 0);
+        geo.computeVertexNormals();
+        return geo;
+      }
       // Dos orificios verticales pasantes (bloques/pilas de sistemas de
       // poleas guiadas): el bloque se extruye como placa con agujeros y se
       // levanta para que los orificios queden a lo largo del eje Y.

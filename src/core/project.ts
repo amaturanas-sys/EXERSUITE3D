@@ -88,6 +88,9 @@ export interface WorkspaceData {
   planta?: [number, number][];
   /** Techo: alturas en los extremos A y B (pendiente) a lo largo de un eje. */
   techo?: { alturaA: number; alturaB: number; eje: "x" | "z" } | null;
+  /** Altura de las paredes (cm) cuando NO hay techumbre (con techo, la
+   *  pared sube exactamente hasta él, siguiendo su inclinación). */
+  alturaParedes?: number;
   /** Paredes creadas en los bordes (N=+Z, S=-Z, E=+X, O=-X). */
   paredes?: ("N" | "S" | "E" | "O")[];
 }
