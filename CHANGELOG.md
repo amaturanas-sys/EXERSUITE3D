@@ -11,6 +11,27 @@ Las paredes del área de trabajo se vuelven CARAS reales del suelo al techo,
 el techo pasa a ser una cara plana, los cables se ven en azul oscuro y el
 Instructivo ilustrado queda con imágenes fieles a cada pestaña.
 
+### Añadido
+
+- **Roldanas EMPOTRADAS en su estructura**: una roldana adosada a una pieza
+  forma ahora un cuerpo rígido COMPUESTO con ella en la simulación. Si la
+  estructura es móvil, la roldana viaja con ella y la tensión del cable que
+  la recorre actúa directamente sobre la estructura; si es fija, la roldana
+  queda anclada (no cae al vacío). Vale para carros de polea, brazos
+  móviles con roldanas y cualquier pieza portante.
+- **El puente del carro del TTP es MÓVIL**: el rack con torre de fábrica
+  incorpora la barra de jalón bajo y sus DOS CABLES reales (jalón bajo →
+  polea baja → carro → placa · portadiscos → torre → carro → poleas altas →
+  remo). El puente con sus dos roldanas sube y baja según la tensión: tirar
+  del jalón bajo lo desciende, tirar del remo alto lo eleva y moviliza el
+  contrapeso — verificado con el motor físico.
+- **Estabilidad de cables**: recuperación de longitud por VELOCIDAD
+  (Baumgarte) con proyección de posición solo como red de emergencia,
+  fricción de polea (amortiguación) y esticción posicional — los sistemas
+  de poleas quedan QUIETOS en reposo (antes el contrapeso "reptaba" solo) y
+  el cable se mantiene azul durante la simulación (la validación roja es
+  una herramienta de diseño).
+
 ### Cambiado
 
 - **Techo como CARA PLANA**: la techumbre del canvas completo deja de ser

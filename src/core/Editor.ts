@@ -3471,8 +3471,11 @@ export class Editor {
       }
       line.geometry.setFromPoints(pts);
       // Validación del diagrama Cables/Poleas: rojo si el trazado atraviesa
-      // material sólido o entra desalineado al plano de una roldana.
-      const valido = this.validarCable(cable, pts);
+      // material sólido o entra desalineado al plano de una roldana. Es una
+      // herramienta de DISEÑO: durante la simulación la geometría cambia a
+      // cada paso y el cable se mantiene azul (el motor ya gobierna la
+      // tensión real).
+      const valido = this.simulating || this.validarCable(cable, pts);
       (line.material as THREE.LineBasicMaterial).color.setHex(valido ? 0x1e3a8a : 0xef4444);
       const invalidoAntes = this.cablesInvalidos.has(cable.id);
       if (!valido && !invalidoAntes) {

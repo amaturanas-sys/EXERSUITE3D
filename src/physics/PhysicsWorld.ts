@@ -29,6 +29,28 @@ export class PhysicsWorld {
   private world: R.World | null = null;
   private bodies = new Map<string, { body: R.RigidBody; obj: SceneObject }>();
   private cables: CableEntry[] = [];
+  /**
+   * ROLDANAS EMPOTRADAS (v0.2.8): una roldana adosada a una pieza forma un
+   * CUERPO RÍGIDO COMPUESTO con ella — si la estructura es móvil, la roldana
+   * viaja con ella y la tensión del cable que la recorre actúa directamente
+   * sobre la estructura (así el puente de un sistema de poleas sube y baja
+   * según la tensión). Se guarda la pose relativa de diseño para reproyectar
+   * la malla de la roldana desde el cuerpo del anfitrión en cada paso.
+   */
+  private empotradas: {
+    obj: SceneObject;
+    host: R.RigidBody;
+    /** Pose relativa de diseño (frame del anfitrión, metros). */
+    relPos: { x: number; y: number; z: number };
+    relQ: { x: number; y: number; z: number; w: number };
+  }[] = [];
+  private empotradaPorId = new Map<string, PhysicsWorld["empotradas"][number]>();
+  /** Masa adicional acumulada por cuerpo (para sumar roldanas empotradas). */
+  private masaExtra = new Map<R.RigidBody, number>();
+  /** Cuerpos dinámicos colgados de algún cable (para la esticción). */
+  private cuerposCable = new Set<R.RigidBody>();
+  /** Posiciones al inicio del subpaso (esticción posicional). */
+  private posAntes = new Map<R.RigidBody, { x: number; y: number; z: number }>();
 
   /** Importa el modulo y carga/inicializa el WASM de Rapier una sola vez. */
   static init(): Promise<void> {
@@ -47,6 +69,10 @@ export class PhysicsWorld {
     this.bodies.clear();
     this.cables = [];
     this.guias = [];
+    this.empotradas = [];
+    this.empotradaPorId.clear();
+    this.masaExtra.clear();
+    this.cuerposCable.clear();
     this.drag = null;
     this.world = new RAPIER.World(GRAVITY);
 
@@ -58,9 +84,88 @@ export class PhysicsWorld {
     );
 
     for (const obj of objects) this.addBody(obj);
+    // Antes de juntas y cables: las roldanas adosadas se FUNDEN con el cuerpo
+    // de su estructura (los nodos de cable que las referencien resolverán al
+    // cuerpo compuesto).
+    this.detectarEmpotradas();
     for (const joint of joints) this.addJoint(joint);
     for (const cable of cables) this.addCable(cable);
     this.detectarGuias();
+  }
+
+  /**
+   * Detecta cada roldana/polea ADOSADA a una pieza (su centro cae dentro del
+   * volumen de la pieza, con un margen del tamaño de la roldana) y la funde
+   * en un cuerpo rígido compuesto con ella:
+   * - Estructura MÓVIL → la roldana viaja con ella (aunque estuviera marcada
+   *   como anclada: empotrada significa solidaria) y la tensión del cable
+   *   que la recorre actúa sobre la estructura — así una polea de carro o de
+   *   brazo móvil transmite y recibe fuerza.
+   * - Estructura FIJA y roldana dinámica → queda anclada a la estructura
+   *   (no cae al vacío).
+   * - Ambas fijas → ya son rígidas; no hace falta nada.
+   */
+  private detectarEmpotradas(): void {
+    if (!this.world) return;
+    const POLEAS = new Set(["polea", "roldana", "bloque-poleas"]);
+    const entradas = [...this.bodies.entries()];
+    const invH = new THREE.Quaternion();
+    const v = new THREE.Vector3();
+    for (const [id, e] of entradas) {
+      if (!POLEAS.has(e.obj.componentId)) continue;
+      const pSize = e.obj.effectiveSize();
+      const margen = Math.max(pSize.x, pSize.y, pSize.z) / 2 + 1.5;
+      let mejor: { body: R.RigidBody; obj: SceneObject } | null = null;
+      let mejorD = Infinity;
+      for (const [hid, h] of entradas) {
+        if (hid === id || POLEAS.has(h.obj.componentId)) continue;
+        const hs = h.obj.effectiveSize();
+        invH.copy(h.obj.mesh.quaternion).invert();
+        v.copy(e.obj.mesh.position).sub(h.obj.mesh.position).applyQuaternion(invH);
+        // Distancia firmada del centro de la roldana a la caja de la pieza.
+        const d = Math.max(
+          Math.abs(v.x) - hs.x / 2,
+          Math.abs(v.y) - hs.y / 2,
+          Math.abs(v.z) - hs.z / 2,
+        );
+        if (d < margen && d < mejorD) {
+          mejorD = d;
+          mejor = h;
+        }
+      }
+      if (!mejor) continue;
+      const hostDinamico = mejor.body.isDynamic();
+      const roldanaDinamica = e.body.isDynamic();
+      if (!hostDinamico && !roldanaDinamica) continue;
+      // Pose relativa de diseño (frame del anfitrión, metros).
+      const qH = mejor.obj.mesh.quaternion;
+      const relQ = qH.clone().invert().multiply(e.obj.mesh.quaternion);
+      const relPos = e.obj.mesh.position
+        .clone()
+        .sub(mejor.obj.mesh.position)
+        .applyQuaternion(qH.clone().invert())
+        .multiplyScalar(S);
+      this.world.removeRigidBody(e.body);
+      const entrada = {
+        obj: e.obj,
+        host: mejor.body,
+        relPos: { x: relPos.x, y: relPos.y, z: relPos.z },
+        relQ: { x: relQ.x, y: relQ.y, z: relQ.z, w: relQ.w },
+      };
+      this.empotradas.push(entrada);
+      this.empotradaPorId.set(id, entrada);
+      // Las juntas que referencien la roldana resuelven al cuerpo compuesto.
+      this.bodies.set(id, { body: mejor.body, obj: mejor.obj });
+      // La masa de la roldana se suma al anfitrión dinámico.
+      if (hostDinamico) {
+        const masa = e.obj.effectiveMassKg();
+        if (masa > 0) {
+          const total = (this.masaExtra.get(mejor.body) ?? 0) + masa;
+          this.masaExtra.set(mejor.body, total);
+          mejor.body.setAdditionalMass(total, true);
+        }
+      }
+    }
   }
 
   /**
@@ -86,8 +191,16 @@ export class PhysicsWorld {
   }[] = [];
 
   private detectarGuias(): void {
-    const dinamicas = [...this.bodies.values()].filter(({ body }) => !body.isFixed());
-    const fijas = [...this.bodies.values()].filter(({ body }) => body.isFixed());
+    // Dedupe: una roldana empotrada duplica la entrada de su anfitrión en el
+    // mapa de cuerpos (para juntas) — aquí cada cuerpo cuenta una sola vez.
+    const vistos = new Set<number>();
+    const unicos = [...this.bodies.values()].filter(({ body }) => {
+      if (vistos.has(body.handle)) return false;
+      vistos.add(body.handle);
+      return true;
+    });
+    const dinamicas = unicos.filter(({ body }) => !body.isFixed());
+    const fijas = unicos.filter(({ body }) => body.isFixed());
 
     // 1) Candidatas: piezas fijas ESBELTAS (tubulares) con su recta axial.
     interface Esbelta {
@@ -239,14 +352,42 @@ export class PhysicsWorld {
   }
 
   private addCable(cable: Cable): void {
-    const entries = cable.nodes.map((n) => this.bodies.get(n.objectId));
-    if (entries.length < 2 || entries.some((e) => !e)) return;
-    const bodies = entries.map((e) => e!.body);
-    // Anclaje local (cm geometria) -> escala de la pieza -> metros, frame cuerpo.
-    const local = cable.nodes.map((n, i) => {
-      const s = entries[i]!.obj.mesh.scale;
-      return { x: n.local.x * s.x * S, y: n.local.y * s.y * S, z: n.local.z * s.z * S };
-    });
+    const bodies: R.RigidBody[] = [];
+    const local: { x: number; y: number; z: number }[] = [];
+    for (const n of cable.nodes) {
+      // Roldana EMPOTRADA: el nodo resuelve al cuerpo compuesto del anfitrión
+      // y su anclaje local se reexpresa en el frame de ese cuerpo.
+      const emp = this.empotradaPorId.get(n.objectId);
+      if (emp) {
+        const s = emp.obj.mesh.scale;
+        const l = new THREE.Vector3(
+          n.local.x * s.x * S,
+          n.local.y * s.y * S,
+          n.local.z * s.z * S,
+        );
+        l.applyQuaternion(new THREE.Quaternion(emp.relQ.x, emp.relQ.y, emp.relQ.z, emp.relQ.w));
+        l.add(new THREE.Vector3(emp.relPos.x, emp.relPos.y, emp.relPos.z));
+        bodies.push(emp.host);
+        local.push({ x: l.x, y: l.y, z: l.z });
+        continue;
+      }
+      const e = this.bodies.get(n.objectId);
+      if (!e) return;
+      // Anclaje local (cm geometria) -> escala de la pieza -> metros, frame cuerpo.
+      const s = e.obj.mesh.scale;
+      bodies.push(e.body);
+      local.push({ x: n.local.x * s.x * S, y: n.local.y * s.y * S, z: n.local.z * s.z * S });
+    }
+    if (bodies.length < 2) return;
+    // Fricción de polea: una amortiguación lineal moderada en los cuerpos
+    // colgados del cable aplaca la deriva cuasi-estática del solver (bombeo
+    // del bias) sin frenar los tirones de la mano, que son mucho mayores.
+    for (const b of bodies) {
+      if (b.isDynamic()) {
+        if (b.linearDamping() < 1) b.setLinearDamping(1);
+        this.cuerposCable.add(b);
+      }
+    }
     const entry: CableEntry = { bodies, local, restLength: 0 };
     entry.restLength = this.cableLength(entry);
     this.cables.push(entry);
@@ -315,7 +456,8 @@ export class PhysicsWorld {
     const { bodies, restLength } = entry;
     const n = bodies.length;
     if (n < 2) return;
-    if (this.cableLength(entry) <= restLength) return;
+    const C = this.cableLength(entry) - restLength;
+    if (C <= 0) return;
 
     const p = bodies.map((_, i) => this.nodeWorld(entry, i));
     const J = this.cableGradients(p);
@@ -327,9 +469,15 @@ export class PhysicsWorld {
     const v = bodies.map((b) => b.linvel());
     let vrel = 0;
     for (let i = 0; i < n; i++) vrel += J[i].x * v[i].x + J[i].y * v[i].y + J[i].z * v[i].z;
-    if (vrel <= 0) return;
+    // Estabilización Baumgarte: el exceso de longitud se recobra por
+    // VELOCIDAD (repartida por masas, dinámica coherente) en lugar de
+    // teletransportar posiciones — sin esto, el reparto posicional bombea
+    // energía y el sistema "repta" en reposo (el contrapeso subía solo).
+    const bias = Math.min(15 * C, 2.5); // m/s
+    const objetivo = -bias;
+    if (vrel <= objetivo) return;
 
-    const lambda = -vrel / effMass;
+    const lambda = (objetivo - vrel) / effMass;
     for (let i = 0; i < n; i++) {
       if (im[i] <= 0) continue;
       const k = im[i] * lambda;
@@ -356,7 +504,11 @@ export class PhysicsWorld {
     for (let i = 0; i < n - 1; i++) {
       segLen.push(Math.hypot(p[i].x - p[i + 1].x, p[i].y - p[i + 1].y, p[i].z - p[i + 1].z));
     }
-    const C = segLen.reduce((a, b) => a + b, 0) - restLength;
+    // Red de EMERGENCIA: la recuperación normal la hace el bias de velocidad
+    // (Baumgarte); solo se teletransporta el exceso grosero (tirones muy
+    // violentos), dejando una holgura que evita el bombeo posicional.
+    const HOLGURA = 0.03; // m
+    const C = segLen.reduce((a, b) => a + b, 0) - restLength - HOLGURA;
     if (C <= 0) return;
 
     const J = this.cableGradients(p);
@@ -557,7 +709,10 @@ export class PhysicsWorld {
 
     const body = this.world.createRigidBody(desc);
     this.world.createCollider(this.colliderDesc(obj), body);
-    if (dynamic) body.setAdditionalMass(massKg, true);
+    if (dynamic) {
+      body.setAdditionalMass(massKg, true);
+      this.masaExtra.set(body, massKg);
+    }
 
     this.bodies.set(obj.id, { body, obj });
   }
@@ -696,6 +851,11 @@ export class PhysicsWorld {
     this.accumulator = Math.min(this.accumulator + dtSeconds, 2 * PhysicsWorld.FIXED_DT);
     while (this.accumulator >= PhysicsWorld.FIXED_DT) {
       this.accumulator -= PhysicsWorld.FIXED_DT;
+      // Instantánea para la esticción de los cuerpos colgados de cables.
+      this.posAntes.clear();
+      for (const b of this.cuerposCable) {
+        if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
+      }
       this.applyDrag(PhysicsWorld.FIXED_DT);
       this.world.step();
       this.aplicarGuias();
@@ -710,6 +870,24 @@ export class PhysicsWorld {
         }
         // La corrección del cable no puede sacar a las guiadas de su riel.
         this.aplicarGuias();
+        // ESTICCIÓN de polea (posicional): si en este subpaso un cuerpo
+        // colgado de cables se desplazó menos de 0,5 mm (< 3 cm/s), el
+        // desplazamiento se revierte y el cuerpo queda aparcado. Esto mata
+        // por completo la deriva cuasi-estática del compromiso entre cables
+        // acoplados (el solver oscila fuerte por dentro pero solo "repta"
+        // milímetros netos) sin afectar ningún movimiento real, que es muy
+        // superior al umbral.
+        for (const [b, antes] of this.posAntes) {
+          if (!b.isDynamic()) continue;
+          const t = b.translation();
+          const dx = t.x - antes.x;
+          const dy = t.y - antes.y;
+          const dz = t.z - antes.z;
+          if (dx * dx + dy * dy + dz * dz < 0.0005 * 0.0005) {
+            b.setTranslation(antes, true);
+            b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          }
+        }
       }
     }
     for (const { body, obj } of this.bodies.values()) {
@@ -719,6 +897,19 @@ export class PhysicsWorld {
       const r = body.rotation();
       obj.mesh.quaternion.set(r.x, r.y, r.z, r.w);
     }
+    // Roldanas empotradas: su malla se reproyecta desde el cuerpo compuesto
+    // del anfitrión con la pose relativa de diseño.
+    for (const emp of this.empotradas) {
+      if (emp.host.isFixed()) continue;
+      const t = emp.host.translation();
+      const q = emp.host.rotation();
+      const qh = new THREE.Quaternion(q.x, q.y, q.z, q.w);
+      const p = new THREE.Vector3(emp.relPos.x, emp.relPos.y, emp.relPos.z).applyQuaternion(qh);
+      emp.obj.mesh.position.set((t.x + p.x) / S, (t.y + p.y) / S, (t.z + p.z) / S);
+      emp.obj.mesh.quaternion
+        .copy(qh)
+        .multiply(new THREE.Quaternion(emp.relQ.x, emp.relQ.y, emp.relQ.z, emp.relQ.w));
+    }
   }
 
   dispose(): void {
@@ -727,6 +918,10 @@ export class PhysicsWorld {
     this.bodies.clear();
     this.cables = [];
     this.guias = [];
+    this.empotradas = [];
+    this.empotradaPorId.clear();
+    this.masaExtra.clear();
+    this.cuerposCable.clear();
     this.drag = null;
   }
 }

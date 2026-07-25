@@ -242,7 +242,10 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -74.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
-  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.9238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  // El puente del carro es MÓVIL: cuelga de los cables y sube/baja según su
+  // tensión (jalón alto y bajo). Sus dos roldanas se empotran solas en él
+  // (cuerpo compuesto, v0.2.8) y viajan con el puente.
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.9238], rotq: [0, 0, 0, 1], fija: false, masaKg: 4 },
   { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -47.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -47.8238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
   { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -64.5238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
@@ -250,6 +253,38 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.0238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
   { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 206.85, -37.8238], rotq: [0, 1, 0, 0], fija: true, masaKg: 0 },
   { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [0.3542, 67, -81.0762], rotq: [0, 0.707107, 0, 0.707107], fija: false, masaKg: 8 },
+  { comp: "barra-dominadas", nombre: "Barra de jalón bajo", params: { kind: "cylinder", radiusTop: 1.6, radiusBottom: 1.6, height: 50 }, material: "cromo", pos: [4, 5, -27.9238], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 2 },
+];
+
+/**
+ * CABLES del sistema de poleas del TTP (del .prefab.json del diseñador,
+ * v0.2.8). Índices sobre RACK_TORRE:
+ * - Jalón BAJO: barra de jalón bajo (34) → polea baja (27) → polea inferior
+ *   del carro (25) → anclado en la placa (29). Tirar de la barra baja TIRA
+ *   el puente del carro hacia abajo.
+ * - Jalón ALTO: portadiscos (33) → polea de torre (23) → polea superior del
+ *   carro (24) → polea alta trasera (22) → polea alta frontal (21) → remo
+ *   (30). La tensión levanta el puente y el contrapeso del portadiscos.
+ */
+const RACK_TORRE_CABLES: CableSpec[] = [
+  {
+    nodos: [
+      { pieza: 34, local: [0, 0, 0] },
+      { pieza: 27, local: [-0.7369, 0, -0.9114] },
+      { pieza: 25, local: [1.1671, 0, 0.1076] },
+      { pieza: 29, local: [0, 0, -13] },
+    ],
+  },
+  {
+    nodos: [
+      { pieza: 33, local: [0, 4.0671, 0] },
+      { pieza: 23, local: [1.1605, 0, -0.1641] },
+      { pieza: 24, local: [-1.1612, 0, 0.159] },
+      { pieza: 22, local: [0.8649, 0, -0.7909] },
+      { pieza: 21, local: [-1.164, 0, 0.1368] },
+      { pieza: 30, local: [0, 3.397, 0] },
+    ],
+  },
 ];
 
 /** Árbol de discos (renders de sala): poste con 6 cuernos a 3 alturas. */
@@ -277,7 +312,7 @@ const SPECS: Record<string, MaquinaSpec> = {
   "torre-polea": { label: "Torre de polea", piezas: TORRE },
   // Las guías del carrier las RECONOCE el motor físico (tubos que atraviesan
   // los manguitos) — no necesitan unión manual.
-  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE },
+  "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, cables: RACK_TORRE_CABLES },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
 
