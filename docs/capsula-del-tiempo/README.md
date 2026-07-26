@@ -327,7 +327,7 @@ v0.2.8: paredes del canvas completo como caras suelo-techo (trapezoidales bajo t
 - [`v28-polea-jalonbajo.png`](2026-07-25/v28-polea-jalonbajo.png)
 - [`v28-polea-jalonalto.png`](2026-07-25/v28-polea-jalonalto.png)
 
-## 2026-07-26 — 10 capturas
+## 2026-07-26 — 11 capturas
 
 v0.2.10: el jalón bajo del TTP con libertad de vectores y transmisión completa al carrier (topes de terminal del cable + detección de guías con abrazo real).
 
@@ -341,3 +341,4 @@ v0.2.10: el jalón bajo del TTP con libertad de vectores y transmisión completa
 - [`v211-brazo-2postes.png`](2026-07-26/v211-brazo-2postes.png)
 - [`v212-calce-numerado.png`](2026-07-26/v212-calce-numerado.png)
 - [`v212-doblado-pinholes.png`](2026-07-26/v212-doblado-pinholes.png)
+- [`v212-doblado-frontal.png`](2026-07-26/v212-doblado-frontal.png)

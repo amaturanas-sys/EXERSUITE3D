@@ -33,12 +33,13 @@ El brazo de seguridad se sostiene de DOS pilares, como en la máquina real.
   conoce la grilla completa (1..X) de cada montante de biblioteca y de
   cada poste trazado con pinholes configurables.
 - **Los pinholes SOBREVIVEN a la deformación por nodos**: al doblar una
-  estructura trazada, los agujeros solo desaparecen en las secciones que
-  pierden la rectitud de la superficie (las caras deformadas por el
-  suavizado en cualquier eje); las regiones que conservan su plano de
-  cara mantienen sus pinholes reales. La viga doblada se construye por
-  TRAMOS: los rectos se extruyen con su grilla de agujeros y los curvos
-  se barren lisos, fusionados en una sola geometría.
+  estructura trazada, los agujeros solo se obliteran donde la CURVATURA
+  real de la superficie impide instalar un acople; toda cara
+  suficientemente plana los conserva, aunque quede DIAGONAL o inclinada.
+  La curva se muestrea centímetro a centímetro y se particiona por
+  cuerda acumulada (comba ≤ 2 mm) en caras planas: las que alcanzan el
+  pie de un accesorio (≥ 20 cm) se extruyen con su grilla de pinholes y
+  el codo se barre liso, fusionados en una geometría continua.
 
 ## [0.2.11] — 2026-07-26
 

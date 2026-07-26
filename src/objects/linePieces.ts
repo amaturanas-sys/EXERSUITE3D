@@ -160,14 +160,15 @@ export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
 }
 
 /**
- * Viga DOBLADA construida por TRAMOS (v0.2.12): los pinholes solo
- * desaparecen en las secciones que pierden la rectitud de la superficie —
- * en las regiones que conservan su plano de cara se PRESERVAN como
- * agujeros reales. Cada segmento del path se clasifica recto o curvo según
- * la colinealidad de sus nodos de INFLUENCIA (la curva Catmull-Rom entre
- * dos nodos depende también de los vecinos: si alguno se deformó, esa cara
- * ya no es plana y pierde sus agujeros); los tramos rectos se extruyen con
- * su grilla de pinholes y los curvos se barren lisos.
+ * Viga DOBLADA construida por TRAMOS (v0.2.12): los pinholes solo se
+ * OBLITERAN donde la CURVATURA real de la superficie impide instalar un
+ * acople — toda cara suficientemente plana los conserva, aunque quede
+ * DIAGONAL o inclinada tras el doblado. La curva barrida se muestrea
+ * centímetro a centímetro y se particiona por CUERDA ACUMULADA (comba
+ * ≤ 2 mm) en tramos de cara plana; los que alcanzan el pie de un
+ * accesorio (≥ 20 cm) se extruyen como prismas CON su grilla de pinholes
+ * sobre su propia línea, y el resto — el codo — se barre liso. Las
+ * partes comparten sus puntos de frontera: la geometría es continua.
  */
 function buildBentBeam(
   p: PrimitiveParams,
@@ -175,30 +176,81 @@ function buildBentBeam(
   D: number,
   path: [number, number, number][],
 ): THREE.BufferGeometry {
-  const n = path.length;
   const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
   const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
+  const margen = W / 2 + holeR;
 
-  // ¿El segmento k (nodos k..k+1) queda RECTO bajo el suavizado? Solo si
-  // todos sus nodos de influencia (k-1..k+2) siguen colineales.
-  const segRecto = (k: number): boolean => {
-    const i0 = Math.max(0, k - 1);
-    const i1 = Math.min(n - 1, k + 2);
-    return pathIsStraight(path.slice(i0, i1 + 1));
+  // Muestreo denso de la curva real (≈1 cm entre muestras).
+  const curva = pathCurve(path);
+  const L = Math.max(pathLength(path), 2);
+  const N = THREE.MathUtils.clamp(Math.ceil(L), 40, 500);
+  const pts = curva.getSpacedPoints(N); // N+1 puntos
+
+  // PLANITUD por CUERDA ACUMULADA: un tramo es "suficientemente plano"
+  // para acoplar un accesorio mientras TODAS sus muestras queden a menos
+  // de la comba tolerada de la cuerda del tramo. (La planitud puramente
+  // local engaña: una curvatura suave de radio grande parece recta en
+  // cada ventana pequeña y la pieza entera se enderezaría.) Al superar la
+  // tolerancia, el tramo se corta y empieza otro; los cortos — el codo —
+  // se barren curvos, y una comba larga y suave se facetea en cuerdas
+  // portadoras de agujeros, todas con caras planas de verdad.
+  const tolPlano = 0.2; // cm de comba tolerada en una cara de acople
+  const desviacionMax = (a0: number, a1: number): number => {
+    const a = pts[a0];
+    const b = pts[a1];
+    const dir = b.clone().sub(a);
+    const len = dir.length();
+    if (len < 1e-6) return 0;
+    dir.divideScalar(len);
+    let peor = 0;
+    for (let k = a0 + 1; k < a1; k++) {
+      const v = pts[k].clone().sub(a);
+      const d = v.clone().addScaledVector(dir, -v.dot(dir)).length();
+      if (d > peor) peor = d;
+    }
+    return peor;
   };
+  const cortes: number[] = [0];
+  let ini = 0;
+  for (let j = 2; j < pts.length; j++) {
+    if (desviacionMax(ini, j) > tolPlano) {
+      cortes.push(j - 1);
+      ini = j - 1;
+    }
+  }
+  if (cortes[cortes.length - 1] !== pts.length - 1) cortes.push(pts.length - 1);
+
+  // Tramos entre cortes: rectos solo si la cara plana tiene el tamaño del
+  // PIE de un accesorio de calce (~20 cm, el manguito de una jota) — una
+  // cuerda más corta es parte del codo y se barre curva, porque ahí la
+  // curvatura impide instalar un acople.
+  const minRecto = Math.max(2 * margen + 1, spacing + 2, 20);
+  interface Tramo {
+    recto: boolean;
+    i0: number;
+    i1: number;
+  }
+  const tramos: Tramo[] = [];
+  for (let c = 0; c < cortes.length - 1; c++) {
+    const i0 = cortes[c];
+    const i1 = cortes[c + 1];
+    const largoTramo = pts[i0].distanceTo(pts[i1]);
+    tramos.push({ recto: largoTramo >= minRecto, i0, i1 });
+  }
+  // Fusiona tramos curvos consecutivos (el codo completo en un solo barrido).
+  const fusionados: Tramo[] = [];
+  for (const t of tramos) {
+    const u = fusionados[fusionados.length - 1];
+    if (u && !u.recto && !t.recto) u.i1 = t.i1;
+    else fusionados.push({ ...t });
+  }
 
   const partes: THREE.BufferGeometry[] = [];
-  let k = 0;
-  while (k < n - 1) {
-    const recto = segRecto(k);
-    let j = k;
-    while (j + 1 < n - 1 && segRecto(j + 1) === recto) j++;
-    const nodos = path.slice(k, j + 2);
-    if (recto) {
-      // Tramo recto: prisma extruido con sus pinholes, orientado sobre la
-      // línea del tramo.
-      const a = new THREE.Vector3(...nodos[0]);
-      const b = new THREE.Vector3(...nodos[nodos.length - 1]);
+  for (const t of fusionados) {
+    if (t.recto) {
+      // Prisma recto con pinholes sobre la línea del intervalo.
+      const a = pts[t.i0];
+      const b = pts[t.i1];
       const L2 = Math.max(a.distanceTo(b), 0.5);
       const cara = new THREE.Shape();
       cara.moveTo(-L2 / 2, -W / 2);
@@ -207,14 +259,13 @@ function buildBentBeam(
       cara.lineTo(-L2 / 2, W / 2);
       cara.closePath();
       if (holeR > 0.05) {
-        const margen = W / 2 + holeR;
         const usable = L2 - 2 * margen;
         const count = Math.floor(usable / spacing) + 1;
         if (count >= 1 && usable >= 0) {
           const inicio = -((count - 1) * spacing) / 2;
-          for (let i = 0; i < count; i++) {
+          for (let k = 0; k < count; k++) {
             const hole = new THREE.Path();
-            hole.absarc(inicio + i * spacing, 0, holeR, 0, Math.PI * 2, true);
+            hole.absarc(inicio + k * spacing, 0, holeR, 0, Math.PI * 2, true);
             cara.holes.push(hole);
           }
         }
@@ -233,10 +284,22 @@ function buildBentBeam(
       geo.translate(medio.x, medio.y, medio.z);
       partes.push(geo);
     } else {
-      partes.push(sweepProfile(rectShape(W, D), nodos));
+      // Sub-curva fiel: Catmull-Rom sobre las muestras densas del
+      // intervalo (pasa por los puntos de frontera compartidos).
+      const sub = pts.slice(t.i0, t.i1 + 1);
+      if (sub.length < 2) continue;
+      const curvaSub = new THREE.CatmullRomCurve3(sub, false, "catmullrom", 0.5);
+      const steps = THREE.MathUtils.clamp(sub.length, 8, 120);
+      const geo = new THREE.ExtrudeGeometry(rectShape(W, D), {
+        steps,
+        bevelEnabled: false,
+        extrudePath: curvaSub,
+        curveSegments: 20,
+      });
+      partes.push(geo);
     }
-    k = j + 1;
   }
+  if (partes.length === 0) return sweepProfile(rectShape(W, D), path);
   const unida =
     partes.length === 1 ? partes[0] : (mergeGeometries(partes, false) ?? partes[0]);
   unida.computeBoundingBox();
