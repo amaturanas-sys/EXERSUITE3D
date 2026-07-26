@@ -26,6 +26,22 @@ libertad total de vectores y su tirón se transmite completo al carrier.
   llega a su tope queda PARQUEADO contra la polea (como la barra real
   descansando en el tope de goma) hasta que la mano lo agarre — todo el
   recorrido restante va al contrapeso.
+- **Mano interactiva con fuerza HUMANA**: el resorte de la mano pasa a un
+  presupuesto de fuerza fijo (hasta ~80 kgf, sobre-amortiguado para toda
+  masa) en lugar de escalar con la masa de la pieza agarrada — agarrando
+  la barra liviana de 2 kg la mano topaba en ~12 kgf y no podía arrastrar
+  el contrapeso de 38 kg conectado por el cable. Verificado con el
+  .prefab.json del diseñador: la mano arrastra la barra baja 36 cm
+  elevando el portadiscos cargado (+14 cm) y la levanta 52 cm en
+  vertical.
+
+### Cambiado
+
+- **Fábrica RACK_TORRE sincronizada con el prefab v0.2.9 del diseñador**:
+  roldanas del carro dinámicas, puente del carro con su masa real
+  (0,2 kg) y portadiscos con 3 DISCOS montados de contrapeso (~38 kg
+  efectivos) — la máquina estándar sale de fábrica con el sistema de
+  poleas cargado y funcional.
 
 ## [0.2.9] — 2026-07-25
 

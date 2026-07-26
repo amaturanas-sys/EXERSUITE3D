@@ -902,18 +902,23 @@ export class PhysicsWorld {
       .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w))
       .add(new THREE.Vector3(t.x, t.y, t.z));
     const v = d.body.linvel();
-    const kp = 60; // rigidez del resorte (1/s^2)
-    const kd = 12; // amortiguación (1/s)
-    const acc = new THREE.Vector3(
-      (d.target.x - pw.x) * kp - v.x * kd,
-      (d.target.y - pw.y) * kp - v.y * kd,
-      (d.target.z - pw.z) * kp - v.z * kd,
+    // Resorte en espacio de FUERZA (v0.2.10): el presupuesto de la mano es
+    // HUMANO e independiente de la masa de la pieza agarrada. Antes la
+    // fuerza escalaba con esa masa (acc·m): agarrando una barra liviana de
+    // 2 kg la mano topaba en ~120 N y no podía arrastrar el contrapeso de
+    // 38 kg conectado por el cable. Sobre-amortiguado para TODAS las masas
+    // (KD/2√(KP·m) > 1 desde 0,3 kg), así no oscila ni con piezas ligeras.
+    const KP = 1500; // N/m
+    const KD = 120; // N·s/m
+    const FMAX = 800; // N (~80 kgf: una persona fuerte tirando con el cuerpo)
+    const F = new THREE.Vector3(
+      (d.target.x - pw.x) * KP - v.x * KD,
+      (d.target.y - pw.y) * KP - v.y * KD,
+      (d.target.z - pw.z) * KP - v.z * KD,
     );
-    const maxAcc = 60; // m/s^2 (~6g): mano firme pero no un motor infinito
-    if (acc.length() > maxAcc) acc.setLength(maxAcc);
-    const m = d.body.mass();
+    if (F.length() > FMAX) F.setLength(FMAX);
     d.body.applyImpulseAtPoint(
-      { x: acc.x * m * dt, y: acc.y * m * dt, z: acc.z * m * dt },
+      { x: F.x * dt, y: F.y * dt, z: F.z * dt },
       { x: pw.x, y: pw.y, z: pw.z },
       true,
     );

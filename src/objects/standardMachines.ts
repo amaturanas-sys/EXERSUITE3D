@@ -240,19 +240,20 @@ const RACK_TORRE: PiezaSpec[] = [
   { comp: "roldana", nombre: "Polea alta frontal", pos: [0, 211, -1.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "roldana", nombre: "Polea alta trasera", pos: [0, 211, -46.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "roldana", nombre: "Polea de torre", pos: [0, 203, -74.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
-  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
-  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
-  // El puente del carro es MÓVIL: cuelga de los cables y sube/baja según su
-  // tensión (jalón alto y bajo). Sus dos roldanas se empotran solas en él
-  // (cuerpo compuesto, v0.2.8) y viajan con el puente.
-  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.9238], rotq: [0, 0, 0, 1], fija: false, masaKg: 4 },
+  // El carro es MÓVIL: cuelga de los cables y sube/baja según su tensión
+  // (jalón alto y bajo). Las dos roldanas se empotran solas en el puente
+  // (cuerpo compuesto, v0.2.8) y viajan con él. Masas del .prefab.json del
+  // diseñador (v0.2.9).
+  { comp: "roldana", nombre: "Carro: polea sup.", pos: [0, 136, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Carro: polea inf.", pos: [0, 123, -51.9238], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 0.3 },
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", pos: [0, 129, -51.9238], rotq: [0, 0, 0, 1], fija: false, masaKg: 0.2 },
   { comp: "roldana", nombre: "Polea baja", pos: [0, 10, -47.9238], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
   { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", pos: [0, 6.7, -47.8238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
   { comp: "placa-polea-ttp", nombre: "Placa polea baja", pos: [0, 3.5, -64.5238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
   { comp: "barra-lat-ttp", nombre: "Remo de polea alta", pos: [-0.12, 210.247, 8.3062], rotq: [0, 0, 0, 1], fija: false, masaKg: 4 },
   { comp: "pletina-ttp", nombre: "Pletina TTP", pos: [0, 3.5, -81.0238], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
   { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", pos: [-0.12, 206.85, -37.8238], rotq: [0, 1, 0, 0], fija: true, masaKg: 0 },
-  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", pos: [0.3542, 67, -81.0762], rotq: [0, 0.707107, 0, 0.707107], fija: false, masaKg: 8 },
+  { comp: "portadiscos-ttp", nombre: "Portadiscos de polea TTP", params: { discCount: 3 }, pos: [0.3542, 67, -81.0762], rotq: [0, 0.707107, 0, 0.707107], fija: false, masaKg: 8 },
   { comp: "barra-dominadas", nombre: "Barra de jalón bajo", params: { kind: "cylinder", radiusTop: 1.6, radiusBottom: 1.6, height: 50 }, material: "cromo", pos: [4, 5, -27.9238], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 2 },
 ];
 
