@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { PrimitiveParams } from "./types";
 
 // Piezas trazadas por linea (estilo "linea recta" de Paint): perfiles de acero
@@ -87,7 +88,7 @@ export function buildBeamGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const D = p.depth ?? 5; // fondo del perfil (cm)
   const path = p.path ?? straightPath(100);
 
-  if (!pathIsStraight(path)) return sweepProfile(rectShape(W, D), path);
+  if (!pathIsStraight(path)) return buildBentBeam(p, W, D, path);
 
   const L = Math.max(pathLength(path), 1);
   const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
@@ -156,6 +157,91 @@ export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const circle = new THREE.Shape();
   circle.absarc(0, 0, r, 0, Math.PI * 2, false);
   return sweepProfile(circle, path);
+}
+
+/**
+ * Viga DOBLADA construida por TRAMOS (v0.2.12): los pinholes solo
+ * desaparecen en las secciones que pierden la rectitud de la superficie —
+ * en las regiones que conservan su plano de cara se PRESERVAN como
+ * agujeros reales. Cada segmento del path se clasifica recto o curvo según
+ * la colinealidad de sus nodos de INFLUENCIA (la curva Catmull-Rom entre
+ * dos nodos depende también de los vecinos: si alguno se deformó, esa cara
+ * ya no es plana y pierde sus agujeros); los tramos rectos se extruyen con
+ * su grilla de pinholes y los curvos se barren lisos.
+ */
+function buildBentBeam(
+  p: PrimitiveParams,
+  W: number,
+  D: number,
+  path: [number, number, number][],
+): THREE.BufferGeometry {
+  const n = path.length;
+  const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
+  const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
+
+  // ¿El segmento k (nodos k..k+1) queda RECTO bajo el suavizado? Solo si
+  // todos sus nodos de influencia (k-1..k+2) siguen colineales.
+  const segRecto = (k: number): boolean => {
+    const i0 = Math.max(0, k - 1);
+    const i1 = Math.min(n - 1, k + 2);
+    return pathIsStraight(path.slice(i0, i1 + 1));
+  };
+
+  const partes: THREE.BufferGeometry[] = [];
+  let k = 0;
+  while (k < n - 1) {
+    const recto = segRecto(k);
+    let j = k;
+    while (j + 1 < n - 1 && segRecto(j + 1) === recto) j++;
+    const nodos = path.slice(k, j + 2);
+    if (recto) {
+      // Tramo recto: prisma extruido con sus pinholes, orientado sobre la
+      // línea del tramo.
+      const a = new THREE.Vector3(...nodos[0]);
+      const b = new THREE.Vector3(...nodos[nodos.length - 1]);
+      const L2 = Math.max(a.distanceTo(b), 0.5);
+      const cara = new THREE.Shape();
+      cara.moveTo(-L2 / 2, -W / 2);
+      cara.lineTo(L2 / 2, -W / 2);
+      cara.lineTo(L2 / 2, W / 2);
+      cara.lineTo(-L2 / 2, W / 2);
+      cara.closePath();
+      if (holeR > 0.05) {
+        const margen = W / 2 + holeR;
+        const usable = L2 - 2 * margen;
+        const count = Math.floor(usable / spacing) + 1;
+        if (count >= 1 && usable >= 0) {
+          const inicio = -((count - 1) * spacing) / 2;
+          for (let i = 0; i < count; i++) {
+            const hole = new THREE.Path();
+            hole.absarc(inicio + i * spacing, 0, holeR, 0, Math.PI * 2, true);
+            cara.holes.push(hole);
+          }
+        }
+      }
+      const geo = new THREE.ExtrudeGeometry(cara, {
+        depth: D,
+        bevelEnabled: false,
+        curveSegments: 12,
+      });
+      geo.translate(0, 0, -D / 2);
+      geo.rotateZ(Math.PI / 2); // largo de la cara -> eje Y local
+      const dir = b.clone().sub(a).normalize();
+      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      geo.applyQuaternion(q);
+      const medio = a.clone().add(b).multiplyScalar(0.5);
+      geo.translate(medio.x, medio.y, medio.z);
+      partes.push(geo);
+    } else {
+      partes.push(sweepProfile(rectShape(W, D), nodos));
+    }
+    k = j + 1;
+  }
+  const unida =
+    partes.length === 1 ? partes[0] : (mergeGeometries(partes, false) ?? partes[0]);
+  unida.computeBoundingBox();
+  unida.computeBoundingSphere();
+  return unida;
 }
 
 /** Barre una seccion 2D a lo largo de la curva del path (con tapas). */
