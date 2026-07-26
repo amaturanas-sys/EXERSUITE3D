@@ -5,7 +5,7 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.2.10] — 2026-07-26
+## [0.2.11] — 2026-07-26
 
 El jalón bajo del TTP funciona como la máquina real: la barra se mueve con
 libertad total de vectores y su tirón se transmite completo al carrier.
