@@ -1122,11 +1122,135 @@ export class Editor {
     if (Math.abs(sNuevo - s) < 1e-3) {
       return tt("La pieza ya está en el último agujero del poste.", "The piece is already at the post's last hole.");
     }
+    // LÍMITES DE COLISIÓN en el MISMO pilar: dos accesorios calzados no
+    // pueden solaparse (rompe la fidelidad del modelo). Si el agujero
+    // destino queda dentro del volumen de otra pieza montada en este
+    // poste, se salta al siguiente agujero LIBRE en la misma dirección;
+    // si no queda ninguno, se avisa.
+    const miExt =
+      Math.abs(tam.x * eje.x) + Math.abs(tam.y * eje.y) + Math.abs(tam.z * eje.z);
+    const ocupantes: { s: number; ext: number }[] = [];
+    for (const o of this.objects.values()) {
+      if (o === obj || o === poste || (pareja && o === pareja.poste)) continue;
+      const defO = getDefinition(o.componentId);
+      if (!defO || (!defO.calceLocal && !defO.frenteCalce && !defO.postesCalce)) continue;
+      const dO = o.mesh.position.clone().sub(poste.mesh.position);
+      const latO = dO.clone().addScaledVector(eje, -dO.dot(eje)).length();
+      const tO = o.effectiveSize();
+      const maxO = Math.max(tO.x, tO.y, tO.z);
+      if (latO > maxO / 2 + 10) continue; // montada en OTRO pilar
+      ocupantes.push({
+        s: dO.dot(eje),
+        ext: Math.abs(tO.x * eje.x) + Math.abs(tO.y * eje.y) + Math.abs(tO.z * eje.z),
+      });
+    }
+    const libre = (sv: number) =>
+      ocupantes.every((q) => Math.abs(sv - q.s) >= (miExt + q.ext) / 2 - 0.5);
+    if (!libre(sNuevo)) {
+      let sBusca = sNuevo;
+      let hallado = false;
+      for (;;) {
+        sBusca += dir * paso;
+        if (sBusca < -lim - 1e-6 || sBusca > lim + 1e-6) break;
+        if (libre(sBusca)) {
+          sNuevo = sBusca;
+          hallado = true;
+          break;
+        }
+      }
+      if (!hallado) {
+        return tt(
+          "Los agujeros en esa dirección están ocupados por otra pieza.",
+          "The holes in that direction are occupied by another piece.",
+        );
+      }
+    }
     centro.addScaledVector(eje, sNuevo - s);
     this.bus.emit("objectTransformed", { object: obj });
     this.scheduleAutosave();
     this.requestRender();
     return null;
+  }
+
+  /**
+   * ESTADO del calce para el panel de Propiedades: en qué AGUJERO (1..X,
+   * numerados desde abajo) está calzada la pieza y cuántos pinholes tiene
+   * en total el poste más cercano. `calzada` es false si la pieza no está
+   * asentada sobre una fila de la grilla (a más de 1 cm). Devuelve null si
+   * no hay poste con grilla cerca. (Las reglas de grilla son las mismas de
+   * calcePorAgujero — biblioteca por holeStepCm, vigas trazadas por sus
+   * parámetros de pinholes.)
+   */
+  estadoCalce(objId: string): { agujero: number; total: number; calzada: boolean } | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return null;
+    const centro = obj.mesh.position;
+    const tam = obj.effectiveSize();
+    let mejor: {
+      poste: SceneObject;
+      eje: THREE.Vector3;
+      paso: number;
+      fase: number;
+      lim: number;
+    } | null = null;
+    let mejorLateral = Infinity;
+    for (const o of this.objects.values()) {
+      if (o === obj) continue;
+      const so = o.effectiveSize();
+      const dims: [number, THREE.Vector3][] = [
+        [so.x, new THREE.Vector3(1, 0, 0)],
+        [so.y, new THREE.Vector3(0, 1, 0)],
+        [so.z, new THREE.Vector3(0, 0, 1)],
+      ];
+      dims.sort((a, b) => b[0] - a[0]);
+      const largo = dims[0][0];
+      const defPoste = getDefinition(o.componentId);
+      let paso: number;
+      let fase: number;
+      let lim: number;
+      if (defPoste?.holeStepCm) {
+        paso = defPoste.holeStepCm;
+        fase = defPoste.calceFase ?? 0;
+        lim = largo / 2 - 2;
+      } else if (o.params.kind === "beam" && (o.params.holeDiameter ?? 0) > 0.1) {
+        const holeR = (o.params.holeDiameter ?? 0) / 2;
+        const spacing = Math.max(o.params.holeSpacing ?? 5, holeR * 2 + 0.5);
+        const ancho = o.params.width ?? 5;
+        const margen = (o.params.ends === "diagonal" ? ancho : ancho / 2) + holeR;
+        const usable = largo - 2 * margen;
+        const count = Math.floor(usable / spacing) + 1;
+        if (count < 1 || usable < 0) continue;
+        paso = spacing;
+        fase = count % 2 === 1 ? 0 : spacing / 2;
+        lim = ((count - 1) / 2) * spacing + 0.01;
+      } else {
+        continue;
+      }
+      const eje = dims[0][1].applyQuaternion(o.mesh.quaternion).normalize();
+      if (eje.y < 0) eje.negate();
+      const delta = centro.clone().sub(o.mesh.position);
+      const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
+      const axial = Math.abs(delta.dot(eje));
+      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 30;
+      if (lateral > tol || axial > largo / 2 + 10) continue;
+      if (lateral < mejorLateral) {
+        mejorLateral = lateral;
+        mejor = { poste: o, eje, paso, fase, lim };
+      }
+    }
+    if (!mejor) return null;
+    const { poste, eje, paso, fase, lim } = mejor;
+    const s = centro.clone().sub(poste.mesh.position).dot(eje);
+    // Filas de la grilla: k entero con -lim ≤ fase + k·paso ≤ lim; el
+    // agujero 1 es el de MÁS ABAJO del poste.
+    const kMin = Math.ceil((-lim - fase) / paso - 1e-6);
+    const kMax = Math.floor((lim - fase) / paso + 1e-6);
+    const total = kMax - kMin + 1;
+    if (total < 1) return null;
+    const k = Math.max(kMin, Math.min(kMax, Math.round((s - fase) / paso)));
+    const agujero = k - kMin + 1;
+    const calzada = Math.abs(fase + k * paso - s) <= 1;
+    return { agujero, total, calzada };
   }
 
   /**

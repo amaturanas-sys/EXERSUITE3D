@@ -183,9 +183,30 @@ export class PropertiesPanel {
    */
   private calceSection(obj: SceneObject): HTMLElement {
     const aviso = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    // Estado del calce: en qué AGUJERO (1..X, desde abajo) está la pieza y
+    // cuántos pinholes tiene el poste en total.
+    const estado = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const refrescar = () => {
+      const e = this.editor.estadoCalce(obj.id);
+      if (!e) {
+        estado.textContent = tt("Sin poste con agujeros cerca.", "No drilled post nearby.");
+      } else if (e.calzada) {
+        estado.textContent = tt(
+          `Calzada en el agujero ${e.agujero} de ${e.total}.`,
+          `Seated in hole ${e.agujero} of ${e.total}.`,
+        );
+      } else {
+        estado.textContent = tt(
+          `Sin calzar (poste de ${e.total} agujeros; el más cercano es el ${e.agujero}).`,
+          `Not seated (post has ${e.total} holes; nearest is hole ${e.agujero}).`,
+        );
+      }
+    };
+    refrescar();
     const paso = (dir: 1 | -1) => {
       const err = this.editor.calcePorAgujero(obj.id, dir);
       aviso.textContent = err ?? "";
+      refrescar();
     };
     const subir = el("button", { class: "tool" }, ["▲ ", tt("Subir un agujero", "Up one hole")]);
     subir.addEventListener("click", () => paso(1));
@@ -193,6 +214,7 @@ export class PropertiesPanel {
     bajar.addEventListener("click", () => paso(-1));
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Calce en el poste (agujero a agujero)", "Post catch (hole by hole)")]),
+      estado,
       el("div", { class: "row" }, [subir, bajar]),
       aviso,
     ]);

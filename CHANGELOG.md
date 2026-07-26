@@ -19,6 +19,19 @@ El brazo de seguridad se sostiene de DOS pilares, como en la máquina real.
   línea y lo centra entre ambos; ▲/▼ lo sube o baja UN agujero en los dos
   pilares simultáneamente (comparten grilla). Antes quedaba colgando de
   un solo punto, girado hacia afuera de la máquina.
+- **Sin SOLAPAMIENTO entre accesorios del mismo pilar**: al subir o bajar
+  una pieza calzada, si el agujero destino cae dentro del volumen de otra
+  pieza montada en ese poste, el paso SALTA al siguiente agujero libre en
+  la misma dirección (o avisa si no queda ninguno) — dos jotas ya no
+  pueden ocupar el mismo espacio.
+
+### Añadido
+
+- **Número de pinhole en Propiedades**: la sección "Calce en el poste"
+  muestra en qué agujero está calzada la pieza y cuántos tiene el poste
+  ("Calzada en el agujero 21 de 40"), numerados desde abajo — el motor
+  conoce la grilla completa (1..X) de cada montante de biblioteca y de
+  cada poste trazado con pinholes configurables.
 
 ## [0.2.11] — 2026-07-26
 
