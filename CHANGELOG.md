@@ -5,6 +5,28 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.10] — 2026-07-26
+
+El jalón bajo del TTP funciona como la máquina real: la barra se mueve con
+libertad total de vectores y su tirón se transmite completo al carrier.
+
+### Corregido
+
+- **La barra de jalón bajo ya no queda clavada en horizontal**: la
+  detección de guías tubulares confundía la barra colgante (a 2 cm del
+  travesaño del piso) con un carro guiado y la circunscribía a una recta
+  horizontal. Ahora una pieza solo se considera guiada si el tubo la
+  ATRAVIESA a lo largo (abrazo interior ≥ 5 cm, como los manguitos del
+  carrier) — la barra recupera la libertad de vectores del jalón alto.
+- **Transmisión COMPLETA del jalón bajo al carrier**: el extremo más
+  liviano del cable (el remo) absorbía el recorrido al tirar de la barra
+  baja y el portadiscos apenas se movía. Nuevos TOPES DE TERMINAL: el
+  primer y último segmento del cable no pueden acortarse por debajo del
+  tope del accesorio contra su roldana vecina (~10 cm), y el extremo que
+  llega a su tope queda PARQUEADO contra la polea (como la barra real
+  descansando en el tope de goma) hasta que la mano lo agarre — todo el
+  recorrido restante va al contrapeso.
+
 ## [0.2.9] — 2026-07-25
 
 El sistema de poleas cobra vida: las roldanas se empotran en su estructura

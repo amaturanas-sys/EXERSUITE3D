@@ -16,6 +16,15 @@ interface CableEntry {
   /** Anclaje local de cada nodo en el frame del cuerpo, en METROS. */
   local: { x: number; y: number; z: number }[];
   restLength: number; // metros
+  /**
+   * TOPE del terminal (v0.2.9): longitud mínima del primer y último
+   * segmento — el accesorio del extremo no puede pasar por la roldana
+   * vecina, igual que el tope de goma de una máquina real. Sin esto, el
+   * extremo más liviano (p. ej. el remo) se "roba" el recorrido del cable
+   * y la transmisión al contrapeso queda parcial.
+   */
+  topeIni: number; // metros (0 = sin tope)
+  topeFin: number;
 }
 
 // Simulacion de fisica rigida con Rapier.
@@ -51,6 +60,10 @@ export class PhysicsWorld {
   private cuerposCable = new Set<R.RigidBody>();
   /** Posiciones al inicio del subpaso (esticción posicional). */
   private posAntes = new Map<R.RigidBody, { x: number; y: number; z: number }>();
+  /** Extremos de cable CONGELADOS en su tope (parqueados contra la roldana
+   *  hasta que la mano los agarre) — evita que el tope bombee contra el
+   *  solver en reposo. */
+  private topeCongelados = new Set<R.RigidBody>();
 
   /** Importa el modulo y carga/inicializa el WASM de Rapier una sola vez. */
   static init(): Promise<void> {
@@ -73,6 +86,7 @@ export class PhysicsWorld {
     this.empotradaPorId.clear();
     this.masaExtra.clear();
     this.cuerposCable.clear();
+    this.topeCongelados.clear();
     this.drag = null;
     this.world = new RAPIER.World(GRAVITY);
 
@@ -271,6 +285,14 @@ export class PhysicsWorld {
         const delta = centroD.clone().sub(g.centro);
         const p = g.centro.clone().addScaledVector(g.eje, delta.dot(g.eje));
         if (!bbox.containsPoint(p)) continue;
+        // ABRAZO real (v0.2.9): un manguito guiado ATRAVIESA la pieza a lo
+        // largo del eje (≥ 5 cm de recorrido interior). Sin este filtro, una
+        // barra de agarre colgando JUNTO a un travesaño del piso quedaba
+        // falsamente circunscrita a su recta (el jalón bajo solo podía
+        // moverse en horizontal, clavado y sin transmisión).
+        const abrazo =
+          tam.x * Math.abs(g.eje.x) + tam.y * Math.abs(g.eje.y) + tam.z * Math.abs(g.eje.z);
+        if (abrazo < 5) continue;
         if (eje && Math.abs(eje.dot(g.eje)) < 0.99) continue;
         usadas.add(g.cuerpo);
         if (!eje) {
@@ -388,9 +410,67 @@ export class PhysicsWorld {
         this.cuerposCable.add(b);
       }
     }
-    const entry: CableEntry = { bodies, local, restLength: 0 };
+    const entry: CableEntry = { bodies, local, restLength: 0, topeIni: 0, topeFin: 0 };
     entry.restLength = this.cableLength(entry);
+    // Topes de terminal: solo tienen sentido con roldanas de por medio
+    // (n ≥ 3). El tope es ~10 cm (radio de roldana + accesorio) acotado por
+    // el largo inicial del segmento, para no nacer en violación.
+    if (bodies.length >= 3) {
+      const seg = (i: number, j: number) => {
+        const a = this.nodeWorld(entry, i);
+        const b = this.nodeWorld(entry, j);
+        return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+      };
+      const n = bodies.length;
+      entry.topeIni = Math.min(0.1, 0.6 * seg(0, 1));
+      entry.topeFin = Math.min(0.1, 0.6 * seg(n - 1, n - 2));
+    }
     this.cables.push(entry);
+  }
+
+  /**
+   * Aplica los TOPES de terminal de un cable: si el extremo se acercó a su
+   * roldana vecina por debajo del mínimo, se reubica en el tope y se mata
+   * su velocidad de aproximación. Así el extremo liviano deja de absorber
+   * recorrido y la transmisión sigue hacia el resto del sistema (el
+   * contrapeso), como en la máquina real.
+   */
+  private aplicarTopesCable(entry: CableEntry): void {
+    const n = entry.bodies.length;
+    if (n < 3) return;
+    const extremos: [number, number, number][] = [
+      [0, 1, entry.topeIni],
+      [n - 1, n - 2, entry.topeFin],
+    ];
+    for (const [i, j, tope] of extremos) {
+      if (tope <= 0) continue;
+      const b = entry.bodies[i];
+      if (!b.isDynamic()) continue;
+      const pa = this.nodeWorld(entry, i);
+      const pb = this.nodeWorld(entry, j);
+      let dx = pa.x - pb.x;
+      let dy = pa.y - pb.y;
+      let dz = pa.z - pb.z;
+      const d = Math.hypot(dx, dy, dz);
+      if (d >= tope) continue;
+      if (d < 1e-6) {
+        dx = 0; dy = -1; dz = 0;
+      } else {
+        dx /= d; dy /= d; dz /= d;
+      }
+      const delta = tope - d;
+      const c = b.translation();
+      b.setTranslation({ x: c.x + dx * delta, y: c.y + dy * delta, z: c.z + dz * delta }, true);
+      b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      // PARQUEO en el tope: si la mano no lo sostiene, el extremo queda
+      // CONGELADO contra la roldana (como la barra real descansando en su
+      // tope). Si no, el solver y el tope se pelean cada paso y el sistema
+      // bombea posición en reposo. La mano lo descongela al agarrarlo.
+      if (this.drag?.body !== b) {
+        b.setBodyType(RAPIER.RigidBodyType.Fixed, true);
+        this.topeCongelados.add(b);
+      }
+    }
   }
 
   /** Posicion mundial (metros) del anclaje del nodo i: trans + rot * local. */
@@ -774,7 +854,13 @@ export class PhysicsWorld {
    */
   grab(objectId: string, worldCm: THREE.Vector3): boolean {
     const e = this.bodies.get(objectId);
-    if (!e || !e.body.isDynamic()) return false;
+    if (!e) return false;
+    // Un extremo parqueado en su tope se DESCONGELA al agarrarlo.
+    if (this.topeCongelados.has(e.body)) {
+      e.body.setBodyType(RAPIER.RigidBodyType.Dynamic, true);
+      this.topeCongelados.delete(e.body);
+    }
+    if (!e.body.isDynamic()) return false;
     const t = e.body.translation();
     const q = e.body.rotation();
     const worldM = worldCm.clone().multiplyScalar(S);
@@ -868,6 +954,8 @@ export class PhysicsWorld {
         for (let it = 0; it < 6; it++) {
           for (const c of this.cables) this.solveCablePosition(c);
         }
+        // Topes de terminal: el extremo no pasa por su roldana vecina.
+        for (const c of this.cables) this.aplicarTopesCable(c);
         // La corrección del cable no puede sacar a las guiadas de su riel.
         this.aplicarGuias();
         // ESTICCIÓN de polea (posicional): si en este subpaso un cuerpo
@@ -922,6 +1010,7 @@ export class PhysicsWorld {
     this.empotradaPorId.clear();
     this.masaExtra.clear();
     this.cuerposCable.clear();
+    this.topeCongelados.clear();
     this.drag = null;
   }
 }
