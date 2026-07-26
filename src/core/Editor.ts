@@ -918,14 +918,18 @@ export class Editor {
     if (!obj) return "Pieza no encontrada";
     const centro = obj.mesh.position;
     const tam = obj.effectiveSize();
-    let mejor: {
+    interface CandidatoPoste {
       poste: SceneObject;
       eje: THREE.Vector3;
       paso: number;
       fase: number;
       lim: number;
       ejePinLocal: "x" | "z" | null;
-    } | null = null;
+      lateral: number;
+      cerca: boolean;
+    }
+    const candidatos: CandidatoPoste[] = [];
+    let mejor: CandidatoPoste | null = null;
     let mejorLateral = Infinity;
     // ¿Path recto? (los pinholes de una viga doblada no forman grilla)
     const esRecto = (path?: [number, number, number][]): boolean => {
@@ -987,12 +991,16 @@ export class Editor {
       const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
       const axial = Math.abs(delta.dot(eje));
       // Radio de búsqueda generoso: una pieza "flotando en el aire" cerca
-      // del poste también se ensambla (el más cercano gana).
+      // del poste también se ensambla (el más cercano gana). Los postes
+      // lejanos igual quedan en la lista: la PAREJA de un tendido de dos
+      // postes puede estar al otro extremo de la pieza.
       const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 30;
-      if (lateral > tol || axial > largo / 2 + 10) continue;
-      if (lateral < mejorLateral) {
+      const cerca = lateral <= tol && axial <= largo / 2 + 10;
+      const cand: CandidatoPoste = { poste: o, eje, paso, fase, lim, ejePinLocal, lateral, cerca };
+      candidatos.push(cand);
+      if (cerca && lateral < mejorLateral) {
         mejorLateral = lateral;
-        mejor = { poste: o, eje, paso, fase, lim, ejePinLocal };
+        mejor = cand;
       }
     }
     if (!mejor) {
@@ -1002,12 +1010,75 @@ export class Editor {
       );
     }
     const { poste, eje, paso, fase, lim, ejePinLocal } = mejor;
+    // TENDIDO ENTRE DOS POSTES (postesCalce 2): mientras las jotas cuelgan
+    // de UN pilar, el brazo de seguridad se sostiene de DOS a la vez. Se
+    // busca la PAREJA del poste más cercano sobre la línea del tendido
+    // (perpendicular al eje de los pinholes), la pieza se alinea con su
+    // eje largo sobre esa línea y se centra entre ambos — y como ambos
+    // pilares comparten la grilla, subir o bajar la mueve UN agujero en
+    // los dos simultáneamente.
+    let pareja: CandidatoPoste | null = null;
+    if (getDefinition(obj.componentId)?.postesCalce === 2 && ejePinLocal) {
+      // El tendido corre A LO LARGO del eje de los pinholes: los pines del
+      // brazo entran axialmente por las caras enfrentadas de ambos pilares.
+      const tendido = (ejePinLocal === "x"
+        ? new THREE.Vector3(1, 0, 0)
+        : new THREE.Vector3(0, 0, 1)
+      )
+        .applyQuaternion(poste.mesh.quaternion)
+        .normalize();
+      const largoPieza = Math.max(tam.x, tam.y, tam.z);
+      let mejorSep = Infinity;
+      for (const c of candidatos) {
+        if (c.poste === poste) continue;
+        if (Math.abs(c.eje.dot(eje)) < 0.99 || Math.abs(c.paso - paso) > 1e-3) continue;
+        const d = c.poste.mesh.position.clone().sub(poste.mesh.position);
+        d.addScaledVector(eje, -d.dot(eje)); // separación en planta
+        const sep = d.length();
+        if (sep < 20 || sep > largoPieza + 40) continue;
+        // La pareja vive sobre la línea del tendido — el pilar de ENFRENTE
+        // (a lo largo del eje de pinholes) no es pareja válida.
+        const desvio = d.clone().addScaledVector(tendido, -d.dot(tendido)).length();
+        if (desvio > 10) continue;
+        if (sep < mejorSep) {
+          mejorSep = sep;
+          pareja = c;
+        }
+      }
+    }
+    if (pareja) {
+      // Eje LARGO de la pieza sobre la línea entre ambos postes (giro en
+      // planta, sin volcarla) y centro en el punto medio del tendido.
+      const tamLoc = obj.localSize();
+      const dimsLoc: [number, THREE.Vector3][] = [
+        [tamLoc.x, new THREE.Vector3(1, 0, 0)],
+        [tamLoc.y, new THREE.Vector3(0, 1, 0)],
+        [tamLoc.z, new THREE.Vector3(0, 0, 1)],
+      ];
+      dimsLoc.sort((a, b) => b[0] - a[0]);
+      const linea = pareja.poste.mesh.position.clone().sub(poste.mesh.position);
+      linea.addScaledVector(eje, -linea.dot(eje)).normalize();
+      const largoMundo = dimsLoc[0][1].clone().applyQuaternion(obj.mesh.quaternion);
+      largoMundo.addScaledVector(eje, -largoMundo.dot(eje));
+      if (largoMundo.lengthSq() > 1e-6) {
+        largoMundo.normalize();
+        const objetivo = linea.clone().multiplyScalar(largoMundo.dot(linea) >= 0 ? 1 : -1);
+        obj.mesh.quaternion.premultiply(
+          new THREE.Quaternion().setFromUnitVectors(largoMundo, objetivo),
+        );
+        obj.mesh.updateMatrixWorld(true);
+      }
+      const medio = poste.mesh.position.clone().add(pareja.poste.mesh.position).multiplyScalar(0.5);
+      const desplazo = medio.sub(centro);
+      desplazo.addScaledVector(eje, -desplazo.dot(eje));
+      centro.add(desplazo);
+    }
     // ARTICULACIÓN CON LOS PINHOLES: el pin de calce solo articula con los
     // orificios ESTANDARIZADOS pasantes por ambas caras del poste — no con
     // los agujeros accesorios de otras caras. Se gira la pieza alrededor
     // del poste hasta encarar ese eje (respetando el lado en que la dejó
     // el usuario).
-    if (ejePinLocal) {
+    if (!pareja && ejePinLocal) {
       const ejePin = (ejePinLocal === "x"
         ? new THREE.Vector3(1, 0, 0)
         : new THREE.Vector3(0, 0, 1)
@@ -1033,7 +1104,8 @@ export class Editor {
     // ENSAMBLE: el manguito de la pieza abraza el pilar — se corrige el
     // desvío lateral para que el eje del poste pase por la cavidad de
     // ensamble de la malla. Sin cavidad (primitiva maciza) no se fuerza.
-    const pc = this.puntoCalceLocal(obj);
+    // En un tendido de DOS postes la pieza ya quedó centrada entre ambos.
+    const pc = pareja ? null : this.puntoCalceLocal(obj);
     if (pc) {
       obj.mesh.updateMatrixWorld(true);
       const manguito = obj.mesh.localToWorld(pc.clone());

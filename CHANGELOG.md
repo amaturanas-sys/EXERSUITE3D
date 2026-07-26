@@ -5,6 +5,21 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.12] — 2026-07-26
+
+El brazo de seguridad se sostiene de DOS pilares, como en la máquina real.
+
+### Corregido
+
+- **Calce de DOS postes**: mientras los ganchos J, las jotas y los
+  anclajes cuelgan de UN pilar, el brazo de seguridad se TIENDE entre los
+  dos pilares de su lado (el pin entra axialmente por las caras
+  enfrentadas). Al calzar, el motor busca la pareja del pilar más cercano
+  sobre la línea de los pinholes, alinea el eje largo del brazo sobre esa
+  línea y lo centra entre ambos; ▲/▼ lo sube o baja UN agujero en los dos
+  pilares simultáneamente (comparten grilla). Antes quedaba colgando de
+  un solo punto, girado hacia afuera de la máquina.
+
 ## [0.2.11] — 2026-07-26
 
 El jalón bajo del TTP funciona como la máquina real: la barra se mueve con

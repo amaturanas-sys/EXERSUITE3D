@@ -161,6 +161,14 @@ export interface ComponentDefinition {
    */
   frenteCalce?: "x" | "z";
   /**
+   * Cantidad de POSTES de los que se sostiene la pieza al calzar (def. 1).
+   * Las jotas/ganchos cuelgan de UN pilar; el brazo de seguridad se TIENDE
+   * entre DOS pilares a la vez: al calzar se alinea sobre la línea que los
+   * une y subir/bajar lo mueve un agujero en AMBOS simultáneamente (misma
+   * grilla).
+   */
+  postesCalce?: 1 | 2;
+  /**
    * Punto local [x, z] del CILINDRO-PIVOTE (cm): el eje horizontal del que
    * cuelgan cadenas o se articulan BRAZOS móviles (jammer arms). Si falta,
    * el pivote es el centro de la pieza.

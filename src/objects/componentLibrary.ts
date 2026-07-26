@@ -114,6 +114,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 9, height: 24, depth: 106 },
     physics: { massKg: 0, fixed: true },
     calceLocal: [0, -49.3],
+    // El brazo se TIENDE entre los dos pilares de su lado (delantero y
+    // trasero): cuelga de ambos y sube/baja agujero a agujero en los dos.
+    postesCalce: 2,
     description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada.",
   },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
