@@ -260,7 +260,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // por los rieles del sistema de poleas (auditoría: horneado horizontal).
     defaults: { kind: "box", width: 6.1, height: 8.1, depth: 88 },
     physics: { massKg: 8, fixed: false },
-    cargaDiscos: { lados: 2, diamCm: 34, grosorCm: 3, masaKg: 10 },
+    cargaDiscos: { lados: 2, diamCm: 34, grosorCm: 3, masaKg: 10, mangaCm: 14 },
     description:
       "Portadiscos real del TTP001L: barra deslizante que soporta los discos A CADA LADO (se ensamblan por el orificio central) y corre guiada por los rieles; el cable la eleva.",
   },
@@ -626,7 +626,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.45, radiusBottom: 1.45, height: 220, radialSegments: 24 },
     physics: { massKg: 20, fixed: false },
-    cargaDiscos: { lados: 2, diamCm: 44, grosorCm: 3, masaKg: 20 },
+    cargaDiscos: { lados: 2, diamCm: 44, grosorCm: 3, masaKg: 20, mangaCm: 75 },
     description: "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.",
   },
   {

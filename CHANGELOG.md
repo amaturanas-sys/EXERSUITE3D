@@ -35,6 +35,29 @@ libertad total de vectores y su tirón se transmite completo al carrier.
   elevando el portadiscos cargado (+14 cm) y la levanta 52 cm en
   vertical.
 
+- **MANGAS DE CARGA reconocidas**: los discos entran por la manga — el
+  cilindro cuyo diámetro concuerda con el orificio central — y se apilan
+  contra el HOMBRO (la deflección o cambio de grosor que delimita la
+  manga), como en una barra olímpica real. Hombros medidos en las mallas
+  oficiales: carrier del TTP a ±14 cm del centro, barra olímpica a
+  ±75 cm. Antes los discos flotaban a un tercio del largo de la pieza.
+- **El freno de las guías topa con el CUERPO del carrier**: los discos
+  montados quedan lejos de los tubos y no participan del stop — antes
+  inflaban la caja del carro y el freno actuaba un radio de disco antes
+  del contacto real. El volumen efectivo de una pieza excluye su carga.
+- **Discos montados SÓLIDOS**: cada disco de la carga recibe su collider
+  cilíndrico — una barra olímpica cargada descansa SOBRE sus discos y
+  ningún disco cae por debajo del suelo ni atraviesa superficies.
+- **Los discos sobreviven a recargar el proyecto**: en piezas con malla
+  personalizada (carrier, barra olímpica) el contador de discos no
+  reconstruía la carga al recargar un proyecto o insertar la máquina de
+  fábrica — solo al tocar el contador en Propiedades.
+- **Esticción solo en REPOSO**: el aparcado anti-deriva de los sistemas
+  de poleas se desactiva mientras la mano arrastra — un contrapeso pesado
+  necesita varios pasos para acelerar desde cero y el muro de la
+  esticción lo dejaba clavado; ahora el jalón bajo eleva el portadiscos
+  cargado (38 kg) con la ventaja 2:1 real del carro móvil.
+
 ### Cambiado
 
 - **Fábrica RACK_TORRE sincronizada con el prefab v0.2.9 del diseñador**:

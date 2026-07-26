@@ -78,8 +78,15 @@ export class SceneObject {
 
   /** Reconstruye la geometria tras cambiar `params`. */
   rebuildGeometry(): void {
-    // La geometria importada o de modelo personalizado no es parametrica.
-    if (this.imported || this.customModel) return;
+    // La geometria importada o de modelo personalizado no es parametrica,
+    // pero la PILA y la CARGA de discos sí dependen de params (discCount):
+    // sin esto, el carrier de fábrica o un proyecto recargado perdía sus
+    // discos montados hasta tocar el contador en Propiedades.
+    if (this.imported || this.customModel) {
+      if (this.stack) this.rebuildStackVisual();
+      if (this.carga) this.rebuildCargaVisual();
+      return;
+    }
     const old = this.mesh.geometry;
     this.mesh.geometry = buildGeometry(this.params);
     old.dispose();
@@ -202,6 +209,11 @@ export class SceneObject {
     return Math.max(0, Math.round(this.params.discCount ?? 0));
   }
 
+  /** Mallas de los discos montados (para darles colliders sólidos). */
+  getCargaParts(): THREE.Mesh[] {
+    return this.cargaParts;
+  }
+
   /**
    * Reconstruye los DISCOS MONTADOS: se ensamblan introduciendo el cilindro
    * de la pieza por el orificio central del disco y quedan suspendidos por
@@ -238,8 +250,11 @@ export class SceneObject {
     const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
 
     const paso = this.carga.grosorCm + 0.4;
-    // Dos lados: desde el collarín interior hacia la punta; un lado: desde la base.
-    const s0 = this.carga.lados === 2 ? L * 0.3 : 0;
+    // Dos lados: los discos entran por la MANGA (el cilindro del diámetro
+    // del orificio central) y se apilan contra el HOMBRO — la deflección o
+    // cambio de grosor que delimita la manga (mangaCm, medido en la malla
+    // real). Un lado (cuerno/atril): desde la base.
+    const s0 = this.carga.lados === 2 ? (this.carga.mangaCm ?? L * 0.3) : 0;
     const maxPorLado =
       this.carga.lados === 2
         ? Math.max(0, Math.floor((L / 2 - s0) / paso))
@@ -296,10 +311,24 @@ export class SceneObject {
   }
 
   /** Dimensiones efectivas en cm (bounding box mundial * escala del mesh). */
+  /**
+   * Caja mundial del CUERPO de la pieza SIN los discos montados: la carga
+   * viaja con la estructura pero no define su volumen — el freno de las
+   * guías topa con el carrier, no con los discos (que quedan lejos de los
+   * tubos y no colisionan con él).
+   */
+  worldBoxBody(target: THREE.Box3): THREE.Box3 {
+    const conCarga = this.cargaParts.length > 0;
+    if (conCarga) for (const m of this.cargaParts) this.mesh.remove(m);
+    this.mesh.updateMatrixWorld(true);
+    target.setFromObject(this.mesh);
+    if (conCarga) for (const m of this.cargaParts) this.mesh.add(m);
+    return target;
+  }
+
   effectiveSize(): THREE.Vector3 {
-    const box = new THREE.Box3().setFromObject(this.mesh);
     const size = new THREE.Vector3();
-    box.getSize(size);
+    this.worldBoxBody(new THREE.Box3()).getSize(size);
     return size;
   }
 

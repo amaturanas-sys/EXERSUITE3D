@@ -188,4 +188,11 @@ export interface CargaDiscosDef {
   diamCm: number;
   grosorCm: number;
   masaKg: number;
+  /**
+   * Distancia del centro al HOMBRO de la manga de carga (cm, piezas de dos
+   * lados): el cilindro del diámetro del orificio central del disco empieza
+   * en esta deflección (cambio de grosor) y los discos se apilan contra
+   * ella, como en una barra olímpica real. Medido en la malla oficial.
+   */
+  mangaCm?: number;
 }

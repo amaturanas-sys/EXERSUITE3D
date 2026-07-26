@@ -272,8 +272,11 @@ export class PhysicsWorld {
     const guiados = new Set<R.RigidBody>();
     const bbox = new THREE.Box3();
     for (const d of dinamicas) {
-      d.obj.mesh.updateMatrixWorld(true);
-      bbox.setFromObject(d.obj.mesh);
+      // Caja del CUERPO sin los discos montados: el freno de la guía topa
+      // con el carrier — los discos quedan lejos de los tubos y no
+      // participan del stop (con ellos, la caja inflada frenaba el carro
+      // un radio de disco antes de tocar el freno).
+      d.obj.worldBoxBody(bbox);
       const tam = bbox.getSize(new THREE.Vector3());
       bbox.expandByScalar(1); // cm de tolerancia del abrazo
       const centroD = d.obj.mesh.position;
@@ -789,6 +792,22 @@ export class PhysicsWorld {
 
     const body = this.world.createRigidBody(desc);
     this.world.createCollider(this.colliderDesc(obj), body);
+    // DISCOS MONTADOS sólidos (v0.2.10): cada disco de la carga recibe su
+    // collider cilíndrico en el cuerpo de la pieza — un disco no cae por
+    // debajo del suelo ni atraviesa superficies. Densidad 0: su masa ya la
+    // aporta effectiveMassKg (cargaMontada × masaKg).
+    if (obj.carga && obj.discosMontados() > 0) {
+      const s = obj.mesh.scale;
+      const rDisco = (obj.carga.diamCm / 2) * S;
+      const hMedia = (obj.carga.grosorCm / 2) * S;
+      for (const m of obj.getCargaParts()) {
+        const cd = RAPIER.ColliderDesc.cylinder(hMedia, rDisco)
+          .setTranslation(m.position.x * s.x * S, m.position.y * s.y * S, m.position.z * s.z * S)
+          .setRotation({ x: m.quaternion.x, y: m.quaternion.y, z: m.quaternion.z, w: m.quaternion.w })
+          .setDensity(0);
+        this.world.createCollider(cd, body);
+      }
+    }
     if (dynamic) {
       body.setAdditionalMass(massKg, true);
       this.masaExtra.set(body, massKg);
@@ -953,10 +972,15 @@ export class PhysicsWorld {
       // Cable: primero corrige velocidades, luego proyecta posiciones para
       // conservar la longitud de forma dura (cable inextensible).
       if (this.cables.length > 0) {
-        for (let it = 0; it < 8; it++) {
+        // 32 pasadas Gauss-Seidel: la TENSIÓN debe propagarse a través de
+        // los nodos livianos (el puente del carro pesa 0,8 kg entre dos
+        // cables y actúa como resorte blando en serie) hasta el contrapeso
+        // pesado — con pocas pasadas el reparto por masa inversa apenas
+        // toca al portadiscos y el cable se estira en vez de transmitir.
+        for (let it = 0; it < 32; it++) {
           for (const c of this.cables) this.solveCableVelocity(c);
         }
-        for (let it = 0; it < 6; it++) {
+        for (let it = 0; it < 8; it++) {
           for (const c of this.cables) this.solveCablePosition(c);
         }
         // Topes de terminal: el extremo no pasa por su roldana vecina.
@@ -968,17 +992,21 @@ export class PhysicsWorld {
         // desplazamiento se revierte y el cuerpo queda aparcado. Esto mata
         // por completo la deriva cuasi-estática del compromiso entre cables
         // acoplados (el solver oscila fuerte por dentro pero solo "repta"
-        // milímetros netos) sin afectar ningún movimiento real, que es muy
-        // superior al umbral.
-        for (const [b, antes] of this.posAntes) {
-          if (!b.isDynamic()) continue;
-          const t = b.translation();
-          const dx = t.x - antes.x;
-          const dy = t.y - antes.y;
-          const dz = t.z - antes.z;
-          if (dx * dx + dy * dy + dz * dz < 0.0005 * 0.0005) {
-            b.setTranslation(antes, true);
-            b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        // milímetros netos). SOLO aplica en REPOSO: con la mano activa se
+        // desactiva — un contrapeso pesado necesita varios subpasos para
+        // acelerar desde cero y el muro de la esticción lo dejaría clavado
+        // por fuerte que tire el usuario.
+        if (!this.drag) {
+          for (const [b, antes] of this.posAntes) {
+            if (!b.isDynamic()) continue;
+            const t = b.translation();
+            const dx = t.x - antes.x;
+            const dy = t.y - antes.y;
+            const dz = t.z - antes.z;
+            if (dx * dx + dy * dy + dz * dz < 0.0005 * 0.0005) {
+              b.setTranslation(antes, true);
+              b.setLinvel({ x: 0, y: 0, z: 0 }, true);
+            }
           }
         }
       }
