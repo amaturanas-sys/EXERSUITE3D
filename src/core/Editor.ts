@@ -944,7 +944,11 @@ export class Editor {
     };
     for (const o of this.objects.values()) {
       if (o === obj) continue;
-      const s = o.effectiveSize();
+      // Ejes LOCALES de la pieza llevados al mundo: el eje del poste es su
+      // dimensión local más larga ROTADA por su cuaternión. (La caja de
+      // mundo re-rotada duplicaría el giro: una viga tendida horizontal
+      // daría un eje vertical falso y la grilla correría perpendicular.)
+      const s = o.localSize();
       const dims: [number, THREE.Vector3][] = [
         [s.x, new THREE.Vector3(1, 0, 0)],
         [s.y, new THREE.Vector3(0, 1, 0)],
@@ -1237,7 +1241,8 @@ export class Editor {
     const cercanas: GrillaCerca[] = [];
     for (const o of this.objects.values()) {
       if (o === obj) continue;
-      const so = o.effectiveSize();
+      // Ejes LOCALES rotados al mundo (mismas reglas que calcePorAgujero).
+      const so = o.localSize();
       const dims: [number, THREE.Vector3][] = [
         [so.x, new THREE.Vector3(1, 0, 0)],
         [so.y, new THREE.Vector3(0, 1, 0)],

@@ -220,7 +220,9 @@ export class PhysicsWorld {
           !!defH?.holeStepCm ||
           (h.obj.params.kind === "beam" && (h.obj.params.holeDiameter ?? 0) > 0.1);
         if (!conGrilla) continue;
-        const hs = h.obj.effectiveSize();
+        // Caja LOCAL del anfitrión (v se expresa en su frame local; la
+        // caja de mundo estaría girada respecto de él).
+        const hs = h.obj.localSize();
         invH.copy(h.obj.mesh.quaternion).invert();
         v.copy(e.obj.mesh.position).sub(h.obj.mesh.position).applyQuaternion(invH);
         const d = Math.max(
