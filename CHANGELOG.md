@@ -40,6 +40,20 @@ El brazo de seguridad se sostiene de DOS pilares, como en la máquina real.
   cuerda acumulada (comba ≤ 2 mm) en caras planas: las que alcanzan el
   pie de un accesorio (≥ 20 cm) se extruyen con su grilla de pinholes y
   el codo se barre liso, fusionados en una geometría continua.
+- **Calce en caras INCLINADAS**: los accesorios reconocen la inclinación
+  de la cara y del pinhole donde calzan. Cada tramo recto de una
+  estructura doblada por nodos aporta su PROPIA grilla de calce (centro,
+  dirección y eje del pin del tramo): la jota se alinea con el eje del
+  tramo — vertical, diagonal u horizontal —, su manguito abraza esa
+  línea, ▲/▼ avanza agujero a agujero A LO LARGO del tramo y Propiedades
+  reporta el número de agujero de la grilla que la sostiene.
+- **Accesorios calzados como GRUPO físico**: en la simulación, una pieza
+  de calce (gancho J, jota, brazo, anclaje) montada en una estructura con
+  pinholes queda FIJADA por su pin — forma un cuerpo rígido compuesto con
+  ella. Si la estructura es móvil (un brazo, un carro), el accesorio
+  viaja solidario sin caerse ni deslizar; si es fija, queda anclado. Sus
+  colliders siguen activos en el cuerpo compuesto (una jota fundida sigue
+  recibiendo la barra) y su masa se suma a la estructura móvil.
 
 ## [0.2.11] — 2026-07-26
 

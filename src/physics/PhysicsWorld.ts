@@ -6,6 +6,7 @@ import * as THREE from "three";
 let RAPIER: typeof R;
 import type { SceneObject } from "../objects/SceneObject";
 import { pathIsStraight } from "../objects/linePieces";
+import { getDefinition } from "../objects/componentLibrary";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
 
@@ -102,6 +103,9 @@ export class PhysicsWorld {
     // de su estructura (los nodos de cable que las referencien resolverán al
     // cuerpo compuesto).
     this.detectarEmpotradas();
+    // Los accesorios de calce (jotas, brazos, anclajes) montados en una
+    // estructura con pinholes forman GRUPO con ella: fijados, no se caen.
+    this.detectarCalzados();
     for (const joint of joints) this.addJoint(joint);
     for (const cable of cables) this.addCable(cable);
     this.detectarGuias();
@@ -172,6 +176,95 @@ export class PhysicsWorld {
       this.bodies.set(id, { body: mejor.body, obj: mejor.obj });
       // La masa de la roldana se suma al anfitrión dinámico.
       if (hostDinamico) {
+        const masa = e.obj.effectiveMassKg();
+        if (masa > 0) {
+          const total = (this.masaExtra.get(mejor.body) ?? 0) + masa;
+          this.masaExtra.set(mejor.body, total);
+          mejor.body.setAdditionalMass(total, true);
+        }
+      }
+    }
+  }
+
+  /**
+   * ACCESORIOS CALZADOS solidarios (v0.2.12): una pieza de calce (gancho J,
+   * brazo de seguridad, jota, anclaje de cadena) montada en una estructura
+   * con pinholes forma GRUPO RÍGIDO con ella — está FIJADA por su pin, no
+   * apoyada: si la estructura es móvil (un brazo-péndulo, un carro), el
+   * accesorio viaja solidario sin caerse ni deslizar; si es fija, queda
+   * anclado a ella. Sus colliders se re-crean en el cuerpo anfitrión (una
+   * jota fundida sigue recibiendo la barra) y su masa se suma al anfitrión
+   * dinámico. Reutiliza la maquinaria de las roldanas empotradas: juntas y
+   * cables resuelven al cuerpo compuesto y la malla se reproyecta desde la
+   * pose del anfitrión en cada paso.
+   */
+  private detectarCalzados(): void {
+    if (!this.world) return;
+    const entradas = [...this.bodies.entries()];
+    const invH = new THREE.Quaternion();
+    const v = new THREE.Vector3();
+    for (const [id, e] of entradas) {
+      if (this.empotradaPorId.has(id)) continue;
+      const def = getDefinition(e.obj.componentId);
+      if (!def || (!def.calceLocal && !def.frenteCalce && !def.postesCalce)) continue;
+      const aSize = e.obj.effectiveSize();
+      const margen = Math.max(aSize.x, aSize.y, aSize.z) / 2 + 2;
+      let mejor: { body: R.RigidBody; obj: SceneObject } | null = null;
+      let mejorD = Infinity;
+      for (const [hid, h] of entradas) {
+        if (hid === id || this.empotradaPorId.has(hid)) continue;
+        // Solo estructuras CON grilla de pinholes hospedan un calce (de
+        // biblioteca por holeStepCm o viga trazada con agujeros).
+        const defH = getDefinition(h.obj.componentId);
+        const conGrilla =
+          !!defH?.holeStepCm ||
+          (h.obj.params.kind === "beam" && (h.obj.params.holeDiameter ?? 0) > 0.1);
+        if (!conGrilla) continue;
+        const hs = h.obj.effectiveSize();
+        invH.copy(h.obj.mesh.quaternion).invert();
+        v.copy(e.obj.mesh.position).sub(h.obj.mesh.position).applyQuaternion(invH);
+        const d = Math.max(
+          Math.abs(v.x) - hs.x / 2,
+          Math.abs(v.y) - hs.y / 2,
+          Math.abs(v.z) - hs.z / 2,
+        );
+        if (d < margen && d < mejorD) {
+          mejorD = d;
+          mejor = h;
+        }
+      }
+      if (!mejor) continue;
+      if (!mejor.body.isDynamic() && !e.body.isDynamic()) continue; // ya rígidos
+      const qH = mejor.obj.mesh.quaternion;
+      const relQ = qH.clone().invert().multiply(e.obj.mesh.quaternion);
+      const relPos = e.obj.mesh.position
+        .clone()
+        .sub(mejor.obj.mesh.position)
+        .applyQuaternion(qH.clone().invert())
+        .multiplyScalar(S);
+      // El collider del accesorio se RE-CREA en el anfitrión con la pose
+      // relativa compuesta (densidad 0: la masa va por masaExtra).
+      const cd = this.colliderDesc(e.obj);
+      const t = cd.translation;
+      const pos = new THREE.Vector3(t.x, t.y, t.z).applyQuaternion(relQ).add(relPos);
+      const r = cd.rotation;
+      const rq = new THREE.Quaternion(r.x, r.y, r.z, r.w).premultiply(relQ);
+      cd.setTranslation(pos.x, pos.y, pos.z);
+      cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
+      cd.setDensity(0);
+      this.world.removeRigidBody(e.body);
+      this.world.createCollider(cd, mejor.body);
+      const entrada = {
+        obj: e.obj,
+        host: mejor.body,
+        relPos: { x: relPos.x, y: relPos.y, z: relPos.z },
+        relQ: { x: relQ.x, y: relQ.y, z: relQ.z, w: relQ.w },
+      };
+      this.empotradas.push(entrada);
+      this.empotradaPorId.set(id, entrada);
+      // Juntas y cables que referencien el accesorio resuelven al compuesto.
+      this.bodies.set(id, { body: mejor.body, obj: mejor.obj });
+      if (mejor.body.isDynamic()) {
         const masa = e.obj.effectiveMassKg();
         if (masa > 0) {
           const total = (this.masaExtra.get(mejor.body) ?? 0) + masa;

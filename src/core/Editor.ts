@@ -15,7 +15,7 @@ import { PhysicsWorld } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
-import { straightPath } from "../objects/linePieces";
+import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
 import { SnapManager, localSnapPoints } from "./snapping";
 
 /**
@@ -920,28 +920,27 @@ export class Editor {
     const tam = obj.effectiveSize();
     interface CandidatoPoste {
       poste: SceneObject;
+      /** Origen de la grilla en MUNDO: centro del poste o del TRAMO. */
+      origen: THREE.Vector3;
       eje: THREE.Vector3;
       paso: number;
       fase: number;
       lim: number;
-      ejePinLocal: "x" | "z" | null;
+      /** Eje de los pinholes en MUNDO (null si el poste no lo define). */
+      ejePin: THREE.Vector3 | null;
       lateral: number;
       cerca: boolean;
     }
     const candidatos: CandidatoPoste[] = [];
     let mejor: CandidatoPoste | null = null;
     let mejorLateral = Infinity;
-    // ¿Path recto? (los pinholes de una viga doblada no forman grilla)
-    const esRecto = (path?: [number, number, number][]): boolean => {
-      if (!path || path.length < 2) return true;
-      const a = new THREE.Vector3(...path[0]);
-      const dirP = new THREE.Vector3(...path[path.length - 1]).sub(a);
-      if (dirP.lengthSq() < 1e-6) return false;
-      dirP.normalize();
-      return path.every((p) => {
-        const v = new THREE.Vector3(...p).sub(a);
-        return v.clone().addScaledVector(dirP, -v.dot(dirP)).length() < 0.5;
-      });
+    const maxTam = Math.max(tam.x, tam.y, tam.z);
+    const considerar = (cand: CandidatoPoste) => {
+      candidatos.push(cand);
+      if (cand.cerca && cand.lateral < mejorLateral) {
+        mejorLateral = cand.lateral;
+        mejor = cand;
+      }
     };
     for (const o of this.objects.values()) {
       if (o === obj) continue;
@@ -958,6 +957,35 @@ export class Editor {
       // en la malla) o TRAZADO con la herramienta lineal (paso/fase según
       // sus parámetros de pinholes configurables — misma validez).
       const defPoste = getDefinition(o.componentId);
+      // Viga DOBLADA por nodos: cada TRAMO recto que conservó pinholes
+      // aporta su PROPIA grilla — el accesorio reconoce la INCLINACIÓN de
+      // la cara y de sus pinholes aunque el tramo quede diagonal.
+      if (!defPoste?.holeStepCm && o.params.kind === "beam" && !pathIsStraight(o.params.path)) {
+        const grosor = o.params.width ?? 5;
+        o.mesh.updateMatrixWorld(true);
+        for (const tr of tramosCalce(o.params)) {
+          const origen = o.mesh.localToWorld(tr.centro.clone());
+          const eje = tr.dir.clone().applyQuaternion(o.mesh.quaternion).normalize();
+          if (eje.y < 0) eje.negate(); // "subir" = hacia arriba del tramo
+          const ejePin = tr.ejePin.clone().applyQuaternion(o.mesh.quaternion).normalize();
+          const delta = centro.clone().sub(origen);
+          const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
+          const axial = Math.abs(delta.dot(eje));
+          const tol = grosor / 2 + maxTam / 2 + 30;
+          considerar({
+            poste: o,
+            origen,
+            eje,
+            paso: tr.paso,
+            fase: tr.fase,
+            lim: tr.lim,
+            ejePin,
+            lateral,
+            cerca: lateral <= tol && axial <= tr.largo / 2 + 10,
+          });
+        }
+        continue;
+      }
       let paso: number;
       let fase: number;
       let lim: number;
@@ -968,7 +996,6 @@ export class Editor {
         lim = largo / 2 - 2;
         ejePinLocal = defPoste.ejeCalce ?? null;
       } else if (o.params.kind === "beam" && (o.params.holeDiameter ?? 0) > 0.1) {
-        if (!esRecto(o.params.path)) continue;
         const holeR = (o.params.holeDiameter ?? 0) / 2;
         const spacing = Math.max(o.params.holeSpacing ?? 5, holeR * 2 + 0.5);
         const ancho = o.params.width ?? 5;
@@ -987,6 +1014,11 @@ export class Editor {
 
       const eje = dims[0][1].applyQuaternion(o.mesh.quaternion).normalize();
       if (eje.y < 0) eje.negate(); // "subir" = hacia arriba del poste
+      const ejePin = ejePinLocal
+        ? (ejePinLocal === "x" ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1))
+            .applyQuaternion(o.mesh.quaternion)
+            .normalize()
+        : null;
       const delta = centro.clone().sub(o.mesh.position);
       const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
       const axial = Math.abs(delta.dot(eje));
@@ -994,14 +1026,19 @@ export class Editor {
       // del poste también se ensambla (el más cercano gana). Los postes
       // lejanos igual quedan en la lista: la PAREJA de un tendido de dos
       // postes puede estar al otro extremo de la pieza.
-      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 30;
+      const tol = dims[1][0] / 2 + maxTam / 2 + 30;
       const cerca = lateral <= tol && axial <= largo / 2 + 10;
-      const cand: CandidatoPoste = { poste: o, eje, paso, fase, lim, ejePinLocal, lateral, cerca };
-      candidatos.push(cand);
-      if (cerca && lateral < mejorLateral) {
-        mejorLateral = lateral;
-        mejor = cand;
-      }
+      considerar({
+        poste: o,
+        origen: o.mesh.position.clone(),
+        eje,
+        paso,
+        fase,
+        lim,
+        ejePin,
+        lateral,
+        cerca,
+      });
     }
     if (!mejor) {
       return tt(
@@ -1009,7 +1046,7 @@ export class Editor {
         "There is no drilled post next to the piece: move it closer to an upright.",
       );
     }
-    const { poste, eje, paso, fase, lim, ejePinLocal } = mejor;
+    const { poste, origen, eje, paso, fase, lim, ejePin } = mejor as CandidatoPoste;
     // TENDIDO ENTRE DOS POSTES (postesCalce 2): mientras las jotas cuelgan
     // de UN pilar, el brazo de seguridad se sostiene de DOS a la vez. Se
     // busca la PAREJA del poste más cercano sobre la línea del tendido
@@ -1018,21 +1055,16 @@ export class Editor {
     // pilares comparten la grilla, subir o bajar la mueve UN agujero en
     // los dos simultáneamente.
     let pareja: CandidatoPoste | null = null;
-    if (getDefinition(obj.componentId)?.postesCalce === 2 && ejePinLocal) {
+    if (getDefinition(obj.componentId)?.postesCalce === 2 && ejePin) {
       // El tendido corre A LO LARGO del eje de los pinholes: los pines del
       // brazo entran axialmente por las caras enfrentadas de ambos pilares.
-      const tendido = (ejePinLocal === "x"
-        ? new THREE.Vector3(1, 0, 0)
-        : new THREE.Vector3(0, 0, 1)
-      )
-        .applyQuaternion(poste.mesh.quaternion)
-        .normalize();
+      const tendido = ejePin;
       const largoPieza = Math.max(tam.x, tam.y, tam.z);
       let mejorSep = Infinity;
       for (const c of candidatos) {
         if (c.poste === poste) continue;
         if (Math.abs(c.eje.dot(eje)) < 0.99 || Math.abs(c.paso - paso) > 1e-3) continue;
-        const d = c.poste.mesh.position.clone().sub(poste.mesh.position);
+        const d = c.origen.clone().sub(origen);
         d.addScaledVector(eje, -d.dot(eje)); // separación en planta
         const sep = d.length();
         if (sep < 20 || sep > largoPieza + 40) continue;
@@ -1056,7 +1088,7 @@ export class Editor {
         [tamLoc.z, new THREE.Vector3(0, 0, 1)],
       ];
       dimsLoc.sort((a, b) => b[0] - a[0]);
-      const linea = pareja.poste.mesh.position.clone().sub(poste.mesh.position);
+      const linea = pareja.origen.clone().sub(origen);
       linea.addScaledVector(eje, -linea.dot(eje)).normalize();
       const largoMundo = dimsLoc[0][1].clone().applyQuaternion(obj.mesh.quaternion);
       largoMundo.addScaledVector(eje, -largoMundo.dot(eje));
@@ -1068,7 +1100,7 @@ export class Editor {
         );
         obj.mesh.updateMatrixWorld(true);
       }
-      const medio = poste.mesh.position.clone().add(pareja.poste.mesh.position).multiplyScalar(0.5);
+      const medio = origen.clone().add(pareja.origen).multiplyScalar(0.5);
       const desplazo = medio.sub(centro);
       desplazo.addScaledVector(eje, -desplazo.dot(eje));
       centro.add(desplazo);
@@ -1078,13 +1110,20 @@ export class Editor {
     // los agujeros accesorios de otras caras. Se gira la pieza alrededor
     // del poste hasta encarar ese eje (respetando el lado en que la dejó
     // el usuario).
-    if (!pareja && ejePinLocal) {
-      const ejePin = (ejePinLocal === "x"
-        ? new THREE.Vector3(1, 0, 0)
-        : new THREE.Vector3(0, 0, 1)
-      )
-        .applyQuaternion(poste.mesh.quaternion)
-        .normalize();
+    if (!pareja && ejePin) {
+      // INCLINACIÓN DE LA CARA (v0.2.12): el accesorio RECONOCE la
+      // inclinación del poste o tramo donde calza — su vertical local se
+      // alinea con el eje de la cara (diagonal o inclinada incluida), de
+      // modo que el manguito abraza el perfil y el pin entra perpendicular
+      // a esa cara, no según la vertical del mundo.
+      const arriba = new THREE.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+      const objetivoArriba = eje.clone().multiplyScalar(arriba.dot(eje) >= 0 ? 1 : -1);
+      if (arriba.angleTo(objetivoArriba) > 1e-4) {
+        obj.mesh.quaternion.premultiply(
+          new THREE.Quaternion().setFromUnitVectors(arriba, objetivoArriba),
+        );
+        obj.mesh.updateMatrixWorld(true);
+      }
       // Cada pieza ENCARA el poste por su propio eje local (frenteCalce):
       // las jotas/brazos por Z; el anclaje de cadena monta por X.
       const frenteLocal =
@@ -1109,11 +1148,11 @@ export class Editor {
     if (pc) {
       obj.mesh.updateMatrixWorld(true);
       const manguito = obj.mesh.localToWorld(pc.clone());
-      const desvio = manguito.sub(poste.mesh.position);
+      const desvio = manguito.sub(origen);
       const lateralManguito = desvio.clone().addScaledVector(eje, -desvio.dot(eje));
       centro.sub(lateralManguito);
     }
-    const delta = centro.clone().sub(poste.mesh.position);
+    const delta = centro.clone().sub(origen);
     const s = delta.dot(eje);
     // Se ajusta a la grilla REAL de pinholes (paso y fase del poste) y da
     // UN paso en la dirección pedida, sin salirse de las filas existentes.
@@ -1134,7 +1173,7 @@ export class Editor {
       if (o === obj || o === poste || (pareja && o === pareja.poste)) continue;
       const defO = getDefinition(o.componentId);
       if (!defO || (!defO.calceLocal && !defO.frenteCalce && !defO.postesCalce)) continue;
-      const dO = o.mesh.position.clone().sub(poste.mesh.position);
+      const dO = o.mesh.position.clone().sub(origen);
       const latO = dO.clone().addScaledVector(eje, -dO.dot(eje)).length();
       const tO = o.effectiveSize();
       const maxO = Math.max(tO.x, tO.y, tO.z);
@@ -1186,14 +1225,16 @@ export class Editor {
     if (!obj) return null;
     const centro = obj.mesh.position;
     const tam = obj.effectiveSize();
-    let mejor: {
-      poste: SceneObject;
+    const maxTam = Math.max(tam.x, tam.y, tam.z);
+    interface GrillaCerca {
+      origen: THREE.Vector3;
       eje: THREE.Vector3;
       paso: number;
       fase: number;
       lim: number;
-    } | null = null;
-    let mejorLateral = Infinity;
+      lateral: number;
+    }
+    const cercanas: GrillaCerca[] = [];
     for (const o of this.objects.values()) {
       if (o === obj) continue;
       const so = o.effectiveSize();
@@ -1205,6 +1246,24 @@ export class Editor {
       dims.sort((a, b) => b[0] - a[0]);
       const largo = dims[0][0];
       const defPoste = getDefinition(o.componentId);
+      // Viga DOBLADA: cada tramo recto con pinholes es su propia grilla
+      // (mismas reglas que calcePorAgujero — caras inclinadas incluidas).
+      if (!defPoste?.holeStepCm && o.params.kind === "beam" && !pathIsStraight(o.params.path)) {
+        const grosor = o.params.width ?? 5;
+        o.mesh.updateMatrixWorld(true);
+        for (const tr of tramosCalce(o.params)) {
+          const origen = o.mesh.localToWorld(tr.centro.clone());
+          const eje = tr.dir.clone().applyQuaternion(o.mesh.quaternion).normalize();
+          if (eje.y < 0) eje.negate();
+          const delta = centro.clone().sub(origen);
+          const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
+          const axial = Math.abs(delta.dot(eje));
+          const tol = grosor / 2 + maxTam / 2 + 30;
+          if (lateral > tol || axial > tr.largo / 2 + 10) continue;
+          cercanas.push({ origen, eje, paso: tr.paso, fase: tr.fase, lim: tr.lim, lateral });
+        }
+        continue;
+      }
       let paso: number;
       let fase: number;
       let lim: number;
@@ -1231,26 +1290,33 @@ export class Editor {
       const delta = centro.clone().sub(o.mesh.position);
       const lateral = delta.clone().addScaledVector(eje, -delta.dot(eje)).length();
       const axial = Math.abs(delta.dot(eje));
-      const tol = dims[1][0] / 2 + Math.max(tam.x, tam.y, tam.z) / 2 + 30;
+      const tol = dims[1][0] / 2 + maxTam / 2 + 30;
       if (lateral > tol || axial > largo / 2 + 10) continue;
-      if (lateral < mejorLateral) {
-        mejorLateral = lateral;
-        mejor = { poste: o, eje, paso, fase, lim };
+      cercanas.push({ origen: o.mesh.position.clone(), eje, paso, fase, lim, lateral });
+    }
+    if (cercanas.length === 0) return null;
+    // Filas de la grilla: k entero con -lim ≤ fase + k·paso ≤ lim; el
+    // agujero 1 es el de MÁS ABAJO del poste/tramo. Entre varias grillas
+    // cercanas (los tramos facetados de una comba suave son casi
+    // colineales) se PREFIERE aquella donde la pieza está realmente
+    // ASENTADA en una fila — el panel reporta la grilla que la sostiene.
+    let mejor: { agujero: number; total: number; calzada: boolean } | null = null;
+    let mejorPuntaje = Infinity;
+    for (const g of cercanas) {
+      const s = centro.clone().sub(g.origen).dot(g.eje);
+      const kMin = Math.ceil((-g.lim - g.fase) / g.paso - 1e-6);
+      const kMax = Math.floor((g.lim - g.fase) / g.paso + 1e-6);
+      const total = kMax - kMin + 1;
+      if (total < 1) continue;
+      const k = Math.max(kMin, Math.min(kMax, Math.round((s - g.fase) / g.paso)));
+      const calzada = Math.abs(g.fase + k * g.paso - s) <= 1;
+      const puntaje = g.lateral + (calzada ? 0 : 10_000);
+      if (puntaje < mejorPuntaje) {
+        mejorPuntaje = puntaje;
+        mejor = { agujero: k - kMin + 1, total, calzada };
       }
     }
-    if (!mejor) return null;
-    const { poste, eje, paso, fase, lim } = mejor;
-    const s = centro.clone().sub(poste.mesh.position).dot(eje);
-    // Filas de la grilla: k entero con -lim ≤ fase + k·paso ≤ lim; el
-    // agujero 1 es el de MÁS ABAJO del poste.
-    const kMin = Math.ceil((-lim - fase) / paso - 1e-6);
-    const kMax = Math.floor((lim - fase) / paso + 1e-6);
-    const total = kMax - kMin + 1;
-    if (total < 1) return null;
-    const k = Math.max(kMin, Math.min(kMax, Math.round((s - fase) / paso)));
-    const agujero = k - kMin + 1;
-    const calzada = Math.abs(fase + k * paso - s) <= 1;
-    return { agujero, total, calzada };
+    return mejor;
   }
 
   /**

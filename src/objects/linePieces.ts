@@ -159,41 +159,33 @@ export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   return sweepProfile(circle, path);
 }
 
-/**
- * Viga DOBLADA construida por TRAMOS (v0.2.12): los pinholes solo se
- * OBLITERAN donde la CURVATURA real de la superficie impide instalar un
- * acople — toda cara suficientemente plana los conserva, aunque quede
- * DIAGONAL o inclinada tras el doblado. La curva barrida se muestrea
- * centímetro a centímetro y se particiona por CUERDA ACUMULADA (comba
- * ≤ 2 mm) en tramos de cara plana; los que alcanzan el pie de un
- * accesorio (≥ 20 cm) se extruyen como prismas CON su grilla de pinholes
- * sobre su propia línea, y el resto — el codo — se barre liso. Las
- * partes comparten sus puntos de frontera: la geometría es continua.
- */
-function buildBentBeam(
-  p: PrimitiveParams,
-  W: number,
-  D: number,
-  path: [number, number, number][],
-): THREE.BufferGeometry {
-  const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
-  const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
-  const margen = W / 2 + holeR;
+interface TramoPlano {
+  recto: boolean;
+  i0: number;
+  i1: number;
+}
 
-  // Muestreo denso de la curva real (≈1 cm entre muestras).
+/**
+ * PARTICIÓN POR CUERDA ACUMULADA de la curva de una viga doblada: muestrea
+ * la curva (≈1 cm entre muestras) y la corta en tramos cuya comba respecto
+ * de su propia cuerda no supere 2 mm — una cara así de plana admite un
+ * acople de calce aunque quede diagonal o inclinada. (La planitud puramente
+ * local engaña: una curvatura suave de radio grande parece recta en cada
+ * ventana pequeña y la pieza entera se enderezaría.) Los tramos que no
+ * alcanzan el PIE de un accesorio (~20 cm, el manguito de una jota) son
+ * parte del codo: ahí la curvatura impide instalar un acople y se barren
+ * curvos (consecutivos fusionados en un solo barrido).
+ */
+function particionPlana(
+  path: [number, number, number][],
+  margen: number,
+  spacing: number,
+): { pts: THREE.Vector3[]; fusionados: TramoPlano[] } {
   const curva = pathCurve(path);
   const L = Math.max(pathLength(path), 2);
   const N = THREE.MathUtils.clamp(Math.ceil(L), 40, 500);
   const pts = curva.getSpacedPoints(N); // N+1 puntos
 
-  // PLANITUD por CUERDA ACUMULADA: un tramo es "suficientemente plano"
-  // para acoplar un accesorio mientras TODAS sus muestras queden a menos
-  // de la comba tolerada de la cuerda del tramo. (La planitud puramente
-  // local engaña: una curvatura suave de radio grande parece recta en
-  // cada ventana pequeña y la pieza entera se enderezaría.) Al superar la
-  // tolerancia, el tramo se corta y empieza otro; los cortos — el codo —
-  // se barren curvos, y una comba larga y suave se facetea en cuerdas
-  // portadoras de agujeros, todas con caras planas de verdad.
   const tolPlano = 0.2; // cm de comba tolerada en una cara de acople
   const desviacionMax = (a0: number, a1: number): number => {
     const a = pts[a0];
@@ -220,30 +212,105 @@ function buildBentBeam(
   }
   if (cortes[cortes.length - 1] !== pts.length - 1) cortes.push(pts.length - 1);
 
-  // Tramos entre cortes: rectos solo si la cara plana tiene el tamaño del
-  // PIE de un accesorio de calce (~20 cm, el manguito de una jota) — una
-  // cuerda más corta es parte del codo y se barre curva, porque ahí la
-  // curvatura impide instalar un acople.
   const minRecto = Math.max(2 * margen + 1, spacing + 2, 20);
-  interface Tramo {
-    recto: boolean;
-    i0: number;
-    i1: number;
-  }
-  const tramos: Tramo[] = [];
+  const tramos: TramoPlano[] = [];
   for (let c = 0; c < cortes.length - 1; c++) {
     const i0 = cortes[c];
     const i1 = cortes[c + 1];
     const largoTramo = pts[i0].distanceTo(pts[i1]);
     tramos.push({ recto: largoTramo >= minRecto, i0, i1 });
   }
-  // Fusiona tramos curvos consecutivos (el codo completo en un solo barrido).
-  const fusionados: Tramo[] = [];
+  const fusionados: TramoPlano[] = [];
   for (const t of tramos) {
     const u = fusionados[fusionados.length - 1];
     if (u && !u.recto && !t.recto) u.i1 = t.i1;
     else fusionados.push({ ...t });
   }
+  return { pts, fusionados };
+}
+
+/**
+ * GRILLA DE CALCE de un tramo recto de una viga doblada, en coordenadas
+ * LOCALES de la pieza: los accesorios (jotas, brazos, anclajes) reconocen
+ * la INCLINACIÓN de la cara — cada tramo plano conserva su propia línea de
+ * pinholes (centro, dirección y eje del pin) aunque quede diagonal.
+ */
+export interface TramoCalce {
+  /** Punto medio de la cuerda del tramo (local, cm). */
+  centro: THREE.Vector3;
+  /** Dirección unitaria de la cuerda (local). */
+  dir: THREE.Vector3;
+  /** Eje unitario de los pinholes del tramo (local, ⊥ a la cara). */
+  ejePin: THREE.Vector3;
+  /** Largo de la cuerda (cm). */
+  largo: number;
+  /** Paso de la grilla (cm) y fase respecto del centro del tramo. */
+  paso: number;
+  fase: number;
+  /** Última fila a cada lado del centro (|s| ≤ lim). */
+  lim: number;
+  /** Número de filas de pinholes del tramo. */
+  count: number;
+}
+
+/** Tramos con pinholes de una viga doblada (vacío si es recta o sin agujeros). */
+export function tramosCalce(p: PrimitiveParams): TramoCalce[] {
+  const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
+  if (p.kind !== "beam" || holeR <= 0.05) return [];
+  const path = p.path ?? straightPath(100);
+  if (pathIsStraight(path)) return [];
+  const W = p.width ?? 5;
+  const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
+  const margen = W / 2 + holeR;
+  const { pts, fusionados } = particionPlana(path, margen, spacing);
+  const out: TramoCalce[] = [];
+  for (const t of fusionados) {
+    if (!t.recto) continue;
+    const a = pts[t.i0];
+    const b = pts[t.i1];
+    const largo = a.distanceTo(b);
+    const usable = largo - 2 * margen;
+    const count = Math.floor(usable / spacing) + 1;
+    if (count < 1 || usable < 0) continue;
+    const dir = b.clone().sub(a).normalize();
+    // Mismo marco que la geometría del tramo: prisma extruido en Z (los
+    // agujeros lo atraviesan) y rotado de +Y a la dirección de la cuerda.
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    out.push({
+      centro: a.clone().add(b).multiplyScalar(0.5),
+      dir,
+      ejePin: new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize(),
+      largo,
+      paso: spacing,
+      fase: count % 2 === 1 ? 0 : spacing / 2,
+      lim: ((count - 1) / 2) * spacing + 0.01,
+      count,
+    });
+  }
+  return out;
+}
+
+/**
+ * Viga DOBLADA construida por TRAMOS (v0.2.12): los pinholes solo se
+ * OBLITERAN donde la CURVATURA real de la superficie impide instalar un
+ * acople — toda cara suficientemente plana los conserva, aunque quede
+ * DIAGONAL o inclinada tras el doblado. La curva barrida se muestrea
+ * centímetro a centímetro y se particiona por CUERDA ACUMULADA (comba
+ * ≤ 2 mm) en tramos de cara plana; los que alcanzan el pie de un
+ * accesorio (≥ 20 cm) se extruyen como prismas CON su grilla de pinholes
+ * sobre su propia línea, y el resto — el codo — se barre liso. Las
+ * partes comparten sus puntos de frontera: la geometría es continua.
+ */
+function buildBentBeam(
+  p: PrimitiveParams,
+  W: number,
+  D: number,
+  path: [number, number, number][],
+): THREE.BufferGeometry {
+  const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
+  const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
+  const margen = W / 2 + holeR;
+  const { pts, fusionados } = particionPlana(path, margen, spacing);
 
   const partes: THREE.BufferGeometry[] = [];
   for (const t of fusionados) {

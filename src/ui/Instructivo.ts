@@ -85,6 +85,8 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Al calzar, la pieza se ENSAMBLA a la estructura: su manguito abraza el pilar y el pin articula con los pinholes estandarizados — los orificios pasantes por ambas caras —, nunca con agujeros accesorios, y nunca queda flotando en el aire.",
       "Algunas piezas se sostienen de UN pilar (ganchos J, jotas, anclajes) y otras de DOS a la vez: el brazo de seguridad se TIENDE entre los dos pilares de su lado y ▲/▼ lo sube o baja un agujero en AMBOS simultáneamente.",
       "También vale para los postes TRAZADOS con la herramienta de línea: el diámetro y la distancia de sus pinholes (del diálogo de trazado) definen la grilla, y la pieza se detiene en la última fila de agujeros.",
+      "El accesorio RECONOCE la inclinación de la cara: en una estructura doblada por nodos, cada tramo recto — vertical, diagonal u horizontal — tiene su propia grilla, la pieza se alinea con el eje del tramo y ▲/▼ avanza a lo largo de él.",
+      "En la SIMULACIÓN, los accesorios calzados quedan FIJADOS por su pin a la estructura: si esta es móvil (un brazo, un carro), viajan solidarios con ella sin caerse ni deslizar.",
     ],
   },
   {
