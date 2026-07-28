@@ -124,7 +124,20 @@ export type EditorEvents = {
   grabFigureChanged: { on: boolean };
   /** Modos de vista del Builder: color, aristas (menú Ver, v0.2.0). */
   viewModesChanged: { color: ColorMode; edges: boolean };
+  /** Herramienta rápida activa (barra de atajos, v0.2.13). */
+  herramientaChanged: { tool: HerramientaRapida };
+  /** El gizmo colectivo (grupo/multiselección) cambió de pose. */
+  grupoTransformado: { fuente: "gizmo" | "numerico" };
 };
+
+/** Herramientas rápidas de la barra de atajos (v0.2.13). */
+export type HerramientaRapida =
+  | "seleccion"
+  | "area"
+  | "mover"
+  | "rotar"
+  | "escalar"
+  | "orbitar";
 
 /** Modo de color del visor: materiales reales, por categoría o neutro. */
 export type ColorMode = "material" | "categoria" | "neutro";
@@ -208,6 +221,8 @@ export class Editor {
   private groupPrev = new THREE.Matrix4();
   // ---- Selección de área (marquee), portapapeles e historial (v0.1.8)
   private areaSelect = false;
+  /** Herramienta rápida activa (barra de atajos, v0.2.13). */
+  private herramienta: HerramientaRapida = "mover";
   private marquee: { x0: number; y0: number; x1: number; y1: number; additive: boolean } | null =
     null;
   private marqueeEl: HTMLDivElement | null = null;
@@ -2414,6 +2429,7 @@ export class Editor {
     this.resetGizmoAxes();
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
+    this.aplicarHerramientaGizmo();
     this.bus.emit("selectionChanged", { selected: obj });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
     this.bus.emit("groupSelectionChanged", { id: null, name: "" });
@@ -2469,14 +2485,75 @@ export class Editor {
   // ------------------------------------------ selección de área (marquee)
 
   setAreaSelect(on: boolean): void {
-    this.areaSelect = on;
-    if (!on) this.cancelMarquee();
-    else if (this.dragTool) this.setDragTool(false);
-    this.bus.emit("areaSelectChanged", { on });
+    if (on) this.setHerramienta("area");
+    else if (this.herramienta === "area") this.setHerramienta("mover");
   }
 
   isAreaSelect(): boolean {
     return this.areaSelect;
+  }
+
+  // -------------------------------------- barra de herramientas rápidas
+
+  /**
+   * HERRAMIENTA RÁPIDA activa (v0.2.13): selección única, selección de
+   * área, mover/rotar/escalar (modos del gizmo) u orbitar. Cambiar de
+   * herramienta de forma explícita evita modificaciones y arrastres
+   * inadvertidos: con selección/orbitar el gizmo de piezas queda inactivo
+   * y oculto, y con orbitar el clic tampoco cambia la selección. El gizmo
+   * articular del maniquí (Posturas) no se ve afectado.
+   */
+  setHerramienta(tool: HerramientaRapida): void {
+    if (this.herramienta === tool) return;
+    const eraArea = this.herramienta === "area";
+    this.herramienta = tool;
+    if (tool === "area") {
+      this.areaSelect = true;
+      if (this.dragTool) this.setDragTool(false);
+      this.bus.emit("areaSelectChanged", { on: true });
+    } else if (eraArea) {
+      this.areaSelect = false;
+      this.cancelMarquee();
+      this.bus.emit("areaSelectChanged", { on: false });
+    }
+    if (tool === "mover") this.setMode("translate");
+    else if (tool === "rotar") this.setMode("rotate");
+    else if (tool === "escalar") this.setMode("scale");
+    this.aplicarHerramientaGizmo();
+    this.bus.emit("herramientaChanged", { tool });
+    this.requestRender();
+  }
+
+  getHerramienta(): HerramientaRapida {
+    return this.herramienta;
+  }
+
+  /** Modo de gizmo que corresponde a la herramienta activa. */
+  private modoDeHerramienta(): TransformMode {
+    if (this.herramienta === "rotar") return "rotate";
+    if (this.herramienta === "escalar") return "scale";
+    return "translate";
+  }
+
+  /**
+   * Aplica la herramienta al gizmo: el gizmo de PIEZAS/GRUPOS solo está
+   * activo y visible con mover/rotar/escalar; los demás objetivos (p. ej.
+   * una articulación del maniquí) conservan su gizmo.
+   */
+  private aplicarHerramientaGizmo(): void {
+    const esPieza =
+      this.gizmo.object === this.groupProxy ||
+      (this.selected !== null && this.gizmo.object === this.selected.mesh);
+    const transformando =
+      this.herramienta === "mover" ||
+      this.herramienta === "rotar" ||
+      this.herramienta === "escalar";
+    const activo = !esPieza || transformando;
+    this.gizmo.enabled = activo;
+    const helper = (this.gizmo as unknown as { getHelper?: () => THREE.Object3D })
+      .getHelper?.();
+    (helper ?? (this.gizmo as unknown as THREE.Object3D)).visible =
+      activo && this.gizmo.object !== undefined && this.gizmo.object !== null;
   }
 
   private beginMarquee(e: PointerEvent): void {
@@ -2836,7 +2913,8 @@ export class Editor {
     this.groupPrev.copy(this.groupProxy.matrixWorld);
     this.resetGizmoAxes();
     this.gizmo.attach(this.groupProxy);
-    if (attachFresh && this.gizmo.getMode() === "scale") this.setMode("translate");
+    if (attachFresh) this.setMode(this.modoDeHerramienta());
+    this.aplicarHerramientaGizmo();
   }
 
   /** Aplica el delta del proxy a todos los objetos de la multiselección. */
@@ -2854,6 +2932,63 @@ export class Editor {
     }
     this.cablesDirty = true;
     this.groupPrev.copy(cur);
+    this.bus.emit("grupoTransformado", { fuente: "gizmo" });
+  }
+
+  /**
+   * TRANSFORMACIÓN NUMÉRICA DEL GRUPO (v0.2.13): pose exacta del gizmo
+   * colectivo (grupo o multiselección) para el panel de Propiedades —
+   * posición del centro (cm) y rotación (°)/escala ACUMULADAS desde que
+   * se tomó la selección (el proxy nace en 0°/×1 al seleccionar).
+   */
+  transformGrupo(): { pos: THREE.Vector3; rotDeg: THREE.Vector3; escala: number } | null {
+    if (!this.selectedGroupId && this.multiSel.size === 0) return null;
+    if (this.gizmo.object !== this.groupProxy) return null;
+    const e = new THREE.Euler().setFromQuaternion(this.groupProxy.quaternion, "XYZ");
+    return {
+      pos: this.groupProxy.position.clone(),
+      rotDeg: new THREE.Vector3(
+        THREE.MathUtils.radToDeg(e.x),
+        THREE.MathUtils.radToDeg(e.y),
+        THREE.MathUtils.radToDeg(e.z),
+      ),
+      escala: this.groupProxy.scale.x,
+    };
+  }
+
+  /**
+   * Fija numéricamente la pose del grupo: mueve el centro a la posición
+   * exacta, gira alrededor del centro hasta los grados pedidos y/o escala
+   * uniformemente — el delta se aplica a TODAS las piezas de la selección,
+   * igual que un arrastre del gizmo.
+   */
+  setTransformGrupo(cambio: {
+    pos?: { x?: number; y?: number; z?: number };
+    rotDeg?: { x?: number; y?: number; z?: number };
+    escala?: number;
+  }): void {
+    if (!this.selectedGroupId && this.multiSel.size === 0) return;
+    if (this.gizmo.object !== this.groupProxy) return;
+    if (cambio.pos) {
+      if (Number.isFinite(cambio.pos.x)) this.groupProxy.position.x = cambio.pos.x!;
+      if (Number.isFinite(cambio.pos.y)) this.groupProxy.position.y = cambio.pos.y!;
+      if (Number.isFinite(cambio.pos.z)) this.groupProxy.position.z = cambio.pos.z!;
+    }
+    if (cambio.rotDeg) {
+      const e = new THREE.Euler().setFromQuaternion(this.groupProxy.quaternion, "XYZ");
+      if (Number.isFinite(cambio.rotDeg.x)) e.x = THREE.MathUtils.degToRad(cambio.rotDeg.x!);
+      if (Number.isFinite(cambio.rotDeg.y)) e.y = THREE.MathUtils.degToRad(cambio.rotDeg.y!);
+      if (Number.isFinite(cambio.rotDeg.z)) e.z = THREE.MathUtils.degToRad(cambio.rotDeg.z!);
+      this.groupProxy.quaternion.setFromEuler(e);
+    }
+    if (cambio.escala !== undefined && Number.isFinite(cambio.escala) && cambio.escala > 0.01) {
+      this.groupProxy.scale.setScalar(cambio.escala);
+    }
+    if (this.selectedGroupId) this.applyGroupDelta();
+    else this.applyMultiDelta();
+    this.bus.emit("grupoTransformado", { fuente: "numerico" });
+    this.scheduleAutosave();
+    this.requestRender();
   }
 
   /** Crea un grupo (subensamblaje) a partir de la multiseleccion (>=2). */
@@ -2914,7 +3049,8 @@ export class Editor {
     this.selectedJointName = null;
     this.resetGizmoAxes();
     this.gizmo.attach(this.groupProxy);
-    this.setMode("translate");
+    this.setMode(this.modoDeHerramienta());
+    this.aplicarHerramientaGizmo();
     this.bus.emit("selectionChanged", { selected: null });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: true });
     this.bus.emit("groupSelectionChanged", { id: gid, name: g.name });
@@ -2940,6 +3076,7 @@ export class Editor {
     }
     this.cablesDirty = true;
     this.groupPrev.copy(cur);
+    this.bus.emit("grupoTransformado", { fuente: "gizmo" });
   }
 
   /** Disuelve el grupo seleccionado (los miembros vuelven a ser individuales). */
@@ -5160,6 +5297,10 @@ export class Editor {
       return;
     }
 
+    // Herramienta ORBITAR: el clic no selecciona ni edita — la cámara manda
+    // (evita arrastres y cambios de selección inadvertidos en tablet).
+    if (this.herramienta === "orbitar") return;
+
     // Selección normal: objetos editables, cuerdas o figura humana, por cercanía.
     const objHits = this.raycaster.intersectObjects(
       this.sceneManager.content.children,
@@ -5322,14 +5463,14 @@ export class Editor {
         break;
       case "g":
       case "w":
-        this.setMode("translate");
+        this.setHerramienta("mover");
         break;
       case "r":
       case "e":
-        this.setMode("rotate");
+        this.setHerramienta("rotar");
         break;
       case "s":
-        this.setMode("scale");
+        this.setHerramienta("escalar");
         break;
       case "delete":
       case "backspace":

@@ -88,7 +88,117 @@ export class PropertiesPanel {
     this.editor.bus.on("objectTransformed", ({ object }) => {
       if (object === this.current) this.refreshTransform();
     });
+    // Multiselección: el panel ofrece la transformación numérica del bloque.
+    this.editor.bus.on("groupingChanged", ({ multi, groupSelected }) => {
+      if (multi >= 2 && !groupSelected) this.showMulti(multi);
+    });
+    this.editor.bus.on("grupoTransformado", () => this.refreshGrupoInputs());
     this.show(null);
+  }
+
+  private showMulti(multi: number): void {
+    this.current = null;
+    this.groupShownId = null;
+    clear(this.body);
+    this.body.append(
+      el("div", { class: "empty-hint" }, [
+        tt(
+          `${multi} piezas seleccionadas. Se transforman juntas como bloque.`,
+          `${multi} pieces selected. They transform together as a block.`,
+        ),
+      ]),
+      this.grupoTransformSection(),
+    );
+  }
+
+  /**
+   * TRANSFORMACIÓN EXACTA del gizmo colectivo (v0.2.13): posición del
+   * centro en cm, rotación en grados y escala uniforme del GRUPO o de la
+   * multiselección, editables en números — el mismo efecto que arrastrar
+   * el gizmo, pero exacto. Rotación y escala parten de 0°/×1 al tomar la
+   * selección (son acumuladas de la sesión de selección).
+   */
+  private grupoTransformSection(): HTMLElement {
+    const axes: ("x" | "y" | "z")[] = ["x", "y", "z"];
+    const t = this.editor.transformGrupo();
+    const posRow = el(
+      "div",
+      { class: "row" },
+      axes.map((ax) => {
+        const input = el("input", {
+          type: "number",
+          value: String(roundTo(t?.pos[ax] ?? 0, 1)),
+          step: "1",
+        });
+        input.dataset.gpos = ax;
+        input.addEventListener("change", () => {
+          const v = parseFloat(input.value);
+          if (Number.isFinite(v)) this.editor.setTransformGrupo({ pos: { [ax]: v } });
+        });
+        return el("div", { class: "sub" }, [el("label", {}, [ax.toUpperCase()]), input]);
+      }),
+    );
+    const rotRow = el(
+      "div",
+      { class: "row" },
+      axes.map((ax) => {
+        const input = el("input", {
+          type: "number",
+          value: String(roundTo(t?.rotDeg[ax] ?? 0, 1)),
+          step: "5",
+        });
+        input.dataset.grot = ax;
+        input.addEventListener("change", () => {
+          const v = parseFloat(input.value);
+          if (Number.isFinite(v)) this.editor.setTransformGrupo({ rotDeg: { [ax]: v } });
+        });
+        return el("div", { class: "sub" }, [el("label", {}, [ax.toUpperCase()]), input]);
+      }),
+    );
+    const esc = el("input", {
+      type: "number",
+      value: String(roundTo(t?.escala ?? 1, 2)),
+      step: "0.1",
+      min: "0.05",
+    });
+    esc.dataset.gesc = "s";
+    esc.addEventListener("change", () => {
+      const v = parseFloat(esc.value);
+      if (Number.isFinite(v) && v > 0.01) this.editor.setTransformGrupo({ escala: v });
+    });
+    return el("div", {}, [
+      el("div", { class: "field" }, [
+        el("label", {}, [tt("Posición del centro (cm)", "Center position (cm)")]),
+        posRow,
+      ]),
+      el("div", { class: "field" }, [
+        el("label", {}, [tt("Rotación del bloque (grados)", "Block rotation (degrees)")]),
+        rotRow,
+      ]),
+      el("div", { class: "field" }, [
+        el("label", {}, [tt("Escala del bloque (×)", "Block scale (×)")]),
+        esc,
+      ]),
+    ]);
+  }
+
+  /** Refresca los campos del bloque tras un arrastre del gizmo (sin pisar el campo en foco). */
+  private refreshGrupoInputs(): void {
+    const t = this.editor.transformGrupo();
+    if (!t) return;
+    const activo = document.activeElement;
+    for (const input of this.body.querySelectorAll<HTMLInputElement>("input[data-gpos]")) {
+      if (input === activo) continue;
+      input.value = String(roundTo(t.pos[input.dataset.gpos as "x" | "y" | "z"], 1));
+    }
+    for (const input of this.body.querySelectorAll<HTMLInputElement>("input[data-grot]")) {
+      if (input === activo) continue;
+      input.value = String(roundTo(t.rotDeg[input.dataset.grot as "x" | "y" | "z"], 1));
+    }
+    for (const input of this.body.querySelectorAll<HTMLInputElement>("input[data-gesc]")) {
+      if (input === activo) continue;
+      input.value = String(roundTo(t.escala, 2));
+    }
   }
 
   private showGroup(id: string, name: string): void {
@@ -107,8 +217,9 @@ export class PropertiesPanel {
       el("div", { class: "field" }, [el("label", {}, ["Nombre del grupo"]), input]),
       el("div", { class: "pose-actions" }, [dup, ungroup]),
       el("div", { class: "pose-actions" }, [del]),
+      this.grupoTransformSection(),
       el("div", { class: "empty-hint" }, [
-        "Mueve/rota el grupo con el gizmo. Las piezas se transforman juntas.",
+        "Mueve/rota el grupo con el gizmo o con los números exactos de arriba. Las piezas se transforman juntas.",
       ]),
     );
   }

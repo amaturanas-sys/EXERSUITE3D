@@ -24,6 +24,7 @@ import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
 import { instalarSonidoUI } from "./ui/sonido";
+import { crearBarraHerramientas } from "./ui/ToolQuickBar";
 
 const app = document.getElementById("app")!;
 // Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.
@@ -204,7 +205,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   // Paneles plegables desde su título (esquema F4).
   for (const p of [palette.root, inspector.root, joints.root, posePanel.root]) hacerPlegable(p);
 
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, precise.root, tabStrip];
+  // Barra de herramientas rápidas (v0.2.13): selección, gizmo y orbitar.
+  const toolQuick = crearBarraHerramientas(ed);
+
+  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, toolQuick, precise.root, tabStrip];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),

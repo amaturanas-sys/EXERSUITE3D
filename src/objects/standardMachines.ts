@@ -35,7 +35,8 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     id: "banco-plano",
     label: "Banco plano",
     icon: "🛋️",
-    description: "Banco de 120×45×30 cm tapizado, para press y accesorios.",
+    description:
+      "Banco plano clásico del diseñador (120×41×30): colchoneta tapizada sobre espina central, pata trasera en L, pata delantera en arco y bisagras de plegado bloqueadas.",
   },
   {
     id: "torre-polea",
@@ -178,19 +179,71 @@ const JAULA: PiezaSpec[] = [
   { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [36.8, 75, 0] },
 ];
 
+// BANCO PLANO CLÁSICO del diseñador — bancoplanoclasico.prefab.json
+// (v0.2.13): piezas VERBATIM del archivo. Colchoneta sobre espina central
+// trazada, pata trasera en L con pie corrido, pata delantera en arco con
+// dos pies y bisagras de plegado BLOQUEADAS. No editar a mano: ante una
+// nueva corrección, reemplazar por el contenido del .prefab.json siguiente.
 const BANCO: PiezaSpec[] = [
-  { comp: "asiento", nombre: "Colchoneta", params: { width: 120, height: 8, depth: 30 }, pos: [0, 41, 0] },
-  ...([[-52, -9], [52, -9], [-52, 9], [52, 9]] as const).map(
-    ([x, z], i): PiezaSpec => ({
-      comp: "prim-box",
-      nombre: `Pata ${i + 1}`,
-      params: { width: 6, height: 37, depth: 6 },
-      material: "acero-negro",
-      pos: [x, 18.5, z],
-    }),
-  ),
-  { comp: "prim-box", nombre: "Pie izq.", params: { width: 8, height: 4, depth: 34 }, material: "acero-negro", pos: [-52, 2, 0] },
-  { comp: "prim-box", nombre: "Pie der.", params: { width: 8, height: 4, depth: 34 }, material: "acero-negro", pos: [52, 2, 0] },
+  { comp: "asiento", nombre: "Colchoneta", params: { kind: "box", width: 120, height: 8, depth: 30 }, material: "tapizado", pos: [0, 36.7153, 0], rotq: [0, 0, 0, 1], fija: true, masaKg: 2 },
+  { comp: "prim-box", nombre: "Pie izq.", params: { kind: "box", width: 8, height: 4, depth: 34 }, material: "acero-negro", pos: [-52, 2, 0], rotq: [0, 0, 0, 1], fija: true, masaKg: 1 },
+  { comp: "prim-box", nombre: "Pie der.", params: { kind: "box", width: 8, height: 4, depth: 15 }, material: "acero-negro", pos: [52, 2, 22], rotq: [0, 0, 0, 1], fija: true, masaKg: 1 },
+  {
+    comp: "pilar-linea",
+    nombre: "Pata trasera en L",
+    params: {
+      kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5,
+      path: [
+        [0, -15.842691599752307, 0],
+        [0, -7.921345799876153, 0],
+        [0.4249177221894058, 0, 0],
+        [6.404642114110054, 7.921345799876153, 0],
+        [23.567640633304404, 11.882018699814225, 0],
+      ],
+    },
+    material: "acero-negro", pos: [-52, 19.8427, 0], rotq: [0, 0, 0, 1], fija: true, masaKg: 0,
+  },
+  {
+    comp: "pilar-linea",
+    nombre: "Espina central",
+    params: {
+      kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5,
+      path: [
+        [0, -41.40874442181292, 0],
+        [0, -20.70437221090646, 0],
+        [0, 0, 0],
+        [0, 20.704372210906463, 0],
+        [0, 41.40874442181292, 0],
+      ],
+    },
+    material: "acero-negro", pos: [12.9764, 31.7247, 0], rotq: [0, 0, -0.707107, 0.707107], fija: true, masaKg: 0,
+  },
+  { comp: "prim-box", nombre: "Pie delantero", params: { kind: "box", width: 8, height: 4, depth: 15 }, material: "acero-negro", pos: [52, 2, -22], rotq: [0, 0, 0, 1], fija: true, masaKg: 1 },
+  {
+    comp: "pilar-linea",
+    nombre: "Pata delantera en arco",
+    params: {
+      kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5,
+      path: [
+        [7.105427357601002e-15, -22.000000000000004, -11.334075056531898],
+        [1.4210854715202004e-14, -19.796227117289938, 1.1552483797550241],
+        [1.4210854715202004e-14, -18.05202136237298, 13.644571816041948],
+        [7.105427357601002e-15, 3.6087232332610226e-15, 16.252244608597586],
+        [1.4210854715202004e-14, 18.250754929127822, 13.314696160547035],
+        [1.4210854715202004e-14, 20.528940069057676, 0.9903105520075659],
+        [7.105427357601002e-15, 22.000000000000004, -11.334075056531907],
+      ],
+    },
+    material: "acero-negro", pos: [52, 15.3341, 0], rotq: [-0.707107, 0, 0, 0.707107], fija: true, masaKg: 0,
+  },
+];
+
+// Bisagras de PLEGADO del banco clásico (bloqueadas en uso): la pata
+// trasera pliega contra la espina y el arco delantero contra sus pies.
+const BANCO_UNIONES: UnionSpec[] = [
+  { tipo: "bisagra", fija: 4, movil: 3, eje: "z", ancla: [-28.4324, 31.7247, 0], min: -90, max: 0, limites: true, bloqueada: true },
+  { tipo: "bisagra", fija: 5, movil: 6, eje: "z", ancla: [52, 4, -22], min: -90, max: 0, limites: true, bloqueada: true },
+  { tipo: "bisagra", fija: 2, movil: 6, eje: "z", ancla: [52, 4, 22], min: -90, max: 0, limites: true, bloqueada: true },
 ];
 
 const TORRE: PiezaSpec[] = [
@@ -309,7 +362,7 @@ export interface MaquinaSpec {
 const SPECS: Record<string, MaquinaSpec> = {
   "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK },
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
-  "banco-plano": { label: "Banco plano", piezas: BANCO },
+  "banco-plano": { label: "Banco plano", piezas: BANCO, uniones: BANCO_UNIONES },
   "torre-polea": { label: "Torre de polea", piezas: TORRE },
   // Las guías del carrier las RECONOCE el motor físico (tubos que atraviesan
   // los manguitos) — no necesitan unión manual.

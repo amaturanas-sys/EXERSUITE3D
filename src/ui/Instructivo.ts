@@ -58,6 +58,8 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "La barra agrupa las herramientas en menús: Archivo, Edición, Selección, Ver y Ejes.",
       "Toca para seleccionar; Ctrl+clic (o Shift) añade a la selección; Área (menú Selección) dibuja un recuadro que selecciona todo lo que abarca.",
       "Mover/Rotar/Escalar cambian el gizmo y Arrastrar lleva las piezas con el dedo (menú Selección).",
+      "BARRA DE HERRAMIENTAS RÁPIDAS (borde derecho): seis atajos con icono — selección única, selección de área, mover, rotar, escalar y orbitar. Con selección u orbitar el gizmo queda inactivo (nada se arrastra por accidente); con orbitar el toque solo mueve la cámara.",
+      "GRUPOS Y MULTISELECCIÓN EN NÚMEROS EXACTOS: con un grupo o varias piezas seleccionadas, Propiedades muestra la posición del centro (cm), la rotación del bloque (grados) y la escala (×) — escribe el valor y el bloque completo se transforma exactamente, igual que con el gizmo.",
       "ARRASTRE PRECISO (menú Selección): abre una ventana con cursores en pantalla (◀ ▶ mueven a los lados; ▲ ▼ suben/bajan o, con el switch de ejes, adelante/atrás). También sirven las flechas del teclado, la tecla C cambia el eje y Shift da pasos de 10 cm.",
       "Teclas 1/2/3 (o el menú Ejes): bloquean TODO el trazado a un eje; 0 o Esc lo libera. La línea inferior muestra el desplazamiento en cm.",
       "Copiar/Pegar/Duplicar/Eliminar y Agrupar/Desagrupar viven en el menú Edición (Ctrl+C/V/D y Supr).",

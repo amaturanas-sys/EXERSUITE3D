@@ -5,6 +5,34 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.13] — 2026-07-27
+
+El banco plano clásico del diseñador entra a la biblioteca, los grupos se
+transforman con números exactos y una barra de seis herramientas rápidas
+evita los arrastres inadvertidos.
+
+### Añadido
+
+- **Banco plano CLÁSICO de fábrica**: la máquina estándar "Banco plano"
+  ahora es el modelo del diseñador (bancoplanoclasico.prefab.json,
+  verbatim): colchoneta tapizada de 120×30 sobre espina central trazada,
+  pata trasera en L con pie corrido, pata delantera en arco con dos pies
+  y tres bisagras de plegado bloqueadas.
+- **Transformación NUMÉRICA del grupo**: con un grupo o una
+  multiselección, Propiedades muestra la pose exacta del gizmo colectivo
+  — posición del centro (cm), rotación del bloque (grados) y escala (×),
+  acumuladas desde que se tomó la selección — y editable en números: el
+  bloque completo se mueve, gira alrededor de su centro o se escala con
+  precisión, igual que arrastrando el gizmo.
+- **Barra de HERRAMIENTAS RÁPIDAS** (borde derecho del visor): seis
+  atajos cuadrados con icono — selección única, selección de área,
+  mover, rotar, escalar y orbitar — con la herramienta activa marcada.
+  Cambiar de herramienta es explícito y fluido: con selección u orbitar
+  el gizmo de piezas queda inactivo y oculto (nada se mueve por
+  accidente), y con orbitar el toque solo maneja la cámara sin cambiar
+  la selección. Los atajos de teclado G/W (mover), R/E (rotar) y S
+  (escalar) seleccionan la herramienta correspondiente.
+
 ## [0.2.12] — 2026-07-26
 
 El brazo de seguridad se sostiene de DOS pilares, como en la máquina real.
