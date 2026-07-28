@@ -24,7 +24,7 @@ import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
 import { instalarSonidoUI } from "./ui/sonido";
-import { crearBarraHerramientas, crearBotonesHerramientas } from "./ui/ToolQuickBar";
+import { crearBarraHerramientas } from "./ui/ToolQuickBar";
 
 const app = document.getElementById("app")!;
 // Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.
@@ -164,11 +164,11 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Ventana de herramientas");
   const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
 
-  // VENTANA IZQUIERDA APILADA (v0.2.13): cinco barras colapsables en una
-  // sola columna con su propia barra de deslizamiento — Toolbox (las seis
-  // herramientas rápidas), Piezas disponibles, Propiedades, Conexiones y
-  // Arrastre preciso. Las tres últimas dejan de vivir en pestañas
-  // laterales: todo el flujo de trabajo cabe en la misma ventana.
+  // VENTANA IZQUIERDA APILADA (v0.2.13): UNA sola ventana con el logo y
+  // cuatro barras colapsables del mismo estilo que "Piezas disponibles" —
+  // Piezas, Propiedades, Conexiones y Arrastre preciso — circunscritas a
+  // sus márgenes y con una única barra de deslizamiento. Las pestañas
+  // laterales desaparecen; el Toolbox vive en la barra flotante derecha.
   const leftStack = document.createElement("div");
   leftStack.id = "left-stack";
 
@@ -179,12 +179,6 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     marca.append(brand);
     leftStack.append(marca);
   }
-
-  // Sección TOOLBOX: los seis botones de herramienta en fila.
-  const toolbox = el("aside", { class: "panel", id: "toolbox" }, [
-    el("div", { class: "panel-title" }, ["Toolbox"]),
-    crearBotonesHerramientas(ed, "tq-fila"),
-  ]);
 
   // Sección ARRASTRE PRECISO: su ventana vive dentro de la barra; el título
   // la pliega/despliega activando o desactivando la herramienta.
@@ -206,13 +200,12 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
 
   // Paneles plegables desde su título (esquema F4). Propiedades y
   // Conexiones nacen plegadas (antes nacían escondidas en pestañas).
-  hacerPlegable(toolbox);
   hacerPlegable(palette.root);
   hacerPlegable(inspector.root, true);
   hacerPlegable(joints.root, true);
   hacerPlegable(posePanel.root);
 
-  leftStack.append(toolbox, palette.root, inspector.root, joints.root, seccionArrastre);
+  leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre);
 
   // Barra de herramientas rápidas flotante (v0.2.13): espejo del Toolbox.
   const toolQuick = crearBarraHerramientas(ed);

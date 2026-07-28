@@ -14,15 +14,16 @@ cinco barras colapsables.
 
 ### Añadido
 
-- **Ventana izquierda APILADA**: la columna de comandos reúne CINCO
-  barras colapsables — TOOLBOX (las seis herramientas rápidas), PIEZAS
-  DISPONIBLES, PROPIEDADES, CONEXIONES y ARRASTRE PRECISO — con su
-  propia barra de deslizamiento, buen margen y texto completo. Las
-  pestañas laterales de Propiedades/Conexiones/Arrastre desaparecen:
-  esos paneles viven ahora dentro de la misma ventana (tocar el título
-  de cada barra la pliega o despliega). En pantallas angostas la ventana
-  entera es un cajón (botón 🧩) y la barra de zoom se esconde mientras
-  está abierto para no interceptar los toques.
+- **Ventana izquierda ÚNICA**: la columna de comandos es UNA sola
+  ventana con el logo y cuatro barras colapsables del mismo estilo que
+  "Piezas disponibles" — PIEZAS DISPONIBLES, PROPIEDADES, CONEXIONES y
+  ARRASTRE PRECISO — circunscritas a sus márgenes, con buen espaciado,
+  texto completo y su propia barra de deslizamiento. Las pestañas
+  laterales de Propiedades/Conexiones/Arrastre desaparecen: tocar el
+  título de cada barra la pliega o despliega. En pantallas angostas la
+  ventana entera es un cajón (botón 🧩) y la barra de zoom se esconde
+  mientras está abierto para no interceptar los toques. El Toolbox de
+  seis herramientas vive en su barra vertical del borde derecho.
 - **Barra superior en varias filas**: si las herramientas no caben en
   una fila, la barra salta de fila en vez de ocultarlas o exigir
   desplazamiento — todos los textos y botones quedan visibles, y la

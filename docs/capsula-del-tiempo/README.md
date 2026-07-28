@@ -343,7 +343,7 @@ v0.2.10: el jalón bajo del TTP con libertad de vectores y transmisión completa
 - [`v212-doblado-pinholes.png`](2026-07-26/v212-doblado-pinholes.png)
 - [`v212-doblado-frontal.png`](2026-07-26/v212-doblado-frontal.png)
 
-## 2026-07-27 — 7 capturas
+## 2026-07-27 — 8 capturas
 
 v0.2.12: calce en caras inclinadas (cada tramo recto de una pieza doblada aporta su propia grilla y el accesorio se alinea con su eje) y accesorios calzados como grupo físico (fijados por su pin, viajan solidarios con la estructura móvil). v0.2.13: banco plano clásico de fábrica y barra de herramientas rápidas.
 
@@ -352,5 +352,6 @@ v0.2.12: calce en caras inclinadas (cada tramo recto de una pieza doblada aporta
 - [`v213-banco-clasico.png`](2026-07-27/v213-banco-clasico.png)
 - [`v213-toolbar.png`](2026-07-27/v213-toolbar.png)
 - [`v213-ventana-apilada-desktop.png`](2026-07-27/v213-ventana-apilada-desktop.png)
+- [`v213-ventana-unica-desktop.png`](2026-07-27/v213-ventana-unica-desktop.png)
 - [`v213-ventana-tablet.png`](2026-07-27/v213-ventana-tablet.png)
 - [`v213-ventana-secciones.png`](2026-07-27/v213-ventana-secciones.png)

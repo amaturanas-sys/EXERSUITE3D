@@ -240,9 +240,10 @@ body.simulator-mode #viewport {
   z-index: 9;
   overflow: hidden;
 }
-/* ---- v0.2.13 · VENTANA IZQUIERDA APILADA: cinco barras colapsables
-   (Toolbox, Piezas disponibles, Propiedades, Conexiones, Arrastre preciso)
-   en una sola columna con SU PROPIA barra de deslizamiento. Empieza justo
+/* ---- v0.2.13 · VENTANA IZQUIERDA APILADA: UNA sola ventana con el logo
+   y cuatro barras colapsables del MISMO estilo que "Piezas disponibles"
+   (Piezas, Propiedades, Conexiones, Arrastre preciso), circunscritas a
+   sus márgenes y con su propia barra de deslizamiento. Empieza justo
    bajo la barra superior (que puede ocupar varias filas: --toolbar-h). */
 #left-stack {
   position: absolute;
@@ -252,13 +253,17 @@ body.simulator-mode #viewport {
   width: var(--panel-w);
   display: flex;
   flex-direction: column;
-  gap: 10px;
   z-index: 12;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: thin;
-  padding-right: 3px;
+  background: rgba(30, 33, 40, 0.94);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
 }
+/* Las barras internas se APLANAN: sin tarjeta propia — cada título es una
+   franja al estilo de "Piezas disponibles" dentro de la misma ventana. */
 #left-stack .panel {
   position: static;
   top: auto;
@@ -267,6 +272,11 @@ body.simulator-mode #viewport {
   max-height: none;
   flex: 0 0 auto;
   overflow: visible;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  backdrop-filter: none;
+  border-top: 1px solid var(--border);
 }
 #left-stack .panel-body {
   overflow: visible;
@@ -275,6 +285,7 @@ body.simulator-mode #viewport {
 }
 #left-stack .seccion-brand {
   padding: 0;
+  border-top: none;
 }
 /* La ventana de Arrastre preciso vive DENTRO de su barra (sin flotar). */
 #left-stack .arrastre-panel {
@@ -288,27 +299,6 @@ body.simulator-mode #viewport {
 }
 #left-stack .arr-header {
   display: none; /* el título de la BARRA manda: pliega/despliega */
-}
-/* Fila de botones del Toolbox. */
-.tq-fila {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px;
-}
-.tq-fila .tq-btn {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-}
-.tq-fila .tq-btn.activa {
-  background: #2f7dd1;
-  color: #fff;
-  border-color: #2f7dd1;
 }
 
 .joints-actions {
