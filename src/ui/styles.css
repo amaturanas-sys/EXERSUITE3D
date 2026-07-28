@@ -59,9 +59,19 @@ body,
 #toolbar {
   position: absolute;
   top: calc(10px + var(--safe-t));
-  left: 50%;
-  transform: translateX(-50%);
+  /* Centrado por márgenes (left/right 0 + fit-content): así el ancho
+     disponible es TODA la pantalla y la barra solo salta de fila cuando
+     de verdad no cabe (left:50% la partía a media pantalla). */
+  left: 0;
+  right: 0;
+  width: fit-content;
+  margin-inline: auto;
   display: flex;
+  /* v0.2.13: si las herramientas no caben en una fila, la barra SALTA DE
+     FILA (nada queda oculto ni requiere desplazar); la ventana izquierda
+     empieza debajo gracias a --toolbar-h. */
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 6px;
   padding: 6px;
   background: rgba(30, 33, 40, 0.92);
@@ -70,10 +80,7 @@ body,
   backdrop-filter: blur(8px);
   z-index: 10;
   max-width: calc(100vw - 16px - var(--safe-l) - var(--safe-r));
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 #toolbar::-webkit-scrollbar {
   height: 5px;
@@ -179,8 +186,7 @@ select.tool-select {
  * herramientas) para liberar recursos y dejar solo las herramientas de
  * simulacion; vuelve al detenerla.
  */
-body.simulating #palette,
-body.simulating #right-dock,
+body.simulating #left-stack,
 body.simulating #poses,
 body.simulating #hud,
 body.simulating .edit-only {
@@ -234,33 +240,75 @@ body.simulator-mode #viewport {
   z-index: 9;
   overflow: hidden;
 }
-#palette {
-  left: calc(12px + var(--safe-l));
-  /* Empieza bajo la barra superior para no quedar tapada por ella. */
-  top: calc(64px + var(--safe-t));
-}
-
-/* Columna derecha apilada: inspector + conexiones. */
-#right-dock {
+/* ---- v0.2.13 · VENTANA IZQUIERDA APILADA: cinco barras colapsables
+   (Toolbox, Piezas disponibles, Propiedades, Conexiones, Arrastre preciso)
+   en una sola columna con SU PROPIA barra de deslizamiento. Empieza justo
+   bajo la barra superior (que puede ocupar varias filas: --toolbar-h). */
+#left-stack {
   position: absolute;
-  top: calc(64px + var(--safe-t));
-  right: calc(12px + var(--safe-r));
-  bottom: calc(48px + var(--safe-b));
+  left: calc(12px + var(--safe-l));
+  top: calc(var(--toolbar-h, 54px) + 16px + var(--safe-t));
+  bottom: calc(12px + var(--safe-b));
   width: var(--panel-w);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  z-index: 9;
+  gap: 10px;
+  z-index: 12;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  padding-right: 3px;
 }
-#right-dock .panel {
+#left-stack .panel {
   position: static;
-  flex: 1 1 0;
-  min-height: 0;
+  top: auto;
+  bottom: auto;
   width: 100%;
+  max-height: none;
+  flex: 0 0 auto;
+  overflow: visible;
 }
-#joints {
-  flex: 0 1 auto;
-  max-height: 50%;
+#left-stack .panel-body {
+  overflow: visible;
+  max-height: none;
+  flex: none;
+}
+#left-stack .seccion-brand {
+  padding: 0;
+}
+/* La ventana de Arrastre preciso vive DENTRO de su barra (sin flotar). */
+#left-stack .arrastre-panel {
+  position: static;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: auto;
+  margin: 8px;
+  box-shadow: none;
+}
+#left-stack .arr-header {
+  display: none; /* el título de la BARRA manda: pliega/despliega */
+}
+/* Fila de botones del Toolbox. */
+.tq-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+}
+.tq-fila .tq-btn {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+}
+.tq-fila .tq-btn.activa {
+  background: #2f7dd1;
+  color: #fff;
+  border-color: #2f7dd1;
 }
 
 .joints-actions {
@@ -306,11 +354,10 @@ body.simulator-mode #viewport {
   border-radius: 6px;
 }
 
-/* Panel de posturas (flotante, junto a la paleta). Se corre a la DERECHA de
-   la tira de pestañas laterales (~34 px) para no obstruirlas jamás. */
+/* Panel de posturas (flotante, junto a la ventana izquierda apilada). */
 #poses {
   top: auto;
-  left: calc(var(--panel-w) + 58px + var(--safe-l));
+  left: calc(var(--panel-w) + 24px + var(--safe-l));
   bottom: calc(48px + var(--safe-b));
   width: 262px;
   max-height: min(340px, 46vh);
@@ -1136,20 +1183,12 @@ body.simulating .dock-toggle {
   .dock-toggle {
     display: block;
   }
-  #palette {
+  #left-stack {
     transform: translateX(calc(-100% - 24px));
     transition: transform 0.22s ease;
     z-index: 13;
   }
-  body.show-left #palette {
-    transform: none;
-  }
-  #right-dock {
-    transform: translateX(calc(100% + 24px));
-    transition: transform 0.22s ease;
-    z-index: 13;
-  }
-  body.show-right #right-dock {
+  body.show-left #left-stack {
     transform: none;
   }
   #poses {
@@ -1531,6 +1570,11 @@ body.simulating .dock-toggle {
   cursor: pointer;
 }
 body.simulating #zoom-bar { display: none; }
+/* Con el cajón izquierdo abierto en pantallas angostas, la barra de zoom
+   quedaría ENCIMA de la ventana e interceptaría los toques: se esconde. */
+@media (max-width: 680px) {
+  body.show-left #zoom-bar { display: none; }
+}
 
 /* ---- v0.2.13 · Barra de herramientas rápidas: seis atajos cuadrados con
    icono (selección única, área, mover, rotar, escalar, orbitar), anclada
@@ -1634,48 +1678,9 @@ body.simulating .arrastre-panel { display: none !important; }
 .field .row { flex-wrap: wrap; }
 .field .row .tool { flex: 1 1 auto; min-width: 0; }
 
-/* ---- v0.2.3 · Pestañas laterales verticales (costado izquierdo): abren y
-   cierran on demand las ventanas de Propiedades, Conexiones y Arrastre
-   preciso. En pantallas anchas la tira queda junto a la paleta; cuando la
-   paleta pasa a cajón, la tira se pega al borde. */
-#tab-strip {
-  position: fixed;
-  left: calc(16px + var(--safe-l) + var(--panel-w));
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 24;
-}
-.side-tab {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  padding: 12px 7px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #cdd3dd;
-  background: #1c212b;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px 0 0 10px;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-}
-.side-tab.active {
-  background: #2f7dd1;
-  color: #fff;
-  border-color: #2f7dd1;
-}
-body.simulating #tab-strip { display: none; }
-@media (max-width: 680px) {
-  #tab-strip { left: 0; }
-}
-
-/* Las ventanas responden a su pestaña (un click muestra, otro esconde). */
-body:not(.show-prop) #inspector { display: none; }
-body:not(.show-conx) #joints { display: none; }
+/* v0.2.13: las pestañas laterales de Propiedades/Conexiones/Arrastre
+   preciso desaparecen — esos paneles viven como barras colapsables de la
+   ventana izquierda apilada (#left-stack). */
 
 /* ---- v0.2.3 · Pie de la Home: versión, crédito y soporte */
 .land-footer {

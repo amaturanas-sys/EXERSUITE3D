@@ -24,7 +24,7 @@ import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
 import { instalarSonidoUI } from "./ui/sonido";
-import { crearBarraHerramientas } from "./ui/ToolQuickBar";
+import { crearBarraHerramientas, crearBotonesHerramientas } from "./ui/ToolQuickBar";
 
 const app = document.getElementById("app")!;
 // Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.
@@ -34,13 +34,14 @@ instalarSonidoUI();
  * Panel plegable (F4 v0.2.0): tocar su título lo colapsa a solo la cabecera
  * (y lo reexpande), en cualquier tamaño de pantalla.
  */
-function hacerPlegable(panel: HTMLElement): void {
+function hacerPlegable(panel: HTMLElement, inicialColapsado = false): void {
   const title = panel.querySelector(".panel-title");
   if (!title) return;
   const chev = document.createElement("span");
   chev.className = "plegar";
-  chev.textContent = "▾";
+  chev.textContent = inicialColapsado ? "▸" : "▾";
   title.append(chev);
+  if (inicialColapsado) panel.classList.add("colapsado");
   title.addEventListener("click", () => {
     const on = panel.classList.toggle("colapsado");
     chev.textContent = on ? "▸" : "▾";
@@ -138,48 +139,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   aplicarModo();
   ed.bus.on("workspaceChanged", aplicarModo);
 
-  // PESTAÑAS LATERALES (v0.2.3): Propiedades, Conexiones y Arrastre preciso
-  // se muestran on demand desde etiquetas verticales en el costado izquierdo
-  // — un click abre la ventana, otro click la esconde.
-  const tabStrip = document.createElement("div");
-  tabStrip.id = "tab-strip";
-  const mkTab = (etiqueta: string, isOn: () => boolean, alternar: () => void) => {
-    const b = document.createElement("button");
-    b.className = "side-tab";
-    b.textContent = etiqueta;
-    b.classList.toggle("active", isOn());
-    b.addEventListener("click", () => {
-      alternar();
-      b.classList.toggle("active", isOn());
-    });
-    return b;
-  };
-  // Las tres ventanas arrancan ESCONDIDAS: se llaman desde sus pestañas.
-  const tabProp = mkTab(
-    tt("Propiedades", "Properties"),
-    () => document.body.classList.contains("show-prop"),
-    () => document.body.classList.toggle("show-prop"),
-  );
-  const tabConx = mkTab(
-    tt("Conexiones", "Connections"),
-    () => document.body.classList.contains("show-conx"),
-    () => document.body.classList.toggle("show-conx"),
-  );
-  const tabArr = mkTab(
-    tt("Arrastre preciso", "Precise drag"),
-    () => precise.isActiva(),
-    () => precise.toggle(),
-  );
-  precise.onCambio = () => tabArr.classList.toggle("active", precise.isActiva());
-  tabStrip.append(tabProp, tabConx, tabArr);
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
   const posePanel = new PosePanel(ed);
   const hud = new MeasurementHUD(ed);
-
-  const rightDock = document.createElement("div");
-  rightDock.id = "right-dock";
-  rightDock.append(inspector.root, joints.root);
 
   // Barra de simulación del Builder: aparece al correr la física (la UI de
   // edición se oculta por CSS) con perspectivas, zoom y la mano interactiva.
@@ -198,22 +161,77 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     });
     return b;
   };
-  const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Piezas disponibles");
-  const toggleRight = dockToggle("toggle-right", "🧰", "show-right", "Propiedades y conexiones");
+  const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Ventana de herramientas");
   const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
 
-  // Paneles plegables desde su título (esquema F4).
-  for (const p of [palette.root, inspector.root, joints.root, posePanel.root]) hacerPlegable(p);
+  // VENTANA IZQUIERDA APILADA (v0.2.13): cinco barras colapsables en una
+  // sola columna con su propia barra de deslizamiento — Toolbox (las seis
+  // herramientas rápidas), Piezas disponibles, Propiedades, Conexiones y
+  // Arrastre preciso. Las tres últimas dejan de vivir en pestañas
+  // laterales: todo el flujo de trabajo cabe en la misma ventana.
+  const leftStack = document.createElement("div");
+  leftStack.id = "left-stack";
 
-  // Barra de herramientas rápidas (v0.2.13): selección, gizmo y orbitar.
+  // La marca corona la ventana (sale de la paleta, que ahora es una barra más).
+  const brand = palette.root.querySelector(".brand-header");
+  if (brand) {
+    const marca = el("div", { class: "panel seccion-brand" }, []);
+    marca.append(brand);
+    leftStack.append(marca);
+  }
+
+  // Sección TOOLBOX: los seis botones de herramienta en fila.
+  const toolbox = el("aside", { class: "panel", id: "toolbox" }, [
+    el("div", { class: "panel-title" }, ["Toolbox"]),
+    crearBotonesHerramientas(ed, "tq-fila"),
+  ]);
+
+  // Sección ARRASTRE PRECISO: su ventana vive dentro de la barra; el título
+  // la pliega/despliega activando o desactivando la herramienta.
+  const tituloArrastre = el("div", { class: "panel-title" }, [
+    tt("Arrastre preciso", "Precise drag"),
+  ]);
+  const chevArrastre = el("span", { class: "plegar" }, ["▸"]);
+  tituloArrastre.append(chevArrastre);
+  const seccionArrastre = el("aside", { class: "panel colapsado", id: "sec-arrastre" }, [
+    tituloArrastre,
+  ]);
+  seccionArrastre.append(precise.root);
+  tituloArrastre.addEventListener("click", () => precise.toggle());
+  precise.onCambio = () => {
+    const on = precise.isActiva();
+    seccionArrastre.classList.toggle("colapsado", !on);
+    chevArrastre.textContent = on ? "▾" : "▸";
+  };
+
+  // Paneles plegables desde su título (esquema F4). Propiedades y
+  // Conexiones nacen plegadas (antes nacían escondidas en pestañas).
+  hacerPlegable(toolbox);
+  hacerPlegable(palette.root);
+  hacerPlegable(inspector.root, true);
+  hacerPlegable(joints.root, true);
+  hacerPlegable(posePanel.root);
+
+  leftStack.append(toolbox, palette.root, inspector.root, joints.root, seccionArrastre);
+
+  // Barra de herramientas rápidas flotante (v0.2.13): espejo del Toolbox.
   const toolQuick = crearBarraHerramientas(ed);
 
-  editorNodes = [canvas, palette.root, toolbar.root, rightDock, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, toggleRight, togglePoses, zoomBar, toolQuick, precise.root, tabStrip];
+  // La barra superior puede ocupar VARIAS FILAS (v0.2.13): su altura real
+  // se publica como --toolbar-h para que la ventana izquierda empiece justo
+  // debajo, sin quedar tapada.
+  const altoToolbar = new ResizeObserver(() => {
+    document.documentElement.style.setProperty("--toolbar-h", `${toolbar.root.offsetHeight}px`);
+  });
+  altoToolbar.observe(toolbar.root);
+
+  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),
     () => toolbar.dispose(),
     () => perfPanel.dispose(),
+    () => altoToolbar.disconnect(),
   ];
   app.append(...editorNodes);
 
@@ -303,7 +321,6 @@ async function goHome(): Promise<void> {
       "simulator-mode",
       "simulating",
       "show-left",
-      "show-right",
       "show-poses",
     );
     // No retener el editor destruido desde la consola de depuración.

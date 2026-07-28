@@ -8,10 +8,25 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 ## [0.2.13] — 2026-07-27
 
 El banco plano clásico del diseñador entra a la biblioteca, los grupos se
-transforman con números exactos y una barra de seis herramientas rápidas
-evita los arrastres inadvertidos.
+transforman con números exactos, una barra de seis herramientas rápidas
+evita los arrastres inadvertidos y la ventana izquierda se reorganiza en
+cinco barras colapsables.
 
 ### Añadido
+
+- **Ventana izquierda APILADA**: la columna de comandos reúne CINCO
+  barras colapsables — TOOLBOX (las seis herramientas rápidas), PIEZAS
+  DISPONIBLES, PROPIEDADES, CONEXIONES y ARRASTRE PRECISO — con su
+  propia barra de deslizamiento, buen margen y texto completo. Las
+  pestañas laterales de Propiedades/Conexiones/Arrastre desaparecen:
+  esos paneles viven ahora dentro de la misma ventana (tocar el título
+  de cada barra la pliega o despliega). En pantallas angostas la ventana
+  entera es un cajón (botón 🧩) y la barra de zoom se esconde mientras
+  está abierto para no interceptar los toques.
+- **Barra superior en varias filas**: si las herramientas no caben en
+  una fila, la barra salta de fila en vez de ocultarlas o exigir
+  desplazamiento — todos los textos y botones quedan visibles, y la
+  ventana izquierda empieza siempre justo debajo de su altura real.
 
 - **Banco plano CLÁSICO de fábrica**: la máquina estándar "Banco plano"
   ahora es el modelo del diseñador (bancoplanoclasico.prefab.json,

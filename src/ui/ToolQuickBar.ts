@@ -30,9 +30,15 @@ const ICONOS: Record<HerramientaRapida, string> = {
   ),
 };
 
-export function crearBarraHerramientas(editor: Editor): HTMLElement {
+/**
+ * Crea el juego de SEIS BOTONES de herramienta (sin posicionamiento):
+ * lo usan la barra flotante del borde derecho y la sección TOOLBOX de la
+ * ventana izquierda — todas las instancias quedan sincronizadas por el
+ * evento herramientaChanged.
+ */
+export function crearBotonesHerramientas(editor: Editor, clase = ""): HTMLElement {
   const bar = document.createElement("div");
-  bar.id = "tool-quick";
+  if (clase) bar.className = clase;
   const defs: [HerramientaRapida, string][] = [
     ["seleccion", tt("Selección única: el clic solo selecciona", "Single select: click only selects")],
     ["area", tt("Selección de área (recuadro)", "Area select (marquee)")],
@@ -57,5 +63,11 @@ export function crearBarraHerramientas(editor: Editor): HTMLElement {
   };
   marcar(editor.getHerramienta());
   editor.bus.on("herramientaChanged", ({ tool }) => marcar(tool));
+  return bar;
+}
+
+export function crearBarraHerramientas(editor: Editor): HTMLElement {
+  const bar = crearBotonesHerramientas(editor);
+  bar.id = "tool-quick";
   return bar;
 }
