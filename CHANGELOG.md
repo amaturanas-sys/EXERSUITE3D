@@ -5,7 +5,7 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.2.13] — 2026-07-27
+## [0.2.13] — 2026-07-28
 
 El banco plano clásico del diseñador entra a la biblioteca, los grupos se
 transforman con números exactos, una barra de seis herramientas rápidas
