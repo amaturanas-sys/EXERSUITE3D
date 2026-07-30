@@ -12,6 +12,19 @@ import type { Cable } from "./cables";
 
 const DEG2RAD = Math.PI / 180;
 
+/**
+ * Cuerda de seguridad vista por el motor: extremos en MUNDO (cm), caída de
+ * la catenaria y radio del eslabón. `movil` marca las que cuelgan de piezas
+ * dinámicas (no se materializan).
+ */
+export interface RopeFisica {
+  a: [number, number, number];
+  b: [number, number, number];
+  sag: number;
+  radio: number;
+  movil: boolean;
+}
+
 interface CableEntry {
   bodies: R.RigidBody[];
   /** Anclaje local de cada nodo en el frame del cuerpo, en METROS. */
@@ -76,7 +89,12 @@ export class PhysicsWorld {
   }
 
   /** Construye el mundo a partir del estado actual de los objetos, joints y cables. */
-  build(objects: SceneObject[], joints: Joint[] = [], cables: Cable[] = []): void {
+  build(
+    objects: SceneObject[],
+    joints: Joint[] = [],
+    cables: Cable[] = [],
+    ropes: RopeFisica[] = [],
+  ): void {
     // Libera un mundo anterior si build() se reutiliza (si no, fuga WASM y los
     // cables quedarian apuntando a cuerpos de un mundo liberado).
     this.world?.free();
@@ -91,10 +109,13 @@ export class PhysicsWorld {
     this.drag = null;
     this.world = new RAPIER.World(GRAVITY);
 
-    // Suelo fijo: cara superior en y = 0.
+    // Suelo fijo: cara superior en y = 0. LOSA GRUESA (v0.2.14): 10 m de
+    // espesor — una pieza delgada y rápida (una barra cargada que cae desde
+    // el rack) no puede atravesarla entre dos pasos del solver, como sí
+    // ocurría con la losa de 1 m.
     const ground = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     this.world.createCollider(
-      RAPIER.ColliderDesc.cuboid(50, 0.5, 50).setTranslation(0, -0.5, 0),
+      RAPIER.ColliderDesc.cuboid(60, 5, 60).setTranslation(0, -5, 0),
       ground,
     );
 
@@ -108,7 +129,56 @@ export class PhysicsWorld {
     this.detectarCalzados();
     for (const joint of joints) this.addJoint(joint);
     for (const cable of cables) this.addCable(cable);
+    // CADENAS Y CORREAS DE SEGURIDAD (v0.2.14): dejan de ser adorno visual —
+    // se materializan como una cuerda de cápsulas que DETIENE la barra.
+    for (const r of ropes) this.addRopeBarrier(r);
     this.detectarGuias();
+  }
+
+  /**
+   * CADENA/CORREA DE SEGURIDAD como BARRERA FÍSICA (v0.2.14): la cuerda se
+   * muestrea a lo largo de su catenaria y cada tramo recibe una cápsula
+   * colisionable. Con los dos extremos anclados a piezas FIJAS (el caso de
+   * las cadenas de seguridad tendidas entre los pilares de un rack) la
+   * barrera es un cuerpo estático: una barra que cae desde las jotas queda
+   * DETENIDA por la cadena, como en la máquina real. Si algún extremo
+   * cuelga de una pieza móvil, la cuerda se deja solo visual (su geometría
+   * cambiaría a cada paso).
+   */
+  private addRopeBarrier(r: RopeFisica): void {
+    if (!this.world || r.movil) return;
+    const a = new THREE.Vector3(r.a[0], r.a[1], r.a[2]);
+    const b = new THREE.Vector3(r.b[0], r.b[1], r.b[2]);
+    const D = a.distanceTo(b);
+    if (D < 1) return;
+    const sag = r.sag; // caída de la catenaria (cm), misma fórmula del visual
+    const N = THREE.MathUtils.clamp(Math.round(D / 8), 4, 40);
+    const punto = (t: number): THREE.Vector3 => {
+      const p = a.clone().lerp(b, t);
+      p.y -= 4 * sag * t * (1 - t); // parábola: máxima caída al centro
+      return p;
+    };
+    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    const radio = Math.max(0.8, r.radio) * S;
+    const eje = new THREE.Vector3();
+    const q = new THREE.Quaternion();
+    for (let i = 0; i < N; i++) {
+      const p0 = punto(i / N);
+      const p1 = punto((i + 1) / N);
+      const medio = p0.clone().add(p1).multiplyScalar(0.5).multiplyScalar(S);
+      const largo = p0.distanceTo(p1) * S;
+      if (largo < 1e-4) continue;
+      eje.copy(p1).sub(p0).normalize();
+      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
+      this.world.createCollider(
+        RAPIER.ColliderDesc.capsule(largo / 2, radio)
+          .setTranslation(medio.x, medio.y, medio.z)
+          .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
+          .setRestitution(0.02)
+          .setFriction(0.9),
+        body,
+      );
+    }
   }
 
   /**
@@ -966,6 +1036,16 @@ export class PhysicsWorld {
    * Agarra una pieza dinámica por el punto de mundo dado (cm), como una mano.
    * Devuelve false si la pieza no existe o no es dinámica.
    */
+  /** Magnitud (N) máxima sostenida por la mano en el agarre actual. */
+  private tensionMaxN = 0;
+  /** |F| filtrada (media móvil exponencial) del agarre actual. */
+  private tensionEMA = 0;
+
+  /** Tensión máxima del agarre actual en kilogramos-fuerza. */
+  tensionManoKg(): number {
+    return this.tensionMaxN / 9.81;
+  }
+
   grab(objectId: string, worldCm: THREE.Vector3): boolean {
     const e = this.bodies.get(objectId);
     if (!e) return false;
@@ -983,6 +1063,8 @@ export class PhysicsWorld {
       .sub(new THREE.Vector3(t.x, t.y, t.z))
       .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w).invert());
     this.drag = { body: e.body, local, target: worldM };
+    this.tensionMaxN = 0; // cada agarre mide su propia tensión
+    this.tensionEMA = 0;
     return true;
   }
 
@@ -1024,13 +1106,29 @@ export class PhysicsWorld {
     // (KD/2√(KP·m) > 1 desde 0,3 kg), así no oscila ni con piezas ligeras.
     const KP = 1500; // N/m
     const KD = 120; // N·s/m
-    const FMAX = 800; // N (~80 kgf: una persona fuerte tirando con el cuerpo)
+    // FUERZA SIEMPRE SUFICIENTE (v0.2.14): la mano ya no topa en un
+    // presupuesto humano — puede levantar y operar cualquier móvil de la
+    // máquina. A cambio, el simulador REPORTA cuánto costó: la tensión
+    // máxima SOSTENIDA del agarre (ver tensionManoKg). La correa de error
+    // y el tope solo protegen la estabilidad numérica del solver.
+    const FMAX = 20_000; // N (~2 toneladas: nunca limita un ejercicio real)
+    const err = new THREE.Vector3(
+      d.target.x - pw.x,
+      d.target.y - pw.y,
+      d.target.z - pw.z,
+    );
+    if (err.length() > 2) err.setLength(2); // correa: sin catapultas
     const F = new THREE.Vector3(
-      (d.target.x - pw.x) * KP - v.x * KD,
-      (d.target.y - pw.y) * KP - v.y * KD,
-      (d.target.z - pw.z) * KP - v.z * KD,
+      err.x * KP - v.x * KD,
+      err.y * KP - v.y * KD,
+      err.z * KP - v.z * KD,
     );
     if (F.length() > FMAX) F.setLength(FMAX);
+    // La LECTURA de tensión es el esfuerzo sostenido, no los picos de un
+    // subpaso del solver: |F| pasa por un filtro exponencial y se registra
+    // el máximo del valor filtrado.
+    this.tensionEMA += 0.08 * (F.length() - this.tensionEMA);
+    if (this.tensionEMA > this.tensionMaxN) this.tensionMaxN = this.tensionEMA;
     d.body.applyImpulseAtPoint(
       { x: F.x * dt, y: F.y * dt, z: F.z * dt },
       { x: pw.x, y: pw.y, z: pw.z },
@@ -1105,6 +1203,8 @@ export class PhysicsWorld {
           }
         }
       }
+      // Guardarraíl al final de CADA subpaso (v0.2.14).
+      this.limitarDesbocados();
     }
     for (const { body, obj } of this.bodies.values()) {
       if (body.isFixed()) continue;
@@ -1125,6 +1225,46 @@ export class PhysicsWorld {
       emp.obj.mesh.quaternion
         .copy(qh)
         .multiply(new THREE.Quaternion(emp.relQ.x, emp.relQ.y, emp.relQ.z, emp.relQ.w));
+    }
+  }
+
+  /**
+   * GUARDARRAÍL DE ESTABILIDAD (v0.2.14). Dos garantías por subpaso:
+   *
+   * 1. NADA se desboca. Al arrancar la simulación, una pieza colocada a ojo
+   *    puede quedar SOLAPADA con otra (una barra apoyada "dentro" de la caja
+   *    de una jota); Rapier resuelve esa penetración con un impulso de
+   *    separación que la lanzaba a decenas de m/s — y una barra delgada a esa
+   *    velocidad atraviesa cualquier cosa. Con la velocidad acotada a 12 m/s
+   *    (43 km/h, muy por encima de cualquier gesto real) la separación sigue
+   *    ocurriendo, pero empujando en vez de disparando.
+   * 2. NADIE cruza el suelo. Si pese a todo un cuerpo aparece por debajo de
+   *    la losa, se devuelve justo sobre el piso con la velocidad anulada: el
+   *    suelo es infranqueable por construcción, no por suerte numérica.
+   */
+  private limitarDesbocados(): void {
+    const VMAX = 12; // m/s
+    const WMAX = 30; // rad/s
+    for (const { body } of this.bodies.values()) {
+      if (!body.isDynamic()) continue;
+      const v = body.linvel();
+      const vLen = Math.hypot(v.x, v.y, v.z);
+      if (vLen > VMAX) {
+        const k = VMAX / vLen;
+        body.setLinvel({ x: v.x * k, y: v.y * k, z: v.z * k }, true);
+      }
+      const w = body.angvel();
+      const wLen = Math.hypot(w.x, w.y, w.z);
+      if (wLen > WMAX) {
+        const k = WMAX / wLen;
+        body.setAngvel({ x: w.x * k, y: w.y * k, z: w.z * k }, true);
+      }
+      const t = body.translation();
+      if (t.y < -0.05) {
+        body.setTranslation({ x: t.x, y: 0.02, z: t.z }, true);
+        body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      }
     }
   }
 

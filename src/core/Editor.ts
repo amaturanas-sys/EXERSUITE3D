@@ -11,7 +11,7 @@ import { aplicarCables, aplicarUniones, construirMaquina, construirPiezas, STAND
 import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
-import { PhysicsWorld } from "../physics/PhysicsWorld";
+import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind, axisVector } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
@@ -124,6 +124,8 @@ export type EditorEvents = {
   grabFigureChanged: { on: boolean };
   /** Modos de vista del Builder: color, aristas (menú Ver, v0.2.0). */
   viewModesChanged: { color: ColorMode; edges: boolean };
+  /** Herramienta del puntero durante la SIMULACIÓN (mano u órbita). */
+  simToolChanged: { tool: "mano" | "orbitar" };
   /** Herramienta rápida activa (barra de atajos, v0.2.13). */
   herramientaChanged: { tool: HerramientaRapida };
   /** El gizmo colectivo (grupo/multiselección) cambió de pose. */
@@ -692,7 +694,12 @@ export class Editor {
     this.cancelLine();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
-    this.physics.build(this.listObjects(), this.listJoints(), this.listCables());
+    this.physics.build(
+      this.listObjects(),
+      this.listJoints(),
+      this.listCables(),
+      this.cuerdasFisicas(),
+    );
     this.jointHelpers.visible = false;
     this.simulating = true;
     this.bus.emit("simulationChanged", { running: true });
@@ -2526,6 +2533,74 @@ export class Editor {
 
   getHerramienta(): HerramientaRapida {
     return this.herramienta;
+  }
+
+  // ------------------------------------ herramientas de la SIMULACIÓN
+
+  /** Puntero durante la simulación: mano interactiva u órbita de cámara. */
+  private simTool: "mano" | "orbitar" = "mano";
+
+  setSimHerramienta(tool: "mano" | "orbitar"): void {
+    if (this.simTool === tool) return;
+    this.simTool = tool;
+    this.bus.emit("simToolChanged", { tool });
+  }
+
+  getSimHerramienta(): "mano" | "orbitar" {
+    return this.simTool;
+  }
+
+  /**
+   * TENSIÓN MÁXIMA de la mano interactiva (kg) en el agarre actual — la
+   * fuerza de la mano siempre alcanza para operar la máquina (v0.2.14) y
+   * el simulador reporta cuánto costó: la magnitud sostenida ejercida.
+   */
+  tensionManoKg(): number | null {
+    if (!this.simulating || !this.physics) return null;
+    return this.physics.tensionManoKg();
+  }
+
+  /** Articulaciones móviles de la figura (para el selector focal). */
+  articulacionesFigura(): string[] {
+    const joints = this.figureJoints();
+    return joints ? Object.keys(joints).filter((n) => JOINT_DOF[n]) : [];
+  }
+
+  /**
+   * DEMOSTRACIÓN DE MOVIMIENTO (v0.2.14): los cursores ▲/▼ flexionan o
+   * extienden la articulación FOCAL de la figura alrededor de su eje
+   * natural primario, respetando el rango de movimiento humano. Las
+   * articulaciones con candado (Posturas) quedan FIJAS y el resto del
+   * cuerpo sigue la cadena (las manos apoyadas se re-resuelven por IK).
+   */
+  moverArticulacionFocal(nombre: string, dir: 1 | -1, pasoDeg = 4): boolean {
+    const joints = this.figureJoints();
+    const dof = JOINT_DOF[nombre];
+    if (!joints || !joints[nombre] || !dof) return false;
+    if (this.jointLocks.has(nombre)) {
+      this.avisoTemporal(tt("🔒 Articulación fijada con candado", "🔒 Joint locked in place"));
+      return false;
+    }
+    // Eje natural PRIMARIO: el de mayor rango articular.
+    let eje: "x" | "y" | "z" = "x";
+    let rango = -1;
+    for (const ax of ["x", "y", "z"] as const) {
+      const l = dof[ax];
+      if (l && l[1] - l[0] > rango) {
+        rango = l[1] - l[0];
+        eje = ax;
+      }
+    }
+    const lim = dof[eje];
+    if (!lim) return false;
+    const actual = radToDeg(joints[nombre].rotation[eje]);
+    const nuevo = Math.max(lim[0], Math.min(lim[1], actual + dir * pasoDeg));
+    if (Math.abs(nuevo - actual) < 1e-3) return false; // tope del rango
+    joints[nombre].rotation[eje] = degToRad(nuevo);
+    this.applyPoseSymmetry(nombre);
+    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.requestRender();
+    return true;
   }
 
   /** Modo de gizmo que corresponde a la herramienta activa. */
@@ -4913,6 +4988,35 @@ export class Editor {
     this.figureDrag = null;
   }
 
+  /**
+   * CUERDAS DE SEGURIDAD para el motor físico (v0.2.14): extremos en mundo,
+   * caída de la catenaria (misma fórmula del visual: sag = slack·D·0,45) y
+   * radio del eslabón. Una cuerda con AMBOS extremos en piezas fijas se
+   * materializa como barrera colisionable — la barra que se suelta de las
+   * jotas cae sobre la cadena y queda detenida ahí, como en el rack real.
+   */
+  private cuerdasFisicas(): RopeFisica[] {
+    const esMovil = (id?: string | null): boolean => {
+      if (!id) return false;
+      const o = this.objects.get(id);
+      return !!o && !o.physics.fixed && o.effectiveMassKg() > 0;
+    };
+    const out: RopeFisica[] = [];
+    for (const r of this.ropes.values()) {
+      const a = this.ropeEndWorld(r.a);
+      const b = this.ropeEndWorld(r.b);
+      const D = a.distanceTo(b);
+      out.push({
+        a: [a.x, a.y, a.z],
+        b: [b.x, b.y, b.z],
+        sag: r.slack * D * 0.45,
+        radio: r.kind === "chain" ? 1.6 : 1.2,
+        movil: esMovil(r.a.objectId) || esMovil(r.b.objectId),
+      });
+    }
+    return out;
+  }
+
   /** Vistas predefinidas para presentar el proyecto en simulación. */
   setViewPreset(view: "frontal" | "lateral" | "superior" | "isometrica"): void {
     // Encuadra el contenido (piezas + figura) con un margen cómodo.
@@ -5130,7 +5234,8 @@ export class Editor {
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
-      this.beginSimInteraction();
+      // Con la herramienta ÓRBITA el puntero solo maneja la cámara (v0.2.14).
+      if (this.simTool !== "orbitar") this.beginSimInteraction();
       return;
     }
 

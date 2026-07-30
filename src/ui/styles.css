@@ -190,7 +190,8 @@ body.simulating #left-stack,
 body.simulating #poses,
 body.simulating #hud,
 body.simulating .edit-only {
-  display: none;
+  /* !important: gana también a un display inline dejado por un panel. */
+  display: none !important;
 }
 
 /* ---- Barra de herramientas de simulacion ---- */
@@ -1691,3 +1692,96 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
 }
 .tool-menu button { text-align: left; }
 .panel { max-height: calc(100vh - 76px - var(--safe-t) - var(--safe-b)); }
+
+/* ---- v0.2.14 · Simulación: tensión de la mano y articulación focal */
+.sim-tension {
+  color: #7fd18a;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sim-figura select.sim-focal {
+  max-width: 130px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.sim-figura.sim-oculto { display: none; }
+
+/* ---- v0.2.14 · Marketplace (maqueta) */
+.mk-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.mk-demo {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: #b45309;
+  color: #fff;
+}
+.mk-scroll {
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+  padding-right: 6px;
+  scrollbar-width: thin;
+}
+.mk-titulo { font-size: 14px; font-weight: 800; margin: 18px 0 4px; }
+.mk-sub { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+.mk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 10px;
+}
+.mk-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mk-marca { font-weight: 800; font-size: 13px; }
+.mk-lema { font-size: 11.5px; color: var(--text-dim); }
+.mk-item {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px;
+}
+.mk-item-precio { color: #7fd18a; font-weight: 700; }
+.mk-item-nota { flex-basis: 100%; font-size: 10.5px; color: var(--text-dim); }
+.mk-btn { margin-top: auto; font-size: 12px; }
+.mk-custom { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.mk-preview {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 380px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+}
+.mk-custom-controles { flex: 1 1 200px; display: flex; flex-direction: column; gap: 8px; }
+.mk-objetivos { display: flex; gap: 6px; }
+.mk-paleta { display: flex; flex-wrap: wrap; gap: 8px; }
+.mk-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+.mk-swatch:hover { border-color: #fff; }
+.mk-pie {
+  margin: 20px 0 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}

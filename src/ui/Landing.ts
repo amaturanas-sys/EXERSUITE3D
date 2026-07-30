@@ -1,6 +1,7 @@
 import type { ProjectData } from "../core/project";
 import { version as VERSION_APP } from "../../package.json";
 import { renderInstructivo } from "./Instructivo";
+import { renderMarketplace } from "./Marketplace";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { borrarCaptura, listarCapturas } from "../core/capturas";
@@ -23,7 +24,7 @@ export interface LandingActions {
   hasAutosave: boolean;
 }
 
-type Vista = "builder" | "simulator" | "instructivo" | "settings";
+type Vista = "builder" | "simulator" | "instructivo" | "marketplace" | "settings";
 
 const LEYENDAS: Record<Vista, string> = {
   builder:
@@ -32,6 +33,8 @@ const LEYENDAS: Record<Vista, string> = {
     "Simulador: abre un proyecto solo para correr su física e interactuar con él, sin herramientas de edición.",
   instructivo:
     "Instructivo: recorrido por las herramientas, los modelos, las funciones y los tipos de archivo.",
+  marketplace:
+    "Marketplace (maqueta): showroom de marcas, cotización de manufactura, venta de diseños maker y equipo personalizado.",
   settings: "Ajustes: calidad gráfica y rendimiento; se aplican al abrir un proyecto.",
 };
 
@@ -78,6 +81,7 @@ export class Landing {
       ["instructivo", "📖 INSTRUCTIVO"],
       ["builder", "🛠 BUILDER"],
       ["simulator", "▶ SIMULADOR"],
+      ["marketplace", "🛒 MARKETPLACE"],
       ["settings", "⚙ SETTINGS"],
     ];
     for (const [vista, etiqueta] of navDefs) {
@@ -132,6 +136,7 @@ export class Landing {
     if (v === "builder") this.renderBuilder();
     else if (v === "simulator") this.renderSimulador();
     else if (v === "instructivo") this.renderInstructivoVista();
+    else if (v === "marketplace") renderMarketplace(this.contenido);
     else this.renderSettings();
   }
 

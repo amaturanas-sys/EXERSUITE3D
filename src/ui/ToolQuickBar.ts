@@ -63,6 +63,27 @@ export function crearBotonesHerramientas(editor: Editor, clase = ""): HTMLElemen
   };
   marcar(editor.getHerramienta());
   editor.bus.on("herramientaChanged", ({ tool }) => marcar(tool));
+
+  // DEFORMACIÓN POR NODOS (v0.2.14): séptimo atajo — activa el doblado de
+  // la pieza de línea seleccionada (asas esféricas en sus nodos) y sale con
+  // otro toque. Se ilumina mientras el modo está activo.
+  const bBend = document.createElement("button");
+  bBend.className = "tool tq-btn tq-bend";
+  const tituloBend = tt(
+    "Deformar por nodos la pieza de línea seleccionada",
+    "Bend the selected line piece by nodes",
+  );
+  bBend.title = tituloBend;
+  bBend.setAttribute("aria-label", tituloBend);
+  bBend.innerHTML = SVG(
+    '<path d="M4 20c5-1 6-6 8-9s4-5 8-6"/><circle cx="4" cy="20" r="2.2" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="2.2" fill="currentColor" stroke="none"/><circle cx="20" cy="5" r="2.2" fill="currentColor" stroke="none"/>',
+  );
+  bBend.addEventListener("click", () => {
+    if (editor.isBending()) editor.endBendNodes();
+    else editor.beginBendNodes();
+  });
+  editor.bus.on("bendModeChanged", ({ active }) => bBend.classList.toggle("activa", active));
+  bar.appendChild(bBend);
   return bar;
 }
 

@@ -22,7 +22,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     label: "Rack de sentadillas",
     icon: "🏋️",
     description:
-      "Rack abierto 142×204×120 cm: montantes reales con agujeros de calce, ganchos J que abrazan el pilar y rieles de base con placas de encuadre.",
+      "Rack de sentadillas del diseñador: dos montantes perforados de 212 cm con arcos superiores, barra de dominadas, jotas con rodillo, anclajes de cadena y base articulada.",
   },
   {
     id: "jaula-potencia",
@@ -109,37 +109,32 @@ export interface CableSpec {
   nodos: { pieza: number; local: [number, number, number] }[];
 }
 
-// El gancho J real ABRAZA el montante: su manguito queda alrededor del perfil
-// 5×7 y el centro del gancho cae 9,6 cm por delante del eje del pilar (medido
-// en el TTP001L armado). Mismo x que el pilar; brazo hacia +Z.
-const CALCE_J = 9.6;
-
+// RACK DE SENTADILLAS del diseñador — racksentadillas.prefab.json
+// (v0.2.14): piezas VERBATIM del archivo. Dos montantes perforados con
+// arcos superiores, barra de dominadas, jotas con rodillo, anclajes de
+// cadena y base con travesaños articulados. No editar a mano: ante una
+// nueva corrección, reemplazar por el contenido del .prefab.json.
 const RACK: PiezaSpec[] = [
-  // 4 MONTANTES REALES con agujeros de calce (5×7×204).
-  ...([[-67, -56], [67, -56], [-67, 56], [67, 56]] as const).map(
-    ([x, z], i): PiezaSpec => ({
-      comp: "montante-ttp",
-      nombre: `Montante ${i + 1}`,
-      pos: [x, 102, z],
-    }),
-  ),
-  // Travesaños superiores laterales + rieles de base bajo cada marco.
-  { comp: "prim-box", nombre: "Travesaño sup. izq.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [-67, 200, 0] },
-  { comp: "prim-box", nombre: "Travesaño sup. der.", params: { width: 7.6, height: 7.6, depth: 104 }, material: "acero-negro", pos: [67, 200, 0] },
-  { comp: "prim-box", nombre: "Riel base izq.", params: { width: 7.6, height: 5, depth: 120 }, material: "acero-negro", pos: [-67, 2.5, 0] },
-  { comp: "prim-box", nombre: "Riel base der.", params: { width: 7.6, height: 5, depth: 120 }, material: "acero-negro", pos: [67, 2.5, 0] },
-  // ARRIOSTRE DE BASE REAL: rieles TTP de 141 con placas de encuadre en los
-  // extremos, uniendo ambos marcos por delante y por detrás (sin esto la
-  // estructura colapsaría al cargar las J — solo la unía la barra de pullups).
-  { comp: "riel-base-ttp", nombre: "Riel base frontal", pos: [0, 10, 56] },
-  { comp: "riel-base-ttp", nombre: "Riel base trasero", pos: [0, 10, -56] },
-  // Barra de dominadas trasera (tumbada a lo ancho).
-  { comp: "barra-dominadas", params: { height: 134 }, pos: [0, 200, -56], rot: [0, 0, Math.PI / 2] },
-  // Ganchos J ABRAZANDO los montantes frontales + pipes con collares.
-  { comp: "j-hook", nombre: "Gancho J izq.", pos: [-67, 110, 56 + CALCE_J] },
-  { comp: "j-hook", nombre: "Gancho J der.", pos: [67, 110, 56 + CALCE_J] },
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-67, 70, 0] },
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [67, 70, 0] },
+  { comp: "barra-pr", nombre: "Barra pullups lateral der.", params: { kind: "box", width: 7, height: 12, depth: 106 }, material: "acero-negro", pos: [22.4621, 210.7134, 0.0844], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "jota-pr", nombre: "Anclaje de cadena izq.", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [20.0332, 68.2807, -55.5513], rotq: [0, 0, 0, 1], fija: true, masaKg: 0, escala: [-1, 1, 1] },
+  { comp: "jota-pr", nombre: "Anclaje de cadena der.", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [20.1621, 68.2807, 55.554], rotq: [0, 0, 0, 1], fija: true, masaKg: 0, escala: [-1, 1, 1] },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo izq.", params: { kind: "box", width: 7.4, height: 13, depth: 15.4 }, material: "acero-negro", pos: [18.3332, 118.2807, -55.5513], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "jota-rodillo-pr", nombre: "Jota rodillo der.", params: { kind: "box", width: 7.4, height: 13, depth: 15.4 }, material: "acero-negro", pos: [18.4621, 118.2807, 55.554], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 7, width: 5, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -106.280731, 0], [0, -53.140366, 0], [0, 0, 0], [0, 53.140366, 0], [0, 106.280731, 0]] }, material: "acero-negro", pos: [22.3332, 110.7807, -55.5513], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 7, width: 5, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -106.280731, 0], [0, -53.140366, 0], [0, 0, 0], [0, 53.140366, 0], [0, 106.280731, 0]] }, material: "acero-negro", pos: [22.4621, 110.7807, 55.554], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[0, -53.555126, 0], [0, -26.777563, 0], [0, 0, 0], [0, 26.777563, 0], [0, 53.555126, 0]] }, material: "acero-negro", pos: [-7.8421, 1.7829, -55.5513], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[0, -53.555126, 0], [0, -26.777563, 0], [0, 0, 0], [0, 26.777563, 0], [0, 53.555126, 0]] }, material: "acero-negro", pos: [-7.813, 1.7829, 55.4911], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[0.0, -55.804692, -8.029068], [0.0, -51.434187, 0], [0, -26.777563, 2.634408], [0, -0.0, 3.275483], [0, 26.777563, 2.505633], [-0.0, 50.912415, 0], [0.0, 55.237739, -8]] }, material: "acero-negro", pos: [53.7421, 1.7829, 0.2534], rotq: [0.5, 0.5, 0.5, 0.5], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -105.206091, 0], [0, -52.603045, 0], [0, 0, 0], [0, 70.368189, 6.09974], [0, 97.892955, 29.348636], [0.0, 103.042469, 73.583129]] }, material: "acero-negro", pos: [-53.7205, 109.6772, -55.554], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -105.206091, 0], [0, -52.603045, 0], [0, 0, 0], [0, 70.368189, 6.09974], [0, 97.892955, 29.348636], [0.0, 103.042469, 73.583129]] }, material: "acero-negro", pos: [-53.7421, 109.6772, 55.446], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "jota-pr", nombre: "Anclaje de cadena POWERRACK 3", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [-51.6847, 70.1495, 55.446], rotq: [0, 0, 0.001847, 0.999998], fija: true, masaKg: 0 },
+  { comp: "jota-pr", nombre: "Anclaje de cadena POWERRACK 4", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [-51.6631, 70.1495, -55.554], rotq: [0, 0, 0.001847, 0.999998], fija: true, masaKg: 0 },
+];
+
+// Bisagras de la base (bloqueadas en uso).
+const RACK_UNIONES: UnionSpec[] = [
+  { tipo: "bisagra", fija: 7, movil: 9, eje: "z", ancla: [45.713, 1.7829, -55.5513], min: -90, max: 0, limites: true, bloqueada: true },
+  { tipo: "bisagra", fija: 8, movil: 9, eje: "z", ancla: [45.7421, 1.7829, 55.4911], min: -90, max: 0, limites: true, bloqueada: true },
 ];
 
 // Jaula = POWERRACK real pieza a pieza (posiciones medidas en el STL armado,
@@ -360,7 +355,7 @@ export interface MaquinaSpec {
 }
 
 const SPECS: Record<string, MaquinaSpec> = {
-  "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK },
+  "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK, uniones: RACK_UNIONES },
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
   "banco-plano": { label: "Banco plano", piezas: BANCO, uniones: BANCO_UNIONES },
   "torre-polea": { label: "Torre de polea", piezas: TORRE },

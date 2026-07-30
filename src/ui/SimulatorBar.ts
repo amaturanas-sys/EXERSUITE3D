@@ -72,7 +72,69 @@ export class SimulatorBar {
       children.push(el("div", { class: "tool-group" }, [homeBtn, simBtn]));
     }
 
+    // HERRAMIENTA DEL PUNTERO en simulación (v0.2.14): mano interactiva u
+    // órbita pura (el arrastre solo mueve la cámara, sin tocar piezas).
+    const bMano = el("button", { class: "tool active", title: tt("Mano interactiva: arrastra piezas móviles", "Interactive hand: drag mobile pieces") }, ["✋"]);
+    const bOrbita = el("button", { class: "tool", title: tt("Órbita: el arrastre solo mueve la cámara", "Orbit: dragging only moves the camera") }, ["🌐"]);
+    bMano.addEventListener("click", () => this.editor.setSimHerramienta("mano"));
+    bOrbita.addEventListener("click", () => this.editor.setSimHerramienta("orbitar"));
+    this.editor.bus.on("simToolChanged", ({ tool }) => {
+      bMano.classList.toggle("active", tool === "mano");
+      bOrbita.classList.toggle("active", tool === "orbitar");
+    });
+
+    // TENSIÓN de la mano (v0.2.14): la fuerza siempre alcanza, y aquí se
+    // reporta cuánto costó el agarre actual, en kg y lb.
+    const tension = el("span", { class: "sim-tension" }, [""]);
+    const refrescarTension = () => {
+      const kg = this.editor.tensionManoKg();
+      if (kg === null || kg < 0.5) {
+        tension.textContent = "";
+        return;
+      }
+      tension.textContent = `✋ máx ${kg.toFixed(1)} kg · ${(kg * 2.20462).toFixed(1)} lb`;
+    };
+    let timerTension: ReturnType<typeof setInterval> | null = null;
+
+    // DEMOSTRACIÓN DE MOVIMIENTO (v0.2.14): elige la articulación FOCAL de
+    // la figura y flexiona/extiende con los cursores ▲/▼ (o las flechas del
+    // teclado) dentro del rango humano; las articulaciones con candado
+    // quedan fijas y el resto del cuerpo sigue la cadena.
+    const focal = el("select", { class: "tool tool-select sim-focal", title: tt("Articulación focal del movimiento", "Focal joint of the movement") }) as HTMLSelectElement;
+    const grupoFigura = el("div", { class: "tool-group sim-figura" }, []);
+    const poblarFocal = () => {
+      focal.replaceChildren();
+      const arts = this.editor.articulacionesFigura();
+      for (const a of arts) focal.append(el("option", { value: a }, [a]));
+      grupoFigura.classList.toggle("sim-oculto", arts.length === 0);
+    };
+    const mover = (dir: 1 | -1) => {
+      if (focal.value) this.editor.moverArticulacionFocal(focal.value, dir);
+    };
+    const bFlex = el("button", { class: "tool", title: tt("Flexión / tracción (▲)", "Flexion / pull (▲)") }, ["▲"]);
+    const bExt = el("button", { class: "tool", title: tt("Extensión / empuje (▼)", "Extension / push (▼)") }, ["▼"]);
+    bFlex.addEventListener("click", () => mover(1));
+    bExt.addEventListener("click", () => mover(-1));
+    grupoFigura.append(focal, bFlex, bExt);
+    const teclas = (e: KeyboardEvent) => {
+      if (e.key === "ArrowUp") { mover(1); e.preventDefault(); }
+      else if (e.key === "ArrowDown") { mover(-1); e.preventDefault(); }
+    };
+    this.editor.bus.on("simulationChanged", ({ running }) => {
+      if (running) {
+        poblarFocal();
+        refrescarTension();
+        timerTension = setInterval(refrescarTension, 300);
+        window.addEventListener("keydown", teclas);
+      } else {
+        if (timerTension) clearInterval(timerTension);
+        timerTension = null;
+        window.removeEventListener("keydown", teclas);
+      }
+    });
+
     children.push(
+      el("div", { class: "tool-group" }, [bMano, bOrbita]),
       el("div", { class: "tool-group" }, [
         view("Frontal", "frontal"),
         view("Lateral", "lateral"),
@@ -84,8 +146,10 @@ export class SimulatorBar {
         zoom("－", 1.25, "Alejar"),
       ]),
       el("div", { class: "tool-group" }, [this.botonCaptura()]),
+      grupoFigura,
+      el("div", { class: "sim-hint" }, [tension]),
       el("div", { class: "sim-hint" }, [
-        "🖐 Arrastra una pieza móvil para moverla con la mano · arrastra el maniquí para situarlo",
+        "🖐 Arrastra una pieza móvil para moverla con la mano · ▲▼ flexionan la articulación focal del maniquí",
       ]),
     );
 
