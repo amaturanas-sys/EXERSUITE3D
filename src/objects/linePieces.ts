@@ -230,6 +230,26 @@ function particionPlana(
 }
 
 /**
+ * CUERDAS DE COLISIÓN de una pieza doblada (v0.2.14): la curva barrida se
+ * muestrea en segmentos casi rectos — cada par de puntos LOCALES define un
+ * collider físico (cápsula o prisma) que SIGUE la forma real. Antes la
+ * física usaba la caja envolvente completa, que en un pilar doblado es un
+ * MURO invisible llenando el hueco del codo: una barra que caía dentro del
+ * rack quedaba acuñada en el aire sin tocar jotas ni cadenas.
+ */
+export function cuerdasColision(
+  path: [number, number, number][],
+): { a: THREE.Vector3; b: THREE.Vector3 }[] {
+  const curva = pathCurve(path);
+  const L = Math.max(pathLength(path), 2);
+  const n = THREE.MathUtils.clamp(Math.round(L / 10), 3, 32); // ~10 cm por cuerda
+  const pts = curva.getSpacedPoints(n);
+  const out: { a: THREE.Vector3; b: THREE.Vector3 }[] = [];
+  for (let i = 0; i < pts.length - 1; i++) out.push({ a: pts[i], b: pts[i + 1] });
+  return out;
+}
+
+/**
  * GRILLA DE CALCE de un tramo recto de una viga doblada, en coordenadas
  * LOCALES de la pieza: los accesorios (jotas, brazos, anclajes) reconocen
  * la INCLINACIÓN de la cara — cada tramo plano conserva su propia línea de

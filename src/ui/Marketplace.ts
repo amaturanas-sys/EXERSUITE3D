@@ -1,6 +1,26 @@
 import { tt } from "../core/i18n";
 import { el } from "./dom";
 
+/** Acciones reales que el Marketplace puede disparar desde la Home. */
+export interface MarketplaceAcciones {
+  /** Abre la Biblioteca de modelos (el showroom navegable de piezas). */
+  verBiblioteca?: () => void;
+}
+
+/** Botón de flujo comercial DEMO: confirma la solicitud en línea. */
+function botonDemo(etiqueta: string, primario = false): HTMLElement {
+  const b = el("button", { class: primario ? "land-btn primary mk-btn" : "land-btn mk-btn" }, [etiqueta]);
+  b.addEventListener("click", () => {
+    b.replaceChildren(tt("✓ Solicitud demo registrada", "✓ Demo request logged"));
+    b.setAttribute("disabled", "true");
+    setTimeout(() => {
+      b.replaceChildren(etiqueta);
+      b.removeAttribute("disabled");
+    }, 2200);
+  });
+  return b;
+}
+
 /**
  * MARKETPLACE (v0.2.14 · MAQUETA navegable): el hub BIDIRECCIONAL donde
  * makers y manufacturers se encuentran —
@@ -54,7 +74,14 @@ const MARCAS: Marca[] = [
 ];
 
 /** Showroom: tarjetas de marcas con sus ítems de biblioteca. */
-function seccionShowroom(): HTMLElement {
+function seccionShowroom(acciones: MarketplaceAcciones): HTMLElement {
+  const verEnBiblioteca = (): HTMLElement => {
+    const b = el("button", { class: "land-btn mk-btn" }, [
+      tt("🧩 Ver en biblioteca (showroom)", "🧩 View in library (showroom)"),
+    ]);
+    b.addEventListener("click", () => acciones.verBiblioteca?.());
+    return b;
+  };
   const tarjetas = MARCAS.map((m) =>
     el("div", { class: "mk-card" }, [
       el("div", { class: "mk-marca" }, [m.nombre]),
@@ -66,9 +93,7 @@ function seccionShowroom(): HTMLElement {
           el("div", { class: "mk-item-nota" }, [it.nota]),
         ]),
       ),
-      el("button", { class: "land-btn mk-btn" }, [
-        tt("🧩 Ver en biblioteca (showroom)", "🧩 View in library (showroom)"),
-      ]),
+      verEnBiblioteca(),
     ]),
   );
   return el("div", {}, [
@@ -101,9 +126,14 @@ function seccionBidireccional(): HTMLElement {
         el("div", { class: "mk-item" }, [
           el("span", { class: "mk-item-nombre" }, [tt("Tu prefab .json → oferta en 72 h", "Your .json prefab → offer in 72 h")]),
         ]),
-        el("button", { class: "land-btn primary mk-btn" }, [
-          tt("📤 Solicitar cotización", "📤 Request a quote"),
+        el("div", { class: "mk-apoyo" }, [
+          el("div", { class: "mk-apoyo-txt" }, [
+            tt("Apoyo de la comunidad: 12 aportes", "Community backing: 12 pledges"),
+          ]),
+          el("div", { class: "mk-barra" }, [el("div", { class: "mk-barra-fill", style: "width:68%" })]),
+          el("div", { class: "mk-apoyo-txt" }, ["68 %"]),
         ]),
+        botonDemo(tt("📤 Solicitar cotización", "📤 Request a quote"), true),
       ]),
       el("div", { class: "mk-card" }, [
         el("div", { class: "mk-marca" }, [tt("💡 Vende tu diseño", "💡 Sell your design")]),
@@ -116,9 +146,7 @@ function seccionBidireccional(): HTMLElement {
         el("div", { class: "mk-item" }, [
           el("span", { class: "mk-item-nombre" }, [tt("Publica desde Archivo → Exportar prefab", "Publish from File → Export prefab")]),
         ]),
-        el("button", { class: "land-btn mk-btn" }, [
-          tt("🏷 Publicar mi diseño", "🏷 Publish my design"),
-        ]),
+        botonDemo(tt("🏷 Publicar mi diseño", "🏷 Publish my design")),
       ]),
     ]),
   ]);
@@ -134,13 +162,16 @@ function seccionCustom(): HTMLElement {
   // Banco plano en SVG: la estructura y el tapiz se pintan en vivo.
   const svg = el("div", { class: "mk-preview" });
   const pintar = () => {
+    // Silueta del BANCO PLANO CLÁSICO de la biblioteca: colchoneta sobre
+    // espina central, pata trasera en L y pata delantera en arco.
     svg.innerHTML = `<svg viewBox="0 0 320 170" width="100%" height="100%">
-      <rect x="30" y="52" width="260" height="26" rx="8" fill="${tapiz}"/>
-      <rect x="52" y="78" width="14" height="60" rx="4" fill="${estructura}"/>
-      <rect x="250" y="78" width="14" height="60" rx="4" fill="${estructura}"/>
-      <rect x="36" y="134" width="52" height="10" rx="4" fill="${estructura}"/>
-      <rect x="232" y="134" width="52" height="10" rx="4" fill="${estructura}"/>
-      <rect x="60" y="100" width="200" height="12" rx="4" fill="${estructura}"/>
+      <rect x="60" y="96" width="190" height="11" rx="4" fill="${estructura}"/>
+      <path d="M78 96 L78 118 Q78 128 68 130 L40 136" stroke="${estructura}" stroke-width="11" fill="none" stroke-linecap="round"/>
+      <rect x="24" y="134" width="58" height="9" rx="4" fill="${estructura}"/>
+      <path d="M236 100 Q262 106 264 126 Q264 140 250 142 M236 100 Q210 106 208 126 Q208 140 222 142" stroke="${estructura}" stroke-width="10" fill="none" stroke-linecap="round"/>
+      <rect x="196" y="140" width="34" height="8" rx="4" fill="${estructura}"/>
+      <rect x="242" y="140" width="34" height="8" rx="4" fill="${estructura}"/>
+      <rect x="30" y="60" width="260" height="26" rx="8" fill="${tapiz}"/>
     </svg>`;
   };
   pintar();
@@ -181,16 +212,14 @@ function seccionCustom(): HTMLElement {
         el("div", { class: "mk-lema" }, [tt("Pintar:", "Paint:")]),
         el("div", { class: "mk-objetivos" }, [bEstructura, bTapiz]),
         paleta,
-        el("button", { class: "land-btn primary mk-btn" }, [
-          tt("🧾 Solicitar equipo personalizado", "🧾 Order custom equipment"),
-        ]),
+        botonDemo(tt("🧾 Solicitar equipo personalizado", "🧾 Order custom equipment"), true),
       ]),
     ]),
   ]);
 }
 
 /** Contenido de la vista Marketplace (maqueta) para la Home. */
-export function renderMarketplace(cont: HTMLElement): void {
+export function renderMarketplace(cont: HTMLElement, acciones: MarketplaceAcciones = {}): void {
   cont.append(
     el("div", { class: "mk-head" }, [
       el("div", { class: "land-aside-title" }, [
@@ -199,7 +228,7 @@ export function renderMarketplace(cont: HTMLElement): void {
       el("span", { class: "mk-demo" }, ["DEMO"]),
     ]),
     el("div", { class: "mk-scroll" }, [
-      seccionShowroom(),
+      seccionShowroom(acciones),
       seccionBidireccional(),
       seccionCustom(),
       el("div", { class: "mk-pie" }, [

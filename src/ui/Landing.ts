@@ -136,7 +136,8 @@ export class Landing {
     if (v === "builder") this.renderBuilder();
     else if (v === "simulator") this.renderSimulador();
     else if (v === "instructivo") this.renderInstructivoVista();
-    else if (v === "marketplace") renderMarketplace(this.contenido);
+    else if (v === "marketplace")
+      renderMarketplace(this.contenido, { verBiblioteca: () => this.actions.onExploreLibrary() });
     else this.renderSettings();
   }
 

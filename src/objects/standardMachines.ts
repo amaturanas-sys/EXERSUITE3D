@@ -109,6 +109,21 @@ export interface CableSpec {
   nodos: { pieza: number; local: [number, number, number] }[];
 }
 
+/**
+ * CUERDA DE SEGURIDAD de una máquina (v0.2.14): cadena o correa tendida
+ * entre dos piezas (por índice, con anclaje local en cm). El formato
+ * prefab del usuario aún no captura cuerdas — las máquinas nativas las
+ * declaran aquí para nacer completas (y el motor las materializa como
+ * barrera si sus anclas son fijas).
+ */
+export interface CuerdaSpec {
+  tipo: "chain" | "strap";
+  a: { pieza: number; local: [number, number, number] };
+  b: { pieza: number; local: [number, number, number] };
+  /** Holgura de la catenaria (0..1). */
+  holgura?: number;
+}
+
 // RACK DE SENTADILLAS del diseñador — racksentadillas.prefab.json
 // (v0.2.14): piezas VERBATIM del archivo. Dos montantes perforados con
 // arcos superiores, barra de dominadas, jotas con rodillo, anclajes de
@@ -129,6 +144,14 @@ const RACK: PiezaSpec[] = [
   { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", depth: 5, width: 5, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -105.206091, 0], [0, -52.603045, 0], [0, 0, 0], [0, 70.368189, 6.09974], [0, 97.892955, 29.348636], [0.0, 103.042469, 73.583129]] }, material: "acero-negro", pos: [-53.7421, 109.6772, 55.446], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
   { comp: "jota-pr", nombre: "Anclaje de cadena POWERRACK 3", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [-51.6847, 70.1495, 55.446], rotq: [0, 0, 0.001847, 0.999998], fija: true, masaKg: 0 },
   { comp: "jota-pr", nombre: "Anclaje de cadena POWERRACK 4", params: { kind: "box", width: 13.2, height: 13, depth: 7.4 }, material: "acero-negro", pos: [-51.6631, 70.1495, -55.554], rotq: [0, 0, 0.001847, 0.999998], fija: true, masaKg: 0 },
+];
+
+// CADENAS DE SEGURIDAD del rack: una por lado, tendidas entre el anclaje
+// delantero y el trasero (el prefab del usuario no captura cuerdas — se
+// declaran aquí para que la máquina nazca completa, como en sus capturas).
+const RACK_CUERDAS: CuerdaSpec[] = [
+  { tipo: "chain", a: { pieza: 1, local: [0, 0, 0] }, b: { pieza: 13, local: [0, 0, 0] }, holgura: 0.16 },
+  { tipo: "chain", a: { pieza: 2, local: [0, 0, 0] }, b: { pieza: 12, local: [0, 0, 0] }, holgura: 0.16 },
 ];
 
 // Bisagras de la base (bloqueadas en uso).
@@ -352,10 +375,11 @@ export interface MaquinaSpec {
   piezas: PiezaSpec[];
   uniones?: UnionSpec[];
   cables?: CableSpec[];
+  cuerdas?: CuerdaSpec[];
 }
 
 const SPECS: Record<string, MaquinaSpec> = {
-  "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK, uniones: RACK_UNIONES },
+  "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK, uniones: RACK_UNIONES, cuerdas: RACK_CUERDAS },
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
   "banco-plano": { label: "Banco plano", piezas: BANCO, uniones: BANCO_UNIONES },
   "torre-polea": { label: "Torre de polea", piezas: TORRE },
@@ -384,6 +408,7 @@ export function construirMaquina(
   const ids = construirPiezas(editor, spec.piezas, spec.label, at);
   if (spec.uniones) aplicarUniones(editor, ids, spec.uniones, at);
   if (spec.cables) aplicarCables(editor, ids, spec.cables);
+  if (spec.cuerdas) aplicarCuerdas(editor, ids, spec.cuerdas);
   return { ids, label: spec.label };
 }
 
@@ -406,6 +431,21 @@ export function aplicarCables(editor: Editor, ids: string[], cables: CableSpec[]
       nodes.push({ objectId: id, local: { x: n.local[0], y: n.local[1], z: n.local[2] } });
     }
     if (completo && nodes.length >= 2) editor.createCable(nodes);
+  }
+}
+
+/** Tiende las CUERDAS DE SEGURIDAD de una máquina recién armada. */
+export function aplicarCuerdas(editor: Editor, ids: string[], cuerdas: CuerdaSpec[]): void {
+  for (const c of cuerdas) {
+    const aId = ids[c.a.pieza];
+    const bId = ids[c.b.pieza];
+    if (!aId || !bId) continue;
+    editor.createRope(
+      c.tipo,
+      { objectId: aId, local: new THREE.Vector3(...c.a.local) },
+      { objectId: bId, local: new THREE.Vector3(...c.b.local) },
+      c.holgura ?? 0.15,
+    );
   }
 }
 

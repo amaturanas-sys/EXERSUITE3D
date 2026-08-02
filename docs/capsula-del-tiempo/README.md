@@ -356,9 +356,17 @@ v0.2.12: calce en caras inclinadas (cada tramo recto de una pieza doblada aporta
 - [`v213-ventana-tablet.png`](2026-07-27/v213-ventana-tablet.png)
 - [`v213-ventana-secciones.png`](2026-07-27/v213-ventana-secciones.png)
 
-## 2026-07-28 — 6 capturas
+## 2026-07-28 — 7 capturas
 
-v0.2.14: Marketplace (maqueta del hub makers⇄manufacturers con showroom y colorización), deformación por nodos en el Toolbox, simulación con tensión de mano en kg/lb + órbita + articulación focal, rack de sentadillas del diseñador en la biblioteca nativa, y físicas corregidas (la barra ya no cruza el suelo y las cadenas de seguridad la detienen).
+v0.2.14 (con pasada de revisión): Marketplace (maqueta del hub
+makers⇄manufacturers con showroom navegable, apoyo de la comunidad y
+colorización del banco clásico), deformación por nodos en el Toolbox,
+simulación con tensión de mano en kg/lb + órbita + articulación focal en
+español con candado y ángulo, rack de sentadillas del diseñador en la
+biblioteca nativa CON sus cadenas de seguridad, y físicas corregidas: los
+pilares doblados colisionan por su forma real (antes su caja envolvente era
+un muro invisible que acuñaba la barra en el aire), la barra ya no cruza el
+suelo y las cadenas la detienen.
 
 - [`v214-marketplace-showroom.png`](2026-07-28/v214-marketplace-showroom.png)
 - [`v214-marketplace-custom.png`](2026-07-28/v214-marketplace-custom.png)
@@ -366,3 +374,4 @@ v0.2.14: Marketplace (maqueta del hub makers⇄manufacturers con showroom y colo
 - [`v214-sim-mejoras.png`](2026-07-28/v214-sim-mejoras.png)
 - [`v214-barra-jotas.png`](2026-07-28/v214-barra-jotas.png)
 - [`v214-barra-cadena.png`](2026-07-28/v214-barra-cadena.png)
+- [`v214b-rack-cadenas.png`](2026-07-28/v214b-rack-cadenas.png)

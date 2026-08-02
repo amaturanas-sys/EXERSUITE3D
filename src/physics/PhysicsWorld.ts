@@ -5,7 +5,7 @@ import * as THREE from "three";
 // PRIMERA simulacion: disenar no lo necesita y el arranque queda mas ligero.
 let RAPIER: typeof R;
 import type { SceneObject } from "../objects/SceneObject";
-import { pathIsStraight } from "../objects/linePieces";
+import { cuerdasColision, pathIsStraight } from "../objects/linePieces";
 import { getDefinition } from "../objects/componentLibrary";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
@@ -314,18 +314,19 @@ export class PhysicsWorld {
         .sub(mejor.obj.mesh.position)
         .applyQuaternion(qH.clone().invert())
         .multiplyScalar(S);
-      // El collider del accesorio se RE-CREA en el anfitrión con la pose
+      // Los colliders del accesorio se RE-CREAN en el anfitrión con la pose
       // relativa compuesta (densidad 0: la masa va por masaExtra).
-      const cd = this.colliderDesc(e.obj);
-      const t = cd.translation;
-      const pos = new THREE.Vector3(t.x, t.y, t.z).applyQuaternion(relQ).add(relPos);
-      const r = cd.rotation;
-      const rq = new THREE.Quaternion(r.x, r.y, r.z, r.w).premultiply(relQ);
-      cd.setTranslation(pos.x, pos.y, pos.z);
-      cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
-      cd.setDensity(0);
       this.world.removeRigidBody(e.body);
-      this.world.createCollider(cd, mejor.body);
+      for (const cd of this.colliderDescs(e.obj)) {
+        const t = cd.translation;
+        const pos = new THREE.Vector3(t.x, t.y, t.z).applyQuaternion(relQ).add(relPos);
+        const r = cd.rotation;
+        const rq = new THREE.Quaternion(r.x, r.y, r.z, r.w).premultiply(relQ);
+        cd.setTranslation(pos.x, pos.y, pos.z);
+        cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
+        cd.setDensity(0);
+        this.world.createCollider(cd, mejor.body);
+      }
       const entrada = {
         obj: e.obj,
         host: mejor.body,
@@ -956,7 +957,7 @@ export class PhysicsWorld {
     }
 
     const body = this.world.createRigidBody(desc);
-    this.world.createCollider(this.colliderDesc(obj), body);
+    for (const cd of this.colliderDescs(obj)) this.world.createCollider(cd, body);
     // DISCOS MONTADOS sólidos (v0.2.10): cada disco de la carga recibe su
     // collider cilíndrico en el cuerpo de la pieza — un disco no cae por
     // debajo del suelo ni atraviesa superficies. Densidad 0: su masa ya la
@@ -981,11 +982,66 @@ export class PhysicsWorld {
     this.bodies.set(obj.id, { body, obj });
   }
 
+  /**
+   * Colliders de una pieza. Piezas TRAZADAS dobladas (vigas y tubos con
+   * codos) reciben UNA CUERDA DE COLLIDERS que sigue su curva real
+   * (v0.2.14): la caja envolvente única era un muro invisible que llenaba
+   * el hueco del codo — en un rack, la barra caía "sobre nada" y quedaba
+   * acuñada en el aire sin alcanzar jotas ni cadenas de seguridad.
+   */
+  private colliderDescs(obj: SceneObject): R.ColliderDesc[] {
+    const p = obj.params;
+    if ((p.kind === "beam" || p.kind === "tube") && p.path && !pathIsStraight(p.path)) {
+      return this.collidersDoblado(obj);
+    }
+    return [this.colliderDesc(obj)];
+  }
+
+  /** Cápsulas (tubo) o prismas (viga) por cada cuerda de la curva doblada. */
+  private collidersDoblado(obj: SceneObject): R.ColliderDesc[] {
+    const p = obj.params;
+    const esc = obj.mesh.scale;
+    // Escala transversal aproximada del perfil (los ejes X/Z locales).
+    const sT = (Math.abs(esc.x) + Math.abs(esc.z)) / 2;
+    const up = new THREE.Vector3(0, 1, 0);
+    const out: R.ColliderDesc[] = [];
+    for (const { a, b } of cuerdasColision(p.path!)) {
+      const A = a.clone().multiply(esc).multiplyScalar(S);
+      const B = b.clone().multiply(esc).multiplyScalar(S);
+      const largo = A.distanceTo(B);
+      if (largo < 1e-4) continue;
+      const medio = A.clone().add(B).multiplyScalar(0.5);
+      const q = new THREE.Quaternion().setFromUnitVectors(
+        up,
+        B.clone().sub(A).normalize(),
+      );
+      let cd: R.ColliderDesc;
+      if (p.kind === "tube") {
+        const r = Math.max((p.radius ?? 2.4) * sT * S, 0.002);
+        // La cápsula ya redondea los empalmes entre cuerdas.
+        cd = RAPIER.ColliderDesc.capsule(largo / 2, r);
+      } else {
+        const hw = Math.max(((p.width ?? 5) / 2) * sT * S, 0.002);
+        const hd = Math.max(((p.depth ?? 5) / 2) * sT * S, 0.002);
+        // Media sección de sobrelargo: los prismas se solapan en el codo
+        // en vez de dejar rendijas.
+        cd = RAPIER.ColliderDesc.cuboid(hw, largo / 2 + Math.min(hw, hd), hd);
+      }
+      cd.setTranslation(medio.x, medio.y, medio.z);
+      cd.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w });
+      cd.setRestitution(0.05).setFriction(0.8);
+      out.push(cd);
+    }
+    return out.length ? out : [this.colliderDesc(obj)];
+  }
+
   private colliderDesc(obj: SceneObject): R.ColliderDesc {
     const size = obj.localSize();
-    const hx = (size.x / 2) * S;
-    const hy = (size.y / 2) * S;
-    const hz = (size.z / 2) * S;
+    // |tamaño|: una pieza ESPEJADA (escala negativa) daría semiejes
+    // negativos — comportamiento indefinido en el motor.
+    const hx = (Math.abs(size.x) / 2) * S;
+    const hy = (Math.abs(size.y) / 2) * S;
+    const hz = (Math.abs(size.z) / 2) * S;
     const r = Math.max(hx, hz);
     let desc: R.ColliderDesc;
     switch (obj.params.kind) {
@@ -1004,10 +1060,8 @@ export class PhysicsWorld {
         desc = RAPIER.ColliderDesc.cuboid(hx, hy, hz);
         break;
       case "tube":
-        // Tubo recto: cilindro exacto; doblado: bbox de la forma barrida.
-        desc = pathIsStraight(obj.params.path)
-          ? RAPIER.ColliderDesc.cylinder(hy, r)
-          : RAPIER.ColliderDesc.cuboid(hx, hy, hz);
+        // Tubo recto: cilindro exacto (el doblado va por collidersDoblado).
+        desc = RAPIER.ColliderDesc.cylinder(hy, r);
         break;
       default: // box / plane / beam
         desc = RAPIER.ColliderDesc.cuboid(hx, Math.max(hy, 0.005), hz);

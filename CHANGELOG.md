@@ -5,6 +5,66 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.14] — 2026-08-02
+
+El Marketplace llega como maqueta navegable, la simulación gana la mano
+con lectura de tensión, la órbita pura y la demostración de movimiento por
+articulación focal, el rack de sentadillas del diseñador entra a la
+biblioteca nativa CON sus cadenas, y las físicas dejan de acuñar la barra:
+las piezas dobladas colisionan por su forma real.
+
+### Corregido
+
+- **Colisión por FORMA REAL de las piezas dobladas**: una viga o tubo
+  TRAZADO con codos colisionaba con su caja envolvente completa — en el
+  rack de sentadillas, los pilares traseros doblados levantaban un MURO
+  invisible que llenaba el hueco del rack: la barra soltada dentro quedaba
+  acuñada en el aire, sin alcanzar jotas, cadenas ni suelo. Ahora la curva
+  barrida se muestrea en cuerdas de ~10 cm y cada una recibe su collider
+  (cápsulas en tubos, prismas solapados en vigas): la barra cae por el
+  hueco real, roza el pilar con fricción y las cadenas de seguridad la
+  detienen, con los discos apoyados sobre los eslabones.
+- **Piezas ESPEJADAS con física**: una pieza con escala negativa (la jota
+  derecha del rack, la columna inferior derecha del TTP) producía un
+  collider de semiejes negativos — comportamiento indefinido que en la
+  práctica la volvía FANTASMA: la barra la atravesaba. Los semiejes ahora
+  usan el tamaño absoluto y el espejo colisiona igual que su gemela.
+- **La barra no cruza el suelo**: losa de suelo de 10 m de espesor y un
+  guardarraíl por subpaso (velocidades acotadas, todo cuerpo bajo la línea
+  de suelo se reposa sobre ella) — el impulso violento de despenetración
+  al arrancar la simulación ya no catapulta piezas al vacío.
+
+### Añadido
+
+- **MARKETPLACE (maqueta navegable)** en la Home: showroom virtual de
+  marcas (ficticias) cuyos equipos se prueban como ítems de biblioteca
+  ANTES de comprar — el botón abre la Biblioteca real —, mercado
+  bidireccional makers⇄manufacturers (cotiza la construcción de tu diseño
+  con apoyo de la comunidad; las marcas licencian o compran diseños), y
+  pedido de equipo personalizado con interfaz de pintura en vivo sobre el
+  banco plano clásico (estructura y tapizado por separado). Los flujos
+  comerciales confirman en línea y todo lleva etiqueta DEMO.
+- **RACK DE SENTADILLAS nativo**: la máquina estándar es el modelo del
+  diseñador (racksentadillas.prefab.json, verbatim: 14 piezas con pilares
+  doblados, jotas espejadas y rodillos) y nace CON sus dos cadenas de
+  seguridad tendidas entre los anclajes de cada lado — el formato prefab
+  no captura cuerdas, así que la especificación nativa las repone
+  (CuerdaSpec) y la física las materializa como barrera.
+- **Mano con TENSIÓN legible** (✋): la fuerza del agarre siempre
+  alcanza, y la barra de simulación reporta la tensión máxima sostenida
+  del agarre en curso en kg y lb (filtrada, sin picos numéricos).
+- **Herramienta de ÓRBITA en simulación** (🌐): el arrastre solo mueve la
+  cámara, sin tocar piezas — conmutable con la mano en la misma barra.
+- **DEMOSTRACIÓN DE MOVIMIENTO por articulación focal**: selector en
+  español (Columna, Hombro izq., Rodilla der., …), cursores ▲▼ (también
+  flechas del teclado) que flexionan/extienden la articulación FOCAL
+  dentro del rango humano real, candado 🔒 para fijarla, lectura del
+  ángulo en grados y el resto del cuerpo ajustándose por la cadena (mano
+  agarrada e IK incluidos).
+- **DOBLADO POR NODOS en el Toolbox**: séptimo atajo (icono de curva) que
+  activa la deformación por nodos de la pieza trazada seleccionada; sin
+  una pieza válida avisa en pantalla en vez de callar.
+
 ## [0.2.13] — 2026-07-28
 
 El banco plano clásico del diseñador entra a la biblioteca, los grupos se

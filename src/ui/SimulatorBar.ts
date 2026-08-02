@@ -100,22 +100,56 @@ export class SimulatorBar {
     // la figura y flexiona/extiende con los cursores ▲/▼ (o las flechas del
     // teclado) dentro del rango humano; las articulaciones con candado
     // quedan fijas y el resto del cuerpo sigue la cadena.
+    const NOMBRES: Record<string, [string, string]> = {
+      spine: ["Columna", "Spine"],
+      neck: ["Cuello", "Neck"],
+      shoulderL: ["Hombro izq.", "Shoulder L"],
+      shoulderR: ["Hombro der.", "Shoulder R"],
+      elbowL: ["Codo izq.", "Elbow L"],
+      elbowR: ["Codo der.", "Elbow R"],
+      wristL: ["Muñeca izq.", "Wrist L"],
+      wristR: ["Muñeca der.", "Wrist R"],
+      hipL: ["Cadera izq.", "Hip L"],
+      hipR: ["Cadera der.", "Hip R"],
+      kneeL: ["Rodilla izq.", "Knee L"],
+      kneeR: ["Rodilla der.", "Knee R"],
+      ankleL: ["Tobillo izq.", "Ankle L"],
+      ankleR: ["Tobillo der.", "Ankle R"],
+    };
     const focal = el("select", { class: "tool tool-select sim-focal", title: tt("Articulación focal del movimiento", "Focal joint of the movement") }) as HTMLSelectElement;
     const grupoFigura = el("div", { class: "tool-group sim-figura" }, []);
+    const angulo = el("span", { class: "sim-angulo" }, [""]);
+    const bCandado = el("button", { class: "tool", title: tt("Fijar/liberar la articulación focal", "Lock/unlock the focal joint") }, ["🔓"]);
+    const refrescarFocal = () => {
+      const est = focal.value ? this.editor.estadoArticulacion(focal.value) : null;
+      angulo.textContent = est ? `${est.grados}°` : "";
+      bCandado.replaceChildren(est?.fijada ? "🔒" : "🔓");
+      bCandado.classList.toggle("active", !!est?.fijada);
+    };
     const poblarFocal = () => {
       focal.replaceChildren();
       const arts = this.editor.articulacionesFigura();
-      for (const a of arts) focal.append(el("option", { value: a }, [a]));
+      for (const a of arts) {
+        const par = NOMBRES[a];
+        focal.append(el("option", { value: a }, [par ? tt(par[0], par[1]) : a]));
+      }
       grupoFigura.classList.toggle("sim-oculto", arts.length === 0);
+      refrescarFocal();
     };
     const mover = (dir: 1 | -1) => {
       if (focal.value) this.editor.moverArticulacionFocal(focal.value, dir);
+      refrescarFocal();
     };
     const bFlex = el("button", { class: "tool", title: tt("Flexión / tracción (▲)", "Flexion / pull (▲)") }, ["▲"]);
     const bExt = el("button", { class: "tool", title: tt("Extensión / empuje (▼)", "Extension / push (▼)") }, ["▼"]);
     bFlex.addEventListener("click", () => mover(1));
     bExt.addEventListener("click", () => mover(-1));
-    grupoFigura.append(focal, bFlex, bExt);
+    bCandado.addEventListener("click", () => {
+      if (focal.value) this.editor.toggleCandadoArticulacion(focal.value);
+      refrescarFocal();
+    });
+    focal.addEventListener("change", refrescarFocal);
+    grupoFigura.append(focal, bFlex, bExt, bCandado, angulo);
     const teclas = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") { mover(1); e.preventDefault(); }
       else if (e.key === "ArrowDown") { mover(-1); e.preventDefault(); }

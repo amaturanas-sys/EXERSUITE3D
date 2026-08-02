@@ -2567,6 +2567,45 @@ export class Editor {
   }
 
   /**
+   * CANDADO de una articulación por nombre (v0.2.14): la barra de
+   * simulación puede FIJAR la articulación focal sin abrir Posturas (que
+   * está oculto durante la simulación). Devuelve el estado resultante.
+   */
+  toggleCandadoArticulacion(nombre: string): boolean {
+    if (this.jointLocks.has(nombre)) this.jointLocks.delete(nombre);
+    else this.jointLocks.add(nombre);
+    if (this.selectedJointName === nombre) this.emitJointSelection();
+    this.scheduleAutosave();
+    return this.jointLocks.has(nombre);
+  }
+
+  /** Estado de la articulación para la barra de simulación: ángulo del eje
+   *  primario (grados), rango natural y candado. */
+  estadoArticulacion(
+    nombre: string,
+  ): { grados: number; min: number; max: number; fijada: boolean } | null {
+    const joints = this.figureJoints();
+    const dof = JOINT_DOF[nombre];
+    if (!joints || !joints[nombre] || !dof) return null;
+    let eje: "x" | "y" | "z" = "x";
+    let rango = -1;
+    for (const ax of ["x", "y", "z"] as const) {
+      const l = dof[ax];
+      if (l && l[1] - l[0] > rango) {
+        rango = l[1] - l[0];
+        eje = ax;
+      }
+    }
+    const lim = dof[eje]!;
+    return {
+      grados: Math.round(radToDeg(joints[nombre].rotation[eje])),
+      min: lim[0],
+      max: lim[1],
+      fijada: this.jointLocks.has(nombre),
+    };
+  }
+
+  /**
    * DEMOSTRACIÓN DE MOVIMIENTO (v0.2.14): los cursores ▲/▼ flexionan o
    * extienden la articulación FOCAL de la figura alrededor de su eje
    * natural primario, respetando el rango de movimiento humano. Las
@@ -4309,7 +4348,17 @@ export class Editor {
    */
   beginBendNodes(): void {
     const obj = this.selected;
-    if (!obj || !obj.params.path || this.simulating) return;
+    if (!obj || !obj.params.path || this.simulating) {
+      if (!this.simulating) {
+        this.avisoTemporal(
+          tt(
+            "Selecciona un pilar o tubo TRAZADO (herramienta de línea) para doblarlo por nodos.",
+            "Select a DRAWN pillar or tube (line tool) to bend it by nodes.",
+          ),
+        );
+      }
+      return;
+    }
     this.cancelConnect();
     this.cancelCable();
     this.cancelRope();
