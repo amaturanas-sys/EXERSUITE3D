@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.15] — 2026-08-03
+
+Las jotas sostienen la barra en su CONCAVIDAD real, las cadenas se
+comportan como CUERDAS flexibles de verdad, y nace el PROTOTIPO CON FOTO:
+el simulador de estética del espacio con fotografías del usuario.
+
+### Corregido
+
+- **Asiento CÓNCAVO de las jotas y brazos de seguridad**: el motor ahora
+  reconoce que el gancho J tiene una estructura cóncava que SOSTIENE la
+  barra — la superficie superior de la malla real se muestrea con rayos
+  verticales y cada muestra se vuelve una columna de collider, de modo que
+  el canal (asiento bajo, tope delantero, respaldo) queda representado tal
+  cual es. La barra apoyada queda RETENIDA: ni rueda ni desliza fuera del
+  gancho, aunque se la empuje (antes resbalaba sobre una caja lisa y caía).
+
+### Cambiado
+
+- **Cadenas y correas como CUERDAS FLEXIBLES**: durante la simulación cada
+  cadena es una cadena de eslabones dinámicos articulados por juntas
+  esféricas, amarrada por sus extremos a los cuerpos de sus piezas de
+  anclaje. La catenaria de diseño solo define la TENSIÓN inicial de los
+  extremos: a partir de ahí la cuerda cuelga, ondula, se hunde bajo la
+  barra que cae (y la mece) y recupera su forma — el visual de eslabones
+  se reproyecta en vivo desde la física, en vez de quedarse clavado en su
+  parábola. Eslabones con masa industrial y amortiguación de rozamiento:
+  la cadena disipa el golpe en lugar de devolverlo como un trampolín.
+
+### Añadido
+
+- **PROTOTIPO CON FOTO** (nueva sección de la ventana izquierda): el
+  simulador de la estética y disposición del espacio con FOTOGRAFÍAS del
+  usuario como referencia. Configura un espacio con las dimensiones del
+  lugar real, carga una foto de ese lugar y ALINEA la cámara con la foto
+  superpuesta al visor (transparencia ajustable, sin capturar toques);
+  activa la PANTALLA VERDE (fondo croma con suelo, rejilla y ayudantes
+  ocultos) y pide la CAPTURA COMPUESTA: los modelos se recortan por croma
+  y se solapan sobre la foto — un piloto visual de lo que obtendría al
+  colocar los equipos en su sitio, guardado en la galería y descargado
+  como PNG.
+
 ## [0.2.14] — 2026-08-02
 
 El Marketplace llega como maqueta navegable, la simulación gana la mano

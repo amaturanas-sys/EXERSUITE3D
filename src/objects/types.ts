@@ -186,6 +186,14 @@ export interface ComponentDefinition {
    * 2 = ambos), diametro/grosor del disco (cm) y masa por disco (kg).
    */
   cargaDiscos?: CargaDiscosDef;
+  /**
+   * La pieza tiene un ASIENTO CÓNCAVO que recibe la barra (jotas, brazos de
+   * seguridad): su física debe seguir el PERFIL real de la malla — el motor
+   * muestrea la superficie superior y construye el canal (asiento bajo,
+   * tope delantero, respaldo) para que la barra quede RETENIDA en la
+   * concavidad en vez de resbalar sobre una caja lisa.
+   */
+  asientoBarra?: boolean;
   /** Descripcion corta para tooltips. */
   description: string;
 }

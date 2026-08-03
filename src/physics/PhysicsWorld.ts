@@ -13,16 +13,19 @@ import type { Cable } from "./cables";
 const DEG2RAD = Math.PI / 180;
 
 /**
- * Cuerda de seguridad vista por el motor: extremos en MUNDO (cm), caída de
- * la catenaria y radio del eslabón. `movil` marca las que cuelgan de piezas
- * dinámicas (no se materializan).
+ * Cuerda de seguridad vista por el motor: extremos en MUNDO (cm) con la
+ * pieza de anclaje de cada uno (para amarrar la junta a su cuerpo), caída
+ * inicial de la catenaria (la TENSIÓN de partida de los extremos) y radio
+ * del eslabón.
  */
 export interface RopeFisica {
+  id: string;
   a: [number, number, number];
   b: [number, number, number];
+  aId: string | null;
+  bId: string | null;
   sag: number;
   radio: number;
-  movil: boolean;
 }
 
 interface CableEntry {
@@ -107,7 +110,13 @@ export class PhysicsWorld {
     this.cuerposCable.clear();
     this.topeCongelados.clear();
     this.drag = null;
+    this.cuerdasSim.clear();
     this.world = new RAPIER.World(GRAVITY);
+    // Cadenas flexibles bajo barras pesadas (razones de masa ~1000:1): más
+    // iteraciones del solver mantienen firmes las juntas de los eslabones.
+    if ("numSolverIterations" in this.world) {
+      (this.world as unknown as { numSolverIterations: number }).numSolverIterations = 12;
+    }
 
     // Suelo fijo: cara superior en y = 0. LOSA GRUESA (v0.2.14): 10 m de
     // espesor — una pieza delgada y rápida (una barra cargada que cae desde
@@ -129,56 +138,145 @@ export class PhysicsWorld {
     this.detectarCalzados();
     for (const joint of joints) this.addJoint(joint);
     for (const cable of cables) this.addCable(cable);
-    // CADENAS Y CORREAS DE SEGURIDAD (v0.2.14): dejan de ser adorno visual —
-    // se materializan como una cuerda de cápsulas que DETIENE la barra.
-    for (const r of ropes) this.addRopeBarrier(r);
+    // CADENAS Y CORREAS DE SEGURIDAD (v0.2.15): cuerdas FLEXIBLES de verdad
+    // — eslabones dinámicos articulados, amarrados a sus piezas de anclaje.
+    for (const r of ropes) this.addRopeFlexible(r);
     this.detectarGuias();
   }
 
+  /** Eslabones simulados de cada cuerda (para reproyectar el visual). */
+  private cuerdasSim = new Map<string, { cuerpos: R.RigidBody[]; medios: number[] }>();
+
   /**
-   * CADENA/CORREA DE SEGURIDAD como BARRERA FÍSICA (v0.2.14): la cuerda se
-   * muestrea a lo largo de su catenaria y cada tramo recibe una cápsula
-   * colisionable. Con los dos extremos anclados a piezas FIJAS (el caso de
-   * las cadenas de seguridad tendidas entre los pilares de un rack) la
-   * barrera es un cuerpo estático: una barra que cae desde las jotas queda
-   * DETENIDA por la cadena, como en la máquina real. Si algún extremo
-   * cuelga de una pieza móvil, la cuerda se deja solo visual (su geometría
-   * cambiaría a cada paso).
+   * CADENA/CORREA DE SEGURIDAD FLEXIBLE (v0.2.15): la cuerda se simula como
+   * una cadena de CÁPSULAS DINÁMICAS articuladas por juntas esféricas y
+   * amarrada por sus extremos a los cuerpos de las piezas de anclaje (fijas
+   * o móviles). La catenaria inicial solo define la TENSIÓN de partida de
+   * los extremos: a partir de ahí la cuerda cuelga, ondula y se deforma con
+   * lo que la toca — una barra que cae sobre ella la hunde y queda mecida
+   * en la cadena, como en la máquina real.
    */
-  private addRopeBarrier(r: RopeFisica): void {
-    if (!this.world || r.movil) return;
+  private addRopeFlexible(r: RopeFisica): void {
+    if (!this.world) return;
     const a = new THREE.Vector3(r.a[0], r.a[1], r.a[2]);
     const b = new THREE.Vector3(r.b[0], r.b[1], r.b[2]);
     const D = a.distanceTo(b);
-    if (D < 1) return;
-    const sag = r.sag; // caída de la catenaria (cm), misma fórmula del visual
-    const N = THREE.MathUtils.clamp(Math.round(D / 8), 4, 40);
+    if (D < 2) return;
+    const sag = r.sag; // caída inicial (cm), misma parábola del visual
+    const rr = sag / D;
+    const arco = D * (1 + (8 / 3) * rr * rr); // longitud de la cuerda (cm)
+    const N = THREE.MathUtils.clamp(Math.round(arco / 6), 4, 30);
     const punto = (t: number): THREE.Vector3 => {
       const p = a.clone().lerp(b, t);
-      p.y -= 4 * sag * t * (1 - t); // parábola: máxima caída al centro
+      p.y -= 4 * sag * t * (1 - t);
       return p;
     };
-    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
     const radio = Math.max(0.8, r.radio) * S;
-    const eje = new THREE.Vector3();
-    const q = new THREE.Quaternion();
+    // Masa de cadena INDUSTRIAL (~6 kg/m) repartida entre eslabones: la
+    // razón de masas contra una barra cargada (100+ kg) se mantiene a raya
+    // y las juntas no se estiran — el precio del realismo del solver.
+    const masaLink = Math.max(0.2, (arco * S * 6) / N);
+    const up = new THREE.Vector3(0, 1, 0);
+    const cuerpos: R.RigidBody[] = [];
+    const medios: number[] = [];
     for (let i = 0; i < N; i++) {
       const p0 = punto(i / N);
       const p1 = punto((i + 1) / N);
       const medio = p0.clone().add(p1).multiplyScalar(0.5).multiplyScalar(S);
-      const largo = p0.distanceTo(p1) * S;
-      if (largo < 1e-4) continue;
-      eje.copy(p1).sub(p0).normalize();
-      q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
+      const largo = Math.max(p0.distanceTo(p1) * S, 0.01);
+      const q = new THREE.Quaternion().setFromUnitVectors(
+        up,
+        p1.clone().sub(p0).normalize(),
+      );
+      // Amortiguación alta: una cadena real DISIPA el golpe (los eslabones
+      // rozan entre sí) — sin ella, la elasticidad de las juntas devuelve
+      // la barra como un trampolín.
+      const bd = RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(medio.x, medio.y, medio.z)
+        .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
+        .setLinearDamping(3.5)
+        .setAngularDamping(2.5)
+        .setCcdEnabled(true);
+      const body = this.world.createRigidBody(bd);
       this.world.createCollider(
         RAPIER.ColliderDesc.capsule(largo / 2, radio)
-          .setTranslation(medio.x, medio.y, medio.z)
-          .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
-          .setRestitution(0.02)
-          .setFriction(0.9),
+          .setDensity(0)
+          .setRestitution(0)
+          .setFriction(1.0),
         body,
       );
+      body.setAdditionalMass(masaLink, true);
+      cuerpos.push(body);
+      medios.push(largo / 2);
     }
+    // Juntas esféricas eslabón↔eslabón (sin contacto entre vecinos).
+    for (let i = 1; i < N; i++) {
+      const jd = RAPIER.JointData.spherical(
+        { x: 0, y: medios[i - 1], z: 0 },
+        { x: 0, y: -medios[i], z: 0 },
+      );
+      const j = this.world.createImpulseJoint(jd, cuerpos[i - 1], cuerpos[i], true);
+      j.setContactsEnabled(false);
+    }
+    // Amarres de los extremos a sus piezas de anclaje.
+    this.anclarCuerda(r.aId, a, cuerpos[0], -medios[0]);
+    this.anclarCuerda(r.bId, b, cuerpos[N - 1], medios[N - 1]);
+    this.cuerdasSim.set(r.id, { cuerpos, medios });
+  }
+
+  /** Junta esférica extremo-de-cuerda ↔ cuerpo del anclaje (o punto fijo). */
+  private anclarCuerda(
+    id: string | null,
+    mundoCm: THREE.Vector3,
+    eslabon: R.RigidBody,
+    syM: number,
+  ): void {
+    if (!this.world) return;
+    const w = mundoCm.clone().multiplyScalar(S);
+    let body = id ? this.bodies.get(id)?.body ?? null : null;
+    let local: { x: number; y: number; z: number };
+    if (body) {
+      const t = body.translation();
+      const q = body.rotation();
+      const inv = new THREE.Quaternion(q.x, q.y, q.z, q.w).invert();
+      const v = new THREE.Vector3(w.x - t.x, w.y - t.y, w.z - t.z).applyQuaternion(inv);
+      local = { x: v.x, y: v.y, z: v.z };
+    } else {
+      body = this.world.createRigidBody(
+        RAPIER.RigidBodyDesc.fixed().setTranslation(w.x, w.y, w.z),
+      );
+      local = { x: 0, y: 0, z: 0 };
+    }
+    const jd = RAPIER.JointData.spherical(local, { x: 0, y: syM, z: 0 });
+    const j = this.world.createImpulseJoint(jd, body, eslabon, true);
+    j.setContactsEnabled(false);
+  }
+
+  /**
+   * Polilínea ACTUAL de una cuerda simulada (puntos de mundo en cm): los
+   * extremos de cada eslabón encadenados — el visual se reproyecta de aquí.
+   */
+  polilineaCuerda(id: string): THREE.Vector3[] | null {
+    const e = this.cuerdasSim.get(id);
+    if (!e) return null;
+    const pts: THREE.Vector3[] = [];
+    const u = new THREE.Vector3();
+    for (let i = 0; i < e.cuerpos.length; i++) {
+      const body = e.cuerpos[i];
+      const t = body.translation();
+      const q = body.rotation();
+      u.set(0, 1, 0).applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w));
+      const hl = e.medios[i];
+      if (i === 0) {
+        pts.push(new THREE.Vector3(
+          (t.x - u.x * hl) / S, (t.y - u.y * hl) / S, (t.z - u.z * hl) / S,
+        ));
+      }
+      pts.push(new THREE.Vector3(
+        (t.x + u.x * hl) / S, (t.y + u.y * hl) / S, (t.z + u.z * hl) / S,
+      ));
+    }
+    return pts;
   }
 
   /**
@@ -991,10 +1089,69 @@ export class PhysicsWorld {
    */
   private colliderDescs(obj: SceneObject): R.ColliderDesc[] {
     const p = obj.params;
+    // Jotas y brazos de seguridad: el asiento CÓNCAVO real de la malla
+    // (v0.2.15) — la caja lisa dejaba resbalar la barra fuera del gancho.
+    if (getDefinition(obj.componentId)?.asientoBarra) {
+      const asiento = this.collidersAsiento(obj);
+      if (asiento.length >= 3) return asiento;
+    }
     if ((p.kind === "beam" || p.kind === "tube") && p.path && !pathIsStraight(p.path)) {
       return this.collidersDoblado(obj);
     }
     return [this.colliderDesc(obj)];
+  }
+
+  /**
+   * ASIENTO CÓNCAVO de una jota/brazo (v0.2.15): la superficie superior de
+   * la malla real se muestrea con rayos verticales a lo largo del brazo y
+   * cada muestra se vuelve una columna de collider — el canal en J queda
+   * representado tal cual es (asiento bajo, tope delantero, respaldo alto):
+   * la barra apoyada queda RETENIDA en la concavidad y no puede rodar ni
+   * deslizar fuera, que es exactamente para lo que existe el gancho.
+   */
+  private collidersAsiento(obj: SceneObject): R.ColliderDesc[] {
+    const geo = obj.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    const esc = obj.mesh.scale;
+    const spanX = bb.max.x - bb.min.x;
+    const spanZ = bb.max.z - bb.min.z;
+    if (spanX < 0.2 || spanZ < 0.2 || bb.max.y - bb.min.y < 0.2) return [];
+    // El brazo (y su canal) corre por el eje horizontal MÁS LARGO local.
+    const ejeZ = spanZ >= spanX;
+    const largo = ejeZ ? spanZ : spanX;
+    const n = Math.min(48, Math.max(8, Math.round(largo / 1.2)));
+    const paso = largo / n;
+    const malla = new THREE.Mesh(geo);
+    malla.updateMatrixWorld();
+    const ray = new THREE.Raycaster();
+    const abajo = new THREE.Vector3(0, -1, 0);
+    const origen = new THREE.Vector3();
+    const xMid = (bb.min.x + bb.max.x) / 2;
+    const zMid = (bb.min.z + bb.max.z) / 2;
+    const out: R.ColliderDesc[] = [];
+    for (let i = 0; i < n; i++) {
+      const sc = (ejeZ ? bb.min.z : bb.min.x) + (i + 0.5) * paso;
+      origen.set(ejeZ ? xMid : sc, bb.max.y + 5, ejeZ ? sc : zMid);
+      ray.set(origen, abajo);
+      const hit = ray.intersectObject(malla, false)[0];
+      if (!hit) continue;
+      const yTop = hit.point.y;
+      if (yTop - bb.min.y < 0.2) continue;
+      const cd = RAPIER.ColliderDesc.cuboid(
+        (ejeZ ? spanX / 2 : paso / 2) * Math.abs(esc.x) * S,
+        ((yTop - bb.min.y) / 2) * Math.abs(esc.y) * S,
+        (ejeZ ? paso / 2 : spanZ / 2) * Math.abs(esc.z) * S,
+      );
+      cd.setTranslation(
+        (ejeZ ? xMid : sc) * esc.x * S,
+        ((yTop + bb.min.y) / 2) * esc.y * S,
+        (ejeZ ? sc : zMid) * esc.z * S,
+      );
+      cd.setRestitution(0.02).setFriction(0.9);
+      out.push(cd);
+    }
+    return out;
   }
 
   /** Cápsulas (tubo) o prismas (viga) por cada cuerda de la curva doblada. */

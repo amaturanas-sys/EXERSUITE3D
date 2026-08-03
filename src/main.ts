@@ -25,6 +25,7 @@ import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
 import { instalarSonidoUI } from "./ui/sonido";
 import { crearBarraHerramientas } from "./ui/ToolQuickBar";
+import { PrototipoFoto } from "./ui/PrototipoFoto";
 
 const app = document.getElementById("app")!;
 // Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.
@@ -198,14 +199,23 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     chevArrastre.textContent = on ? "▾" : "▸";
   };
 
+  // Sección PROTOTIPO CON FOTO (v0.2.15): simulador de estética del espacio
+  // con fotografías del usuario (superposición + pantalla verde + compuesta).
+  const prototipo = new PrototipoFoto(ed);
+  const seccionProto = el("aside", { class: "panel", id: "sec-prototipo" }, [
+    el("div", { class: "panel-title" }, [tt("Prototipo con foto", "Photo prototype")]),
+  ]);
+  seccionProto.append(prototipo.root);
+
   // Paneles plegables desde su título (esquema F4). Propiedades y
   // Conexiones nacen plegadas (antes nacían escondidas en pestañas).
   hacerPlegable(palette.root);
   hacerPlegable(inspector.root, true);
   hacerPlegable(joints.root, true);
+  hacerPlegable(seccionProto, true);
   hacerPlegable(posePanel.root);
 
-  leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre);
+  leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre, seccionProto);
 
   // Barra de herramientas rápidas flotante (v0.2.13): espejo del Toolbox.
   const toolQuick = crearBarraHerramientas(ed);
@@ -218,12 +228,13 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
-  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
+  editorNodes = [canvas, prototipo.overlay, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),
     () => toolbar.dispose(),
     () => perfPanel.dispose(),
+    () => prototipo.dispose(),
     () => altoToolbar.disconnect(),
   ];
   app.append(...editorNodes);

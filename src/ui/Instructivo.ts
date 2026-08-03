@@ -129,7 +129,19 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Con la simulación corriendo, ARRASTRA las piezas móviles con el dedo: es la mano interactiva. La fuerza de la mano SIEMPRE alcanza para operar los móviles, y la barra reporta la TENSIÓN MÁXIMA ejercida en kg y lb (✋ máx …).",
       "El botón 🌐 cambia a la herramienta de ÓRBITA: el arrastre solo mueve la cámara para visualizar, sin tocar piezas; ✋ vuelve a la mano.",
       "DEMOSTRACIÓN DE MOVIMIENTO del maniquí: elige la articulación FOCAL en el selector de la barra y los cursores ▲/▼ (o las flechas del teclado) la flexionan y extienden dentro del rango de movimiento humano — las articulaciones fijadas con candado (Posturas) no se mueven y el resto del cuerpo sigue la cadena.",
+      "Las JOTAS y brazos de seguridad sostienen la barra en su CONCAVIDAD real: apoyada en el gancho queda retenida por el asiento y el tope, sin rodar ni deslizar fuera.",
+      "Las CADENAS y correas son CUERDAS FLEXIBLES: cuelgan, ondulan y se hunden bajo la barra que cae (y la mecen); la caída definida al tenderlas fija su tensión inicial.",
       "Al detener, todo vuelve exactamente a su posición de diseño.",
+    ],
+  },
+  {
+    id: "prototipo",
+    pregunta: "¿Cómo veo mis equipos en una FOTO de mi espacio real (prototipo)?",
+    puntos: [
+      "Abre la sección PROTOTIPO CON FOTO de la ventana izquierda y configura tu espacio con las dimensiones REALES del lugar.",
+      "Carga una foto del lugar: se SUPERPONE al visor con transparencia ajustable (control Superponer) para que alinees la cámara y los modelos con la perspectiva de la foto — la foto no captura toques.",
+      "🟩 Pantalla verde deja el visor con fondo croma (suelo, rejilla y ayudantes ocultos), listo para recortar los modelos.",
+      "🎞 Captura compuesta recorta los modelos por croma y los solapa sobre tu foto: un piloto visual de cómo quedaría el equipamiento en tu sitio, guardado en la galería de la Home y descargado como PNG.",
     ],
   },
   {

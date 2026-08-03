@@ -1803,3 +1803,61 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
+
+/* ---- Prototipo con foto (v0.2.15): superposición y sección ---- */
+/* La foto de referencia cubre el visor SIN capturar toques (solo guía). */
+#proto-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 2; /* sobre el visor, bajo paneles y barras */
+}
+
+.proto-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.proto-ayuda {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+.proto-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.proto-btn.primario {
+  font-weight: 600;
+}
+
+.proto-thumb {
+  width: 100%;
+  max-height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.proto-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.proto-fila input[type="range"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.proto-etiqueta {
+  font-size: 12px;
+  opacity: 0.8;
+}

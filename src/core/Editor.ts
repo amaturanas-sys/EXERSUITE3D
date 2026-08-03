@@ -563,6 +563,23 @@ export class Editor {
     return this.sceneManager.renderer.domElement.toDataURL("image/png");
   }
 
+  /**
+   * PANTALLA VERDE del visor (v0.2.15 · prototipo con foto): fondo croma y
+   * suelo ocultos para recortar los modelos sobre una foto del lugar real.
+   */
+  setPantallaVerde(on: boolean): void {
+    this.sceneManager.setPantallaVerde(on);
+    // Los ayudantes de edición (uniones, indicador de calce) no son parte
+    // del prototipo: se ocultan del recorte croma.
+    this.jointHelpers.visible = !on && !this.simulating;
+    this.snap.hideIndicator();
+    this.requestRender();
+  }
+
+  isPantallaVerde(): boolean {
+    return this.sceneManager.isPantallaVerde();
+  }
+
   /** Pide repintar los próximos frames (interacción, cambios de escena…). */
   requestRender(frames = 3): void {
     this.renderDemand = Math.max(this.renderDemand, frames);
@@ -611,8 +628,9 @@ export class Editor {
     if (this.simulating && this.physics) {
       this.physics.step(dt);
       this.cablesDirty = true;
-      // Las cuerdas ancladas a piezas dinamicas siguen a sus anclas (throttle).
-      if (++this.simFrame % 6 === 0) this.rebuildDynamicRopes();
+      // Las cuerdas SIMULADAS se reproyectan desde sus eslabones físicos
+      // (v0.2.15: cuelgan, ondulan y se hunden como cuerdas de verdad).
+      if (++this.simFrame % 2 === 0) this.syncRopesFromPhysics();
     }
     this.updateStackAnimation();
     this.updateHandIK();
@@ -642,14 +660,17 @@ export class Editor {
     requestAnimationFrame(this.loop);
   };
 
-  /** Reconstruye solo las cuerdas con algún extremo en una pieza no fija. */
-  private rebuildDynamicRopes(): void {
+  /** Reproyecta cada cuerda desde la polilínea de sus eslabones simulados. */
+  private syncRopesFromPhysics(): void {
+    if (!this.physics) return;
     for (const rope of this.ropes.values()) {
-      const dyn = [rope.a.objectId, rope.b.objectId].some((id) => {
-        const o = id ? this.objects.get(id) : null;
-        return o && !o.physics.fixed && o.effectiveMassKg() > 0;
-      });
-      if (dyn) this.rebuildRope(rope);
+      const pts = this.physics.polilineaCuerda(rope.id);
+      if (pts && pts.length > 1) {
+        rope.poseFromPolyline(pts, this.ropeSegTemplate(rope.kind));
+      } else {
+        // Sin simulación propia (cuerda demasiado corta): sigue a sus anclas.
+        this.rebuildRope(rope);
+      }
     }
   }
 
@@ -5045,22 +5066,19 @@ export class Editor {
    * jotas cae sobre la cadena y queda detenida ahí, como en el rack real.
    */
   private cuerdasFisicas(): RopeFisica[] {
-    const esMovil = (id?: string | null): boolean => {
-      if (!id) return false;
-      const o = this.objects.get(id);
-      return !!o && !o.physics.fixed && o.effectiveMassKg() > 0;
-    };
     const out: RopeFisica[] = [];
     for (const r of this.ropes.values()) {
       const a = this.ropeEndWorld(r.a);
       const b = this.ropeEndWorld(r.b);
       const D = a.distanceTo(b);
       out.push({
+        id: r.id,
         a: [a.x, a.y, a.z],
         b: [b.x, b.y, b.z],
+        aId: r.a.objectId,
+        bId: r.b.objectId,
         sag: r.slack * D * 0.45,
         radio: r.kind === "chain" ? 1.6 : 1.2,
-        movil: esMovil(r.a.objectId) || esMovil(r.b.objectId),
       });
     }
     return out;

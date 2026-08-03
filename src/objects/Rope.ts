@@ -157,6 +157,39 @@ export class Rope {
     this.placeEndFitting(this.endB, B, tanB);
   }
 
+  /**
+   * Posa los segmentos sobre una POLILÍNEA arbitraria (v0.2.15): durante la
+   * simulación la cuerda es una cadena de eslabones físicos y el visual se
+   * reproyecta desde sus puntos reales — cuelga, ondula y se hunde bajo la
+   * barra en vez de quedarse clavada en su catenaria de diseño.
+   */
+  poseFromPolyline(pts: THREE.Vector3[], segTemplate: THREE.BufferGeometry | null): void {
+    const n = pts.length - 1;
+    if (n < 1) return;
+    if (this.unitGeo === null || this.unitTemplate !== segTemplate) {
+      this.unitGeo?.dispose();
+      this.unitGeo = this.segmentGeometry(segTemplate, 1);
+      this.unitTemplate = segTemplate;
+      for (const m of this.segs) m.geometry = this.unitGeo;
+    }
+    this.setSegmentCount(n);
+    const up = new THREE.Vector3(0, 1, 0);
+    const dir = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      const p0 = pts[i];
+      const p1 = pts[i + 1];
+      const largo = Math.max(p0.distanceTo(p1), 0.01);
+      const m = this.segs[i];
+      m.position.addVectors(p0, p1).multiplyScalar(0.5);
+      m.scale.setScalar(this.kind === "chain" ? largo * 1.5 : largo);
+      m.quaternion.setFromUnitVectors(up, dir.subVectors(p1, p0).normalize());
+      if (this.kind === "chain" && i % 2 === 1) m.rotateY(Math.PI / 2);
+    }
+    this.endA.visible = this.endB.visible = true;
+    this.placeEndFitting(this.endA, pts[0], dir.subVectors(pts[0], pts[1]).normalize());
+    this.placeEndFitting(this.endB, pts[n], dir.subVectors(pts[n], pts[n - 1]).normalize());
+  }
+
   /** Ajusta el pool de meshes al número de segmentos (geometría compartida). */
   private setSegmentCount(n: number): void {
     while (this.segs.length > n) {

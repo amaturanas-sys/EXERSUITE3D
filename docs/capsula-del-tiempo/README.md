@@ -375,3 +375,18 @@ suelo y las cadenas la detienen.
 - [`v214-barra-jotas.png`](2026-07-28/v214-barra-jotas.png)
 - [`v214-barra-cadena.png`](2026-07-28/v214-barra-cadena.png)
 - [`v214b-rack-cadenas.png`](2026-07-28/v214b-rack-cadenas.png)
+
+## 2026-08-03 — 5 capturas
+
+v0.2.15: asiento CÓNCAVO de las jotas (la barra queda retenida en el canal
+real del gancho, sin rodar ni deslizar), cadenas de seguridad como CUERDAS
+FLEXIBLES (eslabones dinámicos articulados que se hunden bajo la barra y la
+mecen, con el visual reproyectado en vivo), y PROTOTIPO CON FOTO: foto del
+lugar real superpuesta al visor con transparencia, pantalla verde y captura
+compuesta por croma sobre la foto.
+
+- [`v215-asiento-jota.png`](2026-08-03/v215-asiento-jota.png)
+- [`v215-cadena-flexible.png`](2026-08-03/v215-cadena-flexible.png)
+- [`v215-proto-overlay.png`](2026-08-03/v215-proto-overlay.png)
+- [`v215-proto-verde.png`](2026-08-03/v215-proto-verde.png)
+- [`v215-prototipo-compuesto.png`](2026-08-03/v215-prototipo-compuesto.png)

@@ -91,6 +91,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 9, height: 24, depth: 26 },
     physics: { massKg: 0, fixed: true },
     calceLocal: [0, -9.7],
+    asientoBarra: true,
     description: "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW).",
   },
   {
@@ -114,6 +115,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 9, height: 24, depth: 106 },
     physics: { massKg: 0, fixed: true },
     calceLocal: [0, -49.3],
+    asientoBarra: true,
     // El brazo se TIENDE entre los dos pilares de su lado (delantero y
     // trasero): cuelga de ambos y sube/baja agujero a agujero en los dos.
     postesCalce: 2,
@@ -369,6 +371,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 7.4, height: 13, depth: 15.4 },
     physics: { massKg: 0, fixed: true },
     calceLocal: [0, 4],
+    asientoBarra: true,
     description:
       "Jota con rodillo real del POWERRACK: el cilindro es el pin de acople a los orificios del pilar, las placas laterales lo abrazan y la superficie posterior con tope recibe la barra.",
   },

@@ -183,9 +183,9 @@ export class SceneManager {
     this.scene.add(grid);
 
     // Ejes X (rojo) y Z (azul) marcados sobre el grid.
-    const axes = new THREE.AxesHelper(METER);
-    axes.position.y = 0.05;
-    this.scene.add(axes);
+    this.axes = new THREE.AxesHelper(METER);
+    this.axes.position.y = 0.05;
+    this.scene.add(this.axes);
     return grid;
   }
 
@@ -219,6 +219,42 @@ export class SceneManager {
    * cada 1 m) y el logotipo como marca de agua — pero recortado exactamente a
    * la planta definida por el usuario. Con null vuelve al suelo infinito.
    */
+  /** Ejes X/Z del origen (se ocultan en pantalla verde). */
+  private axes!: THREE.AxesHelper;
+  /** Fondo previo a la pantalla verde (para restaurarlo al salir). */
+  private fondoPrevio: THREE.Color | THREE.Texture | null = null;
+  private pantallaVerde = false;
+
+  /**
+   * PANTALLA VERDE (v0.2.15 · prototipo con foto): fondo croma uniforme y
+   * suelo/rejilla ocultos — la captura del visor queda lista para RECORTAR
+   * el modelo y solaparlo sobre una fotografía del lugar real del usuario.
+   */
+  setPantallaVerde(on: boolean): void {
+    if (on === this.pantallaVerde) return;
+    this.pantallaVerde = on;
+    if (on) {
+      this.fondoPrevio = this.scene.background as THREE.Color | THREE.Texture | null;
+      this.scene.background = new THREE.Color("#00b140");
+      this.ground.visible = false;
+      this.grid.visible = false;
+      this.axes.visible = false;
+      if (this.customGround) this.customGround.visible = false;
+    } else {
+      this.scene.background = this.fondoPrevio;
+      this.fondoPrevio = null;
+      const activa = this.plantaActual !== null;
+      this.ground.visible = !activa;
+      this.grid.visible = !activa && this.gridPref;
+      this.axes.visible = true;
+      if (this.customGround) this.customGround.visible = true;
+    }
+  }
+
+  isPantallaVerde(): boolean {
+    return this.pantallaVerde;
+  }
+
   setCustomGround(planta: [number, number][] | null): void {
     this.plantaActual = planta && planta.length >= 3 ? planta.map((p) => [...p] as [number, number]) : null;
     if (this.customGround) {
