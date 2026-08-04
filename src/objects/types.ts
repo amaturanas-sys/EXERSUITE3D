@@ -194,6 +194,16 @@ export interface ComponentDefinition {
    * concavidad en vez de resbalar sobre una caja lisa.
    */
   asientoBarra?: boolean;
+  /**
+   * CURADURÍA DE LA PALETA (v0.2.18): qué hace la pieza en "Piezas
+   * disponibles" del Builder. "oculta" = no aparece (redundante con una
+   * pieza real, o plantilla interna de las cuerdas); "despiece" = aparece
+   * agrupada en la sección plegable del despiece TTP/POWERRACK (piezas
+   * internas de las máquinas reales). SOLO afecta a la paleta: prefabs,
+   * máquinas estándar, proyectos guardados y la Biblioteca de modelos
+   * siguen resolviendo la pieza por su id como siempre.
+   */
+  paleta?: "oculta" | "despiece";
   /** Descripcion corta para tooltips. */
   description: string;
 }

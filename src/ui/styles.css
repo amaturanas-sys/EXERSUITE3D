@@ -2091,3 +2091,18 @@ body.modo-prototipo .arrastre-panel {
   border-color: #2e7d32;
   color: #fff;
 }
+
+/* ---- Curaduría de la paleta (v0.2.18): sección plegable del despiece ---- */
+.cat-plegable {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cat-plegable:hover {
+  color: var(--text);
+}
+
+.despiece-cont.oculto {
+  display: none;
+}

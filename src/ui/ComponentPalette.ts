@@ -132,9 +132,17 @@ export class ComponentPalette {
   private renderGroups(body: HTMLElement): void {
     clear(body);
     const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
+    // CURADURÍA (v0.2.18): las piezas "oculta" no aparecen (redundantes o
+    // plantillas internas) y las "despiece" van a su propia sección
+    // plegable al final. Solo cambia la paleta: prefabs y máquinas siguen
+    // resolviendo TODOS los ids de la biblioteca.
+    // El modo Sencillo conserva SU propia lista blanca tal cual (incluida
+    // la barra de dominadas genérica): la curaduría rige la paleta
+    // profesional.
     const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(
-      (d) => !sencillo || COMPS_SENCILLO.has(d.id),
+      (d) => (sencillo ? COMPS_SENCILLO.has(d.id) : d.paleta !== "oculta"),
     );
+    const despiece = all.filter((d) => d.paleta === "despiece");
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }
@@ -154,6 +162,7 @@ export class ComponentPalette {
     }
     const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
+      if (def.paleta === "despiece") continue;
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);
     }
     for (const [cat, defs] of byCat) {
@@ -161,6 +170,21 @@ export class ComponentPalette {
       for (const def of defs) {
         body.append(this.componentButton(def));
       }
+    }
+    // Despiece TTP/POWERRACK: las piezas INTERNAS de las máquinas reales,
+    // agrupadas y plegadas — disponibles sin saturar las categorías.
+    if (despiece.length > 0 && !sencillo) {
+      const cab = el("div", { class: "cat-label cat-plegable" }, [
+        "Despiece TTP / POWERRACK ▸",
+      ]);
+      cab.title = "Piezas internas de las máquinas reales (toca para desplegar)";
+      const cont = el("div", { class: "despiece-cont oculto" });
+      cab.addEventListener("click", () => {
+        const plegado = cont.classList.toggle("oculto");
+        cab.textContent = `Despiece TTP / POWERRACK ${plegado ? "▸" : "▾"}`;
+      });
+      for (const def of despiece) cont.append(this.componentButton(def));
+      body.append(cab, cont);
     }
   }
 

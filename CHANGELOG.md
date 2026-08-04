@@ -5,6 +5,32 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.18] — 2026-08-04
+
+Revisión de la biblioteca: la paleta del Builder se CURA de redundancias
+sin tocar un solo id — prefabs, máquinas estándar, proyectos guardados y
+la Biblioteca de modelos siguen resolviendo todas las piezas.
+
+### Cambiado
+
+- **Paleta profesional CURADA** (nuevo atributo `paleta` de la
+  biblioteca, que solo afecta a "Piezas disponibles"):
+  · OCHO piezas redundantes dejan de aparecer: los genéricos con gemelo
+    real (Montante de rack, Gancho J, Guía, Riel, Barra de dominadas,
+    Roldana) y las plantillas internas de las cuerdas (Cadena de
+    eslabones, Listón de Kevlar), que se confundían con las cuerdas de
+    seguridad colocables.
+  · DIECIOCHO piezas internas de las máquinas reales (pletinas, placas y
+    soportes de polea, bastidores, travesaños, largueros, listones, pies,
+    rieles de base, tubo guía, puente del carro, portadiscos, manguito)
+    se agrupan en la nueva sección plegable "Despiece TTP / POWERRACK",
+    disponible sin saturar las categorías principales.
+- **El modo Sencillo conserva su propia lista blanca intacta** (incluida
+  la barra de dominadas genérica) y no muestra la sección de despiece.
+- Nada más cambia: las máquinas estándar se arman completas con sus
+  piezas internas, los prefab .json se insertan igual y la Biblioteca de
+  modelos sigue listando TODAS las piezas para sustituir modelos.
+
 ## [0.2.17] — 2026-08-04
 
 El Marketplace se vuelve un CATÁLOGO DE VENTA visual: productos con

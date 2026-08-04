@@ -82,6 +82,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "j-hook",
+    paleta: "oculta",
     label: "Gancho J / soporte barra",
     category: "estructural",
     materialId: "acero-negro",
@@ -96,6 +97,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "montante-rack",
+    paleta: "oculta",
     label: "Montante de rack",
     category: "estructural",
     materialId: "acero-negro",
@@ -139,6 +141,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "multiagarre-ttp",
+    paleta: "despiece",
     label: "Multi-agarre dominadas TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -151,6 +154,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "pie-ttp",
+    paleta: "despiece",
     label: "Travesaño TTP (104)",
     category: "estructural",
     materialId: "acero-negro",
@@ -161,6 +165,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "columna-sup-ttp",
+    paleta: "despiece",
     label: "Columna horizontal superior TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -171,6 +176,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "tubo-guia-ttp",
+    paleta: "despiece",
     label: "Tubo guía de poleas TTP",
     category: "estructural",
     materialId: "acero-pulido",
@@ -181,6 +187,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "riel-base-ttp",
+    paleta: "despiece",
     label: "Columna horizontal inferior TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -191,6 +198,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-lat-ttp",
+    paleta: "despiece",
     label: "Remo de polea alta TTP",
     category: "transmision",
     materialId: "cromo",
@@ -200,6 +208,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "travesano-frontal-ttp",
+    paleta: "despiece",
     label: "Travesaño frontal TTP (118)",
     category: "estructural",
     materialId: "acero-negro",
@@ -209,6 +218,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "soporte-polea-ttp",
+    paleta: "despiece",
     label: "Soporte de polea baja TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -218,6 +228,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "placa-polea-ttp",
+    paleta: "despiece",
     label: "Placa de polea baja TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -227,6 +238,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "bastidor-sup-ttp",
+    paleta: "despiece",
     label: "Bastidor superior TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -239,6 +251,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "pletina-ttp",
+    paleta: "despiece",
     label: "Pletina TTP (45)",
     category: "estructural",
     materialId: "acero-negro",
@@ -248,6 +261,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "puente-carro-ttp",
+    paleta: "despiece",
     label: "Puente del carro TTP",
     category: "estructural",
     materialId: "acero-negro",
@@ -257,6 +271,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "portadiscos-ttp",
+    paleta: "despiece",
     label: "Portadiscos de polea TTP",
     category: "peso",
     materialId: "acero-negro",
@@ -271,6 +286,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "manguito-guia-ttp",
+    paleta: "despiece",
     label: "Manguito de guía TTP (54)",
     category: "movimiento",
     materialId: "acero-pulido",
@@ -297,6 +313,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "travesano-pr",
+    paleta: "despiece",
     label: "Travesaño POWERRACK (70)",
     category: "estructural",
     materialId: "acero-negro",
@@ -309,6 +326,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "larguero-pr",
+    paleta: "despiece",
     label: "Larguero POWERRACK (106)",
     category: "estructural",
     materialId: "acero-negro",
@@ -318,6 +336,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "liston-pr",
+    paleta: "despiece",
     label: "Listón POWERRACK (106)",
     category: "estructural",
     materialId: "acero-negro",
@@ -377,6 +396,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "riel-base-pr",
+    paleta: "despiece",
     label: "Riel de base POWERRACK (118)",
     category: "estructural",
     materialId: "acero-negro",
@@ -396,6 +416,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-dominadas",
+    paleta: "oculta",
     label: "Barra de dominadas",
     category: "estructural",
     materialId: "cromo",
@@ -427,6 +448,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---------------------------------------------------------------- MOVIMIENTO
   {
     id: "guia",
+    paleta: "oculta",
     label: "Guia",
     category: "movimiento",
     materialId: "cromo",
@@ -436,6 +458,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "riel",
+    paleta: "oculta",
     label: "Riel",
     category: "movimiento",
     materialId: "acero-pulido",
@@ -501,6 +524,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "roldana",
+    paleta: "oculta",
     label: "Roldana",
     category: "transmision",
     materialId: "nylon",
@@ -547,6 +571,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cadena-eslabones",
+    paleta: "oculta",
     label: "Cadena de eslabones",
     category: "transmision",
     materialId: "acero",
@@ -566,6 +591,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "liston-kevlar",
+    paleta: "oculta",
     label: "Liston de Kevlar",
     category: "transmision",
     materialId: "kevlar",

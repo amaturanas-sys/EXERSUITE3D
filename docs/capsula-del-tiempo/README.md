@@ -391,7 +391,7 @@ compuesta por croma sobre la foto.
 - [`v215-proto-verde.png`](2026-08-03/v215-proto-verde.png)
 - [`v215-prototipo-compuesto.png`](2026-08-03/v215-prototipo-compuesto.png)
 
-## 2026-08-04 — 8 capturas
+## 2026-08-04 — 10 capturas
 
 v0.2.16: PROTOTIPO CON FOTO definitivo en cinco pasos — modo CALCE con la
 foto del lugar DEBAJO del render (fondo eliminado, suelo preservado y
@@ -421,3 +421,11 @@ vivo y pedido de demostración.
 
 - [`v217-catalogo.png`](2026-08-04/v217-catalogo.png)
 - [`v217-carrito.png`](2026-08-04/v217-carrito.png)
+
+v0.2.18: revisión de la biblioteca — la paleta profesional se cura de
+redundancias (8 genéricos/plantillas ocultos) y las 18 piezas internas de
+las máquinas reales se agrupan en la sección plegable "Despiece TTP /
+POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
+
+- [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
+- [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
