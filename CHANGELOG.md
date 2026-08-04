@@ -36,6 +36,12 @@ fotografía se produce por capas con suelo de caucho y sombras reales.
      impreso — para que se vea real. Galería + descarga PNG.
   Las sombras se fuerzan durante el modo calce aunque el preset de
   rendimiento las tenga apagadas, y al salir todo vuelve a su estado.
+- **Circunscrito a su PROPIA INSTANCIA DE VISOR**: la función no agrega
+  ninguna sección a la ventana izquierda — para no sobresaturar la
+  interfaz del Builder, se entra con el botón 📸 Prototipo de la barra
+  superior y TODA la interfaz de edición desaparece (queda el visor, la
+  órbita y la ventana flotante de controles con ⌂ Volver); al salir, el
+  Builder se restaura tal como estaba, herramienta activa incluida.
 
 ## [0.2.15] — 2026-08-03
 

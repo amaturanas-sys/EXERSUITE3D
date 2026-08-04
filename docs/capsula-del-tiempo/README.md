@@ -391,7 +391,7 @@ compuesta por croma sobre la foto.
 - [`v215-proto-verde.png`](2026-08-03/v215-proto-verde.png)
 - [`v215-prototipo-compuesto.png`](2026-08-03/v215-prototipo-compuesto.png)
 
-## 2026-08-04 — 3 capturas
+## 2026-08-04 — 6 capturas
 
 v0.2.16: PROTOTIPO CON FOTO definitivo en cinco pasos — modo CALCE con la
 foto del lugar DEBAJO del render (fondo eliminado, suelo preservado y
@@ -403,3 +403,13 @@ sombras.
 - [`v216-calce.png`](2026-08-04/v216-calce.png)
 - [`v216-sol.png`](2026-08-04/v216-sol.png)
 - [`v216-prototipo-producido.png`](2026-08-04/v216-prototipo-producido.png)
+
+Refinamiento del mismo día: la función queda CIRCUNSCRITA A SU PROPIA
+INSTANCIA DE VISOR (botón 📸 Prototipo de la barra superior) para no
+sobresaturar la interfaz del Builder — toda la edición desaparece y ⌂
+Volver restaura el Builder tal como estaba. Probado con una fotografía
+real de un garaje aportada por el diseñador.
+
+- [`v216b-visor-calce.png`](2026-08-04/v216b-visor-calce.png)
+- [`v216b-visor-producido.png`](2026-08-04/v216b-visor-producido.png)
+- [`v216b-builder-restaurado.png`](2026-08-04/v216b-builder-restaurado.png)

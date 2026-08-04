@@ -1856,6 +1856,54 @@ body.modo-calce #viewport {
   display: none;
 }
 
+/* INSTANCIA DE VISOR del prototipo (v0.2.16): ventana flotante propia; el
+ * Builder entero se oculta mientras está activa — cero saturación. */
+#proto-viewer {
+  display: none;
+  position: absolute;
+  top: calc(12px + var(--safe-t));
+  right: calc(12px + var(--safe-r, 0px));
+  width: 250px;
+  max-height: calc(100% - 24px - var(--safe-t) - var(--safe-b));
+  overflow-y: auto;
+  scrollbar-width: thin;
+  flex-direction: column;
+  z-index: 12;
+  background: rgba(30, 33, 40, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+body.modo-prototipo #proto-viewer {
+  display: flex;
+}
+
+/* En el visor de prototipo, TODA la interfaz del Builder desaparece. */
+body.modo-prototipo #toolbar,
+body.modo-prototipo #left-stack,
+body.modo-prototipo #poses,
+body.modo-prototipo #hud,
+body.modo-prototipo #tool-quick,
+body.modo-prototipo #zoom-bar,
+body.modo-prototipo .dock-toggle,
+body.modo-prototipo .arrastre-panel {
+  display: none !important;
+}
+
+.proto-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.proto-titulo {
+  font-weight: 600;
+  font-size: 13px;
+}
+
 .proto-body {
   display: flex;
   flex-direction: column;

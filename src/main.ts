@@ -91,11 +91,16 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const palette = new ComponentPalette(ed);
   const perfPanel = new PerformancePanel(ed);
   const precise = new PreciseDrag(ed);
+  // PROTOTIPO CON FOTO (v0.2.16): CIRCUNSCRITO a su propia instancia de
+  // visor — no agrega ninguna sección al Builder; se entra con el botón
+  // 📸 Prototipo de la barra superior y toda la edición desaparece.
+  const prototipo = new PrototipoFoto(ed);
   const toolbar = new Toolbar(ed, {
     onHome: () => void goHome(),
     onPerformance: () => perfPanel.toggle(),
     onPreciseToggle: () => precise.toggle(),
     isPreciseOn: () => precise.isActiva(),
+    onPrototipo: () => prototipo.activar(),
   });
 
   // Barra de ZOOM del visor (v0.2.3): continuum discreto y sencillo en la
@@ -199,23 +204,14 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     chevArrastre.textContent = on ? "▾" : "▸";
   };
 
-  // Sección PROTOTIPO CON FOTO (v0.2.15): simulador de estética del espacio
-  // con fotografías del usuario (superposición + pantalla verde + compuesta).
-  const prototipo = new PrototipoFoto(ed);
-  const seccionProto = el("aside", { class: "panel", id: "sec-prototipo" }, [
-    el("div", { class: "panel-title" }, [tt("Prototipo con foto", "Photo prototype")]),
-  ]);
-  seccionProto.append(prototipo.root);
-
   // Paneles plegables desde su título (esquema F4). Propiedades y
   // Conexiones nacen plegadas (antes nacían escondidas en pestañas).
   hacerPlegable(palette.root);
   hacerPlegable(inspector.root, true);
   hacerPlegable(joints.root, true);
-  hacerPlegable(seccionProto, true);
   hacerPlegable(posePanel.root);
 
-  leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre, seccionProto);
+  leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre);
 
   // Barra de herramientas rápidas flotante (v0.2.13): espejo del Toolbox.
   const toolQuick = crearBarraHerramientas(ed);
@@ -228,7 +224,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
-  editorNodes = [canvas, prototipo.overlay, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
+  editorNodes = [canvas, prototipo.overlay, prototipo.root, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),
