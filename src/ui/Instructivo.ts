@@ -138,10 +138,10 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     id: "prototipo",
     pregunta: "¿Cómo veo mis equipos en una FOTO de mi espacio real (prototipo)?",
     puntos: [
-      "Abre la sección PROTOTIPO CON FOTO de la ventana izquierda y configura tu espacio con las dimensiones REALES del lugar.",
-      "Carga una foto del lugar: se SUPERPONE al visor con transparencia ajustable (control Superponer) para que alinees la cámara y los modelos con la perspectiva de la foto — la foto no captura toques.",
-      "🟩 Pantalla verde deja el visor con fondo croma (suelo, rejilla y ayudantes ocultos), listo para recortar los modelos.",
-      "🎞 Captura compuesta recorta los modelos por croma y los solapa sobre tu foto: un piloto visual de cómo quedaría el equipamiento en tu sitio, guardado en la galería de la Home y descargado como PNG.",
+      "1) Configura el área de trabajo con las dimensiones del lugar REAL (planta libre o parámetros): que ambas superficies coincidan es lo que da un buen resultado. 2) Compón tu espacio colocando y armando los modelos.",
+      "3) En PROTOTIPO CON FOTO carga la fotografía del lugar: entra el MODO CALCE — la foto queda DEBAJO del render, cuyo fondo se elimina pero cuyo SUELO se preserva. ORBITA hasta el punto de coincidencia entre el suelo del área de trabajo y el de la foto (el control Render regula la transparencia del solapamiento).",
+      "4) 📌 Fija la perspectiva (la órbita queda bloqueada) y arrastra el ☀ en el selector circular para elegir desde dónde viene la luz — las sombras deben hacer sentido con la fotografía.",
+      "5) 🎞 Producir fotografía renderiza por CAPAS: tu foto de fondo y, encima, el suelo del área de trabajo — vestido de goma tipo caucho con el logotipo discretamente impreso — con los modelos y las sombras que proyectan. El piloto queda en la galería de la Home y se descarga como PNG.",
     ],
   },
   {

@@ -317,7 +317,7 @@ export class Editor {
     this.gizmo.setSpace("local");
     // El gizmo desactiva el orbit mientras se arrastra.
     this.gizmo.addEventListener("dragging-changed", (e) => {
-      this.orbit.enabled = !e.value;
+      this.orbit.enabled = !e.value && !this.orbitaBloqueada;
       if (e.value && this.gizmo.object) {
         this.gizmoDragStart = {
           pos: this.gizmo.object.position.clone(),
@@ -574,6 +574,41 @@ export class Editor {
     this.jointHelpers.visible = !on && !this.simulating;
     this.snap.hideIndicator();
     this.requestRender();
+  }
+
+  /**
+   * MODO CALCE del prototipo con foto (v0.2.16): fondo del render eliminado
+   * (la foto del usuario asoma por debajo), suelo PRESERVADO vestido de
+   * caucho, sombras activas y ayudantes de edición ocultos.
+   */
+  setModoCalce(on: boolean): void {
+    this.sceneManager.setModoCalce(on);
+    this.jointHelpers.visible = !on && !this.simulating;
+    this.snap.hideIndicator();
+    if (!on) this.setOrbitaBloqueada(false);
+    this.requestRender();
+  }
+
+  isModoCalce(): boolean {
+    return this.sceneManager.isModoCalce();
+  }
+
+  /** Ángulo de incidencia de la luz (selector del sol del prototipo). */
+  setSolAzimut(grados: number): void {
+    this.sceneManager.setSolAzimut(grados);
+    this.requestRender();
+  }
+
+  /** Perspectiva FIJADA: la órbita queda bloqueada hasta soltarla. */
+  private orbitaBloqueada = false;
+
+  setOrbitaBloqueada(on: boolean): void {
+    this.orbitaBloqueada = on;
+    this.orbit.enabled = !on;
+  }
+
+  isOrbitaBloqueada(): boolean {
+    return this.orbitaBloqueada;
   }
 
   isPantallaVerde(): boolean {

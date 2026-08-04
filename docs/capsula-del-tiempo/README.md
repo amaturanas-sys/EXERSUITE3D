@@ -390,3 +390,16 @@ compuesta por croma sobre la foto.
 - [`v215-proto-overlay.png`](2026-08-03/v215-proto-overlay.png)
 - [`v215-proto-verde.png`](2026-08-03/v215-proto-verde.png)
 - [`v215-prototipo-compuesto.png`](2026-08-03/v215-prototipo-compuesto.png)
+
+## 2026-08-04 — 3 capturas
+
+v0.2.16: PROTOTIPO CON FOTO definitivo en cinco pasos — modo CALCE con la
+foto del lugar DEBAJO del render (fondo eliminado, suelo preservado y
+vestido de caucho), perspectiva fijada con la órbita bloqueada, sol ☀
+arrastrable en selector circular para el ángulo de la luz, y producción por
+capas: foto de fondo + suelo de goma con logo discreto + modelos con sus
+sombras.
+
+- [`v216-calce.png`](2026-08-04/v216-calce.png)
+- [`v216-sol.png`](2026-08-04/v216-sol.png)
+- [`v216-prototipo-producido.png`](2026-08-04/v216-prototipo-producido.png)

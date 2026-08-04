@@ -40,10 +40,13 @@ export class SceneManager {
     // Vista 3/4 tipo SketchUp, mirando a una maquina de ~2 m.
     this.camera.position.set(250, 200, 320);
 
+    // alpha:true — el modo CALCE del prototipo con foto (v0.2.16) elimina el
+    // fondo del render (canvas transparente) dejando ver la foto DEBAJO;
+    // fuera de ese modo scene.background lo cubre todo y no cambia nada.
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: perf.antialias,
-      alpha: false,
+      alpha: true,
       powerPreference: "high-performance",
     });
     this.ratioCap = perf.maxPixelRatio;
@@ -255,6 +258,137 @@ export class SceneManager {
     return this.pantallaVerde;
   }
 
+  // ------------------------------- modo CALCE del prototipo con foto (v0.2.16)
+  private modoCalce = false;
+  private fondoCalce: THREE.Color | THREE.Texture | null = null;
+  private mapaSueloPrevio: THREE.Texture | null = null;
+  private mapaTilePrevio: THREE.Texture | null = null;
+  private sombrasPrevias = false;
+  private texCaucho: THREE.CanvasTexture | null = null;
+  private texCauchoTile: THREE.CanvasTexture | null = null;
+
+  /**
+   * MODO CALCE (v0.2.16 · prototipo con foto): el FONDO del render se
+   * elimina (canvas transparente, como pantalla verde) pero el SUELO se
+   * PRESERVA — la foto del usuario, colocada DEBAJO del render dinámico,
+   * asoma por el cielo mientras el suelo del área de trabajo (con sus
+   * modelos y sombras) la tapa: orbitando se busca la coincidencia entre
+   * ambos suelos. El suelo básico se viste de GOMA tipo caucho con el
+   * logotipo discretamente impreso, y las sombras se fuerzan para que la
+   * composición haga sentido con la luz de la fotografía.
+   */
+  setModoCalce(on: boolean): void {
+    if (on === this.modoCalce) return;
+    this.modoCalce = on;
+    const matSuelo = this.ground.material as THREE.MeshStandardMaterial;
+    const matTile = this.customGround
+      ? ((this.customGround.children[0] as THREE.Mesh | undefined)?.material as
+          | THREE.MeshStandardMaterial
+          | undefined)
+      : undefined;
+    if (on) {
+      this.fondoCalce = this.scene.background as THREE.Color | THREE.Texture | null;
+      this.scene.background = null;
+      this.renderer.setClearColor(0x000000, 0);
+      this.grid.visible = false;
+      this.axes.visible = false;
+      // Suelo de caucho: mapa nuevo, mismo material (se restaura al salir).
+      this.mapaSueloPrevio = matSuelo.map;
+      matSuelo.map = this.cauchoTexture();
+      matSuelo.needsUpdate = true;
+      if (matTile) {
+        this.mapaTilePrevio = matTile.map;
+        matTile.map = this.cauchoTileTexture();
+        matTile.needsUpdate = true;
+      }
+      this.sombrasPrevias = this.renderer.shadowMap.enabled;
+      if (!this.sombrasPrevias) this.setShadowsEnabled(true);
+    } else {
+      this.scene.background = this.fondoCalce;
+      this.fondoCalce = null;
+      this.renderer.setClearColor(0x000000, 1);
+      const activa = this.plantaActual !== null;
+      this.grid.visible = !activa && this.gridPref;
+      this.axes.visible = true;
+      matSuelo.map = this.mapaSueloPrevio;
+      matSuelo.needsUpdate = true;
+      this.mapaSueloPrevio = null;
+      if (matTile) {
+        matTile.map = this.mapaTilePrevio;
+        matTile.needsUpdate = true;
+        this.mapaTilePrevio = null;
+      }
+      if (!this.sombrasPrevias) this.setShadowsEnabled(false);
+    }
+  }
+
+  isModoCalce(): boolean {
+    return this.modoCalce;
+  }
+
+  /**
+   * SOL del prototipo (v0.2.16): orienta la luz principal según el ángulo
+   * de incidencia elegido en el selector circular (azimut en grados; 0° =
+   * luz desde el frente +Z, girando en sentido horario visto desde arriba)
+   * para que las sombras hagan sentido con la fotografía del usuario.
+   */
+  setSolAzimut(grados: number): void {
+    const az = (grados * Math.PI) / 180;
+    const elev = (42 * Math.PI) / 180; // altura solar media
+    const R = 600;
+    this.key.position.set(
+      R * Math.cos(elev) * Math.sin(az),
+      R * Math.sin(elev),
+      R * Math.cos(elev) * Math.cos(az),
+    );
+  }
+
+  /** Goma tipo caucho (suelo estándar, 6 m): moteado + logo discreto. */
+  private cauchoTexture(): THREE.CanvasTexture {
+    if (this.texCaucho) return this.texCaucho;
+    const S = 1024;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    pintarCaucho(ctx, S, 6);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.anisotropy = 8;
+    // Logotipo DISCRETAMENTE impreso, como serigrafía clara sobre la goma:
+    // pequeño y muy tenue — se intuye, no protagoniza.
+    const img = new Image();
+    img.onload = () => {
+      const w = S * 0.2;
+      const h = (w * img.height) / img.width;
+      ctx.save();
+      ctx.globalAlpha = 0.045;
+      ctx.filter = "invert(1)";
+      ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+      ctx.restore();
+      tex.needsUpdate = true;
+    };
+    img.src = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
+    this.texCaucho = tex;
+    return tex;
+  }
+
+  /** Mosaico de caucho de 1 m para el suelo personalizado (planta libre). */
+  private cauchoTileTexture(): THREE.CanvasTexture {
+    if (this.texCauchoTile) return this.texCauchoTile;
+    const S = 256;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = S;
+    const ctx = canvas.getContext("2d")!;
+    pintarCaucho(ctx, S, 1);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(1 / 100, 1 / 100); // UVs en cm → un mosaico por metro
+    tex.anisotropy = 8;
+    this.texCauchoTile = tex;
+    return tex;
+  }
+
   setCustomGround(planta: [number, number][] | null): void {
     this.plantaActual = planta && planta.length >= 3 ? planta.map((p) => [...p] as [number, number]) : null;
     if (this.customGround) {
@@ -411,6 +545,10 @@ export class SceneManager {
   }
 
   setGridVisible(visible: boolean): void {
+    if (this.modoCalce) {
+      this.gridPref = visible;
+      return;
+    }
     this.gridPref = visible;
     if (this.plantaActual) {
       // El suelo personalizado lleva la rejilla horneada: se reconstruye.
@@ -476,4 +614,31 @@ function gradientTexture(top: string, bottom: string): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
+}
+
+/**
+ * Pinta goma tipo caucho: base gris muy oscura y MOTEADO de virutas EPDM
+ * (grises, azuladas y rojizas), el aspecto clásico del piso de gimnasio.
+ * `metros` = metros cubiertos por el lienzo (densidad constante de motas).
+ */
+function pintarCaucho(ctx: CanvasRenderingContext2D, S: number, metros: number): void {
+  ctx.fillStyle = "#2a2c2f";
+  ctx.fillRect(0, 0, S, S);
+  const MOTAS = ["#3a3d41", "#46494e", "#54585e", "#3d4550", "#4a3a3c", "#606468"];
+  // Semilla fija (LCG): el moteado es estable entre sesiones y mosaicos.
+  let sem = 48271;
+  const rnd = (): number => {
+    sem = (sem * 16807) % 2147483647;
+    return sem / 2147483647;
+  };
+  const n = Math.round(1400 * metros * metros);
+  for (let i = 0; i < n; i++) {
+    ctx.fillStyle = MOTAS[Math.floor(rnd() * MOTAS.length)];
+    ctx.globalAlpha = 0.35 + rnd() * 0.45;
+    const r = (0.6 + rnd() * 1.6) * (S / 1024) * (6 / metros) * 0.55;
+    ctx.beginPath();
+    ctx.ellipse(rnd() * S, rnd() * S, r, r * (0.6 + rnd() * 0.6), rnd() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }

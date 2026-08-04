@@ -5,6 +5,38 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.16] — 2026-08-04
+
+El PROTOTIPO CON FOTO toma su forma definitiva: la foto del lugar vive
+DEBAJO del render, el calce se hace orbitando sobre el suelo preservado, la
+perspectiva se fija, el sol se arrastra en un selector circular y la
+fotografía se produce por capas con suelo de caucho y sombras reales.
+
+### Cambiado
+
+- **Prototipo con foto — flujo definitivo en cinco pasos** (reemplaza la
+  primera iteración por croma de v0.2.15):
+  1. El área de trabajo se configura con las dimensiones del lugar REAL
+     (planta de forma libre o parámetros digitales): la coincidencia de
+     superficies es la base del buen resultado.
+  2. El usuario compone su espacio colocando y armando los modelos.
+  3. Al cargar la fotografía se entra en MODO CALCE: la foto se ubica
+     DEBAJO del render dinámico, cuyo fondo se elimina (como pantalla
+     verde) pero cuyo SUELO se preserva — se ORBITA hasta el punto de
+     coincidencia entre el suelo del área de trabajo y el suelo de la
+     foto, con la transparencia del render regulable para ver el
+     solapamiento.
+  4. La perspectiva se FIJA (📌: la órbita queda bloqueada) y el ÁNGULO DE
+     INCIDENCIA DE LA LUZ se elige arrastrando un sol ☀ en un selector
+     circular, para que las sombras hagan sentido con la fotografía.
+  5. La foto se PRODUCE por capas: fondo = fotografía del usuario; encima,
+     la captura del suelo del área de trabajo con sus modelos y las
+     sombras que proyectan. El suelo básico se transforma en GOMA tipo
+     caucho (moteado EPDM) con el logotipo de la aplicación discretamente
+     impreso — para que se vea real. Galería + descarga PNG.
+  Las sombras se fuerzan durante el modo calce aunque el preset de
+  rendimiento las tenga apagadas, y al salir todo vuelve a su estado.
+
 ## [0.2.15] — 2026-08-03
 
 Las jotas sostienen la barra en su CONCAVIDAD real, las cadenas se

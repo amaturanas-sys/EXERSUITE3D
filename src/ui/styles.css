@@ -1804,8 +1804,9 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   padding-top: 10px;
 }
 
-/* ---- Prototipo con foto (v0.2.15): superposición y sección ---- */
-/* La foto de referencia cubre el visor SIN capturar toques (solo guía). */
+/* ---- Prototipo con foto (v0.2.16): foto DEBAJO del render y sección ---- */
+/* La foto del lugar se ubica BAJO el render dinámico (modo calce): el
+ * canvas queda encima con el fondo eliminado y el suelo preservado. */
 #proto-overlay {
   position: absolute;
   inset: 0;
@@ -1813,7 +1814,46 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   height: 100%;
   object-fit: cover;
   pointer-events: none;
-  z-index: 2; /* sobre el visor, bajo paneles y barras */
+  z-index: 0;
+}
+
+body.modo-calce #viewport {
+  z-index: 1; /* el render (sin fondo) tapa la foto solo donde hay suelo/modelos */
+}
+
+/* Selector circular del SOL: se arrastra ☀ para elegir de dónde viene la luz. */
+.proto-dial {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin: 2px auto;
+  border-radius: 50%;
+  border: 1px dashed var(--border);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
+  touch-action: none;
+  cursor: grab;
+}
+
+.proto-dial-centro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.proto-sol {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  text-shadow: 0 0 8px rgba(255, 200, 60, 0.9);
+  pointer-events: none;
+}
+
+.proto-oculto {
+  display: none;
 }
 
 .proto-body {
