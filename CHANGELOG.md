@@ -5,6 +5,29 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.17] — 2026-08-04
+
+El Marketplace se vuelve un CATÁLOGO DE VENTA visual: productos con
+imagen, ofertas con descuento, filtros por categoría y carrito demo.
+
+### Cambiado
+
+- **Marketplace — catálogo con imágenes y ofertas** (primera modificación
+  secuencial de la maqueta): el showroom textual pasa a ser una grilla de
+  DIEZ productos, cada uno con su ILUSTRACIÓN de producto (SVG
+  autocontenidos: rack, torre de poleas, banco, jota con rodillo, cadenas,
+  barra olímpica, discos bumper, multigrip, árbol de discos y el servicio
+  "tu diseño, fabricado" de Taller Quimera), marca, calificación,
+  descripción y precio. Las OFERTAS llevan su insignia con el porcentaje
+  de descuento y el precio anterior tachado.
+- **Filtros y carrito demo**: chips por categoría (Racks, Poleas, Pesos y
+  barras, Bancos, Accesorios), botón 🛒 Añadir que alimenta un carrito con
+  contador de artículos y TOTAL en vivo, Pedido demo que confirma en
+  línea y Vaciar. 🧩 Ver sigue abriendo la Biblioteca real (showroom).
+  El mercado bidireccional (con el apoyo de la comunidad) y la
+  personalización con pintura continúan intactos bajo el catálogo, y todo
+  conserva la etiqueta DEMO con marcas ficticias.
+
 ## [0.2.16] — 2026-08-04
 
 El PROTOTIPO CON FOTO toma su forma definitiva: la foto del lugar vive

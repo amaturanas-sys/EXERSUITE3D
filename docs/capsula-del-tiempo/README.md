@@ -391,7 +391,7 @@ compuesta por croma sobre la foto.
 - [`v215-proto-verde.png`](2026-08-03/v215-proto-verde.png)
 - [`v215-prototipo-compuesto.png`](2026-08-03/v215-prototipo-compuesto.png)
 
-## 2026-08-04 — 6 capturas
+## 2026-08-04 — 8 capturas
 
 v0.2.16: PROTOTIPO CON FOTO definitivo en cinco pasos — modo CALCE con la
 foto del lugar DEBAJO del render (fondo eliminado, suelo preservado y
@@ -413,3 +413,11 @@ real de un garaje aportada por el diseñador.
 - [`v216b-visor-calce.png`](2026-08-04/v216b-visor-calce.png)
 - [`v216b-visor-producido.png`](2026-08-04/v216b-visor-producido.png)
 - [`v216b-builder-restaurado.png`](2026-08-04/v216b-builder-restaurado.png)
+
+v0.2.17: el Marketplace se vuelve CATÁLOGO DE VENTA visual — diez
+productos con ilustración propia, ofertas con insignia de descuento y
+precio anterior tachado, filtros por categoría y carrito demo con total en
+vivo y pedido de demostración.
+
+- [`v217-catalogo.png`](2026-08-04/v217-catalogo.png)
+- [`v217-carrito.png`](2026-08-04/v217-carrito.png)
