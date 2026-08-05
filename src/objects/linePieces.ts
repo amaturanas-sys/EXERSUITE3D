@@ -61,9 +61,17 @@ export function pathLength(path: [number, number, number][]): number {
   return L;
 }
 
-/** Curva suave que pasa por los nodos del path (para barrer perfiles). */
+/**
+ * Curva suave que pasa por los nodos del path (para barrer perfiles).
+ * Parametrización CHORDAL (v0.2.20): la uniforme sobreoscilaba — al
+ * separar un nodo, la curva se hundía hacia el lado contrario formando la
+ * SIGMOIDEA que hacía tan molesto corregir un tubo doblado (medido: 3×
+ * más contra-comba que la chordal al jalar un extremo). La chordal
+ * pondera cada tramo por su longitud real: curvas fluidas, sin bucles ni
+ * oscilaciones, también con nodos muy desparejos.
+ */
 function pathCurve(path: [number, number, number][]): THREE.CatmullRomCurve3 {
-  return new THREE.CatmullRomCurve3(pathVectors(path), false, "catmullrom", 0.5);
+  return new THREE.CatmullRomCurve3(pathVectors(path), false, "chordal");
 }
 
 /** Seccion rectangular (ancho x fondo) centrada, para barrer el perfil. */

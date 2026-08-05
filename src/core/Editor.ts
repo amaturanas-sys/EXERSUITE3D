@@ -1490,6 +1490,36 @@ export class Editor {
     return null;
   }
 
+  /**
+   * REANCLA una pieza de línea RECTA a su trayectoria (v0.2.20): la
+   * geometría recta se construye CENTRADA en el origen local, así que al
+   * ESTIRAR un extremo el reconstruido repartía el nuevo largo hacia ambos
+   * lados — el extremo CONTRARIO se acortaba solo. Tras editar un nodo, el
+   * path se re-centra en su cuerda y el origen de la pieza absorbe el
+   * corrimiento: el extremo contrario no se mueve ni un milímetro.
+   */
+  private normalizarPathRecto(obj: SceneObject): void {
+    const path = obj.params.path;
+    if (!path || path.length < 2 || !pathIsStraight(path)) return;
+    const a = path[0];
+    const b = path[path.length - 1];
+    const mid = new THREE.Vector3(
+      (a[0] + b[0]) / 2,
+      (a[1] + b[1]) / 2,
+      (a[2] + b[2]) / 2,
+    );
+    if (mid.lengthSq() < 1e-8) return;
+    for (const n of path) {
+      n[0] -= mid.x;
+      n[1] -= mid.y;
+      n[2] -= mid.z;
+    }
+    obj.mesh.position.add(
+      mid.multiply(obj.mesh.scale).applyQuaternion(obj.mesh.quaternion),
+    );
+    obj.mesh.updateMatrixWorld(true);
+  }
+
   /** Desplaza el nodo activo del modo Doblar en un delta de MUNDO (cm). */
   private nudgeBendNode(dx: number, dy: number, dz: number): void {
     const obj = this.bendTarget;
@@ -1513,6 +1543,7 @@ export class Editor {
     }
     const local = world.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
     path[idx] = [local.x, local.y, local.z];
+    this.normalizarPathRecto(obj);
     obj.rebuildGeometry();
     this.refreshBendHandles();
     this.bus.emit("objectTransformed", { object: obj });
@@ -1586,7 +1617,10 @@ export class Editor {
       name: count > 0 ? `${def.label} ${count + 1}` : def.label,
       componentId: def.id,
       category: def.category,
-      params: def.defaults,
+      // COPIA PROFUNDA (v0.2.20): los defaults se compartían POR REFERENCIA
+      // — doblar por nodos una pieza mutaba el `path` del propio default de
+      // la biblioteca y cada pieza nueva nacía ya deformada y descentrada.
+      params: structuredClone(def.defaults),
       physics: def.physics,
       materialId: def.materialId,
       stack: def.stack,
@@ -4890,6 +4924,7 @@ export class Editor {
       obj.mesh.updateMatrixWorld(true);
       const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
       obj.params.path![this.bendDrag.index] = [local.x, local.y, local.z];
+      this.normalizarPathRecto(obj);
       obj.rebuildGeometry();
       this.refreshBendHandles();
       this.bus.emit("objectTransformed", { object: obj });

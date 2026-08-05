@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.20] — 2026-08-05
+
+Nueva TORRE POLEA DE DISCOS nativa, el guardado en Android deja de cerrar
+la aplicación, y el doblado por nodos queda como debía: estirar un extremo
+no toca el contrario, curvas fluidas sin sigmoidea, y el bug de fondo que
+corrompía la biblioteca al doblar, erradicado.
+
+### Añadido
+
+- **Torre polea de discos** (torrepoleadediscos.prefab.json del diseñador,
+  verbatim): torre de polea con CARRIER PORTADISCOS — dos tubos guía con
+  manguitos, poleas alta/baja/de torre, carro de doble roldana, remo de
+  polea alta y barra de jalón bajo, con sus tres bisagras y DOS CABLES
+  completos. Verificado: tirar del remo levanta el carrier por el cable
+  (+64 cm) sin una décima de deriva lateral en las guías. (Queda encargada
+  la variante con BLOQUE DE PESOS en lugar del carrier.)
+- El racksentadillas.prefab.json adjunto se verificó NUMÉRICAMENTE
+  IDÉNTICO al rack nativo vigente (las modificaciones ya estaban
+  incorporadas desde v0.2.14): no se duplica.
+
+### Corregido
+
+- **Guardar ya no CIERRA la aplicación** (Android): Capacitor serializa
+  las opciones del PluginCall retenido al estado de instancia mientras el
+  diálogo "Guardar como…" está abierto — con una captura de varios MB en
+  base64, ese bundle superaba el límite del Binder y Android mataba el
+  proceso (TransactionTooLargeException). El contenido viaja ahora fuera
+  del call (memoria del plugin) y se elimina de sus opciones antes de
+  lanzar la actividad. Revisados los demás flujos de archivos (abrir,
+  compartir, descarga clásica, proyecto, prefab, biblioteca): ninguno
+  arrastra payloads por ese camino.
+- **Doblado por nodos — estirar un extremo ya no ACORTA el contrario**:
+  la geometría recta se construye centrada en el origen, así que el largo
+  nuevo se repartía hacia ambos lados. Tras editar un nodo, el path se
+  re-centra en su cuerda y el origen de la pieza absorbe el corrimiento:
+  el extremo contrario no se mueve ni un milímetro (verificado: +30 cm en
+  un extremo, deriva 0.0 del otro).
+- **Curvas FLUIDAS (chordal)**: la parametrización uniforme sobreoscilaba
+  formando la SIGMOIDEA — al jalar un nodo, la curva se hundía hacia el
+  lado contrario (medido: 3 cm de contra-comba al doblar un extremo).
+  La catmull-rom CHORDAL pondera cada tramo por su longitud real: 3×
+  menos contra-comba y curvas limpias también con nodos desparejos.
+- **La biblioteca ya no se CORROMPE al doblar** (bug de fondo descubierto
+  en la revisión): los `params` de las piezas se compartían POR
+  REFERENCIA con los defaults de la biblioteca y con los specs de las
+  máquinas nativas — doblar una pieza mutaba el default y cada pieza (o
+  máquina) nueva nacía ya deformada y descentrada. Copia profunda en la
+  creación de piezas y en la construcción de prefabs.
+
 ## [0.2.19] — 2026-08-05
 
 Las cadenas ganan su LÍMITE DE INEXTENSIBILIDAD (ninguna barra las

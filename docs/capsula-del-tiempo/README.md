@@ -430,7 +430,7 @@ POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
 - [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
 - [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
 
-## 2026-08-05 — 3 capturas
+## 2026-08-05 — 5 capturas
 
 v0.2.19: límite de INEXTENSIBILIDAD de las cadenas (una barra de 180 kg en
 caída libre queda retenida — antes atravesaba hasta el suelo), CCD
@@ -442,3 +442,13 @@ arrastre en simulación).
 - [`v219-cadenas-180kg.png`](2026-08-05/v219-cadenas-180kg.png)
 - [`v219-viewer-proto.png`](2026-08-05/v219-viewer-proto.png)
 - [`v219-viewer-proto-abierto.png`](2026-08-05/v219-viewer-proto-abierto.png)
+
+v0.2.20: Torre polea de discos nativa (prefab del diseñador con carrier
+portadiscos, 2 cables y transmisión verificada), fix del cierre de la app
+al guardar en Android (bundle SAF sobre el límite del Binder), y el doblado
+por nodos corregido — estirar un extremo ya no acorta el contrario, curvas
+chordal sin sigmoidea y copia profunda de params (doblar ya no corrompe la
+biblioteca).
+
+- [`v220-torre-discos.png`](2026-08-05/v220-torre-discos.png)
+- [`v220-doblado.png`](2026-08-05/v220-doblado.png)

@@ -35,11 +35,31 @@ import java.io.OutputStream;
 @CapacitorPlugin(name = "Archivos")
 public class Archivos extends Plugin {
 
+  /**
+   * Contenido pendiente de guardar, FUERA del PluginCall (v0.2.20).
+   *
+   * Capacitor serializa las opciones del call retenido al estado de
+   * instancia mientras el diálogo SAF está abierto: con una captura de
+   * varios MB en base64, ese bundle supera el límite del Binder (~1 MB) y
+   * Android MATA la aplicación (TransactionTooLargeException) — era el
+   * "guardar cierra la app" de las capturas de foto. El payload viaja
+   * ahora por esta variable estática y se ELIMINA del call antes de
+   * lanzar la actividad, dejando el bundle liviano.
+   */
+  private static byte[] datosPendientes;
+
   // ------------------------------------------------------------- guardar
   @PluginMethod
   public void guardar(PluginCall call) {
     String nombre = call.getString("nombre", "archivo");
     String mime = call.getString("mime", "application/octet-stream");
+    try {
+      datosPendientes = Base64.decode(call.getString("datos", ""), Base64.DEFAULT);
+    } catch (Exception e) {
+      call.reject("Contenido inválido: " + e.getMessage());
+      return;
+    }
+    call.getData().remove("datos");
     Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
     intent.addCategory(Intent.CATEGORY_OPENABLE);
     intent.setType(mime);
@@ -50,14 +70,21 @@ public class Archivos extends Plugin {
   @ActivityCallback
   private void alGuardar(PluginCall call, ActivityResult result) {
     if (call == null) return;
+    byte[] datos = datosPendientes;
+    datosPendientes = null;
     if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null
         || result.getData().getData() == null) {
       call.reject("cancelado");
       return;
     }
+    if (datos == null) {
+      // El proceso fue recreado mientras el diálogo estaba abierto y el
+      // contenido ya no existe: mejor un error claro que un archivo vacío.
+      call.reject("El contenido a guardar ya no está disponible; vuelve a intentarlo");
+      return;
+    }
     Uri uri = result.getData().getData();
     try {
-      byte[] datos = Base64.decode(call.getString("datos", ""), Base64.DEFAULT);
       OutputStream out = getContext().getContentResolver().openOutputStream(uri, "wt");
       if (out == null) throw new Exception("sin flujo de salida");
       try {
