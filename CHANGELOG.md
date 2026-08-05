@@ -5,6 +5,21 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.22] — 2026-08-05
+
+Control de herramientas: cambiar de herramienta ABANDONA cualquier modo de
+construcción en curso.
+
+### Corregido
+
+- **Ya no se construyen estructuras por accidente al cambiar de
+  herramienta**: tras colocar una pieza en construcción tipo LÍNEA (o con
+  el cable, la cuerda, la conexión o el doblado por nodos activos),
+  elegir cualquier herramienta — selección, área, mover, rotar, escalar u
+  orbitar, desde el Toolbox, los menús o el teclado — SALE del modo de
+  construcción: los toques siguientes ya no plantan piezas nuevas.
+  Re-tocar la herramienta activa también cancela el modo en curso.
+
 ## [0.2.21] — 2026-08-05
 
 La JAULA DE POTENCIA del diseñador entra al repertorio estándar, la paleta

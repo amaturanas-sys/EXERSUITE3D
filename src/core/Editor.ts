@@ -2601,6 +2601,16 @@ export class Editor {
    * articular del maniquí (Posturas) no se ve afectado.
    */
   setHerramienta(tool: HerramientaRapida): void {
+    // CONTROL DE HERRAMIENTAS (v0.2.22): elegir CUALQUIER herramienta
+    // abandona los modos de construcción en curso — trazado de línea,
+    // cable, cuerda, conexión y doblado por nodos. Cambiar a gizmo u
+    // órbita tras colocar una pieza de línea ya no sigue plantando
+    // estructuras nuevas por accidente.
+    this.cancelLine();
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelConnect();
+    this.endBendNodes();
     if (this.herramienta === tool) return;
     const eraArea = this.herramienta === "area";
     this.herramienta = tool;
