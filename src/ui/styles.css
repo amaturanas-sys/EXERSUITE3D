@@ -2103,7 +2103,7 @@ body.modo-prototipo .arrastre-panel {
   color: var(--text);
 }
 
-.despiece-cont.oculto {
+.cat-cont.oculto {
   display: none;
 }
 

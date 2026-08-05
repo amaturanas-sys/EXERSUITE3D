@@ -26,6 +26,12 @@ import { tt } from "./core/i18n";
 import { instalarSonidoUI } from "./ui/sonido";
 import { crearBarraHerramientas } from "./ui/ToolQuickBar";
 import { PrototipoFoto } from "./ui/PrototipoFoto";
+import { SceneObject } from "./objects/SceneObject";
+
+// Los discos montados en barras/cuernos/carriers usan la malla DISTINTIVA
+// del "Disco de peso" de la biblioteca (v0.2.21): si el diseñador
+// sustituyó su modelo, la carga completa lo hereda.
+SceneObject.plantillaDisco = () => componentModels.geometryClone("disco-peso");
 
 const app = document.getElementById("app")!;
 // Detalle estético (v0.2.3): todos los botones hacen "click" al tocarlos.

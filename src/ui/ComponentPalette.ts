@@ -129,6 +129,50 @@ export class ComponentPalette {
     ]);
   }
 
+  /**
+   * Estado de plegado de cada subcategoría de la paleta (v0.2.21):
+   * persiste en el dispositivo — la interfaz queda tan limpia como el
+   * usuario la deje entre sesiones y re-renderizados.
+   */
+  private plegado: Record<string, boolean> = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("paleta-plegado") ?? "{}") as Record<string, boolean>;
+    } catch {
+      return {};
+    }
+  })();
+
+  /**
+   * SUBCATEGORÍA PLEGABLE (v0.2.21): cada grupo de la paleta se pliega o
+   * despliega tocando su título — la lista larga se navega por secciones.
+   * Devuelve el contenedor donde van los botones del grupo.
+   */
+  private seccionPlegable(
+    body: HTMLElement,
+    titulo: string,
+    clave: string,
+    porDefectoPlegada = false,
+  ): HTMLElement {
+    const plegada = this.plegado[clave] ?? porDefectoPlegada;
+    const cab = el("div", { class: "cat-label cat-plegable" }, [
+      `${titulo} ${plegada ? "▸" : "▾"}`,
+    ]);
+    cab.title = "Toca para plegar o desplegar la sección";
+    const cont = el("div", { class: `cat-cont${plegada ? " oculto" : ""}` });
+    cab.addEventListener("click", () => {
+      const p = cont.classList.toggle("oculto");
+      this.plegado[clave] = p;
+      try {
+        localStorage.setItem("paleta-plegado", JSON.stringify(this.plegado));
+      } catch {
+        /* sin almacenamiento */
+      }
+      cab.textContent = `${titulo} ${p ? "▸" : "▾"}`;
+    });
+    body.append(cab, cont);
+    return cont;
+  }
+
   private renderGroups(body: HTMLElement): void {
     clear(body);
     const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
@@ -147,7 +191,7 @@ export class ComponentPalette {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }
     // Máquinas estándar (prefabs agrupados): clave para plantear la sala.
-    body.append(el("div", { class: "cat-label" }, ["Máquinas estándar"]));
+    const contMaquinas = this.seccionPlegable(body, "Máquinas estándar", "maquinas");
     for (const m of STANDARD_MACHINES) {
       const btn = el("button", { class: "comp-btn maquina-btn", title: m.description }, [
         el("span", { class: "swatch maquina-icon" }, [m.icon]),
@@ -158,7 +202,7 @@ export class ComponentPalette {
         this.editor.insertarMaquina(m.id);
       });
       this.habilitarArrastre(btn, (suelo) => this.editor.insertarMaquina(m.id, suelo));
-      body.append(btn);
+      contMaquinas.append(btn);
     }
     const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
@@ -166,25 +210,17 @@ export class ComponentPalette {
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);
     }
     for (const [cat, defs] of byCat) {
-      body.append(el("div", { class: "cat-label" }, [CATEGORY_LABELS[cat] ?? cat]));
+      const cont = this.seccionPlegable(body, CATEGORY_LABELS[cat] ?? cat, `cat:${cat}`);
       for (const def of defs) {
-        body.append(this.componentButton(def));
+        cont.append(this.componentButton(def));
       }
     }
     // Despiece TTP/POWERRACK: las piezas INTERNAS de las máquinas reales,
-    // agrupadas y plegadas — disponibles sin saturar las categorías.
+    // agrupadas y plegadas de fábrica — disponibles sin saturar la paleta.
     if (despiece.length > 0 && !sencillo) {
-      const cab = el("div", { class: "cat-label cat-plegable" }, [
-        "Despiece TTP / POWERRACK ▸",
-      ]);
-      cab.title = "Piezas internas de las máquinas reales (toca para desplegar)";
-      const cont = el("div", { class: "despiece-cont oculto" });
-      cab.addEventListener("click", () => {
-        const plegado = cont.classList.toggle("oculto");
-        cab.textContent = `Despiece TTP / POWERRACK ${plegado ? "▸" : "▾"}`;
-      });
+      const cont = this.seccionPlegable(body, "Despiece TTP / POWERRACK", "despiece", true);
+      cont.classList.add("despiece-cont");
       for (const def of despiece) cont.append(this.componentButton(def));
-      body.append(cab, cont);
     }
   }
 

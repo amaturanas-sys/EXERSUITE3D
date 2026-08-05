@@ -430,7 +430,7 @@ POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
 - [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
 - [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
 
-## 2026-08-05 — 5 capturas
+## 2026-08-05 — 7 capturas
 
 v0.2.19: límite de INEXTENSIBILIDAD de las cadenas (una barra de 180 kg en
 caída libre queda retenida — antes atravesaba hasta el suelo), CCD
@@ -452,3 +452,11 @@ biblioteca).
 
 - [`v220-torre-discos.png`](2026-08-05/v220-torre-discos.png)
 - [`v220-doblado.png`](2026-08-05/v220-doblado.png)
+
+v0.2.21: jaula de potencia del diseñador en el repertorio estándar (17
+piezas TTP con jotas y brazos), subcategorías plegables de la paleta con
+persistencia, y discos de carga que heredan la malla distintiva del
+"Disco de peso" de la biblioteca.
+
+- [`v221-jaula.png`](2026-08-05/v221-jaula.png)
+- [`v221-paleta-plegable.png`](2026-08-05/v221-paleta-plegable.png)

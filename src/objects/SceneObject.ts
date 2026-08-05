@@ -204,6 +204,37 @@ export class SceneObject {
   private cargaParts: THREE.Mesh[] = [];
   private cargaMontada = 0;
 
+  /**
+   * PLANTILLA del disco de la carga (v0.2.21): los discos que se montan en
+   * la barra/cuerno/carrier usan la MISMA malla distintiva de la pieza
+   * "Disco de peso" de la biblioteca (la registra componentModels al
+   * arrancar). Sin plantilla, cilindro clásico.
+   */
+  static plantillaDisco: (() => THREE.BufferGeometry | null) | null = null;
+
+  /** Malla del disco distintivo, alineada (grosor → +Y) y escalada. */
+  private geometriaDisco(diamCm: number, grosorCm: number): THREE.BufferGeometry {
+    const plantilla = SceneObject.plantillaDisco?.() ?? null;
+    if (!plantilla) {
+      return new THREE.CylinderGeometry(diamCm / 2, diamCm / 2, grosorCm, 28);
+    }
+    plantilla.computeBoundingBox();
+    const tam = plantilla.boundingBox!.getSize(new THREE.Vector3());
+    // El GROSOR del disco es su dimensión más corta: se alinea a +Y (el
+    // mismo marco del cilindro clásico) y se escala al diámetro/grosor.
+    const dims = [tam.x, tam.y, tam.z];
+    const iGrosor = dims.indexOf(Math.min(...dims));
+    if (iGrosor === 0) plantilla.rotateZ(Math.PI / 2);
+    else if (iGrosor === 2) plantilla.rotateX(Math.PI / 2);
+    plantilla.computeBoundingBox();
+    const t = plantilla.boundingBox!.getSize(new THREE.Vector3());
+    const c = plantilla.boundingBox!.getCenter(new THREE.Vector3());
+    plantilla.translate(-c.x, -c.y, -c.z);
+    const diam = Math.max(t.x, t.z) || 1;
+    plantilla.scale(diamCm / diam, grosorCm / (t.y || 1), diamCm / diam);
+    return plantilla;
+  }
+
   /** Cantidad de discos pedida por el usuario (params.discCount). */
   discosMontados(): number {
     return Math.max(0, Math.round(this.params.discCount ?? 0));
@@ -269,7 +300,7 @@ export class SceneObject {
           ? s0 + (idx + 0.5) * paso
           : -L / 2 + 1 + (idx + 0.5) * paso;
       const disco = new THREE.Mesh(
-        new THREE.CylinderGeometry(this.carga.diamCm / 2, this.carga.diamCm / 2, this.carga.grosorCm, 28),
+        this.geometriaDisco(this.carga.diamCm, this.carga.grosorCm),
         buildMaterial("hierro-fundido"),
       );
       disco.quaternion.copy(quat);

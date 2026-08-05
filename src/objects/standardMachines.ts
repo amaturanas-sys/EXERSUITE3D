@@ -29,7 +29,7 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     label: "Jaula de potencia",
     icon: "🗼",
     description:
-      "POWERRACK pieza a pieza (118×220×122): postes de dos tramos perforados, doble barra de pullups, jotas de calce con y sin rodillo, pipes de seguridad y rieles de base.",
+      "Jaula de potencia del diseñador (112×219×129): cuatro pilares TTP perforados con columnas inferiores y superiores, travesaños, barra pullups multigrip, cuatro jotas de calce y dos brazos de seguridad.",
   },
   {
     id: "banco-plano",
@@ -167,41 +167,29 @@ const RACK_UNIONES: UnionSpec[] = [
   { tipo: "bisagra", fija: 8, movil: 9, eje: "z", ancla: [45.7421, 1.7829, 55.4911], min: -90, max: 0, limites: true, bloqueada: true },
 ];
 
-// Jaula = POWERRACK real pieza a pieza (posiciones medidas en el STL armado,
-// 118×220×122): postes de DOS TRAMOS apilados (110+110), travesaños laterales
-// superiores perforados, largueros de base, doble barra de pullups (106),
-// rieles de base de 118, jotas de calce y pipes con collares.
+// JAULA DE POTENCIA del diseñador — jauladepotencia.prefab.json
+// (v0.2.21): piezas VERBATIM del archivo. Cuatro pilares TTP con columnas
+// inferiores y superiores, travesaños, barra pullups multigrip, cuatro
+// jotas de calce y dos brazos de seguridad. No editar a mano: ante una
+// corrección, reemplazar por el contenido del .prefab.json.
 const JAULA: PiezaSpec[] = [
-  // 4 postes × 2 tramos de media columna perforada (7×7×110).
-  ...([[-36.8, -57], [36.8, -57], [-36.8, 57], [36.8, 57]] as const).flatMap(
-    ([x, z], i): PiezaSpec[] => [
-      { comp: "montante-pr", nombre: `Poste ${i + 1} tramo inf.`, pos: [x, 55, z] },
-      { comp: "montante-pr", nombre: `Poste ${i + 1} tramo sup.`, pos: [x, 165, z] },
-    ],
-  ),
-  // Barras de pullups reales (106, con placas en los extremos) corriendo a
-  // lo fondo sobre cada lado (auditoría: identidad corregida).
-  { comp: "barra-pr", nombre: "Barra pullups lateral izq.", pos: [-36.8, 212, 0] },
-  { comp: "barra-pr", nombre: "Barra pullups lateral der.", pos: [36.8, 212, 0] },
-  { comp: "larguero-pr", nombre: "Larguero base izq.", pos: [-36.8, 3.5, 0] },
-  { comp: "larguero-pr", nombre: "Larguero base der.", pos: [36.8, 3.5, 0] },
-  // Travesaños reales (70) cruzando a lo ancho al frente y atrás, a 192
-  // (auditoría: identidad corregida).
-  { comp: "travesano-pr", nombre: "Travesaño frontal", pos: [0, 192, 57] },
-  { comp: "travesano-pr", nombre: "Travesaño trasero", pos: [0, 192, -57] },
-  // Rieles de base reales (118) que arriostran los postes al suelo.
-  { comp: "riel-base-pr", nombre: "Riel base frontal", pos: [0, 2.5, 57] },
-  { comp: "riel-base-pr", nombre: "Riel base trasero", pos: [0, 2.5, -57] },
-  // Anclajes de cadena (auditoría: no son jotas) y jotas con rodillo
-  // calzadas en los agujeros de los postes frontales (la malla de la jota
-  // con rodillo quedó horneada como j-hook: rot y90 conserva su pose aquí).
-  { comp: "jota-pr", nombre: "Anclaje de cadena izq.", pos: [-36.8, 110, 64.2] },
-  { comp: "jota-pr", nombre: "Anclaje de cadena der.", pos: [36.8, 110, 64.2] },
-  { comp: "jota-rodillo-pr", nombre: "Jota rodillo izq.", pos: [-36.8, 70, 64.9], rot: [0, Math.PI / 2, 0] },
-  { comp: "jota-rodillo-pr", nombre: "Jota rodillo der.", pos: [36.8, 70, 64.9], rot: [0, Math.PI / 2, 0] },
-  // Pipes de seguridad: los collares de los extremos abrazan los postes.
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad izq.", pos: [-36.8, 75, 0] },
-  { comp: "brazo-seguridad", nombre: "Pipe seguridad der.", pos: [36.8, 75, 0] },
+  { comp: "montante-ttp", nombre: "Pilar vertical 1", params: { kind: "box", width: 5, height: 204, depth: 7 }, material: "acero-negro", pos: [-56, 107, 54.5], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 2", params: { kind: "box", width: 5, height: 204, depth: 7 }, material: "acero-negro", pos: [56, 107, 54.5], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 3", params: { kind: "box", width: 5, height: 204, depth: 7 }, material: "acero-negro", pos: [-56, 107, -44.5], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "montante-ttp", nombre: "Pilar vertical 4", params: { kind: "box", width: 5, height: 204, depth: 7 }, material: "acero-negro", pos: [56, 107, -44.5], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "riel-base-ttp", nombre: "Columna inferior izq.", params: { kind: "box", width: 141, height: 20, depth: 7 }, material: "acero-negro", pos: [-56, 10, -3.1], rotq: [0, -0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "riel-base-ttp", nombre: "Columna inferior der.", params: { kind: "box", width: 141, height: 20, depth: 7 }, material: "acero-negro", pos: [56, 10, -3.1], rotq: [0, -0.707107, 0, 0.707107], fija: true, masaKg: 0, escala: [1, 1, -1] },
+  { comp: "columna-sup-ttp", nombre: "Columna superior izq.", params: { kind: "box", width: 94, height: 20, depth: 7 }, material: "acero-negro", pos: [-56, 199, 5.3], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "columna-sup-ttp", nombre: "Columna superior der.", params: { kind: "box", width: 94, height: 20, depth: 7 }, material: "acero-negro", pos: [56, 199, 5.3], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pie-ttp", nombre: "Travesaño inferior", params: { kind: "box", width: 15, height: 5, depth: 104 }, material: "acero-negro", pos: [0, 3, -64.5], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "travesano-frontal-ttp", nombre: "Travesaño frontal", params: { kind: "box", width: 118, height: 20, depth: 5.2 }, material: "acero-negro", pos: [-0.12, 199.35, -44.792], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "multiagarre-ttp", nombre: "Barra pullups multigrip", params: { kind: "box", width: 32, height: 9.6, depth: 106.5 }, material: "acero-negro", pos: [0, 208.8, 41.1], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota de seguridad izq.", params: { kind: "box", width: 9, height: 24, depth: 26 }, material: "acero-negro", pos: [-56, 127, -34.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota de seguridad der.", params: { kind: "box", width: 9, height: 24, depth: 26 }, material: "acero-negro", pos: [56, 127, -34.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota baja izq.", params: { kind: "box", width: 9, height: 24, depth: 26 }, material: "acero-negro", pos: [-56, 40.91, 64.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "j-hook", nombre: "Jota baja der.", params: { kind: "box", width: 9, height: 24, depth: 26 }, material: "acero-negro", pos: [56, 41, 64.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad izq.", params: { kind: "box", width: 9, height: 24, depth: 106 }, material: "acero-negro", pos: [-56, 65, 5.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "brazo-seguridad", nombre: "Brazo de seguridad der.", params: { kind: "box", width: 9, height: 24, depth: 106 }, material: "acero-negro", pos: [56, 65, 5.5], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
 ];
 
 // BANCO PLANO CLÁSICO del diseñador — bancoplanoclasico.prefab.json

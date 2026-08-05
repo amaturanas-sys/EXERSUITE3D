@@ -5,6 +5,35 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.21] — 2026-08-05
+
+La JAULA DE POTENCIA del diseñador entra al repertorio estándar, la paleta
+se navega por SUBCATEGORÍAS PLEGABLES y los discos montados heredan el
+diseño distintivo del "Disco de peso" de la biblioteca.
+
+### Añadido
+
+- **Jaula de potencia del diseñador** (jauladepotencia.prefab.json,
+  verbatim — reemplaza la jaula genérica anterior): cuatro pilares TTP
+  perforados con columnas inferiores y superiores, travesaños, barra
+  pullups multigrip, cuatro jotas de calce y dos brazos de seguridad
+  (17 piezas).
+
+### Cambiado
+
+- **Subcategorías PLEGABLES en "Piezas disponibles"**: cada grupo de la
+  paleta (Máquinas estándar, Primitivas, Estructural, Movimiento, Poleas
+  y cables, Pesos, Ergonómico, Despiece…) se pliega y despliega tocando
+  su título, con chevron de estado — la lista larga se navega por
+  secciones y la interfaz queda limpia. El estado de plegado PERSISTE en
+  el dispositivo entre sesiones.
+- **Discos de carga con el diseño DISTINTIVO**: los discos que se montan
+  en la barra olímpica, los cuernos y el portadiscos usan la MISMA malla
+  que la pieza "Disco de peso" de la biblioteca — si el diseñador
+  sustituyó su modelo (el disco con radios y relieve), toda la carga lo
+  hereda, alineado por su grosor y escalado al diámetro/grosor de cada
+  pieza. Sin modelo sustituido, el cilindro clásico de siempre.
+
 ## [0.2.20] — 2026-08-05
 
 Nueva TORRE POLEA DE DISCOS nativa, el guardado en Android deja de cerrar
