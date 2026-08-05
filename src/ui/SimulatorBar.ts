@@ -41,7 +41,12 @@ export class SimulatorBar {
 
   constructor(
     private editor: Editor,
-    opts: { standalone?: boolean; onHome?: () => void } = {},
+    opts: {
+      standalone?: boolean;
+      onHome?: () => void;
+      /** Abre el visor de PROTOTIPO CON FOTO (herramienta del viewer, v0.2.19). */
+      onPrototipo?: () => void;
+    } = {},
   ) {
     const view = (label: string, v: "frontal" | "lateral" | "superior" | "isometrica") => {
       const b = el("button", { class: "tool", title: `Vista ${label.toLowerCase()}` }, [label]);
@@ -69,7 +74,16 @@ export class SimulatorBar {
         simBtn.textContent = running ? tt("■ Pausar", "■ Pause") : tt("▶ Reanudar", "▶ Resume");
         simBtn.classList.toggle("active", running);
       });
-      children.push(el("div", { class: "tool-group" }, [homeBtn, simBtn]));
+      // PROTOTIPO CON FOTO (v0.2.19): herramienta del VIEWER — desde aquí
+      // se entra a su instancia (la física se detiene antes de entrar).
+      const protoBtn = el("button", { class: "tool", title: tt("Prototipo con foto del lugar real", "Photo prototype of the real place") }, [
+        "📸 Prototipo",
+      ]);
+      protoBtn.addEventListener("click", () => {
+        if (this.editor.isSimulating()) this.editor.stopSimulation();
+        opts.onPrototipo?.();
+      });
+      children.push(el("div", { class: "tool-group" }, [homeBtn, simBtn, protoBtn]));
     }
 
     // HERRAMIENTA DEL PUNTERO en simulación (v0.2.14): mano interactiva u

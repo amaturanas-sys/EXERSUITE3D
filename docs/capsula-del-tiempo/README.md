@@ -429,3 +429,16 @@ POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
 
 - [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
 - [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
+
+## 2026-08-05 — 3 capturas
+
+v0.2.19: límite de INEXTENSIBILIDAD de las cadenas (una barra de 180 kg en
+caída libre queda retenida — antes atravesaba hasta el suelo), CCD
+reforzado y velocidad de seguridad recortada; el Prototipo con foto pasa a
+ser herramienta del VIEWER (botón 📸 en la barra del Simulador) y el
+viewer pierde el gizmo sobre los objetos (solo posturas del maniquí y
+arrastre en simulación).
+
+- [`v219-cadenas-180kg.png`](2026-08-05/v219-cadenas-180kg.png)
+- [`v219-viewer-proto.png`](2026-08-05/v219-viewer-proto.png)
+- [`v219-viewer-proto-abierto.png`](2026-08-05/v219-viewer-proto-abierto.png)

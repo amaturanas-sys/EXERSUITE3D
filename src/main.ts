@@ -69,17 +69,27 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   editor = ed;
 
   if (opts.simulator) {
-    // Modo SIMULADOR: solo el viewport y la barra de simulación. No se
-    // construye ninguna herramienta de edición (paneles, paleta, inspector…):
-    // mostrar un proyecto no las necesita y serían un gasto de recursos.
+    // Modo SIMULADOR (viewer): solo el viewport y la barra de simulación.
+    // No se construye ninguna herramienta de edición (paneles, paleta,
+    // inspector…): mostrar un proyecto no las necesita.
     document.body.classList.add("simulator-mode");
-    const simBar = new SimulatorBar(ed, { standalone: true, onHome: () => void goHome() });
+    // SIN GIZMO sobre los objetos en el viewer (v0.2.19): la herramienta
+    // queda en selección — las piezas no se transforman; solo se posan las
+    // articulaciones del maniquí y se arrastran móviles en simulación.
+    ed.setHerramienta("seleccion");
+    // El PROTOTIPO CON FOTO es herramienta del viewer.
+    const prototipo = new PrototipoFoto(ed);
+    const simBar = new SimulatorBar(ed, {
+      standalone: true,
+      onHome: () => void goHome(),
+      onPrototipo: () => prototipo.activar(),
+    });
     ed.bus.on("simulationChanged", ({ running }) => {
       document.body.classList.toggle("simulating", running);
     });
-    editorNodes = [canvas, simBar.root];
-    editorDisposables = [];
-    app.append(simBar.root);
+    editorNodes = [canvas, prototipo.overlay, prototipo.root, simBar.root];
+    editorDisposables = [() => prototipo.dispose()];
+    app.append(prototipo.overlay, prototipo.root, simBar.root);
     ed.start();
     (window as unknown as { exersuite: { editor: Editor; THREE: typeof THREE } }).exersuite = {
       editor: ed,
@@ -91,16 +101,11 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const palette = new ComponentPalette(ed);
   const perfPanel = new PerformancePanel(ed);
   const precise = new PreciseDrag(ed);
-  // PROTOTIPO CON FOTO (v0.2.16): CIRCUNSCRITO a su propia instancia de
-  // visor — no agrega ninguna sección al Builder; se entra con el botón
-  // 📸 Prototipo de la barra superior y toda la edición desaparece.
-  const prototipo = new PrototipoFoto(ed);
   const toolbar = new Toolbar(ed, {
     onHome: () => void goHome(),
     onPerformance: () => perfPanel.toggle(),
     onPreciseToggle: () => precise.toggle(),
     isPreciseOn: () => precise.isActiva(),
-    onPrototipo: () => prototipo.activar(),
   });
 
   // Barra de ZOOM del visor (v0.2.3): continuum discreto y sencillo en la
@@ -224,13 +229,12 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
-  editorNodes = [canvas, prototipo.overlay, prototipo.root, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
+  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),
     () => toolbar.dispose(),
     () => perfPanel.dispose(),
-    () => prototipo.dispose(),
     () => altoToolbar.disconnect(),
   ];
   app.append(...editorNodes);

@@ -2106,3 +2106,8 @@ body.modo-prototipo .arrastre-panel {
 .despiece-cont.oculto {
   display: none;
 }
+
+/* En el visor de prototipo también se esconde la barra del simulador. */
+body.modo-prototipo #simbar {
+  display: none !important;
+}

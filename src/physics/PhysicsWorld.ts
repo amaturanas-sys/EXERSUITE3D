@@ -117,6 +117,10 @@ export class PhysicsWorld {
     if ("numSolverIterations" in this.world) {
       (this.world as unknown as { numSolverIterations: number }).numSolverIterations = 12;
     }
+    // CCD reforzado (v0.2.19): las piezas rápidas y delgadas (una barra
+    // cargada en caída libre) reciben hasta 4 subpasos de barrido — sin
+    // esto, a 60 fps un cuerpo recorre ~20 cm por paso y atraviesa cadenas.
+    this.world.integrationParameters.maxCcdSubsteps = 4;
 
     // Suelo fijo: cara superior en y = 0. LOSA GRUESA (v0.2.14): 10 m de
     // espesor — una pieza delgada y rápida (una barra cargada que cae desde
@@ -222,6 +226,65 @@ export class PhysicsWorld {
     this.anclarCuerda(r.aId, a, cuerpos[0], -medios[0]);
     this.anclarCuerda(r.bId, b, cuerpos[N - 1], medios[N - 1]);
     this.cuerdasSim.set(r.id, { cuerpos, medios });
+
+    // LÍMITE DE INEXTENSIBILIDAD (v0.2.19): con anclajes FIJOS, ningún
+    // punto de una cuerda inextensible puede quedar fuera de la elipse
+    // |PA| + |PB| = arco. El solver de juntas no resiste el impulso de una
+    // barra de 180 kg en caída libre (las juntas se estiran un instante y
+    // la barra se cuela); esta barrera estática invisible ES esa
+    // restricción física: la cuerda flexible se deforma con normalidad por
+    // dentro y la barra jamás pasa por debajo del límite real de la cadena.
+    const aBody = r.aId ? this.bodies.get(r.aId)?.body : null;
+    const bBody = r.bId ? this.bodies.get(r.bId)?.body : null;
+    const anclajesFijos = !(aBody?.isDynamic() ?? false) && !(bBody?.isDynamic() ?? false);
+    if (anclajesFijos) this.addEnvolventeCuerda(a, b, arco, radio);
+  }
+
+  /** Cápsulas estáticas sobre la elipse |PA|+|PB| = arco (rama inferior). */
+  private addEnvolventeCuerda(
+    a: THREE.Vector3,
+    b: THREE.Vector3,
+    arcoCm: number,
+    radioM: number,
+  ): void {
+    if (!this.world) return;
+    const N = THREE.MathUtils.clamp(Math.round(a.distanceTo(b) / 8), 6, 24);
+    // Profundidad d bajo la cuerda tal que |P−a|+|P−b| = arco (bisección).
+    const punto = (t: number): THREE.Vector3 => {
+      const base = a.clone().lerp(b, t);
+      let lo = 0;
+      let hi = arcoCm / 2;
+      for (let k = 0; k < 28; k++) {
+        const d = (lo + hi) / 2;
+        const p = base.clone();
+        p.y -= d;
+        if (p.distanceTo(a) + p.distanceTo(b) < arcoCm) lo = d;
+        else hi = d;
+      }
+      const p = base.clone();
+      p.y -= lo;
+      return p;
+    };
+    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    const up = new THREE.Vector3(0, 1, 0);
+    for (let i = 0; i < N; i++) {
+      const p0 = punto(i / N);
+      const p1 = punto((i + 1) / N);
+      const medio = p0.clone().add(p1).multiplyScalar(0.5).multiplyScalar(S);
+      const largo = Math.max(p0.distanceTo(p1) * S, 0.01);
+      const q = new THREE.Quaternion().setFromUnitVectors(
+        up,
+        p1.clone().sub(p0).normalize(),
+      );
+      this.world.createCollider(
+        RAPIER.ColliderDesc.capsule(largo / 2, radioM)
+          .setTranslation(medio.x, medio.y, medio.z)
+          .setRotation({ x: q.x, y: q.y, z: q.z, w: q.w })
+          .setRestitution(0)
+          .setFriction(1.0),
+        body,
+      );
+    }
   }
 
   /** Junta esférica extremo-de-cuerda ↔ cuerpo del anclaje (o punto fijo). */
@@ -1454,7 +1517,10 @@ export class PhysicsWorld {
    *    suelo es infranqueable por construcción, no por suerte numérica.
    */
   private limitarDesbocados(): void {
-    const VMAX = 12; // m/s
+    // 8 m/s cubre cualquier caída legítima dentro de una máquina de 2,2 m
+    // (√(2·g·2,2) ≈ 6,6) y recorta los impulsos de despenetración que
+    // catapultaban piezas a través de cadenas y suelo (v0.2.19).
+    const VMAX = 8; // m/s
     const WMAX = 30; // rad/s
     for (const { body } of this.bodies.values()) {
       if (!body.isDynamic()) continue;

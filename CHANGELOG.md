@@ -5,6 +5,41 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.19] — 2026-08-05
+
+Las cadenas ganan su LÍMITE DE INEXTENSIBILIDAD (ninguna barra las
+atraviesa, ni de 180 kg en caída libre) y el Prototipo con foto pasa a ser
+herramienta del VIEWER, donde el gizmo queda fuera de las piezas.
+
+### Corregido
+
+- **La barra ya no atraviesa las cadenas ni cae al suelo**: el solver de
+  juntas no resiste el impulso de una barra muy cargada en caída libre
+  (las juntas de los eslabones se estiraban un instante y la barra se
+  colaba hasta el suelo — reproducido con 180 kg desde 160 cm). Cada
+  cuerda con anclajes fijos materializa ahora su restricción física real:
+  una barrera invisible sobre la elipse |PA|+|PB| = arco — el lugar
+  geométrico límite que una cadena INEXTENSIBLE puede alcanzar. La cadena
+  flexible se deforma con normalidad por dentro y nada pasa por debajo de
+  su límite: barrido de 33 colocaciones (alturas 75–200, profundidades
+  entre pilares, descentres, giros y 2–4 discos) a velocidad real, todas
+  retenidas.
+- **Anti-túnel reforzado**: hasta 4 subpasos de CCD por paso (a 60 fps un
+  cuerpo recorría ~20 cm por paso y podía atravesar colliders delgados) y
+  velocidad máxima de seguridad recortada de 12 a 8 m/s — cubre cualquier
+  caída legítima en una máquina de 2,2 m y desarma los impulsos de
+  despenetración que catapultaban piezas.
+
+### Cambiado
+
+- **El Prototipo con foto es herramienta del VIEWER**: su botón 📸 vive
+  en la barra del Simulador (Home → ▶ Simulador) y desaparece de la barra
+  del Builder — el visor de prototipo se abre deteniendo la física y ⌂
+  Volver regresa al viewer.
+- **El viewer no edita**: sin capacidad de gizmo sobre los objetos — la
+  herramienta queda fija en selección; solo se posan las articulaciones
+  del maniquí y se arrastran los móviles durante la simulación.
+
 ## [0.2.18] — 2026-08-04
 
 Revisión de la biblioteca: la paleta del Builder se CURA de redundancias

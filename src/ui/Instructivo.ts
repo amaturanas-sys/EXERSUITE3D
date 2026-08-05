@@ -139,7 +139,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Cómo veo mis equipos en una FOTO de mi espacio real (prototipo)?",
     puntos: [
       "1) Configura el área de trabajo con las dimensiones del lugar REAL (planta libre o parámetros): que ambas superficies coincidan es lo que da un buen resultado. 2) Compón tu espacio colocando y armando los modelos.",
-      "La función vive en su PROPIO VISOR para no saturar el Builder: pulsa 📸 Prototipo en la barra superior y toda la interfaz de edición se despeja — solo el visor, la órbita y la ventana de controles (⌂ Volver te regresa al Builder tal como estaba).",
+      "La función es una HERRAMIENTA DEL VIEWER: abre tu proyecto en Home → ▶ Simulador y pulsa 📸 Prototipo en su barra — solo quedan el visor, la órbita y la ventana de controles (⌂ Volver te regresa al viewer). En el viewer las piezas no se editan: sin gizmo, solo posturas del maniquí y arrastre de móviles en simulación.",
       "3) Carga la fotografía del lugar: entra el MODO CALCE — la foto queda DEBAJO del render, cuyo fondo se elimina pero cuyo SUELO se preserva. ORBITA hasta el punto de coincidencia entre el suelo del área de trabajo y el de la foto (el control Render regula la transparencia del solapamiento).",
       "4) 📌 Fija la perspectiva (la órbita queda bloqueada) y arrastra el ☀ en el selector circular para elegir desde dónde viene la luz — las sombras deben hacer sentido con la fotografía.",
       "5) 🎞 Producir fotografía renderiza por CAPAS: tu foto de fondo y, encima, el suelo del área de trabajo — vestido de goma tipo caucho con el logotipo discretamente impreso — con los modelos y las sombras que proyectan. El piloto queda en la galería de la Home y se descarga como PNG.",

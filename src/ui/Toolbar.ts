@@ -32,8 +32,6 @@ export class Toolbar {
       onPerformance?: () => void;
       onPreciseToggle?: () => void;
       isPreciseOn?: () => boolean;
-      /** Abre la INSTANCIA DE VISOR del prototipo con foto (v0.2.16). */
-      onPrototipo?: () => void;
     } = {},
   ) {
     this.menuEl = el("div", { class: "tool-menu" });
@@ -49,13 +47,6 @@ export class Toolbar {
       "▶ Simular",
     ]);
     simBtn.addEventListener("click", () => void this.editor.toggleSimulation());
-
-    // VISOR del prototipo con foto (v0.2.16): función circunscrita a su
-    // propia instancia — el Builder no carga secciones extra por ella.
-    const protoBtn = el("button", { class: "tool edit-only", title: tt("Prototipo con foto del lugar real (visor)", "Photo prototype of the real place (viewer)") }, [
-      "📸 Prototipo",
-    ]);
-    protoBtn.addEventListener("click", () => this.hooks.onPrototipo?.());
 
     // ---- Menús desplegables (esquema: Edición / Selección / Ver / Ejes)
     const archivoBtn = this.menuBtn("Archivo", (m) => this.buildArchivo(m));
@@ -120,7 +111,7 @@ export class Toolbar {
     ];
 
     this.root = el("div", { id: "toolbar" }, [
-      el("div", { class: "tool-group" }, [homeBtn, simBtn, protoBtn]),
+      el("div", { class: "tool-group" }, [homeBtn, simBtn]),
       ...editGroups,
       el("div", { class: "tool-group" }, [autosaveTag]),
     ]);
