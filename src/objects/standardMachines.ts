@@ -59,6 +59,13 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
       "Torre de polea del diseñador con CARRIER PORTADISCOS (carga por discos): dos tubos guía con manguitos, poleas alta/baja/de torre, carro de doble roldana, remo de polea alta y barra de jalón bajo, con sus dos cables completos.",
   },
   {
+    id: "torre-polea-pesos",
+    label: "Torre polea de pesos",
+    icon: "🧱",
+    description:
+      "Variante de la torre del diseñador con BLOQUE DE PESOS: la pila seleccionable abraza los tubos guía en lugar del carrier portadiscos — mismo bastidor, poleas, remo de polea alta y jalón bajo con sus dos cables.",
+  },
+  {
     id: "arbol-discos",
     label: "Árbol de discos",
     icon: "🌳",
@@ -400,6 +407,34 @@ const TORRE_DISCOS_CABLES: CableSpec[] = [
   { nodos: [{ pieza: 17, local: [0, 4.0671, 0] }, { pieza: 7, local: [1.1605, 0, -0.1641] }, { pieza: 8, local: [-1.1612, 0, 0.159] }, { pieza: 6, local: [0.8649, 0, -0.7909] }, { pieza: 5, local: [-1.164, 0, 0.1368] }, { pieza: 14, local: [0, 3.397, 0] }] },
 ];
 
+// TORRE POLEA CON BLOQUE DE PESOS (v0.2.23): variante encargada por el
+// diseñador — el MISMO bastidor de la torre de discos, con la PILA DE
+// PESOS seleccionable (el bloque de pesos, con sus dos orificios que
+// abrazan los tubos guía) en lugar del carrier portadiscos. La pila
+// descansa sobre los manguitos espaciadores (base ≈ 61 cm) y el cable de
+// carga toma su tapa. BORRADOR a corregir por el diseñador.
+const TORRE_PESOS: PiezaSpec[] = TORRE_DISCOS.map((p, i) =>
+  i === 17
+    ? ({
+        comp: "pila-pesos",
+        nombre: "Bloque de pesos (pila)",
+        pos: [0.33, 106, -44.5388],
+        rotq: [0, 0, 0, 1],
+        fija: false,
+      } as PiezaSpec)
+    : p,
+);
+
+const TORRE_PESOS_CABLES: CableSpec[] = [
+  TORRE_DISCOS_CABLES[0],
+  {
+    nodos: [
+      { pieza: 17, local: [0, 45, 0] },
+      ...TORRE_DISCOS_CABLES[1].nodos.slice(1),
+    ],
+  },
+];
+
 const ARBOL: PiezaSpec[] = [
   { comp: "prim-box", nombre: "Poste", params: { width: 6, height: 120, depth: 6 }, material: "acero-negro", pos: [0, 60, 0] },
   { comp: "prim-box", nombre: "Base longitudinal", params: { width: 66, height: 4, depth: 8 }, material: "acero-negro", pos: [0, 2, 0] },
@@ -427,6 +462,7 @@ const SPECS: Record<string, MaquinaSpec> = {
   // los manguitos) — no necesitan unión manual.
   "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, cables: RACK_TORRE_CABLES },
   "torre-polea-discos": { label: "Torre polea de discos", piezas: TORRE_DISCOS, uniones: TORRE_DISCOS_UNIONES, cables: TORRE_DISCOS_CABLES },
+  "torre-polea-pesos": { label: "Torre polea de pesos", piezas: TORRE_PESOS, uniones: TORRE_DISCOS_UNIONES, cables: TORRE_PESOS_CABLES },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
 

@@ -5,6 +5,23 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.23] — 2026-08-05
+
+La variante encargada: TORRE POLEA DE PESOS — el bastidor de la torre del
+diseñador con la pila seleccionable (bloque de pesos) en lugar del carrier.
+
+### Añadido
+
+- **Torre polea de pesos** (borrador para corrección del diseñador): el
+  MISMO bastidor de la Torre polea de discos — tubos guía con manguitos
+  espaciadores, poleas alta/baja/de torre, carro de doble roldana, remo
+  de polea alta, jalón bajo y sus dos cables — con la PILA DE PESOS
+  seleccionable abrazada a los tubos guía en lugar del carrier
+  portadiscos: descansa sobre los espaciadores (base ≈ 61 cm) y el cable
+  de carga toma su tapa. Verificado: tirar del remo levanta la pila
+  +45 cm por el cable, sin deriva lateral en las guías. Se exportó el
+  torrepoleadepesos.prefab.json para la ronda de corrección.
+
 ## [0.2.22] — 2026-08-05
 
 Control de herramientas: cambiar de herramienta ABANDONA cualquier modo de
