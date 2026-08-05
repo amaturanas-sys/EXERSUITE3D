@@ -430,7 +430,7 @@ POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
 - [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
 - [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
 
-## 2026-08-05 — 8 capturas
+## 2026-08-05 — 9 capturas
 
 v0.2.19: límite de INEXTENSIBILIDAD de las cadenas (una barra de 180 kg en
 caída libre queda retenida — antes atravesaba hasta el suelo), CCD
@@ -466,3 +466,8 @@ del diseñador (pila seleccionable en los tubos guía en lugar del carrier),
 con transmisión verificada y prefab exportado para su corrección.
 
 - [`v223-torre-pesos.png`](2026-08-05/v223-torre-pesos.png)
+
+v0.2.24: Torre polea de pesos DEFINITIVA con la corrección del diseñador —
+sin manguitos espaciadores y con el bloque de pesos cerca del piso.
+
+- [`v224-torre-pesos.png`](2026-08-05/v224-torre-pesos.png)

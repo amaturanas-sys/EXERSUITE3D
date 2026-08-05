@@ -5,6 +5,20 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.24] — 2026-08-05
+
+La Torre polea de pesos queda DEFINITIVA con la corrección del diseñador.
+
+### Cambiado
+
+- **Torre polea de pesos — versión corregida del diseñador**
+  (torrepoleadepesos.prefab.json, verbatim): se eliminan los manguitos
+  espaciadores y el BLOQUE DE PESOS baja a su posición natural cerca del
+  piso (base ≈ 8 cm), abrazado a los tubos guía; el recorrido de ambos
+  cables y las tres bisagras quedan según el archivo (22 piezas).
+  Verificado: la pila asienta guiada y el remo de polea alta la levanta
+  +67 cm por el cable, sin deriva lateral.
+
 ## [0.2.23] — 2026-08-05
 
 La variante encargada: TORRE POLEA DE PESOS — el bastidor de la torre del

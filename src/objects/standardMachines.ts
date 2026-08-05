@@ -407,32 +407,46 @@ const TORRE_DISCOS_CABLES: CableSpec[] = [
   { nodos: [{ pieza: 17, local: [0, 4.0671, 0] }, { pieza: 7, local: [1.1605, 0, -0.1641] }, { pieza: 8, local: [-1.1612, 0, 0.159] }, { pieza: 6, local: [0.8649, 0, -0.7909] }, { pieza: 5, local: [-1.164, 0, 0.1368] }, { pieza: 14, local: [0, 3.397, 0] }] },
 ];
 
-// TORRE POLEA CON BLOQUE DE PESOS (v0.2.23): variante encargada por el
-// diseñador — el MISMO bastidor de la torre de discos, con la PILA DE
-// PESOS seleccionable (el bloque de pesos, con sus dos orificios que
-// abrazan los tubos guía) en lugar del carrier portadiscos. La pila
-// descansa sobre los manguitos espaciadores (base ≈ 61 cm) y el cable de
-// carga toma su tapa. BORRADOR a corregir por el diseñador.
-const TORRE_PESOS: PiezaSpec[] = TORRE_DISCOS.map((p, i) =>
-  i === 17
-    ? ({
-        comp: "pila-pesos",
-        nombre: "Bloque de pesos (pila)",
-        pos: [0.33, 106, -44.5388],
-        rotq: [0, 0, 0, 1],
-        fija: false,
-      } as PiezaSpec)
-    : p,
-);
+// TORRE POLEA DE PESOS — torrepoleadepesos.prefab.json CORREGIDO por el
+// diseñador (v0.2.24): piezas VERBATIM del archivo. Mismo bastidor de la
+// torre de discos SIN manguitos espaciadores: el BLOQUE DE PESOS (pila
+// seleccionable) abraza los tubos guía cerca del piso, con remo de polea
+// alta, jalón bajo y sus dos cables. No editar a mano: ante una nueva
+// corrección, reemplazar por el contenido del .prefab.json.
+const TORRE_PESOS: PiezaSpec[] = [
+  { comp: "pie-ttp", nombre: "Travesaño inferior", params: { kind: "box", width: 15, height: 5, depth: 104 }, material: "acero-negro", pos: [-0.015, 3, -11.565], rotq: [0, 0.707107, 0, 0.707107], fija: true, masaKg: 0, escala: [1, 1, 0.9793] },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía izq.", params: { kind: "box", width: 4, height: 214, depth: 4 }, material: "acero-pulido", pos: [-6.3258, 106.9, -44.565], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "tubo-guia-ttp", nombre: "Tubo guía der.", params: { kind: "box", width: 4, height: 214, depth: 4 }, material: "acero-pulido", pos: [6.985, 106.9, -44.565], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "roldana", nombre: "Polea alta frontal", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 211, 34.435], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Polea alta trasera", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 211, -10.565], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Polea de torre", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 203, -38.565], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Carro: polea sup.", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 136, -15.565], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 0.3 },
+  { comp: "roldana", nombre: "Carro: polea inf.", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 123, -15.565], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 0.3 },
+  { comp: "puente-carro-ttp", nombre: "Puente del carro", params: { kind: "box", width: 3.5, height: 20.4, depth: 7.2 }, material: "acero-negro", pos: [-0.015, 129, -15.565], rotq: [0, 0, 0, 1], fija: false, masaKg: 0.2 },
+  { comp: "roldana", nombre: "Polea baja", params: { kind: "cylinder", height: 2.5, radiusTop: 4, radiusBottom: 4 }, material: "nylon", pos: [-0.015, 10, -11.565], rotq: [0, 0, 0.707107, 0.707107], fija: true, masaKg: 0.3 },
+  { comp: "soporte-polea-ttp", nombre: "Soporte polea baja", params: { kind: "box", width: 19, height: 13.3, depth: 7.2 }, material: "acero-negro", pos: [-0.015, 6.7, -11.465], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "placa-polea-ttp", nombre: "Placa polea baja", params: { kind: "box", width: 19, height: 7, depth: 26 }, material: "acero-negro", pos: [-0.015, 3.5, -28.165], rotq: [0, 0, 0, 1], fija: true, masaKg: 0, escala: [1, 1, -1] },
+  { comp: "barra-lat-ttp", nombre: "Remo de polea alta", params: { kind: "box", width: 75, height: 7, depth: 2 }, material: "cromo", pos: [-0.135, 210.247, 44.665], rotq: [0, 0, 0, 1], fija: false, masaKg: 4 },
+  { comp: "pletina-ttp", nombre: "Pletina TTP", params: { kind: "box", width: 45, height: 5, depth: 7 }, material: "acero-negro", pos: [-0.015, 3.5, -44.665], rotq: [0, 0, 0, 1], fija: true, masaKg: 0 },
+  { comp: "bastidor-sup-ttp", nombre: "Bastidor superior TTP", params: { kind: "box", width: 32, height: 15, depth: 92.3 }, material: "acero-negro", pos: [-0.135, 206.85, -1.465], rotq: [0, 1, 0, 0], fija: true, masaKg: 0 },
+  { comp: "pila-pesos", nombre: "Bloque de pesos", params: { kind: "box", width: 25, height: 90, depth: 18, holeDiameter: 6, holeSpacing: 13.3 }, material: "hierro-fundido", pos: [0.33, 53.2002, -44.565], rotq: [0, 0, 0, 1], fija: false, masaKg: 102 },
+  { comp: "barra-dominadas", nombre: "Barra de jalón bajo", params: { kind: "cylinder", height: 50, radiusTop: 1.6, radiusBottom: 1.6 }, material: "cromo", pos: [3.985, 5, 8.435], rotq: [0, 0, 0.707107, 0.707107], fija: false, masaKg: 2 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", width: 5, depth: 7, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[0, -29.578074, 0], [0, -14.789037, 0], [-2.527652, -3.453547, 0], [-12.799007, 9.049852, 0], [-31.806238, 11.090995, 0.5]] }, material: "acero-negro", pos: [54.2912, 3, -33.574], rotq: [-0.707107, 0, 0, 0.707107], fija: true, masaKg: 0 },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", width: 5, depth: 7, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[0, -29.578074, 0], [0, -14.789037, 0], [-2.527652, -3.453547, 0], [-12.799007, 9.049852, 0], [-31.806238, 11.090995, 0.5]] }, material: "acero-negro", pos: [-54.2912, 3, -33.5412], rotq: [-0.707107, 0, 0, 0.707107], fija: true, masaKg: 0, escala: [-1, 1, 1] },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", width: 5, depth: 7, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -101.478722, 0], [0, -76.109042, 0], [0, -50.739361, 0], [0, -25.369681, 0], [0, 0, 0], [0, 25.369681, 0], [0, 50.739361, 0], [0, 66.468019, 0], [0, 89.107808, 2.446404], [0, 97.925334, 18.53356], [0, 98.934026, 42.309652]] }, material: "acero-negro", pos: [-13.6375, 107.1216, -11.6728], rotq: [0, 0, 0, 1], fija: true, masaKg: 0, escala: [1, 1, -1] },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", width: 5, depth: 7, ends: "plano", holeDiameter: 1.6, holeSpacing: 5, path: [[0, -101.478722, 0], [0, -76.109042, 0], [0, -50.739361, 0], [0, -25.369681, 0], [0, 0, 0], [0, 25.369681, 0], [0, 50.739361, 0], [0, 66.468019, 0], [0, 89.107808, 2.446404], [0, 97.925334, 18.53356], [0, 98.934026, 42.309652]] }, material: "acero-negro", pos: [13.585, 107.1216, -11.6412], rotq: [0, 0, 0, 1], fija: true, masaKg: 0, escala: [1, 1, -1] },
+  { comp: "pilar-linea", nombre: "Pilar / travesaño", params: { kind: "beam", width: 5, depth: 5, ends: "plano", holeDiameter: 0, holeSpacing: 5, path: [[1.615067, -13.583646, 38.568193], [-0.015759, -12.788268, 13.580028], [-0.003509, -11.993307, 3.024], [0, 0, 0], [-0.003321, 11.945412, 2.861656], [-0.015666, 12.79233, 13.499779], [1.615067, 13.638828, 38.568193]] }, material: "acero-negro", pos: [-0.0986, 206.6173, 8.3794], rotq: [0.000821, 0, -0.707106, 0.707107], fija: true, masaKg: 0, escala: [1, 1, -1] },
+];
+
+const TORRE_PESOS_UNIONES: UnionSpec[] = [
+  { tipo: "bisagra", fija: 13, movil: 17, eje: "z", ancla: [22.485, 3.5, -44.665], min: -90, max: 0, limites: true, bloqueada: true },
+  { tipo: "bisagra", fija: 20, movil: 21, eje: "z", ancla: [13.585, 205.047, -30.1748], min: -90, max: 0, limites: true, bloqueada: true },
+  { tipo: "bisagra", fija: 19, movil: 21, eje: "z", ancla: [-13.6375, 205.047, -30.2063], min: -90, max: 0, limites: true, bloqueada: true },
+];
 
 const TORRE_PESOS_CABLES: CableSpec[] = [
-  TORRE_DISCOS_CABLES[0],
-  {
-    nodos: [
-      { pieza: 17, local: [0, 45, 0] },
-      ...TORRE_DISCOS_CABLES[1].nodos.slice(1),
-    ],
-  },
+  { nodos: [{ pieza: 15, local: [0, 45, 0] }, { pieza: 5, local: [1.1613, 0, -0.1579] }, { pieza: 6, local: [-1.1612, 0, 0.159] }, { pieza: 4, local: [0.8649, 0, -0.7909] }, { pieza: 3, local: [-1.164, 0, 0.1368] }, { pieza: 12, local: [0, 3.397, 0] }] },
+  { nodos: [{ pieza: 16, local: [0, 0, 0] }, { pieza: 9, local: [-0.7371, 0, -0.9112] }, { pieza: 7, local: [1.1711, 0, 0.0456] }, { pieza: 11, local: [0, 0, 0] }] },
 ];
 
 const ARBOL: PiezaSpec[] = [
@@ -462,7 +476,7 @@ const SPECS: Record<string, MaquinaSpec> = {
   // los manguitos) — no necesitan unión manual.
   "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, cables: RACK_TORRE_CABLES },
   "torre-polea-discos": { label: "Torre polea de discos", piezas: TORRE_DISCOS, uniones: TORRE_DISCOS_UNIONES, cables: TORRE_DISCOS_CABLES },
-  "torre-polea-pesos": { label: "Torre polea de pesos", piezas: TORRE_PESOS, uniones: TORRE_DISCOS_UNIONES, cables: TORRE_PESOS_CABLES },
+  "torre-polea-pesos": { label: "Torre polea de pesos", piezas: TORRE_PESOS, uniones: TORRE_PESOS_UNIONES, cables: TORRE_PESOS_CABLES },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
 };
 
