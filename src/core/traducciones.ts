@@ -157,7 +157,6 @@ export const TRADUCCIONES: Record<string, string> = {
   "Rack de sentadillas": "Squat rack",
   "Jaula de potencia": "Power cage",
   "Banco plano": "Flat bench",
-  "Torre de polea (alta/baja)": "Cable tower (high/low)",
   Primitivas: "Primitives",
   Estructural: "Structural",
   Movimiento: "Motion",

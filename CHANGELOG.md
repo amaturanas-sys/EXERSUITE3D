@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.25] — 2026-08-05
+
+Rotar un grupo ya no rompe su mecánica, y el inventario pierde la torre
+de polea antigua (las dos torres del diseñador la suplen).
+
+### Corregido
+
+- **Rotar un grupo conserva su funcionalidad** (bug reportado con la
+  Torre polea de pesos girada 90°): las ARTICULACIONES ahora viajan con
+  el conjunto — el ancla (guardada en coordenadas de mundo) y el eje se
+  transforman con el mismo delta que las piezas al mover/girar un grupo o
+  multiselección desde el gizmo o el panel de Propiedades. Si el eje
+  girado cae sobre un eje cardinal se conserva como letra (editable en el
+  panel); en ángulos intermedios queda como VECTOR LIBRE, que el motor,
+  los marcadores 3D, el guardado y los prefabs entienden. Elegir una
+  letra en el panel de conexiones reemplaza el vector.
+- **Detecciones del motor invariantes a la rotación**: el empotrado de
+  roldanas, los accesorios calzados y las guías tubulares median las
+  piezas con la caja AABB de MUNDO dentro de pruebas expresadas en el
+  frame LOCAL — con la máquina girada permutaban ejes y elegían
+  anfitriones equivocados (la polea alta se fundía con el remo y la
+  máquina se desarmaba al simular). Ahora usan las dimensiones LOCALES
+  absolutas (también inmunes al espejado con escala negativa), y el
+  radio del groove de las roldanas para el contacto de cables se mide
+  igual. Verificado: la torre girada 90° asienta y transmite IGUAL que
+  sin girar (pila a 52, remo la sube +67 cm, deriva 0), el rack girado
+  45° se mantiene armado, y un grupo manual con bisagra conserva ancla y
+  eje tras el giro.
+
+### Eliminado
+
+- **Torre de polea (alta/baja)** sale del inventario de máquinas: las
+  torres de polea de discos y de pesos del diseñador suplen su función.
+
 ## [0.2.24] — 2026-08-05
 
 La Torre polea de pesos queda DEFINITIVA con la corrección del diseñador.

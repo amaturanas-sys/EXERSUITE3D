@@ -372,6 +372,19 @@ export class SceneObject {
     return size.multiply(this.mesh.scale);
   }
 
+  /**
+   * Dimensiones locales ABSOLUTAS en cm: |bbox × escala| por componente.
+   * A diferencia de effectiveSize() (caja AABB de MUNDO, que se hincha o
+   * permuta ejes cuando la pieza está girada), estas dimensiones viven en el
+   * frame LOCAL y son invariantes a la rotación y al espejado — es la medida
+   * correcta para cualquier prueba geométrica expresada en coordenadas
+   * locales de la pieza (empotrado de roldanas, calces, guías tubulares).
+   */
+  localSizeAbs(): THREE.Vector3 {
+    const s = this.localSize();
+    return new THREE.Vector3(Math.abs(s.x), Math.abs(s.y), Math.abs(s.z));
+  }
+
   dispose(): void {
     for (const p of this.stackParts) {
       p.mesh.geometry.dispose();

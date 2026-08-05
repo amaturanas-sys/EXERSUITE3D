@@ -30,6 +30,8 @@ export interface JointData {
   bodyBId: string;
   anchor: Vec3;
   axis: AxisName;
+  /** Eje libre en mundo (unitario) si la unión giró con su grupo (v0.2.25). */
+  axisVec?: Vec3 | null;
   limitsEnabled: boolean;
   min: number;
   max: number;

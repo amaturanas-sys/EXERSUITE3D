@@ -216,16 +216,28 @@ export class JointsPanel {
     const angUnit = isRev ? "°" : "cm";
     const velUnit = isRev ? "°/s" : "cm/s";
 
-    // Eje
+    // Eje. Si la unión giró con su grupo (eje libre en mundo), se muestra una
+    // opción extra informativa; elegir una letra la reemplaza por ese eje.
     const axisSel = el("select", { class: "select" });
+    if (j.axisVec) {
+      const v = j.axisVec;
+      const opt = el("option", { value: "libre" }, [
+        `Girado (${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)})`,
+      ]);
+      opt.selected = true;
+      axisSel.append(opt);
+    }
     for (const ax of ["x", "y", "z"] as const) {
       const opt = el("option", { value: ax }, [ax.toUpperCase()]);
-      if (ax === j.axis) opt.selected = true;
+      if (!j.axisVec && ax === j.axis) opt.selected = true;
       axisSel.append(opt);
     }
     axisSel.addEventListener("change", () => {
+      if (axisSel.value === "libre") return;
       j.axis = axisSel.value as Joint["axis"];
+      j.axisVec = null;
       this.editor.jointUpdated();
+      this.render();
     });
 
     // Limites

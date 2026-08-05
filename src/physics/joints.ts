@@ -29,6 +29,12 @@ export class Joint {
   anchor: THREE.Vector3;
   /** Eje de la articulacion en el espacio global. */
   axis: AxisName;
+  /**
+   * Eje LIBRE en mundo (unitario) cuando la articulacion fue girada junto a
+   * su grupo y ya no cae sobre un eje cardinal: tiene prioridad sobre `axis`.
+   * null = usar la letra (comportamiento clasico, editable en el panel).
+   */
+  axisVec: THREE.Vector3 | null = null;
   limitsEnabled: boolean;
   /** Limite minimo: grados (revolute) o cm (prismatic). */
   min: number;
@@ -62,6 +68,11 @@ export class Joint {
     this.min = opts.kind === "revolute" ? -90 : 0;
     this.max = opts.kind === "revolute" ? 0 : 50;
     this.motor = { enabled: false, targetVel: opts.kind === "revolute" ? 45 : 20, factor: 2 };
+  }
+
+  /** Eje efectivo en mundo (unitario): el vector girado si existe, o la letra. */
+  ejeVector(): THREE.Vector3 {
+    return this.axisVec ? this.axisVec.clone() : axisVector(this.axis);
   }
 }
 

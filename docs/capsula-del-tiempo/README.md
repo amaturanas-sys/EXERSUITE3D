@@ -430,7 +430,7 @@ POWERRACK"; prefabs, máquinas y Biblioteca de modelos intactos.
 - [`v218-paleta-curada.png`](2026-08-04/v218-paleta-curada.png)
 - [`v218-despiece-abierto.png`](2026-08-04/v218-despiece-abierto.png)
 
-## 2026-08-05 — 9 capturas
+## 2026-08-05 — 10 capturas
 
 v0.2.19: límite de INEXTENSIBILIDAD de las cadenas (una barra de 180 kg en
 caída libre queda retenida — antes atravesaba hasta el suelo), CCD
@@ -471,3 +471,12 @@ v0.2.24: Torre polea de pesos DEFINITIVA con la corrección del diseñador —
 sin manguitos espaciadores y con el bloque de pesos cerca del piso.
 
 - [`v224-torre-pesos.png`](2026-08-05/v224-torre-pesos.png)
+
+v0.2.25: rotar un grupo conserva su mecánica — las articulaciones viajan
+con el conjunto (ancla + eje, con eje libre en ángulos intermedios) y las
+detecciones del motor (empotrado de roldanas, calces, guías) pasan a
+dimensiones locales invariantes a la rotación; la Torre de polea
+(alta/baja) sale del inventario. En la captura, la torre de pesos girada
+90° tras simular: intacta y funcional.
+
+- [`v225-torre-rotada.png`](2026-08-05/v225-torre-rotada.png)

@@ -39,12 +39,6 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
       "Banco plano clásico del diseñador (120×41×30): colchoneta tapizada sobre espina central, pata trasera en L, pata delantera en arco y bisagras de plegado bloqueadas.",
   },
   {
-    id: "torre-polea",
-    label: "Torre de polea (alta/baja)",
-    icon: "🪢",
-    description: "Columna con pila selectorizada y poleas alta y baja.",
-  },
-  {
     id: "rack-torre",
     label: "Rack con torre (TTP)",
     icon: "🏗️",
@@ -103,6 +97,8 @@ export interface UnionSpec {
   fija: number;
   movil: number;
   eje?: "x" | "y" | "z";
+  /** Eje LIBRE en mundo (unitario) si la unión no cae sobre una letra (v0.2.25). */
+  ejeVec?: [number, number, number];
   /** Ancla en coordenadas del prefab (mismas que `pos`); por defecto, la posición de la pieza móvil. */
   ancla?: [number, number, number];
   min?: number;
@@ -266,13 +262,8 @@ const BANCO_UNIONES: UnionSpec[] = [
   { tipo: "bisagra", fija: 2, movil: 6, eje: "z", ancla: [52, 4, 22], min: -90, max: 0, limites: true, bloqueada: true },
 ];
 
-const TORRE: PiezaSpec[] = [
-  { comp: "prim-box", nombre: "Base", params: { width: 60, height: 5, depth: 80 }, material: "acero-negro", pos: [0, 2.5, 10] },
-  { comp: "prim-box", nombre: "Columna", params: { width: 20, height: 210, depth: 12 }, material: "acero-negro", pos: [0, 105, -18] },
-  { comp: "pila-pesos", pos: [0, 47, 0] },
-  { comp: "polea", nombre: "Polea alta", pos: [0, 200, 6], rot: [0, 0, Math.PI / 2] },
-  { comp: "polea", nombre: "Polea baja", pos: [0, 14, 6], rot: [0, 0, Math.PI / 2] },
-];
+// La antigua "Torre de polea (alta/baja)" salió del inventario en v0.2.25:
+// las torres de polea de discos y de pesos del diseñador suplen su función.
 
 /**
  * Rack con torre TTP001L — dimensiones extraídas del despiece STL real:
@@ -471,7 +462,6 @@ const SPECS: Record<string, MaquinaSpec> = {
   "rack-sentadillas": { label: "Rack de sentadillas", piezas: RACK, uniones: RACK_UNIONES, cuerdas: RACK_CUERDAS },
   "jaula-potencia": { label: "Jaula de potencia", piezas: JAULA },
   "banco-plano": { label: "Banco plano", piezas: BANCO, uniones: BANCO_UNIONES },
-  "torre-polea": { label: "Torre de polea", piezas: TORRE },
   // Las guías del carrier las RECONOCE el motor físico (tubos que atraviesan
   // los manguitos) — no necesitan unión manual.
   "rack-torre": { label: "Rack con torre (TTP)", piezas: RACK_TORRE, cables: RACK_TORRE_CABLES },
@@ -560,6 +550,9 @@ export function aplicarUniones(
     const joint = editor.connect(aId, bId, u.tipo === "bisagra" ? "revolute" : "prismatic", ancla);
     if (!joint) continue;
     if (u.eje) joint.axis = u.eje;
+    if (u.ejeVec) {
+      joint.axisVec = new THREE.Vector3(u.ejeVec[0], u.ejeVec[1], u.ejeVec[2]).normalize();
+    }
     if (u.min !== undefined) joint.min = u.min;
     if (u.max !== undefined) joint.max = u.max;
     joint.limitsEnabled = u.limites ?? (u.min !== undefined || u.max !== undefined);

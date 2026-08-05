@@ -12,7 +12,7 @@ import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
 import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
-import { Joint, type AxisName, type JointKind, axisVector } from "../physics/joints";
+import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
@@ -2187,6 +2187,7 @@ export class Editor {
         bodyBId: j.bodyBId,
         anchor: v3(j.anchor),
         axis: j.axis,
+        axisVec: j.axisVec ? v3(j.axisVec) : null,
         limitsEnabled: j.limitsEnabled,
         min: j.min,
         max: j.max,
@@ -2431,6 +2432,7 @@ export class Editor {
       if (!j) continue;
       j.name = jd.name;
       j.axis = jd.axis;
+      j.axisVec = jd.axisVec ? new THREE.Vector3().fromArray(jd.axisVec).normalize() : null;
       j.limitsEnabled = jd.limitsEnabled;
       j.min = jd.min;
       j.max = jd.max;
@@ -3144,9 +3146,51 @@ export class Editor {
       m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
       this.updateRopesForObject(o.id);
     }
+    this.transformarUniones(delta, this.multiSel);
     this.cablesDirty = true;
     this.groupPrev.copy(cur);
     this.bus.emit("grupoTransformado", { fuente: "gizmo" });
+  }
+
+  /**
+   * Las ARTICULACIONES viajan con el conjunto (v0.2.25): el ancla se guarda
+   * en coordenadas de MUNDO y el eje como dirección global, así que al mover
+   * o girar un grupo/multiselección hay que aplicarles el MISMO delta que a
+   * las piezas — si no, el solver reconstruye la bisagra en el punto viejo y
+   * la máquina se destroza al arrancar la simulación. Solo se transforman las
+   * uniones cuyas DOS piezas van dentro del conjunto (si solo va una, la
+   * geometría relativa cambió de verdad y el ancla de diseño se respeta).
+   */
+  private transformarUniones(delta: THREE.Matrix4, ids: Iterable<string>): void {
+    const set = ids instanceof Set ? (ids as Set<string>) : new Set(ids);
+    const pos = new THREE.Vector3();
+    const rot = new THREE.Quaternion();
+    const esc = new THREE.Vector3();
+    delta.decompose(pos, rot, esc);
+    let alguna = false;
+    for (const j of this.joints.values()) {
+      if (!set.has(j.bodyAId) || !set.has(j.bodyBId)) continue;
+      j.anchor.applyMatrix4(delta);
+      const eje = j.ejeVector().applyQuaternion(rot).normalize();
+      // Si el eje girado vuelve a caer sobre una letra cardinal POSITIVA se
+      // guarda como letra (editable en el panel); cualquier otra dirección
+      // queda como vector libre. La cardinal negativa también queda como
+      // vector: volcarla a la letra invertiría el sentido de giro y el
+      // significado de los límites min/max.
+      const letra: AxisName | null =
+        eje.x > 0.9999 ? "x" : eje.y > 0.9999 ? "y" : eje.z > 0.9999 ? "z" : null;
+      if (letra) {
+        j.axis = letra;
+        j.axisVec = null;
+      } else {
+        j.axisVec = eje;
+      }
+      alguna = true;
+    }
+    if (alguna) {
+      this.refreshJointHelpers();
+      this.bus.emit("jointsChanged", { joints: this.listJoints() });
+    }
   }
 
   /**
@@ -3288,6 +3332,7 @@ export class Editor {
       // Las cuerdas ancladas a miembros del grupo siguen a sus anclas.
       this.updateRopesForObject(o.id);
     }
+    this.transformarUniones(delta, g.ids);
     this.cablesDirty = true;
     this.groupPrev.copy(cur);
     this.bus.emit("grupoTransformado", { fuente: "gizmo" });
@@ -3914,7 +3959,7 @@ export class Editor {
       sphere.position.copy(joint.anchor);
       sphere.renderOrder = 999;
 
-      const dir = axisVector(joint.axis).multiplyScalar(30);
+      const dir = joint.ejeVector().multiplyScalar(30);
       const pts = [
         joint.anchor.clone().sub(dir),
         joint.anchor.clone().add(dir),
@@ -4230,7 +4275,7 @@ export class Editor {
     ejeOjal.normalize();
     // El toro se genera en el plano XY (eje +Z).
     term.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ejeOjal);
-    const radio = term.effectiveSize().x / 2 || 2.2;
+    const radio = term.localSizeAbs().x / 2 || 2.2;
     term.mesh.position.copy(punto).addScaledVector(normal, radio * 0.8);
     void host;
     this.bus.emit("objectTransformed", { object: term });
@@ -4285,7 +4330,7 @@ export class Editor {
     ejeRueda.normalize();
     rold.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
 
-    const radio = rold.effectiveSize().x / 2 || 4;
+    const radio = rold.localSizeAbs().x / 2 || 4;
     if (config === "externa") {
       // Montada fuera de la cara, separada el radio de la rueda.
       rold.mesh.position.copy(punto).addScaledVector(normal, radio + 0.5);
@@ -4717,7 +4762,7 @@ export class Editor {
     roldana.mesh.updateMatrixWorld(true);
     const local = haciaWorld.clone().applyMatrix4(roldana.mesh.matrixWorld.clone().invert());
     local.y = 0; // el eje de la rueda es Y local: el groove vive en su plano
-    const radio = roldana.effectiveSize().x / 2;
+    const radio = roldana.localSizeAbs().x / 2;
     if (local.lengthSq() < 1e-6) return new THREE.Vector3();
     return local.normalize().multiplyScalar(radio);
   }
@@ -4744,7 +4789,7 @@ export class Editor {
     if (d1.lengthSq() < 1e-6 || d2.lengthSq() < 1e-6) return null;
     d1.normalize();
     d2.normalize();
-    const radio = roldana.effectiveSize().x / 2;
+    const radio = roldana.localSizeAbs().x / 2;
     const suma = d1.clone().add(d2);
     if (suma.lengthSq() < 1e-4) {
       // Paso recto (los vecinos quedan opuestos): roza tangente por un lado —

@@ -362,13 +362,17 @@ export class PhysicsWorld {
     const v = new THREE.Vector3();
     for (const [id, e] of entradas) {
       if (!POLEAS.has(e.obj.componentId)) continue;
-      const pSize = e.obj.effectiveSize();
+      // Dimensiones LOCALES absolutas: la prueba de caja corre en el frame
+      // del anfitrión y debe ser invariante al giro de la máquina completa
+      // (la AABB de mundo permutaba ejes al rotar el grupo y el empotrado
+      // elegía anfitriones equivocados).
+      const pSize = e.obj.localSizeAbs();
       const margen = Math.max(pSize.x, pSize.y, pSize.z) / 2 + 1.5;
       let mejor: { body: R.RigidBody; obj: SceneObject } | null = null;
       let mejorD = Infinity;
       for (const [hid, h] of entradas) {
         if (hid === id || POLEAS.has(h.obj.componentId)) continue;
-        const hs = h.obj.effectiveSize();
+        const hs = h.obj.localSizeAbs();
         invH.copy(h.obj.mesh.quaternion).invert();
         v.copy(e.obj.mesh.position).sub(h.obj.mesh.position).applyQuaternion(invH);
         // Distancia firmada del centro de la roldana a la caja de la pieza.
@@ -438,7 +442,7 @@ export class PhysicsWorld {
       if (this.empotradaPorId.has(id)) continue;
       const def = getDefinition(e.obj.componentId);
       if (!def || (!def.calceLocal && !def.frenteCalce && !def.postesCalce)) continue;
-      const aSize = e.obj.effectiveSize();
+      const aSize = e.obj.localSizeAbs();
       const margen = Math.max(aSize.x, aSize.y, aSize.z) / 2 + 2;
       let mejor: { body: R.RigidBody; obj: SceneObject } | null = null;
       let mejorD = Infinity;
@@ -452,8 +456,9 @@ export class PhysicsWorld {
           (h.obj.params.kind === "beam" && (h.obj.params.holeDiameter ?? 0) > 0.1);
         if (!conGrilla) continue;
         // Caja LOCAL del anfitrión (v se expresa en su frame local; la
-        // caja de mundo estaría girada respecto de él).
-        const hs = h.obj.localSize();
+        // caja de mundo estaría girada respecto de él). Absoluta: una pieza
+        // ESPEJADA (escala negativa) daba semilados negativos.
+        const hs = h.obj.localSizeAbs();
         invH.copy(h.obj.mesh.quaternion).invert();
         v.copy(e.obj.mesh.position).sub(h.obj.mesh.position).applyQuaternion(invH);
         const d = Math.max(
@@ -553,7 +558,9 @@ export class PhysicsWorld {
     }
     const esbeltas: Esbelta[] = [];
     for (const f of fijas) {
-      const s = f.obj.effectiveSize();
+      // Dimensiones LOCALES: se emparejan con letras de eje local (la AABB
+      // de mundo mezclaba ejes con la pieza girada y perdía la esbeltez).
+      const s = f.obj.localSizeAbs();
       const dims: [number, "x" | "y" | "z"][] = [[s.x, "x"], [s.y, "y"], [s.z, "z"]];
       dims.sort((a, b) => b[0] - a[0]);
       const [largo, ejeLocal] = dims[0];
@@ -961,8 +968,10 @@ export class PhysicsWorld {
     const anchorB = this.localAnchor(b.obj, joint.anchor);
     const qA = a.obj.mesh.quaternion;
     const qB = b.obj.mesh.quaternion;
-    // Eje en el frame local del cuerpo A.
-    const axisLocalA = axisVector(joint.axis).applyQuaternion(qA.clone().invert());
+    // Eje en el frame local del cuerpo A. El eje efectivo respeta el giro del
+    // grupo (axisVec) cuando la maquina fue rotada como conjunto.
+    const ejeMundo = joint.ejeVector();
+    const axisLocalA = ejeMundo.clone().applyQuaternion(qA.clone().invert());
     const axis = { x: axisLocalA.x, y: axisLocalA.y, z: axisLocalA.z };
 
     // RAPIER.JointData.revolute/prismatic aplican el MISMO eje local a ambos
@@ -972,7 +981,7 @@ export class PhysicsWorld {
     // interponemos un ADAPTADOR: un cuerpecillo con la orientacion de A,
     // articulado con A y soldado a B con un joint fijo (que si admite frames
     // por cuerpo), de modo que B conserva su orientacion de diseno.
-    const axisLocalB = axisVector(joint.axis).applyQuaternion(qB.clone().invert());
+    const axisLocalB = ejeMundo.clone().applyQuaternion(qB.clone().invert());
     const compatible =
       joint.kind === "revolute"
         ? axisLocalA.angleTo(axisLocalB) < 1e-3 // giro libre alrededor del eje

@@ -95,6 +95,9 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
       fija: ia,
       movil: ib,
       eje: j.axis,
+      ejeVec: j.axisVec
+        ? ([r6(j.axisVec.x), r6(j.axisVec.y), r6(j.axisVec.z)] as [number, number, number])
+        : undefined,
       ancla: [r4(j.anchor.x - cx), r4(j.anchor.y), r4(j.anchor.z - cz)],
       min: j.min,
       max: j.max,
