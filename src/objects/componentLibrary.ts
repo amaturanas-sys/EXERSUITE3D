@@ -63,6 +63,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "base-apoyo",
+    paleta: "oculta",
     label: "Base de apoyo",
     category: "estructural",
     materialId: "acero-negro",
@@ -262,12 +263,16 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "puente-carro-ttp",
     paleta: "despiece",
-    label: "Puente del carro TTP",
-    category: "estructural",
+    label: "Carro de doble roldana TTP",
+    category: "transmision",
     materialId: "acero-negro",
     defaults: { kind: "box", width: 3.5, height: 20.4, depth: 7.2 },
-    physics: { massKg: 0, fixed: true },
-    description: "Puente real del carro de poleas del TTP001L: une las dos poleas del carro.",
+    // Pieza de TRANSMISIÓN por derecho propio: móvil, y desde la paleta
+    // SIEMPRE nace con sus dos roldanas funcionales (transmite fuerza
+    // entre dos roldanas, como en el TTP con torre).
+    physics: { massKg: 0.2, fixed: false },
+    description:
+      "Carro de poleas real del TTP001L: puente movil que SIEMPRE conserva sus dos roldanas (sup./inf.) — transmite la fuerza entre dos tramos de cable, como en el TTP con torre.",
   },
   {
     id: "portadiscos-ttp",
@@ -468,6 +473,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "fulcro",
+    paleta: "oculta",
     label: "Fulcro",
     category: "movimiento",
     materialId: "turquesa",
@@ -524,13 +530,13 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "roldana",
-    paleta: "oculta",
     label: "Roldana",
     category: "transmision",
     materialId: "nylon",
     defaults: { kind: "cylinder", radiusTop: 4, radiusBottom: 4, height: 2.5 },
     physics: { massKg: 0.3, fixed: false },
-    description: "Polea pequena de reenvio de cable.",
+    description:
+      "Polea pequena de reenvio que se coloca SOBRE una estructura: toca la pieza anfitriona, elige el punto de su eje azul y precisa tipo (interna/externa) y direccion.",
   },
   {
     id: "bloque-poleas",
@@ -562,6 +568,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cable",
+    paleta: "oculta",
     label: "Cable",
     category: "transmision",
     materialId: "cromo",

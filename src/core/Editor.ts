@@ -72,7 +72,7 @@ export type EditorEvents = {
   /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
   /** Modo "colocar roldana" (interna/externa) sobre la cara de una pieza. */
-  roldanaModeChanged: { active: boolean; config: "interna" | "externa" | null };
+  roldanaModeChanged: { active: boolean };
   /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
   lineModeChanged: { active: boolean; kind: "beam" | "tube" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
@@ -193,7 +193,22 @@ export class Editor {
    * una pieza. Config interna = embutida en el pilar/travesaño (la rueda
    * asoma por la apertura); externa = montada fuera de la cara.
    */
-  private roldanaMode: "interna" | "externa" | null = null;
+  private roldanaMode = false;
+  /** Estructura elegida para alojar la roldana (fase 2 de la herramienta). */
+  private roldanaHost: SceneObject | null = null;
+  /** Línea azul del eje mayor de la estructura elegida. */
+  private roldanaAxisLine: THREE.Line | null = null;
+  /**
+   * Diálogo de configuración de la roldana (lo inyecta la UI): tipo
+   * interna/externa + dirección (arriba/abajo/izquierda/derecha, relativas
+   * a la vista). Si no hay diálogo, se coloca externa hacia arriba.
+   */
+  elegirRoldana:
+    | (() => Promise<{
+        tipo: "interna" | "externa";
+        dir: "arriba" | "abajo" | "izquierda" | "derecha";
+      } | null>)
+    | null = null;
   /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
   private terminalMode = false;
 
@@ -804,6 +819,44 @@ export class Editor {
     obj.mesh.position.set(suelo.x, s.y / 2, suelo.z);
     this.bus.emit("objectTransformed", { object: obj });
     return obj;
+  }
+
+  /**
+   * CARRO DE DOBLE ROLDANA TTP (v0.2.26): el puente del carro SIEMPRE nace
+   * con sus dos roldanas funcionales y su física de pieza móvil — su rol es
+   * transmitir fuerza entre dos roldanas (como en el TTP con torre). Las
+   * tres piezas se insertan agrupadas; en simulación las roldanas se
+   * empotran al puente (cuerpo compuesto) y los cables las reconocen como
+   * puntos de reenvío.
+   */
+  insertarCarroDoble(suelo?: THREE.Vector3): void {
+    const puente = suelo
+      ? this.addComponentAt("puente-carro-ttp", suelo)
+      : this.addComponent("puente-carro-ttp");
+    puente.physics = { ...puente.physics, fixed: false, massKg: Math.max(0.2, puente.physics.massKg) };
+    // Poses del prefab TTP: poleas del carro a +7/−6 del centro del puente,
+    // de canto (eje de giro en X local del puente).
+    const qRueda = new THREE.Quaternion(0, 0, Math.SQRT1_2, Math.SQRT1_2);
+    const ids = [puente.id];
+    for (const [nombre, dy] of [
+      ["Carro: polea sup.", 7],
+      ["Carro: polea inf.", -6],
+    ] as [string, number][]) {
+      const r = this.addComponent("roldana");
+      r.name = nombre;
+      r.mesh.name = nombre;
+      r.physics = { ...r.physics, fixed: false, massKg: 0.3 };
+      r.mesh.quaternion.copy(puente.mesh.quaternion).multiply(qRueda);
+      r.mesh.position
+        .copy(puente.mesh.position)
+        .add(new THREE.Vector3(0, dy, 0).applyQuaternion(puente.mesh.quaternion));
+      this.bus.emit("objectTransformed", { object: r });
+      ids.push(r.id);
+    }
+    const gid = this.createGroupFromIds(ids);
+    if (gid) this.renameGroup(gid, tt("Carro de doble roldana", "Double-sheave trolley"));
+    this.scheduleAutosave();
+    this.requestRender();
   }
 
   /**
@@ -2612,6 +2665,7 @@ export class Editor {
     this.cancelCable();
     this.cancelRope();
     this.cancelConnect();
+    this.cancelRoldana();
     this.endBendNodes();
     if (this.herramienta === tool) return;
     const eraArea = this.herramienta === "area";
@@ -4205,12 +4259,15 @@ export class Editor {
 
   // -------------------------------------------------------------- roldanas
   /**
-   * Entra en modo "colocar roldana": el siguiente toque sobre la cara de una
-   * pieza coloca ahí la roldana (interna: embutida en el eje central del
-   * pilar/travesaño con la rueda asomando por la apertura; externa: montada
-   * fuera de la cara). El modo permanece activo para colocar varias; Esc sale.
+   * Entra en modo "colocar roldana" EN DOS PASOS (v0.2.26): primero se toca
+   * la ESTRUCTURA que la alojará (viga, pilar, travesaño, brazo…) — se puede
+   * orbitar libremente para buscarla —, entonces su eje mayor se muestra como
+   * una LÍNEA AZUL y el siguiente toque elige el punto a lo largo de ese eje;
+   * ahí se precisa si la roldana es interna o externa y hacia qué dirección
+   * va dirigida (arriba/abajo/izquierda/derecha, relativas a la vista). El
+   * modo permanece activo para colocar varias; Esc sale.
    */
-  beginRoldana(config: "interna" | "externa"): void {
+  beginRoldana(): void {
     if (this.simulating) return;
     this.cancelCable();
     this.cancelRope();
@@ -4218,22 +4275,80 @@ export class Editor {
     this.cancelConnect();
     this.cancelAttachHand();
     this.select(null);
-    this.roldanaMode = config;
-    this.bus.emit("roldanaModeChanged", { active: true, config });
+    this.roldanaMode = true;
+    this.terminalMode = false;
+    this.limpiarEjeRoldana();
+    this.bus.emit("roldanaModeChanged", { active: true });
     this.bus.emit("dragMeasure", {
       text: tt(
-        `Roldana ${config}: toca la cara de una pieza donde colocarla (Esc termina)`,
-        `${config === "interna" ? "Internal" : "External"} sheave: tap the face of a part to place it (Esc ends)`,
+        "Roldana: toca la ESTRUCTURA que la alojará (viga, pilar, travesaño o brazo) — puedes orbitar para verla mejor (Esc termina)",
+        "Sheave: tap the STRUCTURE that will host it (beam, post, crossbar or arm) — orbit freely to find it (Esc ends)",
       ),
     });
   }
 
   cancelRoldana(): void {
     if (!this.roldanaMode && !this.terminalMode) return;
-    this.roldanaMode = null;
+    this.roldanaMode = false;
     this.terminalMode = false;
-    this.bus.emit("roldanaModeChanged", { active: false, config: null });
+    this.limpiarEjeRoldana();
+    this.bus.emit("roldanaModeChanged", { active: false });
     this.bus.emit("dragMeasure", { text: null });
+  }
+
+  /** Quita la línea azul del eje y olvida la estructura elegida. */
+  private limpiarEjeRoldana(): void {
+    if (this.roldanaAxisLine) {
+      this.sceneManager.scene.remove(this.roldanaAxisLine);
+      this.roldanaAxisLine.geometry.dispose();
+      (this.roldanaAxisLine.material as THREE.Material).dispose();
+      this.roldanaAxisLine = null;
+    }
+    this.roldanaHost = null;
+    this.requestRender();
+  }
+
+  /** Eje mayor de una pieza: dirección local/mundo, semilargo y centro. */
+  private ejeMayorMundo(host: SceneObject): {
+    ejeMundo: THREE.Vector3;
+    half: number;
+    centro: THREE.Vector3;
+  } {
+    const ls = host.localSizeAbs();
+    const ejeLocal =
+      ls.x >= ls.y && ls.x >= ls.z
+        ? new THREE.Vector3(1, 0, 0)
+        : ls.y >= ls.z
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(0, 0, 1);
+    host.mesh.updateMatrixWorld(true);
+    const ejeMundo = ejeLocal
+      .applyQuaternion(host.mesh.getWorldQuaternion(new THREE.Quaternion()))
+      .normalize();
+    return { ejeMundo, half: Math.max(ls.x, ls.y, ls.z) / 2, centro: host.mesh.position.clone() };
+  }
+
+  /** Fase 1→2: fija la estructura anfitriona y muestra su eje mayor en azul. */
+  private elegirEstructuraRoldana(host: SceneObject): void {
+    this.limpiarEjeRoldana();
+    const { ejeMundo, half, centro } = this.ejeMayorMundo(host);
+    const a = centro.clone().addScaledVector(ejeMundo, -half - 6);
+    const b = centro.clone().addScaledVector(ejeMundo, half + 6);
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([a, b]),
+      new THREE.LineBasicMaterial({ color: 0x2563eb, depthTest: false }),
+    );
+    line.renderOrder = 999;
+    this.sceneManager.scene.add(line);
+    this.roldanaAxisLine = line;
+    this.roldanaHost = host;
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `Estructura: ${host.name}. Toca un punto A LO LARGO del eje azul para ubicar la roldana (u otra estructura para cambiar; Esc termina)`,
+        `Structure: ${host.name}. Tap a point ALONG the blue axis to place the sheave (or another structure to switch; Esc ends)`,
+      ),
+    });
+    this.requestRender();
   }
 
   /**
@@ -4249,7 +4364,8 @@ export class Editor {
     this.cancelConnect();
     this.cancelAttachHand();
     this.select(null);
-    this.roldanaMode = null;
+    this.roldanaMode = false;
+    this.limpiarEjeRoldana();
     this.terminalMode = true;
     this.bus.emit("dragMeasure", {
       text: tt(
@@ -4289,74 +4405,84 @@ export class Editor {
     this.requestRender();
   }
 
-  /** Coloca la roldana sobre la pieza tocada, según la configuración. */
-  private colocarRoldana(
-    config: "interna" | "externa",
+  /**
+   * Coloca la roldana en un punto del EJE MAYOR de la estructura, según el
+   * tipo (interna: embutida en el eje central, la rueda asoma por la
+   * apertura; externa: montada fuera de la cara hacia la dirección elegida)
+   * y la dirección a la que va dirigida — el plano de la rueda contiene el
+   * eje de la estructura y esa dirección, así el cable corre a lo largo de
+   * la pieza y se reenvía hacia allí.
+   */
+  private colocarRoldanaEnEje(
     host: SceneObject,
-    punto: THREE.Vector3,
-    normal: THREE.Vector3,
+    puntoEje: THREE.Vector3,
+    tipo: "interna" | "externa",
+    dir: "arriba" | "abajo" | "izquierda" | "derecha",
   ): void {
+    const { ejeMundo } = this.ejeMayorMundo(host);
+    // Dirección pedida, relativa a la VISTA (lo que el usuario ve): arriba/
+    // abajo = vertical de la cámara; derecha/izquierda = su horizontal.
+    const cam = this.sceneManager.camera;
+    cam.updateMatrixWorld(true);
+    const camRight = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize();
+    const camUp = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize();
+    const pedida =
+      dir === "arriba"
+        ? camUp.clone()
+        : dir === "abajo"
+          ? camUp.clone().negate()
+          : dir === "derecha"
+            ? camRight.clone()
+            : camRight.clone().negate();
+    // Componente perpendicular al eje de la estructura.
+    const dirMundo = pedida.clone().addScaledVector(ejeMundo, -pedida.dot(ejeMundo));
+    if (dirMundo.lengthSq() < 0.05) {
+      this.bus.emit("dragMeasure", {
+        text: tt(
+          "⛔ Esa dirección coincide con el eje de la estructura — orbita o elige otra dirección",
+          "⛔ That direction matches the structure's axis — orbit or pick another direction",
+        ),
+      });
+      return;
+    }
+    dirMundo.normalize();
+
     const rold = this.addComponent("roldana");
     const previas = [...this.objects.values()].filter(
-      (o) => o !== rold && o.name.startsWith(`Roldana ${config}`),
+      (o) => o !== rold && o.name.startsWith(`Roldana ${tipo}`),
     ).length;
-    rold.name = `Roldana ${config}${previas > 0 ? ` ${previas + 1}` : ""}`;
+    rold.name = `Roldana ${tipo}${previas > 0 ? ` ${previas + 1}` : ""}`;
     rold.mesh.name = rold.name;
     // Punto de deslizamiento del cable: fija (el cable resbala por ella).
     rold.physics = { ...rold.physics, fixed: true };
 
-    // Orientación (diagrama): el plano de la rueda es VERTICAL y contiene el
-    // eje largo de la pieza — así el cable corre a lo largo de la viga y se
-    // reenvía hacia arriba/abajo (interna: visible por la apertura frontal;
-    // externa: rueda de canto sobre la cara).
-    host.mesh.updateMatrixWorld(true);
-    const ls = host.localSize();
-    const ejeLocal =
-      ls.x >= ls.y && ls.x >= ls.z
-        ? new THREE.Vector3(1, 0, 0)
-        : ls.y >= ls.z
-          ? new THREE.Vector3(0, 1, 0)
-          : new THREE.Vector3(0, 0, 1);
-    const ejeMundo = ejeLocal
-      .clone()
-      .applyQuaternion(host.mesh.getWorldQuaternion(new THREE.Quaternion()))
-      .normalize();
-    let ejeRueda = new THREE.Vector3().crossVectors(ejeMundo, new THREE.Vector3(0, 1, 0));
-    if (ejeRueda.lengthSq() < 0.01) {
-      // Pieza vertical (pilar): plano de rueda contiene el pilar y la normal.
-      ejeRueda = new THREE.Vector3().crossVectors(normal, ejeMundo);
-      if (ejeRueda.lengthSq() < 0.01) ejeRueda.copy(normal);
-    }
-    ejeRueda.normalize();
+    // El eje de giro de la rueda es perpendicular al plano (eje, dirección).
+    const ejeRueda = new THREE.Vector3().crossVectors(ejeMundo, dirMundo).normalize();
     rold.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
 
     const radio = rold.localSizeAbs().x / 2 || 4;
-    if (config === "externa") {
-      // Montada fuera de la cara, separada el radio de la rueda.
-      rold.mesh.position.copy(punto).addScaledVector(normal, radio + 0.5);
+    if (tipo === "externa") {
+      // Fuera de la cara que mira hacia la dirección: semiespesor de la
+      // estructura a lo largo de la dirección + el radio de la rueda.
+      const qInv = host.mesh.getWorldQuaternion(new THREE.Quaternion()).invert();
+      const dirLocal = dirMundo.clone().applyQuaternion(qInv);
+      const ls = host.localSizeAbs();
+      const halfDir =
+        (Math.abs(dirLocal.x) * ls.x + Math.abs(dirLocal.y) * ls.y + Math.abs(dirLocal.z) * ls.z) /
+        2;
+      rold.mesh.position.copy(puntoEje).addScaledVector(dirMundo, halfDir + radio + 0.5);
     } else {
-      // Embutida: centrada en el eje de la pieza a la altura del toque; la
-      // rueda asoma por las caras como apertura del reenvío interno.
-      const local = host.mesh.worldToLocal(punto.clone());
-      if (ejeLocal.x === 1) {
-        local.y = 0;
-        local.z = 0;
-      } else if (ejeLocal.y === 1) {
-        local.x = 0;
-        local.z = 0;
-      } else {
-        local.x = 0;
-        local.y = 0;
-      }
-      rold.mesh.position.copy(host.mesh.localToWorld(local));
+      // Embutida: centrada en el eje central; la rueda asoma por la apertura
+      // orientada hacia la dirección elegida.
+      rold.mesh.position.copy(puntoEje);
     }
     this.bus.emit("objectTransformed", { object: rold });
     this.select(null);
-    // El modo sigue activo para colocar la siguiente (como en el diagrama).
+    // El modo y la estructura siguen activos para colocar la siguiente.
     this.bus.emit("dragMeasure", {
       text: tt(
-        `✓ ${rold.name} colocada — toca otra cara o Esc para terminar`,
-        `✓ ${rold.name} placed — tap another face or Esc to finish`,
+        `✓ ${rold.name} colocada — toca otro punto del eje, otra estructura, o Esc para terminar`,
+        `✓ ${rold.name} placed — tap another point on the axis, another structure, or Esc to finish`,
       ),
     });
     this.requestRender();
@@ -5561,17 +5687,67 @@ export class Editor {
       return;
     }
 
-    // Modos "colocar roldana"/"colocar terminal": el toque sobre una cara.
-    if (this.roldanaMode || this.terminalMode) {
+    // Modo "colocar terminal": el toque sobre una cara ancla el ojal.
+    if (this.terminalMode) {
       const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
       const hit = hits[0];
       const hid = hit?.object.userData.sceneObjectId as string | undefined;
       const hostR = hid ? this.objects.get(hid) : undefined;
       if (hit && hostR && hit.face) {
         const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
-        if (this.roldanaMode) this.colocarRoldana(this.roldanaMode, hostR, hit.point.clone(), normal);
-        else this.colocarTerminal(hostR, hit.point.clone(), normal);
+        this.colocarTerminal(hostR, hit.point.clone(), normal);
       }
+      return;
+    }
+
+    // Modo "colocar roldana" en dos pasos: estructura → punto del eje azul.
+    if (this.roldanaMode) {
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hit = hits[0];
+      const hid = hit?.object.userData.sceneObjectId as string | undefined;
+      const hostR = hid ? this.objects.get(hid) : undefined;
+      if (!this.roldanaHost) {
+        // Fase 1: elegir estructura (un toque al vacío no cancela: se puede
+        // orbitar hasta encontrarla).
+        if (hostR) this.elegirEstructuraRoldana(hostR);
+        return;
+      }
+      // Fase 2: otro anfitrión cambia la estructura; el propio anfitrión (o
+      // un toque cercano al eje azul) elige el punto a lo largo del eje.
+      if (hostR && hostR !== this.roldanaHost) {
+        this.elegirEstructuraRoldana(hostR);
+        return;
+      }
+      const host = this.roldanaHost;
+      const { ejeMundo, half, centro } = this.ejeMayorMundo(host);
+      let s: number;
+      if (hostR === host && hit) {
+        s = hit.point.clone().sub(centro).dot(ejeMundo);
+      } else {
+        // Punto de la recta del eje más cercano al rayo del puntero; lejos
+        // del eje se ignora (el usuario está orbitando). Fórmula estándar de
+        // parámetros más cercanos entre recta (C + t·u) y rayo (O + r·d).
+        const ray = this.raycaster.ray;
+        const w0 = centro.clone().sub(ray.origin);
+        const b = ejeMundo.dot(ray.direction);
+        const denom = 1 - b * b;
+        if (denom < 1e-6) return; // eje paralelo a la vista
+        const d0 = ejeMundo.dot(w0);
+        const e = ray.direction.dot(w0);
+        const t = (b * e - d0) / denom;
+        const pEje = centro.clone().addScaledVector(ejeMundo, t);
+        if (ray.distanceToPoint(pEje) > Math.max(18, half * 0.25)) return;
+        s = t;
+      }
+      s = THREE.MathUtils.clamp(s, -half, half);
+      const puntoEje = centro.clone().addScaledVector(ejeMundo, s);
+      const pedir =
+        this.elegirRoldana ??
+        (async () => ({ tipo: "externa" as const, dir: "arriba" as const }));
+      void pedir().then((cfg) => {
+        if (!cfg || !this.roldanaMode || this.roldanaHost !== host) return;
+        this.colocarRoldanaEnEje(host, puntoEje, cfg.tipo, cfg.dir);
+      });
       return;
     }
 

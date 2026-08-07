@@ -480,3 +480,15 @@ dimensiones locales invariantes a la rotación; la Torre de polea
 90° tras simular: intacta y funcional.
 
 - [`v225-torre-rotada.png`](2026-08-05/v225-torre-rotada.png)
+
+## 2026-08-06 — 2 capturas
+
+v0.2.26: herramienta de roldana en DOS PASOS (estructura → eje mayor como
+línea azul → punto + tipo interna/externa + dirección), revisión del
+inventario (Roldana vuelve; Cable/Base de apoyo/Fulcro salen; el Carro de
+doble roldana TTP siempre nace con sus roldanas funcionales) y foto de
+fondo ARRASTRABLE en el prototipo (🖐, para fotos tomadas desde otra
+altura).
+
+- [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
+- [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)

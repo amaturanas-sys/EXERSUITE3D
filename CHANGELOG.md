@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.26] — 2026-08-06
+
+Herramienta de roldana en dos pasos, revisión del inventario de piezas y
+foto de fondo arrastrable en el prototipo.
+
+### Cambiado
+
+- **Herramienta de roldana rediseñada (dos pasos)**: al elegir Roldana en
+  la paleta ya no se toca una cara — primero se toca la ESTRUCTURA que la
+  alojará (viga, pilar, travesaño, brazo…; se puede orbitar libremente
+  para buscarla), su eje mayor aparece como una LÍNEA AZUL, y el
+  siguiente toque elige el punto a lo largo de ese eje; ahí se precisa el
+  tipo (interna: embutida con la rueda asomando por la apertura; externa:
+  montada fuera de la cara) y la dirección a la que va dirigida
+  (arriba/abajo/izquierda/derecha, relativas a la vista). El modo queda
+  activo para encadenar roldanas y Esc termina; las estructuras con
+  roldanas adosadas o insertas interactúan con los cables como siempre.
+- **Revisión ítem por ítem del inventario** (solo la paleta del Builder;
+  los prefabs no cambian): la Roldana VUELVE a la paleta como entrada de
+  la nueva herramienta; salen el Cable rígido (los cables reales se
+  trazan con su herramienta), la Base de apoyo (la Base de soporte
+  redimensionada la cubre) y el Fulcro (un Pivote anclado lo suple).
+- **Carro de doble roldana TTP** (el puente del carro): SIEMPRE conserva
+  sus roldanas y su física de transmisión — desde la paleta nace como
+  conjunto agrupado (puente móvil + polea superior e inferior
+  funcionales, poses del prefab TTP); en simulación las roldanas se
+  empotran al puente como cuerpo compuesto y los cables las reconocen
+  como reenvío, igual que en el TTP con torre.
+
+### Añadido
+
+- **Prototipo con foto — 🖐 Mover foto**: en el modo calce, la fotografía
+  de fondo se puede ARRASTRAR para calzar mejor la perspectiva (las fotos
+  pueden estar tomadas desde una altura distinta a la del visor 3D);
+  doble toque la recentra y el desplazamiento se conserva en la
+  producción por capas.
+
 ## [0.2.25] — 2026-08-05
 
 Rotar un grupo ya no rompe su mecánica, y el inventario pierde la torre

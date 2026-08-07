@@ -1817,6 +1817,20 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   z-index: 0;
 }
 
+/* Capa de arrastre de la FOTO (v0.2.26): mientras "🖐 Mover foto" está
+   activo, captura el puntero por encima del render para desplazar la
+   fotografía de fondo (fotos tomadas desde otra altura). */
+#proto-drag {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  cursor: grab;
+  touch-action: none;
+}
+#proto-drag:active {
+  cursor: grabbing;
+}
+
 body.modo-calce #viewport {
   z-index: 1; /* el render (sin fondo) tapa la foto solo donde hay suelo/modelos */
 }

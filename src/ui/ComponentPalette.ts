@@ -11,25 +11,74 @@ import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { configureBeam, configureTube } from "./lineToolDialog";
 import { clear, el } from "./dom";
 
+type RoldanaConfig = {
+  tipo: "interna" | "externa";
+  dir: "arriba" | "abajo" | "izquierda" | "derecha";
+};
+
 /**
- * Configuración de la roldana antes de colocarla (diagrama Cables y Poleas):
- * interna (embutida en el pilar/travesaño, la rueda asoma por la apertura) o
- * externa (montada con soporte fuera de la cara).
+ * Configuración de la roldana al elegir el punto del eje (herramienta en dos
+ * pasos, v0.2.26): tipo (externa: montada fuera de la cara; interna: embutida
+ * con la rueda asomando por la apertura) y dirección a la que va dirigida —
+ * arriba/abajo/izquierda/derecha, relativas a lo que se ve en pantalla.
  */
-function elegirConfigRoldana(): Promise<"interna" | "externa" | null> {
+function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
   return new Promise((resolve) => {
-    const terminar = (v: "interna" | "externa" | null): void => {
+    let tipo: "interna" | "externa" | null = null;
+    const terminar = (v: RoldanaConfig | null): void => {
       overlay.remove();
       resolve(v);
     };
-    const carta = (icono: string, titulo: string, detalle: string, v: "interna" | "externa") => {
+    const carta = (icono: string, titulo: string, detalle: string, fn: () => void) => {
       const c = el("button", { class: "wizard-carta" }, [
         el("div", { class: "wizard-icono" }, [icono]),
         el("div", { class: "wizard-nombre" }, [titulo]),
         el("div", { class: "wizard-detalle" }, [detalle]),
       ]);
-      c.addEventListener("click", () => terminar(v));
+      c.addEventListener("click", fn);
       return c;
+    };
+    const cuerpo = el("div", {}, []);
+    const paso = el("div", { class: "wizard-paso" }, []);
+    const pasoTipo = (): void => {
+      paso.textContent = "1/2 · ¿Cómo va montada en la estructura?";
+      clear(cuerpo);
+      cuerpo.append(
+        el("div", { class: "wizard-cartas" }, [
+          carta(
+            "🅐",
+            "Roldana externa",
+            "Montada fuera de la cara de la estructura: el cable pasa por fuera.",
+            () => {
+              tipo = "externa";
+              pasoDir();
+            },
+          ),
+          carta(
+            "🅑",
+            "Roldana interna",
+            "Embutida en el eje central: la rueda asoma por la apertura y el cable se reenvía por dentro.",
+            () => {
+              tipo = "interna";
+              pasoDir();
+            },
+          ),
+        ]),
+      );
+    };
+    const pasoDir = (): void => {
+      paso.textContent = "2/2 · ¿Hacia qué dirección va dirigida? (según lo que ves en pantalla)";
+      clear(cuerpo);
+      const dir = (icono: string, titulo: string, v: RoldanaConfig["dir"]) =>
+        carta(icono, titulo, "", () => terminar({ tipo: tipo ?? "externa", dir: v }));
+      cuerpo.append(
+        el("div", { class: "wizard-cartas" }, [
+          dir("⬆️", "Arriba", "arriba"),
+          dir("⬇️", "Abajo", "abajo"),
+          dir("⬅️", "Izquierda", "izquierda"),
+          dir("➡️", "Derecha", "derecha"),
+        ]),
+      );
     };
     const cerrar = el("button", { class: "tool" }, ["✕"]);
     cerrar.addEventListener("click", () => terminar(null));
@@ -38,28 +87,14 @@ function elegirConfigRoldana(): Promise<"interna" | "externa" | null> {
         el("div", { class: "lib-title" }, ["Roldana: configuración"]),
         cerrar,
       ]),
-      el("div", { class: "wizard-paso" }, [
-        "Después, toca la cara de la pieza donde colocarla.",
-      ]),
-      el("div", { class: "wizard-cartas" }, [
-        carta(
-          "🅐",
-          "Roldana externa",
-          "Montada fuera de la cara de la pieza: el cable pasa por fuera.",
-          "externa",
-        ),
-        carta(
-          "🅑",
-          "Roldana interna",
-          "Embutida dentro del pilar/travesaño: la rueda asoma por la apertura y el cable se reenvía por dentro.",
-          "interna",
-        ),
-      ]),
+      paso,
+      cuerpo,
     ]);
     const overlay = el("div", { class: "lib-overlay wizard-overlay" }, [panel]);
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) terminar(null);
     });
+    pasoTipo();
     document.body.append(overlay);
   });
 }
@@ -94,6 +129,8 @@ export class ComponentPalette {
   private unsubWorkspace: () => void;
 
   constructor(private editor: Editor) {
+    // La herramienta de roldana pide tipo + dirección al elegir el punto.
+    this.editor.elegirRoldana = elegirConfigRoldana;
     this.body = el("div", { class: "panel-body" });
     this.renderGroups(this.body);
     this.root = el("aside", { class: "panel", id: "palette" }, [
@@ -333,17 +370,25 @@ export class ComponentPalette {
       } else if (def.placement === "tube") {
         void configureTube().then((p) => p && this.editor.beginLine("tube", p));
       } else if (def.id === "roldana") {
-        // Punto de deslizamiento del cable: se configura y se coloca sobre
-        // la cara de una pieza existente (diagrama Cables y Poleas).
-        void elegirConfigRoldana().then((c) => c && this.editor.beginRoldana(c));
+        // Herramienta en dos pasos (v0.2.26): estructura → punto del eje
+        // azul → tipo + dirección (el diálogo aparece al elegir el punto).
+        this.editor.beginRoldana();
       } else if (def.id === "terminal-cable") {
         // Punto de anclaje de cable sobre una cara (ojal terminal).
         this.editor.beginTerminalCable();
+      } else if (def.id === "puente-carro-ttp") {
+        // El carro SIEMPRE nace con sus dos roldanas funcionales y su
+        // física de transmisión (rol: transmitir fuerza entre roldanas).
+        this.editor.insertarCarroDoble();
       } else this.editor.addComponent(def.id);
     });
     // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
     if (!def.placement && def.id !== "roldana" && def.id !== "terminal-cable") {
-      this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
+      if (def.id === "puente-carro-ttp") {
+        this.habilitarArrastre(btn, (suelo) => this.editor.insertarCarroDoble(suelo));
+      } else {
+        this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
+      }
     }
     return btn;
   }

@@ -41,6 +41,15 @@ export class PrototipoFoto {
   private readonly bFijar: HTMLElement;
   private readonly dialSol: HTMLElement;
   private readonly slider: HTMLInputElement;
+  /**
+   * Desplazamiento de la FOTO de fondo (px CSS, v0.2.26): las fotos pueden
+   * estar tomadas desde una altura distinta a la del visor 3D — arrastrarla
+   * permite calzar mejor la perspectiva. Se replica en la producción.
+   */
+  private fotoDX = 0;
+  private fotoDY = 0;
+  private readonly bMoverFoto: HTMLElement;
+  private capaArrastre: HTMLElement | null = null;
 
   constructor(
     private editor: Editor,
@@ -66,6 +75,7 @@ export class PrototipoFoto {
           thumb.src = img.src;
           thumb.style.display = "block";
           this.overlay.src = img.src;
+          this.ponerOffsetFoto(0, 0); // foto nueva: encuadre centrado
           if (this.activo) this.entrarCalce();
         };
         img.src = String(reader.result);
@@ -95,6 +105,18 @@ export class PrototipoFoto {
     this.slider.addEventListener("input", () => {
       this.opacidadRender = +this.slider.value;
       this.aplicarOpacidad();
+    });
+
+    // Mover la FOTO de fondo (v0.2.26): el toggle superpone una capa que
+    // captura el arrastre y desplaza la fotografía — para calzar la
+    // perspectiva cuando la foto fue tomada desde otra altura. Doble toque
+    // sobre la capa recentra la foto.
+    this.bMoverFoto = el("button", { class: "tool proto-btn" }, [
+      tt("🖐 Mover foto", "🖐 Move photo"),
+    ]);
+    this.bMoverFoto.addEventListener("click", () => {
+      if (this.capaArrastre) this.terminarArrastreFoto();
+      else this.iniciarArrastreFoto();
     });
 
     // Paso 4: fijar la perspectiva encontrada (bloquea la órbita).
@@ -181,8 +203,8 @@ export class PrototipoFoto {
       el("div", { class: "proto-body" }, [
         el("div", { class: "proto-ayuda" }, [
           tt(
-            "Compón tu espacio en el Builder con las dimensiones del lugar REAL y entra aquí: carga la foto (queda DEBAJO del render, sin fondo y con suelo), orbita hasta calzar ambos suelos, fija la perspectiva, arrastra el ☀ y produce la fotografía.",
-            "Compose your space in the Builder at the REAL room's dimensions, then: load the photo (it sits UNDER the render — no background, floor kept), orbit until both floors match, lock the perspective, drag the ☀ and produce the photo.",
+            "Compón tu espacio en el Builder con las dimensiones del lugar REAL y entra aquí: carga la foto (queda DEBAJO del render, sin fondo y con suelo), orbita hasta calzar ambos suelos — y si la foto fue tomada desde otra altura, muévela con 🖐 —, fija la perspectiva, arrastra el ☀ y produce la fotografía.",
+            "Compose your space in the Builder at the REAL room's dimensions, then: load the photo (it sits UNDER the render — no background, floor kept), orbit until both floors match — and drag the photo with 🖐 if it was shot from a different height —, lock the perspective, drag the ☀ and produce the photo.",
           ),
         ]),
         bFoto,
@@ -191,6 +213,7 @@ export class PrototipoFoto {
           el("span", { class: "proto-etiqueta" }, [tt("Render", "Render")]),
           this.slider,
         ]),
+        this.bMoverFoto,
         this.bFijar,
         this.dialSol,
         bProducir,
@@ -235,11 +258,59 @@ export class PrototipoFoto {
   }
 
   private salirCalce(): void {
+    this.terminarArrastreFoto();
     this.overlay.style.display = "none";
     this.overlay.classList.remove("detras");
     document.body.classList.remove("modo-calce");
     this.editor.setModoCalce(false);
     this.canvasEl().style.opacity = "";
+  }
+
+  /** Aplica el desplazamiento de la foto (px CSS) al overlay. */
+  private ponerOffsetFoto(dx: number, dy: number): void {
+    this.fotoDX = dx;
+    this.fotoDY = dy;
+    this.overlay.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
+  }
+
+  /** Activa la capa de arrastre de la foto (por encima del render). */
+  private iniciarArrastreFoto(): void {
+    if (this.capaArrastre || !this.foto) return;
+    const capa = document.createElement("div");
+    capa.id = "proto-drag";
+    capa.title = tt(
+      "Arrastra para mover la foto · doble toque recentra",
+      "Drag to move the photo · double-tap recenters",
+    );
+    let ultX = 0;
+    let ultY = 0;
+    let arrastrando = false;
+    capa.addEventListener("pointerdown", (ev) => {
+      capa.setPointerCapture(ev.pointerId);
+      arrastrando = true;
+      ultX = ev.clientX;
+      ultY = ev.clientY;
+    });
+    capa.addEventListener("pointermove", (ev) => {
+      if (!arrastrando) return;
+      this.ponerOffsetFoto(this.fotoDX + ev.clientX - ultX, this.fotoDY + ev.clientY - ultY);
+      ultX = ev.clientX;
+      ultY = ev.clientY;
+    });
+    capa.addEventListener("pointerup", () => {
+      arrastrando = false;
+    });
+    capa.addEventListener("dblclick", () => this.ponerOffsetFoto(0, 0));
+    document.body.append(capa);
+    this.capaArrastre = capa;
+    this.bMoverFoto.classList.add("active");
+  }
+
+  /** Quita la capa de arrastre (la órbita vuelve a mandar sobre el visor). */
+  private terminarArrastreFoto(): void {
+    this.capaArrastre?.remove();
+    this.capaArrastre = null;
+    this.bMoverFoto.classList.remove("active");
   }
 
   private canvasEl(): HTMLElement {
@@ -275,7 +346,17 @@ export class PrototipoFoto {
     const fw = this.foto.naturalWidth;
     const fh = this.foto.naturalHeight;
     const k = Math.max(W / fw, H / fh);
-    ctx.drawImage(this.foto, (W - fw * k) / 2, (H - fh * k) / 2, fw * k, fh * k);
+    // El desplazamiento del calce (px CSS del visor) se lleva a la escala
+    // real del PNG para que la producción coincida con lo que se ve.
+    const vp = this.canvasEl().getBoundingClientRect();
+    const esc = vp.width > 0 ? W / vp.width : 1;
+    ctx.drawImage(
+      this.foto,
+      (W - fw * k) / 2 + this.fotoDX * esc,
+      (H - fh * k) / 2 + this.fotoDY * esc,
+      fw * k,
+      fh * k,
+    );
     ctx.drawImage(render, 0, 0);
 
     const compuesta = cv.toDataURL("image/png");
