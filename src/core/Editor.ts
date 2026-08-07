@@ -4236,6 +4236,10 @@ export class Editor {
         if (!id || propios.has(id)) continue;
         const o = this.objects.get(id);
         if (!o) continue;
+        // Piezas del propio conjunto de roldana: la APERTURA es el orificio
+        // por donde el cable transita y las mejillas lo flanquean — no son
+        // material que el cable "atraviese".
+        if (o.componentId === "apertura-cable" || o.componentId === "soporte-roldana") continue;
         caja.setFromObject(o.mesh).expandByScalar(3);
         // La pieza que contiene ambos extremos es la anfitriona del reenvío
         // interno: no cuenta como colisión.
@@ -4446,6 +4450,18 @@ export class Editor {
       return;
     }
     dirMundo.normalize();
+    // CALCE A CARA: la dirección se ajusta a la cara del perfil más cercana
+    // a lo pedido (eje local dominante ⊥ al eje mayor) — el montaje apoya
+    // plano y la apertura se abre en una CARA, nunca sobre una arista.
+    const qHost = host.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const dirLocal = dirMundo.clone().applyQuaternion(qHost.clone().invert());
+    const ax = Math.abs(dirLocal.x);
+    const ay = Math.abs(dirLocal.y);
+    const az = Math.abs(dirLocal.z);
+    if (ax >= ay && ax >= az) dirLocal.set(Math.sign(dirLocal.x), 0, 0);
+    else if (ay >= az) dirLocal.set(0, Math.sign(dirLocal.y), 0);
+    else dirLocal.set(0, 0, Math.sign(dirLocal.z));
+    dirMundo.copy(dirLocal).applyQuaternion(qHost).normalize();
 
     const rold = this.addComponent("roldana");
     const previas = [...this.objects.values()].filter(
@@ -4461,22 +4477,78 @@ export class Editor {
     rold.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
 
     const radio = rold.localSizeAbs().x / 2 || 4;
+    // Semiespesor del perfil hacia la cara elegida (dirLocal ya es un eje
+    // local exacto) y punto de la CARA (donde apoya el montaje o se abre el
+    // orificio).
+    const ls = host.localSizeAbs();
+    const halfDir =
+      (Math.abs(dirLocal.x) * ls.x + Math.abs(dirLocal.y) * ls.y + Math.abs(dirLocal.z) * ls.z) /
+      2;
+    const cara = puntoEje.clone().addScaledVector(dirMundo, halfDir);
+
+    // Base local del conjunto: X = eje de la estructura, Y = dirección
+    // elegida, Z = eje de giro de la rueda (terna derecha: Z = X × Y).
+    const qBase = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(ejeMundo, dirMundo, ejeRueda),
+    );
+    const piezasConjunto = [rold.id];
+    const aux = (
+      comp: string,
+      nombre: string,
+      dims: [number, number, number],
+      centro: THREE.Vector3,
+    ): void => {
+      const p = this.addComponent(comp);
+      p.name = nombre;
+      p.mesh.name = nombre;
+      p.params = { kind: "box", width: dims[0], height: dims[1], depth: dims[2] };
+      p.rebuildGeometry();
+      p.physics = { ...p.physics, fixed: true };
+      p.mesh.quaternion.copy(qBase);
+      p.mesh.position.copy(centro);
+      this.bus.emit("objectTransformed", { object: p });
+      piezasConjunto.push(p.id);
+    };
+
     if (tipo === "externa") {
-      // Fuera de la cara que mira hacia la dirección: semiespesor de la
-      // estructura a lo largo de la dirección + el radio de la rueda.
-      const qInv = host.mesh.getWorldQuaternion(new THREE.Quaternion()).invert();
-      const dirLocal = dirMundo.clone().applyQuaternion(qInv);
-      const ls = host.localSizeAbs();
-      const halfDir =
-        (Math.abs(dirLocal.x) * ls.x + Math.abs(dirLocal.y) * ls.y + Math.abs(dirLocal.z) * ls.z) /
-        2;
-      rold.mesh.position.copy(puntoEje).addScaledVector(dirMundo, halfDir + radio + 0.5);
+      // Fuera de la cara, con su MONTAJE (como la polea baja del TTP): la
+      // roldana no flota — una placa base apoyada en la cara y dos mejillas
+      // paralelas a la rueda la vinculan a la estructura hasta su eje.
+      rold.mesh.position.copy(cara).addScaledVector(dirMundo, radio + 0.5);
+      aux(
+        "soporte-roldana",
+        tt("Placa de montaje", "Mounting plate"),
+        [5, 0.8, 5.8],
+        cara.clone().addScaledVector(dirMundo, 0.4),
+      );
+      const altoMejilla = radio + 1.3; // de la cara hasta pasado el eje
+      for (const lado of [1, -1]) {
+        aux(
+          "soporte-roldana",
+          tt("Mejilla de soporte", "Support cheek"),
+          [4, altoMejilla, 0.8],
+          cara
+            .clone()
+            .addScaledVector(dirMundo, altoMejilla / 2)
+            .addScaledVector(ejeRueda, lado * 2.05),
+        );
+      }
     } else {
-      // Embutida: centrada en el eje central; la rueda asoma por la apertura
-      // orientada hacia la dirección elegida.
+      // Embutida: alojada en el interior del perfil, con un ORIFICIO
+      // RECTANGULAR en la cara hacia la dirección elegida para el tránsito
+      // del cable (como la viga superior del jalón alto TTP).
       rold.mesh.position.copy(puntoEje);
+      aux(
+        "apertura-cable",
+        tt("Apertura de cable", "Cable slot"),
+        [2 * radio + 2, 0.6, 3.6],
+        cara.clone(),
+      );
     }
     this.bus.emit("objectTransformed", { object: rold });
+    // El conjunto viaja unido (roldana + montaje/apertura): agrupado.
+    const gid = this.createGroupFromIds(piezasConjunto);
+    if (gid) this.renameGroup(gid, rold.name);
     this.select(null);
     // El modo y la estructura siguen activos para colocar la siguiente.
     this.bus.emit("dragMeasure", {

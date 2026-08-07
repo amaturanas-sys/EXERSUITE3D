@@ -492,3 +492,13 @@ altura).
 
 - [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
 - [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)
+
+## 2026-08-07 — 1 captura
+
+v0.2.27: la roldana ya no flota — la externa nace con su MONTAJE (placa
+base + mejillas hasta el eje, como la polea baja del TTP) y la interna se
+ALOJA dentro del perfil produciendo el orificio rectangular del cable en
+la cara adecuada (como el jalón alto del TTP); la dirección se calza a la
+cara más cercana y el conjunto queda agrupado.
+
+- [`v227-montaje-apertura.png`](2026-08-07/v227-montaje-apertura.png)

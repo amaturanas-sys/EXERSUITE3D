@@ -539,6 +539,28 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       "Polea pequena de reenvio que se coloca SOBRE una estructura: toca la pieza anfitriona, elige el punto de su eje azul y precisa tipo (interna/externa) y direccion.",
   },
   {
+    id: "soporte-roldana",
+    paleta: "oculta",
+    label: "Soporte de roldana",
+    category: "transmision",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 5, height: 1, depth: 5 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Placa/mejilla de montaje que fija una roldana EXTERNA a su estructura (la produce la herramienta de roldana: nada queda flotando).",
+  },
+  {
+    id: "apertura-cable",
+    paleta: "oculta",
+    label: "Apertura de cable",
+    category: "transmision",
+    materialId: "caucho",
+    defaults: { kind: "box", width: 10, height: 0.5, depth: 3.5 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Orificio rectangular en la cara del perfil por donde transita el cable de una roldana INTERNA (lo produce la herramienta de roldana, como en la viga superior del jalón alto TTP).",
+  },
+  {
     id: "bloque-poleas",
     label: "Bloque de poleas",
     category: "transmision",

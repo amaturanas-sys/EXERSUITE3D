@@ -74,7 +74,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     puntos: [
       "En Propiedades: material, masa (kg) y Anclado (las piezas ancladas o sin masa no caen).",
       "+ Bisagra y + Corredera articulan dos piezas (toca una y luego la otra).",
-      "Roldana (paleta, en dos pasos): toca la ESTRUCTURA que la alojará (puedes orbitar para buscarla), su eje mayor aparece como línea AZUL; toca el punto del eje donde va y precisa tipo (interna: embutida, la rueda asoma por la apertura; externa: fuera de la cara) y dirección (arriba/abajo/izquierda/derecha según la vista) — así defines ANTES los puntos de deslizamiento del cable.",
+      "Roldana (paleta, en dos pasos): toca la ESTRUCTURA que la alojará (puedes orbitar para buscarla), su eje mayor aparece como línea AZUL; toca el punto del eje donde va y precisa tipo y dirección (arriba/abajo/izquierda/derecha según la vista). EXTERNA: nace con su MONTAJE (placa y mejillas) que la vincula a la estructura, nada queda flotando. INTERNA: se aloja DENTRO del perfil y produce el orificio rectangular en la cara adecuada para el tránsito del cable, como la viga del jalón alto TTP. El conjunto queda agrupado.",
       "Terminal de cable (paleta): coloca ojales de anclaje sobre cualquier cara; el cable VÁLIDO se dibuja en azul oscuro (destaca sobre el fondo claro) y el cable en ERROR se pinta en rojo si atraviesa material o entra torcido a una roldana.",
       "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.",
       "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).",

@@ -5,6 +5,28 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.27] — 2026-08-07
+
+La roldana ya no queda flotando: montaje real para la externa y
+alojamiento con apertura para la interna.
+
+### Cambiado
+
+- **Roldana externa con MONTAJE**: al colocarla nace vinculada a la
+  estructura por una placa base apoyada en la cara y dos mejillas
+  paralelas a la rueda que llegan hasta su eje — como el soporte que fija
+  la polea baja al travesaño inferior del jalón bajo en el modelo TTP.
+- **Roldana interna ALOJADA con apertura**: se aloja en el interior de la
+  viga/estructura y produce un ORIFICIO RECTANGULAR en la cara del perfil
+  hacia la dirección elegida, que facilita el tránsito del cable — como
+  las roldanas internas de la estructura de soporte superior del sistema
+  de jalón alto del TTP. La validación de cables reconoce la apertura y
+  las mejillas como parte del conjunto (no como material atravesado).
+- La dirección elegida se CALZA a la cara del perfil más cercana (eje
+  local dominante): el montaje apoya plano y la apertura se abre en una
+  cara, nunca sobre una arista. El conjunto (roldana + montaje o
+  apertura) queda AGRUPADO y viaja unido.
+
 ## [0.2.26] — 2026-08-06
 
 Herramienta de roldana en dos pasos, revisión del inventario de piezas y
