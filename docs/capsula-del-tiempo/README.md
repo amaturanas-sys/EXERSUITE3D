@@ -493,7 +493,7 @@ altura).
 - [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
 - [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)
 
-## 2026-08-07 — 6 capturas
+## 2026-08-07 — 7 capturas
 
 v0.2.27: la roldana ya no flota — la externa nace con su MONTAJE (placa
 base + mejillas hasta el eje, como la polea baja del TTP) y la interna se
@@ -528,3 +528,10 @@ en las dos paredes del perfil. En la captura, el hueco real con la rueda
 dentro y el cable corriendo por él.
 
 - [`v230-viga-calada.png`](2026-08-07/v230-viga-calada.png)
+
+v0.2.31: Agrupar vuelve a funcionar en modelos con roldanas — el grupo
+nuevo absorbe los conjuntos que ya venían agrupados (rueda + eje) en vez
+de descartarlos, y tocar cualquier pieza selecciona el grupo entero.
+Además, FAQ e imágenes del Instructivo puestas al día.
+
+- [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)

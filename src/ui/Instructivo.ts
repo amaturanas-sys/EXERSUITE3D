@@ -26,7 +26,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Qué diferencia al modo Sencillo del Profesional?",
     puntos: [
       "El modo Sencillo acota las herramientas a lo esencial: máquinas estándar completas, primitivas y unas pocas piezas básicas — ideal para plantear la distribución de una sala sin distracciones.",
-      "El modo Profesional muestra la paleta completa (despieces reales, roldanas, terminales), las conexiones (bisagras, correderas, cables) y el bloqueo de ejes.",
+      "El modo Profesional muestra la paleta completa (estructura, transmisión, movimiento, peso y ergonomía, con la roldana y los terminales de cable), las conexiones (bisagras, correderas, cables) y el bloqueo de ejes. Las piezas INTERNAS de las máquinas reales ya no se listan sueltas: viven dentro de sus máquinas y prefabs.",
       "El modo se elige al crear el proyecto y queda guardado con él.",
     ],
   },
@@ -45,10 +45,11 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Cómo construyo una máquina?",
     puntos: [
       "Toca una pieza de la paleta para añadirla, o ARRÁSTRALA al visor para colocarla donde la sueltes (en táctil: mantén pulsado ~medio segundo y arrastra).",
-      "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, torre de polea, rack con torre TTP (construido con las piezas REALES del despiece: montantes con agujeros de calce, ganchos J de pin+giro, rieles porta-discos, multi-agarre y patines) y árbol de discos — con medidas comerciales, listas como grupo para plantear la sala.",
+      "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, rack con torre TTP, torre polea de discos, torre polea de pesos y árbol de discos — con medidas comerciales y armadas con las piezas REALES del despiece (montantes con agujeros de calce, ganchos J de pin+giro, rieles porta-discos, multi-agarre y patines). Cada una se inserta como GRUPO, lista para plantear la sala.",
       "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.",
       "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.",
       "Cuerdas (cadena/correa): toca los dos anclajes (cualquier cara de una pieza, pared o techumbre) y define la CAÍDA en cm — la catenaria con la que cuelga.",
+      "La paleta lista solo piezas que se usan sueltas; las internas de cada máquina real llegan con la máquina o con su prefab. El Carro de doble roldana TTP sí está a mano (Transmisión) y nace SIEMPRE con sus dos roldanas funcionales.",
     ],
   },
   {
@@ -64,6 +65,8 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "ARRASTRE PRECISO (menú Selección): abre una ventana con cursores en pantalla (◀ ▶ mueven a los lados; ▲ ▼ suben/bajan o, con el switch de ejes, adelante/atrás). También sirven las flechas del teclado, la tecla C cambia el eje y Shift da pasos de 10 cm.",
       "Teclas 1/2/3 (o el menú Ejes): bloquean TODO el trazado a un eje; 0 o Esc lo libera. La línea inferior muestra el desplazamiento en cm.",
       "Copiar/Pegar/Duplicar/Eliminar y Agrupar/Desagrupar viven en el menú Edición (Ctrl+C/V/D y Supr).",
+      "GRUPOS: selecciona dos o más piezas (Mayús+toque o Selección de área) y Edición → Agrupar las une en un subensamblaje. Si alguna ya pertenece a un conjunto — el de una roldana (rueda + eje) o una máquina insertada —, ese conjunto se ABSORBE entero en el grupo nuevo, sin dejar piezas fuera. Después, tocar CUALQUIER pieza del grupo selecciona el grupo completo (Mayús+toque lo añade a una multiselección), y Desagrupar lo devuelve a piezas sueltas.",
+      "Un grupo se mueve, gira y escala como un bloque —con el gizmo o con los números exactos de Propiedades— y su MECÁNICA viaja con él: las bisagras y correderas conservan su punto y su eje al girarlo, así que la máquina sigue funcionando en la simulación.",
       "↺/↻ o Ctrl+Z/Ctrl+Y deshacen y rehacen (hasta 60 pasos).",
       "Menú Ver: grid, aristas de las piezas, modo de color (materiales reales · por categoría · neutro) y perspectivas Frontal/Lateral/Superior/Isométrica. Los botones +/− junto al visor ajustan el zoom.",
     ],
@@ -74,7 +77,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     puntos: [
       "En Propiedades: material, masa (kg) y Anclado (las piezas ancladas o sin masa no caen).",
       "+ Bisagra y + Corredera articulan dos piezas (toca una y luego la otra).",
-      "Roldana (paleta, en dos pasos): toca la ESTRUCTURA que la alojará (puedes orbitar para buscarla), su eje mayor aparece como línea AZUL; toca el punto del eje donde va y el panel del costado derecho pide montaje y dirección — arriba/abajo/derecha/izquierda/anterior/posterior en los ejes GLOBALES, y el modelo se sigue viendo y orbitando mientras eliges. EXTERNA: nace con su MONTAJE (placa y mejillas) que la vincula a la estructura, nada queda flotando. INTERNA: se aloja DENTRO del perfil montada en un EJE que apoya en sus dos paredes, y CALA la estructura elegida con dos agujeros iguales y pasantes en las caras que quedan sobre y bajo la rueda (⊥ a su eje de giro) — el cable entra y sale sin obstruirse y la rueda cabe entera sin chocar con la cara, como el soporte de polea alta del TTP. El conjunto queda agrupado.",
+      "Roldana (paleta, en dos pasos): toca la ESTRUCTURA que la alojará (puedes orbitar para buscarla), su eje mayor aparece como línea AZUL; toca el punto del eje donde va y el panel del costado derecho pide montaje y dirección — arriba/abajo/derecha/izquierda/anterior/posterior en los ejes GLOBALES, y el modelo se sigue viendo y orbitando mientras eliges. EXTERNA: nace con su MONTAJE (placa y mejillas) que la vincula a la estructura, nada queda flotando. INTERNA: se aloja DENTRO del perfil montada en un EJE que apoya en sus dos paredes, y CALA la estructura elegida con dos agujeros iguales y pasantes en las caras que quedan sobre y bajo la rueda (⊥ a su eje de giro) — el cable entra y sale sin obstruirse y la rueda cabe entera sin chocar con la cara, como el soporte de polea alta del TTP. El conjunto (rueda + eje) queda agrupado, y si luego agrupas la máquina entera se absorbe dentro de ella.",
       "Terminal de cable (paleta): coloca ojales de anclaje sobre cualquier cara; el cable VÁLIDO se dibuja en azul oscuro (destaca sobre el fondo claro) y el cable en ERROR se pinta en rojo si atraviesa material o entra torcido a una roldana.",
       "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.",
       "+ Cable traza un cable inextensible punto a punto: ancla A → roldanas de paso → ancla B (Finalizar cable). Las poleas dan ventaja mecánica real (2:1…).",
@@ -146,11 +149,19 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     ],
   },
   {
+    id: "marketplace",
+    pregunta: "¿Qué es el Marketplace?",
+    puntos: [
+      "Es el catálogo de la Home: fichas con imagen, marca, precio y ofertas, filtrables por categoría (racks, poleas, bancos, pesos, accesorios) y con un carrito de demostración.",
+      "Desde la ficha de cualquier producto, Ver abre la BIBLIOTECA DE MODELOS: el showroom navegable de todas las piezas y máquinas, donde además se sustituyen por modelos 3D propios.",
+    ],
+  },
+  {
     id: "biblioteca",
     pregunta: "¿Qué es la Biblioteca de modelos y cómo sustituyo piezas o máquinas?",
     puntos: [
       "Sustituye cualquier componente o segmento del maniquí por tu propio modelo 3D (.glb/.gltf/.obj/.stl).",
-      "Pestaña Máquinas: cada máquina estándar del modo Sencillo se puede EXPORTAR como STL u OBJ (el ensamblaje completo), editar fuera y SUSTITUIR por tu versión corregida — al insertarla usará tu modelo.",
+      "Pestaña Máquinas: cada máquina estándar se puede EXPORTAR como STL u OBJ (el ensamblaje completo), editar fuera y SUSTITUIR por tu versión corregida — al insertarla usará tu modelo.",
       "Ciclo de PREFABS por máquina: Exportar prefab (.json) descarga su definición pieza a pieza (componente, medidas, pose, uniones), la corriges en la app y con Sustituir por prefab pasa a ser la definición PERSISTENTE de esa máquina.",
       "Exportar ZIP descarga toda tu colección (incluidas las máquinas sustituidas); Importar ZIP la restaura o fusiona en otro dispositivo.",
     ],

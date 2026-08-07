@@ -5,6 +5,33 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.31] — 2026-08-07
+
+### Corregido
+
+- **Agrupar a partir de la selección volvía a fallar en modelos con
+  roldanas**: las piezas que ya pertenecían a un conjunto — el de cada
+  roldana (rueda + eje), creado por la propia herramienta desde v0.2.27,
+  o una máquina insertada — se descartaban en silencio, de modo que
+  Edición → Agrupar dejaba fuera justo esas piezas o no hacía nada. Ahora
+  el grupo nuevo ABSORBE esos conjuntos enteros (se disuelven dentro de
+  él) y, si aun así no llegan a dos piezas, lo dice en pantalla en lugar
+  de callar. Tocar cualquier pieza del grupo vuelve a seleccionar el
+  grupo completo, que se mueve, gira y escala como bloque.
+
+### Cambiado
+
+- **FAQ (Instructivo) al día**: se reescriben los puntos que habían
+  quedado atrás — paleta sin la subpestaña de despiece, inventario actual
+  de máquinas estándar, herramienta de roldana en dos pasos con calado
+  real, grupos (crear absorbiendo conjuntos, seleccionar tocando, girar
+  sin perder la mecánica) y el prototipo con zoom de la foto y perilla de
+  inclinación —, y se añade una entrada para el Marketplace.
+- **Capturas del Instructivo regeneradas** con la interfaz actual (21
+  imágenes, incluidas las nuevas de grupos, herramienta de roldana, viga
+  calada, prototipo y marketplace); se retiran las que ya no
+  correspondían a ninguna pantalla.
+
 ## [0.2.30] — 2026-08-07
 
 La roldana interna se aloja DE VERDAD dentro de la viga: la estructura

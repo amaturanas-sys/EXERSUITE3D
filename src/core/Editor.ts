@@ -3364,11 +3364,40 @@ export class Editor {
 
   /** Crea un grupo a partir de una lista de ids (>=2). Devuelve el id del grupo. */
   createGroupFromIds(ids: string[]): string | null {
-    const valid = ids.filter((id) => this.objects.has(id) && !this.objGroup.has(id));
-    if (valid.length < 2) return null;
+    // ABSORCIÓN DE SUBGRUPOS (v0.2.31): una pieza que YA pertenece a un grupo
+    // — el conjunto de una roldana (rueda + eje), una máquina insertada — se
+    // trae con TODO su grupo, que se disuelve dentro del nuevo. Antes esas
+    // piezas se descartaban en silencio, así que agrupar un modelo armado con
+    // roldanas no hacía nada (o dejaba fuera justo las roldanas).
+    const finales: string[] = [];
+    const vistos = new Set<string>();
+    const aDisolver = new Set<string>();
+    for (const id of ids) {
+      if (!this.objects.has(id)) continue;
+      const gid = this.objGroup.get(id);
+      const miembros = gid ? (this.groups.get(gid)?.ids ?? [id]) : [id];
+      if (gid) aDisolver.add(gid);
+      for (const mid of miembros) {
+        if (!this.objects.has(mid) || vistos.has(mid)) continue;
+        vistos.add(mid);
+        finales.push(mid);
+      }
+    }
+    if (finales.length < 2) {
+      this.avisoTemporal(
+        tt(
+          "Selecciona al menos DOS piezas para agrupar (toca con Mayús o usa Selección).",
+          "Select at least TWO parts to group (Shift-tap, or use the Selection menu).",
+        ),
+      );
+      return null;
+    }
+    // Los subgrupos absorbidos dejan de existir por su cuenta.
+    for (const viejo of aDisolver) this.groups.delete(viejo);
+
     const gid = `g${this.nextGroupId++}`;
-    this.groups.set(gid, { name: `Grupo ${gid.slice(1)}`, ids: valid });
-    for (const id of valid) {
+    this.groups.set(gid, { name: `Grupo ${gid.slice(1)}`, ids: finales });
+    for (const id of finales) {
       this.objGroup.set(id, gid);
       const o = this.objects.get(id);
       if (o) this.setHighlight(o, false);
