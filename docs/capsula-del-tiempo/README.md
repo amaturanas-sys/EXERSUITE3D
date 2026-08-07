@@ -493,7 +493,7 @@ altura).
 - [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
 - [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)
 
-## 2026-08-07 — 5 capturas
+## 2026-08-07 — 6 capturas
 
 v0.2.27: la roldana ya no flota — la externa nace con su MONTAJE (placa
 base + mejillas hasta el eje, como la polea baja del TTP) y la interna se
@@ -520,3 +520,11 @@ coincidir exactamente el plano del suelo del render con el de la foto.
 
 - [`v229-zoom-foto.png`](2026-08-07/v229-zoom-foto.png)
 - [`v229-perilla-inclinacion.png`](2026-08-07/v229-perilla-inclinacion.png)
+
+v0.2.30: la roldana INTERNA se aloja de verdad dentro de la viga — la
+estructura elegida se CALA con dos agujeros pasantes iguales (sobre y
+bajo la rueda, ⊥ a su eje de giro) y la rueda gira sobre un eje apoyado
+en las dos paredes del perfil. En la captura, el hueco real con la rueda
+dentro y el cable corriendo por él.
+
+- [`v230-viga-calada.png`](2026-08-07/v230-viga-calada.png)

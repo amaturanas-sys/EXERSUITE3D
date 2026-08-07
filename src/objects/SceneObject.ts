@@ -7,6 +7,7 @@ import type {
   StackInfo,
 } from "./types";
 import { buildGeometry } from "./geometryFactory";
+import { perforarGeometria } from "./perforar";
 import { applyMaterial, buildMaterial } from "./materials";
 
 let nextId = 1;
@@ -57,7 +58,10 @@ export class SceneObject {
     this.carga = opts.carga ? { ...opts.carga } : undefined;
 
     this.imported = !!opts.importedGeometry;
-    const geometry = opts.importedGeometry ?? buildGeometry(this.params);
+    const geometry = perforarGeometria(
+      opts.importedGeometry ?? buildGeometry(this.params),
+      this.params.ventanas,
+    );
     const material = buildMaterial(this.materialId);
     this.mesh = new THREE.Mesh(geometry, material);
     this.mesh.castShadow = true;
@@ -68,6 +72,13 @@ export class SceneObject {
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
   }
+
+  /**
+   * Malla SIN PERFORAR de un modelo de biblioteca/importado (v0.2.30): al
+   * abrir o cambiar las ventanas hay que volver a calarlas sobre el original,
+   * no sobre una malla ya agujereada.
+   */
+  private geoOriginal: THREE.BufferGeometry | null = null;
 
   /** Partes visuales de la pila (placas/varillas/tubo) para animarlas. */
   private stackParts: { mesh: THREE.Mesh; restY: number; carriage: boolean }[] = [];
@@ -83,12 +94,19 @@ export class SceneObject {
     // sin esto, el carrier de fábrica o un proyecto recargado perdía sus
     // discos montados hasta tocar el contador en Propiedades.
     if (this.imported || this.customModel) {
+      // Las VENTANAS (v0.2.30) sí se re-abren sobre la malla original del
+      // modelo: se guarda intacta al perforar por primera vez.
+      if (this.geoOriginal) {
+        const old = this.mesh.geometry;
+        this.mesh.geometry = perforarGeometria(this.geoOriginal.clone(), this.params.ventanas);
+        old.dispose();
+      }
       if (this.stack) this.rebuildStackVisual();
       if (this.carga) this.rebuildCargaVisual();
       return;
     }
     const old = this.mesh.geometry;
-    this.mesh.geometry = buildGeometry(this.params);
+    this.mesh.geometry = perforarGeometria(buildGeometry(this.params), this.params.ventanas);
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
@@ -100,7 +118,9 @@ export class SceneObject {
    */
   applyCustomGeometry(geometry: THREE.BufferGeometry): void {
     const old = this.mesh.geometry;
-    this.mesh.geometry = geometry;
+    this.geoOriginal?.dispose();
+    this.geoOriginal = this.params.ventanas?.length ? geometry.clone() : null;
+    this.mesh.geometry = perforarGeometria(geometry, this.params.ventanas);
     old.dispose();
     this.mesh.scale.set(1, 1, 1);
     this.customModel = true;
@@ -114,8 +134,10 @@ export class SceneObject {
   revertToPrimitive(): void {
     if (!this.customModel) return;
     this.customModel = false;
+    this.geoOriginal?.dispose();
+    this.geoOriginal = null;
     const old = this.mesh.geometry;
-    this.mesh.geometry = buildGeometry(this.params);
+    this.mesh.geometry = perforarGeometria(buildGeometry(this.params), this.params.ventanas);
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
@@ -399,6 +421,7 @@ export class SceneObject {
       }
     }
     this.mesh.geometry.dispose();
+    this.geoOriginal?.dispose();
     (this.mesh.material as THREE.Material).dispose();
   }
 }

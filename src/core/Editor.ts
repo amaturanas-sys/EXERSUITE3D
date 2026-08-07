@@ -62,7 +62,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
-import type { ComponentCategory, PrimitiveParams } from "../objects/types";
+import type { ComponentCategory, PrimitiveParams, VentanaRect } from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
@@ -4282,9 +4282,12 @@ export class Editor {
       const gid = this.objGroup.get(rold.id);
       const grupo = gid ? this.groups.get(gid) : undefined;
       if (!grupo) continue;
-      const esInterna = grupo.ids.some(
-        (id) => this.objects.get(id)?.componentId === "apertura-cable",
-      );
+      // Marca de roldana INTERNA: su eje pasante (v0.2.30) o, en proyectos
+      // anteriores, las placas de apertura que se dibujaban en las caras.
+      const esInterna = grupo.ids.some((id) => {
+        const c = this.objects.get(id)?.componentId;
+        return c === "eje-roldana" || c === "apertura-cable";
+      });
       if (!esInterna) continue;
       const propias = new Set(grupo.ids);
       for (const cand of this.objects.values()) {
@@ -4328,7 +4331,13 @@ export class Editor {
         // Piezas del propio conjunto de roldana: la APERTURA es el orificio
         // por donde el cable transita y las mejillas lo flanquean — no son
         // material que el cable "atraviese".
-        if (o.componentId === "apertura-cable" || o.componentId === "soporte-roldana") continue;
+        if (
+          o.componentId === "apertura-cable" ||
+          o.componentId === "soporte-roldana" ||
+          o.componentId === "eje-roldana"
+        ) {
+          continue;
+        }
         // Viga que aloja una roldana interna de este cable: se cruza por sus
         // aperturas.
         if (permeables.has(id)) continue;
@@ -4503,6 +4512,37 @@ export class Editor {
   }
 
   /**
+   * Traduce el hueco de una roldana interna al formato de VENTANA de la
+   * pieza: eje pasante (la dirección elegida) y rectángulo en el plano
+   * perpendicular, con el LARGO a lo largo de la viga (el diámetro de la
+   * rueda) y el ANCHO a lo ancho (el paso del cable). El par de coordenadas
+   * del plano es (Y,Z) para el eje X, (Z,X) para el eje Y y (X,Y) para Z.
+   */
+  private ventanaRect(
+    dirLocal: THREE.Vector3,
+    ejeLocal: THREE.Vector3,
+    centroLocal: THREE.Vector3,
+    largo: number,
+    ancho: number,
+  ): VentanaRect {
+    const eje: "x" | "y" | "z" =
+      Math.abs(dirLocal.x) > 0.5 ? "x" : Math.abs(dirLocal.y) > 0.5 ? "y" : "z";
+    const idx = eje === "x" ? [1, 2] : eje === "y" ? [2, 0] : [0, 1];
+    const c = [centroLocal.x, centroLocal.y, centroLocal.z];
+    const e = [Math.abs(ejeLocal.x), Math.abs(ejeLocal.y), Math.abs(ejeLocal.z)];
+    // De las dos coordenadas del plano, la que corre a lo largo de la viga
+    // recibe el LARGO; la otra (la del eje de giro), el ANCHO.
+    const largoEnU = e[idx[0]] >= e[idx[1]];
+    return {
+      eje,
+      u: c[idx[0]],
+      v: c[idx[1]],
+      du: largoEnU ? largo : ancho,
+      dv: largoEnU ? ancho : largo,
+    };
+  }
+
+  /**
    * Coloca la roldana en un punto del EJE MAYOR de la estructura, según el
    * tipo (interna: embutida en el eje central, la rueda asoma por la
    * apertura; externa: montada fuera de la cara hacia la dirección elegida)
@@ -4618,16 +4658,85 @@ export class Editor {
         );
       }
     } else {
-      // Alojada en el interior del perfil, con DOS ORIFICIOS RECTANGULARES
-      // (v0.2.28) de las MISMAS dimensiones en las dos caras colocalizadas
-      // con la roldana — la que queda sobre ella y la de debajo, ambas
-      // perpendiculares a su eje de rotación —, por donde el cable entra y
-      // sale: es la pieza de soporte de polea alta del TTP.
+      // ALOJADA DENTRO DE LA VIGA (v0.2.30), como el soporte de polea alta
+      // del TTP:
+      //  · la rueda queda en el eje central del perfil y su EJE DE GIRO,
+      //    pasante, se apoya en las DOS paredes laterales;
+      //  · las dos caras que quedan sobre y bajo la rueda se CALAN de verdad
+      //    (se modifica la geometría del anfitrión) con sendos agujeros
+      //    iguales, alineados ⊥ al eje de giro: el cable entra y sale sin
+      //    obstrucción y la rueda cabe entera sin chocar con la cara.
       rold.mesh.position.copy(puntoEje);
-      const dimsApertura: [number, number, number] = [2 * radio + 2, 0.6, 3.6];
-      const caraOpuesta = puntoEje.clone().addScaledVector(dirMundo, -halfDir);
-      aux("apertura-cable", tt("Apertura de cable", "Cable slot"), dimsApertura, cara.clone());
-      aux("apertura-cable", tt("Apertura de cable", "Cable slot"), dimsApertura, caraOpuesta);
+
+      // Ancho del perfil a lo largo del EJE DE GIRO (de pared a pared). El
+      // eje de giro cae sobre un eje local exacto —dir y el eje mayor lo
+      // son—, así que se redondea para evitar arrastre numérico.
+      const ejeRuedaLocal = ejeRueda.clone().applyQuaternion(qHost.clone().invert());
+      ejeRuedaLocal.set(
+        Math.abs(ejeRuedaLocal.x) > 0.5 ? Math.sign(ejeRuedaLocal.x) : 0,
+        Math.abs(ejeRuedaLocal.y) > 0.5 ? Math.sign(ejeRuedaLocal.y) : 0,
+        Math.abs(ejeRuedaLocal.z) > 0.5 ? Math.sign(ejeRuedaLocal.z) : 0,
+      );
+      const anchoLateral =
+        Math.abs(ejeRuedaLocal.x) * ls.x +
+        Math.abs(ejeRuedaLocal.y) * ls.y +
+        Math.abs(ejeRuedaLocal.z) * ls.z;
+
+      // La rueda debe caber ENTRE las dos paredes: si el perfil es más
+      // estrecho que su espesor, se afina proporcionalmente.
+      const grosor = rold.localSizeAbs().y || 2.5;
+      const holgura = 0.6;
+      if (grosor + holgura > anchoLateral && anchoLateral > holgura + 0.4) {
+        const k = (anchoLateral - holgura) / grosor;
+        rold.mesh.scale.set(1, k, 1);
+      }
+      const grosorFinal = Math.min(grosor, Math.max(0.6, anchoLateral - holgura));
+
+      // EJE PASANTE: cilindro a lo largo del eje de giro, de pared a pared.
+      const eje = this.addComponent("eje-roldana");
+      eje.name = tt("Eje de la roldana", "Sheave axle");
+      eje.mesh.name = eje.name;
+      eje.params = {
+        kind: "cylinder",
+        radiusTop: 0.9,
+        radiusBottom: 0.9,
+        height: Math.max(anchoLateral, grosorFinal + 1),
+      };
+      eje.rebuildGeometry();
+      eje.physics = { ...eje.physics, fixed: true };
+      // El cilindro nace a lo largo de +Y: se alinea con el eje de giro.
+      eje.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeRueda);
+      eje.mesh.position.copy(puntoEje);
+      this.bus.emit("objectTransformed", { object: eje });
+      piezasConjunto.push(eje.id);
+
+      // VENTANAS REALES en el anfitrión: pasantes por la dirección elegida,
+      // con la rueda entera de holgura a lo largo de la viga y el paso del
+      // cable a lo ancho.
+      const ejeLocalHost = ejeMundo.clone().applyQuaternion(qHost.clone().invert());
+      const largoVentana = 2 * radio + 2.4; // la rueda cabe y no roza la cara
+      const anchoVentana = Math.min(grosorFinal + 2.2, Math.max(1.6, anchoLateral - 1.6));
+      const centroLocal = host.mesh.worldToLocal(puntoEje.clone());
+      const ventana = this.ventanaRect(
+        dirLocal,
+        ejeLocalHost,
+        centroLocal,
+        largoVentana,
+        anchoVentana,
+      );
+      const yaHabia = host.params.ventanas ?? [];
+      const otroEje = yaHabia.find((v) => v.eje !== ventana.eje);
+      host.params = { ...host.params, ventanas: [...yaHabia, ventana] };
+      host.rebuildGeometry();
+      this.bus.emit("objectTransformed", { object: host });
+      if (otroEje) {
+        this.avisoTemporal(
+          tt(
+            "⚠ Esta pieza ya estaba calada en otra dirección: las ventanas se abren por un solo eje.",
+            "⚠ This part was already cut through another direction: windows are opened along a single axis.",
+          ),
+        );
+      }
     }
     this.bus.emit("objectTransformed", { object: rold });
     // El conjunto viaja unido (roldana + montaje/apertura): agrupado.

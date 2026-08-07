@@ -5,6 +5,38 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.30] — 2026-08-07
+
+La roldana interna se aloja DE VERDAD dentro de la viga: la estructura
+elegida se cala y la rueda gira sobre un eje apoyado en sus dos paredes.
+
+### Cambiado
+
+- **La viga se PERFORA de verdad**: colocar una roldana interna modifica la
+  geometría del objeto seleccionado — abre en él dos agujeros pasantes
+  iguales, en las caras que quedan sobre y bajo la rueda, alineados
+  perpendicularmente a su eje de giro. Ya no se dibujan placas encima de
+  las caras: el hueco es real (un rayo lo atraviesa sin tocar material) y
+  se ve el interior de sus paredes.
+- **Eje de giro soportado por las dos paredes**: la rueda nace montada en
+  un eje pasante que va de pared a pared del perfil, en lugar de quedar
+  suelta en el aire.
+- **La rueda cabe entera**: el hueco se dimensiona con el diámetro de la
+  rueda más holgura a lo largo de la viga, y el paso del cable a lo
+  ancho, de modo que la rueda no choca con la cara; si el perfil es más
+  estrecho que su espesor, la rueda se afina para entrar entre las
+  paredes.
+
+### Añadido
+
+- **Ventanas rectangulares pasantes** (`ventanas` en los parámetros de la
+  pieza) como capacidad general del modelo: se calan recortando los
+  triángulos de la malla y levantando las cuatro paredes interiores del
+  hueco, así que funcionan igual sobre una primitiva paramétrica que
+  sobre el modelo 3D de biblioteca de una pieza real. Viajan en el
+  proyecto y se vuelven a calar al recargarlo.
+- Componente oculto **Eje de roldana** (lo produce la herramienta).
+
 ## [0.2.29] — 2026-08-07
 
 El calce del prototipo con foto gana los dos grados de libertad que le

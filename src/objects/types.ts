@@ -70,6 +70,34 @@ export interface PrimitiveParams {
    * ella. La definicion del componente (cargaDiscos) fija lados y medidas.
    */
   discCount?: number;
+  /**
+   * VENTANAS RECTANGULARES PASANTES (v0.2.30): huecos calados de verdad en la
+   * pieza — los abre la herramienta de roldana INTERNA en las dos caras que
+   * quedan sobre y bajo la rueda, para que el cable pase sin obstruirse y la
+   * rueda no choque con la cara. Viajan en los params, así que sobreviven a
+   * la reconstrucción de la geometría, al guardado del proyecto y a los
+   * prefabs.
+   */
+  ventanas?: VentanaRect[];
+}
+
+/**
+ * Hueco rectangular PASANTE en coordenadas LOCALES de la pieza (cm): un eje
+ * por el que atraviesa y el rectángulo (centro + tamaños) en el plano
+ * perpendicular. El par de coordenadas del plano es (Y,Z) para el eje X,
+ * (Z,X) para el eje Y y (X,Y) para el eje Z.
+ */
+export interface VentanaRect {
+  /** Eje local que atraviesa la pieza de lado a lado. */
+  eje: "x" | "y" | "z";
+  /** Centro del hueco: primera coordenada del plano perpendicular. */
+  u: number;
+  /** Centro del hueco: segunda coordenada del plano perpendicular. */
+  v: number;
+  /** Tamaño del hueco en la primera coordenada del plano. */
+  du: number;
+  /** Tamaño del hueco en la segunda coordenada del plano. */
+  dv: number;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */

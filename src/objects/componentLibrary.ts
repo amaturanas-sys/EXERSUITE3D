@@ -549,6 +549,17 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       "Placa/mejilla de montaje que fija una roldana EXTERNA a su estructura (la produce la herramienta de roldana: nada queda flotando).",
   },
   {
+    id: "eje-roldana",
+    paleta: "oculta",
+    label: "Eje de roldana",
+    category: "transmision",
+    materialId: "acero-pulido",
+    defaults: { kind: "cylinder", radiusTop: 0.9, radiusBottom: 0.9, height: 10 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Eje pasante que sostiene una roldana INTERNA: apoya en las DOS paredes laterales de la viga y la rueda gira sobre el (lo produce la herramienta de roldana).",
+  },
+  {
     id: "apertura-cable",
     paleta: "oculta",
     label: "Apertura de cable",
