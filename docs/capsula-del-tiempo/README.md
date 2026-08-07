@@ -493,7 +493,7 @@ altura).
 - [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
 - [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)
 
-## 2026-08-07 — 3 capturas
+## 2026-08-07 — 5 capturas
 
 v0.2.27: la roldana ya no flota — la externa nace con su MONTAJE (placa
 base + mejillas hasta el eje, como la polea baja del TTP) y la interna se
@@ -512,3 +512,11 @@ entra y sale.
 
 - [`v228-panel-roldana.png`](2026-08-07/v228-panel-roldana.png)
 - [`v228-interna-dos-aperturas.png`](2026-08-07/v228-interna-dos-aperturas.png)
+
+v0.2.29: el calce del prototipo con foto suma la ESCALA de la fotografía
+(🖐 mover y escalar: pinza, rueda y control fino) y la PERILLA 📐 de
+inclinación del modelo, que aparece al fijar la perspectiva y hace
+coincidir exactamente el plano del suelo del render con el de la foto.
+
+- [`v229-zoom-foto.png`](2026-08-07/v229-zoom-foto.png)
+- [`v229-perilla-inclinacion.png`](2026-08-07/v229-perilla-inclinacion.png)

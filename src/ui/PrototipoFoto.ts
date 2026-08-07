@@ -48,8 +48,21 @@ export class PrototipoFoto {
    */
   private fotoDX = 0;
   private fotoDY = 0;
+  /**
+   * ZOOM de la FOTO de fondo (v0.2.29): además de moverla, se acerca o aleja
+   * — con pinza de dos dedos, rueda del ratón o el control fino del panel —
+   * para que su escala case con la del render. Se replica en la producción.
+   */
+  private fotoEscala = 1;
   private readonly bMoverFoto: HTMLElement;
+  private readonly zoomFoto: HTMLInputElement;
+  private readonly filaZoom: HTMLElement;
   private capaArrastre: HTMLElement | null = null;
+  /** Perilla de inclinación del modelo (visible con la perspectiva fijada). */
+  private readonly dialInclinacion: HTMLElement;
+  private readonly lecturaInclinacion: HTMLElement;
+  private readonly filaInclinacion: HTMLElement;
+  private ponerAgujaInclinacion: (grados: number) => void = () => {};
 
   constructor(
     private editor: Editor,
@@ -75,7 +88,7 @@ export class PrototipoFoto {
           thumb.src = img.src;
           thumb.style.display = "block";
           this.overlay.src = img.src;
-          this.ponerOffsetFoto(0, 0); // foto nueva: encuadre centrado
+          this.ponerEncuadreFoto(0, 0, 1); // foto nueva: centrada y a escala 1
           if (this.activo) this.entrarCalce();
         };
         img.src = String(reader.result);
@@ -107,17 +120,34 @@ export class PrototipoFoto {
       this.aplicarOpacidad();
     });
 
-    // Mover la FOTO de fondo (v0.2.26): el toggle superpone una capa que
-    // captura el arrastre y desplaza la fotografía — para calzar la
-    // perspectiva cuando la foto fue tomada desde otra altura. Doble toque
-    // sobre la capa recentra la foto.
+    // Mover y ESCALAR la FOTO de fondo (v0.2.26 · zoom v0.2.29): el toggle
+    // superpone una capa que captura el gesto — arrastrar la desplaza y la
+    // PINZA de dos dedos (o la rueda del ratón) la acerca y aleja — para
+    // calzar la perspectiva cuando la foto fue tomada desde otra altura o
+    // con otra distancia focal. Doble toque sobre la capa la recentra.
     this.bMoverFoto = el("button", { class: "tool proto-btn" }, [
-      tt("🖐 Mover foto", "🖐 Move photo"),
+      tt("🖐 Mover y escalar foto", "🖐 Move & scale photo"),
     ]);
     this.bMoverFoto.addEventListener("click", () => {
       if (this.capaArrastre) this.terminarArrastreFoto();
       else this.iniciarArrastreFoto();
     });
+
+    // Control fino del zoom de la foto (el gesto de pinza lo mueve también).
+    this.zoomFoto = document.createElement("input");
+    this.zoomFoto.type = "range";
+    this.zoomFoto.min = "30";
+    this.zoomFoto.max = "300";
+    this.zoomFoto.step = "1";
+    this.zoomFoto.value = "100";
+    this.zoomFoto.title = tt("Zoom de la fotografía", "Photo zoom");
+    this.zoomFoto.addEventListener("input", () => {
+      this.ponerEncuadreFoto(this.fotoDX, this.fotoDY, +this.zoomFoto.value / 100);
+    });
+    this.filaZoom = el("div", { class: "proto-fila" }, [
+      el("span", { class: "proto-etiqueta" }, [tt("Zoom foto", "Photo zoom")]),
+      this.zoomFoto,
+    ]);
 
     // Paso 4: fijar la perspectiva encontrada (bloquea la órbita).
     this.bFijar = el("button", { class: "tool proto-btn" }, [
@@ -128,7 +158,13 @@ export class PrototipoFoto {
       this.editor.setOrbitaBloqueada(on);
       this.bFijar.classList.toggle("active", on);
       this.dialSol.classList.toggle("proto-oculto", !on);
+      // Con la perspectiva fijada aparece la PERILLA DE INCLINACIÓN: es el
+      // ajuste fino que hace coincidir el plano del suelo del modelo con el
+      // de la fotografía (la órbita ya no puede moverlo).
+      this.dialInclinacion.classList.toggle("proto-oculto", !on);
+      this.filaInclinacion.classList.toggle("proto-oculto", !on);
       if (on) {
+        this.sincronizarInclinacion();
         this.opacidadRender = 100;
         this.slider.value = "100";
         this.aplicarOpacidad();
@@ -171,6 +207,60 @@ export class PrototipoFoto {
       this.dialSol.addEventListener("pointerup", soltar);
     });
 
+    // PERILLA DE INCLINACIÓN (v0.2.29): con la perspectiva fijada, gira el
+    // punto de vista en vertical — el modelo se inclina — hasta que el plano
+    // del suelo del render calza EXACTAMENTE con el de la fotografía. No
+    // toca el azimut ni la distancia: solo el ángulo sobre el suelo.
+    const aguja = el("div", { class: "proto-aguja" }, []);
+    this.dialInclinacion = el("div", { class: "proto-dial proto-perilla proto-oculto" }, [
+      el("div", { class: "proto-dial-centro" }, ["📐"]),
+      aguja,
+    ]);
+    this.lecturaInclinacion = el("span", { class: "proto-lectura" }, ["—"]);
+    const ponerAguja = (grados: number): void => {
+      // 0° (a ras del suelo) a la derecha; 90° (cenital) arriba.
+      aguja.style.transform = `rotate(${-grados}deg)`;
+      this.lecturaInclinacion.textContent = `${Math.round(grados)}°`;
+    };
+    this.ponerAgujaInclinacion = ponerAguja;
+    const arrastrarInclinacion = (ev: PointerEvent): void => {
+      const r = this.dialInclinacion.getBoundingClientRect();
+      const dx = ev.clientX - (r.left + r.width / 2);
+      const dy = ev.clientY - (r.top + r.height / 2);
+      if (Math.abs(dx) + Math.abs(dy) < 4) return;
+      // Ángulo del puntero respecto del eje horizontal (hacia arriba, +).
+      const grados = Math.max(1, Math.min(89, (Math.atan2(-dy, Math.abs(dx)) * 180) / Math.PI));
+      this.editor.setInclinacionVista(grados);
+      ponerAguja(grados);
+    };
+    this.dialInclinacion.addEventListener("pointerdown", (ev) => {
+      this.dialInclinacion.setPointerCapture(ev.pointerId);
+      arrastrarInclinacion(ev);
+      const mover = (e: PointerEvent): void => arrastrarInclinacion(e);
+      const soltar = (): void => {
+        this.dialInclinacion.removeEventListener("pointermove", mover);
+        this.dialInclinacion.removeEventListener("pointerup", soltar);
+      };
+      this.dialInclinacion.addEventListener("pointermove", mover);
+      this.dialInclinacion.addEventListener("pointerup", soltar);
+    });
+    // Ajuste fino de a 0,5° con los cursores (calce exacto del suelo).
+    const paso = (d: number) => {
+      const b = el("button", { class: "tool proto-mini" }, [d < 0 ? "−" : "+"]);
+      b.addEventListener("click", () => {
+        const g = this.editor.getInclinacionVista() + d;
+        this.editor.setInclinacionVista(g);
+        this.sincronizarInclinacion();
+      });
+      return b;
+    };
+    this.filaInclinacion = el("div", { class: "proto-fila proto-oculto" }, [
+      el("span", { class: "proto-etiqueta" }, [tt("Inclinación", "Tilt")]),
+      paso(-0.5),
+      this.lecturaInclinacion,
+      paso(0.5),
+    ]);
+
     const bProducir = el("button", { class: "tool proto-btn primario" }, [
       tt("🎞 Producir fotografía", "🎞 Produce the photo"),
     ]);
@@ -203,8 +293,8 @@ export class PrototipoFoto {
       el("div", { class: "proto-body" }, [
         el("div", { class: "proto-ayuda" }, [
           tt(
-            "Compón tu espacio en el Builder con las dimensiones del lugar REAL y entra aquí: carga la foto (queda DEBAJO del render, sin fondo y con suelo), orbita hasta calzar ambos suelos — y si la foto fue tomada desde otra altura, muévela con 🖐 —, fija la perspectiva, arrastra el ☀ y produce la fotografía.",
-            "Compose your space in the Builder at the REAL room's dimensions, then: load the photo (it sits UNDER the render — no background, floor kept), orbit until both floors match — and drag the photo with 🖐 if it was shot from a different height —, lock the perspective, drag the ☀ and produce the photo.",
+            "Compón tu espacio en el Builder con las dimensiones del lugar REAL y entra aquí: carga la foto (queda DEBAJO del render, sin fondo y con suelo), orbita hasta calzar ambos suelos — con 🖐 la mueves y le haces zoom (pinza o rueda) si fue tomada desde otra altura o distancia —, fija la perspectiva, afina el calce del suelo con la perilla 📐 de inclinación, arrastra el ☀ y produce la fotografía.",
+            "Compose your space in the Builder at the REAL room's dimensions, then: load the photo (it sits UNDER the render — no background, floor kept), orbit until both floors match — use 🖐 to move and zoom it (pinch or wheel) if it was shot from another height or distance —, lock the perspective, fine-tune the floor match with the 📐 tilt knob, drag the ☀ and produce the photo.",
           ),
         ]),
         bFoto,
@@ -214,7 +304,10 @@ export class PrototipoFoto {
           this.slider,
         ]),
         this.bMoverFoto,
+        this.filaZoom,
         this.bFijar,
+        this.filaInclinacion,
+        this.dialInclinacion,
         this.dialSol,
         bProducir,
         input,
@@ -266,44 +359,100 @@ export class PrototipoFoto {
     this.canvasEl().style.opacity = "";
   }
 
-  /** Aplica el desplazamiento de la foto (px CSS) al overlay. */
-  private ponerOffsetFoto(dx: number, dy: number): void {
+  /** Aplica el encuadre de la foto (desplazamiento px CSS + escala). */
+  private ponerEncuadreFoto(dx: number, dy: number, escala: number): void {
     this.fotoDX = dx;
     this.fotoDY = dy;
-    this.overlay.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
+    this.fotoEscala = Math.min(3, Math.max(0.3, escala));
+    this.overlay.style.transform = `translate(${dx}px, ${dy}px) scale(${this.fotoEscala})`;
+    this.zoomFoto.value = String(Math.round(this.fotoEscala * 100));
   }
 
-  /** Activa la capa de arrastre de la foto (por encima del render). */
+  /** Zoom de la foto ANCLADO a un punto de pantalla (pinza y rueda). */
+  private zoomFotoEn(factor: number, cx: number, cy: number): void {
+    const nueva = Math.min(3, Math.max(0.3, this.fotoEscala * factor));
+    const k = nueva / this.fotoEscala;
+    if (k === 1) return;
+    // El punto bajo los dedos (o el puntero) se queda quieto: la foto crece
+    // en torno a él, como en cualquier visor de imágenes.
+    const r = this.canvasEl().getBoundingClientRect();
+    const ox = r.left + r.width / 2 + this.fotoDX;
+    const oy = r.top + r.height / 2 + this.fotoDY;
+    this.ponerEncuadreFoto(
+      this.fotoDX + (ox - cx) * (k - 1),
+      this.fotoDY + (oy - cy) * (k - 1),
+      nueva,
+    );
+  }
+
+  /** Activa la capa de gesto de la foto (por encima del render). */
   private iniciarArrastreFoto(): void {
     if (this.capaArrastre || !this.foto) return;
     const capa = document.createElement("div");
     capa.id = "proto-drag";
     capa.title = tt(
-      "Arrastra para mover la foto · doble toque recentra",
-      "Drag to move the photo · double-tap recenters",
+      "Arrastra para mover la foto · pinza o rueda para el zoom · doble toque recentra",
+      "Drag to move the photo · pinch or wheel to zoom · double-tap recenters",
     );
-    let ultX = 0;
-    let ultY = 0;
-    let arrastrando = false;
+    // Punteros activos: 1 = arrastre; 2 = PINZA (mueve y escala a la vez).
+    const activos = new Map<number, { x: number; y: number }>();
+    const centro = (): { x: number; y: number } => {
+      const p = [...activos.values()];
+      return {
+        x: p.reduce((s, q) => s + q.x, 0) / p.length,
+        y: p.reduce((s, q) => s + q.y, 0) / p.length,
+      };
+    };
+    const separacion = (): number => {
+      const p = [...activos.values()];
+      return p.length < 2 ? 0 : Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    };
     capa.addEventListener("pointerdown", (ev) => {
       capa.setPointerCapture(ev.pointerId);
-      arrastrando = true;
-      ultX = ev.clientX;
-      ultY = ev.clientY;
+      activos.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     });
     capa.addEventListener("pointermove", (ev) => {
-      if (!arrastrando) return;
-      this.ponerOffsetFoto(this.fotoDX + ev.clientX - ultX, this.fotoDY + ev.clientY - ultY);
-      ultX = ev.clientX;
-      ultY = ev.clientY;
+      const prev = activos.get(ev.pointerId);
+      if (!prev) return;
+      const antes = centro();
+      const sepAntes = separacion();
+      activos.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      const ahora = centro();
+      // El centro del gesto arrastra la foto…
+      this.ponerEncuadreFoto(
+        this.fotoDX + ahora.x - antes.x,
+        this.fotoDY + ahora.y - antes.y,
+        this.fotoEscala,
+      );
+      // …y la separación de los dedos la escala en torno a ese centro.
+      const sep = separacion();
+      if (activos.size >= 2 && sepAntes > 10 && sep > 10) {
+        this.zoomFotoEn(sep / sepAntes, ahora.x, ahora.y);
+      }
     });
-    capa.addEventListener("pointerup", () => {
-      arrastrando = false;
-    });
-    capa.addEventListener("dblclick", () => this.ponerOffsetFoto(0, 0));
+    const soltar = (ev: PointerEvent): void => {
+      activos.delete(ev.pointerId);
+    };
+    capa.addEventListener("pointerup", soltar);
+    capa.addEventListener("pointercancel", soltar);
+    // Rueda del ratón / trackpad: zoom fino en el escritorio.
+    capa.addEventListener(
+      "wheel",
+      (ev) => {
+        ev.preventDefault();
+        this.zoomFotoEn(ev.deltaY < 0 ? 1.06 : 1 / 1.06, ev.clientX, ev.clientY);
+      },
+      { passive: false },
+    );
+    capa.addEventListener("dblclick", () => this.ponerEncuadreFoto(0, 0, 1));
     document.body.append(capa);
     this.capaArrastre = capa;
     this.bMoverFoto.classList.add("active");
+  }
+
+  /** Pone la perilla y la lectura al ángulo real de la cámara. */
+  private sincronizarInclinacion(): void {
+    this.ponerAgujaInclinacion(this.editor.getInclinacionVista());
   }
 
   /** Quita la capa de arrastre (la órbita vuelve a mandar sobre el visor). */
@@ -350,12 +499,18 @@ export class PrototipoFoto {
     // real del PNG para que la producción coincida con lo que se ve.
     const vp = this.canvasEl().getBoundingClientRect();
     const esc = vp.width > 0 ? W / vp.width : 1;
+    // El zoom del calce escala la foto EN TORNO AL CENTRO del encuadre, igual
+    // que el `transform: scale()` del overlay, y el desplazamiento se aplica
+    // después — así el PNG reproduce exactamente lo que se ve.
+    const z = this.fotoEscala;
+    const dw = fw * k * z;
+    const dh = fh * k * z;
     ctx.drawImage(
       this.foto,
-      (W - fw * k) / 2 + this.fotoDX * esc,
-      (H - fh * k) / 2 + this.fotoDY * esc,
-      fw * k,
-      fh * k,
+      (W - dw) / 2 + this.fotoDX * esc,
+      (H - dh) / 2 + this.fotoDY * esc,
+      dw,
+      dh,
     );
     ctx.drawImage(render, 0, 0);
 

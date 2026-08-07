@@ -646,6 +646,40 @@ export class Editor {
     return this.orbitaBloqueada;
   }
 
+  /**
+   * INCLINACIÓN DE LA VISTA (v0.2.29, prototipo con foto): ángulo de la
+   * cámara sobre el plano del suelo, en grados (0° = a ras de suelo, 90° =
+   * cenital). Es el parámetro que hace coincidir EXACTAMENTE el plano del
+   * suelo del render con el de la fotografía: la perilla lo ajusta con la
+   * perspectiva ya fijada, sin tocar el azimut ni la distancia.
+   */
+  getInclinacionVista(): number {
+    const d = new THREE.Vector3().subVectors(this.sceneManager.camera.position, this.orbit.target);
+    const horiz = Math.hypot(d.x, d.z);
+    return THREE.MathUtils.radToDeg(Math.atan2(d.y, horiz));
+  }
+
+  setInclinacionVista(grados: number): void {
+    const cam = this.sceneManager.camera;
+    const d = new THREE.Vector3().subVectors(cam.position, this.orbit.target);
+    const dist = d.length();
+    if (dist < 1e-6) return;
+    // Azimut y distancia intactos: solo cambia la altura del punto de vista.
+    // El rango respeta el límite polar de la órbita (no se baja del suelo),
+    // que si no lo recortaría en el siguiente update().
+    const az = Math.atan2(d.x, d.z);
+    const el = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(grados, 1, 89));
+    const horiz = Math.cos(el) * dist;
+    cam.position.set(
+      this.orbit.target.x + Math.sin(az) * horiz,
+      this.orbit.target.y + Math.sin(el) * dist,
+      this.orbit.target.z + Math.cos(az) * horiz,
+    );
+    cam.lookAt(this.orbit.target);
+    cam.updateMatrixWorld(true);
+    this.requestRender();
+  }
+
   isPantallaVerde(): boolean {
     return this.sceneManager.isPantallaVerde();
   }

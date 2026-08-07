@@ -5,6 +5,32 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.29] — 2026-08-07
+
+El calce del prototipo con foto gana los dos grados de libertad que le
+faltaban: escala de la fotografía e inclinación del modelo.
+
+### Añadido
+
+- **Zoom de la fotografía de fondo**: 🖐 pasa a ser *Mover y escalar foto*
+  — arrastrar la desplaza (como antes) y la PINZA de dos dedos o la rueda
+  del ratón la acercan y alejan, anclando el zoom al punto bajo los dedos;
+  un control fino del panel fija el porcentaje exacto (30–300 %) y el
+  doble toque recentra. Encuadre y escala se replican en la producción por
+  capas, así que el PNG reproduce exactamente lo que se ve.
+- **Perilla de inclinación del modelo** (📐): aparece al FIJAR la
+  perspectiva y gira el punto de vista en vertical hasta que el plano del
+  suelo del render calza EXACTAMENTE con el de la fotografía — sin tocar
+  el giro ni la distancia, que la fijación ya dejó resueltos. Trae lectura
+  en grados y pasos finos de 0,5°.
+
+### Corregido
+
+- La utilidad `.proto-oculto` no ocultaba las filas del panel del
+  prototipo (la clase base `.proto-fila`, definida después, ganaba en
+  especificidad): la fila de inclinación asomaba antes de fijar la
+  perspectiva.
+
 ## [0.2.28] — 2026-08-07
 
 Paleta sin la subpestaña de despiece, panel de roldana compacto con
