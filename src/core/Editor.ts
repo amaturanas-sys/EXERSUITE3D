@@ -23,6 +23,27 @@ import { SnapManager, localSnapPoints } from "./snapping";
  * ruedas acanaladas. Un nodo intermedio de un cable debe ser una de estas.
  */
 const PULLEY_IDS = new Set(["polea", "roldana", "bloque-poleas"]);
+
+/**
+ * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
+ * proyecto: la elección no depende de desde dónde se esté mirando.
+ */
+export type DireccionRoldana =
+  | "arriba"
+  | "abajo"
+  | "derecha"
+  | "izquierda"
+  | "anterior"
+  | "posterior";
+
+const DIRECCIONES_ROLDANA: Record<DireccionRoldana, THREE.Vector3> = {
+  arriba: new THREE.Vector3(0, 1, 0),
+  abajo: new THREE.Vector3(0, -1, 0),
+  derecha: new THREE.Vector3(1, 0, 0),
+  izquierda: new THREE.Vector3(-1, 0, 0),
+  anterior: new THREE.Vector3(0, 0, 1),
+  posterior: new THREE.Vector3(0, 0, -1),
+};
 import {
   DEFAULT_HUMAN_HEIGHT,
   JOINT_DOF,
@@ -194,20 +215,19 @@ export class Editor {
    * asoma por la apertura); externa = montada fuera de la cara.
    */
   private roldanaMode = false;
+  /** Panel de configuración de la roldana abierto (se puede orbitar detrás). */
+  private roldanaPidiendo = false;
   /** Estructura elegida para alojar la roldana (fase 2 de la herramienta). */
   private roldanaHost: SceneObject | null = null;
   /** Línea azul del eje mayor de la estructura elegida. */
   private roldanaAxisLine: THREE.Line | null = null;
   /**
    * Diálogo de configuración de la roldana (lo inyecta la UI): tipo
-   * interna/externa + dirección (arriba/abajo/izquierda/derecha, relativas
-   * a la vista). Si no hay diálogo, se coloca externa hacia arriba.
+   * interna/externa + dirección en ejes GLOBALES (arriba/abajo/derecha/
+   * izquierda/anterior/posterior). Si no hay diálogo, externa hacia arriba.
    */
   elegirRoldana:
-    | (() => Promise<{
-        tipo: "interna" | "externa";
-        dir: "arriba" | "abajo" | "izquierda" | "derecha";
-      } | null>)
+    | (() => Promise<{ tipo: "interna" | "externa"; dir: DireccionRoldana } | null>)
     | null = null;
   /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
   private terminalMode = false;
@@ -4213,6 +4233,36 @@ export class Editor {
   private cablesInvalidos = new Set<string>();
 
   /**
+   * Estructuras que ALOJAN una roldana INTERNA de este cable (v0.2.28): son
+   * las vigas/perfiles con las dos aperturas del conjunto, por donde el
+   * cable entra y sale legítimamente. Se reconocen porque el grupo de la
+   * roldana trae piezas "apertura-cable" y la caja de la estructura
+   * contiene el centro de la rueda.
+   */
+  private anfitrionesDeRoldanasInternas(cable: Cable): Set<string> {
+    const permeables = new Set<string>();
+    const caja = new THREE.Box3();
+    for (const n of cable.nodes) {
+      const rold = this.objects.get(n.objectId);
+      if (!rold || !this.isPulley(rold)) continue;
+      const gid = this.objGroup.get(rold.id);
+      const grupo = gid ? this.groups.get(gid) : undefined;
+      if (!grupo) continue;
+      const esInterna = grupo.ids.some(
+        (id) => this.objects.get(id)?.componentId === "apertura-cable",
+      );
+      if (!esInterna) continue;
+      const propias = new Set(grupo.ids);
+      for (const cand of this.objects.values()) {
+        if (propias.has(cand.id)) continue;
+        caja.setFromObject(cand.mesh).expandByScalar(1);
+        if (caja.containsPoint(rold.mesh.position)) permeables.add(cand.id);
+      }
+    }
+    return permeables;
+  }
+
+  /**
    * Reglas del diagrama Cables/Poleas:
    *  (a) ningún tramo puede atravesar una pieza ajena — salvo la que aloja a
    *      AMBOS extremos del tramo (roldanas internas del mismo pilar: el
@@ -4224,6 +4274,11 @@ export class Editor {
     const propios = new Set(cable.nodes.map((n) => n.objectId));
     const ray = new THREE.Raycaster();
     const caja = new THREE.Box3();
+    // Estructuras PERMEABLES a este cable (v0.2.28): la viga que ALOJA una
+    // roldana interna del recorrido tiene sus dos aperturas justo sobre y
+    // bajo la rueda — el cable entra por una y sale por la otra, así que
+    // cruzar su pared ahí es el funcionamiento correcto, no un error.
+    const permeables = this.anfitrionesDeRoldanasInternas(cable);
     for (let i = 0; i < pts.length - 1; i++) {
       const dir = pts[i + 1].clone().sub(pts[i]);
       const len = dir.length();
@@ -4240,6 +4295,9 @@ export class Editor {
         // por donde el cable transita y las mejillas lo flanquean — no son
         // material que el cable "atraviese".
         if (o.componentId === "apertura-cable" || o.componentId === "soporte-roldana") continue;
+        // Viga que aloja una roldana interna de este cable: se cruza por sus
+        // aperturas.
+        if (permeables.has(id)) continue;
         caja.setFromObject(o.mesh).expandByScalar(3);
         // La pieza que contiene ambos extremos es la anfitriona del reenvío
         // interno: no cuenta como colisión.
@@ -4294,6 +4352,7 @@ export class Editor {
   cancelRoldana(): void {
     if (!this.roldanaMode && !this.terminalMode) return;
     this.roldanaMode = false;
+    this.roldanaPidiendo = false;
     this.terminalMode = false;
     this.limpiarEjeRoldana();
     this.bus.emit("roldanaModeChanged", { active: false });
@@ -4421,30 +4480,21 @@ export class Editor {
     host: SceneObject,
     puntoEje: THREE.Vector3,
     tipo: "interna" | "externa",
-    dir: "arriba" | "abajo" | "izquierda" | "derecha",
+    dir: DireccionRoldana,
   ): void {
     const { ejeMundo } = this.ejeMayorMundo(host);
-    // Dirección pedida, relativa a la VISTA (lo que el usuario ve): arriba/
-    // abajo = vertical de la cámara; derecha/izquierda = su horizontal.
-    const cam = this.sceneManager.camera;
-    cam.updateMatrixWorld(true);
-    const camRight = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0).normalize();
-    const camUp = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1).normalize();
-    const pedida =
-      dir === "arriba"
-        ? camUp.clone()
-        : dir === "abajo"
-          ? camUp.clone().negate()
-          : dir === "derecha"
-            ? camRight.clone()
-            : camRight.clone().negate();
+    // Dirección pedida en los ejes GLOBALES del proyecto (v0.2.28): arriba/
+    // abajo = ±Y, derecha/izquierda = ±X, anterior/posterior = ±Z. Al no
+    // depender de la cámara, el resultado es el mismo se mire desde donde
+    // se mire (y se puede orbitar mientras se elige).
+    const pedida = DIRECCIONES_ROLDANA[dir].clone();
     // Componente perpendicular al eje de la estructura.
     const dirMundo = pedida.clone().addScaledVector(ejeMundo, -pedida.dot(ejeMundo));
     if (dirMundo.lengthSq() < 0.05) {
       this.bus.emit("dragMeasure", {
         text: tt(
-          "⛔ Esa dirección coincide con el eje de la estructura — orbita o elige otra dirección",
-          "⛔ That direction matches the structure's axis — orbit or pick another direction",
+          "⛔ Esa dirección coincide con el eje de la estructura — elige otra dirección",
+          "⛔ That direction matches the structure's axis — pick another direction",
         ),
       });
       return;
@@ -4534,16 +4584,16 @@ export class Editor {
         );
       }
     } else {
-      // Embutida: alojada en el interior del perfil, con un ORIFICIO
-      // RECTANGULAR en la cara hacia la dirección elegida para el tránsito
-      // del cable (como la viga superior del jalón alto TTP).
+      // Alojada en el interior del perfil, con DOS ORIFICIOS RECTANGULARES
+      // (v0.2.28) de las MISMAS dimensiones en las dos caras colocalizadas
+      // con la roldana — la que queda sobre ella y la de debajo, ambas
+      // perpendiculares a su eje de rotación —, por donde el cable entra y
+      // sale: es la pieza de soporte de polea alta del TTP.
       rold.mesh.position.copy(puntoEje);
-      aux(
-        "apertura-cable",
-        tt("Apertura de cable", "Cable slot"),
-        [2 * radio + 2, 0.6, 3.6],
-        cara.clone(),
-      );
+      const dimsApertura: [number, number, number] = [2 * radio + 2, 0.6, 3.6];
+      const caraOpuesta = puntoEje.clone().addScaledVector(dirMundo, -halfDir);
+      aux("apertura-cable", tt("Apertura de cable", "Cable slot"), dimsApertura, cara.clone());
+      aux("apertura-cable", tt("Apertura de cable", "Cable slot"), dimsApertura, caraOpuesta);
     }
     this.bus.emit("objectTransformed", { object: rold });
     // El conjunto viaja unido (roldana + montaje/apertura): agrupado.
@@ -5774,6 +5824,9 @@ export class Editor {
 
     // Modo "colocar roldana" en dos pasos: estructura → punto del eje azul.
     if (this.roldanaMode) {
+      // Con el panel de configuración abierto se puede ORBITAR en vivo: los
+      // clics sobre el visor no abren un segundo panel ni mueven el punto.
+      if (this.roldanaPidiendo) return;
       const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
       const hit = hits[0];
       const hid = hit?.object.userData.sceneObjectId as string | undefined;
@@ -5816,7 +5869,9 @@ export class Editor {
       const pedir =
         this.elegirRoldana ??
         (async () => ({ tipo: "externa" as const, dir: "arriba" as const }));
+      this.roldanaPidiendo = true;
       void pedir().then((cfg) => {
+        this.roldanaPidiendo = false;
         if (!cfg || !this.roldanaMode || this.roldanaHost !== host) return;
         this.colocarRoldanaEnEje(host, puntoEje, cfg.tipo, cfg.dir);
       });

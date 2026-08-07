@@ -5,6 +5,35 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.28] — 2026-08-07
+
+Paleta sin la subpestaña de despiece, panel de roldana compacto con
+direcciones globales y aperturas en las dos caras de la viga.
+
+### Cambiado
+
+- **La subpestaña "Despiece TTP/POWERRACK" sale de la paleta**: las piezas
+  internas de las máquinas reales ya no se listan en el Builder. El *Carro
+  de doble roldana TTP* pasa a la sección Transmisión (sigue disponible
+  con sus dos roldanas funcionales). Las máquinas estándar, los prefabs,
+  los proyectos guardados y la Biblioteca de modelos siguen resolviendo
+  TODOS los ids como siempre.
+- **Panel de la herramienta de roldana COMPACTO y al costado derecho**:
+  reemplaza al diálogo modal a pantalla completa — el modelo se sigue
+  viendo y se puede ORBITAR en vivo mientras se elige (los clics sobre el
+  visor no abren un segundo panel; Esc cancela).
+- **Direcciones en ejes GLOBALES**: arriba (+Y), abajo (−Y), derecha (+X),
+  izquierda (−X), anterior (+Z) y posterior (−Z) — antes eran cuatro y
+  relativas a la cámara, así que el resultado cambiaba según desde dónde
+  se mirase.
+- **Roldana interna: DOS aperturas**, de las mismas dimensiones, en las
+  dos caras del perfil colocalizadas con la rueda — la de encima y la de
+  debajo, ambas perpendiculares a su eje de giro —, por donde el cable
+  entra y sale: es la pieza de soporte de polea alta del TTP. La
+  validación reconoce la viga que aloja una roldana interna del recorrido
+  como PERMEABLE (cruzarla por sus aperturas es el funcionamiento
+  correcto, no un error).
+
 ## [0.2.27] — 2026-08-07
 
 La roldana ya no queda flotando: montaje real para la externa y

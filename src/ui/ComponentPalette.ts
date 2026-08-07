@@ -9,93 +9,114 @@ import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { configureBeam, configureTube } from "./lineToolDialog";
+import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
 type RoldanaConfig = {
   tipo: "interna" | "externa";
-  dir: "arriba" | "abajo" | "izquierda" | "derecha";
+  dir: "arriba" | "abajo" | "izquierda" | "derecha" | "anterior" | "posterior";
 };
 
 /**
  * Configuración de la roldana al elegir el punto del eje (herramienta en dos
- * pasos, v0.2.26): tipo (externa: montada fuera de la cara; interna: embutida
- * con la rueda asomando por la apertura) y dirección a la que va dirigida —
- * arriba/abajo/izquierda/derecha, relativas a lo que se ve en pantalla.
+ * pasos, v0.2.26; panel compacto v0.2.28): tipo (externa: montada fuera de la
+ * cara con su soporte; interna: alojada dentro del perfil con sus aperturas) y
+ * dirección a la que va dirigida — arriba/abajo/derecha/izquierda/anterior/
+ * posterior respecto de los ejes GLOBALES del proyecto.
+ *
+ * El panel es PEQUEÑO y va anclado al costado derecho, SIN velo de fondo: el
+ * modelo se sigue viendo y se puede orbitar en vivo mientras se decide.
  */
 function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
   return new Promise((resolve) => {
-    let tipo: "interna" | "externa" | null = null;
+    let tipo: "interna" | "externa" = "externa";
     const terminar = (v: RoldanaConfig | null): void => {
-      overlay.remove();
+      window.removeEventListener("keydown", alTeclado);
+      panel.remove();
       resolve(v);
     };
-    const carta = (icono: string, titulo: string, detalle: string, fn: () => void) => {
-      const c = el("button", { class: "wizard-carta" }, [
-        el("div", { class: "wizard-icono" }, [icono]),
-        el("div", { class: "wizard-nombre" }, [titulo]),
-        el("div", { class: "wizard-detalle" }, [detalle]),
+    // Esc cierra el panel (misma tecla que termina la herramienta).
+    const alTeclado = (ev: KeyboardEvent): void => {
+      if (ev.key === "Escape") terminar(null);
+    };
+    window.addEventListener("keydown", alTeclado);
+
+    // Tipo: dos opciones compactas en fila, con la elegida resaltada.
+    const bTipo = new Map<"externa" | "interna", HTMLElement>();
+    const pintarTipo = (): void => {
+      for (const [k, b] of bTipo) b.classList.toggle("active", k === tipo);
+    };
+    const opcTipo = (k: "externa" | "interna", icono: string, titulo: string, ayuda: string) => {
+      const b = el("button", { class: "rold-opt", title: ayuda }, [
+        el("span", { class: "rold-icono" }, [icono]),
+        el("span", {}, [titulo]),
       ]);
-      c.addEventListener("click", fn);
-      return c;
+      b.addEventListener("click", () => {
+        tipo = k;
+        pintarTipo();
+      });
+      bTipo.set(k, b);
+      return b;
     };
-    const cuerpo = el("div", {}, []);
-    const paso = el("div", { class: "wizard-paso" }, []);
-    const pasoTipo = (): void => {
-      paso.textContent = "1/2 · ¿Cómo va montada en la estructura?";
-      clear(cuerpo);
-      cuerpo.append(
-        el("div", { class: "wizard-cartas" }, [
-          carta(
-            "🅐",
-            "Roldana externa",
-            "Montada fuera de la cara de la estructura: el cable pasa por fuera.",
-            () => {
-              tipo = "externa";
-              pasoDir();
-            },
-          ),
-          carta(
-            "🅑",
-            "Roldana interna",
-            "Embutida en el eje central: la rueda asoma por la apertura y el cable se reenvía por dentro.",
-            () => {
-              tipo = "interna";
-              pasoDir();
-            },
-          ),
-        ]),
-      );
+
+    const dir = (icono: string, titulo: string, v: RoldanaConfig["dir"], ayuda: string) => {
+      const b = el("button", { class: "rold-dir", title: ayuda }, [
+        el("span", { class: "rold-icono" }, [icono]),
+        el("span", {}, [titulo]),
+      ]);
+      b.addEventListener("click", () => terminar({ tipo, dir: v }));
+      return b;
     };
-    const pasoDir = (): void => {
-      paso.textContent = "2/2 · ¿Hacia qué dirección va dirigida? (según lo que ves en pantalla)";
-      clear(cuerpo);
-      const dir = (icono: string, titulo: string, v: RoldanaConfig["dir"]) =>
-        carta(icono, titulo, "", () => terminar({ tipo: tipo ?? "externa", dir: v }));
-      cuerpo.append(
-        el("div", { class: "wizard-cartas" }, [
-          dir("⬆️", "Arriba", "arriba"),
-          dir("⬇️", "Abajo", "abajo"),
-          dir("⬅️", "Izquierda", "izquierda"),
-          dir("➡️", "Derecha", "derecha"),
-        ]),
-      );
-    };
-    const cerrar = el("button", { class: "tool" }, ["✕"]);
+
+    const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
     cerrar.addEventListener("click", () => terminar(null));
-    const panel = el("div", { class: "perf-panel wizard-panel" }, [
-      el("div", { class: "lib-header" }, [
-        el("div", { class: "lib-title" }, ["Roldana: configuración"]),
+
+    const panel = el("aside", { id: "rold-panel" }, [
+      el("div", { class: "rold-head" }, [
+        el("span", { class: "rold-titulo" }, [tt("Roldana", "Sheave")]),
         cerrar,
       ]),
-      paso,
-      cuerpo,
+      el("div", { class: "rold-seccion" }, [tt("Montaje", "Mounting")]),
+      el("div", { class: "rold-tipos" }, [
+        opcTipo(
+          "externa",
+          "🅐",
+          tt("Externa", "External"),
+          tt(
+            "Montada fuera de la cara, con su soporte a la estructura.",
+            "Mounted outside the face, with its bracket to the structure.",
+          ),
+        ),
+        opcTipo(
+          "interna",
+          "🅑",
+          tt("Interna", "Internal"),
+          tt(
+            "Alojada dentro del perfil, con aperturas de cable en las dos caras.",
+            "Housed inside the profile, with cable slots on both faces.",
+          ),
+        ),
+      ]),
+      el("div", { class: "rold-seccion" }, [
+        tt("Dirección (ejes globales)", "Direction (global axes)"),
+      ]),
+      el("div", { class: "rold-dirs" }, [
+        dir("⬆", tt("Arriba", "Up"), "arriba", "+Y"),
+        dir("⬇", tt("Abajo", "Down"), "abajo", "−Y"),
+        dir("➡", tt("Derecha", "Right"), "derecha", "+X"),
+        dir("⬅", tt("Izquierda", "Left"), "izquierda", "−X"),
+        dir("⧉", tt("Anterior", "Front"), "anterior", "+Z"),
+        dir("⧈", tt("Posterior", "Back"), "posterior", "−Z"),
+      ]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "Puedes orbitar el modelo mientras eliges.",
+          "You can orbit the model while choosing.",
+        ),
+      ]),
     ]);
-    const overlay = el("div", { class: "lib-overlay wizard-overlay" }, [panel]);
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) terminar(null);
-    });
-    pasoTipo();
-    document.body.append(overlay);
+    pintarTipo();
+    document.body.append(panel);
   });
 }
 
@@ -213,17 +234,15 @@ export class ComponentPalette {
   private renderGroups(body: HTMLElement): void {
     clear(body);
     const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
-    // CURADURÍA (v0.2.18): las piezas "oculta" no aparecen (redundantes o
-    // plantillas internas) y las "despiece" van a su propia sección
-    // plegable al final. Solo cambia la paleta: prefabs y máquinas siguen
-    // resolviendo TODOS los ids de la biblioteca.
-    // El modo Sencillo conserva SU propia lista blanca tal cual (incluida
-    // la barra de dominadas genérica): la curaduría rige la paleta
-    // profesional.
+    // CURADURÍA (v0.2.18) + v0.2.28: la paleta lista SOLO las piezas sin
+    // etiqueta de curaduría — las "oculta" (redundantes o plantillas
+    // internas) y las "despiece" (piezas internas de las máquinas reales,
+    // cuya subpestaña TTP/POWERRACK se eliminó) quedan fuera. Solo cambia
+    // la paleta: prefabs y máquinas siguen resolviendo TODOS los ids.
+    // El modo Sencillo conserva SU propia lista blanca tal cual.
     const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(
-      (d) => (sencillo ? COMPS_SENCILLO.has(d.id) : d.paleta !== "oculta"),
+      (d) => (sencillo ? COMPS_SENCILLO.has(d.id) : !d.paleta),
     );
-    const despiece = all.filter((d) => d.paleta === "despiece");
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }
@@ -243,7 +262,6 @@ export class ComponentPalette {
     }
     const byCat = new Map<ComponentDefinition["category"], ComponentDefinition[]>();
     for (const def of all) {
-      if (def.paleta === "despiece") continue;
       (byCat.get(def.category) ?? byCat.set(def.category, []).get(def.category)!).push(def);
     }
     for (const [cat, defs] of byCat) {
@@ -251,13 +269,6 @@ export class ComponentPalette {
       for (const def of defs) {
         cont.append(this.componentButton(def));
       }
-    }
-    // Despiece TTP/POWERRACK: las piezas INTERNAS de las máquinas reales,
-    // agrupadas y plegadas de fábrica — disponibles sin saturar la paleta.
-    if (despiece.length > 0 && !sencillo) {
-      const cont = this.seccionPlegable(body, "Despiece TTP / POWERRACK", "despiece", true);
-      cont.classList.add("despiece-cont");
-      for (const def of despiece) cont.append(this.componentButton(def));
     }
   }
 

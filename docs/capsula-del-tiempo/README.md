@@ -493,7 +493,7 @@ altura).
 - [`v226-roldana-eje.png`](2026-08-06/v226-roldana-eje.png)
 - [`v226-foto-arrastrada.png`](2026-08-06/v226-foto-arrastrada.png)
 
-## 2026-08-07 — 1 captura
+## 2026-08-07 — 3 capturas
 
 v0.2.27: la roldana ya no flota — la externa nace con su MONTAJE (placa
 base + mejillas hasta el eje, como la polea baja del TTP) y la interna se
@@ -502,3 +502,13 @@ la cara adecuada (como el jalón alto del TTP); la dirección se calza a la
 cara más cercana y el conjunto queda agrupado.
 
 - [`v227-montaje-apertura.png`](2026-08-07/v227-montaje-apertura.png)
+
+v0.2.28: la subpestaña de despiece TTP/POWERRACK sale de la paleta; el
+panel de la herramienta de roldana pasa a ser COMPACTO y va al costado
+derecho (se orbita el modelo en vivo mientras se elige) con las seis
+direcciones en ejes GLOBALES; y la roldana interna abre DOS aperturas
+iguales en las caras que quedan sobre y bajo la rueda, por donde el cable
+entra y sale.
+
+- [`v228-panel-roldana.png`](2026-08-07/v228-panel-roldana.png)
+- [`v228-interna-dos-aperturas.png`](2026-08-07/v228-interna-dos-aperturas.png)

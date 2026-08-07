@@ -262,7 +262,6 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "puente-carro-ttp",
-    paleta: "despiece",
     label: "Carro de doble roldana TTP",
     category: "transmision",
     materialId: "acero-negro",

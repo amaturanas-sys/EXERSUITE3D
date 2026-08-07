@@ -1817,6 +1817,91 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   z-index: 0;
 }
 
+/* Panel COMPACTO de la herramienta de roldana (v0.2.28): anclado al costado
+   derecho y SIN velo de fondo — el modelo se sigue viendo y se puede orbitar
+   en vivo mientras se elige montaje y dirección. */
+#rold-panel {
+  position: fixed;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  z-index: 60;
+  width: 216px;
+  max-height: 84vh;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(24, 26, 31, 0.96);
+  border: 1px solid #33363d;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rold-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rold-titulo {
+  font-weight: 600;
+  font-size: 14px;
+  color: #e8eaee;
+}
+.rold-cerrar {
+  padding: 2px 8px;
+}
+.rold-seccion {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8b9099;
+}
+.rold-tipos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.rold-dirs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.rold-opt,
+.rold-dir {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1px solid #383b43;
+  background: #22252b;
+  color: #dfe2e7;
+  font-size: 12px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.rold-opt:hover,
+.rold-dir:hover {
+  border-color: #4b5563;
+  background: #2a2e35;
+}
+.rold-opt.active {
+  border-color: #2563eb;
+  background: #1e3a8a;
+  color: #eaf0ff;
+}
+.rold-icono {
+  font-size: 15px;
+  line-height: 1;
+}
+.rold-pie {
+  font-size: 11px;
+  color: #8b9099;
+  line-height: 1.35;
+}
+
 /* Capa de arrastre de la FOTO (v0.2.26): mientras "🖐 Mover foto" está
    activo, captura el puntero por encima del render para desplazar la
    fotografía de fondo (fotos tomadas desde otra altura). */
@@ -2106,7 +2191,7 @@ body.modo-prototipo .arrastre-panel {
   color: #fff;
 }
 
-/* ---- Curaduría de la paleta (v0.2.18): sección plegable del despiece ---- */
+/* ---- Curaduría de la paleta (v0.2.18): categorías plegables ---- */
 .cat-plegable {
   cursor: pointer;
   -webkit-user-select: none;
