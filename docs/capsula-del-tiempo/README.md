@@ -536,7 +536,7 @@ Además, FAQ e imágenes del Instructivo puestas al día.
 
 - [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)
 
-## 2026-08-09 — 6 capturas
+## 2026-08-09 — 7 capturas
 
 v0.2.32: la herramienta de BISAGRA instala un herraje REAL — dos placas
 planas soldadas a la cara de cada pieza y el pasador cilíndrico que las
@@ -557,3 +557,11 @@ suma el selector de cara de montaje.
 - [`v233-bisagra-arriba-topa.png`](2026-08-09/v233-bisagra-arriba-topa.png)
 - [`v233-bisagra-abajo-flexiona.png`](2026-08-09/v233-bisagra-abajo-flexiona.png)
 - [`v233-panel-cara-montaje.png`](2026-08-09/v233-panel-cara-montaje.png)
+
+v0.2.34: la máquina UpperMachine del diseñador, revisada contra el motor
+actual — el brazo compuesto vuelve a pivotar (ya no lo ancla un mango
+anclado soldado al conjunto), los volteos se hornean también al insertar un
+prefab, los terminales viajan con su pieza y el mástil deja pasar el cable
+alto. Cada pieza conserva sus pinholes, ventanas, perfil y nodos.
+
+- [`v234-uppermachine.png`](2026-08-09/v234-uppermachine.png)

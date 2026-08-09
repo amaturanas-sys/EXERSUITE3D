@@ -859,6 +859,15 @@ export class Editor {
     this.jointHelpers.visible = false;
     this.simulating = true;
     this.bus.emit("simulationChanged", { running: true });
+    // Incoherencias de armado detectadas por el motor (v0.2.34): no rompen la
+    // simulación, pero explican por qué algo no se mueve como se esperaba.
+    const avisos = this.physics.avisosDeArmado();
+    if (avisos.length > 0) {
+      console.warn("EXERSUITE3D · avisos de armado:\n· " + avisos.join("\n· "));
+      this.avisoTemporal(
+        `⚠ ${avisos[0]}${avisos.length > 1 ? ` (+${avisos.length - 1} aviso(s), ver consola)` : ""}`,
+      );
+    }
   }
 
   stopSimulation(): void {

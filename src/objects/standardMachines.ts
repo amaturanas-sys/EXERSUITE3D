@@ -595,7 +595,13 @@ export function construirPiezas(
     // tampoco, se conserva la orientación de inserción del componente.
     if (p.rotq) obj.mesh.quaternion.set(p.rotq[0], p.rotq[1], p.rotq[2], p.rotq[3]);
     else if (p.rot) obj.mesh.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
-    if (p.escala) obj.mesh.scale.set(p.escala[0], p.escala[1], p.escala[2]);
+    if (p.escala) {
+      obj.mesh.scale.set(p.escala[0], p.escala[1], p.escala[2]);
+      // VOLTEOS heredados como escala NEGATIVA (prefabs anteriores a
+      // v0.2.32): se hornean en la geometría para que los ejes de la pieza
+      // vuelvan a concordar con los del mundo (gizmo y arrastre preciso).
+      editor.normalizarEspejo(obj);
+    }
     ids.push(obj.id);
   }
   return ids;

@@ -5,6 +5,48 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.34] — 2026-08-09
+
+### Añadido
+
+- **Avisos de armado**: al arrancar la simulación el motor informa de las
+  incoherencias que cambian el comportamiento sin romper nada. La primera:
+  **soldar una pieza ANCLADA a otras móviles ancla el conjunto entero** —
+  la trampa silenciosa que deja un brazo compuesto inmóvil aunque su pivote
+  esté bien puesto. El aviso nombra la pieza culpable.
+- **`docs/prefabs/uppermachine.prefab.json`**: la máquina UpperMachine del
+  diseñador, revisada y puesta al día con el motor actual (ver abajo).
+
+### Corregido
+
+- **Los volteos de los PREFABS también se hornean**: al insertar un prefab
+  con `escala` negativa (v0.2.31 o anterior) la pieza conservaba la escala
+  invertida y su gizmo seguía descuadrado. Ahora se migra al insertarla,
+  igual que al abrir un proyecto.
+
+### Revisión del prefab UpperMachine
+
+Se corrigieron las incoherencias físicas que el motor actual destapa, sin
+tocar la geometría de las piezas (trazados, pinholes, ventanas, perfil viga
+o tubo, dimensiones y nodos se conservan intactos):
+
+- El **brazo compuesto** mezclaba piezas móviles con un mango ANCLADO, de
+  modo que el conjunto entero quedaba anclado y no pivotaba. Los mangos y
+  los tubos de agarre pasan a ser móviles con masa real, y el arco recibe
+  la suya (antes 0 kg).
+- Faltaban las **soldaduras** del mango derecho (espejo de las del
+  izquierdo) y de los dos tubos de agarre: se quedaban clavados en el aire
+  mientras el brazo se movía.
+- Los **terminales de cable** no viajaban con su pieza: el cable del brazo
+  tiraba de un anclaje fijo en vez del brazo. Ahora van soldados a la pieza
+  que deben arrastrar.
+- Cuatro piezas guardaban su **volteo como escala negativa**; pasan a
+  espejo horneado.
+- El **remate del mástil** llegaba 3,6 cm por encima del cable alto y lo
+  atravesaba (el validador lo marcaba en rojo): se recorta 6 cm, con lo que
+  el mástil sigue metido 9 cm dentro del bastidor superior y ambos cables
+  quedan válidos.
+
 ## [0.2.33] — 2026-08-09
 
 ### Corregido

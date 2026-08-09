@@ -71,6 +71,13 @@ export class PhysicsWorld {
     relQ: { x: number; y: number; z: number; w: number };
   }[] = [];
   private empotradaPorId = new Map<string, PhysicsWorld["empotradas"][number]>();
+  /**
+   * AVISOS de armado (v0.2.34): incoherencias detectadas al construir el
+   * mundo que el diseñador debe conocer porque cambian el comportamiento sin
+   * romper nada (p. ej. una pieza anclada soldada a un brazo móvil ancla el
+   * brazo entero). La UI los muestra al arrancar la simulación.
+   */
+  private avisos: string[] = [];
   /** Masa adicional acumulada por cuerpo (para sumar roldanas empotradas). */
   private masaExtra = new Map<R.RigidBody, number>();
   /** Cuerpos dinámicos colgados de algún cable (para la esticción). */
@@ -106,6 +113,7 @@ export class PhysicsWorld {
     this.guias = [];
     this.empotradas = [];
     this.empotradaPorId.clear();
+    this.avisos = [];
     this.masaExtra.clear();
     this.cuerposCable.clear();
     this.topeCongelados.clear();
@@ -1183,8 +1191,26 @@ export class PhysicsWorld {
       const masaTotal = piezas.reduce((s, o) => s + Math.max(0, o.effectiveMassKg()), 0);
       for (const o of piezas) anfitrionDe.set(o.id, anfitrion.id);
       masaDe.set(anfitrion.id, masaTotal);
+      // DIAGNÓSTICO (v0.2.34): soldar una pieza ANCLADA a otras móviles
+      // ancla el conjunto entero — es la trampa silenciosa que deja un brazo
+      // compuesto inmóvil aunque su pivote esté bien puesto. Se avisa con
+      // nombres para poder corregir la pieza culpable.
+      if (fija) {
+        const moviles = piezas.filter((o) => !o.physics.fixed);
+        if (moviles.length > 0) {
+          this.avisos.push(
+            `El conjunto soldado de "${moviles[0].name}" quedó ANCLADO porque "${fija.name}" está anclada` +
+              (moviles.length > 1 ? ` (y ${moviles.length - 1} pieza(s) móvil(es) más)` : ""),
+          );
+        }
+      }
     }
     return { anfitrionDe, masaDe };
+  }
+
+  /** Incoherencias detectadas al armar el mundo (ver `avisos`). */
+  avisosDeArmado(): string[] {
+    return [...this.avisos];
   }
 
   /** Cede colliders y pose de cada pieza soldada al cuerpo de su anfitrión. */
