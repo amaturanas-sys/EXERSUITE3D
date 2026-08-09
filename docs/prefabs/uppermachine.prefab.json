@@ -570,7 +570,7 @@
       "material": "nylon",
       "pos": [
         -0.0887,
-        135.6949,
+        119.0,
         -32.9853
       ],
       "rotq": [
@@ -599,7 +599,7 @@
       "material": "nylon",
       "pos": [
         -0.0887,
-        122.6949,
+        106.0,
         -32.9853
       ],
       "rotq": [
@@ -628,7 +628,7 @@
       "material": "acero-negro",
       "pos": [
         -0.0887,
-        128.6949,
+        112.0,
         -32.9853
       ],
       "rotq": [
@@ -1764,7 +1764,7 @@
       ],
       "min": -90,
       "max": 0,
-      "limites": false
+      "limites": true
     },
     {
       "tipo": "bisagra",
@@ -1915,6 +1915,20 @@
       "max": 0,
       "limites": true,
       "bloqueada": true
+    },
+    {
+      "tipo": "corredera",
+      "fija": 8,
+      "movil": 15,
+      "eje": "y",
+      "ancla": [
+        -0.0887,
+        112.0,
+        -32.9853
+      ],
+      "min": -8,
+      "max": 8,
+      "limites": true
     }
   ],
   "cables": [
