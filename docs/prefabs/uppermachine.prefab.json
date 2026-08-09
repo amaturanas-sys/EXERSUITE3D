@@ -570,7 +570,7 @@
       "material": "nylon",
       "pos": [
         -0.0887,
-        119.0,
+        135.6949,
         -32.9853
       ],
       "rotq": [
@@ -599,7 +599,7 @@
       "material": "nylon",
       "pos": [
         -0.0887,
-        106.0,
+        122.6949,
         -32.9853
       ],
       "rotq": [
@@ -628,7 +628,7 @@
       "material": "acero-negro",
       "pos": [
         -0.0887,
-        112.0,
+        128.6949,
         -32.9853
       ],
       "rotq": [
@@ -690,9 +690,9 @@
       },
       "material": "cromo",
       "pos": [
-        -0.2087,
-        209.9419,
-        27.2447
+        0.042,
+        201.1339,
+        20.7568
       ],
       "rotq": [
         0,
@@ -1324,34 +1324,6 @@
       ]
     },
     {
-      "comp": "terminal-cable",
-      "nombre": "Terminal de cable 3",
-      "params": {
-        "kind": "torus",
-        "radius": 1,
-        "tubeRadius": 0.3
-      },
-      "material": "acero-pulido",
-      "pos": [
-        -0.2087,
-        213.3389,
-        27.2447
-      ],
-      "rotq": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "fija": false,
-      "masaKg": 0.1,
-      "dims": [
-        2.6,
-        2.6,
-        0.6
-      ]
-    },
-    {
       "comp": "pilar-linea",
       "nombre": "Pilar / travesaño",
       "params": {
@@ -1764,7 +1736,7 @@
       ],
       "min": -90,
       "max": 0,
-      "limites": true
+      "limites": false
     },
     {
       "tipo": "bisagra",
@@ -1784,7 +1756,7 @@
     {
       "tipo": "bisagra",
       "fija": 1,
-      "movil": 37,
+      "movil": 36,
       "eje": "z",
       "ancla": [
         0.042,
@@ -1799,7 +1771,7 @@
     {
       "tipo": "bisagra",
       "fija": 34,
-      "movil": 38,
+      "movil": 37,
       "eje": "z",
       "ancla": [
         -15.6003,
@@ -1814,7 +1786,7 @@
     {
       "tipo": "bisagra",
       "fija": 34,
-      "movil": 38,
+      "movil": 37,
       "eje": "z",
       "ancla": [
         -17.3404,
@@ -1829,7 +1801,7 @@
     {
       "tipo": "bisagra",
       "fija": 34,
-      "movil": 39,
+      "movil": 38,
       "eje": "z",
       "ancla": [
         15.6003,
@@ -1844,7 +1816,7 @@
     {
       "tipo": "bisagra",
       "fija": 34,
-      "movil": 39,
+      "movil": 38,
       "eje": "z",
       "ancla": [
         17.3404,
@@ -1858,8 +1830,8 @@
     },
     {
       "tipo": "bisagra",
-      "fija": 38,
-      "movil": 41,
+      "fija": 37,
+      "movil": 40,
       "eje": "z",
       "ancla": [
         -28.7,
@@ -1873,8 +1845,8 @@
     },
     {
       "tipo": "bisagra",
-      "fija": 39,
-      "movil": 40,
+      "fija": 38,
+      "movil": 39,
       "eje": "z",
       "ancla": [
         28.7,
@@ -1900,35 +1872,6 @@
       "max": 0,
       "limites": true,
       "bloqueada": true
-    },
-    {
-      "tipo": "bisagra",
-      "fija": 17,
-      "movil": 36,
-      "eje": "z",
-      "ancla": [
-        -0.2087,
-        213.3389,
-        27.2447
-      ],
-      "min": -90,
-      "max": 0,
-      "limites": true,
-      "bloqueada": true
-    },
-    {
-      "tipo": "corredera",
-      "fija": 8,
-      "movil": 15,
-      "eje": "y",
-      "ancla": [
-        -0.0887,
-        112.0,
-        -32.9853
-      ],
-      "min": -8,
-      "max": 8,
-      "limites": true
     }
   ],
   "cables": [
@@ -1999,31 +1942,31 @@
           "local": [
             3.5755,
             0,
-            -0.4756
+            -0.4757
           ]
         },
         {
           "pieza": 13,
           "local": [
-            -3.5698,
+            -3.5692,
             0,
-            0.5164
+            0.5206
           ]
         },
         {
           "pieza": 11,
           "local": [
-            2.7179,
+            2.539,
             0,
-            -2.3713
+            -2.562
           ]
         },
         {
           "pieza": 10,
           "local": [
-            -3.5898,
+            3.0951,
             0,
-            0.3522
+            1.8522
           ]
         },
         {

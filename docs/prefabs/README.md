@@ -35,36 +35,39 @@ tira del carro hacia abajo; el del **cable 2** (jalón alto) sube en dos
 ramales a las poleas altas y tira hacia arriba. Como las longitudes se
 congelan en la pose de diseño, **la altura del carro fija de una vez el
 largo de los dos cables**: bajarlo acorta el 1 y alarga el 2; subirlo hace
-lo contrario.
+lo contrario. Medido: a 70 cm el cable 1 mide 389,6 y el 2 443,4; a 128,7
+cm, 506,3 y 327,6.
 
-Medido en simulación (jalón alto, dos repeticiones por medida):
+Lo que realmente destrabó las dos estaciones, sin embargo, fue el cambio
+que hizo el diseñador en la **barra de jalón**: bajarla 8,8 cm, acercarla
+6,5 y sacar el cable por el otro lado de la polea alta frontal. Con eso el
+último tramo pasa de casi horizontal a colgar VERTICAL, y el recorrido de
+la barra se traduce 1:1 en cable recogido (antes, 16 cm de barra recogían
+apenas 5). Además resuelve por geometría el cruce del cable con el mástil.
 
-| configuración | recorrido muerto | rango de placas |
+Rendimiento medido con esa barra (3 placas = 20,4 kg, varias repeticiones):
+
+| | recorrido muerto | rango de placas |
 |---|---|---|
-| prefab del diseñador (carro a 128,7 cm, carro libre) | 10,7 – 15 cm | 9 – 23 cm |
-| afinado (carro a 112 cm, guiado ±8 cm, brazo topado) | **4,9 – 5,8 cm** | 14 – 25 cm |
+| jalón alto | 5 – 7,6 cm | 23,5 – 26,6 cm |
+| press de pecho (desde reposo) | ≈ 5 cm | 7,4 cm · 39,5 kg en la mano |
 
-El recorrido muerto —los centímetros que se tiran antes de que las placas
-se muevan— baja a un tercio. Para lograrlo hicieron falta dos condiciones
-previas, porque sin ellas ninguna longitud de cable sirve:
+**Barrido de la altura del carro** (118 / 128,7 / 140 / 152 / 164 cm): el
+rango del jalón se mueve entre 22 y 29 cm sin un óptimo que se sostenga al
+repetir las medidas, y el press no cambia. **Rangos del brazo** probados
+(libre, [−90°,0°], [−45°,0°], [−40°,−5°]): tampoco mejoran de forma
+reproducible — limitarlo incluso resta recorrido al press cuando se usa
+después del jalón. Por eso el prefab conserva la altura y el brazo libre
+tal como los dejó el diseñador: ningún ajuste fino superó al original.
 
-- **Guía del carro** (corredera vertical con topes ±8 cm). El carro es unas
-  40 veces más ligero que las placas seleccionadas, y la restricción de
-  cable inextensible reparte el recorrido por masa inversa: flotando libre
-  se llevaba TODO el tirón de cualquier estación y la pila no se movía. En
-  la máquina real corre por sus tubos guía entre topes.
-- **Tope del brazo**. Su pivote ya traía el rango [−90°, 0°] (0 = reposo,
-  −90 = press a fondo) pero con los límites APAGADOS: el tirón del jalón se
-  llevaba el brazo por encima de su reposo en lugar de mover la pila.
+Dos techos del diseño, medidos, que sí acotan lo que se puede pedir:
 
-Dos límites del diseño que conviene tener presentes:
-
-- **Carga máxima útil ≈ 20 kg** (3 placas). El brazo de pecho pesa 19,2 kg
-  y es lo único que contrarresta la tensión del cable 1; por encima de ese
-  valor el cable levanta el brazo antes que las placas. Con 13,6 kg el
-  jalón mueve la pila 14–25 cm; con 34 kg apenas unos centímetros.
-- **Recorrido del press ≈ 16 cm de cable**. El terminal del cable sobre el
-  brazo recoge 0,37 cm por grado (15,9 cm en un giro de 45°), y alejarlo
-  del pivote no lo mejora: la recogida la gobierna el ÁNGULO entre el
-  terminal y la roldana interna, no el radio. Para dar más recorrido al
-  press habría que reubicar esa roldana o el terminal cambiando ese ángulo.
+- **Carga útil ≈ 20 kg.** El brazo de pecho pesa 19,2 kg y es lo único que
+  contrarresta la tensión del cable 1; por encima de eso el cable levanta
+  el brazo antes que las placas.
+- **Recorrido del press ≈ 16 cm de cable.** El terminal sobre el brazo
+  recoge 0,37 cm por grado (15,9 cm en 45°), y alejarlo del pivote no lo
+  mejora: la recogida la gobierna el ÁNGULO entre el terminal y la roldana
+  interna, no el radio. Para dar más recorrido al press hay que cambiar ese
+  ángulo — reubicando la roldana interna del mástil o pasando el terminal
+  al otro lado del pivote.
