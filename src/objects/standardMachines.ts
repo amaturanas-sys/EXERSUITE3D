@@ -106,6 +106,8 @@ export interface UnionSpec {
   /** Con límites activos (por defecto sí cuando hay min/max). */
   limites?: boolean;
   bloqueada?: boolean;
+  /** Las dos piezas unidas siguen chocando entre sí (bisagra real, v0.2.33). */
+  contactos?: boolean;
 }
 
 /**
@@ -557,6 +559,7 @@ export function aplicarUniones(
     if (u.max !== undefined) joint.max = u.max;
     joint.limitsEnabled = u.limites ?? (u.min !== undefined || u.max !== undefined);
     if (u.bloqueada) joint.locked = true;
+    if (u.contactos) joint.contactos = true;
   }
   editor.refreshJointHelpers();
 }

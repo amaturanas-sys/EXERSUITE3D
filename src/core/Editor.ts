@@ -50,6 +50,13 @@ export interface ConfigBisagra {
   tamano: number;
   /** Recorrido limitado de la bisagra (grados); ausente = giro libre. */
   limite?: [number, number];
+  /**
+   * CARA DE MONTAJE (v0.2.33): en cuál de las dos caras enfrentadas al eje se
+   * atornilla el herraje, en direcciones GLOBALES. Es lo que decide hacia
+   * dónde puede plegar: montada arriba, las piezas topan entre sí enseguida;
+   * montada abajo, la bisagra flexiona. "auto" = la cara superior/visible.
+   */
+  cara?: "auto" | DireccionRoldana;
 }
 
 const DIRECCIONES_ROLDANA: Record<DireccionRoldana, THREE.Vector3> = {
@@ -948,7 +955,10 @@ export class Editor {
     const prefabUsuario = prefabsMaquina.get(prefabId);
     if (prefabUsuario) {
       const ids = construirPiezas(this, prefabUsuario.piezas, prefabUsuario.label, at);
-      if (prefabUsuario.uniones) aplicarUniones(this, ids, prefabUsuario.uniones, at);
+      if (prefabUsuario.uniones) {
+        aplicarUniones(this, ids, prefabUsuario.uniones, at);
+        this.migrarContactosBisagra(new Set());
+      }
       if (prefabUsuario.cables) aplicarCables(this, ids, prefabUsuario.cables);
       if (ids.length >= 2) {
         const gid = this.createGroupFromIds(ids);
@@ -1693,7 +1703,10 @@ export class Editor {
     at = new THREE.Vector3(),
   ): string[] {
     const ids = construirPiezas(this, data.piezas, data.label, at);
-    if (data.uniones) aplicarUniones(this, ids, data.uniones, at);
+    if (data.uniones) {
+      aplicarUniones(this, ids, data.uniones, at);
+      this.migrarContactosBisagra(new Set());
+    }
     if (data.cables) aplicarCables(this, ids, data.cables);
     const avisos: string[] = [];
     for (let i = 0; i < data.piezas.length && i < ids.length; i++) {
@@ -2359,6 +2372,7 @@ export class Editor {
         max: j.max,
         motor: { ...j.motor },
         locked: j.locked,
+        contactos: j.contactos || undefined,
       })),
       cables: this.listCables().map((c) => ({
         name: c.name,
@@ -2591,12 +2605,14 @@ export class Editor {
       }
     }
 
+    const contactosExplicitos = new Set<string>();
     for (const jd of data.joints) {
       const a = idMap.get(jd.bodyAId);
       const b = idMap.get(jd.bodyBId);
       if (!a || !b) continue;
       const j = this.connect(a, b, jd.kind, new THREE.Vector3().fromArray(jd.anchor));
       if (!j) continue;
+      if (jd.contactos !== undefined) contactosExplicitos.add(j.id);
       j.name = jd.name;
       j.axis = jd.axis;
       j.axisVec = jd.axisVec ? new THREE.Vector3().fromArray(jd.axisVec).normalize() : null;
@@ -2605,7 +2621,9 @@ export class Editor {
       j.max = jd.max;
       j.motor = { ...jd.motor };
       j.locked = jd.locked ?? false;
+      j.contactos = jd.contactos ?? false;
     }
+    this.migrarContactosBisagra(contactosExplicitos);
 
     for (const cd of data.cables) {
       const nodes = cd.nodes
@@ -4162,6 +4180,103 @@ export class Editor {
   }
 
   /**
+   * Caja ORIENTADA de una pieza (centro, ejes locales en mundo y semilados en
+   * cm): la representación honesta de su volumen, a diferencia de la AABB del
+   * mundo, que se hincha cuando la pieza está girada.
+   */
+  private cajaOrientada(o: SceneObject): {
+    c: THREE.Vector3;
+    u: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
+    e: [number, number, number];
+  } {
+    const q = o.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const e = o.localSizeAbs().multiplyScalar(0.5);
+    return {
+      c: o.mesh.getWorldPosition(new THREE.Vector3()),
+      u: [
+        new THREE.Vector3(1, 0, 0).applyQuaternion(q),
+        new THREE.Vector3(0, 1, 0).applyQuaternion(q),
+        new THREE.Vector3(0, 0, 1).applyQuaternion(q),
+      ],
+      e: [e.x, e.y, e.z],
+    };
+  }
+
+  /** Hasta dónde llega la pieza en la dirección `n` (cm, proyección sobre n). */
+  private soporteEnDireccion(o: SceneObject, n: THREE.Vector3): number {
+    const caja = this.cajaOrientada(o);
+    return (
+      caja.c.dot(n) +
+      caja.e[0] * Math.abs(caja.u[0].dot(n)) +
+      caja.e[1] * Math.abs(caja.u[1].dot(n)) +
+      caja.e[2] * Math.abs(caja.u[2].dot(n))
+    );
+  }
+
+  /**
+   * ¿Las dos piezas están SEPARADAS en la pose de diseño? (v0.2.33)
+   *
+   * Prueba de ejes separadores (SAT) entre sus cajas ORIENTADAS — no las AABB
+   * del mundo, que se hinchan cuando la pieza está girada y darían por
+   * solapadas dos vigas que solo se encuentran en una esquina. Se admite una
+   * pequeña interpenetración (`tol`) porque las piezas que se tocan suelen
+   * compartir unos milímetros. Sirve para decidir si una bisagra puede pedir
+   * contactos reales entre ambas sin que el solver las expulse al arrancar.
+   */
+  /**
+   * MIGRACIÓN de bisagras reales anteriores a v0.2.33: las instaladas antes
+   * de esta versión se guardaron sin pedir contactos, así que sus piezas se
+   * atravesaban al plegar. Al abrir el proyecto (o insertar un prefab
+   * antiguo) se les activa la colisión si las piezas anfitrionas —las que
+   * lleva soldada cada placa— no están interpenetradas en la pose de diseño.
+   * Las uniones que traen el dato explícito se respetan tal cual.
+   */
+  private migrarContactosBisagra(explicitas: Set<string>): void {
+    const anfitrion = new Map<string, string>();
+    for (const j of this.joints.values()) {
+      if (!j.locked) continue;
+      const a = this.objects.get(j.bodyAId);
+      const b = this.objects.get(j.bodyBId);
+      if (!a || !b) continue;
+      if (a.componentId === "placa-bisagra" && b.componentId !== "placa-bisagra") {
+        anfitrion.set(a.id, b.id);
+      } else if (b.componentId === "placa-bisagra" && a.componentId !== "placa-bisagra") {
+        anfitrion.set(b.id, a.id);
+      }
+    }
+    for (const j of this.joints.values()) {
+      if (j.locked || j.contactos || explicitas.has(j.id)) continue;
+      const a = this.objects.get(j.bodyAId);
+      const b = this.objects.get(j.bodyBId);
+      if (a?.componentId !== "placa-bisagra" || b?.componentId !== "placa-bisagra") continue;
+      const ha = this.objects.get(anfitrion.get(a.id) ?? "");
+      const hb = this.objects.get(anfitrion.get(b.id) ?? "");
+      if (ha && hb && ha !== hb && this.piezasSeparadas(ha, hb)) j.contactos = true;
+    }
+  }
+
+  piezasSeparadas(a: SceneObject, b: SceneObject, tol = 0.8): boolean {
+    const A = this.cajaOrientada(a);
+    const B = this.cajaOrientada(b);
+    const d = B.c.clone().sub(A.c);
+    const radio = (caj: typeof A, L: THREE.Vector3): number =>
+      caj.e[0] * Math.abs(caj.u[0].dot(L)) +
+      caj.e[1] * Math.abs(caj.u[1].dot(L)) +
+      caj.e[2] * Math.abs(caj.u[2].dot(L));
+    const ejesPrueba: THREE.Vector3[] = [...A.u, ...B.u];
+    for (const ua of A.u) {
+      for (const ub of B.u) {
+        const cruz = new THREE.Vector3().crossVectors(ua, ub);
+        if (cruz.lengthSq() > 1e-6) ejesPrueba.push(cruz.normalize());
+      }
+    }
+    for (const L of ejesPrueba) {
+      if (Math.abs(d.dot(L)) >= radio(A, L) + radio(B, L) - tol) return true;
+    }
+    return false;
+  }
+
+  /**
    * Instala una BISAGRA REAL entre dos piezas (v0.2.32).
    *
    * Herraje: una PLACA plana soldada a cada pieza y un PASADOR cilíndrico que
@@ -4187,16 +4302,36 @@ export class Editor {
       y: new THREE.Vector3(0, 1, 0),
       z: new THREE.Vector3(0, 0, 1),
     };
-    let letra: "x" | "y" | "z";
-    if (cfg.eje === "auto") {
-      const d = cb.clone().sub(ca);
-      if (d.lengthSq() < 1e-6) d.set(0, 1, 0);
-      d.normalize();
-      letra = (["x", "y", "z"] as const).reduce((mejor, k) =>
-        Math.abs(d.dot(ejes[k])) < Math.abs(d.dot(ejes[mejor])) ? k : mejor,
+    const entrePiezas = cb.clone().sub(ca);
+    if (entrePiezas.lengthSq() < 1e-6) entrePiezas.set(0, 1, 0);
+    entrePiezas.normalize();
+    const letraMasCercana = (v: THREE.Vector3): "x" | "y" | "z" =>
+      (["x", "y", "z"] as const).reduce((mejor, k) =>
+        Math.abs(v.dot(ejes[k])) > Math.abs(v.dot(ejes[mejor])) ? k : mejor,
       );
-    } else {
+    const caraPedida =
+      cfg.cara && cfg.cara !== "auto" ? DIRECCIONES_ROLDANA[cfg.cara].clone() : null;
+    let letra: "x" | "y" | "z";
+    if (cfg.eje !== "auto") {
       letra = cfg.eje;
+    } else if (caraPedida) {
+      // Con una cara elegida el eje queda determinado: la charnela corre
+      // perpendicular tanto a la cara como a la línea entre las piezas.
+      const ideal = new THREE.Vector3().crossVectors(caraPedida, entrePiezas);
+      letra =
+        ideal.length() > 0.3
+          ? letraMasCercana(ideal.normalize())
+          : (["x", "y", "z"] as const).reduce((mejor, k) =>
+              Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor]))
+                ? k
+                : mejor,
+            );
+    } else {
+      // Sin pistas: el eje global MÁS PERPENDICULAR a la línea que une las
+      // piezas (la charnela natural entre ellas).
+      letra = (["x", "y", "z"] as const).reduce((mejor, k) =>
+        Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor])) ? k : mejor,
+      );
     }
     const ejeMundo = ejes[letra].clone();
 
@@ -4221,23 +4356,38 @@ export class Editor {
     const largo = Math.max(2, cfg.tamano);
     const ancho = Math.max(2, largo * 0.75);
     const grosor = Math.max(0.5, largo * 0.1);
+    const radioPasador = Math.max(0.5, grosor * 0.9);
+    // Las palas arrancan pasado el pasador: si lo montaran encima, el cilindro
+    // (soldado a la pala A) chocaría con la pala B y la bisagra se agarrotaría
+    // en cuanto las piezas empiezan a chocar de verdad.
+    const separacion = radioPasador + 0.35;
 
     // CARA DE MONTAJE: una bisagra real se atornilla SOBRE la superficie de
-    // las dos piezas, no dentro de ellas. La normal de montaje es
-    // perpendicular al eje y a las palas; se prefiere la que mira hacia
-    // arriba (la cara visible) y el herraje se sube hasta despejar el
-    // volumen de ambas piezas — así se ve y se puede manipular.
+    // las dos piezas, no dentro de ellas. Solo hay DOS caras posibles —las
+    // perpendiculares al eje y a las palas— y elegir una u otra es lo que
+    // decide hacia dónde pliega. Por omisión, la que mira hacia arriba.
     const normal = new THREE.Vector3().crossVectors(ejeMundo, dirA).normalize();
-    if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) normal.negate();
-    const sobresale = (o: SceneObject): number => {
-      const caja = o.worldBoxBody(new THREE.Box3());
-      const sop = new THREE.Vector3(
-        normal.x >= 0 ? caja.max.x : caja.min.x,
-        normal.y >= 0 ? caja.max.y : caja.min.y,
-        normal.z >= 0 ? caja.max.z : caja.min.z,
-      );
-      return sop.dot(normal) - pivote.dot(normal);
-    };
+    if (caraPedida) {
+      const proy = caraPedida.clone().addScaledVector(ejeMundo, -caraPedida.dot(ejeMundo));
+      const comp = proy.dot(normal);
+      if (proy.length() < 0.3 || Math.abs(comp) < 0.35 * proy.length()) {
+        this.avisoTemporal(
+          tt(
+            "⚠ Esa cara no es perpendicular al eje de la bisagra: se monta en la cara más cercana.",
+            "⚠ That face is not perpendicular to the hinge axis: it mounts on the nearest one.",
+          ),
+        );
+        if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) normal.negate();
+      } else if (comp < 0) {
+        normal.negate();
+      }
+    } else if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) {
+      normal.negate();
+    }
+    // El herraje se sube justo hasta despejar el volumen REAL de ambas piezas
+    // (caja orientada, no AABB: una viga girada no infla su envolvente).
+    const sobresale = (o: SceneObject): number =>
+      this.soporteEnDireccion(o, normal) - pivote.dot(normal);
     const charnela = pivote
       .clone()
       .addScaledVector(normal, Math.max(sobresale(a), sobresale(b)) + grosor / 2 + 0.1);
@@ -4255,7 +4405,7 @@ export class Editor {
       p.mesh.quaternion.setFromRotationMatrix(
         new THREE.Matrix4().makeBasis(dir, normal, z),
       );
-      p.mesh.position.copy(charnela).addScaledVector(dir, largo / 2 + 0.4);
+      p.mesh.position.copy(charnela).addScaledVector(dir, largo / 2 + separacion);
       this.bus.emit("objectTransformed", { object: p });
       piezas.push(p.id);
       return p;
@@ -4267,7 +4417,6 @@ export class Editor {
     const pasador = this.addComponent("pasador-bisagra");
     pasador.name = tt("Pasador de bisagra", "Hinge pin");
     pasador.mesh.name = pasador.name;
-    const radioPasador = Math.max(0.5, grosor * 0.9);
     pasador.params = {
       kind: "cylinder",
       radiusTop: radioPasador,
@@ -4304,6 +4453,23 @@ export class Editor {
         bisagra.min = cfg.limite[0];
         bisagra.max = cfg.limite[1];
       }
+      // COLISIÓN REAL ENTRE LAS DOS PIEZAS (v0.2.33): una bisagra montada
+      // sobre una cara solo puede plegar hacia el lado donde el material no
+      // estorba — hacia el otro, las piezas topan. El motor apaga por defecto
+      // los contactos entre los cuerpos que une una articulación (en un
+      // pivote clásico se solapan a propósito), así que aquí se piden
+      // EXPRESAMENTE. Si las dos piezas ya están interpenetradas en la pose
+      // de diseño, se dejan apagados: encenderlos las expulsaría al arrancar.
+      if (this.piezasSeparadas(a, b)) {
+        bisagra.contactos = true;
+      } else {
+        this.avisoTemporal(
+          tt(
+            "⚠ Las dos piezas se superponen: la bisagra no podrá frenar contra el material.",
+            "⚠ Both parts overlap: the hinge will not be able to stop against the material.",
+          ),
+        );
+      }
     }
 
     const gid = this.createGroupFromIds(piezas);
@@ -4311,10 +4477,30 @@ export class Editor {
     this.select(null);
     this.jointUpdated();
     this.requestRender();
+    const nombreCara = (
+      Object.entries(DIRECCIONES_ROLDANA) as [DireccionRoldana, THREE.Vector3][]
+    ).reduce((mejor, [k, v]) => (normal.dot(v) > normal.dot(DIRECCIONES_ROLDANA[mejor]) ? k : mejor),
+      "arriba" as DireccionRoldana);
+    const caraES: Record<DireccionRoldana, string> = {
+      arriba: "arriba",
+      abajo: "abajo",
+      derecha: "derecha",
+      izquierda: "izquierda",
+      anterior: "anterior",
+      posterior: "posterior",
+    };
+    const caraEN: Record<DireccionRoldana, string> = {
+      arriba: "top",
+      abajo: "bottom",
+      derecha: "right",
+      izquierda: "left",
+      anterior: "front",
+      posterior: "back",
+    };
     this.avisoTemporal(
       tt(
-        `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()})`,
-        `✓ Hinge installed between ${a.name} and ${b.name} (axis ${letra.toUpperCase()})`,
+        `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()}, cara ${caraES[nombreCara]})`,
+        `✓ Hinge installed between ${a.name} and ${b.name} (axis ${letra.toUpperCase()}, ${caraEN[nombreCara]} face)`,
       ),
     );
     return bisagra;

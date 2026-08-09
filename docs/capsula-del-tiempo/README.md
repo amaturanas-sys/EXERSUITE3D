@@ -536,7 +536,7 @@ Además, FAQ e imágenes del Instructivo puestas al día.
 
 - [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)
 
-## 2026-08-09 — 3 capturas
+## 2026-08-09 — 6 capturas
 
 v0.2.32: la herramienta de BISAGRA instala un herraje REAL — dos placas
 planas soldadas a la cara de cada pieza y el pasador cilíndrico que las
@@ -548,3 +548,12 @@ un brazo compuesto pivota entero en su sitio.
 - [`v232-panel-bisagra.png`](2026-08-09/v232-panel-bisagra.png)
 - [`v232-bisagra-herraje.png`](2026-08-09/v232-bisagra-herraje.png)
 - [`v232-bisagra-abatida.png`](2026-08-09/v232-bisagra-abatida.png)
+
+v0.2.33: la bisagra pasa a ser CONCORDANTE con la física del mundo — las dos
+piezas que une siguen chocando entre sí, así que la cara de montaje decide el
+recorrido: montada arriba topan y no pliega; montada abajo, flexiona. El panel
+suma el selector de cara de montaje.
+
+- [`v233-bisagra-arriba-topa.png`](2026-08-09/v233-bisagra-arriba-topa.png)
+- [`v233-bisagra-abajo-flexiona.png`](2026-08-09/v233-bisagra-abajo-flexiona.png)
+- [`v233-panel-cara-montaje.png`](2026-08-09/v233-panel-cara-montaje.png)

@@ -47,6 +47,22 @@ export class Joint {
    * empuje horizontal a vertical) sin rehacer las conexiones.
    */
   locked = false;
+  /**
+   * COLISIÓN ENTRE LAS DOS PIEZAS UNIDAS (v0.2.33).
+   *
+   * Por omisión el motor APAGA los contactos entre los dos cuerpos que une
+   * una articulación: en un pivote clásico las piezas se solapan en el punto
+   * de giro (un brazo metido en su anclaje, una jota abrazando el poste) y
+   * dejarlas chocar las expulsaría al arrancar.
+   *
+   * Pero cuando la unión es una BISAGRA REAL montada sobre la cara de dos
+   * piezas que NO se solapan, apagar los contactos rompe la fidelidad
+   * física: las vigas se atraviesan y la bisagra pliega hacia el lado que el
+   * material debería impedir. Con esta bandera activa las dos piezas siguen
+   * chocando entre sí, así que el recorrido real lo define la geometría —
+   * montada arriba topa enseguida; montada abajo, flexiona.
+   */
+  contactos = false;
 
   constructor(opts: {
     kind: JointKind;

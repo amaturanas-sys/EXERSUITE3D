@@ -1016,7 +1016,10 @@ export class PhysicsWorld {
           : RAPIER.JointData.prismatic(anchorA, anchorB, axis);
       handle = this.world.createImpulseJoint(params, a.body, b.body, true) as
         R.UnitImpulseJoint;
-      handle.setContactsEnabled(false);
+      // Los contactos entre las dos piezas se apagan salvo que la unión pida
+      // lo contrario (bisagra real montada sobre caras que no se solapan):
+      // ahí el material debe frenar el plegado, no atravesarse.
+      handle.setContactsEnabled(joint.contactos);
     } else {
       handle = this.addJointViaAdapter(joint, a, b, anchorA, anchorB, axis);
     }
@@ -1102,14 +1105,17 @@ export class PhysicsWorld {
 
     // El flag de contactos solo filtra pares unidos DIRECTAMENTE por un joint:
     // registra un joint de cuerda inerte (longitud enorme) entre A y B para
-    // que tampoco colisionen entre si en el pivote.
-    const rope = world.createImpulseJoint(
-      RAPIER.JointData.rope(1e6, anchorA, anchorB),
-      a.body,
-      b.body,
-      true,
-    );
-    rope.setContactsEnabled(false);
+    // que tampoco colisionen entre si en el pivote. Si la union PIDE
+    // contactos (bisagra real), no se registra: las dos piezas deben chocar.
+    if (!joint.contactos) {
+      const rope = world.createImpulseJoint(
+        RAPIER.JointData.rope(1e6, anchorA, anchorB),
+        a.body,
+        b.body,
+        true,
+      );
+      rope.setContactsEnabled(false);
+    }
 
     return unit;
   }

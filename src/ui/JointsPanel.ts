@@ -16,6 +16,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
   return new Promise((resolve) => {
     let eje: ConfigBisagra["eje"] = "auto";
     let tamano = 8;
+    let cara: NonNullable<ConfigBisagra["cara"]> = "auto";
     const terminar = (v: ConfigBisagra | null): void => {
       window.removeEventListener("keydown", alTeclado);
       panel.remove();
@@ -28,9 +29,24 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
 
     const bEje = new Map<ConfigBisagra["eje"], HTMLElement>();
     const bTam = new Map<number, HTMLElement>();
+    const bCara = new Map<string, HTMLElement>();
     const pintar = (): void => {
       for (const [k, b] of bEje) b.classList.toggle("active", k === eje);
       for (const [k, b] of bTam) b.classList.toggle("active", k === tamano);
+      for (const [k, b] of bCara) b.classList.toggle("active", k === cara);
+    };
+    const opcCara = (
+      k: NonNullable<ConfigBisagra["cara"]>,
+      titulo: string,
+      ayuda: string,
+    ): HTMLElement => {
+      const b = el("button", { class: "rold-opt", title: ayuda }, [titulo]);
+      b.addEventListener("click", () => {
+        cara = k;
+        pintar();
+      });
+      bCara.set(k, b);
+      return b;
     };
     const opcEje = (k: ConfigBisagra["eje"], titulo: string, ayuda: string) => {
       const b = el("button", { class: "rold-opt", title: ayuda }, [titulo]);
@@ -62,6 +78,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
       terminar({
         eje,
         tamano,
+        cara,
         limite:
           limOn.checked && Number.isFinite(min) && Number.isFinite(max) ? [min, max] : undefined,
       });
@@ -88,6 +105,28 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
         opcEje("x", "X", "±X"),
         opcEje("y", "Y", "±Y"),
         opcEje("z", "Z", "±Z"),
+      ]),
+      el("div", { class: "rold-seccion" }, [
+        tt("Cara de montaje (global)", "Mounting face (global)"),
+      ]),
+      el("div", { class: "rold-ejes" }, [
+        opcCara(
+          "auto",
+          tt("Auto", "Auto"),
+          tt("La cara superior/visible.", "The top/visible face."),
+        ),
+        opcCara("arriba", "⬆", tt("Arriba (+Y)", "Up (+Y)")),
+        opcCara("abajo", "⬇", tt("Abajo (−Y)", "Down (−Y)")),
+        opcCara("derecha", "➡", tt("Derecha (+X)", "Right (+X)")),
+        opcCara("izquierda", "⬅", tt("Izquierda (−X)", "Left (−X)")),
+        opcCara("anterior", "⧉", tt("Anterior (+Z)", "Front (+Z)")),
+        opcCara("posterior", "⧈", tt("Posterior (−Z)", "Back (−Z)")),
+      ]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "La cara decide hacia dónde pliega: por el otro lado las piezas topan entre sí.",
+          "The face decides which way it folds: on the other side the parts butt against each other.",
+        ),
       ]),
       el("div", { class: "rold-seccion" }, [tt("Placas", "Leaves")]),
       el("div", { class: "rold-ejes" }, [
@@ -412,8 +451,30 @@ export class JointsPanel {
       this.render();
     });
 
+    // COLISIÓN entre las dos piezas unidas (v0.2.33): activada, el material
+    // frena el recorrido (una bisagra sobre la cara solo pliega hacia el lado
+    // libre); desactivada, las piezas se atraviesan — que es lo que necesita
+    // un pivote clásico, donde el brazo se mete dentro de su anclaje.
+    const contOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    contOn.checked = j.contactos;
+    contOn.addEventListener("change", () => {
+      j.contactos = contOn.checked;
+      this.editor.jointUpdated();
+    });
+
     return el("div", { class: "joint-editor" }, [
       el("div", { class: "field" }, [lockBtn]),
+      el("div", { class: "field" }, [
+        el(
+          "label",
+          {
+            style: "display:flex;gap:6px;align-items:center;",
+            title:
+              "Las dos piezas siguen chocando entre si: el material frena el recorrido (bisagras montadas sobre una cara). Desactivalo en pivotes donde las piezas se solapan a proposito.",
+          },
+          [contOn, "Las piezas chocan entre si"],
+        ),
+      ]),
       el("div", { class: "field" }, [el("label", {}, ["Eje de la articulacion"]), axisSel]),
       el("div", { class: "field" }, [
         el("label", { style: "display:flex;gap:6px;align-items:center;" }, [limOn, "Limitar recorrido"]),

@@ -38,6 +38,8 @@ export interface JointData {
   motor: JointMotor;
   /** Lock switch: la articulación queda rígida en su pose de diseño. */
   locked?: boolean;
+  /** Las dos piezas unidas siguen chocando entre sí (v0.2.33). */
+  contactos?: boolean;
 }
 
 export interface CableData {

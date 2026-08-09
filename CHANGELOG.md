@@ -5,6 +5,44 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.33] — 2026-08-09
+
+### Corregido
+
+- **La bisagra plegaba atravesando el material**: el motor apaga los
+  contactos entre los dos cuerpos que une una articulación —en un pivote
+  clásico las piezas se solapan a propósito—, y como las placas de la
+  bisagra se funden con sus piezas, esa regla acababa apagando también la
+  colisión entre las dos vigas: se cerraban una dentro de la otra. Ahora
+  una bisagra real PIDE contactos, así que el recorrido lo define la
+  geometría igual que en el mundo: montada sobre la cara superior las
+  piezas topan enseguida y no pliegan; montada en la inferior, el mismo
+  conjunto flexiona. Si las dos piezas ya estaban interpenetradas al
+  instalarla, los contactos se dejan apagados y se avisa (encenderlos las
+  expulsaría al arrancar).
+- **El herraje flotaba sobre las piezas giradas**: se apoyaba usando la
+  caja AABB del mundo, que se hincha al girar la pieza (una viga a 30°
+  inflaba su envolvente y subía la bisagra 14 cm por encima de la cara).
+  Ahora se apoya sobre la caja ORIENTADA — la superficie real.
+- El pasador ya no roza la placa contraria: las palas arrancan pasado su
+  radio, así que la bisagra no se agarrota cuando las piezas empiezan a
+  chocar de verdad.
+- Las bisagras instaladas con v0.2.32 se corrigen al abrir el proyecto o
+  reinsertar el prefab: se les activa la colisión si sus piezas no están
+  superpuestas.
+
+### Añadido
+
+- **Cara de montaje de la bisagra**: el panel suma un selector de cara en
+  direcciones globales (auto, arriba, abajo, derecha, izquierda, anterior,
+  posterior). Es la decisión física de la herramienta — la cara determina
+  hacia dónde puede plegar —, y con eje «Auto» la charnela se deduce de la
+  cara elegida y de la línea entre las piezas.
+- **Interruptor «Las piezas chocan entre sí»** en cada unión (Conexiones):
+  encendido, el material frena el recorrido; apagado, las piezas se
+  atraviesan, que es lo que necesita un pivote donde se solapan a propósito
+  (un brazo metido en su anclaje). Viaja en proyectos y prefabs.
+
 ## [0.2.32] — 2026-08-09
 
 ### Añadido

@@ -103,6 +103,7 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
       max: j.max,
       limites: j.limitsEnabled,
       bloqueada: j.locked || undefined,
+      contactos: j.contactos || undefined,
     });
   }
 
