@@ -5,6 +5,27 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.36] — 2026-08-09
+
+### Añadido
+
+- **UPPERMACHINE en la biblioteca de máquinas estándar**: la torre
+  multiestación del diseñador entra en el Builder junto al rack, la jaula y
+  las torres de polea. 41 piezas con su geometría literal —trazados,
+  pinholes, ventanas caladas, perfil viga o tubo—, 16 uniones y 2 cables.
+
+  Su mecánica: una pila selectorizada de 15 placas × 6,8 kg sobre tubos
+  guía; el CARRO DE DOBLE ROLDANA flota entre los senos de los dos cables
+  (el del jalón tira hacia arriba, el del press hacia abajo), de modo que
+  su altura fija de una vez el largo de ambos. El jalón alto da 23–27 cm de
+  recorrido de placas con 5–7 cm de recorrido muerto, y el press de pecho
+  7,4 cm; su carga útil práctica ronda los 20 kg, que es lo que el brazo
+  (19,2 kg) puede contrarrestar.
+
+  El BRAZO COMPUESTO —segmento superior, arco en U, dos mangos y dos
+  agarres— viaja soldado como un solo cuerpo rígido y pivota desde el
+  bastidor superior.
+
 ## [0.2.35] — 2026-08-09
 
 ### Añadido

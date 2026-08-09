@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import type { Editor } from "../core/Editor";
 import type { PrimitiveParams } from "./types";
+import {
+  UPPER_MACHINE,
+  UPPER_MACHINE_CABLES,
+  UPPER_MACHINE_UNIONES,
+} from "./maquinas/upperMachine";
 
 /**
  * Máquinas estándar (F4 v0.2.0): prefabricados montados con los componentes
@@ -44,6 +49,13 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     icon: "🏗️",
     description:
       "TTP001L corregido por el diseñador: 4 pilares girados al calce, columnas inferiores y superiores, travesaños y bastidor superior, 2 tubos de guía con manguitos y portadiscos móvil, 4 jotas, set de roldanas, remo de polea alta y pullups multigrip.",
+  },
+  {
+    id: "uppermachine",
+    label: "UpperMachine",
+    icon: "🏠",
+    description:
+      "Torre multiestación del diseñador: pila selectorizada de 15 placas sobre tubos guía, carro de doble roldana, jalón alto con barra, y brazo de pecho COMPUESTO (segmento, arco en U, mangos y agarres soldados en un cuerpo rígido) que pivota desde el bastidor superior.",
   },
   {
     id: "torre-polea-discos",
@@ -470,6 +482,14 @@ const SPECS: Record<string, MaquinaSpec> = {
   "torre-polea-discos": { label: "Torre polea de discos", piezas: TORRE_DISCOS, uniones: TORRE_DISCOS_UNIONES, cables: TORRE_DISCOS_CABLES },
   "torre-polea-pesos": { label: "Torre polea de pesos", piezas: TORRE_PESOS, uniones: TORRE_PESOS_UNIONES, cables: TORRE_PESOS_CABLES },
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
+  // Definición LITERAL revisada contra el motor actual (v0.2.36): sus 41
+  // piezas viven en su propio módulo por tamaño.
+  uppermachine: {
+    label: "UpperMachine",
+    piezas: UPPER_MACHINE,
+    uniones: UPPER_MACHINE_UNIONES,
+    cables: UPPER_MACHINE_CABLES,
+  },
 };
 
 /** Especificación de piezas de una máquina estándar (para hornear/exportar). */

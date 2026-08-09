@@ -536,7 +536,7 @@ Además, FAQ e imágenes del Instructivo puestas al día.
 
 - [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)
 
-## 2026-08-09 — 8 capturas
+## 2026-08-09 — 9 capturas
 
 v0.2.32: la herramienta de BISAGRA instala un herraje REAL — dos placas
 planas soldadas a la cara de cada pieza y el pasador cilíndrico que las
@@ -572,3 +572,9 @@ roldanas internas de la misma viga el cable discurre por dentro del perfil
 obstrucción. La regla no relaja ningún otro caso.
 
 - [`v235-cable-oculto.png`](2026-08-09/v235-cable-oculto.png)
+
+v0.2.36: la UpperMachine del diseñador entra en la biblioteca de máquinas
+estándar — 41 piezas, 16 uniones y 2 cables — y se inserta desde la paleta
+con un clic, con su brazo compuesto rígido y su jalón moviendo la pila.
+
+- [`v236-uppermachine-libreria.png`](2026-08-09/v236-uppermachine-libreria.png)

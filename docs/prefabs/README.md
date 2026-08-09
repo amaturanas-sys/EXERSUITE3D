@@ -10,6 +10,11 @@ anclaje —, sus uniones (articulaciones y soldaduras) y sus cables.
 
 ## `uppermachine.prefab.json`
 
+> Desde v0.2.36 esta máquina también viene **incorporada a la biblioteca de
+> máquinas estándar** del Builder (paleta → Máquinas estándar → UpperMachine).
+> El archivo se conserva aquí como definición literal y punto de partida para
+> variantes.
+
 Torre multiestación del diseñador: pila de pesos selectorizada, carro de
 doble roldana, polea alta con barra de remo y brazo de pecho compuesto que
 pivota desde el bastidor superior.
