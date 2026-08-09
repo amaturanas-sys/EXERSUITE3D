@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.35] — 2026-08-09
+
+### Añadido
+
+- **TRAMOS OCULTOS del cable**: cuando un tramo va de una roldana INTERNA a
+  otra roldana INTERNA DE LA MISMA estructura, el cable discurre por DENTRO
+  del perfil —hueco en el mundo real—, así que nada de lo que ocupe ese
+  volumen lo obstruye: ni la propia viga ni el mástil que la sostiene
+  penetrando en ella. Antes el validador lo marcaba en rojo y obligaba a
+  mutilar la estructura para "arreglarlo".
+
+  La regla es ESTRICTA y se aplica tramo a tramo: entre roldanas de vigas
+  DISTINTAS, de una interna a una EXTERNA, o en cualquier otro punto del
+  recorrido, el cable se sigue validando contra el material como siempre —
+  ahí sí transgrede las paredes del perfil.
+
+  La condición de roldana interna se resuelve por geometría (la rueda cae
+  dentro del volumen de la estructura), así que vale tanto para las que
+  empotró la herramienta como para las colocadas a mano en modelos
+  anteriores a ella.
+
+### Corregido
+
+- **Prefab UpperMachine**: se revierte el recorte del mástil de v0.2.34. El
+  remate llega al interior del bastidor superior porque es su APOYO
+  ESTRUCTURAL —sin ese contacto la torre horizontal cede—, y el cruce con
+  el cable alto no era un defecto del diseño sino un tramo oculto, que
+  ahora el validador entiende. El prefab ya no altera la geometría de
+  ninguna pieza.
+
 ## [0.2.34] — 2026-08-09
 
 ### Añadido

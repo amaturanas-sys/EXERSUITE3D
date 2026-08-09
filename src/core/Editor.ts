@@ -4747,6 +4747,46 @@ export class Editor {
    * roldana trae piezas "apertura-cable" y la caja de la estructura
    * contiene el centro de la rueda.
    */
+  /**
+   * ESTRUCTURAS QUE ALOJAN cada roldana del recorrido (v0.2.35): por cada
+   * roldana del cable, las piezas cuyo volumen CONTIENE el centro de la
+   * rueda — es decir, aquellas de las que la roldana es INTERNA.
+   *
+   * La detección es geométrica a propósito: vale para las roldanas que
+   * empotró la herramienta (conjunto con eje pasante y aperturas) y también
+   * para las que se colocaron a mano dentro de una viga en modelos
+   * anteriores a ella. Una roldana EXTERNA queda fuera del volumen de su
+   * estructura —la separa su montaje—, así que nunca aparece aquí.
+   */
+  private contenedoresDeRoldanas(cable: Cable): Map<string, Set<string>> {
+    const dentro = new Map<string, Set<string>>();
+    const caja = new THREE.Box3();
+    for (const n of cable.nodes) {
+      const rold = this.objects.get(n.objectId);
+      if (!rold || !this.isPulley(rold) || dentro.has(rold.id)) continue;
+      const hosts = new Set<string>();
+      for (const cand of this.objects.values()) {
+        // Ni la propia rueda, ni otras roldanas, ni los herrajes del reenvío
+        // cuentan como estructura anfitriona. No se mira el GRUPO: una
+        // máquina insertada agrupa todas sus piezas de golpe, y entonces la
+        // viga que aloja la roldana quedaría excluida por ser "del grupo".
+        if (cand.id === rold.id || this.isPulley(cand)) continue;
+        if (
+          cand.componentId === "soporte-roldana" ||
+          cand.componentId === "eje-roldana" ||
+          cand.componentId === "apertura-cable" ||
+          cand.componentId === "terminal-cable"
+        ) {
+          continue;
+        }
+        caja.setFromObject(cand.mesh).expandByScalar(1);
+        if (caja.containsPoint(rold.mesh.position)) hosts.add(cand.id);
+      }
+      if (hosts.size > 0) dentro.set(rold.id, hosts);
+    }
+    return dentro;
+  }
+
   private anfitrionesDeRoldanasInternas(cable: Cable): Set<string> {
     const permeables = new Set<string>();
     const caja = new THREE.Box3();
@@ -4790,14 +4830,40 @@ export class Editor {
     // bajo la rueda — el cable entra por una y sale por la otra, así que
     // cruzar su pared ahí es el funcionamiento correcto, no un error.
     const permeables = this.anfitrionesDeRoldanasInternas(cable);
+    // TRAMOS OCULTOS (v0.2.35): cuando un tramo va de una roldana INTERNA a
+    // otra roldana INTERNA DE LA MISMA estructura, el cable discurre por
+    // DENTRO de la viga — que en el mundo real es hueca —, así que lo que
+    // haya dentro de ese volumen no lo obstruye: ni la propia viga ni las
+    // piezas que penetran en ella (el mástil que sostiene el bastidor, por
+    // ejemplo). La regla es ESTRICTA: si las dos roldanas pertenecen a
+    // estructuras distintas, o una es externa, el tramo cruza paredes de
+    // verdad y se sigue validando como siempre.
+    const contenedores = this.contenedoresDeRoldanas(cable);
+    const cajaOculta = new THREE.Box3();
     for (let i = 0; i < pts.length - 1; i++) {
       const dir = pts[i + 1].clone().sub(pts[i]);
       const len = dir.length();
       if (len < 2) continue;
+      const dentroA = contenedores.get(cable.nodes[i].objectId);
+      const dentroB = contenedores.get(cable.nodes[i + 1].objectId);
+      const comunes = dentroA && dentroB ? [...dentroA].filter((id) => dentroB.has(id)) : [];
+      let oculto = false;
+      if (comunes.length > 0) {
+        cajaOculta.makeEmpty();
+        const caj = new THREE.Box3();
+        for (const id of comunes) {
+          const host = this.objects.get(id);
+          if (host) cajaOculta.union(caj.setFromObject(host.mesh).expandByScalar(1));
+        }
+        oculto = !cajaOculta.isEmpty();
+      }
       ray.set(pts[i], dir.normalize());
       ray.near = 1;
       ray.far = len - 1;
       for (const h of ray.intersectObjects(this.sceneManager.content.children, false)) {
+        // Dentro de la estructura que aloja ambas roldanas, el cable va
+        // oculto por el interior hueco: ahí nada lo obstruye.
+        if (oculto && cajaOculta.containsPoint(h.point)) continue;
         const id = h.object.userData.sceneObjectId as string | undefined;
         if (!id || propios.has(id)) continue;
         const o = this.objects.get(id);

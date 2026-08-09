@@ -536,7 +536,7 @@ Además, FAQ e imágenes del Instructivo puestas al día.
 
 - [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)
 
-## 2026-08-09 — 7 capturas
+## 2026-08-09 — 8 capturas
 
 v0.2.32: la herramienta de BISAGRA instala un herraje REAL — dos placas
 planas soldadas a la cara de cada pieza y el pasador cilíndrico que las
@@ -565,3 +565,10 @@ prefab, los terminales viajan con su pieza y el mástil deja pasar el cable
 alto. Cada pieza conserva sus pinholes, ventanas, perfil y nodos.
 
 - [`v234-uppermachine.png`](2026-08-09/v234-uppermachine.png)
+
+v0.2.35: el validador de cables entiende los TRAMOS OCULTOS — entre dos
+roldanas internas de la misma viga el cable discurre por dentro del perfil
+(hueco), así que el mástil que sostiene el bastidor deja de contar como
+obstrucción. La regla no relaja ningún otro caso.
+
+- [`v235-cable-oculto.png`](2026-08-09/v235-cable-oculto.png)
