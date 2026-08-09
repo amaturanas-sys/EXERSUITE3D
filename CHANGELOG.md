@@ -5,6 +5,59 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.37] — 2026-08-09
+
+### Añadido
+
+- **MARKETPLACE: el hub de siete ventanas**. El catálogo de la Home pasa a ser
+  el HUB que junta a usuarios, makers y marcas en un showroom virtual: el
+  dueño de gimnasio cotiza y simula la distribución de su sala con equipos
+  reales, la marca expone su catálogo en modelos de alta fidelidad levantados
+  por escáner fotográfico, y el aficionado encuentra foro, patrocinio y quien
+  le fabrique lo que dibujó. Se recorre por una barra de siete pestañas y el
+  CARRITO es el mismo en todas las vitrinas.
+
+  1. **🎉 NEWCOMERS** — las marcas recién llegadas (cuatro meses o menos)
+     estrenan su vitrina: historia, país, modelos escaneados, seguidores y
+     catálogo, con salto directo a la vitrina ya filtrada por esa marca.
+  2. **✨ NEW ARRIVALS** — los estrenos de los últimos tres meses con su
+     cinta y su antigüedad, del más reciente al más antiguo, más la fila de
+     «próximamente» con aviso.
+  3. **🌱 SUPPORT THE LOCAL ECONOMY** — PyMEs y marcas que fabrican en el
+     país del usuario, que se elige con las banderas y queda guardado;
+     debajo, el resto de talleres pequeños del hub.
+  4. **🏬 VITRINA DIGITAL** — la tienda. Arriba, las HISTORIAS de cada marca
+     en formato Instagram (anillo, diapositivas verticales, barra de
+     progreso, avance automático y toque a los lados), cuyo botón «Ver
+     productos» deja el catálogo filtrado por esa marca. Abajo, el catálogo
+     con BUSCADOR integrado (nombre, marca, categoría o nota), chips de
+     categoría y carrito con total.
+  5. **🔧 MAKERS** — el foro de la comunidad DIY: diseños originales,
+     búsqueda de patrocinio (con barra de reservas y las marcas interesadas)
+     y equipos de trabajo, con respuestas plegables —las de las marcas
+     marcadas aparte—, apoyo en vivo y compositor de hilo nuevo. Aquí vive
+     ahora el mercado bidireccional makers ⇄ manufacturers.
+  6. **🪄 GOT A WISH** — el usuario presenta su diseño a las marcas y pide
+     una valoración para fabricarlo: formulario de encargo con las marcas
+     destinatarias, conversación directa por hilo con su estado (enviado ·
+     en revisión · presupuestado · en fabricación) y la pintura de
+     estructura y tapizado que acompaña al pedido.
+  7. **🤝 JOIN EXERSUITE3D** — la puerta de entrada de las marcas al hub:
+     el trayecto contacto → acuerdo y ficha → escáner fotográfico 3D →
+     publicación, qué gana la marca y el formulario para escribir a la
+     administración.
+
+### Cambiado
+
+- El catálogo crece a **18 productos de 7 marcas** con su país, su condición
+  de PyME y su antigüedad en el hub; se añade la categoría **Máquinas**. Las
+  fechas se guardan como ANTIGÜEDAD (días o meses atrás), no absolutas, para
+  que «recién llegada» y «estreno» sigan siendo ciertos con el paso del
+  tiempo.
+- El Marketplace se reparte en `src/ui/marketplace/` (arte, datos, piezas
+  comunes y un módulo por ventana) en lugar de un solo archivo.
+- FAQ del Instructivo al día, con capturas de las ventanas nuevas.
+
 ## [0.2.36] — 2026-08-09
 
 ### Añadido

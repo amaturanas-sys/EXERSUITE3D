@@ -1731,7 +1731,7 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
 }
 .mk-scroll {
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - 244px);
   padding-right: 6px;
   scrollbar-width: thin;
 }
@@ -2266,6 +2266,423 @@ body.modo-prototipo .arrastre-panel {
   border-color: #2e7d32;
   color: #fff;
 }
+
+/* ---- Marketplace v0.2.37: hub de siete ventanas ---- */
+.mk-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mk-tab {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mk-tab:hover { border-color: rgba(255, 255, 255, 0.4); }
+
+.mk-tab.active {
+  background: #e8eaee;
+  color: #14161a;
+  border-color: #e8eaee;
+}
+
+/* La clase de ocultar tiene que ganarle a los display: de este bloque. */
+.mk-pill.mkc-oculto,
+.mk-respuestas.mkc-oculto,
+.mk-vacio.mkc-oculto,
+.mkc-carrito.mkc-oculto { display: none; }
+
+.mk-cuerpo { min-height: 40vh; }
+.mk-ventana { display: block; }
+.mk-ventana > .mk-titulo:first-child { margin-top: 4px; }
+
+.mk-nota-fin {
+  margin: 14px 0 4px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.mk-vacio {
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ---- Buscador de la vitrina */
+.mk-busca-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+.mk-input {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 10px;
+  width: 100%;
+}
+
+.mk-input:focus { outline: none; border-color: #7fa9d8; }
+.mk-buscador { flex: 1 1 240px; width: auto; }
+.mk-area { resize: vertical; min-height: 62px; }
+.mk-cuenta { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; }
+
+.mk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: rgba(127, 169, 216, 0.18);
+  border: 1px solid rgba(127, 169, 216, 0.5);
+  margin-bottom: 8px;
+}
+
+.mk-pill-x {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+/* ---- Historias (formato Instagram) */
+.mk-historias {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 4px 0 10px;
+}
+
+.mk-historia {
+  flex: 0 0 auto;
+  width: 72px;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.mk-anillo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(135deg, #8a929c, #3a4048);
+  overflow: hidden;
+}
+
+.mk-anillo.nueva { background: linear-gradient(135deg, #f0a63a, #c22d2d 55%, #6d28d9); }
+.mk-anillo > svg { border-radius: 50%; background: var(--panel-2); display: block; }
+
+.mk-historia-txt {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Visor de historia */
+.mk-hv {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.mk-hv-caja {
+  position: relative;
+  width: min(360px, 92vw);
+  max-height: 92vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #262a31, #15171b);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mk-hv-progreso { display: flex; gap: 4px; }
+
+.mk-hv-barra {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mk-hv-barra.vista { background: rgba(255, 255, 255, 0.65); }
+.mk-hv-barra.activa { background: #fff; }
+
+.mk-hv-cab { display: flex; align-items: center; gap: 8px; }
+.mk-hv-logo { width: 30px; height: 30px; flex: 0 0 auto; }
+.mk-hv-logo > svg { border-radius: 8px; display: block; }
+.mk-hv-marca { flex: 1; font-size: 12.5px; font-weight: 700; }
+
+.mk-hv-cerrar {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  z-index: 2;
+}
+
+.mk-hv-arte {
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.09), transparent 65%),
+    linear-gradient(180deg, #262a31, #1b1e24);
+  border: 1px solid var(--border);
+  padding: 6px;
+}
+
+.mk-hv-titulo { font-size: 15px; font-weight: 700; }
+.mk-hv-texto { font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+.mk-hv-cta { margin-top: 4px; z-index: 2; position: relative; }
+
+.mk-hv-zona {
+  position: absolute;
+  top: 46px;
+  bottom: 70px;
+  width: 34%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mk-hv-prev { left: 0; }
+.mk-hv-next { right: 0; }
+
+/* ---- Cintas extra de la ficha de producto */
+.mkc-cinta {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: #1d4ed8;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.mkc-cinta-nuevo { background: #2e7d32; }
+.mkc-pie { font-size: 10.5px; color: var(--text-dim); }
+
+/* ---- Fichas de marca */
+.mk-avatar { width: 42px; height: 42px; flex: 0 0 auto; }
+.mk-avatar > svg { border-radius: 10px; display: block; }
+.mk-marca-head { display: flex; align-items: center; gap: 10px; }
+.mk-marca-datos { min-width: 0; }
+.mk-marca-nombre { font-weight: 800; font-size: 13.5px; }
+.mk-marca-pais { font-size: 11px; color: var(--text-dim); }
+
+.mk-marca-ficha {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 14px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mk-marca-fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.mk-marca-historia { font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+
+.mk-cinta-marca {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #6d28d9;
+  color: #fff;
+}
+
+.mk-datos { display: flex; gap: 18px; flex-wrap: wrap; }
+.mk-datos-hub { margin: 10px 0 4px; }
+.mk-dato-num { font-size: 18px; font-weight: 800; }
+.mk-dato-txt { font-size: 10.5px; color: var(--text-dim); }
+.mk-grid-marca { margin-bottom: 4px; }
+.mk-paises { margin-bottom: 4px; }
+
+/* ---- Foro de makers */
+.mk-hilos { display: flex; flex-direction: column; gap: 12px; }
+.mk-hilo-cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.mk-iniciales {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3a4048, #22262c);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mk-etiqueta {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mk-etiqueta.et-diseno { background: rgba(127, 169, 216, 0.28); }
+.mk-etiqueta.et-patrocinio { background: rgba(240, 166, 58, 0.28); }
+.mk-etiqueta.et-equipo { background: rgba(127, 208, 138, 0.24); }
+
+.mk-hilo-cuerpo { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.mk-hilo-arte {
+  flex: 0 0 150px;
+  max-width: 150px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #262a31, #1b1e24);
+  border: 1px solid var(--border);
+}
+
+.mk-hilo-txt { flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mk-respuestas { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--border); padding-top: 8px; }
+
+.mk-respuesta {
+  font-size: 11.5px;
+  line-height: 1.45;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mk-respuesta.de-marca { background: rgba(127, 169, 216, 0.14); border-left: 3px solid #7fa9d8; }
+.mk-respuesta-autor { font-weight: 700; margin-right: 6px; }
+.mk-respuesta-txt { color: var(--text-dim); }
+.mk-apoyo-btn.active { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+
+/* ---- Formularios del hub */
+.mk-campo { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; }
+.mk-campo-tit { font-size: 11px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.mk-fila-campos { display: flex; gap: 10px; flex-wrap: wrap; }
+.mk-formulario, .mk-compositor { gap: 10px; }
+/* En columna, los campos no deben estirarse a lo alto. */
+.mk-card > .mk-campo { flex: 0 0 auto; }
+.mk-check { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.mk-check-in { width: 15px; height: 15px; accent-color: #7fa9d8; }
+
+/* ---- Encargos (Got a wish) */
+.mk-estado {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mk-estado.est-enviado { background: rgba(255, 255, 255, 0.14); }
+.mk-estado.est-revision { background: rgba(240, 166, 58, 0.3); }
+.mk-estado.est-presupuestado { background: rgba(127, 169, 216, 0.3); }
+.mk-estado.est-fabricando { background: rgba(127, 208, 138, 0.3); }
+
+.mk-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 210px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+.mk-msg {
+  font-size: 11.5px;
+  line-height: 1.45;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  align-self: flex-end;
+  max-width: 92%;
+}
+
+.mk-msg.de-marca { background: rgba(127, 169, 216, 0.14); border-left: 3px solid #7fa9d8; align-self: flex-start; }
+.mk-msg-de { font-weight: 700; margin-right: 6px; }
+.mk-msg-txt { color: var(--text-dim); }
+.mk-chat-envio { display: flex; gap: 6px; align-items: center; }
+.mk-chat-envio .mk-input { flex: 1; }
+.mk-chat-envio .mk-btn { margin: 0; }
+
+/* ---- Incorporación de marcas */
+.mk-pasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+
+.mk-paso {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.mk-paso-num {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #7fa9d8;
+  color: #14161a;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mk-paso-tit { font-weight: 700; font-size: 12.5px; margin-bottom: 3px; }
+.mk-escaner { padding: 14px; }
 
 /* ---- Curaduría de la paleta (v0.2.18): categorías plegables ---- */
 .cat-plegable {

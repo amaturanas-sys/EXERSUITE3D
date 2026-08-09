@@ -158,8 +158,15 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     id: "marketplace",
     pregunta: "¿Qué es el Marketplace?",
     puntos: [
-      "Es el catálogo de la Home: fichas con imagen, marca, precio y ofertas, filtrables por categoría (racks, poleas, bancos, pesos, accesorios) y con un carrito de demostración.",
+      "Es el HUB que junta a usuarios, makers y marcas en un showroom virtual: el dueño del gimnasio cotiza y simula la distribución de su sala con equipos reales, la marca expone su catálogo y el aficionado encuentra foro, patrocinio y quien le fabrique lo que dibujó. Se recorre por SIETE ventanas.",
+      "🎉 NEWCOMERS: las marcas recién llegadas al hub estrenan su vitrina — historia, país, modelos escaneados y catálogo. ✨ NEW ARRIVALS: los estrenos de los últimos tres meses, del más reciente al más antiguo, más lo que viene.",
+      "🌱 ECONOMÍA LOCAL: PyMEs y marcas que fabrican en TU país (lo eliges con las banderas y queda guardado); comprar ahí acorta el envío y deja el servicio y los repuestos a mano.",
+      "🏬 VITRINA DIGITAL: la tienda. Arriba, las HISTORIAS de cada marca (formato Instagram: anillo, diapositivas, avance automático y toque a los lados) y su botón Ver productos deja el catálogo filtrado por esa marca. Abajo, el catálogo con BUSCADOR, filtro por categoría y carrito — que es el mismo en todas las ventanas.",
+      "🔧 MAKERS: el foro de la comunidad DIY — diseños originales, búsqueda de patrocinio (con su barra de reservas y las marcas interesadas) y equipos de trabajo. Los hilos se responden con el prefab en la mano. Aquí vive también el mercado bidireccional: cotiza tu construcción o vende tu diseño.",
+      "🪄 GOT A WISH: presenta TU diseño a las marcas y pide una valoración para fabricarlo. Viaja el prefab, la marca lo simula, y la conversación queda abierta con su estado (enviado · en revisión · presupuestado · en fabricación). Incluye la pintura de estructura y tapizado del encargo.",
+      "🤝 JOIN EXERSUITE3D: la puerta de entrada de las marcas. Contacto → acuerdo y ficha → ESCÁNER FOTOGRÁFICO 3D del catálogo (unas 120 fotos por equipo más las medidas de fábrica) → publicación en la vitrina, las historias y la biblioteca.",
       "Desde la ficha de cualquier producto, Ver abre la BIBLIOTECA DE MODELOS: el showroom navegable de todas las piezas y máquinas, donde además se sustituyen por modelos 3D propios.",
+      "Es una MAQUETA: las marcas son ficticias y las acciones comerciales no operan todavía (etiqueta DEMO), pero la navegación es la definitiva.",
     ],
   },
   {

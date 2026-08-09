@@ -1,7 +1,7 @@
 import type { ProjectData } from "../core/project";
 import { version as VERSION_APP } from "../../package.json";
 import { renderInstructivo } from "./Instructivo";
-import { renderMarketplace } from "./Marketplace";
+import { renderMarketplace } from "./marketplace";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { borrarCaptura, listarCapturas } from "../core/capturas";
@@ -34,7 +34,7 @@ const LEYENDAS: Record<Vista, string> = {
   instructivo:
     "Instructivo: recorrido por las herramientas, los modelos, las funciones y los tipos de archivo.",
   marketplace:
-    "Marketplace (maqueta): showroom de marcas, cotización de manufactura, venta de diseños maker y equipo personalizado.",
+    "Marketplace (maqueta): hub de usuarios, makers y marcas — recién llegadas, estrenos, economía local, vitrina digital, foro maker, encargos e incorporación de marcas.",
   settings: "Ajustes: calidad gráfica y rendimiento; se aplican al abrir un proyecto.",
 };
 
