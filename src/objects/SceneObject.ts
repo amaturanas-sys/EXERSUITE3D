@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import { buildGeometry } from "./geometryFactory";
 import { perforarGeometria } from "./perforar";
+import { deltaEspejo, espejarGeometria, espejoDe } from "./espejar";
 import { applyMaterial, buildMaterial } from "./materials";
 
 let nextId = 1;
@@ -58,9 +59,9 @@ export class SceneObject {
     this.carga = opts.carga ? { ...opts.carga } : undefined;
 
     this.imported = !!opts.importedGeometry;
-    const geometry = perforarGeometria(
-      opts.importedGeometry ?? buildGeometry(this.params),
-      this.params.ventanas,
+    const geometry = this.hornearEspejo(
+      perforarGeometria(opts.importedGeometry ?? buildGeometry(this.params), this.params.ventanas),
+      true,
     );
     const material = buildMaterial(this.materialId);
     this.mesh = new THREE.Mesh(geometry, material);
@@ -80,6 +81,32 @@ export class SceneObject {
    */
   private geoOriginal: THREE.BufferGeometry | null = null;
 
+  /**
+   * Ejes ya HORNEADOS en la malla actual (v0.2.32). El volteo se guarda en
+   * `params.espejo` y se cuece en los vértices; esta bandera dice qué tiene
+   * la geometría en pantalla, para espejar solo la diferencia cuando el
+   * usuario voltea una pieza cuya malla no se reconstruye (modelo importado
+   * o personalizado).
+   */
+  private espejoHorneado: [boolean, boolean, boolean] = [false, false, false];
+
+  /**
+   * Aplica `params.espejo` a una geometría. Con `fresca` la malla viene recién
+   * construida (sin espejo); si no, se espeja solo lo que cambió respecto de
+   * lo ya horneado.
+   */
+  private hornearEspejo(geo: THREE.BufferGeometry, fresca: boolean): THREE.BufferGeometry {
+    const base: [boolean, boolean, boolean] = fresca ? [false, false, false] : this.espejoHorneado;
+    espejarGeometria(geo, deltaEspejo(this.params.espejo, base));
+    this.espejoHorneado = espejoDe(this.params.espejo);
+    return geo;
+  }
+
+  /** Ejes locales espejados de la pieza (copia). */
+  espejoActual(): [boolean, boolean, boolean] {
+    return espejoDe(this.params.espejo);
+  }
+
   /** Partes visuales de la pila (placas/varillas/tubo) para animarlas. */
   private stackParts: { mesh: THREE.Mesh; restY: number; carriage: boolean }[] = [];
 
@@ -98,15 +125,25 @@ export class SceneObject {
       // modelo: se guarda intacta al perforar por primera vez.
       if (this.geoOriginal) {
         const old = this.mesh.geometry;
-        this.mesh.geometry = perforarGeometria(this.geoOriginal.clone(), this.params.ventanas);
+        this.mesh.geometry = this.hornearEspejo(
+          perforarGeometria(this.geoOriginal.clone(), this.params.ventanas),
+          true,
+        );
         old.dispose();
+      } else {
+        // Sin malla original guardada no se puede reconstruir: se espeja en
+        // sitio la diferencia (el espejado es su propia inversa).
+        this.hornearEspejo(this.mesh.geometry, false);
       }
       if (this.stack) this.rebuildStackVisual();
       if (this.carga) this.rebuildCargaVisual();
       return;
     }
     const old = this.mesh.geometry;
-    this.mesh.geometry = perforarGeometria(buildGeometry(this.params), this.params.ventanas);
+    this.mesh.geometry = this.hornearEspejo(
+      perforarGeometria(buildGeometry(this.params), this.params.ventanas),
+      true,
+    );
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
@@ -120,7 +157,11 @@ export class SceneObject {
     const old = this.mesh.geometry;
     this.geoOriginal?.dispose();
     this.geoOriginal = this.params.ventanas?.length ? geometry.clone() : null;
-    this.mesh.geometry = perforarGeometria(geometry, this.params.ventanas);
+    this.espejoHorneado = [false, false, false];
+    this.mesh.geometry = this.hornearEspejo(
+      perforarGeometria(geometry, this.params.ventanas),
+      true,
+    );
     old.dispose();
     this.mesh.scale.set(1, 1, 1);
     this.customModel = true;
@@ -137,7 +178,10 @@ export class SceneObject {
     this.geoOriginal?.dispose();
     this.geoOriginal = null;
     const old = this.mesh.geometry;
-    this.mesh.geometry = perforarGeometria(buildGeometry(this.params), this.params.ventanas);
+    this.mesh.geometry = this.hornearEspejo(
+      perforarGeometria(buildGeometry(this.params), this.params.ventanas),
+      true,
+    );
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();

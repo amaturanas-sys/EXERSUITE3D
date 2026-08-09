@@ -233,6 +233,8 @@ export const TRADUCCIONES: Record<string, string> = {
   "Articula piezas (bisagra/corredera) o traza un cable por poleas.":
     "Join parts (hinge/slider) or route a cable through pulleys.",
   "+ Bisagra": "+ Hinge",
+  "Instalar una bisagra REAL (dos placas y su pasador) entre dos piezas":
+    "Install a REAL hinge (two leaves and its pin) between two parts",
   "+ Corredera": "+ Slider",
   "+ Cable": "+ Cable",
   "Finalizar cable": "Finish cable",

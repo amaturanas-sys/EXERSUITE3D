@@ -1820,7 +1820,8 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
 /* Panel COMPACTO de la herramienta de roldana (v0.2.28): anclado al costado
    derecho y SIN velo de fondo — el modelo se sigue viendo y se puede orbitar
    en vivo mientras se elige montaje y dirección. */
-#rold-panel {
+#rold-panel,
+#bisagra-panel {
   position: fixed;
   top: 50%;
   right: 12px;
@@ -1900,6 +1901,33 @@ button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   font-size: 11px;
   color: #8b9099;
   line-height: 1.35;
+}
+
+/* Panel de la BISAGRA REAL (v0.2.32): mismas piezas visuales que el de la
+   roldana, con una rejilla de cuatro ejes y una fila de números. */
+.rold-ejes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.rold-ejes .rold-opt {
+  justify-content: center;
+  padding: 8px 2px;
+}
+.rold-nums {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.rold-nums input {
+  width: 100%;
+}
+.rold-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #dfe2e7;
 }
 
 /* Capa de arrastre de la FOTO (v0.2.26): mientras "🖐 Mover foto" está

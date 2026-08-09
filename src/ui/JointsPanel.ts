@@ -1,7 +1,115 @@
-import type { Editor } from "../core/Editor";
+import type { ConfigBisagra, Editor } from "../core/Editor";
 import type { Joint } from "../physics/joints";
 import { roundTo } from "../core/units";
+import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
+
+/**
+ * Configuración de la BISAGRA REAL (v0.2.32) tras elegir las dos piezas: eje
+ * de giro (automático o un eje global), largo de las placas y recorrido.
+ *
+ * Panel PEQUEÑO al costado derecho y sin velo, como el de la roldana: el
+ * modelo se sigue viendo y se puede orbitar mientras se decide dónde y cómo
+ * queda montado el herraje.
+ */
+function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
+  return new Promise((resolve) => {
+    let eje: ConfigBisagra["eje"] = "auto";
+    let tamano = 8;
+    const terminar = (v: ConfigBisagra | null): void => {
+      window.removeEventListener("keydown", alTeclado);
+      panel.remove();
+      resolve(v);
+    };
+    const alTeclado = (ev: KeyboardEvent): void => {
+      if (ev.key === "Escape") terminar(null);
+    };
+    window.addEventListener("keydown", alTeclado);
+
+    const bEje = new Map<ConfigBisagra["eje"], HTMLElement>();
+    const bTam = new Map<number, HTMLElement>();
+    const pintar = (): void => {
+      for (const [k, b] of bEje) b.classList.toggle("active", k === eje);
+      for (const [k, b] of bTam) b.classList.toggle("active", k === tamano);
+    };
+    const opcEje = (k: ConfigBisagra["eje"], titulo: string, ayuda: string) => {
+      const b = el("button", { class: "rold-opt", title: ayuda }, [titulo]);
+      b.addEventListener("click", () => {
+        eje = k;
+        pintar();
+      });
+      bEje.set(k, b);
+      return b;
+    };
+    const opcTam = (cm: number, titulo: string) => {
+      const b = el("button", { class: "rold-opt", title: `${cm} cm` }, [titulo]);
+      b.addEventListener("click", () => {
+        tamano = cm;
+        pintar();
+      });
+      bTam.set(cm, b);
+      return b;
+    };
+
+    const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    const minIn = el("input", { type: "number", value: "0", step: "5" }) as HTMLInputElement;
+    const maxIn = el("input", { type: "number", value: "90", step: "5" }) as HTMLInputElement;
+
+    const instalar = el("button", { class: "tool sim" }, [tt("Instalar bisagra", "Install hinge")]);
+    instalar.addEventListener("click", () => {
+      const min = parseFloat(minIn.value);
+      const max = parseFloat(maxIn.value);
+      terminar({
+        eje,
+        tamano,
+        limite:
+          limOn.checked && Number.isFinite(min) && Number.isFinite(max) ? [min, max] : undefined,
+      });
+    });
+
+    const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
+    cerrar.addEventListener("click", () => terminar(null));
+
+    const panel = el("aside", { id: "bisagra-panel" }, [
+      el("div", { class: "rold-head" }, [
+        el("span", { class: "rold-titulo" }, [tt("Bisagra", "Hinge")]),
+        cerrar,
+      ]),
+      el("div", { class: "rold-seccion" }, [tt("Eje de giro (global)", "Hinge axis (global)")]),
+      el("div", { class: "rold-ejes" }, [
+        opcEje(
+          "auto",
+          tt("Auto", "Auto"),
+          tt(
+            "El eje más perpendicular a la línea entre las dos piezas.",
+            "The axis most perpendicular to the line between both parts.",
+          ),
+        ),
+        opcEje("x", "X", "±X"),
+        opcEje("y", "Y", "±Y"),
+        opcEje("z", "Z", "±Z"),
+      ]),
+      el("div", { class: "rold-seccion" }, [tt("Placas", "Leaves")]),
+      el("div", { class: "rold-ejes" }, [
+        opcTam(5, tt("Chica", "Small")),
+        opcTam(8, tt("Media", "Medium")),
+        opcTam(12, tt("Grande", "Large")),
+      ]),
+      el("div", { class: "rold-seccion" }, [tt("Recorrido", "Travel")]),
+      el("label", { class: "rold-check" }, [limOn, tt("Limitar (grados)", "Limit (degrees)")]),
+      el("div", { class: "rold-nums" }, [minIn, maxIn]),
+      el("div", { class: "field" }, [instalar]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "Se montan dos placas planas y el pasador que las articula; cada placa queda soldada a su pieza.",
+          "Two flat leaves and the pin that articulates them are mounted; each leaf is welded to its part.",
+        ),
+      ]),
+    ]);
+    pintar();
+    document.body.append(panel);
+  });
+}
 
 /** Panel de articulaciones: crea y edita bisagras (revolute) y correderas (prismatic). */
 export class JointsPanel {
@@ -19,9 +127,17 @@ export class JointsPanel {
   private ropeId: string | null = null;
 
   constructor(private editor: Editor) {
-    this.hingeBtn = el("button", { class: "tool", title: "Conectar dos piezas con una bisagra" }, [
-      "+ Bisagra",
-    ]);
+    // La herramienta de bisagra pide eje, tamaño y recorrido antes de montar
+    // el herraje real (dos placas + pasador).
+    this.editor.elegirBisagra = elegirConfigBisagra;
+    this.hingeBtn = el(
+      "button",
+      {
+        class: "tool",
+        title: "Instalar una bisagra REAL (dos placas y su pasador) entre dos piezas",
+      },
+      ["+ Bisagra"],
+    );
     this.hingeBtn.addEventListener("click", () => this.editor.beginConnect("revolute"));
 
     this.slideBtn = el("button", { class: "tool", title: "Conectar dos piezas con una corredera" }, [
@@ -156,7 +272,12 @@ export class JointsPanel {
       const tipo = kind === "revolute" ? "bisagra" : "corredera";
       this.status.textContent = pending
         ? `Ahora clic en la 2ª pieza (móvil) para la ${tipo}.`
-        : `Clic en la 1ª pieza (anclaje) para la ${tipo}.`;
+        : kind === "revolute"
+          ? tt(
+              "Clic en la 1ª pieza: se montará una bisagra real (dos placas + pasador).",
+              "Click the 1st part: a real hinge (two leaves + pin) will be mounted.",
+            )
+          : `Clic en la 1ª pieza (anclaje) para la ${tipo}.`;
     }
   }
 

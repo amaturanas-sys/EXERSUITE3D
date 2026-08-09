@@ -67,6 +67,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Copiar/Pegar/Duplicar/Eliminar y Agrupar/Desagrupar viven en el menú Edición (Ctrl+C/V/D y Supr).",
       "GRUPOS: selecciona dos o más piezas (Mayús+toque o Selección de área) y Edición → Agrupar las une en un subensamblaje. Si alguna ya pertenece a un conjunto — el de una roldana (rueda + eje) o una máquina insertada —, ese conjunto se ABSORBE entero en el grupo nuevo, sin dejar piezas fuera. Después, tocar CUALQUIER pieza del grupo selecciona el grupo completo (Mayús+toque lo añade a una multiselección), y Desagrupar lo devuelve a piezas sueltas.",
       "Un grupo se mueve, gira y escala como un bloque —con el gizmo o con los números exactos de Propiedades— y su MECÁNICA viaja con él: las bisagras y correderas conservan su punto y su eje al girarlo, así que la máquina sigue funcionando en la simulación.",
+      "VOLTEAR (espejo) en Propiedades espeja la pieza HORNEANDO el volteo en su geometría: la pieza se ve reflejada pero sus ejes siguen siendo los del mundo, así que el gizmo y el arrastre preciso continúan tirando hacia donde apuntan. Los proyectos antiguos con volteos guardados como escala negativa se convierten solos al abrirlos.",
       "↺/↻ o Ctrl+Z/Ctrl+Y deshacen y rehacen (hasta 60 pasos).",
       "Menú Ver: grid, aristas de las piezas, modo de color (materiales reales · por categoría · neutro) y perspectivas Frontal/Lateral/Superior/Isométrica. Los botones +/− junto al visor ajustan el zoom.",
     ],
@@ -76,7 +77,9 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Cómo funcionan la física y las conexiones (cables y poleas)?",
     puntos: [
       "En Propiedades: material, masa (kg) y Anclado (las piezas ancladas o sin masa no caen).",
-      "+ Bisagra y + Corredera articulan dos piezas (toca una y luego la otra).",
+      "+ Bisagra instala una BISAGRA REAL: toca la 1ª pieza y luego la 2ª y el panel del costado derecho pide el eje de giro (Auto, X, Y o Z global), el tamaño de las placas y el recorrido en grados. Se montan DOS PLACAS PLANAS —una sobre la cara de cada pieza— y el PASADOR cilíndrico que las articula; cada placa queda SOLDADA a su pieza, así que lo que gira en la simulación es exactamente el herraje que ves. El conjunto queda agrupado como \"Bisagra\" y puedes moverlo o borrarlo como una sola cosa.",
+      "+ Corredera articula dos piezas con un deslizamiento (toca una y luego la otra).",
+      "SOLDADURAS: una unión BLOQUEADA (Lock switch) deja de ser articulación y pasa a ser una SOLDADURA — las piezas unidas se simulan como UN SOLO CUERPO rígido con la masa de todas. Es lo que hace que un brazo compuesto (brazo + extensión soldada) pivote entero en su sitio en vez de salir despedido. Sus marcadores se dibujan pequeños y grises para distinguirlos de las articulaciones libres.",
       "Roldana (paleta, en dos pasos): toca la ESTRUCTURA que la alojará (puedes orbitar para buscarla), su eje mayor aparece como línea AZUL; toca el punto del eje donde va y el panel del costado derecho pide montaje y dirección — arriba/abajo/derecha/izquierda/anterior/posterior en los ejes GLOBALES, y el modelo se sigue viendo y orbitando mientras eliges. EXTERNA: nace con su MONTAJE (placa y mejillas) que la vincula a la estructura, nada queda flotando. INTERNA: se aloja DENTRO del perfil montada en un EJE que apoya en sus dos paredes, y CALA la estructura elegida con dos agujeros iguales y pasantes en las caras que quedan sobre y bajo la rueda (⊥ a su eje de giro) — el cable entra y sale sin obstruirse y la rueda cabe entera sin chocar con la cara, como el soporte de polea alta del TTP. El conjunto (rueda + eje) queda agrupado, y si luego agrupas la máquina entera se absorbe dentro de ella.",
       "Terminal de cable (paleta): coloca ojales de anclaje sobre cualquier cara; el cable VÁLIDO se dibuja en azul oscuro (destaca sobre el fondo claro) y el cable en ERROR se pinta en rojo si atraviesa material o entra torcido a una roldana.",
       "Lock switch en cada bisagra/corredera (Conexiones): bloqueada queda rígida en su pose — transforma una máquina de empuje horizontal en vertical con un clic.",
@@ -112,6 +115,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Calza un Anclaje de cadena POWERRACK al pilar: su pin posterior entra en los pinholes y su cilindro perpendicular queda libre como PIVOTE.",
       "Selecciona una estructura tubular o tipo pilar, acércala al anclaje y pulsa Articular como brazo (sección Brazo móvil de Propiedades): la pieza se vuelve móvil y gira alrededor del cilindro, cayendo en el plano frontal del pilar como un jammer arm real.",
       "El brazo puede portar roldanas (soldador de nodos), cables/piolas, cuernos de carga con discos, o calzar piezas en sus propios pinholes — todo se mueve con él y expande la máquina.",
+      "BRAZO COMPUESTO: si el brazo se prolonga con otra pieza, únelas con + Bisagra y deja la unión BLOQUEADA (o usa Lock switch): la simulación las funde en un solo cuerpo y el conjunto pivota entero desde su anclaje. Una pieza marcada como móvil sin masa declarada ya no queda estática en el aire — recibe una masa mínima de trabajo.",
     ],
   },
   {

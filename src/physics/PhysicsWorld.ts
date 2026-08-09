@@ -132,7 +132,17 @@ export class PhysicsWorld {
       ground,
     );
 
-    for (const obj of objects) this.addBody(obj);
+    // SOLDADURAS (v0.2.32): las uniones BLOQUEADAS no son articulaciones —
+    // son soldaduras. Sus piezas se funden en UN cuerpo rígido antes de
+    // crear nada, así un brazo compuesto (brazo + extensión soldada) pivota
+    // como una sola pieza en lugar de pelearse consigo mismo.
+    const soldadas = this.agruparSoldadas(objects, joints);
+    for (const obj of objects) {
+      if (soldadas.anfitrionDe.get(obj.id) === obj.id || !soldadas.anfitrionDe.has(obj.id)) {
+        this.addBody(obj, soldadas.masaDe.get(obj.id));
+      }
+    }
+    this.fundirSoldadas(objects, soldadas);
     // Antes de juntas y cables: las roldanas adosadas se FUNDEN con el cuerpo
     // de su estructura (los nodos de cable que las referencien resolverán al
     // cuerpo compuesto).
@@ -140,7 +150,13 @@ export class PhysicsWorld {
     // Los accesorios de calce (jotas, brazos, anclajes) montados en una
     // estructura con pinholes forman GRUPO con ella: fijados, no se caen.
     this.detectarCalzados();
-    for (const joint of joints) this.addJoint(joint);
+    // Las uniones bloqueadas ya están resueltas como soldadura rígida: crear
+    // además su joint solo introduciría una restricción redundante que pelea
+    // con el resto del ensamblaje.
+    for (const joint of joints) {
+      if (joint.locked && soldadas.anfitrionDe.has(joint.bodyAId)) continue;
+      this.addJoint(joint);
+    }
     for (const cable of cables) this.addCable(cable);
     // CADENAS Y CORREAS DE SEGURIDAD (v0.2.15): cuerdas FLEXIBLES de verdad
     // — eslabones dinámicos articulados, amarrados a sus piezas de anclaje.
@@ -356,12 +372,17 @@ export class PhysicsWorld {
    */
   private detectarEmpotradas(): void {
     if (!this.world) return;
-    const POLEAS = new Set(["polea", "roldana", "bloque-poleas"]);
+    // La roldana es la única polea de la biblioteca (v0.2.32); los ids
+    // retirados se mantienen por compatibilidad de proyectos antiguos.
+    const POLEAS = new Set(["roldana", "polea", "bloque-poleas"]);
     const entradas = [...this.bodies.entries()];
     const invH = new THREE.Quaternion();
     const v = new THREE.Vector3();
     for (const [id, e] of entradas) {
       if (!POLEAS.has(e.obj.componentId)) continue;
+      // Ya fundida en un conjunto soldado: su cuerpo es el del anfitrión y
+      // no debe volver a empotrarse (destruiría el cuerpo compartido).
+      if (this.empotradaPorId.has(id)) continue;
       // Dimensiones LOCALES absolutas: la prueba de caja corre en el frame
       // del anfitrión y debe ser invariante al giro de la máquina completa
       // (la AABB de mundo permutaba ejes al rotar el grupo y el empotrado
@@ -1105,9 +1126,110 @@ export class PhysicsWorld {
     return { x: rel.x, y: rel.y, z: rel.z };
   }
 
-  private addBody(obj: SceneObject): void {
+  /**
+   * SOLDADURAS (v0.2.32): agrupa en CONJUNTOS las piezas unidas por uniones
+   * BLOQUEADAS. Cada conjunto se simula como un solo cuerpo rígido: uno de
+   * sus miembros es el ANFITRIÓN (el que aporta el cuerpo) y los demás le
+   * ceden sus colliders y su masa. Es lo que hace que un brazo compuesto
+   * —brazo + extensión soldada— pivote como una pieza única.
+   */
+  private agruparSoldadas(
+    objects: SceneObject[],
+    joints: Joint[],
+  ): { anfitrionDe: Map<string, string>; masaDe: Map<string, number> } {
+    const anfitrionDe = new Map<string, string>();
+    const masaDe = new Map<string, number>();
+    const porId = new Map(objects.map((o) => [o.id, o]));
+    // Union-find sobre las uniones bloqueadas.
+    const padre = new Map<string, string>();
+    const raiz = (a: string): string => {
+      let r = a;
+      while (padre.get(r) && padre.get(r) !== r) r = padre.get(r)!;
+      return r;
+    };
+    for (const j of joints) {
+      if (!j.locked) continue;
+      if (!porId.has(j.bodyAId) || !porId.has(j.bodyBId)) continue;
+      if (!padre.has(j.bodyAId)) padre.set(j.bodyAId, j.bodyAId);
+      if (!padre.has(j.bodyBId)) padre.set(j.bodyBId, j.bodyBId);
+      const ra = raiz(j.bodyAId);
+      const rb = raiz(j.bodyBId);
+      if (ra !== rb) padre.set(rb, ra);
+    }
+    if (padre.size === 0) return { anfitrionDe, masaDe };
+
+    const grupos = new Map<string, string[]>();
+    for (const id of padre.keys()) {
+      const r = raiz(id);
+      (grupos.get(r) ?? grupos.set(r, []).get(r)!).push(id);
+    }
+    for (const miembros of grupos.values()) {
+      if (miembros.length < 2) continue;
+      const piezas = miembros
+        .map((id) => porId.get(id))
+        .filter((o): o is SceneObject => !!o);
+      // Un conjunto con alguna pieza ANCLADA queda anclado por completo; si
+      // no, el anfitrión es la pieza con más masa (la que "manda").
+      const fija = piezas.find((o) => o.physics.fixed);
+      const anfitrion =
+        fija ??
+        piezas.reduce((mejor, o) => (o.effectiveMassKg() > mejor.effectiveMassKg() ? o : mejor));
+      const masaTotal = piezas.reduce((s, o) => s + Math.max(0, o.effectiveMassKg()), 0);
+      for (const o of piezas) anfitrionDe.set(o.id, anfitrion.id);
+      masaDe.set(anfitrion.id, masaTotal);
+    }
+    return { anfitrionDe, masaDe };
+  }
+
+  /** Cede colliders y pose de cada pieza soldada al cuerpo de su anfitrión. */
+  private fundirSoldadas(
+    objects: SceneObject[],
+    soldadas: { anfitrionDe: Map<string, string>; masaDe: Map<string, number> },
+  ): void {
+    if (!this.world || soldadas.anfitrionDe.size === 0) return;
+    const porId = new Map(objects.map((o) => [o.id, o]));
+    for (const [id, anfId] of soldadas.anfitrionDe) {
+      if (id === anfId) continue;
+      const obj = porId.get(id);
+      const host = this.bodies.get(anfId);
+      if (!obj || !host) continue;
+      const qH = host.obj.mesh.quaternion;
+      const relQ = qH.clone().invert().multiply(obj.mesh.quaternion);
+      const relPos = obj.mesh.position
+        .clone()
+        .sub(host.obj.mesh.position)
+        .applyQuaternion(qH.clone().invert())
+        .multiplyScalar(S);
+      for (const cd of this.colliderDescs(obj)) {
+        const t = cd.translation;
+        const pos = new THREE.Vector3(t.x, t.y, t.z).applyQuaternion(relQ).add(relPos);
+        const r = cd.rotation;
+        const rq = new THREE.Quaternion(r.x, r.y, r.z, r.w).premultiply(relQ);
+        cd.setTranslation(pos.x, pos.y, pos.z);
+        cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
+        cd.setDensity(0); // la masa del conjunto ya la puso el anfitrión
+        this.world.createCollider(cd, host.body);
+      }
+      const entrada = {
+        obj,
+        host: host.body,
+        relPos: { x: relPos.x, y: relPos.y, z: relPos.z },
+        relQ: { x: relQ.x, y: relQ.y, z: relQ.z, w: relQ.w },
+      };
+      this.empotradas.push(entrada);
+      this.empotradaPorId.set(id, entrada);
+      // Juntas y cables que referencien la pieza resuelven al compuesto.
+      this.bodies.set(id, { body: host.body, obj: host.obj });
+    }
+  }
+
+  private addBody(obj: SceneObject, masaConjunto?: number): void {
     if (!this.world) return;
-    const massKg = obj.effectiveMassKg();
+    // Una pieza marcada MÓVIL sin masa declarada no puede quedar estática por
+    // omisión (era el caso que dejaba un brazo soldado a un cuerpo fijo en el
+    // aire): recibe una masa mínima de trabajo.
+    const propia = masaConjunto ?? obj.effectiveMassKg();
+    const massKg = !obj.physics.fixed && propia <= 0 ? 1 : propia;
     const dynamic = massKg > 0 && !obj.physics.fixed;
 
     const desc = dynamic

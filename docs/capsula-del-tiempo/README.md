@@ -535,3 +535,16 @@ de descartarlos, y tocar cualquier pieza selecciona el grupo entero.
 Además, FAQ e imágenes del Instructivo puestas al día.
 
 - [`v231-grupo-con-roldanas.png`](2026-08-07/v231-grupo-con-roldanas.png)
+
+## 2026-08-09 — 3 capturas
+
+v0.2.32: la herramienta de BISAGRA instala un herraje REAL — dos placas
+planas soldadas a la cara de cada pieza y el pasador cilíndrico que las
+articula —, con panel compacto al costado derecho para el eje, el tamaño
+de las placas y el recorrido. Además, las uniones bloqueadas pasan a ser
+SOLDADURAS: las piezas unidas se simulan como un solo cuerpo, de modo que
+un brazo compuesto pivota entero en su sitio.
+
+- [`v232-panel-bisagra.png`](2026-08-09/v232-panel-bisagra.png)
+- [`v232-bisagra-herraje.png`](2026-08-09/v232-bisagra-herraje.png)
+- [`v232-bisagra-abatida.png`](2026-08-09/v232-bisagra-abatida.png)

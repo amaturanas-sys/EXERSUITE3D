@@ -79,6 +79,15 @@ export interface PrimitiveParams {
    * prefabs.
    */
   ventanas?: VentanaRect[];
+  /**
+   * VOLTEO / ESPEJADO (v0.2.32): ejes locales en los que la pieza está
+   * espejada. Se hornea en la GEOMETRÍA en lugar de usar una escala
+   * negativa, porque una escala negativa invierte también los ejes del
+   * gizmo y del arrastre preciso — el usuario tiraba de +X y la pieza se
+   * iba a −X. Con el espejo horneado la pieza se ve igual y sus ejes
+   * siguen concordando con el mundo.
+   */
+  espejo?: [boolean, boolean, boolean];
 }
 
 /**

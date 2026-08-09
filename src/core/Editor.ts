@@ -22,7 +22,10 @@ import { SnapManager, localSnapPoints } from "./snapping";
  * Únicas piezas sobre las que un cable puede DESLIZARSE (superficies de reenvío):
  * ruedas acanaladas. Un nodo intermedio de un cable debe ser una de estas.
  */
-const PULLEY_IDS = new Set(["polea", "roldana", "bloque-poleas"]);
+// Superficie de reenvío del cable. Desde v0.2.32 la ROLDANA es la única
+// (la polea y el bloque de poleas salieron de la biblioteca por redundantes;
+// los ids antiguos siguen aceptándose al abrir proyectos viejos).
+const PULLEY_IDS = new Set(["roldana", "polea", "bloque-poleas"]);
 
 /**
  * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
@@ -35,6 +38,19 @@ export type DireccionRoldana =
   | "izquierda"
   | "anterior"
   | "posterior";
+
+/**
+ * Configuración de la BISAGRA REAL (v0.2.32): eje de giro y tamaño de las
+ * placas. "auto" elige el eje global más perpendicular a la línea que une las
+ * dos piezas — el que hace de charnela natural entre ellas.
+ */
+export interface ConfigBisagra {
+  eje: "auto" | "x" | "y" | "z";
+  /** Largo de cada placa desde el pasador (cm). */
+  tamano: number;
+  /** Recorrido limitado de la bisagra (grados); ausente = giro libre. */
+  limite?: [number, number];
+}
 
 const DIRECCIONES_ROLDANA: Record<DireccionRoldana, THREE.Vector3> = {
   arriba: new THREE.Vector3(0, 1, 0),
@@ -229,6 +245,14 @@ export class Editor {
   elegirRoldana:
     | (() => Promise<{ tipo: "interna" | "externa"; dir: DireccionRoldana } | null>)
     | null = null;
+  /**
+   * Diálogo de la BISAGRA REAL (v0.2.32, lo inyecta la UI): eje de giro en los
+   * ejes globales (o automático) y tamaño de las placas. Si no hay diálogo, se
+   * instala con el eje automático y placas medianas.
+   */
+  elegirBisagra: (() => Promise<ConfigBisagra | null>) | null = null;
+  /** Panel de la bisagra abierto (los clics del visor no arman otra). */
+  private bisagraPidiendo = false;
   /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
   private terminalMode = false;
 
@@ -1714,6 +1738,9 @@ export class Editor {
   }
 
   addComponent(componentId: string, position?: THREE.Vector3): SceneObject {
+    // Las piezas RETIRADAS (polea, bloque de poleas, leva) se resuelven a su
+    // sustituta —la roldana—, así que un proyecto o prefab antiguo abre
+    // completo en lugar de perder esas piezas.
     const def = getDefinition(componentId);
     if (!def) throw new Error(`Componente desconocido: ${componentId}`);
 
@@ -1865,11 +1892,43 @@ export class Editor {
     }
   }
 
-  /** Voltea (espeja) el objeto seleccionado en un eje. */
+  /**
+   * Voltea (espeja) el objeto seleccionado en un eje LOCAL (v0.2.32).
+   *
+   * El volteo se hornea en la geometría en lugar de aplicar una escala
+   * negativa: con escala negativa el gizmo heredaba la matriz invertida y sus
+   * flechas dejaban de concordar con el mundo — se arrastraba hacia +X y la
+   * pieza se iba a −X. Con el espejo horneado la pieza se ve igual y sus ejes
+   * siguen siendo los del mundo.
+   */
   flipSelected(axis: "x" | "y" | "z"): void {
     if (!this.selected) return;
-    this.selected.mesh.scale[axis] *= -1;
-    this.bus.emit("objectTransformed", { object: this.selected });
+    const obj = this.selected;
+    this.normalizarEspejo(obj);
+    const i = axis === "x" ? 0 : axis === "y" ? 1 : 2;
+    const e = obj.espejoActual();
+    e[i] = !e[i];
+    obj.params.espejo = e.some(Boolean) ? e : undefined;
+    obj.rebuildGeometry();
+    this.cablesDirty = true;
+    this.bus.emit("objectTransformed", { object: obj });
+    this.requestRender();
+  }
+
+  /**
+   * MIGRACIÓN de piezas volteadas con escala negativa (proyectos y prefabs
+   * anteriores a v0.2.32): pasa el signo de la escala a `params.espejo` y deja
+   * la escala positiva, para que el gizmo vuelva a concordar con el mundo.
+   */
+  normalizarEspejo(obj: SceneObject): void {
+    const s = obj.mesh.scale;
+    const neg: [boolean, boolean, boolean] = [s.x < 0, s.y < 0, s.z < 0];
+    if (!neg[0] && !neg[1] && !neg[2]) return;
+    const e = obj.espejoActual();
+    for (let i = 0; i < 3; i++) if (neg[i]) e[i] = !e[i];
+    obj.params.espejo = e.some(Boolean) ? e : undefined;
+    s.set(Math.abs(s.x), Math.abs(s.y), Math.abs(s.z));
+    obj.rebuildGeometry();
   }
 
   // ------------------------------------------- espacio de trabajo (v0.2.0)
@@ -2525,6 +2584,7 @@ export class Editor {
         obj.mesh.position.fromArray(od.position);
         obj.mesh.quaternion.fromArray(od.quaternion);
         obj.mesh.scale.fromArray(od.scale);
+        this.normalizarEspejo(obj);
         idMap.set(od.id, obj.id);
       } catch (err) {
         console.warn(`Se omite la pieza "${od.name}" (${od.componentId}):`, err);
@@ -3021,6 +3081,7 @@ export class Editor {
       obj.mesh.position.fromArray(d.position).add(offset);
       obj.mesh.quaternion.fromArray(d.quaternion);
       if (d.scale) obj.mesh.scale.fromArray(d.scale);
+      this.normalizarEspejo(obj);
       created.push(obj.id);
     }
     // Deja lo pegado como selección activa (listo para mover en bloque).
@@ -4076,8 +4137,187 @@ export class Editor {
 
   private createJoint(a: SceneObject, b: SceneObject): void {
     if (!this.connectMode) return;
+    // BISAGRA REAL (v0.2.32): la herramienta ya no deja una articulación
+    // abstracta entre las dos piezas — instala el herraje completo (dos placas
+    // planas y el pasador cilíndrico que las articula) y lo suelda a cada
+    // pieza, así el usuario ve y controla la bisagra que está montando.
+    if (this.connectMode === "revolute") {
+      this.cancelConnect();
+      const pedir = this.elegirBisagra;
+      if (!pedir) {
+        this.instalarBisagra(a, b, { eje: "auto", tamano: 8 });
+        return;
+      }
+      this.bisagraPidiendo = true;
+      void pedir().then((cfg) => {
+        this.bisagraPidiendo = false;
+        if (cfg && this.objects.has(a.id) && this.objects.has(b.id)) {
+          this.instalarBisagra(a, b, cfg);
+        }
+      });
+      return;
+    }
     this.connect(a.id, b.id, this.connectMode);
     this.cancelConnect();
+  }
+
+  /**
+   * Instala una BISAGRA REAL entre dos piezas (v0.2.32).
+   *
+   * Herraje: una PLACA plana soldada a cada pieza y un PASADOR cilíndrico que
+   * hace de articulación entre ambas. En la simulación las placas se funden
+   * con su pieza (uniones bloqueadas = soldaduras) y la única articulación
+   * libre es la del pasador, de modo que lo que se ve montado es exactamente
+   * lo que gira: la bisagra deja de ser una abstracción invisible.
+   */
+  instalarBisagra(a: SceneObject, b: SceneObject, cfg: ConfigBisagra): Joint | null {
+    if (a === b) return null;
+    const ca = a.mesh.getWorldPosition(new THREE.Vector3());
+    const cb = b.mesh.getWorldPosition(new THREE.Vector3());
+    // Punto de la charnela: entre las dos piezas, en su zona de contacto
+    // (punto de cada caja más cercano al centro de la otra).
+    const pa = a.worldBoxBody(new THREE.Box3()).clampPoint(cb, new THREE.Vector3());
+    const pb = b.worldBoxBody(new THREE.Box3()).clampPoint(ca, new THREE.Vector3());
+    const pivote = pa.clone().add(pb).multiplyScalar(0.5);
+
+    // Eje de giro: el elegido o, en automático, el eje global MÁS
+    // PERPENDICULAR a la línea que une las piezas (la charnela natural).
+    const ejes: Record<"x" | "y" | "z", THREE.Vector3> = {
+      x: new THREE.Vector3(1, 0, 0),
+      y: new THREE.Vector3(0, 1, 0),
+      z: new THREE.Vector3(0, 0, 1),
+    };
+    let letra: "x" | "y" | "z";
+    if (cfg.eje === "auto") {
+      const d = cb.clone().sub(ca);
+      if (d.lengthSq() < 1e-6) d.set(0, 1, 0);
+      d.normalize();
+      letra = (["x", "y", "z"] as const).reduce((mejor, k) =>
+        Math.abs(d.dot(ejes[k])) < Math.abs(d.dot(ejes[mejor])) ? k : mejor,
+      );
+    } else {
+      letra = cfg.eje;
+    }
+    const ejeMundo = ejes[letra].clone();
+
+    // Direcciones de cada pala: del pasador hacia su pieza, ⊥ al eje.
+    const perp = (v: THREE.Vector3): THREE.Vector3 => {
+      const p = v.clone().addScaledVector(ejeMundo, -v.dot(ejeMundo));
+      return p.lengthSq() < 1e-6 ? new THREE.Vector3() : p.normalize();
+    };
+    let dirA = perp(ca.clone().sub(pivote));
+    let dirB = perp(cb.clone().sub(pivote));
+    if (dirA.lengthSq() < 0.5 && dirB.lengthSq() >= 0.5) dirA = dirB.clone().negate();
+    if (dirB.lengthSq() < 0.5 && dirA.lengthSq() >= 0.5) dirB = dirA.clone().negate();
+    if (dirA.lengthSq() < 0.5) {
+      // Piezas concéntricas: se toma cualquier perpendicular al eje.
+      dirA = perp(new THREE.Vector3(0, 1, 0));
+      if (dirA.lengthSq() < 0.5) dirA = perp(new THREE.Vector3(1, 0, 0));
+      dirB = dirA.clone().negate();
+    }
+    // Palas enfrentadas: si ambas miran al mismo lado, la segunda se opone.
+    if (dirA.dot(dirB) > 0.9) dirB = dirA.clone().negate();
+
+    const largo = Math.max(2, cfg.tamano);
+    const ancho = Math.max(2, largo * 0.75);
+    const grosor = Math.max(0.5, largo * 0.1);
+
+    // CARA DE MONTAJE: una bisagra real se atornilla SOBRE la superficie de
+    // las dos piezas, no dentro de ellas. La normal de montaje es
+    // perpendicular al eje y a las palas; se prefiere la que mira hacia
+    // arriba (la cara visible) y el herraje se sube hasta despejar el
+    // volumen de ambas piezas — así se ve y se puede manipular.
+    const normal = new THREE.Vector3().crossVectors(ejeMundo, dirA).normalize();
+    if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) normal.negate();
+    const sobresale = (o: SceneObject): number => {
+      const caja = o.worldBoxBody(new THREE.Box3());
+      const sop = new THREE.Vector3(
+        normal.x >= 0 ? caja.max.x : caja.min.x,
+        normal.y >= 0 ? caja.max.y : caja.min.y,
+        normal.z >= 0 ? caja.max.z : caja.min.z,
+      );
+      return sop.dot(normal) - pivote.dot(normal);
+    };
+    const charnela = pivote
+      .clone()
+      .addScaledVector(normal, Math.max(sobresale(a), sobresale(b)) + grosor / 2 + 0.1);
+
+    const piezas: string[] = [];
+    const placa = (dir: THREE.Vector3, nombre: string): SceneObject => {
+      const p = this.addComponent("placa-bisagra");
+      p.name = nombre;
+      p.mesh.name = nombre;
+      p.params = { kind: "box", width: largo, height: grosor, depth: ancho };
+      p.rebuildGeometry();
+      // Base: X a lo largo de la pala, Y = espesor (⊥ a la cara de montaje),
+      // Z sobre el eje del pasador.
+      const z = new THREE.Vector3().crossVectors(dir, normal).normalize();
+      p.mesh.quaternion.setFromRotationMatrix(
+        new THREE.Matrix4().makeBasis(dir, normal, z),
+      );
+      p.mesh.position.copy(charnela).addScaledVector(dir, largo / 2 + 0.4);
+      this.bus.emit("objectTransformed", { object: p });
+      piezas.push(p.id);
+      return p;
+    };
+    const placaA = placa(dirA, tt("Placa de bisagra A", "Hinge leaf A"));
+    const placaB = placa(dirB, tt("Placa de bisagra B", "Hinge leaf B"));
+
+    // PASADOR: cilindro sobre el eje, entre las dos palas.
+    const pasador = this.addComponent("pasador-bisagra");
+    pasador.name = tt("Pasador de bisagra", "Hinge pin");
+    pasador.mesh.name = pasador.name;
+    const radioPasador = Math.max(0.5, grosor * 0.9);
+    pasador.params = {
+      kind: "cylinder",
+      radiusTop: radioPasador,
+      radiusBottom: radioPasador,
+      height: ancho + grosor * 2,
+    };
+    pasador.rebuildGeometry();
+    pasador.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ejeMundo);
+    pasador.mesh.position.copy(charnela);
+    this.bus.emit("objectTransformed", { object: pasador });
+    piezas.push(pasador.id);
+
+    // SOLDADURAS (uniones bloqueadas): cada pala con su pieza y el pasador con
+    // la pala A. La física las funde en un solo cuerpo con su anfitrión.
+    const soldar = (x: SceneObject, y: SceneObject, punto: THREE.Vector3): void => {
+      const j = this.connect(x.id, y.id, "revolute", punto.clone());
+      if (!j) return;
+      j.locked = true;
+      j.name = tt("Soldadura de bisagra", "Hinge weld");
+    };
+    soldar(a, placaA, placaA.mesh.position);
+    soldar(b, placaB, placaB.mesh.position);
+    soldar(placaA, pasador, charnela);
+
+    // ARTICULACIÓN: la única unión libre, entre las dos palas, sobre el eje
+    // del pasador.
+    const bisagra = this.connect(placaA.id, placaB.id, "revolute", charnela.clone());
+    if (bisagra) {
+      bisagra.axis = letra;
+      bisagra.axisVec = null;
+      bisagra.name = tt("Bisagra", "Hinge");
+      if (cfg.limite) {
+        bisagra.limitsEnabled = true;
+        bisagra.min = cfg.limite[0];
+        bisagra.max = cfg.limite[1];
+      }
+    }
+
+    const gid = this.createGroupFromIds(piezas);
+    if (gid) this.renameGroup(gid, tt("Bisagra", "Hinge"));
+    this.select(null);
+    this.jointUpdated();
+    this.requestRender();
+    this.avisoTemporal(
+      tt(
+        `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()})`,
+        `✓ Hinge installed between ${a.name} and ${b.name} (axis ${letra.toUpperCase()})`,
+      ),
+    );
+    return bisagra;
   }
 
   /** Reconstruye los marcadores 3D de las articulaciones. */
@@ -4088,15 +4328,25 @@ export class Editor {
       ((child as THREE.Mesh).material as THREE.Material | undefined)?.dispose?.();
     }
     for (const joint of this.joints.values()) {
-      const color = joint.kind === "revolute" ? 0x22d3ee : 0xf59e0b;
+      // Una unión BLOQUEADA es una soldadura, no una articulación: se marca
+      // pequeña y gris para que no tape el herraje (una bisagra real trae
+      // tres soldaduras justo en la charnela).
+      const soldadura = joint.locked;
+      // La BISAGRA REAL ya tiene su pasador a la vista: su marcador se reduce
+      // para no taparlo (el herraje es la señal, no el globo).
+      const conHerraje =
+        this.objects.get(joint.bodyAId)?.componentId === "placa-bisagra" &&
+        this.objects.get(joint.bodyBId)?.componentId === "placa-bisagra";
+      const menor = soldadura || conHerraje;
+      const color = soldadura ? 0x94a3b8 : joint.kind === "revolute" ? 0x22d3ee : 0xf59e0b;
       const sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(3, 16, 12),
+        new THREE.SphereGeometry(menor ? 1 : 3, menor ? 8 : 16, menor ? 6 : 12),
         new THREE.MeshBasicMaterial({ color, depthTest: false }),
       );
       sphere.position.copy(joint.anchor);
       sphere.renderOrder = 999;
 
-      const dir = joint.ejeVector().multiplyScalar(30);
+      const dir = joint.ejeVector().multiplyScalar(soldadura ? 6 : conHerraje ? 12 : 30);
       const pts = [
         joint.anchor.clone().sub(dir),
         joint.anchor.clone().add(dir),
@@ -6049,6 +6299,10 @@ export class Editor {
       });
       return;
     }
+
+    // Con el panel de la bisagra abierto se puede orbitar: el clic no arma
+    // otra ni cambia la selección.
+    if (this.bisagraPidiendo) return;
 
     // Modo conexion: solo objetos editables (no la figura de referencia).
     if (this.connectMode) {

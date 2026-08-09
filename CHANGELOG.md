@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.32] — 2026-08-09
+
+### Añadido
+
+- **Herramienta de bisagra REAL**: «+ Bisagra» ya no deja una articulación
+  invisible entre dos piezas — instala el herraje completo. Tras tocar la
+  1.ª y la 2.ª pieza, un panel pequeño al costado derecho (se puede
+  orbitar el modelo mientras se decide) pide el EJE de giro (Auto, X, Y o
+  Z global), el TAMAÑO de las placas y el RECORRIDO en grados. Se montan
+  DOS PLACAS PLANAS sobre la cara de cada pieza y el PASADOR cilíndrico
+  que las articula; cada placa queda SOLDADA a su pieza, de modo que en la
+  simulación gira exactamente el herraje que se ve. El conjunto queda
+  agrupado como «Bisagra» y se mueve o se borra como una sola cosa.
+
+### Corregido
+
+- **Un brazo compuesto salía despedido de su pivote**: las uniones
+  BLOQUEADAS son soldaduras, no articulaciones, pero el motor las trataba
+  como una articulación más y las hacía pelear con el pivote del brazo.
+  Ahora las piezas soldadas se FUNDEN en un solo cuerpo rígido (con la
+  masa de todas y los colisionadores de cada una), así que un jammer arm
+  con una extensión soldada pivota entero desde su anclaje. Además, una
+  pieza marcada como MÓVIL sin masa declarada ya no se simulaba como
+  estática — flotaba en el aire y expulsaba a lo que tuviera unido —:
+  recibe una masa mínima de trabajo.
+- **Voltear una pieza descuadraba el gizmo**: el volteo se aplicaba como
+  ESCALA NEGATIVA, que invierte también los ejes del objeto — se
+  arrastraba hacia +X y la pieza se iba a −X. Ahora el espejo se HORNEA en
+  la geometría: la pieza se ve reflejada igual, pero su escala sigue
+  siendo positiva y sus ejes concuerdan con los del mundo. Los proyectos y
+  prefabs antiguos con escalas negativas se convierten al abrirlos.
+- Los marcadores de las uniones BLOQUEADAS se dibujan pequeños y grises
+  (son soldaduras) y el de una bisagra real se reduce para no tapar su
+  propio pasador.
+
+### Cambiado
+
+- **Biblioteca sin piezas redundantes**: se retiran la *polea*, el *bloque
+  de poleas* y la *leva* — la roldana, con su herramienta de colocación
+  (externa con montaje / interna alojada y calada), cubre su función y es
+  más versátil. Los proyectos, prefabs y máquinas que las usaban siguen
+  cargando: sus ids se resuelven a la roldana.
+- FAQ actualizada (física y conexiones, brazos móviles, edición) con la
+  bisagra real, las soldaduras y el volteo horneado, más una captura nueva
+  del herraje.
+
 ## [0.2.31] — 2026-08-07
 
 ### Corregido

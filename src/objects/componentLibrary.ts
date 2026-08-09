@@ -519,15 +519,6 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
 
   // ---------------------------------------------------------------- TRANSMISION
   {
-    id: "polea",
-    label: "Polea",
-    category: "transmision",
-    materialId: "nylon",
-    defaults: { kind: "cylinder", radiusTop: 6, radiusBottom: 6, height: 3 },
-    physics: { massKg: 0.5, fixed: false },
-    description: "Rueda acanalada que redirige un cable.",
-  },
-  {
     id: "roldana",
     label: "Roldana",
     category: "transmision",
@@ -571,13 +562,26 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       "Orificio rectangular en la cara del perfil por donde transita el cable de una roldana INTERNA (lo produce la herramienta de roldana, como en la viga superior del jalón alto TTP).",
   },
   {
-    id: "bloque-poleas",
-    label: "Bloque de poleas",
-    category: "transmision",
+    id: "placa-bisagra",
+    paleta: "oculta",
+    label: "Placa de bisagra",
+    category: "movimiento",
     materialId: "acero-negro",
-    defaults: { kind: "cylinder", radiusTop: 5, radiusBottom: 5, height: 7 },
-    physics: { massKg: 0.8, fixed: false },
-    description: "Bloque de doble polea de reenvio (swivel) atornillado al montante.",
+    defaults: { kind: "box", width: 8, height: 0.8, depth: 6 },
+    physics: { massKg: 0.4, fixed: false },
+    description:
+      "Pala plana de una bisagra REAL: va soldada a una de las dos piezas y gira con ella alrededor del pasador (la produce la herramienta de bisagra).",
+  },
+  {
+    id: "pasador-bisagra",
+    paleta: "oculta",
+    label: "Pasador de bisagra",
+    category: "movimiento",
+    materialId: "acero-pulido",
+    defaults: { kind: "cylinder", radiusTop: 0.9, radiusBottom: 0.9, height: 8 },
+    physics: { massKg: 0.2, fixed: false },
+    description:
+      "Cilindro que hace de articulacion entre las dos placas de una bisagra REAL: marca el eje de giro (la produce la herramienta de bisagra).",
   },
   {
     id: "terminal-cable",
@@ -646,15 +650,6 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "cylinder", radiusTop: 3, radiusBottom: 3, height: 30 },
     physics: { massKg: 0.3, fixed: false },
     description: "Muelle elastico que almacena energia.",
-  },
-  {
-    id: "leva",
-    label: "Leva (cam)",
-    category: "transmision",
-    materialId: "acero",
-    defaults: { kind: "cylinder", radiusTop: 8, radiusBottom: 8, height: 2.5 },
-    physics: { massKg: 0.7, fixed: false },
-    description: "Leva de resistencia variable: el radio efectivo r(θ) modela la curva de fuerza.",
   },
 
   // ---------------------------------------------------------------- PESO
@@ -832,8 +827,26 @@ const BY_ID = new Map<string, ComponentDefinition>(
   [...COMPONENT_LIBRARY, ...PRIMITIVE_DEFS].map((d) => [d.id, d]),
 );
 
+/**
+ * PIEZAS RETIRADAS (v0.2.32) y su sustituta. La polea, el bloque de poleas y
+ * la leva no aportaban nada que la ROLDANA no haga mejor (se coloca sobre la
+ * estructura, con montaje o calado real), así que salieron de la biblioteca.
+ * Los proyectos y prefabs que aún las nombran siguen abriendo: cada una se
+ * resuelve como roldana en lugar de perderse.
+ */
+export const COMPONENTES_RETIRADOS: Record<string, string> = {
+  polea: "roldana",
+  "bloque-poleas": "roldana",
+  leva: "roldana",
+};
+
 export function getDefinition(id: string): ComponentDefinition | undefined {
-  return BY_ID.get(id);
+  return BY_ID.get(id) ?? BY_ID.get(COMPONENTES_RETIRADOS[id] ?? "");
+}
+
+/** Id vigente de un componente (resuelve los retirados a su sustituta). */
+export function idVigente(id: string): string {
+  return BY_ID.has(id) ? id : (COMPONENTES_RETIRADOS[id] ?? id);
 }
 
 export const CATEGORY_LABELS: Record<ComponentCategory, string> = {
