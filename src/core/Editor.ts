@@ -6569,12 +6569,17 @@ export class Editor {
         frente.normalize();
       }
       this.applyPose("Sentado");
-      // La pelvis se apoya sobre la cara superior del asiento. Aquí NO se
-      // "aterriza" la figura: sentada, lo que toca el suelo son los pies por
-      // su cuenta, y bajarla hasta que lleguen la hundiría en el asiento.
+      // La figura se APOYA sobre la cara superior del asiento. Aquí NO se
+      // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
+      // y bajarla hasta que lleguen la hundiría en el asiento.
       const caja = new THREE.Box3().setFromObject(destino.obj.mesh);
       fig.position.set(destino.punto.x, caja.max.y, destino.punto.z);
-      fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0);
+      // El origen de la raíz NO es la cara inferior del cuerpo: los glúteos y
+      // los muslos cuelgan por debajo de él, así que dejarlo a ras del asiento
+      // hundía media pelvis dentro de la pieza (8,8 cm medidos). Se levanta lo
+      // que haga falta para que la carne SE POSE sobre la superficie.
+      fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
+      fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
     } else {
       const maquina = this.piezaCercana(destino.punto, (o) => o.physics.fixed);
       if (maquina) {
@@ -6595,6 +6600,23 @@ export class Editor {
         ? tt(`Maniquí sentado en "${destino.obj.name}"`, `Mannequin seated on "${destino.obj.name}"`)
         : tt("Maniquí de pie en el suelo", "Mannequin standing on the floor"),
     );
+  }
+
+  /**
+   * Cota mundial más baja de lo que REPOSA en el asiento: pelvis y muslos.
+   * Se excluyen piernas y pies a propósito — sentada, esos cuelgan hacia el
+   * suelo y medirlos hundiría la figura en la pieza en vez de posarla.
+   */
+  private baseDeApoyoSentado(fig: THREE.Group): number {
+    const APOYAN = new Set(["pelvis", "muslo-L", "muslo-R"]);
+    fig.updateMatrixWorld(true);
+    const caja = new THREE.Box3();
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (!m.isMesh || !APOYAN.has(m.userData.segmentId as string)) return;
+      caja.union(new THREE.Box3().setFromObject(m));
+    });
+    return caja.isEmpty() ? fig.position.y : caja.min.y;
   }
 
   /** Pieza más cercana a un punto que cumpla el filtro. */
