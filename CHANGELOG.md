@@ -5,6 +5,46 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.41] — 2026-08-10
+
+### Añadido
+
+- **HERRAMIENTA DE MANIPULACIÓN, ELEGIDA A PROPÓSITO**. La simulación arranca
+  con el puntero en ÓRBITA: mirar la máquina ya no la manosea. La mano (✋) se
+  elige, y al elegirla **resalta al pasar por encima la pieza que agarraría**,
+  sea ergonómica o estructural — lo que decide es el CUERPO al que pertenece,
+  así que un asiento o un travesaño soldado a un conjunto móvil se agarran
+  igual que el propio brazo. Si lo que hay bajo el puntero está anclado, se
+  dice con su nombre en vez de no hacer nada.
+
+- **COLOCAR MANIQUÍ (🧍) apuntando**: el puntero recorre el SUELO y los puntos
+  de apoyo ergonómicos —asientos, respaldos, bancos— marcando dónde caería la
+  figura (la marca cambia de color sobre un apoyo), y el clic la deja ahí con
+  su orientación: sentada sobre la cara superior del asiento y mirando al
+  frente de éste, o de pie sobre el suelo mirando a la máquina más cercana.
+  Está en el panel Posturas y en la barra de simulación, así que sirve en
+  construcción y en simulación, en el Builder y en el Viewer.
+
+- **VENTANA DE ARTICULACIONES (🦴)**: una casilla por familia articular
+  —columna, cuello, hombro, codo, muñeca, cadera, rodilla, tobillo— y un
+  selector de lado (izquierda, derecha o simétrico). La figura nace con TODAS
+  las articulaciones BLOQUEADAS y se libera a propósito lo que el ejercicio
+  necesita; los cursores **▲▼ mueven a la vez todas las liberadas**, cada una
+  por su eje natural y en el sentido en que flexiona. El candado gobierna solo
+  ese movimiento: posar la figura a mano y apoyar manos y pies siguen
+  disponibles, porque son los que fijan la postura de partida.
+
+### Corregido
+
+- **REVISIÓN DE LOS RANGOS ARTICULARES DEL MANIQUÍ**. La ABDUCCIÓN DEL HOMBRO
+  tenía los signos cambiados de lado: el brazo izquierdo separaba hacia el
+  derecho y viceversa (`shoulderL` z `[-30,150]` → `[-150,30]`, y su espejo).
+  El TOBILLO permitía tanta dorsiflexión como flexión plantar (`[-45,45]` →
+  `[-20,50]`) y su inversión/eversión era simétrica cuando no lo es
+  (`[-15,30]` a la izquierda y su espejo a la derecha). El CUELLO pasa a
+  `[-60,50]` (50° de flexión, 60° de extensión) y el CODO gana la
+  pronosupución del antebrazo (`y: [-80,80]`), que no existía.
+
 ## [0.2.40] — 2026-08-10
 
 ### Añadido

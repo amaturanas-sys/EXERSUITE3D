@@ -8,6 +8,7 @@ import { Toolbar } from "./ui/Toolbar";
 import { PropertiesPanel } from "./ui/PropertiesPanel";
 import { JointsPanel } from "./ui/JointsPanel";
 import { PosePanel } from "./ui/PosePanel";
+import { ArticulacionesPanel } from "./ui/ArticulacionesPanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
 import { PerformancePanel } from "./ui/PerformancePanel";
 import { SimulatorBar } from "./ui/SimulatorBar";
@@ -159,6 +160,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
   const posePanel = new PosePanel(ed);
+  // Ventana de ARTICULACIONES (v0.2.41): el candado por familia y lado que
+  // decide qué mueve el ▲▼ de la simulación. Vale igual en Builder y Viewer.
+  const articPanel = new ArticulacionesPanel(ed);
+  ed.panelArticulaciones = articPanel;
   const hud = new MeasurementHUD(ed);
 
   // Barra de simulación del Builder: aparece al correr la física (la UI de
@@ -235,7 +240,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
-  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
+  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, articPanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),

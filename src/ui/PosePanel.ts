@@ -107,6 +107,23 @@ export class PosePanel {
     ]);
     this.jointBox.style.display = "none";
 
+    // COLOCAR MANIQUÍ en construcción: el mismo modo de la barra de
+    // simulación — hover sobre suelo y apoyos, clic para dejarlo puesto.
+    const placeBtn = el("button", { class: "tool", title: "Colocar el maniquí tocando el suelo o un apoyo (asiento, respaldo, banco)" }, [
+      "🧍 Colocar maniquí",
+    ]);
+    placeBtn.addEventListener("click", () => {
+      if (this.editor.isColocarFigura()) this.editor.cancelColocarFigura();
+      else this.editor.beginColocarFigura();
+    });
+    this.editor.bus.on("colocarFiguraChanged", ({ active }) =>
+      placeBtn.classList.toggle("active", active),
+    );
+    const articBtn = el("button", { class: "tool", title: "Ventana de articulaciones: elige cuáles se mueven" }, [
+      "🦴 Articulaciones",
+    ]);
+    articBtn.addEventListener("click", () => this.editor.panelArticulaciones?.alternar());
+
     this.root = el("aside", { class: "panel", id: "poses" }, [
       el("div", { class: "panel-title" }, ["Posturas"]),
       el("div", { class: "panel-body" }, [
@@ -115,6 +132,8 @@ export class PosePanel {
         el("div", { class: "pose-actions" }, [saveBtn, delBtn]),
         el("div", { class: "pose-actions" }, [resetBtn]),
         el("div", { class: "pose-actions" }, [grabBtn]),
+        el("div", { class: "pose-actions" }, [placeBtn]),
+        el("div", { class: "pose-actions" }, [articBtn]),
         symRow,
         this.jointBox,
         el("div", { class: "field" }, [el("label", {}, ["Manos (IK)"])]),

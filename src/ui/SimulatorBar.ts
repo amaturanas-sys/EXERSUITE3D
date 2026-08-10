@@ -88,8 +88,17 @@ export class SimulatorBar {
 
     // HERRAMIENTA DEL PUNTERO en simulación (v0.2.14): mano interactiva u
     // órbita pura (el arrastre solo mueve la cámara, sin tocar piezas).
-    const bMano = el("button", { class: "tool active", title: tt("Mano interactiva: arrastra piezas móviles", "Interactive hand: drag mobile pieces") }, ["✋"]);
-    const bOrbita = el("button", { class: "tool", title: tt("Órbita: el arrastre solo mueve la cámara", "Orbit: dragging only moves the camera") }, ["🌐"]);
+    // La MANO se elige A PROPÓSITO: al arrancar manda la órbita, así mirar la
+    // máquina no la manosea sin querer.
+    const inicial = this.editor.getSimHerramienta();
+    const bMano = el("button", {
+      class: inicial === "mano" ? "tool active" : "tool",
+      title: tt("Manipulación: arrastra las piezas móviles (se resaltan al pasar por encima)", "Manipulation: drag the mobile pieces (they highlight on hover)"),
+    }, ["✋"]);
+    const bOrbita = el("button", {
+      class: inicial === "orbitar" ? "tool active" : "tool",
+      title: tt("Órbita: el arrastre solo mueve la cámara", "Orbit: dragging only moves the camera"),
+    }, ["🌐"]);
     bMano.addEventListener("click", () => this.editor.setSimHerramienta("mano"));
     bOrbita.addEventListener("click", () => this.editor.setSimHerramienta("orbitar"));
     this.editor.bus.on("simToolChanged", ({ tool }) => {
@@ -110,67 +119,60 @@ export class SimulatorBar {
     };
     let timerTension: ReturnType<typeof setInterval> | null = null;
 
-    // DEMOSTRACIÓN DE MOVIMIENTO (v0.2.14): elige la articulación FOCAL de
-    // la figura y flexiona/extiende con los cursores ▲/▼ (o las flechas del
-    // teclado) dentro del rango humano; las articulaciones con candado
-    // quedan fijas y el resto del cuerpo sigue la cadena.
-    const NOMBRES: Record<string, [string, string]> = {
-      spine: ["Columna", "Spine"],
-      neck: ["Cuello", "Neck"],
-      shoulderL: ["Hombro izq.", "Shoulder L"],
-      shoulderR: ["Hombro der.", "Shoulder R"],
-      elbowL: ["Codo izq.", "Elbow L"],
-      elbowR: ["Codo der.", "Elbow R"],
-      wristL: ["Muñeca izq.", "Wrist L"],
-      wristR: ["Muñeca der.", "Wrist R"],
-      hipL: ["Cadera izq.", "Hip L"],
-      hipR: ["Cadera der.", "Hip R"],
-      kneeL: ["Rodilla izq.", "Knee L"],
-      kneeR: ["Rodilla der.", "Knee R"],
-      ankleL: ["Tobillo izq.", "Ankle L"],
-      ankleR: ["Tobillo der.", "Ankle R"],
-    };
-    const focal = el("select", { class: "tool tool-select sim-focal", title: tt("Articulación focal del movimiento", "Focal joint of the movement") }) as HTMLSelectElement;
+    // MOVIMIENTO DEL MANIQUÍ (v0.2.41): los cursores ▲▼ flexionan y extienden
+    // A LA VEZ todas las articulaciones LIBRES; qué está libre se decide en la
+    // ventana de Articulaciones (🦴). La figura nace con todo bloqueado, así
+    // que el movimiento es exactamente el que se pidió y nada más.
+    // COLOCAR MANIQUÍ (v0.2.41): disponible siempre —haya figura o no— y
+    // también con la simulación corriendo, en Builder y en Viewer.
+    const bColocar = el("button", {
+      class: "tool",
+      title: tt("Colocar maniquí: toca el suelo o un apoyo (asiento, respaldo, banco)", "Place mannequin: tap the floor or a support (seat, backrest, bench)"),
+    }, ["🧍"]);
+    bColocar.addEventListener("click", () => {
+      if (this.editor.isColocarFigura()) this.editor.cancelColocarFigura();
+      else this.editor.beginColocarFigura();
+    });
+    this.editor.bus.on("colocarFiguraChanged", ({ active }) =>
+      bColocar.classList.toggle("active", active),
+    );
+
     const grupoFigura = el("div", { class: "tool-group sim-figura" }, []);
-    const angulo = el("span", { class: "sim-angulo" }, [""]);
-    const bCandado = el("button", { class: "tool", title: tt("Fijar/liberar la articulación focal", "Lock/unlock the focal joint") }, ["🔓"]);
-    const refrescarFocal = () => {
-      const est = focal.value ? this.editor.estadoArticulacion(focal.value) : null;
-      angulo.textContent = est ? `${est.grados}°` : "";
-      bCandado.replaceChildren(est?.fijada ? "🔒" : "🔓");
-      bCandado.classList.toggle("active", !!est?.fijada);
-    };
-    const poblarFocal = () => {
-      focal.replaceChildren();
+    const resumen = el("span", { class: "sim-angulo" }, [""]);
+    const bArtic = el("button", {
+      class: "tool",
+      title: tt("Articulaciones: elige cuáles se mueven (izquierda, derecha o simétricas)", "Joints: pick which ones move (left, right or symmetric)"),
+    }, ["🦴"]);
+    const refrescarFigura = () => {
       const arts = this.editor.articulacionesFigura();
-      for (const a of arts) {
-        const par = NOMBRES[a];
-        focal.append(el("option", { value: a }, [par ? tt(par[0], par[1]) : a]));
-      }
       grupoFigura.classList.toggle("sim-oculto", arts.length === 0);
-      refrescarFocal();
+      const libres = this.editor.articulacionesLibres().length;
+      resumen.textContent = tt(`${libres} libres`, `${libres} free`);
+      bArtic.classList.toggle("active", this.editor.panelArticulaciones?.visible() ?? false);
     };
+    bArtic.addEventListener("click", () => {
+      this.editor.panelArticulaciones?.alternar();
+      refrescarFigura();
+    });
     const mover = (dir: 1 | -1) => {
-      if (focal.value) this.editor.moverArticulacionFocal(focal.value, dir);
-      refrescarFocal();
+      this.editor.moverArticulacionesLibres(dir);
+      refrescarFigura();
     };
-    const bFlex = el("button", { class: "tool", title: tt("Flexión / tracción (▲)", "Flexion / pull (▲)") }, ["▲"]);
-    const bExt = el("button", { class: "tool", title: tt("Extensión / empuje (▼)", "Extension / push (▼)") }, ["▼"]);
+    const bFlex = el("button", { class: "tool", title: tt("Flexión (▲) de todo lo liberado", "Flexion (▲) of everything released") }, ["▲"]);
+    const bExt = el("button", { class: "tool", title: tt("Extensión (▼) de todo lo liberado", "Extension (▼) of everything released") }, ["▼"]);
     bFlex.addEventListener("click", () => mover(1));
     bExt.addEventListener("click", () => mover(-1));
-    bCandado.addEventListener("click", () => {
-      if (focal.value) this.editor.toggleCandadoArticulacion(focal.value);
-      refrescarFocal();
-    });
-    focal.addEventListener("change", refrescarFocal);
-    grupoFigura.append(focal, bFlex, bExt, bCandado, angulo);
+    grupoFigura.append(bArtic, bFlex, bExt, resumen);
+    this.editor.bus.on("jointLocksChanged", refrescarFigura);
+    this.editor.bus.on("humanFigureChanged", refrescarFigura);
     const teclas = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") { mover(1); e.preventDefault(); }
       else if (e.key === "ArrowDown") { mover(-1); e.preventDefault(); }
     };
+
     this.editor.bus.on("simulationChanged", ({ running }) => {
       if (running) {
-        poblarFocal();
+        refrescarFigura();
         refrescarTension();
         timerTension = setInterval(refrescarTension, 300);
         window.addEventListener("keydown", teclas);
@@ -182,7 +184,7 @@ export class SimulatorBar {
     });
 
     children.push(
-      el("div", { class: "tool-group" }, [bMano, bOrbita]),
+      el("div", { class: "tool-group" }, [bMano, bOrbita, bColocar]),
       el("div", { class: "tool-group" }, [
         view("Frontal", "frontal"),
         view("Lateral", "lateral"),
@@ -197,7 +199,10 @@ export class SimulatorBar {
       grupoFigura,
       el("div", { class: "sim-hint" }, [tension]),
       el("div", { class: "sim-hint" }, [
-        "🖐 Arrastra una pieza móvil para moverla con la mano · ▲▼ flexionan la articulación focal del maniquí",
+        tt(
+          "🌐 órbita · ✋ manipulación: al elegirla, las piezas móviles se resaltan al pasar por encima · 🦴 articulaciones · ▲▼ mueven las liberadas",
+          "🌐 orbit · ✋ manipulation: pick it and mobile parts highlight on hover · 🦴 joints · ▲▼ move the released ones",
+        ),
       ]),
     );
 

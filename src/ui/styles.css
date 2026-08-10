@@ -2703,3 +2703,40 @@ body.modo-prototipo .arrastre-panel {
 body.modo-prototipo #simbar {
   display: none !important;
 }
+
+/* ---- Ventana de ARTICULACIONES del maniquí (v0.2.41) ---- */
+#articulaciones {
+  position: fixed;
+  right: 12px;
+  bottom: 190px;
+  width: 232px;
+  max-height: 62vh;
+  overflow-y: auto;
+  z-index: 40;
+  scrollbar-width: thin;
+}
+
+.art-lados { display: flex; gap: 4px; margin-bottom: 6px; }
+.art-lados .tool { flex: 1; font-size: 11px; padding: 4px 2px; }
+.art-hint { font-size: 10.5px; color: var(--text-dim); margin: 6px 0 4px; line-height: 1.35; }
+
+.art-fila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  padding: 3px 2px;
+  cursor: pointer;
+}
+
+.art-fila:hover { color: #fff; }
+.art-chk { width: 15px; height: 15px; accent-color: #7fa9d8; }
+.art-acciones { display: flex; gap: 6px; margin-top: 8px; }
+.art-acciones .tool { flex: 1; font-size: 11px; }
+
+.art-resumen {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7fd08a;
+}

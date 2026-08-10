@@ -171,6 +171,10 @@ export type EditorEvents = {
   viewModesChanged: { color: ColorMode; edges: boolean };
   /** Herramienta del puntero durante la SIMULACIÓN (mano u órbita). */
   simToolChanged: { tool: "mano" | "orbitar" };
+  /** Cambió el conjunto de articulaciones bloqueadas del maniquí. */
+  jointLocksChanged: { locks: string[] };
+  /** Modo COLOCAR MANIQUÍ activo/inactivo. */
+  colocarFiguraChanged: { active: boolean };
   /** Herramienta rápida activa (barra de atajos, v0.2.13). */
   herramientaChanged: { tool: HerramientaRapida };
   /** El gizmo colectivo (grupo/multiselección) cambió de pose. */
@@ -225,6 +229,10 @@ export class Editor {
   private cableMode = false;
   /** Herramienta de FRENO DE CABLE activa (colocar/quitar esferas de tope). */
   private frenoMode = false;
+  /** Herramienta de COLOCAR MANIQUÍ activa (v0.2.41). */
+  private colocarFiguraMode = false;
+  /** Marca del punto de apoyo bajo el puntero mientras se coloca la figura. */
+  private marcaApoyo: THREE.Mesh | null = null;
   /** Esferas de los frenos, por `cableId#indice`. */
   private frenoVisuals = new Map<string, THREE.Mesh>();
   private cablePending: { object: SceneObject; local: THREE.Vector3 }[] = [];
@@ -263,6 +271,11 @@ export class Editor {
    * instala con el eje automático y placas medianas.
    */
   elegirBisagra: (() => Promise<ConfigBisagra | null>) | null = null;
+  /**
+   * Ventana de ARTICULACIONES del maniquí (v0.2.41): la monta la UI y el
+   * editor solo la conoce para poder abrirla desde la barra de simulación.
+   */
+  panelArticulaciones: { alternar(): boolean; visible(): boolean } | null = null;
   /** Panel de la bisagra abierto (los clics del visor no arman otra). */
   private bisagraPidiendo = false;
   /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
@@ -2845,8 +2858,15 @@ export class Editor {
 
   // ------------------------------------ herramientas de la SIMULACIÓN
 
-  /** Puntero durante la simulación: mano interactiva u órbita de cámara. */
-  private simTool: "mano" | "orbitar" = "mano";
+  /**
+   * Puntero durante la simulación: mano interactiva u órbita de cámara.
+   * Por omisión ÓRBITA (v0.2.41): la mano se elige A PROPÓSITO, de modo que
+   * mirar la máquina no la manosee sin querer — y cuando el usuario elige la
+   * mano, sabe que cada arrastre va a mover algo.
+   */
+  private simTool: "mano" | "orbitar" = "orbitar";
+  /** Pieza resaltada bajo el puntero con la mano (la que se agarraría). */
+  private manoHover: SceneObject | null = null;
 
   setSimHerramienta(tool: "mano" | "orbitar"): void {
     if (this.simTool === tool) return;
@@ -2952,6 +2972,65 @@ export class Editor {
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
     this.requestRender();
     return true;
+  }
+
+  /**
+   * Libera o bloquea una FAMILIA de articulaciones (hombro, codo, rodilla…)
+   * en el lado pedido. `lado` "sim" actúa sobre los dos a la vez, que es como
+   * se trabaja un ejercicio simétrico.
+   */
+  setBloqueoArticular(familia: string, lado: "L" | "R" | "sim", bloqueada: boolean): void {
+    const nombres =
+      familia === "spine" || familia === "neck"
+        ? [familia]
+        : lado === "sim"
+          ? [`${familia}L`, `${familia}R`]
+          : [`${familia}${lado}`];
+    for (const n of nombres) {
+      if (!JOINT_DOF[n]) continue;
+      if (bloqueada) this.jointLocks.add(n);
+      else this.jointLocks.delete(n);
+    }
+    if (this.selectedJointName && nombres.includes(this.selectedJointName)) {
+      this.selectJoint(this.selectedJointName);
+    }
+    this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
+    this.scheduleAutosave();
+  }
+
+  /** Articulaciones libres (sin candado) que el ▲▼ va a mover. */
+  articulacionesLibres(): string[] {
+    return Object.keys(JOINT_DOF).filter((n) => !this.jointLocks.has(n));
+  }
+
+  /**
+   * FLEXIÓN/EXTENSIÓN SIMULTÁNEA (v0.2.41): los cursores ▲▼ mueven A LA VEZ
+   * todas las articulaciones LIBRES, cada una por su eje natural y en el
+   * sentido en que flexiona — que es como se ejecuta un movimiento real, no
+   * articulación por articulación. Devuelve cuántas se movieron.
+   */
+  moverArticulacionesLibres(dir: 1 | -1, pasoDeg = 4): number {
+    const joints = this.figureJoints();
+    if (!joints) return 0;
+    let n = 0;
+    const libres = this.articulacionesLibres();
+    for (const nombre of libres) {
+      // Con la simetría activa, mover la izquierda ya arrastra a la derecha:
+      // mover también la derecha daría el paso dos veces.
+      if (this.poseSymmetry && nombre.endsWith("R") && libres.includes(`${nombre.slice(0, -1)}L`)) {
+        continue;
+      }
+      if (this.moverArticulacionFocal(nombre, dir, pasoDeg)) n++;
+    }
+    if (n === 0) {
+      this.avisoTemporal(
+        tt(
+          "Todas las articulaciones están bloqueadas: libera alguna en Articulaciones",
+          "Every joint is locked: release one in Joints",
+        ),
+      );
+    }
+    return n;
   }
 
   /** Modo de gizmo que corresponde a la herramienta activa. */
@@ -3692,8 +3771,13 @@ export class Editor {
     }
     this.humanFigure = figure;
     this.references.add(figure);
+    // ARTICULACIONES BLOQUEADAS DE ENTRADA (v0.2.41): la figura nace rígida y
+    // el usuario libera a propósito las que quiera mover. Así el ▲▼ de la
+    // simulación hace exactamente lo que se le pidió y nada más.
+    if (this.jointLocks.size === 0) this.jointLocks = new Set(Object.keys(JOINT_DOF));
     if (wasSelected) this.selectFigure();
     this.emitHumanState(true, false);
+    this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
   }
 
   removeHumanFigure(): void {
@@ -3789,6 +3873,7 @@ export class Editor {
     // Reengancha (o suelta) el gizmo según el nuevo estado del candado.
     if (this.selectedJointName === jn) this.selectJoint(jn);
     else this.emitJointSelection();
+    this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
     this.scheduleAutosave();
   }
 
@@ -6032,7 +6117,28 @@ export class Editor {
       this.requestRender();
       return;
     }
+    // COLOCAR MANIQUÍ: el puntero va marcando dónde caería la figura.
+    if (this.colocarFiguraMode) {
+      const rectC = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((event.clientX - rectC.left) / rectC.width) * 2 - 1;
+      this.pointer.y = -((event.clientY - rectC.top) / rectC.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      this.marcarApoyo(this.apoyoBajoPuntero());
+      return;
+    }
+
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
+    // AIM ASSIST DE LA MANO (v0.2.41): con la herramienta elegida, la pieza
+    // que se agarraría se resalta al pasar por encima. Así se ve de un
+    // vistazo qué es "estructura móvil" y qué no, sin tener que probar.
+    if (this.simulating && !simInteract && this.simTool === "mano") {
+      const rect0 = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((event.clientX - rect0.left) / rect0.width) * 2 - 1;
+      this.pointer.y = -((event.clientY - rect0.top) / rect0.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      this.resaltarAgarrable(this.piezaAgarrableBajoPuntero());
+      return;
+    }
     if (
       (this.simulating && !simInteract) ||
       (!this.simulating && !this.cableMode && !this.ropeMode && !this.lineMode && !this.bendDrag)
@@ -6278,6 +6384,18 @@ export class Editor {
       this.orbit.enabled = false;
       return;
     }
+    // Nada agarrable en esa dirección: si lo que hay es estructura anclada,
+    // se dice — antes el clic no hacía nada y parecía que la herramienta no
+    // reconocía la pieza.
+    if (hits.length > 0 && !this.humanFigure) {
+      const id0 = hits[0].object.userData.sceneObjectId as string | undefined;
+      const o0 = id0 ? this.objects.get(id0) : undefined;
+      if (o0) {
+        this.avisoTemporal(
+          tt(`"${o0.name}" está anclada: no se puede mover`, `"${o0.name}" is anchored: it can't be moved`),
+        );
+      }
+    }
     if (this.humanFigure) {
       const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
       if (fHits[0]) {
@@ -6339,8 +6457,186 @@ export class Editor {
     return ray.intersectPlane(d.plane, at) ? at : null;
   }
 
+  // ------------------------------------------ COLOCAR MANIQUÍ (v0.2.41)
+  /**
+   * Herramienta de COLOCAR MANIQUÍ: el puntero recorre el suelo y los puntos
+   * de apoyo ergonómicos (asientos, respaldos, bancos) marcando dónde caería
+   * la figura, y el clic la deja ahí con la orientación que corresponde —
+   * sentada mirando al frente del asiento, o de pie sobre el suelo mirando a
+   * la máquina más cercana. Funciona igual en construcción y en simulación,
+   * y por tanto en el Builder y en el Viewer.
+   */
+  beginColocarFigura(): void {
+    this.cancelConnect();
+    this.cancelCable();
+    this.cancelFrenoCable();
+    this.cancelRope();
+    this.colocarFiguraMode = true;
+    this.bus.emit("colocarFiguraChanged", { active: true });
+    this.avisoTemporal(
+      tt(
+        "Maniquí: toca el SUELO o un apoyo (asiento, respaldo, banco) para colocarlo",
+        "Mannequin: tap the FLOOR or a support (seat, backrest, bench) to place it",
+      ),
+    );
+  }
+
+  cancelColocarFigura(): void {
+    if (!this.colocarFiguraMode) return;
+    this.colocarFiguraMode = false;
+    this.quitarMarcaApoyo();
+    this.bus.emit("colocarFiguraChanged", { active: false });
+  }
+
+  isColocarFigura(): boolean {
+    return this.colocarFiguraMode;
+  }
+
+  /** ¿Es esta pieza un APOYO donde el maniquí puede sentarse o recostarse? */
+  private esApoyoErgonomico(obj: SceneObject): boolean {
+    const def = getDefinition(obj.componentId);
+    if (def?.category === "ergonomico") {
+      return obj.componentId === "asiento" || obj.componentId === "respaldo";
+    }
+    // Los bancos y asientos de las máquinas se nombran así aunque su pieza
+    // sea una caja tapizada cualquiera.
+    return /asiento|respaldo|banco|seat|bench/i.test(obj.name);
+  }
+
+  /** Punto de colocación bajo el puntero: suelo o apoyo ergonómico. */
+  private apoyoBajoPuntero(): { punto: THREE.Vector3; obj: SceneObject | null } | null {
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, true);
+    for (const h of hits) {
+      const id = h.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (obj && this.esApoyoErgonomico(obj)) return { punto: h.point.clone(), obj };
+    }
+    // Si no hay apoyo, el SUELO (plano y = 0).
+    const suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const p = new THREE.Vector3();
+    return this.raycaster.ray.intersectPlane(suelo, p) ? { punto: p, obj: null } : null;
+  }
+
+  /** Anillo que marca dónde caería la figura. */
+  private marcarApoyo(destino: { punto: THREE.Vector3; obj: SceneObject | null } | null): void {
+    if (!destino) {
+      this.quitarMarcaApoyo();
+      return;
+    }
+    if (!this.marcaApoyo) {
+      this.marcaApoyo = new THREE.Mesh(
+        new THREE.RingGeometry(9, 13, 32),
+        new THREE.MeshBasicMaterial({ color: 0x2f7dd1, transparent: true, opacity: 0.75, side: THREE.DoubleSide, depthTest: false }),
+      );
+      this.marcaApoyo.rotation.x = -Math.PI / 2;
+      this.marcaApoyo.renderOrder = 999;
+      this.references.add(this.marcaApoyo);
+    }
+    this.marcaApoyo.position.copy(destino.punto).add(new THREE.Vector3(0, 0.6, 0));
+    (this.marcaApoyo.material as THREE.MeshBasicMaterial).color.setHex(destino.obj ? 0x7fd08a : 0x2f7dd1);
+    this.canvas.style.cursor = "crosshair";
+    this.requestRender();
+  }
+
+  private quitarMarcaApoyo(): void {
+    if (!this.marcaApoyo) return;
+    this.references.remove(this.marcaApoyo);
+    this.marcaApoyo.geometry.dispose();
+    (this.marcaApoyo.material as THREE.Material).dispose();
+    this.marcaApoyo = null;
+    this.canvas.style.cursor = "";
+    this.requestRender();
+  }
+
+  /**
+   * Deja la figura en el punto marcado. Sobre un APOYO se sienta y mira hacia
+   * el frente del asiento (el lado opuesto a su respaldo); sobre el SUELO se
+   * queda de pie mirando a la máquina más cercana.
+   */
+  private async colocarFiguraEn(destino: { punto: THREE.Vector3; obj: SceneObject | null }): Promise<void> {
+    if (!this.humanFigure) await this.addHumanFigure();
+    const fig = this.humanFigure;
+    if (!fig) return;
+    const frente = new THREE.Vector3(0, 0, 1);
+    if (destino.obj) {
+      // Frente del asiento: se aleja del respaldo más cercano; si no hay
+      // respaldo, del centro de la máquina a la que pertenece la pieza.
+      const respaldo = this.piezaCercana(destino.punto, (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo");
+      const ref = respaldo ?? this.piezaCercana(destino.punto, (o) => o.physics.fixed && o.id !== destino.obj!.id);
+      if (ref) {
+        frente.copy(destino.punto).sub(ref.mesh.position).setY(0);
+        if (frente.lengthSq() < 1e-4) frente.set(0, 0, 1);
+        frente.normalize();
+      }
+      this.applyPose("Sentado");
+      // La pelvis se apoya sobre la cara superior del asiento. Aquí NO se
+      // "aterriza" la figura: sentada, lo que toca el suelo son los pies por
+      // su cuenta, y bajarla hasta que lleguen la hundiría en el asiento.
+      const caja = new THREE.Box3().setFromObject(destino.obj.mesh);
+      fig.position.set(destino.punto.x, caja.max.y, destino.punto.z);
+      fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0);
+    } else {
+      const maquina = this.piezaCercana(destino.punto, (o) => o.physics.fixed);
+      if (maquina) {
+        frente.copy(maquina.mesh.position).sub(destino.punto).setY(0);
+        if (frente.lengthSq() < 1e-4) frente.set(0, 0, 1);
+        frente.normalize();
+      }
+      this.applyPose("De pie");
+      fig.position.set(destino.punto.x, 0, destino.punto.z);
+    }
+    fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
+    if (!destino.obj) (fig.userData.ground as (() => void) | undefined)?.();
+    this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
+    this.requestRender();
+    this.scheduleAutosave();
+    this.avisoTemporal(
+      destino.obj
+        ? tt(`Maniquí sentado en "${destino.obj.name}"`, `Mannequin seated on "${destino.obj.name}"`)
+        : tt("Maniquí de pie en el suelo", "Mannequin standing on the floor"),
+    );
+  }
+
+  /** Pieza más cercana a un punto que cumpla el filtro. */
+  private piezaCercana(p: THREE.Vector3, filtro: (o: SceneObject) => boolean): SceneObject | null {
+    let mejor: SceneObject | null = null;
+    let d = Infinity;
+    for (const o of this.objects.values()) {
+      if (!filtro(o)) continue;
+      const dd = o.mesh.position.distanceToSquared(p);
+      if (dd < d) {
+        d = dd;
+        mejor = o;
+      }
+    }
+    return mejor;
+  }
+
+  /** Primera pieza bajo el puntero que la mano PODRÍA mover, si la hay. */
+  private piezaAgarrableBajoPuntero(): SceneObject | null {
+    if (!this.physics) return null;
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, true);
+    for (const h of hits) {
+      const id = h.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (obj && this.physics.puedeAgarrar(obj.id)) return obj;
+    }
+    return null;
+  }
+
+  /** Resalta (y des-resalta) la pieza que la mano tomaría. */
+  private resaltarAgarrable(obj: SceneObject | null): void {
+    if (this.manoHover === obj) return;
+    if (this.manoHover) this.setHighlight(this.manoHover, false);
+    this.manoHover = obj;
+    if (obj) this.setHighlight(obj, true);
+    this.canvas.style.cursor = obj ? "grab" : "";
+    this.requestRender();
+  }
+
   /** Termina los arrastres de simulación (mano y maniquí). */
   private endSimInteraction(): void {
+    this.resaltarAgarrable(null);
     if (this.simDrag) this.physics?.release();
     if (this.simDrag || this.figureDrag) this.orbit.enabled = true;
     this.simDrag = null;
@@ -6584,6 +6880,15 @@ export class Editor {
           this.orbit.enabled = false;
         }
       }
+      return;
+    }
+
+    // COLOCAR MANIQUÍ: el clic lo deja en el apoyo o el suelo marcado. Vale
+    // también con la simulación corriendo (la figura es una referencia, no un
+    // cuerpo físico), que es lo que permite posarla dentro de la máquina.
+    if (this.colocarFiguraMode && event.button === 0) {
+      const destino = this.apoyoBajoPuntero();
+      if (destino) void this.colocarFiguraEn(destino);
       return;
     }
 
@@ -7010,6 +7315,7 @@ export class Editor {
         this.cancelConnect();
         this.cancelCable();
         this.cancelFrenoCable();
+        this.cancelColocarFigura();
         this.cancelRope();
         this.cancelLine();
         this.cancelRoldana();

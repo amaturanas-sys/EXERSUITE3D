@@ -1703,6 +1703,18 @@ export class PhysicsWorld {
     return { punto, eje };
   }
 
+  /**
+   * ¿Puede la mano mover esta pieza? Vale tanto para una pieza suelta como
+   * para una ergonómica o estructural que forme parte de un conjunto móvil
+   * (un asiento soldado a un brazo, el travesaño de un carro): lo que decide
+   * es el CUERPO al que pertenece, no la pieza que se tocó.
+   */
+  puedeAgarrar(objectId: string): boolean {
+    const e = this.bodies.get(objectId);
+    if (!e) return false;
+    return e.body.isDynamic() || this.topeCongelados.has(e.body);
+  }
+
   grab(objectId: string, worldCm: THREE.Vector3, firme = false): boolean {
     const e = this.bodies.get(objectId);
     if (!e) return false;

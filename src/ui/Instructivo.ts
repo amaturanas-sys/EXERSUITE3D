@@ -126,6 +126,8 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Cómo uso el maniquí?",
     puntos: [
       "Figura muestra el maniquí a escala; ajusta su altura en cm.",
+      "🧍 COLOCAR MANIQUÍ (en Posturas y en la barra de simulación): apunta y el puntero va marcando dónde caería — verde sobre un APOYO ergonómico (asiento, respaldo, banco), azul sobre el SUELO. El clic lo deja puesto con su orientación: sentado sobre la cara del asiento mirando a su frente, o de pie mirando a la máquina más cercana. Vale en construcción y en simulación, en el Builder y en el Viewer.",
+      "🦴 ARTICULACIONES: la ventana con una casilla por familia (columna, cuello, hombro, codo, muñeca, cadera, rodilla, tobillo) y un selector de lado — izquierda, derecha o simétrico. La figura NACE CON TODO BLOQUEADO: marca solo lo que quieras mover y los cursores ▲▼ lo flexionan y extienden TODO A LA VEZ, cada articulación por su eje natural. El candado solo afecta a ▲▼: posar la figura y apoyar manos y pies siguen disponibles, y son los que fijan la postura de partida.",
       "Posa sus articulaciones arrastrando los ejes, guarda posturas y usa Apoyar mano para fijar las manos a un agarre (IK).",
       "✋ Agarrar maniquí (en Posturas): arrastra directamente un segmento del cuerpo; con 1/2/3 el movimiento se restringe a un eje.",
       "🔒 Candado: bloquea articulaciones para que no se muevan al posar (representa técnica y ejercicio con precisión); Simetría L↔R replica cada cambio espejado en el otro lado.",
@@ -137,6 +139,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     pregunta: "¿Cómo simulo la máquina?",
     puntos: [
       "▶ Simular (o Espacio) corre la física; los paneles se ocultan para máximo rendimiento.",
+      "El puntero arranca en ÓRBITA: mirar la máquina no la mueve. La MANIPULACIÓN (✋) se elige a propósito y, al elegirla, la pieza que agarrarías SE RESALTA al pasar por encima — da igual que sea ergonómica (un asiento, un agarre) o estructural (un travesaño): lo que decide es el conjunto móvil al que pertenece. Si lo que hay delante está anclado, se te dice con su nombre.",
       "Con la simulación corriendo, ARRASTRA las piezas móviles con el dedo: es la mano interactiva. La fuerza de la mano SIEMPRE alcanza para operar los móviles, y la barra reporta la TENSIÓN MÁXIMA ejercida en kg y lb (✋ máx …).",
       "PIEZAS ARTICULADAS: si lo que agarras cuelga de una bisagra —el brazo de press de una torre, un pedal, una tapa— la mano SIGUE SU ARCO en vez de tirar contra el pasador, así que el brazo va detrás de tu dedo mientras recorres la curva que la máquina permite. Arrastra siguiendo ese arco (no en línea recta) y el recorrido sale entero; la tensión que se muestra es la que de verdad cuesta girarla.",
       "El pivote es RÍGIDO en todo lo que no sea su giro: aunque empujes un brazo por uno solo de sus dos agarres, el conjunto describe su semicircunferencia sobre el eje del pasador sin torcerse ni salirse de plano, y por eso tira del cable como en la máquina real. Los TOPES de la unión (Conexiones) definen dónde descansa y hasta dónde llega el recorrido.",

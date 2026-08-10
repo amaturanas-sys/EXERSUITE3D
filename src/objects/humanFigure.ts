@@ -22,25 +22,40 @@ export const DEFAULT_HUMAN_HEIGHT = 175;
  */
 export type AxisLimits = { x?: [number, number]; y?: [number, number]; z?: [number, number] };
 
+/**
+ * RANGOS ARTICULARES (revisión v0.2.41). Convención del rig: los huesos
+ * descansan sobre −Y y la figura mira a +Z, así que una X POSITIVA lleva el
+ * segmento hacia ATRÁS (bien para la rodilla) y una NEGATIVA hacia delante
+ * (cadera, hombro, codo). El costado izquierdo vive en −X y el derecho en
+ * +X, de modo que la ABDUCCIÓN —separar del cuerpo— es Z negativa a la
+ * izquierda y positiva a la derecha.
+ */
 export const JOINT_DOF: Record<string, AxisLimits> = {
   spine: { x: [-30, 80], y: [-40, 40], z: [-35, 35] },
-  neck: { x: [-50, 55], y: [-70, 70], z: [-40, 40] },
-  shoulderL: { x: [-180, 60], y: [-90, 90], z: [-30, 150] },
-  shoulderR: { x: [-180, 60], y: [-90, 90], z: [-150, 30] },
+  // Cuello: 50° de flexión (barbilla al pecho) y 60° de extensión.
+  neck: { x: [-60, 50], y: [-70, 70], z: [-40, 40] },
+  // Hombro: 180° de flexión hacia delante, 60° de extensión atrás, 150° de
+  // ABDUCCIÓN hacia su propio costado y 30° de aducción cruzando el cuerpo.
+  // Los signos de Z estaban cambiados de lado: el brazo izquierdo abducía
+  // hacia el derecho y viceversa.
+  shoulderL: { x: [-180, 60], y: [-90, 90], z: [-150, 30] },
+  shoulderR: { x: [-180, 60], y: [-90, 90], z: [-30, 150] },
   // CODO (v0.2.38): flexiona hacia DELANTE, al revés que la rodilla. Con los
   // huesos en reposo sobre -Y y la figura mirando a +Z, una X POSITIVA lleva
   // el segmento hacia atrás — bien para la rodilla, imposible para el codo,
   // que antes doblaba al revés del cuerpo.
-  elbowL: { x: [-150, 15] },
-  elbowR: { x: [-150, 15] },
+  elbowL: { x: [-150, 15], y: [-80, 80] },
+  elbowR: { x: [-150, 15], y: [-80, 80] },
   wristL: { x: [-70, 70], z: [-25, 25] },
   wristR: { x: [-70, 70], z: [-25, 25] },
   hipL: { x: [-135, 30], y: [-45, 45], z: [-45, 20] },
   hipR: { x: [-135, 30], y: [-45, 45], z: [-20, 45] },
   kneeL: { x: [-5, 150] },
   kneeR: { x: [-5, 150] },
-  ankleL: { x: [-45, 45], z: [-25, 25] },
-  ankleR: { x: [-45, 45], z: [-25, 25] },
+  // Tobillo: 50° de flexión plantar (punta abajo) contra 20° de dorsiflexión,
+  // y la inversión (planta hacia dentro) mayor que la eversión.
+  ankleL: { x: [-20, 50], z: [-15, 30] },
+  ankleR: { x: [-20, 50], z: [-30, 15] },
 };
 
 function mat(): THREE.MeshStandardMaterial {
