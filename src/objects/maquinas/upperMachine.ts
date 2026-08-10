@@ -875,6 +875,12 @@ export const UPPER_MACHINE_UNIONES: UnionSpec[] = [
     bloqueada: true
   },
   {
+    // PIVOTE DEL BRAZO DE PRESS: pasador horizontal en el plano transversal,
+    // sobre el mástil. Con TOPES activos [-90°, 0°] el brazo descansa en su
+    // pose de diseño (0° = apoyado contra su tope, listo para empujar desde
+    // el respaldo) y recorre 90° de semicircunferencia hacia anterior y
+    // arriba, tirando del cable. Sin topes se colaba 10 cm por detrás de su
+    // reposo al arrancar la simulación.
     tipo: "bisagra",
     fija: 33,
     movil: 32,
@@ -882,7 +888,7 @@ export const UPPER_MACHINE_UNIONES: UnionSpec[] = [
     ancla: [0.042, 191.7527, 13.1569],
     min: -90,
     max: 0,
-    limites: false
+    limites: true
   },
   {
     tipo: "bisagra",

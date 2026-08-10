@@ -1,7 +1,7 @@
 {
   "formato": "exersuite3d-prefab",
   "version": 2,
-  "app": "0.2.36",
+  "app": "0.2.39",
   "label": "UpperMachine",
   "piezas": [
     {
@@ -1736,7 +1736,7 @@
       ],
       "min": -90,
       "max": 0,
-      "limites": false
+      "limites": true
     },
     {
       "tipo": "bisagra",

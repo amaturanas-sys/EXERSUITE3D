@@ -1096,18 +1096,64 @@ export class PhysicsWorld {
     const world = this.world!;
     const qA = a.obj.mesh.quaternion;
     const qB = b.obj.mesh.quaternion;
-
-    // Adaptador: cuerpo diminuto en el punto de ancla, orientado como A (asi el
-    // eje local de A vale tambien para el). Masa/inercia pequenas: va soldado a
-    // B, no aporta dinamica apreciable.
     const w = joint.anchor.clone().multiplyScalar(S);
+
+    // PIVOTE SOBRE PIEZA ANCLADA (v0.2.39): cuando uno de los dos lados NO se
+    // mueve, el adaptador no necesita ser un cuerpo dinámico soldado — puede
+    // ser un cuerpo FIJO colocado en el pasador y orientado como la pieza que
+    // sí gira. Entonces la bisagra une "fijo ↔ móvil" directamente y es tan
+    // rígida como cualquier otra: sin un cuerpecillo de 50 g haciendo de
+    // eslabón entre el bastidor y un brazo de 19 kg, que era lo que dejaba
+    // que el brazo se TORCIERA y saliera de su plano al empujarlo de un solo
+    // agarre en vez de describir su semicircunferencia.
+    const aFija = !a.body.isDynamic();
+    const bFija = !b.body.isDynamic();
+    if (aFija || bFija) {
+      const movil = aFija ? b : a;
+      const qM = movil.obj.mesh.quaternion;
+      const anclaMovil = aFija ? anchorB : anchorA;
+      // Eje en el frame de la pieza móvil: vale a la vez para ella y para el
+      // adaptador, que se orienta igual (y por eso la pose de diseño es el
+      // cero de la articulación).
+      const ejeM = joint
+        .ejeVector()
+        .applyQuaternion(qM.clone().invert());
+      const fijo = world.createRigidBody(
+        RAPIER.RigidBodyDesc.fixed()
+          .setTranslation(w.x, w.y, w.z)
+          .setRotation({ x: qM.x, y: qM.y, z: qM.z, w: qM.w }),
+      );
+      const ejeR = { x: ejeM.x, y: ejeM.y, z: ejeM.z };
+      const cero = { x: 0, y: 0, z: 0 };
+      const params =
+        joint.kind === "revolute"
+          ? RAPIER.JointData.revolute(cero, anclaMovil, ejeR)
+          : RAPIER.JointData.prismatic(cero, anclaMovil, ejeR);
+      const directo = world.createImpulseJoint(params, fijo, movil.body, true) as
+        R.UnitImpulseJoint;
+      directo.setContactsEnabled(false);
+      // Las dos piezas del pivote no chocan entre sí salvo que la unión lo pida.
+      if (!joint.contactos) {
+        world
+          .createImpulseJoint(RAPIER.JointData.rope(1e6, anchorA, anchorB), a.body, b.body, true)
+          .setContactsEnabled(false);
+      }
+      return directo;
+    }
+
+    // Adaptador: cuerpo en el punto de ancla, orientado como A (asi el eje
+    // local de A vale tambien para el). Va SOLDADO a B; su masa e inercia se
+    // toman del orden de las de B para que el solver no vea un salto de masa
+    // de tres órdenes de magnitud (que volvía blanda la bisagra).
+    const masaB = Math.max(0.2, b.body.mass());
+    const inercia = Math.max(1e-3, masaB * 0.02); // ~ radio de giro de 14 cm
     const desc = RAPIER.RigidBodyDesc.dynamic()
       .setTranslation(w.x, w.y, w.z)
       .setRotation({ x: qA.x, y: qA.y, z: qA.z, w: qA.w })
       .setAdditionalMassProperties(
-        0.05,
+        Math.min(masaB * 0.1, 2),
         { x: 0, y: 0, z: 0 },
-        { x: 1e-4, y: 1e-4, z: 1e-4 },
+        { x: inercia, y: inercia, z: inercia },
         { x: 0, y: 0, z: 0, w: 1 },
       );
     const adapter = world.createRigidBody(desc);

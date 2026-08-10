@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.39] — 2026-08-10
+
+### Corregido
+
+- **EL BRAZO ARTICULADO SE TORCÍA EN VEZ DE GIRAR EN SU PLANO**. Empujando el
+  brazo de press de la UpperMachine desde UN solo agarre, el conjunto no
+  describía su semicircunferencia sobre el pasador: se torcía. Medido, con un
+  empuje de 50°: **22° de diferencia entre el agarre derecho y el izquierdo**,
+  13° de guiñada, 60° de balanceo y el agarre izquierdo desplazado 23 cm hacia
+  el centro. La trayectoria que salía no era la de la máquina.
+
+  La causa estaba en cómo se arma un pivote cuando las dos piezas tienen
+  orientaciones de diseño distintas: se interponía un ADAPTADOR dinámico de
+  50 g y 1e-4 kg·m² de inercia entre el bastidor y un brazo de 19 kg. Con ese
+  salto de masa de tres órdenes de magnitud el solver deja la bisagra blanda
+  en los dos grados de libertad que debería bloquear, y un tirón desde un lado
+  la retuerce.
+
+  Ahora, cuando **uno de los dos lados está ANCLADO** —el caso de casi todos
+  los pivotes de una máquina: un brazo sobre su bastidor— el adaptador es un
+  cuerpo FIJO colocado en el pasador y orientado como la pieza que gira, de
+  modo que la bisagra une «anclado ↔ móvil» directamente y es tan rígida como
+  cualquier otra. Cuando ambas piezas se mueven, el adaptador conserva su
+  papel pero recibe masa e inercia del orden de las de la pieza que sostiene.
+
+  Resultado medido en el mismo empuje: **0,0° de torsión, 0,0° de guiñada,
+  0,0° de balanceo**, los agarres clavados en su sitio y el brazo recorriendo
+  su semicircunferencia hacia anterior y arriba. Y como ya no se escapa
+  torciéndose, TIRA DEL CABLE: la pila sube 10,4 cm en 39° de recorrido
+  (antes 2,9 cm), con 33 kg de esfuerzo.
+
+- Con la bisagra rígida los **TOPES del pivote vuelven a valer**: se activan
+  los del brazo de la UpperMachine ([-90°, 0°]), así descansa exactamente en
+  su pose de diseño —apoyado en su tope, listo para empujar contra el
+  respaldo— en vez de colarse 10 cm por detrás al arrancar la simulación.
+
 ## [0.2.38] — 2026-08-10
 
 ### Corregido
