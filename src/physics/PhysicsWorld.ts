@@ -1804,6 +1804,68 @@ export class PhysicsWorld {
     return e.body.isDynamic() || this.topeCongelados.has(e.body);
   }
 
+  /**
+   * CAJAS DE LA ESTRUCTURA (v0.2.43), en CENTÍMETROS de la escena.
+   *
+   * El maniquí no tiene cuerpo en el motor, así que para saber dónde NO puede
+   * meter un brazo necesita una descripción del hierro: cada collider se
+   * devuelve como caja orientada en su pose ACTUAL, de modo que la lista sirve
+   * también con la máquina en movimiento. Las formas redondas (cilindros,
+   * cápsulas, esferas) se acotan por su caja envolvente, que es lo bastante
+   * fiel para un tope y no cuesta nada de calcular.
+   */
+  cajasDeColision(): {
+    c: THREE.Vector3;
+    e: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
+    h: [number, number, number];
+  }[] {
+    const out: {
+      c: THREE.Vector3;
+      e: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
+      h: [number, number, number];
+    }[] = [];
+    const vistos = new Set<R.RigidBody>();
+    const m = new THREE.Matrix4();
+    for (const { body } of this.bodies.values()) {
+      if (vistos.has(body)) continue;
+      vistos.add(body);
+      for (let i = 0; i < body.numColliders(); i++) {
+        const col = body.collider(i);
+        if (col.isSensor()) continue;
+        const s = col.shape as {
+          halfExtents?: { x: number; y: number; z: number };
+          halfHeight?: number;
+          radius?: number;
+          type?: number;
+        };
+        let h: [number, number, number] | null = null;
+        if (s.halfExtents) {
+          h = [s.halfExtents.x, s.halfExtents.y, s.halfExtents.z];
+        } else if (s.halfHeight !== undefined && s.radius !== undefined) {
+          // La cápsula añade su radio a los dos casquetes; el cilindro no.
+          const tapa = s.type === RAPIER.ShapeType.Capsule ? s.radius : 0;
+          h = [s.radius, s.halfHeight + tapa, s.radius];
+        } else if (s.radius !== undefined) {
+          h = [s.radius, s.radius, s.radius];
+        }
+        if (!h) continue;
+        const p = col.translation();
+        const q = col.rotation();
+        m.makeRotationFromQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w));
+        out.push({
+          c: new THREE.Vector3(p.x / S, p.y / S, p.z / S),
+          e: [
+            new THREE.Vector3().setFromMatrixColumn(m, 0),
+            new THREE.Vector3().setFromMatrixColumn(m, 1),
+            new THREE.Vector3().setFromMatrixColumn(m, 2),
+          ],
+          h: [h[0] / S, h[1] / S, h[2] / S],
+        });
+      }
+    }
+    return out;
+  }
+
   grab(objectId: string, worldCm: THREE.Vector3, firme = false): boolean {
     const e = this.bodies.get(objectId);
     if (!e) return false;

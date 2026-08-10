@@ -5,6 +5,44 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.43] — 2026-08-10
+
+### Corregido
+
+- **EL MANIQUÍ SENTADO SE POSA EN EL ASIENTO, NO SE HUNDE**. Al sentarlo se
+  ponía el ORIGEN de su raíz a ras de la cara superior del asiento, pero los
+  glúteos y los muslos cuelgan por debajo de ese origen: media pelvis quedaba
+  dentro de la pieza (8,8 cm medidos en la UpperMachine). Ahora se mide la cota
+  más baja de lo que de verdad reposa —pelvis y muslos, no las piernas, que
+  cuelgan hacia el suelo— y se levanta la figura lo justo para que esa cota
+  coincida con la superficie.
+
+- **LA ESTRUCTURA FRENA A ▲▼**. El maniquí no tiene cuerpo en el motor, así
+  que un brazo liberado entraba en un pilar como si fuera aire: medidos 3,03 cm
+  de brazo dentro de un travesaño recorriendo hombro y codo. Antes de dar por
+  bueno un paso de ▲▼ se mide cuánto penetra el segmento movido en las cajas de
+  colisión de la máquina —leídas en su pose actual, así que valen también con
+  la máquina en marcha— y si el paso EMPEORA la penetración se deshace: la
+  articulación se queda donde el hierro la deja.
+
+  Un segmento que ya estaba rozando puede seguir moviéndose, incluso para
+  salir; lo único que no puede es entrar más. Medido: la penetración añadida
+  por ▲▼ pasa de 3,03 cm a **cero** (el 1,42 cm que queda es previo, del pie
+  contra un travesaño al colocar la figura), se aplican 113 de 152 pasos —los
+  frenados son justo los que entraban en el hierro— y la pulsación pasa de
+  0,14 ms a 2 ms.
+
+  El tope solo actúa con la simulación en marcha: POSAR el maniquí y colocar
+  los agarres siguen siendo libres, porque son los que fijan la postura de
+  partida.
+
+### Sabido
+
+- El maniquí sigue sin cuerpo físico: la MÁQUINA puede barrerlo (medidos
+  2,78 cm de brazo de press a través del torso) y el pie puede quedar dentro
+  de un travesaño al sentarlo. Eso pide meter la figura en el motor, que es
+  otro cambio.
+
 ## [0.2.42] — 2026-08-10
 
 ### Corregido

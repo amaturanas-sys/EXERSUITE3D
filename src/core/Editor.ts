@@ -2967,9 +2967,35 @@ export class Editor {
     const actual = radToDeg(joints[nombre].rotation[eje]);
     const nuevo = Math.max(lim[0], Math.min(lim[1], actual + dir * flexion * pasoDeg));
     if (Math.abs(nuevo - actual) < 1e-3) return false; // tope del rango
+
+    // TOPE DE ESTRUCTURA: solo en simulación, y solo si el paso EMPEORA la
+    // penetración. Así un segmento que ya estaba rozando puede seguir
+    // moviéndose —incluso para salir—, pero ninguno entra más en el hierro.
+    const cajas = this.physics ? (this.cajasEstructura ?? this.cajasCercaDeLaFigura()) : null;
+    const mallas = cajas?.length ? this.mallasDeArticulacion(nombre) : [];
+    let antes = 0;
+    if (mallas.length) {
+      this.humanFigure?.updateMatrixWorld(true);
+      antes = this.penetracionEnEstructura(mallas, cajas!);
+    }
+
+    const previo = joints[nombre].rotation[eje];
     joints[nombre].rotation[eje] = degToRad(nuevo);
     this.applyPoseSymmetry(nombre);
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+
+    if (mallas.length) {
+      this.humanFigure?.updateMatrixWorld(true);
+      if (this.penetracionEnEstructura(mallas, cajas!) > antes + 1e-4) {
+        joints[nombre].rotation[eje] = previo;
+        this.applyPoseSymmetry(nombre);
+        (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+        this.humanFigure?.updateMatrixWorld(true);
+        this.frenadasPorEstructura++;
+        this.requestRender();
+        return false;
+      }
+    }
     this.requestRender();
     return true;
   }
@@ -3013,6 +3039,10 @@ export class Editor {
     const joints = this.figureJoints();
     if (!joints) return 0;
     let n = 0;
+    // Las cajas del hierro se leen UNA vez por pulsación y valen para todas
+    // las articulaciones del paso (la máquina no se mueve entremedias).
+    this.cajasEstructura = this.physics ? this.cajasCercaDeLaFigura() : null;
+    this.frenadasPorEstructura = 0;
     const libres = this.articulacionesLibres();
     for (const nombre of libres) {
       // Con la simetría activa, mover la izquierda ya arrastra a la derecha:
@@ -3022,7 +3052,13 @@ export class Editor {
       }
       if (this.moverArticulacionFocal(nombre, dir, pasoDeg)) n++;
     }
-    if (n === 0) {
+    const frenadas = this.frenadasPorEstructura;
+    this.cajasEstructura = null;
+    if (n === 0 && frenadas > 0) {
+      this.avisoTemporal(
+        tt("La estructura frena el movimiento", "The structure blocks the movement"),
+      );
+    } else if (n === 0) {
       this.avisoTemporal(
         tt(
           "Todas las articulaciones están bloqueadas: libera alguna en Articulaciones",
@@ -6600,6 +6636,123 @@ export class Editor {
         ? tt(`Maniquí sentado en "${destino.obj.name}"`, `Mannequin seated on "${destino.obj.name}"`)
         : tt("Maniquí de pie en el suelo", "Mannequin standing on the floor"),
     );
+  }
+
+  /**
+   * TOPE DE ESTRUCTURA PARA ▲▼ (v0.2.43).
+   *
+   * El maniquí no tiene cuerpo en el motor: un brazo liberado entraba en un
+   * pilar como si fuera aire (medidos 3 cm en la UpperMachine). Antes de dar
+   * por bueno un paso de ▲▼ se mide cuánto penetra el segmento movido en las
+   * cajas del hierro; si el paso EMPEORA la penetración, se deshace y la
+   * articulación se queda donde estaba, que es lo que haría la máquina real.
+   *
+   * Solo actúa con la simulación en marcha: POSAR la figura sigue siendo
+   * libre, porque es lo que fija la postura de partida.
+   */
+  private cajasEstructura: ReturnType<PhysicsWorld["cajasDeColision"]> | null = null;
+  private frenadasPorEstructura = 0;
+
+  /** Cajas del hierro cercanas a la figura (el resto no puede estorbar). */
+  private cajasCercaDeLaFigura(): ReturnType<PhysicsWorld["cajasDeColision"]> | null {
+    if (!this.physics || !this.humanFigure) return null;
+    const cerca = new THREE.Box3().setFromObject(this.humanFigure).expandByScalar(25);
+    const caja = new THREE.Box3();
+    return this.physics.cajasDeColision().filter((b) => {
+      const r = Math.abs(b.h[0]) + Math.abs(b.h[1]) + Math.abs(b.h[2]);
+      caja.setFromCenterAndSize(b.c, new THREE.Vector3(r * 2, r * 2, r * 2));
+      return caja.intersectsBox(cerca);
+    });
+  }
+
+  /** Penetración máxima (cm) de unas mallas del maniquí en el hierro. */
+  private penetracionEnEstructura(
+    mallas: THREE.Mesh[],
+    cajas: ReturnType<PhysicsWorld["cajasDeColision"]>,
+  ): number {
+    const q = new THREE.Quaternion();
+    const esc = new THREE.Vector3();
+    const pos = new THREE.Vector3();
+    const m = new THREE.Matrix4();
+    let peor = 0;
+    for (const malla of mallas) {
+      const geo = malla.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const bb = geo.boundingBox!;
+      malla.matrixWorld.decompose(pos, q, esc);
+      const centro = bb.getCenter(new THREE.Vector3()).applyMatrix4(malla.matrixWorld);
+      const semi = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      const hA: [number, number, number] = [
+        semi.x * Math.abs(esc.x),
+        semi.y * Math.abs(esc.y),
+        semi.z * Math.abs(esc.z),
+      ];
+      m.makeRotationFromQuaternion(q);
+      const eA = [
+        new THREE.Vector3().setFromMatrixColumn(m, 0),
+        new THREE.Vector3().setFromMatrixColumn(m, 1),
+        new THREE.Vector3().setFromMatrixColumn(m, 2),
+      ];
+      for (const b of cajas) {
+        const p = Editor.penetracionOBB(centro, eA, hA, b.c, b.e, b.h);
+        if (p > peor) peor = p;
+      }
+    }
+    return peor;
+  }
+
+  /** SAT caja-caja: 0 si no se tocan, si no la penetración mínima (cm). */
+  private static penetracionOBB(
+    cA: THREE.Vector3,
+    eA: THREE.Vector3[],
+    hA: [number, number, number],
+    cB: THREE.Vector3,
+    eB: THREE.Vector3[],
+    hB: [number, number, number],
+  ): number {
+    const d = new THREE.Vector3().subVectors(cB, cA);
+    const ejes: THREE.Vector3[] = [...eA, ...eB];
+    const cruz = new THREE.Vector3();
+    for (const a of eA) {
+      for (const b of eB) {
+        cruz.crossVectors(a, b);
+        if (cruz.lengthSq() > 1e-8) ejes.push(cruz.clone().normalize());
+      }
+    }
+    let min = Infinity;
+    for (const ax of ejes) {
+      let ra = 0;
+      let rb = 0;
+      for (let i = 0; i < 3; i++) ra += hA[i] * Math.abs(eA[i].dot(ax));
+      for (let i = 0; i < 3; i++) rb += hB[i] * Math.abs(eB[i].dot(ax));
+      const sep = Math.abs(d.dot(ax)) - (ra + rb);
+      if (sep > 0) return 0; // eje separador: no hay solape
+      if (-sep < min) min = -sep;
+    }
+    return min === Infinity ? 0 : min;
+  }
+
+  /** Mallas que arrastra una articulación (con su espejo si hay simetría). */
+  private mallasDeArticulacion(nombre: string): THREE.Mesh[] {
+    const joints = this.figureJoints();
+    if (!joints) return [];
+    const raices = [joints[nombre]];
+    if (this.poseSymmetry) {
+      const otro = nombre.endsWith("L")
+        ? `${nombre.slice(0, -1)}R`
+        : nombre.endsWith("R")
+          ? `${nombre.slice(0, -1)}L`
+          : null;
+      if (otro && joints[otro]) raices.push(joints[otro]);
+    }
+    const out: THREE.Mesh[] = [];
+    for (const r of raices) {
+      r?.traverse((n) => {
+        const m = n as THREE.Mesh;
+        if (m.isMesh && m.visible && m.geometry?.getAttribute("position")) out.push(m);
+      });
+    }
+    return out;
   }
 
   /**
