@@ -2929,8 +2929,12 @@ export class Editor {
     }
     const lim = dof[eje];
     if (!lim) return false;
+    // ▲ FLEXIONA siempre, sea cual sea el signo de la articulación: la
+    // rodilla dobla con X positiva y el codo (o la cadera) con X negativa,
+    // así que el sentido se toma del recorrido largo de su rango.
+    const flexion = Math.abs(lim[1]) >= Math.abs(lim[0]) ? 1 : -1;
     const actual = radToDeg(joints[nombre].rotation[eje]);
-    const nuevo = Math.max(lim[0], Math.min(lim[1], actual + dir * pasoDeg));
+    const nuevo = Math.max(lim[0], Math.min(lim[1], actual + dir * flexion * pasoDeg));
     if (Math.abs(nuevo - actual) < 1e-3) return false; // tope del rango
     joints[nombre].rotation[eje] = degToRad(nuevo);
     this.applyPoseSymmetry(nombre);
@@ -5878,8 +5882,9 @@ export class Editor {
     // Arrastres de simulación: mano interactiva y posicionamiento del maniquí.
     if (simInteract) {
       const at = new THREE.Vector3();
-      if (this.simDrag && this.raycaster.ray.intersectPlane(this.simDrag.plane, at)) {
-        this.physics?.dragTo(at);
+      if (this.simDrag) {
+        const destino = this.puntoDeArrastre();
+        if (destino) this.physics?.dragTo(destino);
       } else if (this.figureDrag && this.humanFigure &&
         this.raycaster.ray.intersectPlane(this.figureDrag.plane, at)) {
         this.humanFigure.position.copy(at.add(this.figureDrag.offset));
@@ -6069,8 +6074,16 @@ export class Editor {
   }
 
   // -------------------------------------- herramientas de simulación
-  /** Arrastre de mano activo (plano de arrastre frente a la cámara). */
-  private simDrag: { plane: THREE.Plane } | null = null;
+  /**
+   * Arrastre de mano activo. Para una pieza LIBRE el objetivo se busca en un
+   * plano frente a la cámara; para una pieza ARTICULADA se busca sobre el
+   * ARCO que su bisagra le permite recorrer (v0.2.38): así el tirón entra
+   * entero como giro en vez de estrellarse contra el pasador.
+   */
+  private simDrag: {
+    plane: THREE.Plane;
+    arco?: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number };
+  } | null = null;
   /** Arrastre del maniquí (plano horizontal + offset al punto de agarre). */
   private figureDrag: { plane: THREE.Plane; offset: THREE.Vector3 } | null = null;
 
@@ -6080,14 +6093,22 @@ export class Editor {
    * si toca el maniquí, lo desliza por el suelo para situarlo.
    */
   private beginSimInteraction(): void {
-    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
-    const hit = hits[0];
-    const id = hit?.object.userData.sceneObjectId as string | undefined;
-    const obj = id ? this.objects.get(id) : undefined;
-    if (obj && hit && this.physics?.grab(obj.id, hit.point)) {
+    // Se recorren TODOS los impactos, no solo el primero: si delante hay una
+    // pieza anclada (un montante, el respaldo), la mano sigue buscando detrás
+    // hasta encontrar algo que de verdad se pueda mover. El rayo es
+    // RECURSIVO para que también cuenten las mallas hijas (placas de la pila,
+    // discos cargados).
+    const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, true);
+    for (const hit of hits) {
+      const id = hit.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (!obj) continue;
+      const arco = this.arcoDeAgarre(obj.id, hit.point);
+      if (!this.physics?.grab(obj.id, hit.point, !!arco)) continue;
       const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
       this.simDrag = {
         plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+        arco,
       };
       this.orbit.enabled = false;
       return;
@@ -6104,6 +6125,53 @@ export class Editor {
         }
       }
     }
+  }
+
+  /**
+   * Arco que la pieza agarrada puede recorrer: circunferencia centrada en su
+   * eje de giro y que pasa por el punto de agarre. Devuelve null si la pieza
+   * es libre (o si se la agarró justo sobre el pasador, donde no hay palanca).
+   */
+  private arcoDeAgarre(
+    objectId: string,
+    punto: THREE.Vector3,
+  ): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number } | undefined {
+    const bis = this.physics?.ejeDeGiro(objectId);
+    if (!bis) return undefined;
+    const centro = bis.punto
+      .clone()
+      .add(bis.eje.clone().multiplyScalar(punto.clone().sub(bis.punto).dot(bis.eje)));
+    const radio = punto.distanceTo(centro);
+    return radio > 3 ? { centro, eje: bis.eje, radio } : undefined;
+  }
+
+  /**
+   * Punto al que la mano lleva la pieza según el puntero: sobre el arco de su
+   * bisagra si la tiene, y si no en el plano frente a la cámara.
+   */
+  private puntoDeArrastre(): THREE.Vector3 | null {
+    const d = this.simDrag;
+    if (!d) return null;
+    const ray = this.raycaster.ray;
+    if (d.arco) {
+      const { centro, eje, radio } = d.arco;
+      const q = new THREE.Vector3();
+      const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(eje, centro);
+      // Con el rayo casi contenido en el plano del arco la intersección se
+      // dispara al infinito: en ese caso se toma el punto del rayo más
+      // cercano al eje, que es la lectura estable de "hacia dónde apunta".
+      if (Math.abs(ray.direction.dot(eje)) < 0.15 || !ray.intersectPlane(plano, q)) {
+        ray.closestPointToPoint(centro, q);
+      }
+      const radial = q.sub(centro).projectOnPlane(eje);
+      if (radial.lengthSq() < 1e-6) return null;
+      // El objetivo se deja EXACTAMENTE sobre el arco: así el esfuerzo que
+      // mide la mano es el que de verdad cuesta girar la pieza y no incluye
+      // el tirón radial que se come el pasador.
+      return radial.setLength(radio).add(centro);
+    }
+    const at = new THREE.Vector3();
+    return ray.intersectPlane(d.plane, at) ? at : null;
   }
 
   /** Termina los arrastres de simulación (mano y maniquí). */

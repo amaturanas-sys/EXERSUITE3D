@@ -89,6 +89,19 @@ export class PhysicsWorld {
    *  solver en reposo. */
   private topeCongelados = new Set<R.RigidBody>();
 
+  /**
+   * BISAGRA QUE GOBIERNA A CADA CUERPO (v0.2.38). Para cada cuerpo dinámico
+   * articulado por una revoluta libre se guarda su eje: el ancla y la
+   * dirección EN EL FRAME DE LA OTRA PIEZA, de modo que si esa otra pieza
+   * también se mueve (una bisagra montada sobre un brazo) el eje se recalcula
+   * bien en cada consulta. Lo usa la mano interactiva para tirar SIGUIENDO EL
+   * ARCO en vez de contra el pasador.
+   */
+  private bisagras = new Map<
+    R.RigidBody,
+    { ref: R.RigidBody; ancla: { x: number; y: number; z: number }; eje: { x: number; y: number; z: number } }
+  >();
+
   /** Importa el modulo y carga/inicializa el WASM de Rapier una sola vez. */
   static init(): Promise<void> {
     return (PhysicsWorld.ready ??= import("@dimforge/rapier3d-compat").then((m) => {
@@ -109,6 +122,7 @@ export class PhysicsWorld {
     // cables quedarian apuntando a cuerpos de un mundo liberado).
     this.world?.free();
     this.bodies.clear();
+    this.bisagras.clear();
     this.cables = [];
     this.guias = [];
     this.empotradas = [];
@@ -1032,6 +1046,19 @@ export class PhysicsWorld {
       handle = this.addJointViaAdapter(joint, a, b, anchorA, anchorB, axis);
     }
 
+    // Se anota el EJE DE GIRO de cada pieza articulada (para que la mano tire
+    // por el arco, no contra el pasador). Cada cuerpo guarda el eje descrito
+    // en el frame del OTRO, que es su referencia de giro.
+    if (joint.kind === "revolute" && !joint.locked) {
+      if (b.body.isDynamic() && !this.bisagras.has(b.body)) {
+        this.bisagras.set(b.body, { ref: a.body, ancla: anchorA, eje: axis });
+      }
+      if (a.body.isDynamic() && !this.bisagras.has(a.body)) {
+        const e = axisLocalB;
+        this.bisagras.set(a.body, { ref: b.body, ancla: anchorB, eje: { x: e.x, y: e.y, z: e.z } });
+      }
+    }
+
     if (joint.limitsEnabled) {
       const [min, max] =
         joint.kind === "revolute"
@@ -1467,6 +1494,8 @@ export class PhysicsWorld {
     body: R.RigidBody;
     local: THREE.Vector3;
     target: THREE.Vector3;
+    /** Agarre FIRME: la pieza está articulada y solo puede seguir su arco. */
+    firme: boolean;
   } | null = null;
 
   /**
@@ -1483,7 +1512,28 @@ export class PhysicsWorld {
     return this.tensionMaxN / 9.81;
   }
 
-  grab(objectId: string, worldCm: THREE.Vector3): boolean {
+  /**
+   * Eje de giro (en cm de mundo) de la pieza, si está articulada por una
+   * bisagra libre: punto del pasador y dirección. La mano lo usa para
+   * arrastrar SIGUIENDO EL ARCO que la pieza puede recorrer de verdad.
+   */
+  ejeDeGiro(objectId: string): { punto: THREE.Vector3; eje: THREE.Vector3 } | null {
+    const e = this.bodies.get(objectId);
+    if (!e) return null;
+    const h = this.bisagras.get(e.body);
+    if (!h) return null;
+    const t = h.ref.translation();
+    const r = h.ref.rotation();
+    const q = new THREE.Quaternion(r.x, r.y, r.z, r.w);
+    const punto = new THREE.Vector3(h.ancla.x, h.ancla.y, h.ancla.z)
+      .applyQuaternion(q)
+      .add(new THREE.Vector3(t.x, t.y, t.z))
+      .divideScalar(S);
+    const eje = new THREE.Vector3(h.eje.x, h.eje.y, h.eje.z).applyQuaternion(q).normalize();
+    return { punto, eje };
+  }
+
+  grab(objectId: string, worldCm: THREE.Vector3, firme = false): boolean {
     const e = this.bodies.get(objectId);
     if (!e) return false;
     // Un extremo parqueado en su tope se DESCONGELA al agarrarlo.
@@ -1499,7 +1549,7 @@ export class PhysicsWorld {
       .clone()
       .sub(new THREE.Vector3(t.x, t.y, t.z))
       .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w).invert());
-    this.drag = { body: e.body, local, target: worldM };
+    this.drag = { body: e.body, local, target: worldM, firme };
     this.tensionMaxN = 0; // cada agarre mide su propia tensión
     this.tensionEMA = 0;
     return true;
@@ -1541,8 +1591,14 @@ export class PhysicsWorld {
     // 2 kg la mano topaba en ~120 N y no podía arrastrar el contrapeso de
     // 38 kg conectado por el cable. Sobre-amortiguado para TODAS las masas
     // (KD/2√(KP·m) > 1 desde 0,3 kg), así no oscila ni con piezas ligeras.
-    const KP = 1500; // N/m
-    const KD = 120; // N·s/m
+    // AGARRE FIRME (v0.2.38): sobre una pieza ARTICULADA la mano no sujeta un
+    // objeto suelto sino una manilla que solo puede recorrer su arco; ahí la
+    // mano da tres veces menos juego y el brazo sigue al dedo en vez de
+    // quedarse atrás. KP y KD suben JUNTOS, así el amortiguamiento relativo
+    // (y por tanto la estabilidad para cualquier masa) es el mismo de siempre.
+    const rigidez = d.firme ? 3 : 1;
+    const KP = 1500 * rigidez; // N/m
+    const KD = 120 * rigidez; // N·s/m
     // FUERZA SIEMPRE SUFICIENTE (v0.2.14): la mano ya no topa en un
     // presupuesto humano — puede levantar y operar cualquier móvil de la
     // máquina. A cambio, el simulador REPORTA cuánto costó: la tensión
@@ -1712,6 +1768,7 @@ export class PhysicsWorld {
     this.world?.free();
     this.world = null;
     this.bodies.clear();
+    this.bisagras.clear();
     this.cables = [];
     this.guias = [];
     this.empotradas = [];

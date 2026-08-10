@@ -7,7 +7,8 @@
 export type PoseDef = Record<string, [number, number, number]>;
 export type PoseMap = Record<string, PoseDef>;
 
-const STORAGE_KEY = "exersuite.poses.v1";
+const STORAGE_KEY = "exersuite.poses.v2";
+const STORAGE_KEY_V1 = "exersuite.poses.v1";
 
 export const BUILTIN_POSES: PoseMap = {
   "De pie": {},
@@ -22,14 +23,14 @@ export const BUILTIN_POSES: PoseMap = {
     hipL: [-85, 0, 0], hipR: [-85, 0, 0],
     kneeL: [95, 0, 0], kneeR: [95, 0, 0],
     shoulderL: [-20, 0, 0], shoulderR: [-20, 0, 0],
-    elbowL: [55, 0, 0], elbowR: [55, 0, 0],
+    elbowL: [-55, 0, 0], elbowR: [-55, 0, 0],
   },
   Remo: {
     spine: [35, 0, 0],
     hipL: [-15, 0, 0], hipR: [-15, 0, 0],
     kneeL: [25, 0, 0], kneeR: [25, 0, 0],
     shoulderL: [20, 0, 0], shoulderR: [20, 0, 0],
-    elbowL: [105, 0, 0], elbowR: [105, 0, 0],
+    elbowL: [-105, 0, 0], elbowR: [-105, 0, 0],
   },
   Press: {
     shoulderL: [-165, 0, 0], shoulderR: [-165, 0, 0],
@@ -43,6 +44,20 @@ function load(): PoseMap {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as PoseMap;
+    // MIGRACIÓN v1 → v2 (v0.2.38): el codo doblaba al revés, así que las
+    // posturas guardadas con el criterio viejo se pasan al nuevo cambiando
+    // el signo de su flexión. Las que el usuario creó se conservan.
+    const viejo = localStorage.getItem(STORAGE_KEY_V1);
+    if (viejo) {
+      const previas = JSON.parse(viejo) as PoseMap;
+      for (const pose of Object.values(previas)) {
+        for (const art of ["elbowL", "elbowR"]) {
+          if (pose[art]) pose[art] = [-pose[art][0], pose[art][1], pose[art][2]];
+        }
+      }
+      // Las de fábrica se rehacen: pueden haber cambiado por otros motivos.
+      return { ...previas, ...structuredClone(BUILTIN_POSES) };
+    }
   } catch {
     /* sin persistencia disponible */
   }

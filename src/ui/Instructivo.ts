@@ -128,6 +128,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Posa sus articulaciones arrastrando los ejes, guarda posturas y usa Apoyar mano para fijar las manos a un agarre (IK).",
       "✋ Agarrar maniquí (en Posturas): arrastra directamente un segmento del cuerpo; con 1/2/3 el movimiento se restringe a un eje.",
       "🔒 Candado: bloquea articulaciones para que no se muevan al posar (representa técnica y ejercicio con precisión); Simetría L↔R replica cada cambio espejado en el otro lado.",
+      "Cada articulación dobla hacia SU lado anatómico: el CODO flexiona hacia delante (X negativa) y la RODILLA hacia atrás (X positiva), como en el cuerpo. Si guardaste posturas con una versión anterior, se migran solas al criterio correcto.",
     ],
   },
   {
@@ -136,8 +137,10 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     puntos: [
       "▶ Simular (o Espacio) corre la física; los paneles se ocultan para máximo rendimiento.",
       "Con la simulación corriendo, ARRASTRA las piezas móviles con el dedo: es la mano interactiva. La fuerza de la mano SIEMPRE alcanza para operar los móviles, y la barra reporta la TENSIÓN MÁXIMA ejercida en kg y lb (✋ máx …).",
+      "PIEZAS ARTICULADAS: si lo que agarras cuelga de una bisagra —el brazo de press de una torre, un pedal, una tapa— la mano SIGUE SU ARCO en vez de tirar contra el pasador, así que el brazo va detrás de tu dedo mientras recorres la curva que la máquina permite. Arrastra siguiendo ese arco (no en línea recta) y el recorrido sale entero; la tensión que se muestra es la que de verdad cuesta girarla.",
+      "Si delante de la pieza que buscas hay algo ANCLADO (un montante, el respaldo), el agarre lo atraviesa y toma la primera pieza móvil que encuentre detrás: ya no hace falta orbitar para \"despejar\" el objetivo.",
       "El botón 🌐 cambia a la herramienta de ÓRBITA: el arrastre solo mueve la cámara para visualizar, sin tocar piezas; ✋ vuelve a la mano.",
-      "DEMOSTRACIÓN DE MOVIMIENTO del maniquí: elige la articulación FOCAL en el selector de la barra y los cursores ▲/▼ (o las flechas del teclado) la flexionan y extienden dentro del rango de movimiento humano — las articulaciones fijadas con candado (Posturas) no se mueven y el resto del cuerpo sigue la cadena.",
+      "DEMOSTRACIÓN DE MOVIMIENTO del maniquí: elige la articulación FOCAL en el selector de la barra y los cursores ▲/▼ (o las flechas del teclado) la flexionan y extienden dentro del rango de movimiento humano — ▲ FLEXIONA siempre, sea codo, rodilla, cadera u hombro. Las articulaciones fijadas con candado (Posturas) no se mueven y el resto del cuerpo sigue la cadena.",
       "Las JOTAS y brazos de seguridad sostienen la barra en su CONCAVIDAD real: apoyada en el gancho queda retenida por el asiento y el tope, sin rodar ni deslizar fuera.",
       "Las CADENAS y correas son CUERDAS FLEXIBLES: cuelgan, ondulan y se hunden bajo la barra que cae (y la mecen); la caída definida al tenderlas fija su tensión inicial.",
       "Al detener, todo vuelve exactamente a su posición de diseño.",

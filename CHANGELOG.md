@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.38] — 2026-08-10
+
+### Corregido
+
+- **LA MANO SIGUE EL ARCO DE LA PIEZA ARTICULADA**. Movilizar el brazo de
+  press era casi imposible: la mano llevaba el objetivo a un plano paralelo a
+  la pantalla, y como una pieza con bisagra solo puede recorrer un ARCO, la
+  mayor parte del tirón se estrellaba contra el pasador — 30 a 50 kg de
+  esfuerzo para no mover nada, o unos pocos grados cuando movía.
+
+  Ahora el motor anota el EJE DE GIRO de cada pieza articulada (el ancla y la
+  dirección en el frame de la pieza de referencia, así vale también para una
+  bisagra montada sobre otra pieza móvil) y la mano lleva el objetivo sobre la
+  circunferencia que esa pieza puede recorrer de verdad. Todo el esfuerzo
+  entra como giro y la lectura de tensión sigue siendo honesta, porque el
+  objetivo cae EXACTAMENTE sobre el arco y no incluye el tirón radial que se
+  come el pasador.
+
+  Además, sobre una pieza articulada el agarre es FIRME (tres veces menos
+  juego: KP y KD suben juntos, así la estabilidad para cualquier masa es la de
+  siempre), porque la mano no sujeta un objeto suelto sino una manilla guiada.
+
+  Medido en la UpperMachine, arrastrando el agarre con el puntero: el brazo de
+  press recorre 34° de los 45° pedidos siguiendo al dedo con ~3° de retraso y
+  27 kg de esfuerzo. Antes, el mismo gesto daba 4°.
+
+- **El agarre ya no se queda con la primera pieza que encuentra**: el rayo
+  recorre TODOS los impactos hasta dar con algo que de verdad se pueda mover,
+  así una pieza anclada por delante (un montante, el respaldo) deja de
+  bloquear el agarre de lo que hay detrás. El rayo pasa a ser recursivo, de
+  modo que también cuentan las mallas hijas (placas de la pila, discos
+  cargados).
+
+- **EL CODO DEL MANIQUÍ DOBLABA AL REVÉS**. Con los huesos en reposo sobre
+  −Y y la figura mirando a +Z, una X positiva lleva el segmento hacia ATRÁS:
+  correcto para la rodilla, imposible para el codo, que tenía el mismo signo
+  (`[-15, 150]`). El antebrazo se plegaba hacia la espalda. El rango pasa a
+  `[-150, 15]` y las posturas de fábrica «Sentado» y «Remo» se corrigen con
+  él; las posturas que hubieras guardado se migran solas cambiando el signo
+  de la flexión del codo.
+
+- Los cursores **▲/▼ de la articulación focal FLEXIONAN siempre**, sea cual
+  sea el signo de la articulación: antes ▲ flexionaba la rodilla pero extendía
+  la cadera, el hombro y (ahora) el codo.
+
 ## [0.2.37] — 2026-08-09
 
 ### Añadido

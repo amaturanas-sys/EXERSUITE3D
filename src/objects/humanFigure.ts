@@ -27,8 +27,12 @@ export const JOINT_DOF: Record<string, AxisLimits> = {
   neck: { x: [-50, 55], y: [-70, 70], z: [-40, 40] },
   shoulderL: { x: [-180, 60], y: [-90, 90], z: [-30, 150] },
   shoulderR: { x: [-180, 60], y: [-90, 90], z: [-150, 30] },
-  elbowL: { x: [-15, 150] },
-  elbowR: { x: [-15, 150] },
+  // CODO (v0.2.38): flexiona hacia DELANTE, al revés que la rodilla. Con los
+  // huesos en reposo sobre -Y y la figura mirando a +Z, una X POSITIVA lleva
+  // el segmento hacia atrás — bien para la rodilla, imposible para el codo,
+  // que antes doblaba al revés del cuerpo.
+  elbowL: { x: [-150, 15] },
+  elbowR: { x: [-150, 15] },
   wristL: { x: [-70, 70], z: [-25, 25] },
   wristR: { x: [-70, 70], z: [-25, 25] },
   hipL: { x: [-135, 30], y: [-45, 45], z: [-45, 20] },
