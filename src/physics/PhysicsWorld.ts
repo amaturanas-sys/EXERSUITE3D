@@ -95,6 +95,12 @@ export class PhysicsWorld {
    *  hasta que la mano los agarre) — evita que el tope bombee contra el
    *  solver en reposo. */
   private topeCongelados = new Set<R.RigidBody>();
+  /** Posiciones justo antes de la corrección POSICIONAL del cable, para poder
+   *  barrer el desplazamiento neto y no atravesar nada. */
+  private posCable = new Map<R.RigidBody, { x: number; y: number; z: number }>();
+  /** Pares de cuerpos cuyo contacto está APAGADO por su unión: el barrido
+   *  anti-atravesamiento debe ignorarlos igual que los ignora el motor. */
+  private sinContacto = new Map<R.RigidBody, Set<R.RigidBody>>();
 
   /**
    * BISAGRA QUE GOBIERNA A CADA CUERPO (v0.2.38). Para cada cuerpo dinámico
@@ -138,6 +144,8 @@ export class PhysicsWorld {
     this.masaExtra.clear();
     this.cuerposCable.clear();
     this.topeCongelados.clear();
+    this.posCable.clear();
+    this.sinContacto.clear();
     this.drag = null;
     this.cuerdasSim.clear();
     this.world = new RAPIER.World(GRAVITY);
@@ -872,6 +880,84 @@ export class PhysicsWorld {
     }
   }
 
+  /** Anota que dos cuerpos NO deben chocar (su unión apagó los contactos). */
+  private marcarSinContacto(a: R.RigidBody, b: R.RigidBody): void {
+    const anotar = (x: R.RigidBody, y: R.RigidBody) => {
+      let s = this.sinContacto.get(x);
+      if (!s) {
+        s = new Set();
+        this.sinContacto.set(x, s);
+      }
+      s.add(y);
+    };
+    anotar(a, b);
+    anotar(b, a);
+  }
+
+  /**
+   * ANTI-ATRAVESAMIENTO DEL CABLE (v0.2.42).
+   *
+   * La corrección de longitud mueve los nodos con `setTranslation` DESPUÉS de
+   * `world.step()`: el motor no ve esos desplazamientos, así que el cable
+   * podía empujar una pieza DENTRO de la estructura de la que cuelga — la
+   * barra de jalón incrustándose milímetro a milímetro en el bastidor cada
+   * subpaso, que es como acaba solapada con lo que tiene al lado.
+   *
+   * En vez de encarecer las 8 pasadas, se corrige UNA vez por subpaso: el
+   * desplazamiento NETO de cada nodo se barre con su propia forma y se corta
+   * en el primer choque. Los pares cuyo contacto apagó su unión (pivotes,
+   * adaptadores) se ignoran, igual que los ignora el motor.
+   */
+  private frenarAtravesamiento(): void {
+    const world = this.world;
+    if (!world) return;
+    for (const [body, antes] of this.posCable) {
+      const t = body.translation();
+      const dx = t.x - antes.x;
+      const dy = t.y - antes.y;
+      const dz = t.z - antes.z;
+      const mag = Math.hypot(dx, dy, dz);
+      // Por debajo de 0,05 mm no hay atravesamiento posible ni que medir.
+      if (mag < 5e-5) continue;
+      const dir = { x: dx / mag, y: dy / mag, z: dz / mag };
+      const vecinos = this.sinContacto.get(body);
+      const filtro = vecinos
+        ? (c: R.Collider) => {
+            const padre = c.parent();
+            return !padre || !vecinos.has(padre);
+          }
+        : undefined;
+      let toi = mag;
+      for (let i = 0; i < body.numColliders() && toi > 0; i++) {
+        const col = body.collider(i);
+        if (col.isSensor()) continue;
+        // El barrido parte de la pose PREVIA: la proyección solo traslada,
+        // así que basta restar el desplazamiento al centro del collider.
+        const p = col.translation();
+        const hit = world.castShape(
+          { x: p.x - dx, y: p.y - dy, z: p.z - dz },
+          col.rotation(),
+          dir,
+          col.shape,
+          0,
+          toi,
+          false, // ya penetrando: lo resuelve el motor, no este barrido
+          RAPIER.QueryFilterFlags.EXCLUDE_SENSORS,
+          col.collisionGroups(),
+          undefined,
+          body,
+          filtro,
+        );
+        if (hit && hit.time_of_impact < toi) toi = Math.max(0, hit.time_of_impact);
+      }
+      if (toi >= mag) continue;
+      body.setTranslation(
+        { x: antes.x + dir.x * toi, y: antes.y + dir.y * toi, z: antes.z + dir.z * toi },
+        true,
+      );
+    }
+  }
+
   /** Posicion mundial (metros) del anclaje del nodo i: trans + rot * local. */
   private nodeWorld(entry: CableEntry, i: number): { x: number; y: number; z: number } {
     const t = entry.bodies[i].translation();
@@ -1166,6 +1252,7 @@ export class PhysicsWorld {
       // lo contrario (bisagra real montada sobre caras que no se solapan):
       // ahí el material debe frenar el plegado, no atravesarse.
       handle.setContactsEnabled(joint.contactos);
+      if (!joint.contactos) this.marcarSinContacto(a.body, b.body);
     } else {
       handle = this.addJointViaAdapter(joint, a, b, anchorA, anchorB, axis);
     }
@@ -1261,6 +1348,7 @@ export class PhysicsWorld {
         world
           .createImpulseJoint(RAPIER.JointData.rope(1e6, anchorA, anchorB), a.body, b.body, true)
           .setContactsEnabled(false);
+        this.marcarSinContacto(a.body, b.body);
       }
       return directo;
     }
@@ -1320,6 +1408,7 @@ export class PhysicsWorld {
         true,
       );
       rope.setContactsEnabled(false);
+      this.marcarSinContacto(a.body, b.body);
     }
 
     return unit;
@@ -1851,6 +1940,14 @@ export class PhysicsWorld {
             this.aplicarFrenos(c, false);
           }
         }
+        // Instantánea previa a la parte POSICIONAL: es la que se barre luego
+        // para que ninguna corrección de longitud atraviese geometría.
+        this.posCable.clear();
+        for (const c of this.cables) {
+          for (const b of c.bodies) {
+            if (!this.posCable.has(b)) this.posCable.set(b, { ...b.translation() });
+          }
+        }
         for (let it = 0; it < 8; it++) {
           for (const c of this.cables) {
             this.solveCablePosition(c);
@@ -1859,6 +1956,8 @@ export class PhysicsWorld {
         }
         // Topes de terminal: el extremo no pasa por su roldana vecina.
         for (const c of this.cables) this.aplicarTopesCable(c);
+        // Nada de lo anterior pudo meter una pieza dentro de otra.
+        this.frenarAtravesamiento();
         // La corrección del cable no puede sacar a las guiadas de su riel.
         this.aplicarGuias();
         // ESTICCIÓN de polea (posicional): si en este subpaso un cuerpo
@@ -1964,6 +2063,8 @@ export class PhysicsWorld {
     this.masaExtra.clear();
     this.cuerposCable.clear();
     this.topeCongelados.clear();
+    this.posCable.clear();
+    this.sinContacto.clear();
     this.drag = null;
   }
 }

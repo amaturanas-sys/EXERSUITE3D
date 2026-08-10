@@ -5,6 +5,30 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.42] — 2026-08-10
+
+### Corregido
+
+- **EL CABLE YA NO EMPUJA UNA PIEZA DENTRO DE OTRA**. La corrección de longitud
+  del cable movía los nodos con un reposicionamiento directo DESPUÉS del paso
+  del motor, así que ese desplazamiento no pasaba por los contactos: nada le
+  impedía meter una pieza dentro de la estructura de la que cuelga. En la
+  UpperMachine la barra de jalón se hundía milímetro a milímetro en el
+  bastidor superior hasta **3,3 cm**, se quedaba clavada ahí y **la estación de
+  jalón dejaba de funcionar**: la pila subía 0,3 cm en vez de 21.
+
+  Ahora el desplazamiento NETO que el cable imprime a cada nodo en el subpaso
+  se barre con la forma del propio cuerpo y se corta en el primer choque, una
+  sola vez por subpaso (no en cada una de las ocho pasadas, para no encarecer
+  el bucle). Los pares cuyo contacto apagó su unión —pivotes y adaptadores— se
+  ignoran, igual que los ignora el motor, y una pieza que ya estaba penetrando
+  sigue pudiendo salir: eso lo resuelve el motor, no el barrido.
+
+  Medido sobre la UpperMachine, tres repeticiones: la barra pasa de hundirse
+  3,1-3,4 cm a quedar libre en cuanto el motor la expulsa, el jalón pasa de
+  0,2-0,3 cm a 20,5-24,5 cm de recorrido de la pila, y el press se mantiene.
+  El coste del paso sube de ~1,3 ms a ~1,4-2,2 ms.
+
 ## [0.2.41] — 2026-08-10
 
 ### Añadido
