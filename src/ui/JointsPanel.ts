@@ -158,6 +158,7 @@ export class JointsPanel {
   private hingeBtn: HTMLButtonElement;
   private slideBtn: HTMLButtonElement;
   private cableBtn: HTMLButtonElement;
+  private frenoBtn: HTMLButtonElement;
   private finishBtn: HTMLButtonElement;
   private selectedId: string | null = null;
   private ropeBox!: HTMLElement;
@@ -188,6 +189,19 @@ export class JointsPanel {
       "+ Cable",
     ]);
     this.cableBtn.addEventListener("click", () => this.editor.beginCable());
+
+    this.frenoBtn = el(
+      "button",
+      {
+        class: "tool",
+        title: "Engarzar un FRENO (esfera de tope) en un punto del cable; volver a pulsarlo sobre el freno lo retira",
+      },
+      ["⏺ Freno"],
+    );
+    this.frenoBtn.addEventListener("click", () => {
+      if (this.editor.isFrenoMode()) this.editor.cancelFrenoCable();
+      else this.editor.beginFrenoCable();
+    });
 
     this.finishBtn = el("button", { class: "tool sim", title: "Finalizar el cable (Enter)" }, [
       "Finalizar cable",
@@ -224,7 +238,12 @@ export class JointsPanel {
 
     this.root = el("aside", { class: "panel", id: "joints" }, [
       el("div", { class: "panel-title" }, ["Conexiones"]),
-      el("div", { class: "joints-actions" }, [this.hingeBtn, this.slideBtn, this.cableBtn]),
+      el("div", { class: "joints-actions" }, [
+        this.hingeBtn,
+        this.slideBtn,
+        this.cableBtn,
+        this.frenoBtn,
+      ]),
       this.finishBtn,
       this.status,
       this.ropeBox,
@@ -239,6 +258,12 @@ export class JointsPanel {
     this.editor.bus.on("cableModeChanged", ({ active, count, hint }) =>
       this.onCableMode(active, count, hint),
     );
+    this.editor.bus.on("frenoModeChanged", ({ active }) => {
+      this.frenoBtn.classList.toggle("active", active);
+      this.status.textContent = active
+        ? "Freno de cable: clic sobre el trazado de un cable para engarzar la esfera de tope (clic sobre un freno puesto lo retira). ESC para salir."
+        : "Articula piezas (bisagra/corredera) o traza un cable por poleas.";
+    });
     this.editor.bus.on("ropeModeChanged", ({ active, kind, count }) => {
       if (active) {
         const t = kind === "chain" ? "cadena" : "correa";

@@ -131,6 +131,12 @@ export interface UnionSpec {
  */
 export interface CableSpec {
   nodos: { pieza: number; local: [number, number, number] }[];
+  /**
+   * FRENOS engarzados al cable (v0.2.40): esferas de tope que viajan con él y
+   * no pasan por una roldana. `seg` es el segmento del recorrido (entre el
+   * nodo `seg` y el siguiente) y `dist` la distancia en cm desde ese nodo.
+   */
+  topes?: { seg: number; dist: number; radio?: number }[];
 }
 
 /**
@@ -533,7 +539,12 @@ export function aplicarCables(editor: Editor, ids: string[], cables: CableSpec[]
       }
       nodes.push({ objectId: id, local: { x: n.local[0], y: n.local[1], z: n.local[2] } });
     }
-    if (completo && nodes.length >= 2) editor.createCable(nodes);
+    if (completo && nodes.length >= 2) {
+      const cable = editor.createCable(nodes);
+      if (cable && c.topes) {
+        cable.topes = c.topes.map((t) => ({ seg: t.seg, dist: t.dist, radio: t.radio ?? 2.2 }));
+      }
+    }
   }
 }
 

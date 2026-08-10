@@ -45,6 +45,8 @@ export interface JointData {
 export interface CableData {
   name: string;
   nodes: { objectId: string; local: Vec3 }[];
+  /** Frenos engarzados al cable (esferas de tope), v0.2.40. */
+  topes?: { seg: number; dist: number; radio: number }[];
 }
 
 export interface GroupData {

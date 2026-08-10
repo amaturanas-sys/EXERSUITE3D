@@ -122,7 +122,13 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
       }
       nodos.push({ pieza: idx, local: [r4(n.local.x), r4(n.local.y), r4(n.local.z)] });
     }
-    if (dentro && nodos.length >= 2) cables.push({ nodos });
+    if (dentro && nodos.length >= 2) {
+      const entrada: CableSpec = { nodos };
+      if (c.topes.length > 0) {
+        entrada.topes = c.topes.map((t) => ({ seg: t.seg, dist: r4(t.dist), radio: t.radio }));
+      }
+      cables.push(entrada);
+    }
   }
 
   const archivo: PrefabArchivo = {
@@ -177,6 +183,7 @@ export function prefabDeFabrica(prefabId: string): PrefabArchivo | null {
   if (spec.cables) {
     archivo.cables = spec.cables.map((c) => ({
       nodos: c.nodos.map((n) => ({ pieza: n.pieza, local: [...n.local] as [number, number, number] })),
+      ...(c.topes ? { topes: c.topes.map((t) => ({ ...t })) } : {}),
     }));
   }
   return archivo;
@@ -261,7 +268,15 @@ export function parsearPrefab(texto: string): ReportePrefab {
         }
         nodos.push({ pieza: ni, local: [n.local[0], n.local[1], n.local[2]] });
       }
-      if (valido) cables.push({ nodos });
+      if (valido) {
+        const entrada: CableSpec = { nodos };
+        if (Array.isArray(c.topes)) {
+          entrada.topes = c.topes
+            .filter((t) => typeof t?.seg === "number" && typeof t?.dist === "number")
+            .map((t) => ({ seg: t.seg, dist: t.dist, radio: t.radio }));
+        }
+        cables.push(entrada);
+      }
       else advertencias.push("Un cable del prefab tocaba una pieza excluida y quedó fuera.");
     }
     if (cables.length === 0) cables = undefined;

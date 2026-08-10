@@ -42,6 +42,13 @@ interface CableEntry {
    */
   topeIni: number; // metros (0 = sin tope)
   topeFin: number;
+  /**
+   * FRENOS engarzados (v0.2.40): esferas que viajan con el cable y no pasan
+   * por una roldana. Cada uno parte el recorrido en dos tramos cuyas
+   * longitudes quedan acotadas: antes del freno como mucho `s` metros de
+   * cable, después como mucho `restLength - s`.
+   */
+  topes: { seg: number; s: number }[];
 }
 
 // Simulacion de fisica rigida con Rapier.
@@ -790,8 +797,20 @@ export class PhysicsWorld {
         this.cuerposCable.add(b);
       }
     }
-    const entry: CableEntry = { bodies, local, restLength: 0, topeIni: 0, topeFin: 0 };
+    const entry: CableEntry = { bodies, local, restLength: 0, topeIni: 0, topeFin: 0, topes: [] };
     entry.restLength = this.cableLength(entry);
+    // FRENOS: su posición se pasa a LONGITUD DE CABLE desde el nodo 0. Es la
+    // magnitud que se conserva mientras el cable corre por sus roldanas, y la
+    // que permite acotar cuánto cable puede quedar a cada lado de la esfera.
+    for (const t of cable.topes) {
+      const seg = Math.max(0, Math.min(bodies.length - 2, Math.round(t.seg)));
+      const sm = this.longitudTramo(entry, 0, seg) + Math.max(0, t.dist) * S;
+      const margen = 0.02; // 2 cm: nunca nace pegado a un extremo
+      entry.topes.push({
+        seg,
+        s: Math.max(margen, Math.min(entry.restLength - margen, sm)),
+      });
+    }
     // Topes de terminal: solo tienen sentido con roldanas de por medio
     // (n ≥ 3). El tope es ~10 cm (radio de roldana + accesorio) acotado por
     // el largo inicial del segmento, para no nacer en violación.
@@ -871,8 +890,13 @@ export class PhysicsWorld {
   }
 
   private cableLength(entry: CableEntry): number {
+    return this.longitudTramo(entry, 0, entry.bodies.length - 1);
+  }
+
+  /** Longitud (m) del tramo de cable entre los nodos `i0` e `i1`. */
+  private longitudTramo(entry: CableEntry, i0: number, i1: number): number {
     let L = 0;
-    for (let i = 0; i < entry.bodies.length - 1; i++) {
+    for (let i = i0; i < i1; i++) {
       const a = this.nodeWorld(entry, i);
       const b = this.nodeWorld(entry, i + 1);
       L += Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
@@ -912,14 +936,19 @@ export class PhysicsWorld {
    * aplicada a TODOS los nodos dinamicos (extremos y poleas moviles). Solo tira:
    * si hay holgura (L <= rest) o ya no se alarga (vrel <= 0) no hace nada.
    */
-  private solveCableVelocity(entry: CableEntry): void {
-    const { bodies, restLength } = entry;
+  private solveCableVelocity(
+    entry: CableEntry,
+    i0 = 0,
+    i1 = entry.bodies.length - 1,
+    maxLen = entry.restLength,
+  ): void {
+    const bodies = entry.bodies.slice(i0, i1 + 1);
     const n = bodies.length;
     if (n < 2) return;
-    const C = this.cableLength(entry) - restLength;
+    const C = this.longitudTramo(entry, i0, i1) - maxLen;
     if (C <= 0) return;
 
-    const p = bodies.map((_, i) => this.nodeWorld(entry, i));
+    const p = bodies.map((_, i) => this.nodeWorld(entry, i0 + i));
     const J = this.cableGradients(p);
     const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
     let effMass = 0;
@@ -954,12 +983,19 @@ export class PhysicsWorld {
    * conservar la longitud. El desplazamiento de cada nodo se limita para no
    * cruzar una polea adyacente (evita inestabilidad en los extremos).
    */
-  private solveCablePosition(entry: CableEntry): void {
-    const { bodies, restLength } = entry;
+  private solveCablePosition(
+    entry: CableEntry,
+    i0 = 0,
+    i1 = entry.bodies.length - 1,
+    maxLen = entry.restLength,
+    holgura = 0.03,
+  ): void {
+    const bodies = entry.bodies.slice(i0, i1 + 1);
+    const restLength = maxLen;
     const n = bodies.length;
     if (n < 2) return;
 
-    const p = bodies.map((_, i) => this.nodeWorld(entry, i));
+    const p = bodies.map((_, i) => this.nodeWorld(entry, i0 + i));
     const segLen: number[] = [];
     for (let i = 0; i < n - 1; i++) {
       segLen.push(Math.hypot(p[i].x - p[i + 1].x, p[i].y - p[i + 1].y, p[i].z - p[i + 1].z));
@@ -967,8 +1003,7 @@ export class PhysicsWorld {
     // Red de EMERGENCIA: la recuperación normal la hace el bias de velocidad
     // (Baumgarte); solo se teletransporta el exceso grosero (tirones muy
     // violentos), dejando una holgura que evita el bombeo posicional.
-    const HOLGURA = 0.03; // m
-    const C = segLen.reduce((a, b) => a + b, 0) - restLength - HOLGURA;
+    const C = segLen.reduce((a, b) => a + b, 0) - restLength - holgura;
     if (C <= 0) return;
 
     const J = this.cableGradients(p);
@@ -997,6 +1032,95 @@ export class PhysicsWorld {
       // El delta se aplica al CENTRO del cuerpo (el anclaje se mueve con el).
       const c = bodies[i].translation();
       bodies[i].setTranslation({ x: c.x + dx, y: c.y + dy, z: c.z + dz }, true);
+    }
+  }
+
+  /**
+   * TOPE DE LONGITUD MÍNIMA de un tramo (v0.2.40): lo contrario del cable —
+   * en vez de impedir que se estire, impide que se ACORTE. Es lo que hace un
+   * freno de esfera: el cable no puede seguir corriendo hacia la roldana
+   * porque la bola se interpone. Se resuelve con los mismos gradientes,
+   * separando los nodos en lugar de juntarlos.
+   */
+  private solveTramoMinimo(
+    entry: CableEntry,
+    i0: number,
+    i1: number,
+    minLen: number,
+    posicional: boolean,
+  ): void {
+    const bodies = entry.bodies.slice(i0, i1 + 1);
+    const n = bodies.length;
+    if (n < 2) return;
+    const C = minLen - this.longitudTramo(entry, i0, i1); // > 0 = violado
+    if (C <= 0) return;
+
+    const p = bodies.map((_, i) => this.nodeWorld(entry, i0 + i));
+    const J = this.cableGradients(p);
+    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    let effMass = 0;
+    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    if (effMass <= 0) return;
+
+    if (posicional) {
+      const lambda = C / effMass;
+      for (let i = 0; i < n; i++) {
+        if (im[i] <= 0) continue;
+        const k = im[i] * lambda;
+        const c = bodies[i].translation();
+        bodies[i].setTranslation(
+          { x: c.x + J[i].x * k, y: c.y + J[i].y * k, z: c.z + J[i].z * k },
+          true,
+        );
+      }
+      return;
+    }
+    const v = bodies.map((b) => b.linvel());
+    let vrel = 0;
+    for (let i = 0; i < n; i++) vrel += J[i].x * v[i].x + J[i].y * v[i].y + J[i].z * v[i].z;
+    const objetivo = Math.min(15 * C, 2.5); // m/s: el tramo debe dejar de acortarse
+    if (vrel >= objetivo) return;
+    const lambda = (objetivo - vrel) / effMass;
+    for (let i = 0; i < n; i++) {
+      if (im[i] <= 0) continue;
+      const k = im[i] * lambda;
+      bodies[i].setLinvel(
+        { x: v[i].x + J[i].x * k, y: v[i].y + J[i].y * k, z: v[i].z + J[i].z * k },
+        true,
+      );
+    }
+  }
+
+  /**
+   * FRENOS DE CABLE (v0.2.40): la esfera no pasa por la roldana, así que el
+   * cable que queda a cada lado de ella está acotado — antes del freno como
+   * mucho `s`, después como mucho `restLength - s`. Se resuelve con la misma
+   * maquinaria del cable completo, aplicada a cada TRAMO: dos restricciones
+   * unilaterales más, sin cuerpos nuevos ni contactos que simular.
+   *
+   * El efecto es el de la máquina real: un extremo liviano deja de tragarse
+   * el recorrido y la tensión se transmite al otro lado desde el primer
+   * milímetro (el "momento cero" del que depende que el esfuerzo sea
+   * constante en todo el rango).
+   */
+  private aplicarFrenos(entry: CableEntry, posicional: boolean): void {
+    const n = entry.bodies.length;
+    for (const t of entry.topes) {
+      // El freno es un tope DURO (la esfera contra la roldana), no la
+      // longitud elástica del cable: se proyecta casi sin holgura. Las dos
+      // condiciones se miden sobre el MISMO tramo —el que va del extremo 0 a
+      // la esfera— para que no dependan de que el cable esté perfectamente
+      // tenso: la bola no puede pasar el nodo que tiene detrás (el cable
+      // antes de ella nunca supera `s`) ni el que tiene delante (el cable
+      // hasta ese nodo nunca baja de `s`).
+      const HOLGURA = 0.005; // m
+      if (t.seg >= 1) {
+        if (posicional) this.solveCablePosition(entry, 0, t.seg, t.s, HOLGURA);
+        else this.solveCableVelocity(entry, 0, t.seg, t.s);
+      }
+      if (t.seg + 1 <= n - 1) {
+        this.solveTramoMinimo(entry, 0, t.seg + 1, t.s, posicional);
+      }
     }
   }
 
@@ -1710,10 +1834,16 @@ export class PhysicsWorld {
         // pesado — con pocas pasadas el reparto por masa inversa apenas
         // toca al portadiscos y el cable se estira en vez de transmitir.
         for (let it = 0; it < 32; it++) {
-          for (const c of this.cables) this.solveCableVelocity(c);
+          for (const c of this.cables) {
+            this.solveCableVelocity(c);
+            this.aplicarFrenos(c, false);
+          }
         }
         for (let it = 0; it < 8; it++) {
-          for (const c of this.cables) this.solveCablePosition(c);
+          for (const c of this.cables) {
+            this.solveCablePosition(c);
+            this.aplicarFrenos(c, true);
+          }
         }
         // Topes de terminal: el extremo no pasa por su roldana vecina.
         for (const c of this.cables) this.aplicarTopesCable(c);

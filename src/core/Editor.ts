@@ -13,7 +13,7 @@ import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
 import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind } from "../physics/joints";
-import { Cable, type CableNode } from "../physics/cables";
+import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
 import { SnapManager, localSnapPoints } from "./snapping";
@@ -113,6 +113,7 @@ export type EditorEvents = {
   cablesChanged: { cables: Cable[] };
   /** Modo "trazar cable" activo: nº de nodos colocados + pista de acción. */
   cableModeChanged: { active: boolean; count: number; hint?: string };
+  frenoModeChanged: { active: boolean };
   /** Modo "colocar cuerda" (cadena/correa) activo: nº de extremos fijados. */
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
   /** Modo "colocar roldana" (interna/externa) sobre la cara de una pieza. */
@@ -222,6 +223,10 @@ export class Editor {
   private cables = new Map<string, Cable>();
   private cableVisuals = new THREE.Group();
   private cableMode = false;
+  /** Herramienta de FRENO DE CABLE activa (colocar/quitar esferas de tope). */
+  private frenoMode = false;
+  /** Esferas de los frenos, por `cableId#indice`. */
+  private frenoVisuals = new Map<string, THREE.Mesh>();
   private cablePending: { object: SceneObject; local: THREE.Vector3 }[] = [];
 
   // Cuerdas (cadenas/correas de seguridad): elementos de línea con catenaria.
@@ -2386,6 +2391,9 @@ export class Editor {
       cables: this.listCables().map((c) => ({
         name: c.name,
         nodes: c.nodes.map((n) => ({ objectId: n.objectId, local: [n.local.x, n.local.y, n.local.z] as [number, number, number] })),
+        topes: c.topes.length > 0
+          ? c.topes.map((t) => ({ seg: t.seg, dist: t.dist, radio: t.radio }))
+          : undefined,
       })),
       ropes: this.listRopes().map((r) => ({
         name: r.name,
@@ -2640,7 +2648,10 @@ export class Editor {
         .filter((n) => n.objectId);
       if (nodes.length >= 2) {
         const c = this.createCable(nodes);
-        if (c) c.name = cd.name;
+        if (c) {
+          c.name = cd.name;
+          c.topes = (cd.topes ?? []).map((t) => ({ seg: t.seg, dist: t.dist, radio: t.radio }));
+        }
       }
     }
 
@@ -4582,6 +4593,7 @@ export class Editor {
   beginCable(): void {
     if (this.simulating) return;
     this.cancelConnect();
+    this.cancelFrenoCable();
     this.cancelRope();
     this.cableMode = true;
     this.cablePending = [];
@@ -4590,6 +4602,148 @@ export class Editor {
     // puntos de recorrido mientras se traza el cable.
     for (const o of this.objects.values()) if (this.isPulley(o)) this.setHighlight(o, true);
     this.emitCableMode();
+  }
+
+  // ------------------------------------------------- FRENO (TOPE) DE CABLE
+  /**
+   * Herramienta de FRENO DE CABLE (v0.2.40): un clic sobre el trazado de un
+   * cable engarza en ese punto una ESFERA de tope. La esfera viaja con el
+   * cable mientras se tira de él, pero no pasa por una roldana: al llegar a
+   * ella se interpone y ese lado del cable deja de retraerse. Es el freno de
+   * goma de las máquinas reales, el que mantiene la tensión en el momento
+   * cero para que el esfuerzo sea parejo en todo el recorrido.
+   *
+   * Clic sobre un freno ya puesto lo retira.
+   */
+  beginFrenoCable(): void {
+    if (this.simulating) return;
+    this.cancelConnect();
+    this.cancelRope();
+    this.cancelCable();
+    this.select(null);
+    this.frenoMode = true;
+    this.bus.emit("frenoModeChanged", { active: true });
+  }
+
+  cancelFrenoCable(): void {
+    if (!this.frenoMode) return;
+    this.frenoMode = false;
+    this.bus.emit("frenoModeChanged", { active: false });
+  }
+
+  isFrenoMode(): boolean {
+    return this.frenoMode;
+  }
+
+  /**
+   * Coloca (o retira) un freno donde apunte el puntero. Devuelve true si tocó
+   * algún cable. El radio por omisión —2,2 cm— es el de una esfera de tope
+   * corriente, más gruesa que la garganta de cualquier roldana.
+   */
+  private frenoEnPuntero(): boolean {
+    const lineas = this.cableVisuals.children.filter(
+      (c): c is THREE.Line => (c as THREE.Line).isLine === true,
+    );
+    if (lineas.length === 0) return false;
+    const antes = this.raycaster.params.Line?.threshold ?? 1;
+    this.raycaster.params.Line = { threshold: 4 };
+    const hits = this.raycaster.intersectObjects(lineas, false);
+    this.raycaster.params.Line = { threshold: antes };
+    const hit = hits[0];
+    if (!hit) return false;
+    const cable = this.cables.get(hit.object.userData.cableId as string);
+    if (!cable) return false;
+    const pts = this.puntosDeCable(cable);
+    if (pts.length < 2) return false;
+
+    // ¿Se pulsó sobre un freno ya puesto? Entonces se retira.
+    for (let k = 0; k < cable.topes.length; k++) {
+      const t = cable.topes[k];
+      const p = this.puntoEnArco(pts, t.arco ?? this.arcoDeTope(pts, t));
+      if (p.distanceTo(hit.point) < t.radio + 2.5) {
+        cable.topes.splice(k, 1);
+        this.cablesDirty = true;
+        this.bus.emit("cablesChanged", { cables: this.listCables() });
+        this.historyPush();
+        this.scheduleAutosave();
+        this.avisoTemporal(tt("Freno retirado", "Stop removed"));
+        return true;
+      }
+    }
+
+    const seg = Math.max(0, Math.min(pts.length - 2, hit.index ?? 0));
+    const dist = Math.max(0, hit.point.distanceTo(pts[seg]));
+    const tope: TopeCable = { seg, dist, radio: 2.2 };
+    tope.arco = this.arcoDeTope(pts, tope);
+    cable.topes.push(tope);
+    this.cablesDirty = true;
+    this.bus.emit("cablesChanged", { cables: this.listCables() });
+    this.historyPush();
+    this.scheduleAutosave();
+    this.avisoTemporal(tt("⏺ Freno de cable colocado", "⏺ Cable stop placed"));
+    return true;
+  }
+
+  /** Puntos de mundo (cm) del recorrido actual de un cable. */
+  private puntosDeCable(cable: Cable): THREE.Vector3[] {
+    const pts: THREE.Vector3[] = [];
+    for (const node of cable.nodes) {
+      const obj = this.objects.get(node.objectId);
+      if (!obj) continue;
+      obj.mesh.updateMatrixWorld();
+      pts.push(
+        new THREE.Vector3(node.local.x, node.local.y, node.local.z).applyMatrix4(obj.mesh.matrixWorld),
+      );
+    }
+    return pts;
+  }
+
+  /** Distancia (cm) desde el nodo 0 hasta el freno, a lo largo del cable. */
+  private arcoDeTope(pts: THREE.Vector3[], t: TopeCable): number {
+    let acc = 0;
+    for (let i = 0; i < Math.min(t.seg, pts.length - 1); i++) acc += pts[i].distanceTo(pts[i + 1]);
+    return acc + t.dist;
+  }
+
+  /** Punto a `arco` cm del nodo 0 sobre la polilínea del cable. */
+  private puntoEnArco(pts: THREE.Vector3[], arco: number): THREE.Vector3 {
+    let acc = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const L = pts[i].distanceTo(pts[i + 1]);
+      if (acc + L >= arco || i === pts.length - 2) {
+        const t = L > 1e-6 ? Math.min(1, Math.max(0, (arco - acc) / L)) : 0;
+        return pts[i].clone().lerp(pts[i + 1], t);
+      }
+      acc += L;
+    }
+    return pts[pts.length - 1].clone();
+  }
+
+  /**
+   * Dibuja las esferas de freno sobre el trazado. En DISEÑO su posición se
+   * recalcula desde el segmento donde se colocaron; durante la SIMULACIÓN se
+   * conserva su distancia a lo largo del cable, que es lo que hace que la
+   * esfera se deslice con él en vez de quedarse clavada en el aire.
+   */
+  private actualizarFrenos(cable: Cable, pts: THREE.Vector3[], vivos: Set<string>): void {
+    for (let k = 0; k < cable.topes.length; k++) {
+      const t = cable.topes[k];
+      if (!this.simulating || t.arco === undefined) t.arco = this.arcoDeTope(pts, t);
+      const clave = `${cable.id}#${k}`;
+      vivos.add(clave);
+      let m = this.frenoVisuals.get(clave);
+      if (!m) {
+        m = new THREE.Mesh(
+          new THREE.SphereGeometry(1, 18, 12),
+          new THREE.MeshStandardMaterial({ color: 0x14161a, roughness: 0.55, metalness: 0.1 }),
+        );
+        m.userData.frenoDe = cable.id;
+        this.cableVisuals.add(m);
+        this.frenoVisuals.set(clave, m);
+      }
+      m.scale.setScalar(t.radio);
+      m.position.copy(this.puntoEnArco(pts, t.arco));
+    }
   }
 
   /** Emite el estado del modo cable con una pista de la siguiente acción. */
@@ -4676,8 +4830,10 @@ export class Editor {
   /** Reconstruye las polilineas de los cables segun la posicion de sus nodos. */
   private updateCableVisuals(): void {
     // Anade/quita lineas para que coincidan con los cables actuales.
+    const frenosVivos = new Set<string>();
     const wanted = new Set(this.cables.keys());
     for (const child of [...this.cableVisuals.children]) {
+      if (!(child as THREE.Line).isLine) continue; // las esferas de freno se podan aparte
       if (!wanted.has(child.userData.cableId as string)) {
         this.cableVisuals.remove(child);
         ((child as THREE.Line).geometry as THREE.BufferGeometry).dispose();
@@ -4686,7 +4842,7 @@ export class Editor {
     }
     const existing = new Map<string, THREE.Line>();
     for (const child of this.cableVisuals.children) {
-      existing.set(child.userData.cableId as string, child as THREE.Line);
+      if ((child as THREE.Line).isLine) existing.set(child.userData.cableId as string, child as THREE.Line);
     }
 
     for (const cable of this.cables.values()) {
@@ -4719,6 +4875,7 @@ export class Editor {
         this.cableVisuals.add(line);
       }
       line.geometry.setFromPoints(pts);
+      this.actualizarFrenos(cable, pts, frenosVivos);
       // Validación del diagrama Cables/Poleas: rojo si el trazado atraviesa
       // material sólido o entra desalineado al plano de una roldana. Es una
       // herramienta de DISEÑO: durante la simulación la geometría cambia a
@@ -4738,6 +4895,14 @@ export class Editor {
       } else if (valido && invalidoAntes) {
         this.cablesInvalidos.delete(cable.id);
       }
+    }
+    // Esferas de freno que ya no existen (cable borrado o freno retirado).
+    for (const [clave, m] of [...this.frenoVisuals]) {
+      if (frenosVivos.has(clave)) continue;
+      this.cableVisuals.remove(m);
+      m.geometry.dispose();
+      (m.material as THREE.Material).dispose();
+      this.frenoVisuals.delete(clave);
     }
   }
 
@@ -6422,6 +6587,15 @@ export class Editor {
       return;
     }
 
+    // Herramienta de FRENO DE CABLE: el clic engarza (o retira) la esfera de
+    // tope sobre el trazado del cable que haya bajo el puntero.
+    if (this.frenoMode && !this.simulating && event.button === 0) {
+      if (!this.frenoEnPuntero()) {
+        this.avisoTemporal(tt("Apunta al trazado de un cable", "Aim at a cable's run"));
+      }
+      return;
+    }
+
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
@@ -6835,6 +7009,7 @@ export class Editor {
         if (this.axisLock) this.setAxisLock(this.axisLock); // libera el eje
         this.cancelConnect();
         this.cancelCable();
+        this.cancelFrenoCable();
         this.cancelRope();
         this.cancelLine();
         this.cancelRoldana();

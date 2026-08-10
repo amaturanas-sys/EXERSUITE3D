@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "EXERSUITE3D",
   "mainBinaryName": "EXERSUITE3D",
-  "version": "0.2.39",
+  "version": "0.2.40",
   "identifier": "com.exersuite.app",
   "build": {
     "frontendDist": "../dist",

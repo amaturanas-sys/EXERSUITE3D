@@ -5,6 +5,35 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.40] — 2026-08-10
+
+### Añadido
+
+- **HERRAMIENTA DE FRENO (TOPE) DE CABLE** — `⏺ Freno`, en el panel
+  Conexiones. Un clic sobre el trazado de un cable engarza ahí la ESFERA de
+  tope de las máquinas reales: viaja con el cable mientras se tira de él, pero
+  no pasa por una roldana ni por un terminal, y al llegar se interpone y ese
+  lado deja de retraerse. Otro clic sobre la esfera la retira. La bola se
+  dibuja sobre el cable y se DESLIZA con él durante la simulación, porque lo
+  que se conserva es su posición a lo largo del cable, no su punto en el aire.
+
+  Sirve para lo que motivó la herramienta: **limitar las fugas de tensión**.
+  En un sistema de dos estaciones, el extremo más liviano —una barra que
+  cuelga suelta— se traga el recorrido que debería mover el contrapeso; un
+  freno en su ramal lo impide y el esfuerzo se vuelve parejo desde el momento
+  cero.
+
+  En el motor no es un cuerpo más ni un contacto que simular: el freno parte
+  el recorrido en dos tramos y acota sus longitudes —antes de la esfera nunca
+  hay más de `s` de cable, y hasta el nodo siguiente nunca menos—, con la
+  misma maquinaria del cable inextensible pero proyectado casi sin holgura,
+  porque un tope de goma no es elástico. Medido en la UpperMachine: un freno a
+  116 cm sobre un ramal de 119,8 impide que baje de 116,4 cm (sin él llega a
+  114,4), y uno bajo la roldana alta del jalón sube el recorrido que el press
+  entrega a la pila de 9,4 a 11,5 cm.
+
+  El freno viaja en el proyecto, en los prefabs y en las máquinas estándar.
+
 ## [0.2.39] — 2026-08-10
 
 ### Corregido

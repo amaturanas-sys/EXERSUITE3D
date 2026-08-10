@@ -17,12 +17,39 @@ export interface CableNode {
   local: { x: number; y: number; z: number };
 }
 
+/**
+ * FRENO (TOPE) DE CABLE (v0.2.40): la esfera engarzada al cable de las
+ * máquinas reales. Viaja CON el cable mientras se tira de él, pero no puede
+ * pasar por una roldana: al llegar a ella se interpone y el cable deja de
+ * retraerse por ese lado. Es lo que mantiene la tensión en el momento cero y
+ * evita que un extremo liviano (una barra que cuelga suelta) se robe el
+ * recorrido que debería mover el contrapeso.
+ *
+ * Se guarda como POSICIÓN SOBRE EL RECORRIDO: el segmento donde se colocó y
+ * la distancia desde su nodo inicial, medidas en la pose de diseño. `arco`
+ * es esa misma posición expresada en longitud de cable desde el nodo 0; se
+ * recalcula en diseño y se conserva durante la simulación, que es lo que
+ * hace que la esfera se deslice por el cable en vez de quedarse clavada.
+ */
+export interface TopeCable {
+  /** Segmento del recorrido: entre el nodo `seg` y el `seg + 1`. */
+  seg: number;
+  /** Distancia (cm) desde el nodo `seg` hasta la esfera, en la pose de diseño. */
+  dist: number;
+  /** Radio de la esfera (cm). */
+  radio: number;
+  /** Derivado: distancia (cm) desde el nodo 0 a lo largo del cable. */
+  arco?: number;
+}
+
 let nextCableId = 1;
 
 export class Cable {
   readonly id: string;
   name: string;
   nodes: CableNode[];
+  /** Frenos engarzados a este cable (esferas que topan con las roldanas). */
+  topes: TopeCable[] = [];
 
   constructor(opts: { nodes: CableNode[]; name?: string }) {
     this.id = `cable_${nextCableId++}`;
