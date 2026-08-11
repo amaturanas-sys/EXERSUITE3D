@@ -28,17 +28,22 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   anclada no se empujan. La figura se aparta por su frente lo MÍNIMO necesario,
   y solo si de verdad estaba encajada; se avisa de cuánto se movió.
 
-### Sabido
+### Lo que esto revela
 
-- Con el maniquí sentado, la estación de press pierde recorrido: de 23-33° y
-  7-11 cm de pila sin nadie, a 1-18° con la figura sentada, con mucha variación
-  entre arranques. Es el comportamiento fiel —una persona sólida sentada a
-  centímetros del conjunto móvil lo estorba— pero conviene saberlo: el asiento
-  de esta máquina deja la figura muy cerca del brazo, y los miembros del maniquí
-  no viajan CON el asa como lo harían los de una persona.
+- **El maniquí sólido es, de hecho, una COMPROBACIÓN ERGONÓMICA.** Si al sentar
+  la figura una estación pierde recorrido, lo que falla es el diseño de la
+  máquina, no el motor: no hay holgura suficiente para el cuerpo que va a
+  usarla. En la UpperMachine de fábrica se ve enseguida — el press pasa de
+  23-33° y 7-11 cm de pila sin nadie a 1-18° con la figura sentada, porque el
+  asiento la deja a **0,6-3,3 cm** del conjunto móvil (mano 0,6 cm, cabeza
+  2,9 cm, antebrazo 3,3 cm, torso 10,3 cm). Esas cifras son la medida de cuánta
+  holgura hay que ganar rediseñando.
+
+### Sabido
 
 - Apoyar la mano en un asa lleva el antebrazo sobre ella (7-8 cm de solape
   mano-asa): la IK apunta al punto de agarre, no a una empuñadura por fuera.
+  Por eso los miembros del maniquí no viajan CON el asa como los de una persona.
 
 ## [0.2.43] — 2026-08-10
 
