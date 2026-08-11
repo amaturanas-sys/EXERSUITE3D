@@ -33,6 +33,7 @@ function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
     const terminar = (v: RoldanaConfig | null): void => {
       window.removeEventListener("keydown", alTeclado);
       panel.remove();
+      document.body.classList.remove("dialogo-derecha");
       resolve(v);
     };
     // Esc cierra el panel (misma tecla que termina la herramienta).
@@ -117,6 +118,9 @@ function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
     ]);
     pintarTipo();
     document.body.append(panel);
+    // El carril derecho aloja UNA ventana a la vez: mientras este diálogo
+    // esté abierto, la del maniquí se repliega (v0.2.48).
+    document.body.classList.add("dialogo-derecha");
   });
 }
 

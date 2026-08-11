@@ -20,6 +20,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     const terminar = (v: ConfigBisagra | null): void => {
       window.removeEventListener("keydown", alTeclado);
       panel.remove();
+      document.body.classList.remove("dialogo-derecha");
       resolve(v);
     };
     const alTeclado = (ev: KeyboardEvent): void => {
@@ -147,6 +148,9 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     ]);
     pintar();
     document.body.append(panel);
+    // El carril derecho aloja UNA ventana a la vez: mientras este diálogo
+    // esté abierto, la del maniquí se repliega (v0.2.48).
+    document.body.classList.add("dialogo-derecha");
   });
 }
 

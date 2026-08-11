@@ -5,6 +5,38 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.48] — 2026-08-11
+
+### Corregido
+
+- **LAS VENTANAS YA NO SE PISAN.** Auditoría de la interfaz en 5 tamaños de
+  pantalla (1440×900, 1280×800, 1024×768, 800×1280 y 640×900) × 7 escenarios
+  con varias herramientas abiertas a la vez: **50 conflictos medidos, 0 tras
+  los ajustes**. Lo que fallaba:
+
+  - Todo el costado derecho compartía `right: 12px`, así que la ventana del
+    maniquí **tapaba el Toolbox por completo** (100 % de su superficie) en
+    TODOS los tamaños. Ahora existe un CARRIL derecho: el Toolbox se queda
+    pegado al borde y toda ventana de ese lado se aparta su ancho.
+  - Las ventanas del costado derecho crecían hasta la barra superior y hasta
+    la de simulación. Ahora viven en una BANDA vertical que empieza bajo la
+    barra de arriba y acaba sobre la de abajo, midiendo la altura REAL de
+    ambas (que crecen a varias filas al estrecharse la pantalla). Si no cabe,
+    la ventana desplaza por dentro en vez de desbordar.
+  - El bloque de estilo de la ventana del maniquí estaba DESPUÉS de las
+    consultas de medio, así que anulaba su propio cajón de pantalla estrecha:
+    en 640×900 la ventana salía de la pantalla y tapaba la barra de zoom, las
+    dos pestañas y la barra de simulación. Reordenado.
+  - El costado derecho aloja UNA ventana a la vez: mientras un diálogo de
+    herramienta (roldana, bisagra) ocupa el carril, la del maniquí se repliega
+    y vuelve al cerrarlo.
+  - Los menús de la barra superior colgaban del botón y tapaban la franja
+    inferior de la propia barra. Ahora cuelgan del borde de la barra.
+
+  Los elementos TRANSITORIOS —menús desplegables, fantasma de arrastre,
+  marquesina de selección, velos modales— sí pueden cubrir a propósito: se
+  cierran al tocar fuera y no compiten por el espacio.
+
 ## [0.2.47] — 2026-08-11
 
 ### Corregido

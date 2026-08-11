@@ -238,6 +238,15 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
+  // La barra de SIMULACIÓN también crece en varias filas al estrecharse la
+  // pantalla: su alto real se publica para que las ventanas del costado
+  // derecho acaben justo encima de ella y nunca la pisen (v0.2.48).
+  const altoSimbar = new ResizeObserver(() => {
+    const alto = simBar.root.offsetParent === null ? 0 : simBar.root.offsetHeight;
+    document.documentElement.style.setProperty("--simbar-h", `${alto}px`);
+  });
+  altoSimbar.observe(simBar.root);
+
   editorNodes = [canvas, leftStack, toolbar.root, articPanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
@@ -245,6 +254,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     () => toolbar.dispose(),
     () => perfPanel.dispose(),
     () => altoToolbar.disconnect(),
+    () => altoSimbar.disconnect(),
   ];
   app.append(...editorNodes);
 

@@ -161,7 +161,10 @@ export class Toolbar {
       build(this.menuEl);
       this.menuEl.classList.add("open");
       const r = btn.getBoundingClientRect();
-      this.menuEl.style.top = `${r.bottom + 6}px`;
+      // Cuelga del borde inferior de LA BARRA, no del botón: la barra tiene
+      // relleno propio y el menú acababa tapando su franja inferior.
+      const barra = this.root.getBoundingClientRect();
+      this.menuEl.style.top = `${Math.max(r.bottom, barra.bottom) + 6}px`;
       // Que no se salga por la derecha de la pantalla.
       const w = Math.max(this.menuEl.offsetWidth, 200);
       this.menuEl.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
