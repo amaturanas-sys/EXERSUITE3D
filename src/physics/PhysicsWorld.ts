@@ -1940,7 +1940,7 @@ export class PhysicsWorld {
    * cápsulas, esferas) se acotan por su caja envolvente, que es lo bastante
    * fiel para un tope y no cuesta nada de calcular.
    */
-  cajasDeColision(): {
+  cajasDeColision(excluirIds?: Set<string>): {
     c: THREE.Vector3;
     e: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
     h: [number, number, number];
@@ -1950,10 +1950,19 @@ export class PhysicsWorld {
       e: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
       h: [number, number, number];
     }[] = [];
+    // Cuerpos que NO cuentan como estorbo (los apoyos ergonómicos: tocarlos
+    // es justo lo que tiene que pasar).
+    const fuera = new Set<R.RigidBody>();
+    if (excluirIds) {
+      for (const id of excluirIds) {
+        const e = this.bodies.get(id);
+        if (e) fuera.add(e.body);
+      }
+    }
     const vistos = new Set<R.RigidBody>();
     const m = new THREE.Matrix4();
     for (const { body } of this.bodies.values()) {
-      if (vistos.has(body)) continue;
+      if (vistos.has(body) || fuera.has(body)) continue;
       vistos.add(body);
       for (let i = 0; i < body.numColliders(); i++) {
         const col = body.collider(i);

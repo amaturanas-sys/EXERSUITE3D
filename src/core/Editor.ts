@@ -890,10 +890,6 @@ export class Editor {
     // atraviesa. Sus segmentos son cinemáticos —la postura la manda quien
     // simula—, así que no se desploma ni lo arrastran las piezas.
     if (this.humanFigure && this.humanMode === "mannequin") {
-      // Con cuerpo físico, NACER dentro de la máquina ya no es un detalle
-      // estético: la pieza móvil se queda atascada contra la figura y la
-      // estación no se puede usar. Se aparta lo mínimo antes de darle cuerpo.
-      this.despejarFiguraDeLaEstructura();
       this.physics.añadirFigura(this.humanFigure);
     }
     this.jointHelpers.visible = false;
@@ -6662,6 +6658,8 @@ export class Editor {
       // que haga falta para que la carne SE POSE sobre la superficie.
       fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
       fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
+      // Y la espalda contra el respaldo: un apoyo solo apoya si se toca.
+      this.apoyarContraRespaldo(fig, frente, destino.punto);
     } else {
       const maquina = this.piezaCercana(destino.punto, (o) => o.physics.fixed);
       if (maquina) {
@@ -6675,13 +6673,10 @@ export class Editor {
     fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
     if (!destino.obj) (fig.userData.ground as (() => void) | undefined)?.();
     this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
-    // Colocar funciona también con la simulación en marcha: la figura se
-    // aparta si quedó encajada y su cuerpo en el motor se rehace en el sitio
-    // definitivo (si no, chocaría desde la pose anterior).
-    if (this.physics) {
-      this.despejarFiguraDeLaEstructura();
-      this.physics.añadirFigura(fig);
-    }
+    // Colocar funciona también con la simulación en marcha: el cuerpo de la
+    // figura en el motor se rehace en el sitio definitivo (si no, chocaría
+    // desde la pose anterior).
+    if (this.physics) this.physics.añadirFigura(fig);
     this.requestRender();
     this.scheduleAutosave();
     this.avisoTemporal(
@@ -6707,12 +6702,23 @@ export class Editor {
   /** ¿El último paso de 8/9 dejó algún segmento dentro del hierro? */
   contactoConEstructura = false;
 
-  /** Cajas del hierro cercanas a la figura (el resto no puede estorbar). */
+  /**
+   * Cajas del hierro cercanas a la figura (el resto no puede estorbar).
+   *
+   * Los APOYOS ERGONÓMICOS quedan fuera: asiento, respaldo y banco existen
+   * para que el cuerpo se pose en ellos, así que tocarlos no es "estorbar" —
+   * tratarlos como estorbo era lo que separaba al maniquí de su propio
+   * asiento y lo dejaba flotando.
+   */
   private cajasCercaDeLaFigura(): ReturnType<PhysicsWorld["cajasDeColision"]> | null {
     if (!this.physics || !this.humanFigure) return null;
+    const apoyos = new Set<string>();
+    for (const o of this.objects.values()) {
+      if (this.esApoyoErgonomico(o)) apoyos.add(o.id);
+    }
     const cerca = new THREE.Box3().setFromObject(this.humanFigure).expandByScalar(25);
     const caja = new THREE.Box3();
-    return this.physics.cajasDeColision().filter((b) => {
+    return this.physics.cajasDeColision(apoyos).filter((b) => {
       const r = Math.abs(b.h[0]) + Math.abs(b.h[1]) + Math.abs(b.h[2]);
       caja.setFromCenterAndSize(b.c, new THREE.Vector3(r * 2, r * 2, r * 2));
       return caja.intersectsBox(cerca);
@@ -6797,72 +6803,79 @@ export class Editor {
   }
 
   /**
-   * DESPEJE INICIAL (v0.2.44). Con cuerpo físico, una figura que nace DENTRO
-   * de la máquina la deja inservible: la pieza móvil topa contra ella desde el
-   * primer instante y no hay recorrido. El motor tampoco puede resolverlo,
-   * porque un cinemático y una pieza anclada no se empujan entre sí.
-   *
-   * Se aparta la figura por su FRENTE —hacia donde mira, que es como se
-   * separaría del respaldo una persona— lo MÍNIMO que haga falta, y solo si
-   * de verdad está encajada.
-   */
-  private despejarFiguraDeLaEstructura(): void {
-    const fig = this.humanFigure;
-    if (!fig || !this.physics) return;
-    const cajas = this.cajasCercaDeLaFigura();
-    if (!cajas?.length) return;
-    const mallas = this.mallasDeLaFigura();
-    if (!mallas.length) return;
-    fig.updateMatrixWorld(true);
-    const inicial = this.penetracionEnEstructura(mallas, cajas);
-    if (inicial <= 0.2) return; // rozar no es estorbar
-
-    const origen = fig.position.clone();
-    const frente = new THREE.Vector3(0, 0, 1)
-      .applyQuaternion(fig.quaternion)
-      .setY(0);
-    if (frente.lengthSq() < 1e-6) return;
-    frente.normalize();
-
-    let mejor = { d: 0, pen: inicial };
-    for (let d = 2; d <= 30; d += 2) {
-      fig.position.copy(origen).addScaledVector(frente, d);
-      fig.updateMatrixWorld(true);
-      const pen = this.penetracionEnEstructura(mallas, cajas);
-      if (pen < mejor.pen) mejor = { d, pen };
-      if (pen <= 0) break;
-    }
-    fig.position.copy(origen).addScaledVector(frente, mejor.d);
-    fig.updateMatrixWorld(true);
-    if (mejor.d > 0) {
-      this.lastFigureTransform = {
-        position: fig.position.clone(),
-        quaternion: fig.quaternion.clone(),
-      };
-      this.avisoTemporal(
-        tt(
-          `Maniquí apartado ${mejor.d} cm: nacía dentro de la máquina`,
-          `Mannequin moved ${mejor.d} cm clear: it started inside the machine`,
-        ),
-      );
-    }
-  }
-
-  /**
    * Cota mundial más baja de lo que REPOSA en el asiento: pelvis y muslos.
    * Se excluyen piernas y pies a propósito — sentada, esos cuelgan hacia el
    * suelo y medirlos hundiría la figura en la pieza en vez de posarla.
    */
   private baseDeApoyoSentado(fig: THREE.Group): number {
-    const APOYAN = new Set(["pelvis", "muslo-L", "muslo-R"]);
+    // Los GLÚTEOS son el apoyo: es lo que carga el peso al sentarse. Medir en
+    // cambio el punto más bajo de pelvis + muslos alzaba la figura hasta dejar
+    // flotando los glúteos (11,3 cm de hueco medidos sobre una máquina real),
+    // que es justo lo que se veía mal.
     fig.updateMatrixWorld(true);
     const caja = new THREE.Box3();
     fig.traverse((n) => {
       const m = n as THREE.Mesh;
-      if (!m.isMesh || !APOYAN.has(m.userData.segmentId as string)) return;
+      if (!m.isMesh || m.userData.segmentId !== "pelvis") return;
       caja.union(new THREE.Box3().setFromObject(m));
     });
     return caja.isEmpty() ? fig.position.y : caja.min.y;
+  }
+
+  /** Caja orientada de una pieza, en el formato de las cajas de colisión. */
+  private cajaDePieza(obj: SceneObject): ReturnType<PhysicsWorld["cajasDeColision"]>[number] {
+    const geo = obj.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    obj.mesh.updateMatrixWorld(true);
+    const q = new THREE.Quaternion();
+    const esc = new THREE.Vector3();
+    obj.mesh.matrixWorld.decompose(new THREE.Vector3(), q, esc);
+    const semi = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+    const m = new THREE.Matrix4().makeRotationFromQuaternion(q);
+    return {
+      c: bb.getCenter(new THREE.Vector3()).applyMatrix4(obj.mesh.matrixWorld),
+      e: [
+        new THREE.Vector3().setFromMatrixColumn(m, 0),
+        new THREE.Vector3().setFromMatrixColumn(m, 1),
+        new THREE.Vector3().setFromMatrixColumn(m, 2),
+      ],
+      h: [semi.x * Math.abs(esc.x), semi.y * Math.abs(esc.y), semi.z * Math.abs(esc.z)],
+    };
+  }
+
+  /**
+   * APOYAR LA ESPALDA (v0.2.46). Un respaldo solo sirve si el cuerpo lo TOCA:
+   * la figura se desliza hacia atrás hasta el instante justo antes de meterse
+   * en él. Sin esto quedaba sentada en el aire, a 29 cm del respaldo, y
+   * cualquier medida de esfuerzo salía falseada porque no había punto de
+   * apoyo desde el que empujar.
+   */
+  private apoyarContraRespaldo(fig: THREE.Group, frente: THREE.Vector3, cerca: THREE.Vector3): void {
+    const respaldo = this.piezaCercana(
+      cerca,
+      (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo",
+    );
+    if (!respaldo) return;
+    const caja = this.cajaDePieza(respaldo);
+    const espalda: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && (m.userData.segmentId === "torso" || m.userData.segmentId === "pelvis")) {
+        espalda.push(m);
+      }
+    });
+    if (!espalda.length) return;
+    const origen = fig.position.clone();
+    let mejor = 0;
+    for (let d = 1; d <= 45; d++) {
+      fig.position.copy(origen).addScaledVector(frente, -d);
+      fig.updateMatrixWorld(true);
+      if (this.penetracionEnEstructura(espalda, [caja]) > 0.5) break;
+      mejor = d;
+    }
+    fig.position.copy(origen).addScaledVector(frente, -mejor);
+    fig.updateMatrixWorld(true);
   }
 
   /** Pieza más cercana a un punto que cumpla el filtro. */

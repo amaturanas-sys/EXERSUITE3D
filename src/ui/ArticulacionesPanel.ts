@@ -42,6 +42,9 @@ export class ArticulacionesPanel {
   private resumen: HTMLElement;
   private botonesLado: HTMLButtonElement[] = [];
   private modo: "posar" | "simular" = "posar";
+  private ladoPosar: "L" | "R" | "sim" = "sim";
+  private botonesPosar = new Map<string, HTMLButtonElement>();
+  private botonesLadoPosar: HTMLButtonElement[] = [];
   private cajaPosar: HTMLElement;
   private cajaSimular: HTMLElement;
   private botonesModo: Record<"posar" | "simular", HTMLButtonElement>;
@@ -157,10 +160,40 @@ export class ArticulacionesPanel {
     ]);
     this.jointBox.style.display = "none";
 
+    // SELECTOR DE ARTICULACIÓN, homólogo al de SIMULAR: la misma lista de
+    // familias y el mismo selector de lado, pero aquí ELIGE cuál se posa —
+    // así no hay que cazar el miembro en el visor para editar sus grados.
+    const filasPosar = FAMILIAS.map(([fam, es, en]) => {
+      const b = el("button", { class: "tool art-sel" }, [tt(es, en)]) as HTMLButtonElement;
+      b.addEventListener("click", () => {
+        const unico = fam === "spine" || fam === "neck";
+        const nombre = unico ? fam : `${fam}${this.ladoPosar === "sim" ? "L" : this.ladoPosar}`;
+        this.editor.selectJoint(nombre);
+        this.marcarSeleccion(nombre);
+      });
+      this.botonesPosar.set(fam, b);
+      return b;
+    });
+    const filaLadosPosar = el("div", { class: "art-lados" }, LADOS.map(([id, es, en]) => {
+      const b = el("button", { class: id === "sim" ? "tool active" : "tool" }, [tt(es, en)]) as HTMLButtonElement;
+      b.addEventListener("click", () => {
+        this.ladoPosar = id;
+        for (const o of this.botonesLadoPosar) o.classList.toggle("active", o === b);
+      });
+      this.botonesLadoPosar.push(b);
+      return b;
+    }));
+
     this.cajaPosar = el("div", { class: "mq-seccion" }, [
       el("div", { class: "art-hint" }, [
         tt("Fija la POSTURA DE PARTIDA. Nada de esto depende del candado.", "Set the STARTING POSE. None of this depends on the lock."),
       ]),
+      el("div", { class: "art-hint" }, [tt("Lado:", "Side:")]),
+      filaLadosPosar,
+      el("div", { class: "art-hint" }, [
+        tt("Elige la articulación que quieres posar:", "Pick the joint you want to pose:"),
+      ]),
+      el("div", { class: "art-rejilla" }, filasPosar),
       el("div", { class: "field" }, [el("label", {}, [tt("Postura", "Pose")]), this.select]),
       el("div", { class: "pose-actions" }, [bAplicar, bActualizar]),
       el("div", { class: "pose-actions" }, [bGuardar, bEliminar]),
@@ -283,6 +316,7 @@ export class ArticulacionesPanel {
           : tt("Ahora haz clic en el agarre donde apoyar la mano.", "Now click the grip where the hand should rest.");
     });
     this.editor.bus.on("jointSelectionChanged", ({ name, angles, locked }) => {
+      this.marcarSeleccion(name);
       if (!name) {
         this.jointBox.style.display = "none";
         return;
@@ -303,6 +337,12 @@ export class ArticulacionesPanel {
 
     this.refrescarPosturas();
     this.refrescar();
+  }
+
+  /** Resalta en la rejilla de POSAR la familia de la articulación activa. */
+  private marcarSeleccion(nombre: string | null): void {
+    const fam = nombre ? nombre.replace(/[LR]$/, "") : null;
+    for (const [f, b] of this.botonesPosar) b.classList.toggle("active", f === fam);
   }
 
   /** Cambia de modo (posar / simular). */

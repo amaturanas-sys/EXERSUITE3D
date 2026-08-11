@@ -5,6 +5,46 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.46] — 2026-08-11
+
+### Corregido
+
+- **EL MANIQUÍ APOYA EN SUS APOYOS, ya no flota sobre ellos.** Medido sobre una
+  máquina real: al sentarlo quedaba **11,3 cm por encima del asiento y a
+  29,2 cm del respaldo**. Con esa separación no hay punto desde el que empujar,
+  así que cualquier lectura de esfuerzo salía falseada. Tres causas, las tres
+  corregidas:
+
+  1. La altura se calculaba con el punto más bajo de pelvis Y muslos. Si un
+     muslo caía —asiento corto o inclinado—, la figura se alzaba hasta dejar
+     ESE punto a ras y los glúteos quedaban en el aire. Ahora la referencia son
+     los GLÚTEOS, que es lo que carga el peso.
+  2. No había nada que llevara la espalda al respaldo. Ahora la figura se
+     desliza hacia atrás hasta el instante justo antes de meterse en él.
+  3. El "despeje inicial" de v0.2.44 apartaba la figura de TODO lo que tocara,
+     apoyos incluidos, deshaciendo lo anterior. Se retira: los apoyos
+     ergonómicos quedan fuera de lo que cuenta como estorbo, y el maniquí se
+     queda donde lo pones. Si eso lo deja encajado en la máquina, es la
+     evidencia ergonómica que se busca, no algo que esconder.
+
+  Resultado sobre el mismo modelo: **0 cm de hueco al asiento y contacto con el
+  respaldo**.
+
+### Añadido
+
+- **SELECTOR DE ARTICULACIÓN EN EL MODO POSAR**, homólogo al de SIMULAR: la
+  misma lista de ocho familias y su propio selector de lado, pero aquí ELIGE
+  cuál se posa — ya no hay que cazar el miembro en el visor para editar sus
+  grados, y la familia activa queda resaltada aunque la selección venga de un
+  clic en la figura.
+
+### Sabido
+
+- Con los glúteos a ras del asiento, los MUSLOS quedan ~8 cm dentro del cojín:
+  en el rig actual el muslo cuelga por debajo de la pelvis, así que ambos no
+  pueden estar a ras a la vez. Se prioriza el glúteo, que es el apoyo real;
+  cuadrarlo del todo pide recolocar las caderas del rig.
+
 ## [0.2.45] — 2026-08-11
 
 ### Cambiado
