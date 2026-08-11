@@ -216,10 +216,23 @@ export function buildHumanFigure(
   buildArm("L", -0.15 * H);
   buildArm("R", 0.15 * H);
 
-  // Piernas
+  // Piernas.
+  //
+  // CADERA A LA ALTURA DE LA CABEZA FEMORAL (v0.2.47). Antes el pivote estaba
+  // en la CARA INFERIOR de la pelvis (−0,05·H), no en medio de ella. Como el
+  // muslo es un cilindro de radio 0,05·H que cuelga de ese pivote, al sentarse
+  // —muslo horizontal— su cara inferior quedaba 0,05·H (8,75 cm en un maniquí
+  // de 175) POR DEBAJO de los glúteos: era imposible que ambos apoyaran a la
+  // vez sobre un asiento plano. Uno u otro tenía que hundirse o flotar.
+  //
+  // Subiéndolo un radio de muslo, la generatriz inferior del muslo horizontal
+  // coincide exactamente con la cara inferior de la pelvis, que es lo que pasa
+  // en un cuerpo real: el fémur articula por el MEDIO del hueso coxal, no por
+  // su borde de abajo.
+  const RADIO_MUSLO = 0.05 * H;
   const buildLeg = (side: "L" | "R", sx: number) => {
-    const hip = pivot(`hip${side}`, root, sx, -0.05 * H, 0);
-    hip.add(cyl(0.23 * H, 0.05 * H, `hip${side}`, `muslo-${side}`));
+    const hip = pivot(`hip${side}`, root, sx, -0.05 * H + RADIO_MUSLO, 0);
+    hip.add(cyl(0.23 * H, RADIO_MUSLO, `hip${side}`, `muslo-${side}`));
     const knee = pivot(`knee${side}`, hip, 0, -0.23 * H, 0);
     knee.add(cyl(0.23 * H, 0.04 * H, `knee${side}`, `pierna-${side}`));
     const ankle = pivot(`ankle${side}`, knee, 0, -0.23 * H, 0);

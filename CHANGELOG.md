@@ -5,6 +5,27 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.47] — 2026-08-11
+
+### Corregido
+
+- **LA CADERA DEL MANIQUÍ, A LA ALTURA DE LA CABEZA FEMORAL.** El pivote de
+  cadera estaba en la CARA INFERIOR de la pelvis, no en medio de ella. Como el
+  muslo es un cilindro de radio 0,05·H que cuelga de ese pivote, al sentarse
+  —muslo horizontal— su cara inferior quedaba **8,75 cm por debajo de los
+  glúteos**: era geométricamente imposible que ambos apoyaran a la vez sobre un
+  asiento plano, y había que elegir cuál se hundía o cuál flotaba.
+
+  Subido un radio de muslo, la generatriz inferior del muslo coincide con la
+  cara inferior de la pelvis — que es lo que pasa en un cuerpo real, donde el
+  fémur articula por el MEDIO del hueso coxal y no por su borde de abajo.
+
+  Medido sobre la misma máquina: **0 cm de hueco al asiento, contacto con el
+  respaldo y 0 cm de muslo hundido en el cojín** (antes: 0 / contacto / 8,06).
+  La cadera queda al 48,4 % de la estatura, dentro del rango humano; la
+  estatura sigue siendo exacta (175 cm) y los pies siguen apoyando en y = 0 en
+  todas las posturas de fábrica.
+
 ## [0.2.46] — 2026-08-11
 
 ### Corregido
@@ -40,10 +61,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Sabido
 
-- Con los glúteos a ras del asiento, los MUSLOS quedan ~8 cm dentro del cojín:
-  en el rig actual el muslo cuelga por debajo de la pelvis, así que ambos no
-  pueden estar a ras a la vez. Se prioriza el glúteo, que es el apoyo real;
-  cuadrarlo del todo pide recolocar las caderas del rig.
+- Con los glúteos a ras del asiento, los MUSLOS quedaban ~8 cm dentro del
+  cojín. Resuelto en 0.2.47 recolocando la cadera del rig.
 
 ## [0.2.45] — 2026-08-11
 
