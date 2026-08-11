@@ -523,6 +523,18 @@ export class Editor {
     this.bus.on("cablesChanged", trigger);
     this.bus.on("groupingChanged", trigger);
     this.bus.on("humanFigureChanged", trigger);
+    // Si la figura se crea, se cambia de altura o se retira CON la simulación
+    // en marcha (colocar maniquí funciona en simulación), su cuerpo en el
+    // motor se rehace: si no, quedarían chocando los segmentos de la figura
+    // anterior contra la máquina.
+    this.bus.on("humanFigureChanged", () => {
+      if (!this.physics) return;
+      if (this.humanFigure && this.humanMode === "mannequin") {
+        this.physics.añadirFigura(this.humanFigure);
+      } else {
+        this.physics.quitarFigura();
+      }
+    });
     // Red de seguridad: vuelca a disco periódicamente por si algún cambio
     // (material, ángulo numérico de articulación…) no emitió evento.
     this.autosaveInterval = setInterval(() => this.writeAutosave(), 30_000);
@@ -874,6 +886,16 @@ export class Editor {
       this.listCables(),
       this.cuerdasFisicas(),
     );
+    // El maniquí entra al motor con cuerpo propio: la máquina ya no lo
+    // atraviesa. Sus segmentos son cinemáticos —la postura la manda quien
+    // simula—, así que no se desploma ni lo arrastran las piezas.
+    if (this.humanFigure && this.humanMode === "mannequin") {
+      // Con cuerpo físico, NACER dentro de la máquina ya no es un detalle
+      // estético: la pieza móvil se queda atascada contra la figura y la
+      // estación no se puede usar. Se aparta lo mínimo antes de darle cuerpo.
+      this.despejarFiguraDeLaEstructura();
+      this.physics.añadirFigura(this.humanFigure);
+    }
     this.jointHelpers.visible = false;
     this.simulating = true;
     this.bus.emit("simulationChanged", { running: true });
@@ -6629,6 +6651,13 @@ export class Editor {
     fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
     if (!destino.obj) (fig.userData.ground as (() => void) | undefined)?.();
     this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
+    // Colocar funciona también con la simulación en marcha: la figura se
+    // aparta si quedó encajada y su cuerpo en el motor se rehace en el sitio
+    // definitivo (si no, chocaría desde la pose anterior).
+    if (this.physics) {
+      this.despejarFiguraDeLaEstructura();
+      this.physics.añadirFigura(fig);
+    }
     this.requestRender();
     this.scheduleAutosave();
     this.avisoTemporal(
@@ -6730,6 +6759,68 @@ export class Editor {
       if (-sep < min) min = -sep;
     }
     return min === Infinity ? 0 : min;
+  }
+
+  /** Todas las mallas de segmento de la figura. */
+  private mallasDeLaFigura(): THREE.Mesh[] {
+    const out: THREE.Mesh[] = [];
+    this.humanFigure?.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.visible && m.userData.humanFigurePart) out.push(m);
+    });
+    return out;
+  }
+
+  /**
+   * DESPEJE INICIAL (v0.2.44). Con cuerpo físico, una figura que nace DENTRO
+   * de la máquina la deja inservible: la pieza móvil topa contra ella desde el
+   * primer instante y no hay recorrido. El motor tampoco puede resolverlo,
+   * porque un cinemático y una pieza anclada no se empujan entre sí.
+   *
+   * Se aparta la figura por su FRENTE —hacia donde mira, que es como se
+   * separaría del respaldo una persona— lo MÍNIMO que haga falta, y solo si
+   * de verdad está encajada.
+   */
+  private despejarFiguraDeLaEstructura(): void {
+    const fig = this.humanFigure;
+    if (!fig || !this.physics) return;
+    const cajas = this.cajasCercaDeLaFigura();
+    if (!cajas?.length) return;
+    const mallas = this.mallasDeLaFigura();
+    if (!mallas.length) return;
+    fig.updateMatrixWorld(true);
+    const inicial = this.penetracionEnEstructura(mallas, cajas);
+    if (inicial <= 0.2) return; // rozar no es estorbar
+
+    const origen = fig.position.clone();
+    const frente = new THREE.Vector3(0, 0, 1)
+      .applyQuaternion(fig.quaternion)
+      .setY(0);
+    if (frente.lengthSq() < 1e-6) return;
+    frente.normalize();
+
+    let mejor = { d: 0, pen: inicial };
+    for (let d = 2; d <= 30; d += 2) {
+      fig.position.copy(origen).addScaledVector(frente, d);
+      fig.updateMatrixWorld(true);
+      const pen = this.penetracionEnEstructura(mallas, cajas);
+      if (pen < mejor.pen) mejor = { d, pen };
+      if (pen <= 0) break;
+    }
+    fig.position.copy(origen).addScaledVector(frente, mejor.d);
+    fig.updateMatrixWorld(true);
+    if (mejor.d > 0) {
+      this.lastFigureTransform = {
+        position: fig.position.clone(),
+        quaternion: fig.quaternion.clone(),
+      };
+      this.avisoTemporal(
+        tt(
+          `Maniquí apartado ${mejor.d} cm: nacía dentro de la máquina`,
+          `Mannequin moved ${mejor.d} cm clear: it started inside the machine`,
+        ),
+      );
+    }
   }
 
   /** Mallas que arrastra una articulación (con su espejo si hay simetría). */

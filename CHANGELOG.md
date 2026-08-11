@@ -5,6 +5,41 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.44] — 2026-08-11
+
+### Añadido
+
+- **EL MANIQUÍ TIENE CUERPO EN EL MOTOR**. Cada segmento entra como cuerpo
+  CINEMÁTICO con la forma de su primitiva —esfera la cabeza, cilindros los
+  miembros, cajas torso y pelvis—, no como caja envolvente. Cinemático quiere
+  decir que la postura la manda quien simula (posar, ▲▼, agarres): la figura no
+  se desploma ni la arrastran las piezas, pero **la máquina ya no puede
+  atravesarla**. Medido sobre la UpperMachine: el conjunto móvil pasa de meterse
+  5,0 cm en el cuerpo de la figura a **0 cm**.
+
+- **MANOS Y PIES SIN COLLIDER, a propósito**: son los puntos por los que la
+  figura AGARRA la máquina. Apoyar una mano en un asa la lleva justo encima de
+  ella, y si además chocaran, la IK del brazo y el contacto se pelearían
+  empujándose sin parar. Lo que no puede atravesarse es el cuerpo.
+
+- **DESPEJE AL COLOCAR Y AL ARRANCAR**: con cuerpo físico, nacer dentro de la
+  máquina deja la estación inservible —la pieza móvil topa desde el primer
+  instante— y el motor no puede resolverlo, porque un cinemático y una pieza
+  anclada no se empujan. La figura se aparta por su frente lo MÍNIMO necesario,
+  y solo si de verdad estaba encajada; se avisa de cuánto se movió.
+
+### Sabido
+
+- Con el maniquí sentado, la estación de press pierde recorrido: de 23-33° y
+  7-11 cm de pila sin nadie, a 1-18° con la figura sentada, con mucha variación
+  entre arranques. Es el comportamiento fiel —una persona sólida sentada a
+  centímetros del conjunto móvil lo estorba— pero conviene saberlo: el asiento
+  de esta máquina deja la figura muy cerca del brazo, y los miembros del maniquí
+  no viajan CON el asa como lo harían los de una persona.
+
+- Apoyar la mano en un asa lleva el antebrazo sobre ella (7-8 cm de solape
+  mano-asa): la IK apunta al punto de agarre, no a una empuñadura por fuera.
+
 ## [0.2.43] — 2026-08-10
 
 ### Corregido

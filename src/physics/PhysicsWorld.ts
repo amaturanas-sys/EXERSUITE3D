@@ -55,6 +55,9 @@ interface CableEntry {
 // El editor trabaja en centimetros (1 unidad = 1 cm). Rapier es mas estable en
 // metros, asi que internamente escalamos cm -> m con el factor S.
 const S = 0.01; // cm -> m
+
+/** Segmentos del maniquí que NO reciben cuerpo: son sus puntos de agarre. */
+const SEGMENTOS_SIN_CUERPO = new Set(["mano-L", "mano-R", "pie-L", "pie-R"]);
 const GRAVITY = { x: 0, y: -9.81, z: 0 };
 
 export class PhysicsWorld {
@@ -146,6 +149,7 @@ export class PhysicsWorld {
     this.topeCongelados.clear();
     this.posCable.clear();
     this.sinContacto.clear();
+    this.figura = [];
     this.drag = null;
     this.cuerdasSim.clear();
     this.world = new RAPIER.World(GRAVITY);
@@ -1805,6 +1809,128 @@ export class PhysicsWorld {
   }
 
   /**
+   * CUERPO FÍSICO DEL MANIQUÍ (v0.2.44).
+   *
+   * Cada segmento de la figura entra en el motor como cuerpo CINEMÁTICO: la
+   * postura la manda el usuario (posar, ▲▼, agarres), no la gravedad, así que
+   * el maniquí no se desploma ni lo empuja la máquina — pero la máquina
+   * tampoco puede atravesarlo. Un brazo de press que llega al torso choca y
+   * se detiene, que es lo que pasa con una persona sentada de verdad.
+   *
+   * Los colisionadores son los del propio segmento (esfera, cilindro, caja),
+   * no cajas envolventes: un muslo cilíndrico rueda contra el asiento como un
+   * muslo, no como un ladrillo.
+   */
+  private figura: { body: R.RigidBody; malla: THREE.Mesh }[] = [];
+
+  /** ¿Está el maniquí representado en el motor? */
+  get figuraEnElMotor(): boolean {
+    return this.figura.length > 0;
+  }
+
+  /** Da cuerpo a la figura: un cinemático por segmento visible. */
+  añadirFigura(fig: THREE.Group): void {
+    const world = this.world;
+    if (!world) return;
+    this.quitarFigura();
+    fig.updateMatrixWorld(true);
+    const pos = new THREE.Vector3();
+    const rot = new THREE.Quaternion();
+    const esc = new THREE.Vector3();
+    fig.traverse((n) => {
+      const malla = n as THREE.Mesh;
+      if (!malla.isMesh || !malla.visible || !malla.userData.humanFigurePart) return;
+      // MANOS Y PIES no llevan collider: son los puntos por los que la figura
+      // AGARRA la máquina. Apoyar una mano en un asa la lleva justo encima de
+      // ella, y si además chocaran, la IK del brazo y el contacto se pelearían
+      // empujándose sin parar. Lo que no puede atravesarse es el cuerpo.
+      if (SEGMENTOS_SIN_CUERPO.has(malla.userData.segmentId as string)) return;
+      const cd = this.colliderDeSegmento(malla);
+      if (!cd) return;
+      malla.matrixWorld.decompose(pos, rot, esc);
+      const body = world.createRigidBody(
+        RAPIER.RigidBodyDesc.kinematicPositionBased()
+          .setTranslation(pos.x * S, pos.y * S, pos.z * S)
+          .setRotation({ x: rot.x, y: rot.y, z: rot.z, w: rot.w }),
+      );
+      // Rozamiento de ropa: frena, pero no pega la pieza al cuerpo.
+      world.createCollider(cd.setFriction(0.7).setRestitution(0.02), body);
+      this.figura.push({ body, malla });
+    });
+  }
+
+  /** Retira del motor los cuerpos del maniquí. */
+  quitarFigura(): void {
+    if (this.world) {
+      for (const s of this.figura) this.world.removeRigidBody(s.body);
+    }
+    this.figura = [];
+  }
+
+  /**
+   * Collider de un segmento, con la forma de su primitiva. El centro de la
+   * geometría puede no estar en el origen del hueso (los huesos cuelgan hacia
+   * −Y), así que se desplaza al centro real de su caja.
+   */
+  private colliderDeSegmento(malla: THREE.Mesh): R.ColliderDesc | null {
+    const geo = malla.geometry as THREE.BufferGeometry & {
+      type?: string;
+      parameters?: Record<string, number>;
+    };
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    if (!bb) return null;
+    const esc = new THREE.Vector3();
+    malla.matrixWorld.decompose(new THREE.Vector3(), new THREE.Quaternion(), esc);
+    const sx = Math.abs(esc.x) * S;
+    const sy = Math.abs(esc.y) * S;
+    const sz = Math.abs(esc.z) * S;
+    const semi = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+    const p = geo.parameters ?? {};
+    let cd: R.ColliderDesc | null = null;
+    if (geo.type === "SphereGeometry" && p.radius) {
+      cd = RAPIER.ColliderDesc.ball(p.radius * Math.max(sx, sy, sz));
+    } else if (geo.type === "CylinderGeometry" && p.radiusTop !== undefined) {
+      const r = Math.max(p.radiusTop, p.radiusBottom ?? p.radiusTop) * Math.max(sx, sz);
+      cd = RAPIER.ColliderDesc.cylinder(((p.height ?? 1) / 2) * sy, r);
+    } else if (geo.type === "CapsuleGeometry" && p.radius !== undefined) {
+      cd = RAPIER.ColliderDesc.capsule(
+        ((p.length ?? p.height ?? 0) / 2) * sy,
+        p.radius * Math.max(sx, sz),
+      );
+    } else {
+      cd = RAPIER.ColliderDesc.cuboid(
+        Math.max(semi.x * sx, 0.005),
+        Math.max(semi.y * sy, 0.005),
+        Math.max(semi.z * sz, 0.005),
+      );
+    }
+    const centro = bb.getCenter(new THREE.Vector3());
+    if (centro.lengthSq() > 1e-8) {
+      cd.setTranslation(centro.x * sx, centro.y * sy, centro.z * sz);
+    }
+    return cd;
+  }
+
+  /**
+   * Lleva los cuerpos del maniquí a la pose que marcan sus mallas. Se usa el
+   * destino CINEMÁTICO (no un teletransporte) para que Rapier deduzca la
+   * velocidad del segmento y empuje bien lo que tenga delante en vez de
+   * aparecer dentro.
+   */
+  private sincronizarFigura(): void {
+    if (this.figura.length === 0) return;
+    const pos = new THREE.Vector3();
+    const rot = new THREE.Quaternion();
+    const esc = new THREE.Vector3();
+    for (const s of this.figura) {
+      s.malla.matrixWorld.decompose(pos, rot, esc);
+      s.body.setNextKinematicTranslation({ x: pos.x * S, y: pos.y * S, z: pos.z * S });
+      s.body.setNextKinematicRotation({ x: rot.x, y: rot.y, z: rot.z, w: rot.w });
+    }
+  }
+
+  /**
    * CAJAS DE LA ESTRUCTURA (v0.2.43), en CENTÍMETROS de la escena.
    *
    * El maniquí no tiene cuerpo en el motor, así que para saber dónde NO puede
@@ -1986,6 +2112,10 @@ export class PhysicsWorld {
         if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
       }
       this.applyDrag(PhysicsWorld.FIXED_DT);
+      // El maniquí manda su postura al motor ANTES del paso: sus segmentos
+      // son cinemáticos, así que llegan como destino y el motor calcula con
+      // qué velocidad barren lo que tengan delante.
+      this.sincronizarFigura();
       this.world.step();
       this.aplicarGuias();
       // Cable: primero corrige velocidades, luego proyecta posiciones para
@@ -2127,6 +2257,7 @@ export class PhysicsWorld {
     this.topeCongelados.clear();
     this.posCable.clear();
     this.sinContacto.clear();
+    this.figura = [];
     this.drag = null;
   }
 }
