@@ -2990,36 +2990,30 @@ export class Editor {
     const nuevo = Math.max(lim[0], Math.min(lim[1], actual + dir * flexion * pasoDeg));
     if (Math.abs(nuevo - actual) < 1e-3) return false; // tope del rango
 
-    // TOPE DE ESTRUCTURA: solo en simulación, y solo si el paso EMPEORA la
-    // penetración. Así un segmento que ya estaba rozando puede seguir
-    // moviéndose —incluso para salir—, pero ninguno entra más en el hierro.
-    const cajas = this.physics ? (this.cajasEstructura ?? this.cajasCercaDeLaFigura()) : null;
-    const mallas = cajas?.length ? this.mallasDeArticulacion(nombre) : [];
-    let antes = 0;
-    if (mallas.length) {
-      this.humanFigure?.updateMatrixWorld(true);
-      antes = this.penetracionEnEstructura(mallas, cajas!);
-    }
-
-    const previo = joints[nombre].rotation[eje];
     joints[nombre].rotation[eje] = degToRad(nuevo);
     this.applyPoseSymmetry(nombre);
     (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
 
-    if (mallas.length) {
-      this.humanFigure?.updateMatrixWorld(true);
-      if (this.penetracionEnEstructura(mallas, cajas!) > antes + 1e-4) {
-        joints[nombre].rotation[eje] = previo;
-        this.applyPoseSymmetry(nombre);
-        (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
-        this.humanFigure?.updateMatrixWorld(true);
-        this.frenadasPorEstructura++;
-        this.requestRender();
-        return false;
-      }
-    }
     this.requestRender();
     return true;
+  }
+
+  /**
+   * ¿Hay alguna parte del cuerpo DENTRO del hierro? (v0.2.45)
+   *
+   * Se mide el cuerpo ENTERO, no solo el segmento que se acaba de girar: lo
+   * que delata una máquina sin holgura es el torso contra el mástil tanto
+   * como el antebrazo contra un travesaño. Y se AVISA, no se impide: ese
+   * choque es la evidencia de que la máquina no deja sitio a quien la usa.
+   */
+  private medirChoqueConEstructura(): boolean {
+    if (!this.physics || !this.humanFigure) return false;
+    const cajas = this.cajasEstructura ?? this.cajasCercaDeLaFigura();
+    if (!cajas?.length) return false;
+    const mallas = this.mallasDeLaFigura();
+    if (!mallas.length) return false;
+    this.humanFigure.updateMatrixWorld(true);
+    return this.penetracionEnEstructura(mallas, cajas) > 0.5;
   }
 
   /**
@@ -3064,7 +3058,6 @@ export class Editor {
     // Las cajas del hierro se leen UNA vez por pulsación y valen para todas
     // las articulaciones del paso (la máquina no se mueve entremedias).
     this.cajasEstructura = this.physics ? this.cajasCercaDeLaFigura() : null;
-    this.frenadasPorEstructura = 0;
     const libres = this.articulacionesLibres();
     for (const nombre of libres) {
       // Con la simetría activa, mover la izquierda ya arrastra a la derecha:
@@ -3074,13 +3067,20 @@ export class Editor {
       }
       if (this.moverArticulacionFocal(nombre, dir, pasoDeg)) n++;
     }
-    const frenadas = this.frenadasPorEstructura;
+    const antes = this.contactoConEstructura;
+    this.contactoConEstructura = this.medirChoqueConEstructura();
     this.cajasEstructura = null;
-    if (n === 0 && frenadas > 0) {
+    // El aviso solo salta al ENTRAR en choque: repetirlo en cada pulsación
+    // sería ruido mientras se recorre el rango con el cuerpo encajado.
+    if (this.contactoConEstructura && !antes) {
       this.avisoTemporal(
-        tt("La estructura frena el movimiento", "The structure blocks the movement"),
+        tt(
+          "⚠ El cuerpo choca con la estructura: la máquina no le deja sitio",
+          "⚠ The body hits the structure: the machine leaves it no room",
+        ),
       );
-    } else if (n === 0) {
+    }
+    if (n === 0) {
       this.avisoTemporal(
         tt(
           "Todas las articulaciones están bloqueadas: libera alguna en Articulaciones",
@@ -6561,15 +6561,39 @@ export class Editor {
     return /asiento|respaldo|banco|seat|bench/i.test(obj.name);
   }
 
-  /** Punto de colocación bajo el puntero: suelo o apoyo ergonómico. */
+  /**
+   * Punto de colocación bajo el puntero: apoyo ergonómico o suelo.
+   *
+   * La PRIMERA pieza que encuentra el rayo manda. Si es un apoyo, ahí va la
+   * figura; si es cualquier otra cosa —la pila de pesos, un montante— NO se
+   * cuela al suelo que hay detrás: eso mandaba el maniquí a metros de
+   * distancia, al punto donde el rayo pinchaba el plano y = 0 después de
+   * atravesar media máquina.
+   */
   private apoyoBajoPuntero(): { punto: THREE.Vector3; obj: SceneObject | null } | null {
     const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, true);
     for (const h of hits) {
       const id = h.object.userData.sceneObjectId as string | undefined;
       const obj = id ? this.objects.get(id) : undefined;
-      if (obj && this.esApoyoErgonomico(obj)) return { punto: h.point.clone(), obj };
+      if (!obj) continue;
+      if (!this.esApoyoErgonomico(obj)) return null; // pieza que no es apoyo: tapa el suelo
+      // RESPALDO: nadie se sienta ENCIMA de un respaldo. El clic sobre él
+      // vale como "siéntate contra este respaldo", así que la figura va al
+      // asiento más cercano.
+      if (/respaldo|back/i.test(obj.name) || obj.componentId === "respaldo") {
+        const asiento = this.piezaCercana(
+          h.point,
+          (o) => o !== obj && (/asiento|banco|seat|bench/i.test(o.name) || o.componentId === "asiento"),
+        );
+        if (asiento) {
+          const caja = new THREE.Box3().setFromObject(asiento.mesh);
+          const centro = caja.getCenter(new THREE.Vector3());
+          return { punto: new THREE.Vector3(centro.x, caja.max.y, centro.z), obj: asiento };
+        }
+      }
+      return { punto: h.point.clone(), obj };
     }
-    // Si no hay apoyo, el SUELO (plano y = 0).
+    // Nada delante: el SUELO (plano y = 0).
     const suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const p = new THREE.Vector3();
     return this.raycaster.ray.intersectPlane(suelo, p) ? { punto: p, obj: null } : null;
@@ -6680,7 +6704,8 @@ export class Editor {
    * libre, porque es lo que fija la postura de partida.
    */
   private cajasEstructura: ReturnType<PhysicsWorld["cajasDeColision"]> | null = null;
-  private frenadasPorEstructura = 0;
+  /** ¿El último paso de 8/9 dejó algún segmento dentro del hierro? */
+  contactoConEstructura = false;
 
   /** Cajas del hierro cercanas a la figura (el resto no puede estorbar). */
   private cajasCercaDeLaFigura(): ReturnType<PhysicsWorld["cajasDeColision"]> | null {
@@ -6821,29 +6846,6 @@ export class Editor {
         ),
       );
     }
-  }
-
-  /** Mallas que arrastra una articulación (con su espejo si hay simetría). */
-  private mallasDeArticulacion(nombre: string): THREE.Mesh[] {
-    const joints = this.figureJoints();
-    if (!joints) return [];
-    const raices = [joints[nombre]];
-    if (this.poseSymmetry) {
-      const otro = nombre.endsWith("L")
-        ? `${nombre.slice(0, -1)}R`
-        : nombre.endsWith("R")
-          ? `${nombre.slice(0, -1)}L`
-          : null;
-      if (otro && joints[otro]) raices.push(joints[otro]);
-    }
-    const out: THREE.Mesh[] = [];
-    for (const r of raices) {
-      r?.traverse((n) => {
-        const m = n as THREE.Mesh;
-        if (m.isMesh && m.visible && m.geometry?.getAttribute("position")) out.push(m);
-      });
-    }
-    return out;
   }
 
   /**
@@ -7154,7 +7156,17 @@ export class Editor {
     // cuerpo físico), que es lo que permite posarla dentro de la máquina.
     if (this.colocarFiguraMode && event.button === 0) {
       const destino = this.apoyoBajoPuntero();
-      if (destino) void this.colocarFiguraEn(destino);
+      if (destino) {
+        // La herramienta se APAGA al dejar la figura puesta. Si sigue viva,
+        // el clic siguiente —orbitar, agarrar una pieza— vuelve a teletrans-
+        // portar el maniquí, que es lo que parecía un fallo de colocación.
+        this.cancelColocarFigura();
+        void this.colocarFiguraEn(destino);
+      } else {
+        this.avisoTemporal(
+          tt("Apunta al suelo o a un apoyo (asiento, respaldo, banco)", "Aim at the floor or a support (seat, backrest, bench)"),
+        );
+      }
       return;
     }
 

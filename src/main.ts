@@ -7,7 +7,6 @@ import { ComponentPalette } from "./ui/ComponentPalette";
 import { Toolbar } from "./ui/Toolbar";
 import { PropertiesPanel } from "./ui/PropertiesPanel";
 import { JointsPanel } from "./ui/JointsPanel";
-import { PosePanel } from "./ui/PosePanel";
 import { ArticulacionesPanel } from "./ui/ArticulacionesPanel";
 import { MeasurementHUD } from "./ui/MeasurementHUD";
 import { PerformancePanel } from "./ui/PerformancePanel";
@@ -159,9 +158,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
 
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
-  const posePanel = new PosePanel(ed);
-  // Ventana de ARTICULACIONES (v0.2.41): el candado por familia y lado que
-  // decide qué mueve el ▲▼ de la simulación. Vale igual en Builder y Viewer.
+  // VENTANA DEL MANIQUÍ (v0.2.45): una sola con dos modos — POSAR fija la
+  // postura de partida y SIMULAR el candado articular y el 8/9. Sustituye a
+  // las dos ventanas separadas (Posturas y Articulaciones).
   const articPanel = new ArticulacionesPanel(ed);
   ed.panelArticulaciones = articPanel;
   const hud = new MeasurementHUD(ed);
@@ -184,7 +183,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     return b;
   };
   const toggleLeft = dockToggle("toggle-left", "🧩", "show-left", "Ventana de herramientas");
-  const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Posturas del maniquí");
+  const togglePoses = dockToggle("toggle-poses", "🧍", "show-poses", "Ventana del maniquí");
 
   // VENTANA IZQUIERDA APILADA (v0.2.13): UNA sola ventana con el logo y
   // cuatro barras colapsables del mismo estilo que "Piezas disponibles" —
@@ -225,7 +224,6 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   hacerPlegable(palette.root);
   hacerPlegable(inspector.root, true);
   hacerPlegable(joints.root, true);
-  hacerPlegable(posePanel.root);
 
   leftStack.append(palette.root, inspector.root, joints.root, seccionArrastre);
 
@@ -240,7 +238,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   });
   altoToolbar.observe(toolbar.root);
 
-  editorNodes = [canvas, leftStack, toolbar.root, posePanel.root, articPanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
+  editorNodes = [canvas, leftStack, toolbar.root, articPanel.root, hud.root, perfPanel.root, simBar.root, toggleLeft, togglePoses, zoomBar, toolQuick];
   editorDisposables = [
     () => precise.dispose(),
     () => palette.dispose(),

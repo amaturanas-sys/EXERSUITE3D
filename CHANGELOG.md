@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.45] — 2026-08-11
+
+### Cambiado
+
+- **UNA SOLA VENTANA PARA EL MANIQUÍ, con dos modos.** Las herramientas de
+  posar vivían en "Posturas" y los candados en "Articulaciones", así que había
+  que saltar de ventana a mitad de gesto. Ahora hay una ventana —**Maniquí**—
+  con un interruptor:
+  - **🧍 POSAR** fija la POSTURA DE PARTIDA: postura guardada, agarrar un
+    segmento, colocar la figura, simetría L↔R y apoyo de manos (IK).
+  - **▶ SIMULAR** trae el candado por familia articular con su selector de
+    lado, y la flexión/extensión de todo lo liberado.
+
+  La ventana aparece sola cuando hay maniquí y salta a SIMULAR al arrancar la
+  física (y vuelve a POSAR al pararla). La ventana "Posturas" desaparece.
+
+- **FLEXIÓN Y EXTENSIÓN CON LAS TECLAS 8 y 9** (antes ▲▼). Los cursores los
+  reclama el navegador para recorrer los botones de la interfaz, así que
+  pulsar "flexionar" movía el foco en vez del maniquí. 8 flexiona, 9 extiende;
+  los botones de la ventana y de la barra de simulación lo dicen.
+
+### Corregido
+
+- **COLOCAR MANIQUÍ SE APAGA AL SOLTARLO.** La herramienta seguía activa tras
+  el clic, de modo que el siguiente toque —orbitar, agarrar una pieza— volvía
+  a teletransportar la figura. Eso era el "error" al colocar durante la
+  simulación.
+
+- **CLICAR UNA PIEZA QUE NO ES APOYO YA NO MANDA LA FIGURA LEJOS.** El rayo se
+  colaba hasta el suelo que había DETRÁS de la pieza y dejaba el maniquí a
+  metros de distancia (medido: a 4,7 m al tocar la pila de pesos). Ahora la
+  primera pieza que encuentra el rayo manda: si no es un apoyo, no se coloca y
+  se dice qué apuntar.
+
+- **CLICAR UN RESPALDO SIENTA EN SU ASIENTO**, en vez de dejar la figura
+  encaramada sobre el respaldo.
+
+- **NINGUNA DIRECCIÓN DEL MOVIMIENTO QUEDA MUERTA.** El tope de estructura de
+  v0.2.43 frenaba la articulación cuando el segmento fuera a entrar en el
+  hierro, y con la figura encajada eso mataba un sentido entero del recorrido
+  (medido: 1 paso aplicado de 40 en flexión). Se retira: las articulaciones
+  recorren su rango completo y el choque **se avisa** —en la ventana y con un
+  mensaje— en vez de impedirse. Ese choque es la evidencia de que la máquina
+  no deja sitio al cuerpo, y esconderlo era justo lo contrario de lo que sirve.
+
 ## [0.2.44] — 2026-08-11
 
 ### Añadido
