@@ -15,7 +15,9 @@ export const BUILTIN_POSES: PoseMap = {
   Sentadilla: {
     hipL: [-70, 0, 0], hipR: [-70, 0, 0],
     kneeL: [110, 0, 0], kneeR: [110, 0, 0],
-    ankleL: [-30, 0, 0], ankleR: [-30, 0, 0],
+    // 20° de dorsiflexión es el tope humano; estaba en 30 y ninguna
+    // acomodación podía sostener la planta desde un ángulo imposible.
+    ankleL: [-20, 0, 0], ankleR: [-20, 0, 0],
     spine: [25, 0, 0],
     shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
   },
@@ -36,14 +38,67 @@ export const BUILTIN_POSES: PoseMap = {
     shoulderL: [-165, 0, 0], shoulderR: [-165, 0, 0],
     elbowL: [-10, 0, 0], elbowR: [-10, 0, 0],
   },
+  // POSTURAS DE PARTIDA DE LOS CUATRO MOVIMIENTOS CLÁSICOS (v0.2.49).
+  //
+  // El movimiento lo pone la primitiva (zona + empuje/tracción); el PLANO lo
+  // pone la postura. Estas cuatro son el punto de partida de cada uno, con la
+  // base sentada, para que salgan bien con solo marcar «tren superior» y
+  // pulsar 8 o 9.
+  "Empuje horizontal": {
+    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
+    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
+    // Codos atrás y manos al pecho: al empujar, el brazo sale hacia delante.
+    shoulderL: [-15, 0, 0], shoulderR: [-15, 0, 0],
+    elbowL: [-100, 0, 0], elbowR: [-100, 0, 0],
+  },
+  "Tracción horizontal": {
+    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
+    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
+    // Brazos estirados al frente: al traccionar, el codo dobla y el hombro
+    // vuelve al costado. Es el remo.
+    shoulderL: [-75, 0, 0], shoulderR: [-75, 0, 0],
+    elbowL: [-10, 0, 0], elbowR: [-10, 0, 0],
+  },
+  "Empuje vertical": {
+    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
+    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
+    // Manos a la altura de los hombros con el codo muy doblado: al empujar,
+    // el brazo sube. Es el press militar.
+    shoulderL: [-100, 0, 0], shoulderR: [-100, 0, 0],
+    elbowL: [-130, 0, 0], elbowR: [-130, 0, 0],
+  },
+  "Tracción vertical": {
+    hipL: [-85, 0, 0], hipR: [-85, 0, 0],
+    kneeL: [95, 0, 0], kneeR: [95, 0, 0],
+    // Brazos estirados por encima de la cabeza: al traccionar, la barra baja.
+    // Es el jalón.
+    shoulderL: [-165, 0, 0], shoulderR: [-165, 0, 0],
+    elbowL: [-10, 0, 0], elbowR: [-10, 0, 0],
+  },
 };
 
 let poses: PoseMap = load();
 
+/**
+ * Añade a la biblioteca guardada las posturas de FÁBRICA que no estén.
+ *
+ * Sin esto, quien ya tenía biblioteca no veía nunca las posturas que trae una
+ * versión nueva —las de los cuatro movimientos clásicos, por ejemplo—: se
+ * guardaba una copia el primer día y no se volvía a mirar el catálogo. Las que
+ * el usuario haya modificado se respetan tal cual.
+ */
+function conPosturasDeFabrica(previas: PoseMap): PoseMap {
+  const out = { ...previas };
+  for (const [nombre, def] of Object.entries(BUILTIN_POSES)) {
+    if (!(nombre in out)) out[nombre] = structuredClone(def);
+  }
+  return out;
+}
+
 function load(): PoseMap {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as PoseMap;
+    if (raw) return conPosturasDeFabrica(JSON.parse(raw) as PoseMap);
     // MIGRACIÓN v1 → v2 (v0.2.38): el codo doblaba al revés, así que las
     // posturas guardadas con el criterio viejo se pasan al nuevo cambiando
     // el signo de su flexión. Las que el usuario creó se conservan.

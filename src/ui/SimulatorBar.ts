@@ -119,10 +119,11 @@ export class SimulatorBar {
     };
     let timerTension: ReturnType<typeof setInterval> | null = null;
 
-    // MOVIMIENTO DEL MANIQUÍ (v0.2.45): las teclas 8 y 9 flexionan y extienden
-    // A LA VEZ todas las articulaciones LIBRES; qué está libre se decide en la
-    // ventana de Articulaciones (🦴). La figura nace con todo bloqueado, así
-    // que el movimiento es exactamente el que se pidió y nada más.
+    // MOVIMIENTO DEL MANIQUÍ (v0.2.49): las teclas 8 y 9 EMPUJAN y TRACCIONAN
+    // las ZONAS del cuerpo que estén activas en la ventana del maniquí (🦴).
+    // Cada zona mueve sus articulaciones con el signo que le toca por
+    // anatomía —empujar es extender el codo mientras se flexiona el hombro—,
+    // así que un solo botón produce el gesto completo.
     // COLOCAR MANIQUÍ (v0.2.41): disponible siempre —haya figura o no— y
     // también con la simulación corriendo, en Builder y en Viewer.
     const bColocar = el("button", {
@@ -146,8 +147,10 @@ export class SimulatorBar {
     const refrescarFigura = () => {
       const arts = this.editor.articulacionesFigura();
       grupoFigura.classList.toggle("sim-oculto", arts.length === 0);
-      const libres = this.editor.articulacionesLibres().length;
-      resumen.textContent = tt(`${libres} libres`, `${libres} free`);
+      const zonas = this.editor.zonasDeMovimiento();
+      resumen.textContent = zonas.size === 0
+        ? tt("sin zona", "no zone")
+        : [...zonas].map(([id, l]) => (l === "sim" ? id : `${id}·${l}`)).join(" + ");
       bArtic.classList.toggle("active", this.editor.panelArticulaciones?.visible() ?? false);
     };
     bArtic.addEventListener("click", () => {
@@ -155,18 +158,23 @@ export class SimulatorBar {
       refrescarFigura();
     });
     const mover = (dir: 1 | -1) => {
-      this.editor.moverArticulacionesLibres(dir);
+      this.editor.moverPrimitiva(dir);
       refrescarFigura();
     };
-    const bFlex = el("button", { class: "tool", title: tt("Flexión de todo lo liberado (tecla 8)", "Flexion of everything released (key 8)") }, ["8 ▲"]);
-    const bExt = el("button", { class: "tool", title: tt("Extensión de todo lo liberado (tecla 9)", "Extension of everything released (key 9)") }, ["9 ▼"]);
+    const bFlex = el("button", { class: "tool", title: tt("EMPUJE: aleja la carga del cuerpo (tecla 8)", "PUSH: drives the load away from the body (key 8)") }, ["8 ▸"]);
+    const bExt = el("button", { class: "tool", title: tt("TRACCIÓN: acerca la carga al cuerpo (tecla 9)", "PULL: draws the load toward the body (key 9)") }, ["9 ◂"]);
     bFlex.addEventListener("click", () => mover(1));
     bExt.addEventListener("click", () => mover(-1));
-    grupoFigura.append(bArtic, bFlex, bExt, resumen);
+    const bPartida = el("button", { class: "tool", title: tt("Devuelve el maniquí a su postura de partida", "Return the mannequin to its starting pose") }, ["↺"]);
+    bPartida.addEventListener("click", () => {
+      this.editor.reiniciarPoseDePartida();
+      refrescarFigura();
+    });
+    grupoFigura.append(bArtic, bFlex, bExt, bPartida, resumen);
     this.editor.bus.on("jointLocksChanged", refrescarFigura);
     this.editor.bus.on("humanFigureChanged", refrescarFigura);
     // TECLAS 8 y 9 (v0.2.45): los cursores ▲▼ los reclama el navegador para
-    // recorrer los botones de la interfaz, así que pulsar "flexionar" movía
+    // recorrer los botones de la interfaz, así que pulsar "empujar" movía
     // el foco en vez del maniquí. Los números no compiten con nada.
     const teclas = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -206,8 +214,8 @@ export class SimulatorBar {
       el("div", { class: "sim-hint" }, [tension]),
       el("div", { class: "sim-hint" }, [
         tt(
-          "🌐 órbita · ✋ manipulación: al elegirla, las piezas móviles se resaltan al pasar por encima · 🦴 maniquí · teclas 8/9 flexionan y extienden lo liberado",
-          "🌐 orbit · ✋ manipulation: pick it and mobile parts highlight on hover · 🦴 mannequin · keys 8/9 flex and extend what is released",
+          "🌐 órbita · ✋ manipulación: al elegirla, las piezas móviles se resaltan al pasar por encima · 🦴 maniquí · teclas 8/9 empujan y traccionan las zonas activas · ↺ vuelve a la postura de partida",
+          "🌐 orbit · ✋ manipulation: pick it and mobile parts highlight on hover · 🦴 mannequin · keys 8/9 push and pull the active zones · ↺ returns to the starting pose",
         ),
       ]),
     );

@@ -75,6 +75,15 @@ export interface HumanData {
   locks?: string[];
   /** Simetría de pose activa (los cambios de un lado se replican al otro). */
   symmetry?: boolean;
+  /** Dónde se apoya: en el suelo (se re-aterriza) o en una pieza (v0.2.49). */
+  support?: "suelo" | "pieza";
+  /** Zonas de movimiento activas y su lado (v0.2.49). */
+  zones?: { id: string; side: string }[];
+  /** POSTURA DE PARTIDA: pose y sitio a los que devuelve el ↺ (v0.2.49). */
+  startPose?: Record<string, Vec3> | null;
+  startPoseName?: string | null;
+  startPosition?: Vec3 | null;
+  startQuaternion?: Quat | null;
 }
 
 /** Espacio de trabajo del proyecto (asistente de Nuevo, v0.2.0). */

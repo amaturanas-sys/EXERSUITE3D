@@ -1,9 +1,10 @@
 import type { Editor } from "../core/Editor";
 import { tt } from "../core/i18n";
+import { ZONAS, type LadoZona, type ZonaId } from "../objects/movimientos";
 import { clear, el } from "./dom";
 
 /**
- * VENTANA DEL MANIQUÍ (v0.2.45).
+ * VENTANA DEL MANIQUÍ (v0.2.45, movimiento por zonas en v0.2.49).
  *
  * Una sola ventana con DOS MODOS, que es como se trabaja de verdad:
  *
@@ -11,11 +12,14 @@ import { clear, el } from "./dom";
  *               agarrar un segmento, colocar la figura en el suelo o en un
  *               apoyo, la simetría y el apoyo de manos. Nada de esto depende
  *               del candado articular.
- *  · SIMULAR  — el candado por familia articular y su lado, y el movimiento
- *               de flexión/extensión (teclas 8 y 9) de todo lo liberado.
+ *  · SIMULAR  — la ZONA del cuerpo que trabaja, su lado, y el sentido del
+ *               gesto: EMPUJE (8) o TRACCIÓN (9). Más el ↺ que devuelve la
+ *               figura a su postura de partida.
  *
  * Antes esto vivía repartido entre dos ventanas —Posturas y Articulaciones—
- * y obligaba a saltar de una a otra a mitad de gesto.
+ * y obligaba a saltar de una a otra a mitad de gesto. Y la instrucción se daba
+ * ARTICULACIÓN POR ARTICULACIÓN, lo que hacía imposible un press: empujar es
+ * extender el codo MIENTRAS se flexiona el hombro, direcciones opuestas.
  */
 
 const FAMILIAS: [string, string, string][] = [
@@ -37,10 +41,9 @@ const LADOS: ["L" | "R" | "sim", string, string][] = [
 
 export class ArticulacionesPanel {
   readonly root: HTMLElement;
-  private lado: "L" | "R" | "sim" = "sim";
-  private casillas = new Map<string, HTMLInputElement>();
+  private casillas = new Map<ZonaId, HTMLInputElement>();
+  private ladosZona = new Map<ZonaId, HTMLButtonElement[]>();
   private resumen: HTMLElement;
-  private botonesLado: HTMLButtonElement[] = [];
   private modo: "posar" | "simular" = "posar";
   private ladoPosar: "L" | "R" | "sim" = "sim";
   private botonesPosar = new Map<string, HTMLButtonElement>();
@@ -49,8 +52,13 @@ export class ArticulacionesPanel {
   private cajaSimular: HTMLElement;
   private botonesModo: Record<"posar" | "simular", HTMLButtonElement>;
 
+  /** Lado elegido para cada zona, se conserve activa o no. */
+  private ladoPorZona = new Map<ZonaId, LadoZona>();
+
   // --- modo POSAR ---
   private select: HTMLSelectElement;
+  private nombreNuevo: HTMLInputElement;
+  private etiquetaPartida: HTMLElement;
   private symChk: HTMLInputElement;
   private hint: HTMLElement;
   private jointBox: HTMLElement;
@@ -77,16 +85,40 @@ export class ArticulacionesPanel {
     bActualizar.addEventListener("click", () => {
       if (this.select.value) this.editor.savePose(this.select.value);
     });
-    const bGuardar = el("button", { class: "tool sim", title: tt("Guardar la pose actual como nueva postura", "Save the current pose as a new one") }, [
-      tt("Guardar como…", "Save as…"),
-    ]);
-    bGuardar.addEventListener("click", () => {
-      const name = window.prompt(tt("Nombre de la nueva postura:", "New pose name:"));
-      if (name && name.trim()) {
-        this.editor.savePose(name);
-        this.select.value = name.trim();
+    // GUARDAR CON NOMBRE en un campo de la propia ventana (v0.2.49). Con
+    // window.prompt la tableta abría un diálogo del sistema que se comía el
+    // gesto —y en el WebView de la app podía no aparecer siquiera—, así que
+    // guardar una postura nueva fallaba sin decir por qué.
+    this.nombreNuevo = el("input", {
+      type: "text",
+      class: "input",
+      placeholder: tt("Nombre de la postura nueva", "New pose name"),
+    }) as HTMLInputElement;
+    const guardarComo = () => {
+      const name = this.nombreNuevo.value.trim();
+      if (!name) {
+        this.hint.textContent = tt(
+          "Escribe un nombre para la postura antes de guardarla.",
+          "Type a name for the pose before saving it.",
+        );
+        this.nombreNuevo.focus();
+        return;
+      }
+      this.editor.savePose(name);
+      this.select.value = name;
+      this.nombreNuevo.value = "";
+      this.hint.textContent = tt(`Postura "${name}" guardada.`, `Pose "${name}" saved.`);
+    };
+    this.nombreNuevo.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Enter") {
+        e.preventDefault();
+        guardarComo();
       }
     });
+    const bGuardar = el("button", { class: "tool sim", title: tt("Guardar la pose actual con el nombre escrito", "Save the current pose under the typed name") }, [
+      tt("Guardar como…", "Save as…"),
+    ]);
+    bGuardar.addEventListener("click", guardarComo);
     const bEliminar = el("button", { class: "tool danger", title: tt("Eliminar esta postura", "Delete this pose") }, [
       tt("Eliminar", "Delete"),
     ]);
@@ -137,6 +169,25 @@ export class ArticulacionesPanel {
     bSoltar.addEventListener("click", () => this.editor.detachHands());
 
     this.hint = el("div", { class: "empty-hint" }, [this.hintPorDefecto]);
+
+    // POSTURA DE PARTIDA (v0.2.49): la referencia del ejercicio. Se fija sola
+    // al aplicar una postura, al colocar la figura y al arrancar la
+    // simulación, y aquí se puede clavar a mano en cualquier momento.
+    this.etiquetaPartida = el("div", { class: "art-hint mq-partida" }, [""]);
+    const bFijarPartida = el("button", { class: "tool", title: tt("Fija la pose actual como postura de partida", "Pin the current pose as the starting one") }, [
+      tt("📌 Fijar partida", "📌 Pin start"),
+    ]);
+    bFijarPartida.addEventListener("click", () => {
+      this.editor.marcarPoseDePartida(this.select.value || null);
+      this.refrescarPartida();
+    });
+    const bVolverPartida = el("button", { class: "tool", title: tt("Devuelve la figura a su postura de partida", "Return the figure to its starting pose") }, [
+      tt("↺ Volver a partida", "↺ Back to start"),
+    ]);
+    bVolverPartida.addEventListener("click", () => {
+      this.editor.reiniciarPoseDePartida();
+      this.refrescar();
+    });
 
     // Editor numérico de la articulación seleccionada.
     this.jointLabel = el("label", {}, [tt("Articulación", "Joint")]);
@@ -196,8 +247,14 @@ export class ArticulacionesPanel {
       el("div", { class: "art-rejilla" }, filasPosar),
       el("div", { class: "field" }, [el("label", {}, [tt("Postura", "Pose")]), this.select]),
       el("div", { class: "pose-actions" }, [bAplicar, bActualizar]),
+      el("div", { class: "field" }, [this.nombreNuevo]),
       el("div", { class: "pose-actions" }, [bGuardar, bEliminar]),
       el("div", { class: "pose-actions" }, [bRestaurar]),
+      el("div", { class: "art-hint" }, [
+        tt("Postura de PARTIDA (adonde vuelve el ↺ al parar la simulación):", "STARTING pose (where ↺ returns when the simulation stops):"),
+      ]),
+      el("div", { class: "pose-actions" }, [bFijarPartida, bVolverPartida]),
+      this.etiquetaPartida,
       el("div", { class: "pose-actions" }, [bAgarrar]),
       el("div", { class: "pose-actions" }, [bColocar]),
       filaSim,
@@ -208,50 +265,66 @@ export class ArticulacionesPanel {
     ]);
 
     // ---------------------------------------------------- modo SIMULAR
-    const filas = FAMILIAS.map(([fam, es, en]) => {
+    //
+    // La instrucción es la del gesto real: ZONA + SENTIDO. El EMPUJE aleja la
+    // carga del cuerpo y la TRACCIÓN la acerca; cada zona reparte el paso
+    // entre sus articulaciones con el signo que le toca por anatomía. Marcando
+    // varias zonas el movimiento sale simultáneo, y el lado de cada una lo
+    // hace simétrico, asimétrico o sectorizado.
+    const filasZona = ZONAS.map((z) => {
       const chk = el("input", { type: "checkbox", class: "art-chk" }) as HTMLInputElement;
       chk.addEventListener("change", () => {
-        const unico = fam === "spine" || fam === "neck";
-        this.editor.setBloqueoArticular(fam, unico ? "sim" : this.lado, !chk.checked);
-      });
-      this.casillas.set(fam, chk);
-      return el("label", { class: "art-fila" }, [chk, el("span", {}, [tt(es, en)])]);
-    });
-
-    const filaLados = el("div", { class: "art-lados" }, LADOS.map(([id, es, en]) => {
-      const b = el("button", { class: id === "sim" ? "tool active" : "tool" }, [tt(es, en)]) as HTMLButtonElement;
-      b.addEventListener("click", () => {
-        this.lado = id;
-        for (const o of this.botonesLado) o.classList.toggle("active", o === b);
+        this.editor.activarZona(z.id, chk.checked ? (this.ladoElegido(z.id) ?? "sim") : null);
         this.refrescar();
       });
-      this.botonesLado.push(b);
-      return b;
-    }));
+      this.casillas.set(z.id, chk);
 
-    const bTodo = el("button", { class: "tool" }, [tt("Bloquear todo", "Lock all")]);
-    bTodo.addEventListener("click", () => {
-      for (const [fam] of FAMILIAS) this.editor.setBloqueoArticular(fam, "sim", true);
-    });
-    const bNada = el("button", { class: "tool" }, [tt("Liberar todo", "Release all")]);
-    bNada.addEventListener("click", () => {
-      for (const [fam] of FAMILIAS) this.editor.setBloqueoArticular(fam, "sim", false);
+      const botones = LADOS.map(([id, es, en]) => {
+        const b = el("button", { class: "tool art-lado-mini", title: tt(es, en) }, [
+          id === "sim" ? "L+R" : id,
+        ]) as HTMLButtonElement;
+        b.addEventListener("click", () => {
+          this.ladoPorZona.set(z.id, id);
+          // Elegir lado ACTIVA la zona: es lo que se quería decir al tocarlo.
+          this.editor.activarZona(z.id, id);
+          this.refrescar();
+        });
+        return b;
+      });
+      this.ladosZona.set(z.id, botones);
+
+      const empuje = z.patron.map((a) => tt(a.es, a.en)).join(" + ");
+      return el("div", { class: "mq-zona" }, [
+        el("label", { class: "art-fila" }, [chk, el("span", {}, [tt(z.es, z.en)])]),
+        el("div", { class: "art-lados" }, botones),
+        el("div", { class: "mq-zona-detalle" }, [`${tt("Empuje", "Push")}: ${empuje}`]),
+      ]);
     });
 
-    // FLEXIÓN / EXTENSIÓN con las teclas 8 y 9 (los cursores ▲▼ los reclama
-    // el navegador para recorrer los botones de la interfaz).
-    const bFlex = el("button", { class: "tool", title: tt("Flexionar todo lo liberado (tecla 8)", "Flex everything released (key 8)") }, [
-      tt("8 ▲ Flexión", "8 ▲ Flexion"),
+    // EMPUJE / TRACCIÓN con las teclas 8 y 9 (los cursores ▲▼ los reclama el
+    // navegador para recorrer los botones de la interfaz).
+    const bEmpuje = el("button", { class: "tool", title: tt("EMPUJE: aleja la carga del cuerpo (tecla 8)", "PUSH: drives the load away from the body (key 8)") }, [
+      tt("8 ▸ Empuje", "8 ▸ Push"),
     ]);
-    const bExt = el("button", { class: "tool", title: tt("Extender todo lo liberado (tecla 9)", "Extend everything released (key 9)") }, [
-      tt("9 ▼ Extensión", "9 ▼ Extension"),
+    const bTraccion = el("button", { class: "tool", title: tt("TRACCIÓN: acerca la carga al cuerpo (tecla 9)", "PULL: draws the load toward the body (key 9)") }, [
+      tt("9 ◂ Tracción", "9 ◂ Pull"),
     ]);
-    bFlex.addEventListener("click", () => {
-      this.editor.moverArticulacionesLibres(1);
+    bEmpuje.addEventListener("click", () => {
+      this.editor.moverPrimitiva(1);
       this.refrescar();
     });
-    bExt.addEventListener("click", () => {
-      this.editor.moverArticulacionesLibres(-1);
+    bTraccion.addEventListener("click", () => {
+      this.editor.moverPrimitiva(-1);
+      this.refrescar();
+    });
+
+    const bReiniciar = el("button", { class: "tool", title: tt("Devuelve la figura a su postura de partida", "Return the figure to its starting pose") }, [
+      tt("↺ Postura de partida", "↺ Starting pose"),
+    ]);
+    bReiniciar.addEventListener("click", () => {
+      if (!this.editor.reiniciarPoseDePartida()) {
+        return;
+      }
       this.refrescar();
     });
 
@@ -259,20 +332,19 @@ export class ArticulacionesPanel {
 
     this.cajaSimular = el("div", { class: "mq-seccion" }, [
       el("div", { class: "art-hint" }, [
-        tt("Lado sobre el que actúan las casillas:", "Side the checkboxes act on:"),
+        tt(
+          "Marca la ZONA que trabaja y su lado. 8 EMPUJA (aleja la carga) y 9 TRACCIONA (la acerca).",
+          "Tick the ZONE that works and its side. 8 PUSHES (drives the load away) and 9 PULLS (draws it in).",
+        ),
       ]),
-      filaLados,
-      el("div", { class: "art-hint" }, [
-        tt("Marca lo que quieras MOVER con 8/9:", "Tick what you want to MOVE with 8/9:"),
-      ]),
-      ...filas,
-      el("div", { class: "art-acciones" }, [bTodo, bNada]),
-      el("div", { class: "art-acciones mq-mover" }, [bFlex, bExt]),
+      ...filasZona,
+      el("div", { class: "art-acciones mq-mover" }, [bEmpuje, bTraccion]),
+      el("div", { class: "art-acciones" }, [bReiniciar]),
       this.resumen,
       el("div", { class: "art-hint" }, [
         tt(
-          "El candado solo afecta a 8/9: posar la figura y apoyar manos y pies siguen disponibles, y son los que fijan la postura de partida.",
-          "Locking only affects 8/9: posing the figure and attaching hands and feet still work, and they set the starting pose.",
+          "El PLANO lo pone la postura de partida, no el botón: con el hombro a la altura del pecho el empuje sale horizontal (press de pecho) y con los brazos arriba, vertical (press militar). La tracción, igual: desde delante es remo y desde arriba, jalón.",
+          "The PLANE comes from the starting pose, not from the button: with the shoulder at chest height the push is horizontal (chest press); with the arms overhead it is vertical (overhead press). Same for the pull: from the front it is a row, from above a pulldown.",
         ),
       ]),
     ]);
@@ -296,6 +368,7 @@ export class ArticulacionesPanel {
     this.setModo("posar");
 
     this.editor.bus.on("jointLocksChanged", () => this.refrescar());
+    this.editor.bus.on("poseDePartidaChanged", () => this.refrescarPartida());
     this.editor.bus.on("posesChanged", () => this.refrescarPosturas());
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
       this.symChk.checked = this.editor.getPoseSymmetry();
@@ -380,31 +453,60 @@ export class ArticulacionesPanel {
     if (this.editor.listPoseNames().includes(actual)) this.select.value = actual;
   }
 
+  /** Lado elegido para una zona (el activo manda; si no, el recordado). */
+  private ladoElegido(id: ZonaId): LadoZona | null {
+    return this.editor.ladoDeZona(id) ?? this.ladoPorZona.get(id) ?? null;
+  }
+
+  /** Etiqueta de la postura de partida actual. */
+  private refrescarPartida(): void {
+    const nombre = this.editor.nombrePoseDePartida();
+    this.etiquetaPartida.textContent = !this.editor.tienePoseDePartida()
+      ? tt("Sin partida fijada.", "No start pinned.")
+      : nombre
+        ? tt(`Partida: "${nombre}".`, `Start: "${nombre}".`)
+        : tt("Partida: la pose que tenía al fijarla.", "Start: the pose it had when pinned.");
+  }
+
   private refrescar(): void {
-    const libres = new Set(this.editor.articulacionesLibres());
-    for (const [fam] of FAMILIAS) {
-      const chk = this.casillas.get(fam);
-      if (!chk) continue;
-      const nombres =
-        fam === "spine" || fam === "neck"
-          ? [fam]
-          : this.lado === "sim"
-            ? [`${fam}L`, `${fam}R`]
-            : [`${fam}${this.lado}`];
-      const libresAqui = nombres.filter((n) => libres.has(n)).length;
-      chk.checked = libresAqui > 0;
-      chk.indeterminate = libresAqui > 0 && libresAqui < nombres.length;
+    const zonas = this.editor.zonasDeMovimiento();
+    for (const z of ZONAS) {
+      const activa = zonas.get(z.id) ?? null;
+      const chk = this.casillas.get(z.id);
+      if (chk) chk.checked = activa !== null;
+      const marcado = activa ?? this.ladoPorZona.get(z.id) ?? "sim";
+      const botones = this.ladosZona.get(z.id) ?? [];
+      botones.forEach((b, i) => {
+        b.classList.toggle("active", LADOS[i][0] === marcado && activa !== null);
+      });
     }
-    const n = libres.size;
-    const base = n === 0
-      ? tt("Todo bloqueado: 8/9 no moverán nada.", "All locked: 8/9 will move nothing.")
-      : tt(`${n} articulación(es) libre(s) — 8/9 las mueven a la vez.`,
-           `${n} joint(s) free — 8/9 move them together.`);
+    this.refrescarPartida();
+
+    const activas = [...zonas].map(([id, lado]) => {
+      const z = ZONAS.find((q) => q.id === id);
+      const suf = lado === "sim" ? "" : ` (${lado})`;
+      return `${z ? tt(z.es, z.en) : id}${suf}`;
+    });
+    const partes: string[] = [];
+    partes.push(
+      activas.length === 0
+        ? tt("Ninguna zona activa: 8/9 no moverán nada.", "No zone active: 8/9 will move nothing.")
+        : tt(`Trabajan: ${activas.join(", ")}.`, `Working: ${activas.join(", ")}.`),
+    );
     // El CHOQUE con la estructura se anuncia, no se impide: es la evidencia
     // de que la máquina no deja sitio al cuerpo que va a usarla.
-    this.resumen.textContent = this.editor.contactoConEstructura
-      ? `${base} ⚠ ${tt("el cuerpo choca con la estructura", "the body hits the structure")}`
-      : base;
-    this.resumen.classList.toggle("art-choque", this.editor.contactoConEstructura);
+    if (this.editor.contactoConEstructura) {
+      partes.push(`⚠ ${tt("el cuerpo choca con la estructura", "the body hits the structure")}`);
+    }
+    // Y si el tobillo se queda sin recorrido, el pie deja de apoyar: la
+    // plataforma pide un ángulo que el cuerpo no tiene.
+    if (this.editor.acomodacionAlLimite) {
+      partes.push(
+        `⚠ ${tt("el tobillo llega a su tope: el pie pierde el apoyo", "the ankle hits its limit: the foot loses contact")}`,
+      );
+    }
+    const aviso = this.editor.contactoConEstructura || this.editor.acomodacionAlLimite;
+    this.resumen.textContent = partes.join(" ");
+    this.resumen.classList.toggle("art-choque", aviso);
   }
 }

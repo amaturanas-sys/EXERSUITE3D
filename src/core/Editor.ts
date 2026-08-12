@@ -82,6 +82,15 @@ import {
   setPose,
   type PoseDef,
 } from "../objects/poseLibrary";
+import {
+  ZONA_POR_ID,
+  articulacionesDeZona,
+  ladosDe,
+  nombresDeFamilia,
+  type LadoZona,
+  type SentidoMov,
+  type ZonaId,
+} from "../objects/movimientos";
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
@@ -173,6 +182,8 @@ export type EditorEvents = {
   simToolChanged: { tool: "mano" | "orbitar" };
   /** Cambió el conjunto de articulaciones bloqueadas del maniquí. */
   jointLocksChanged: { locks: string[] };
+  /** Se fijó (o restauró) la POSTURA DE PARTIDA del maniquí (v0.2.49). */
+  poseDePartidaChanged: { name: string | null };
   /** Modo COLOCAR MANIQUÍ activo/inactivo. */
   colocarFiguraChanged: { active: boolean };
   /** Herramienta rápida activa (barra de atajos, v0.2.13). */
@@ -890,6 +901,10 @@ export class Editor {
     // atraviesa. Sus segmentos son cinemáticos —la postura la manda quien
     // simula—, así que no se desploma ni lo arrastran las piezas.
     if (this.humanFigure && this.humanMode === "mannequin") {
+      // La pose con la que se pulsa ▶ ES la postura de partida: es adonde
+      // vuelve el ↺ y desde donde se repite el ejercicio en la siguiente
+      // pasada. Antes el maniquí se quedaba con la última pose movida.
+      this.marcarPoseDePartida();
       this.physics.añadirFigura(this.humanFigure);
     }
     this.jointHelpers.visible = false;
@@ -923,6 +938,10 @@ export class Editor {
     }
     this.saved.clear();
     this.jointHelpers.visible = true;
+    // El maniquí también vuelve a su estado de diseño: parar la simulación lo
+    // dejaba con la última pose movida y la siguiente pasada arrancaba desde
+    // ahí, así que no había forma de repetir el mismo gesto dos veces.
+    this.reiniciarPoseDePartida();
     // Cables y cuerdas vuelven a las posiciones de diseño restauradas.
     this.cablesDirty = true;
     this.rebuildAllRopes();
@@ -2448,6 +2467,14 @@ export class Editor {
         })),
         locks: [...this.jointLocks],
         symmetry: this.poseSymmetry,
+        // Apoyo, zonas de movimiento y POSTURA DE PARTIDA (v0.2.49): sin
+        // ellos, reabrir el proyecto perdía el punto de partida del ejercicio.
+        support: this.figuraApoyadaEn,
+        zones: [...this.zonasActivas].map(([id, side]) => ({ id, side })),
+        startPose: this.poseDePartida,
+        startPoseName: this.nombreDePartida,
+        startPosition: this.transformDePartida ? v3(this.transformDePartida.p) : null,
+        startQuaternion: this.transformDePartida ? q4(this.transformDePartida.q) : null,
       },
     };
   }
@@ -2546,6 +2573,7 @@ export class Editor {
     this.multiSel.clear();
     this.removeHumanFigure();
     this.jointLocks.clear();
+    this.reiniciarZonas();
     this.poseSymmetry = false;
     this.grabDrag = null;
     this.cablesInvalidos.clear();
@@ -2717,6 +2745,9 @@ export class Editor {
       await this.addHumanFigure(data.human.heightCm);
       const fig = this.humanFigure;
       if (fig) {
+        // El apoyo se restaura ANTES de posar: sobre una pieza la figura no
+        // debe re-aterrizar, o el maniquí sentado acabaría en el suelo.
+        this.figuraApoyadaEn = data.human.support === "pieza" ? "pieza" : "suelo";
         fig.position.fromArray(data.human.position);
         fig.quaternion.fromArray(data.human.quaternion);
         const joints = this.figureJoints();
@@ -2725,12 +2756,36 @@ export class Editor {
             const jj = joints[jn];
             if (jj) jj.rotation.set(degToRad(x), degToRad(y), degToRad(z));
           }
-          (fig.userData.ground as (() => void) | undefined)?.();
+          this.reapoyarFigura();
         }
         for (const h of data.human.hands) {
           const oid = idMap.get(h.objectId);
           if (oid) this.attachHand(h.side, oid, new THREE.Vector3().fromArray(h.local));
         }
+        // Zonas de movimiento y POSTURA DE PARTIDA guardadas con el proyecto.
+        // Un proyecto anterior a v0.2.49 no las trae: se vuelve a la de fábrica
+        // para no heredar las del proyecto que estuviera abierto antes.
+        this.zonasActivas = data.human.zones?.length
+          ? new Map(
+              data.human.zones
+                .filter((z) => ZONA_POR_ID[z.id])
+                .map((z) => [z.id as ZonaId, z.side as LadoZona]),
+            )
+          : new Map<ZonaId, LadoZona>([["superior", "sim"]]);
+        if (data.human.zones?.length) this.candadosDesdeZonas();
+        this.nombreDePartida = data.human.startPoseName ?? null;
+        if (data.human.startPose) {
+          this.poseDePartida = data.human.startPose as PoseDef;
+          this.transformDePartida = {
+            p: new THREE.Vector3().fromArray(data.human.startPosition ?? data.human.position),
+            q: new THREE.Quaternion().fromArray(
+              data.human.startQuaternion ?? data.human.quaternion,
+            ),
+          };
+        } else {
+          this.marcarPoseDePartida();
+        }
+        this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
       }
     } else if (data.human) {
       this.humanMode = "mannequin"; // el modo esqueleto se retiró en 0.1.7
@@ -2988,7 +3043,7 @@ export class Editor {
 
     joints[nombre].rotation[eje] = degToRad(nuevo);
     this.applyPoseSymmetry(nombre);
-    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.reapoyarFigura();
 
     this.requestRender();
     return true;
@@ -3036,33 +3091,199 @@ export class Editor {
     this.scheduleAutosave();
   }
 
-  /** Articulaciones libres (sin candado) que el ▲▼ va a mover. */
+  /** Articulaciones libres (sin candado) que el 8/9 va a mover. */
   articulacionesLibres(): string[] {
     return Object.keys(JOINT_DOF).filter((n) => !this.jointLocks.has(n));
   }
 
+  // ------------------------------------------- movimiento POR ZONAS (v0.2.49)
+  /** Zonas del cuerpo activas y el lado sobre el que actúa cada una. */
+  private zonasActivas = new Map<ZonaId, LadoZona>([["superior", "sim"]]);
+  /** Orientación de destino de cada segmento que se acomoda (grados). */
+  private pitchAcomodacion = new Map<string, number>();
+  /** ¿La última acomodación se quedó sin recorrido? (el pie pierde contacto) */
+  acomodacionAlLimite = false;
+
+  /** Zonas activas y su lado, para la interfaz. */
+  zonasDeMovimiento(): Map<ZonaId, LadoZona> {
+    return new Map(this.zonasActivas);
+  }
+
+  /** Vuelve a la zona de fábrica (tren superior a los dos lados). */
+  private reiniciarZonas(): void {
+    this.zonasActivas = new Map([["superior", "sim"]]);
+    this.pitchAcomodacion.clear();
+    this.poseDePartida = null;
+    this.transformDePartida = null;
+    this.nombreDePartida = null;
+  }
+
+  ladoDeZona(id: ZonaId): LadoZona | null {
+    return this.zonasActivas.get(id) ?? null;
+  }
+
   /**
-   * FLEXIÓN/EXTENSIÓN SIMULTÁNEA (v0.2.41): los cursores ▲▼ mueven A LA VEZ
-   * todas las articulaciones LIBRES, cada una por su eje natural y en el
-   * sentido en que flexiona — que es como se ejecuta un movimiento real, no
-   * articulación por articulación. Devuelve cuántas se movieron.
+   * Activa (con su lado) o desactiva una ZONA de movimiento. El candado por
+   * articulación se recalcula a partir de las zonas: lo que no participa en
+   * ninguna queda fijo, que es exactamente lo que dice la interfaz.
    */
-  moverArticulacionesLibres(dir: 1 | -1, pasoDeg = 4): number {
+  activarZona(id: ZonaId, lado: LadoZona | null): void {
+    if (lado === null) this.zonasActivas.delete(id);
+    else this.zonasActivas.set(id, lado);
+    this.candadosDesdeZonas();
+  }
+
+  /** Recalcula el candado articular a partir de las zonas activas. */
+  private candadosDesdeZonas(): void {
+    const libres = new Set<string>();
+    for (const [id, lado] of this.zonasActivas) {
+      const z = ZONA_POR_ID[id];
+      if (z) for (const n of articulacionesDeZona(z, lado)) libres.add(n);
+    }
+    this.jointLocks = new Set(Object.keys(JOINT_DOF).filter((n) => !libres.has(n)));
+    this.pitchAcomodacion.clear();
+    this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
+    this.scheduleAutosave();
+  }
+
+  /**
+   * Orientación (grados) que debe conservar el segmento acomodado: la que
+   * tenía en la POSTURA DE PARTIDA. Se calcula una sola vez y se guarda, para
+   * que el pie no vaya a la deriva paso a paso.
+   */
+  private objetivoDeAcomodacion(
+    nombre: string,
+    cadena: string[],
+    joints: Record<string, THREE.Object3D>,
+  ): number {
+    const guardado = this.pitchAcomodacion.get(nombre);
+    if (guardado !== undefined) return guardado;
+    const partida = this.poseDePartida;
+    let suma = 0;
+    for (const n of [...cadena, nombre]) {
+      suma += partida?.[n] ? partida[n][0] : joints[n] ? radToDeg(joints[n].rotation.x) : 0;
+    }
+    this.pitchAcomodacion.set(nombre, suma);
+    return suma;
+  }
+
+  /** ¿Le queda recorrido a esta articulación en el sentido pedido? */
+  private leQuedaRecorrido(
+    joints: Record<string, THREE.Object3D>,
+    nombre: string,
+    signo: number,
+  ): boolean {
+    const lim = JOINT_DOF[nombre]?.x;
+    if (!lim || !joints[nombre]) return false;
+    const a = radToDeg(joints[nombre].rotation.x);
+    return signo > 0 ? a < lim[1] - 1e-3 : a > lim[0] + 1e-3;
+  }
+
+  /**
+   * MOVIMIENTO PRIMITIVO (v0.2.49): EMPUJE (+1) o TRACCIÓN (−1) de las zonas
+   * activas. Cada zona reparte el paso entre sus articulaciones con el signo
+   * que le toca por anatomía —empujar es extender el codo MIENTRAS se flexiona
+   * el hombro—, así que un solo botón produce el gesto entero.
+   *
+   * Varias zonas activas se mueven a la vez y sus aportes se SUMAN (la cadera
+   * participa en el tren inferior y en la bisagra), que es lo que pasa en un
+   * peso muerto o en una prensa con tronco. Devuelve cuántas articulaciones
+   * se movieron.
+   */
+  moverPrimitiva(sentido: SentidoMov, pasoDeg = 5): number {
     const joints = this.figureJoints();
     if (!joints) return 0;
-    let n = 0;
-    // Las cajas del hierro se leen UNA vez por pulsación y valen para todas
-    // las articulaciones del paso (la máquina no se mueve entremedias).
-    this.cajasEstructura = this.physics ? this.cajasCercaDeLaFigura() : null;
-    const libres = this.articulacionesLibres();
-    for (const nombre of libres) {
-      // Con la simetría activa, mover la izquierda ya arrastra a la derecha:
-      // mover también la derecha daría el paso dos veces.
-      if (this.poseSymmetry && nombre.endsWith("R") && libres.includes(`${nombre.slice(0, -1)}L`)) {
-        continue;
-      }
-      if (this.moverArticulacionFocal(nombre, dir, pasoDeg)) n++;
+    if (this.zonasActivas.size === 0) {
+      this.avisoTemporal(
+        tt(
+          "Ninguna zona activa: marca tren superior, inferior o bisagra",
+          "No zone active: tick upper body, lower body or hinge",
+        ),
+      );
+      return 0;
     }
+    // Las cajas del hierro se leen UNA vez por pulsación y valen para todo el
+    // paso (la máquina no se mueve entremedias).
+    this.cajasEstructura = this.physics ? this.cajasCercaDeLaFigura() : null;
+
+    // 1) Reparto del paso entre las articulaciones de todas las zonas.
+    //
+    // Cada zona tiene una articulación que MANDA (peso 1: el codo empuja, la
+    // rodilla se extiende, la cadera bisagra) y el gesto TERMINA cuando ella
+    // llega a su tope: un press acaba al bloquear el codo, no cuando al hombro
+    // se le acaba el rango 90° después. Sin este freno el hombro seguía
+    // flexionando con el brazo ya estirado y se iba por encima de la cabeza.
+    const delta = new Map<string, number>();
+    const acomodar: { nombre: string; cadena: string[]; objetivo: number }[] = [];
+    for (const [id, lado] of this.zonasActivas) {
+      const z = ZONA_POR_ID[id];
+      if (!z) continue;
+      const lider = z.patron.find((a) => a.peso >= 1) ?? null;
+      const centrales = new Set<string>(); // las articulaciones sin lado, una vez
+      for (const l of ladosDe(lado)) {
+        if (lider) {
+          const mandan = nombresDeFamilia(lider.familia, lider.bilateral, l).filter(
+            (n) => JOINT_DOF[n]?.x && joints[n] && !this.jointLocks.has(n),
+          );
+          const dir = sentido * lider.empuje;
+          if (mandan.length && !mandan.some((n) => this.leQuedaRecorrido(joints, n, dir))) {
+            continue; // esta zona ya agotó su recorrido por este lado
+          }
+        }
+        for (const a of z.patron) {
+          for (const n of nombresDeFamilia(a.familia, a.bilateral, l)) {
+            if (!JOINT_DOF[n]?.x || !joints[n] || this.jointLocks.has(n)) continue;
+            if (!a.bilateral) {
+              if (centrales.has(n)) continue; // la columna no cuenta dos veces
+              centrales.add(n);
+            }
+            delta.set(n, (delta.get(n) ?? 0) + sentido * a.empuje * a.peso * pasoDeg);
+          }
+        }
+        if (z.acomodacion) {
+          const nombre = `${z.acomodacion.familia}${l}`;
+          if (joints[nombre] && !this.jointLocks.has(nombre)) {
+            const cadena = z.acomodacion.cadena.map((f) => `${f}${l}`);
+            acomodar.push({
+              nombre,
+              cadena,
+              objetivo: this.objetivoDeAcomodacion(nombre, cadena, joints),
+            });
+          }
+        }
+      }
+    }
+
+    // 2) Se aplica cada aporte dentro del rango humano de su articulación.
+    let n = 0;
+    for (const [nombre, d] of delta) {
+      const lim = JOINT_DOF[nombre]!.x!;
+      const actual = radToDeg(joints[nombre].rotation.x);
+      const nuevo = Math.max(lim[0], Math.min(lim[1], actual + d));
+      if (Math.abs(nuevo - actual) < 1e-3) continue; // tope del rango
+      joints[nombre].rotation.x = degToRad(nuevo);
+      n++;
+    }
+
+    // 3) ACOMODACIÓN: el tobillo persigue la orientación de partida del pie,
+    //    que es lo que mantiene la planta apoyada mientras el resto se mueve.
+    this.acomodacionAlLimite = false;
+    for (const a of acomodar) {
+      const lim = JOINT_DOF[a.nombre]?.x;
+      if (!lim) continue;
+      let suma = 0;
+      for (const c of a.cadena) if (joints[c]) suma += radToDeg(joints[c].rotation.x);
+      const deseado = a.objetivo - suma;
+      const nuevo = Math.max(lim[0], Math.min(lim[1], deseado));
+      // Si el tobillo se queda sin recorrido, el pie DEJA de apoyar: es una
+      // conclusión ergonómica (la plataforma pide un ángulo que no existe).
+      if (Math.abs(deseado - nuevo) > 0.5) this.acomodacionAlLimite = true;
+      if (Math.abs(nuevo - radToDeg(joints[a.nombre].rotation.x)) < 1e-3) continue;
+      joints[a.nombre].rotation.x = degToRad(nuevo);
+      n++;
+    }
+
+    this.reapoyarFigura();
     const antes = this.contactoConEstructura;
     this.contactoConEstructura = this.medirChoqueConEstructura();
     this.cajasEstructura = null;
@@ -3078,12 +3299,13 @@ export class Editor {
     }
     if (n === 0) {
       this.avisoTemporal(
-        tt(
-          "Todas las articulaciones están bloqueadas: libera alguna en Articulaciones",
-          "Every joint is locked: release one in Joints",
-        ),
+        sentido > 0
+          ? tt("El empuje llegó a su tope articular", "The push reached its joint limit")
+          : tt("La tracción llegó a su tope articular", "The pull reached its joint limit"),
       );
     }
+    this.requestRender();
+    this.scheduleAutosave();
     return n;
   }
 
@@ -3826,9 +4048,12 @@ export class Editor {
     this.humanFigure = figure;
     this.references.add(figure);
     // ARTICULACIONES BLOQUEADAS DE ENTRADA (v0.2.41): la figura nace rígida y
-    // el usuario libera a propósito las que quiera mover. Así el ▲▼ de la
-    // simulación hace exactamente lo que se le pidió y nada más.
-    if (this.jointLocks.size === 0) this.jointLocks = new Set(Object.keys(JOINT_DOF));
+    // solo se mueve lo que pide la ZONA activa (v0.2.49) — de fábrica, el tren
+    // superior a los dos lados, que es el press/jalón de la mayoría de
+    // estaciones. Así 8/9 hace exactamente lo que se le pidió y nada más.
+    if (this.jointLocks.size === 0) this.candadosDesdeZonas();
+    if (!keep) this.figuraApoyadaEn = "suelo";
+    this.marcarPoseDePartida(this.nombreDePartida ?? null);
     if (wasSelected) this.selectFigure();
     this.emitHumanState(true, false);
     this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
@@ -4078,7 +4303,7 @@ export class Editor {
         j.rotation[ax] = degToRad(Math.max(lim[0], Math.min(lim[1], deg)));
       }
     }
-    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.reapoyarFigura();
   }
 
   /** Limita la articulación seleccionada y aplica la simetría si procede. */
@@ -4126,7 +4351,7 @@ export class Editor {
     const value = lim ? Math.max(lim[0], Math.min(lim[1], deg)) : 0;
     joints[jn].rotation[axis] = degToRad(value);
     this.applyPoseSymmetry(jn);
-    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    this.reapoyarFigura();
     this.emitJointSelection();
     this.scheduleAutosave();
   }
@@ -4152,7 +4377,13 @@ export class Editor {
     return (this.humanFigure?.userData.joints as Record<string, THREE.Object3D>) ?? null;
   }
 
-  /** Aplica una postura de la biblioteca a la figura posable. */
+  /**
+   * Aplica una postura de la biblioteca a la figura posable.
+   *
+   * Aplicar una postura FIJA LA PARTIDA: es de donde arranca la simulación y
+   * adonde vuelve el ↺. Y la figura NO se re-aterriza si está apoyada en una
+   * pieza: cargar una postura sobre un banco la tiraba al suelo.
+   */
   applyPose(name: string): void {
     const joints = this.figureJoints();
     const def = getPose(name);
@@ -4162,9 +4393,92 @@ export class Editor {
       const j = joints[jn];
       if (j) j.rotation.set(degToRad(x), degToRad(y), degToRad(z));
     }
-    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    // Una postura guardada con un ángulo imposible dejaba la articulación
+    // fuera de su rango: desde ahí ninguna primitiva puede volver a entrar.
+    for (const jn of Object.keys(def)) if (joints[jn]) this.clampJoint(jn);
+    this.reapoyarFigura();
+    this.marcarPoseDePartida(name);
+    if (this.physics && this.humanFigure) this.physics.añadirFigura(this.humanFigure);
+    this.updateHandIK();
+    this.emitJointSelection();
+    this.requestRender();
     this.scheduleAutosave();
   }
+
+  // ------------------------------------------ POSTURA DE PARTIDA (v0.2.49)
+  /** Postura desde la que arranca la simulación y adonde devuelve el ↺. */
+  private poseDePartida: PoseDef | null = null;
+  private transformDePartida: { p: THREE.Vector3; q: THREE.Quaternion } | null = null;
+  private nombreDePartida: string | null = null;
+
+  /**
+   * Fija la POSTURA DE PARTIDA con la pose y el sitio actuales de la figura.
+   * Antes, al terminar de simular el maniquí se quedaba con la última pose
+   * movida y no había forma de repetir el ejercicio desde el principio.
+   */
+  marcarPoseDePartida(nombre?: string | null): void {
+    const fig = this.humanFigure;
+    if (!fig || this.humanMode !== "mannequin") return;
+    this.poseDePartida = this.captureCurrentPose();
+    this.transformDePartida = { p: fig.position.clone(), q: fig.quaternion.clone() };
+    if (nombre !== undefined) this.nombreDePartida = nombre;
+    this.pitchAcomodacion.clear();
+    this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+  }
+
+  /** ¿Hay una postura de partida a la que volver? */
+  tienePoseDePartida(): boolean {
+    return this.poseDePartida !== null;
+  }
+
+  /** Nombre de la postura de partida (si vino de la biblioteca). */
+  nombrePoseDePartida(): string | null {
+    return this.nombreDePartida;
+  }
+
+  /**
+   * ↺ REINICIA a la postura de partida: devuelve la pose Y el sitio de la
+   * figura, rehace su cuerpo en el motor y vuelve a resolver las manos
+   * apoyadas. Es lo que permite repetir la misma serie desde el mismo punto.
+   */
+  reiniciarPoseDePartida(): boolean {
+    const joints = this.figureJoints();
+    const fig = this.humanFigure;
+    if (!joints || !fig || !this.poseDePartida) return false;
+    for (const g of Object.values(joints)) g.rotation.set(0, 0, 0);
+    for (const [jn, [x, y, z]] of Object.entries(this.poseDePartida)) {
+      joints[jn]?.rotation.set(degToRad(x), degToRad(y), degToRad(z));
+    }
+    if (this.transformDePartida) {
+      fig.position.copy(this.transformDePartida.p);
+      fig.quaternion.copy(this.transformDePartida.q);
+    }
+    this.pitchAcomodacion.clear();
+    this.acomodacionAlLimite = false;
+    this.contactoConEstructura = false;
+    this.updateHandIK();
+    if (this.physics) this.physics.añadirFigura(fig);
+    this.emitJointSelection();
+    this.requestRender();
+    this.scheduleAutosave();
+    return true;
+  }
+
+  /**
+   * Re-apoya la figura CONSERVANDO su apoyo (v0.2.49).
+   *
+   * `ground()` la clavaba siempre en y=0: un maniquí sentado en un banco a
+   * 45 cm saltaba al suelo en cuanto se tocaba una articulación o se cargaba
+   * una postura. Sobre una pieza la raíz —la pelvis— se queda donde la dejó el
+   * apoyo y los miembros giran a su alrededor, que es lo que pasa al sentarse.
+   */
+  private reapoyarFigura(): void {
+    if (this.figuraApoyadaEn !== "suelo") return;
+    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+  }
+
+  /** Dónde se apoya la figura: en el suelo (se re-aterriza) o en una pieza. */
+  private figuraApoyadaEn: "suelo" | "pieza" = "suelo";
 
   /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */
   captureCurrentPose(): PoseDef {
@@ -4236,6 +4550,25 @@ export class Editor {
     return this.handTargets.size > 0;
   }
 
+  /**
+   * ¿Está el brazo de este lado MANDADO por una zona de movimiento activa?
+   *
+   * Si lo está, la IK de la mano NO debe tocarlo (v0.2.49): la IK apunta al
+   * agarre y, apoyada la mano, deshacía el gesto en el mismo frame — el brazo
+   * se quedaba clavado como si nunca se hubiera pulsado nada. Con la zona
+   * activa manda el gesto y es el CUERPO el que empuja la pieza por contacto,
+   * que es lo que hace una persona de verdad.
+   */
+  private brazoMandado(side: HandSide): boolean {
+    for (const [id, lado] of this.zonasActivas) {
+      const z = ZONA_POR_ID[id];
+      if (!z) continue;
+      if (lado !== "sim" && lado !== side) continue;
+      if (z.patron.some((a) => a.familia === "shoulder" || a.familia === "elbow")) return true;
+    }
+    return false;
+  }
+
   /** Resuelve cada frame la IK de las manos apoyadas para que sigan su agarre. */
   private updateHandIK(): void {
     if (!this.humanFigure || this.handTargets.size === 0) return;
@@ -4247,6 +4580,7 @@ export class Editor {
         this.handTargets.delete(side);
         continue;
       }
+      if (this.brazoMandado(side)) continue;
       obj.mesh.updateMatrixWorld();
       const target = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
       const sh = joints[`shoulder${side}`];
@@ -6646,6 +6980,8 @@ export class Editor {
         if (frente.lengthSq() < 1e-4) frente.set(0, 0, 1);
         frente.normalize();
       }
+      // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
+      this.figuraApoyadaEn = "pieza";
       this.applyPose("Sentado");
       // La figura se APOYA sobre la cara superior del asiento. Aquí NO se
       // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
@@ -6667,12 +7003,15 @@ export class Editor {
         if (frente.lengthSq() < 1e-4) frente.set(0, 0, 1);
         frente.normalize();
       }
+      this.figuraApoyadaEn = "suelo";
       this.applyPose("De pie");
       fig.position.set(destino.punto.x, 0, destino.punto.z);
     }
     fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
     if (!destino.obj) (fig.userData.ground as (() => void) | undefined)?.();
     this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
+    // Colocar define la PARTIDA: es el sitio y la pose desde los que arranca.
+    this.marcarPoseDePartida(destino.obj ? "Sentado" : "De pie");
     // Colocar funciona también con la simulación en marcha: el cuerpo de la
     // figura en el motor se rehace en el sitio definitivo (si no, chocaría
     // desde la pose anterior).
@@ -7478,7 +7817,7 @@ export class Editor {
       this.grabDrag = null;
       this.orbit.enabled = true;
       this.bus.emit("dragMeasure", { text: null });
-      (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+      this.reapoyarFigura();
       this.scheduleAutosave();
       return;
     }

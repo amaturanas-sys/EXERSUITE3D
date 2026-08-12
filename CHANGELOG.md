@@ -5,6 +5,80 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.49] — 2026-08-12
+
+### Cambiado
+
+- **LA SIMULACIÓN SE INSTRUYE POR ZONAS, NO POR ARTICULACIONES.** El modelo
+  anterior liberaba articulaciones sueltas y las movía todas «flexionando» o
+  «extendiendo» a la vez. Eso hace IMPOSIBLE un press: empujar una carga es
+  **extender el codo MIENTRAS se flexiona el hombro**, direcciones anatómicas
+  opuestas. Medido en la máquina: con el modelo viejo el brazo solo podía
+  quedarse recto y hacia atrás (hombro +60°, codo +15°) o doblado por encima
+  de la cabeza (hombro −180°, codo −150°); ninguna de las dos es un empuje, y
+  de ahí que los brazos se quedaran en extensión completa.
+
+  Ahora la instrucción es la del gesto real: **ZONA + SENTIDO**.
+
+  - **Tren superior** — empuje: extensión de codo + flexión de hombro.
+  - **Tren inferior** — empuje: extensión de rodilla + extensión de cadera,
+    **con acomodación dinámica del tobillo** para que la planta conserve su
+    orientación sobre la plataforma. Cuando el tobillo se queda sin recorrido
+    se avisa: el pie pierde el apoyo porque la máquina pide un ángulo que el
+    cuerpo no tiene.
+  - **Bisagra (hinge)** — empuje: extensión de cadera + extensión de espalda.
+
+  La **tracción es la inversa exacta** de cada patrón. Las teclas 8 y 9 pasan
+  a ser EMPUJE y TRACCIÓN. Cada zona se activa con su **lado** (izquierda,
+  derecha o los dos), así que el movimiento sale simétrico, asimétrico,
+  sectorizado o simultáneo con solo marcar casillas: marcando tren inferior y
+  bisagra a la vez, cadera y espalda se extienden juntas — un peso muerto.
+
+  El gesto **termina donde manda su articulación principal**: el press acaba
+  al bloquear el codo, no cuando al hombro se le acaba el rango 90° después.
+
+- **El PLANO lo pone la postura de partida, no el botón.** Con el hombro a la
+  altura del pecho el empuje sale horizontal y con los brazos arriba, vertical;
+  la tracción, igual: desde delante es un remo y desde arriba un jalón. Se
+  añaden las cuatro posturas de partida a la biblioteca —**Empuje horizontal,
+  Empuje vertical, Tracción horizontal, Tracción vertical**— para que los
+  cuatro movimientos clásicos salgan con dos botones.
+
+- **Con la zona activa, la mano apoyada deja de mandar sobre el brazo.** La IK
+  apuntaba al agarre y deshacía el gesto en el mismo fotograma: el brazo se
+  quedaba clavado como si no se hubiera pulsado nada. Ahora manda el gesto y
+  es el CUERPO el que empuja la pieza por contacto, que es lo que hace una
+  persona.
+
+### Añadido
+
+- **POSTURA DE PARTIDA con reinicio (↺).** Se fija sola al aplicar una postura,
+  al colocar la figura y al pulsar ▶, y se puede clavar a mano con 📌 Fijar
+  partida. **Parar la simulación devuelve la figura a ella**, y el ↺ la
+  devuelve sin parar. Antes el maniquí se quedaba con la última pose movida y
+  no había forma de repetir el mismo gesto una segunda vez.
+- La postura de partida, las zonas activas y el apoyo de la figura se guardan
+  con el proyecto.
+
+### Corregido
+
+- **Cargar o guardar una postura tiraba al maniquí al suelo.** Cada cambio de
+  articulación re-aterrizaba la figura en y=0: sentada en un banco a 51 cm,
+  aplicar una postura la mandaba al suelo y editar un ángulo la movía sola.
+  Ahora, apoyada en una pieza, la pelvis se queda donde la dejó el apoyo y los
+  miembros giran a su alrededor; solo se re-aterriza lo que está en el suelo.
+- **Guardar una postura nueva** se hace con un campo de la propia ventana. El
+  `prompt` del sistema abría un diálogo que se comía el gesto en la tableta —y
+  en el WebView de la app podía no aparecer siquiera—, así que guardar fallaba
+  sin decir por qué.
+- **Las posturas de fábrica nuevas ya aparecen en bibliotecas existentes.** Se
+  guardaba una copia el primer día y no se volvía a mirar el catálogo, así que
+  quien ya tenía biblioteca no vería nunca las que trae una versión nueva.
+- La postura **Sentadilla** pedía 30° de dorsiflexión de tobillo contra un tope
+  humano de 20°: desde un ángulo imposible ninguna acomodación podía sostener
+  la planta. Corregida, y al aplicar una postura los ángulos se limitan al
+  rango articular.
+
 ## [0.2.48] — 2026-08-11
 
 ### Cambiado
