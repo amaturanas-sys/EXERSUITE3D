@@ -368,6 +368,8 @@ export class Editor {
   private handTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
   private attachMode = false;
   private attachSide: HandSide | null = null;
+  /** Qué se está apoyando: la mano (hombro/codo) o el pie (cadera/rodilla). */
+  private attachTipo: "mano" | "pie" = "mano";
 
   // ---- Ergonomía del maniquí (esquema v0.2.0)
   /** Articulaciones bloqueadas con el candado: no se posan hasta liberarlas. */
@@ -809,6 +811,7 @@ export class Editor {
     }
     this.updateStackAnimation();
     this.updateHandIK();
+    this.updateFootIK();
     if (this.cablesDirty) {
       this.updateCableVisuals();
       this.cablesDirty = false;
@@ -2473,11 +2476,18 @@ export class Editor {
           objectId: t.objectId,
           local: [t.local.x, t.local.y, t.local.z] as [number, number, number],
         })),
+        // Pies apoyados en una plataforma o pedal (v0.2.52).
+        feet: [...this.footTargets].map(([side, t]) => ({
+          side,
+          objectId: t.objectId,
+          local: [t.local.x, t.local.y, t.local.z] as [number, number, number],
+        })),
         locks: [...this.jointLocks],
         symmetry: this.poseSymmetry,
         // Apoyo, zonas de movimiento y POSTURA DE PARTIDA (v0.2.49): sin
         // ellos, reabrir el proyecto perdía el punto de partida del ejercicio.
         support: this.figuraApoyadaEn,
+        supportY: this.alturaDelApoyo,
         zones: [...this.zonasActivas].map(([id, side]) => ({ id, side })),
         startPose: this.poseDePartida,
         startPoseName: this.nombreDePartida,
@@ -2769,6 +2779,7 @@ export class Editor {
         // El apoyo se restaura ANTES de posar: sobre una pieza la figura no
         // debe re-aterrizar, o el maniquí sentado acabaría en el suelo.
         this.figuraApoyadaEn = data.human.support === "pieza" ? "pieza" : "suelo";
+        this.alturaDelApoyo = data.human.supportY ?? null;
         fig.position.fromArray(data.human.position);
         fig.quaternion.fromArray(data.human.quaternion);
         const joints = this.figureJoints();
@@ -2782,6 +2793,10 @@ export class Editor {
         for (const h of data.human.hands) {
           const oid = idMap.get(h.objectId);
           if (oid) this.attachHand(h.side, oid, new THREE.Vector3().fromArray(h.local));
+        }
+        for (const f of data.human.feet ?? []) {
+          const oid = idMap.get(f.objectId);
+          if (oid) this.attachFoot(f.side, oid, new THREE.Vector3().fromArray(f.local));
         }
         // Zonas de movimiento y POSTURA DE PARTIDA guardadas con el proyecto.
         // Un proyecto anterior a v0.2.49 no las trae: se vuelve a la de fábrica
@@ -4090,7 +4105,10 @@ export class Editor {
     // superior a los dos lados, que es el press/jalón de la mayoría de
     // estaciones. Así 8/9 hace exactamente lo que se le pidió y nada más.
     if (this.jointLocks.size === 0) this.candadosDesdeZonas();
-    if (!keep) this.figuraApoyadaEn = "suelo";
+    if (!keep) {
+      this.figuraApoyadaEn = "suelo";
+      this.alturaDelApoyo = null;
+    }
     this.marcarPoseDePartida(this.nombreDePartida ?? null);
     if (wasSelected) this.selectFigure();
     this.emitHumanState(true, false);
@@ -4112,6 +4130,7 @@ export class Editor {
     this.humanFigure = null;
     this.humanToken++;
     this.handTargets.clear();
+    this.footTargets.clear();
     this.cancelAttachHand();
     this.emitHumanState(false, false);
   }
@@ -4432,6 +4451,7 @@ export class Editor {
     this.marcarPoseDePartida(name);
     if (this.physics && this.humanFigure) this.physics.añadirFigura(this.humanFigure);
     this.updateHandIK();
+    this.updateFootIK();
     this.emitJointSelection();
     this.requestRender();
     this.scheduleAutosave();
@@ -4541,6 +4561,7 @@ export class Editor {
     this.acomodacionAlLimite = false;
     this.contactoConEstructura = false;
     this.updateHandIK();
+    this.updateFootIK();
     if (this.physics) this.physics.añadirFigura(fig);
     this.emitJointSelection();
     this.requestRender();
@@ -4557,12 +4578,139 @@ export class Editor {
    * apoyo y los miembros giran a su alrededor, que es lo que pasa al sentarse.
    */
   private reapoyarFigura(): void {
-    if (this.figuraApoyadaEn !== "suelo") return;
-    (this.humanFigure?.userData.ground as (() => void) | undefined)?.();
+    const fig = this.humanFigure;
+    if (!fig) return;
+    if (this.figuraApoyadaEn === "suelo") {
+      (fig.userData.ground as (() => void) | undefined)?.();
+      return;
+    }
+    // Sobre una pieza, los glúteos vuelven a posarse en la cara del asiento.
+    // Sin esto la figura se quedaba flotando: la invariante del suelo solo
+    // sube, así que una vez levantada por una postura de pie ya nunca volvía a
+    // sentarse aunque se le cargara una postura sentada.
+    if (this.alturaDelApoyo !== null) {
+      fig.updateMatrixWorld(true);
+      fig.position.y += this.alturaDelApoyo - this.baseDeApoyoSentado(fig);
+      fig.updateMatrixWorld(true);
+    }
+    this.noHundirse();
+  }
+
+  /**
+   * NADA POR DEBAJO DEL SUELO (v0.2.52).
+   *
+   * Sea cual sea la pose o la colocación, ningún segmento puede quedar bajo el
+   * suelo ni hundido en la superficie que lo sostiene. Los pies SÍ pueden
+   * flotar —una extensión de rodillas es cadena abierta y el pie no toca
+   * nada—, así que aquí solo se EMPUJA HACIA ARRIBA: nunca se baja un miembro
+   * para forzarlo a pisar.
+   *
+   * El orden importa y es el que sigue un cuerpo real. Sentado en un banco
+   * bajo, una persona no se levanta del banco: ESTIRA LA RODILLA y adelanta el
+   * pie. Por eso primero se corrige la pierna y solo si aun estirada no llega
+   * —el banco es más bajo que su pierna— se levanta la figura entera, que es
+   * la señal de que el asiento no le sirve a ese cuerpo.
+   */
+  private noHundirse(): void {
+    const fig = this.humanFigure;
+    const joints = this.figureJoints();
+    if (!fig || !joints) return;
+    fig.updateMatrixWorld(true);
+
+    // 1) Cada pierna que se hunde estira la rodilla hasta salir.
+    for (const lado of ["L", "R"] as const) {
+      // Un pie APOYADO manda: si pisa una plataforma o un pedal, la pierna la
+      // resuelve la IK y tocar la rodilla aquí sería pelearse con ella.
+      if (this.footTargets.has(lado)) continue;
+      const rodilla = joints[`knee${lado}`];
+      const lim = JOINT_DOF[`knee${lado}`]?.x;
+      if (!rodilla || !lim) continue;
+      for (let paso = 0; paso < 40; paso++) {
+        const hundido = this.cuantoSeHunde([`pierna-${lado}`, `pie-${lado}`]);
+        if (hundido <= 0.05) break;
+        // La rodilla flexiona con X POSITIVA: estirarla es ir hacia el mínimo.
+        const actual = radToDeg(rodilla.rotation.x);
+        const nuevo = Math.max(lim[0], actual - 3);
+        if (Math.abs(nuevo - actual) < 1e-3) break; // ya está estirada del todo
+        rodilla.rotation.x = degToRad(nuevo);
+        fig.updateMatrixWorld(true);
+      }
+    }
+
+    // 2) Lo que siga por debajo sube con la figura entera. Aquí ya no hay
+    //    postura que lo arregle: el apoyo es más bajo de lo que ese cuerpo
+    //    necesita, y esconderlo sería falsear la medida.
+    const resto = this.cuantoSeHunde();
+    if (resto > 0.05) {
+      fig.position.y += resto;
+      fig.updateMatrixWorld(true);
+    }
+  }
+
+  /** Cota mundial de la planta del pie (cm), o null si no hay pie. */
+  private plantaDelPie(side: HandSide): number | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    let y: number | null = null;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === `pie-${side}`) {
+        y = new THREE.Box3().setFromObject(m).min.y;
+      }
+    });
+    return y;
+  }
+
+  /**
+   * Cuánto cuelga la planta por debajo del tobillo (cm), medido en el espacio
+   * del PROPIO tobillo.
+   *
+   * Es una constante del rig, y tiene que serlo: medirla en mundo sobre la
+   * pose de ese instante hacía que cada pasada de la IK corrigiera sobre la
+   * corrección anterior, y el pie oscilaba hasta quedarse 12 cm en el aire.
+   */
+  private altoDelPie(side: HandSide): number {
+    const fig = this.humanFigure;
+    if (!fig) return 0;
+    let pie: THREE.Mesh | null = null;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === `pie-${side}`) pie = m;
+    });
+    if (!pie) return 0;
+    const malla = pie as THREE.Mesh;
+    const geo = malla.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    // El pie cuelga del pivote del tobillo, así que su posición local ya está
+    // en el espacio del tobillo; solo falta la escala del rig.
+    const bajoElTobillo = -(malla.position.y + geo.boundingBox!.min.y * malla.scale.y);
+    const escala = fig.getWorldScale(new THREE.Vector3()).y || 1;
+    return Math.max(0, bajoElTobillo * escala);
+  }
+
+  /**
+   * Cuánto se hunde el cuerpo bajo el suelo (cm). Con `soloSegmentos` mide
+   * únicamente esos; sin argumento, el cuerpo entero.
+   */
+  private cuantoSeHunde(soloSegmentos?: string[]): number {
+    const fig = this.humanFigure;
+    if (!fig) return 0;
+    const filtro = soloSegmentos ? new Set(soloSegmentos) : null;
+    let minY = Infinity;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (!m.isMesh || !m.visible || !m.userData.humanFigurePart) return;
+      if (filtro && !filtro.has(String(m.userData.segmentId ?? ""))) return;
+      const c = new THREE.Box3().setFromObject(m);
+      if (c.min.y < minY) minY = c.min.y;
+    });
+    return Number.isFinite(minY) ? Math.max(0, -minY) : 0;
   }
 
   /** Dónde se apoya la figura: en el suelo (se re-aterriza) o en una pieza. */
   private figuraApoyadaEn: "suelo" | "pieza" = "suelo";
+  /** Cota de la cara sobre la que se sentó, para volver a posarla en ella. */
+  private alturaDelApoyo: number | null = null;
 
   /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */
   captureCurrentPose(): PoseDef {
@@ -4608,6 +4756,7 @@ export class Editor {
     this.cancelConnect();
     this.cancelCable();
     this.attachMode = true;
+    this.attachTipo = "mano";
     this.attachSide = null;
     this.bus.emit("attachModeChanged", { active: true, stage: "hand" });
   }
@@ -4632,6 +4781,88 @@ export class Editor {
 
   hasAttachedHands(): boolean {
     return this.handTargets.size > 0;
+  }
+
+  // ------------------------------------------- PISAR una superficie (v0.2.52)
+  /**
+   * Los pies no siempre tocan el suelo. En una prensa de piernas PISAN la
+   * plataforma, en una extensión de rodillas quedan al aire (cadena abierta) y
+   * sentado en un banco alto cuelgan. Apoyar un pie es lo mismo que apoyar una
+   * mano, pero resolviendo cadera→rodilla→tobillo.
+   */
+  private footTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
+
+  /** Entra en modo: clic en un pie/pierna de la figura y luego en la superficie. */
+  beginAttachFoot(): void {
+    if (!this.humanFigure || this.humanMode !== "mannequin") return;
+    this.cancelConnect();
+    this.cancelCable();
+    this.attachMode = true;
+    this.attachTipo = "pie";
+    this.attachSide = null;
+    this.bus.emit("attachModeChanged", { active: true, stage: "hand" });
+  }
+
+  /** Apoya un pie (lado) en el punto local de una pieza (plataforma, pedal). */
+  attachFoot(side: HandSide, objectId: string, local: THREE.Vector3): void {
+    if (!this.objects.has(objectId)) return;
+    this.footTargets.set(side, { objectId, local: local.clone() });
+  }
+
+  detachFeet(): void {
+    this.footTargets.clear();
+  }
+
+  hasAttachedFeet(): boolean {
+    return this.footTargets.size > 0;
+  }
+
+  /**
+   * Resuelve cada frame la IK de los pies apoyados. El POLO va hacia el frente
+   * de la figura porque la rodilla dobla al revés que el codo: sin eso la
+   * pierna se plegaba hacia delante, que es una rodilla rota.
+   */
+  private updateFootIK(): void {
+    if (!this.humanFigure || this.footTargets.size === 0) return;
+    const joints = this.figureJoints();
+    if (!joints) return;
+    const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(this.humanFigure.quaternion);
+    for (const [side, t] of [...this.footTargets]) {
+      const obj = this.objects.get(t.objectId);
+      if (!obj) {
+        this.footTargets.delete(side);
+        continue;
+      }
+      obj.mesh.updateMatrixWorld();
+      const target = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
+      const cadera = joints[`hip${side}`];
+      const rodilla = joints[`knee${side}`];
+      const tobillo = joints[`ankle${side}`];
+      if (!cadera || !rodilla || !tobillo) continue;
+      // Lo que pisa es la PLANTA, no el tobillo. La IK resuelve la posición
+      // del tobillo, así que el objetivo sube lo que el pie cuelga por debajo
+      // de él; sin esta corrección la planta quedaba 9 cm dentro de la
+      // plataforma en vez de encima.
+      const suelo = target.y;
+      target.y += this.altoDelPie(side);
+      solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
+      // Y se remata con el residuo REAL: con la pierna en ángulo el tobillo no
+      // queda justo encima de la planta, así que se mide dónde acabó la suela y
+      // se SUBE el objetivo lo que falte.
+      //
+      // Dos cautelas, ambas aprendidas a base de verla salir disparada: hay que
+      // refrescar las matrices antes de medir (si no se lee la pose del
+      // fotograma anterior y la corrección se realimenta), y la corrección solo
+      // puede SUBIR y va acotada — con el objetivo fuera del alcance de la
+      // pierna la suela no responde como se predice y una corrección libre
+      // diverge.
+      this.humanFigure.updateMatrixWorld(true);
+      const sola = this.plantaDelPie(side);
+      if (sola !== null && suelo - sola > 0.3) {
+        target.y += Math.min(suelo - sola, 8);
+        solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
+      }
+    }
   }
 
   /**
@@ -7057,6 +7288,7 @@ export class Editor {
     if (destino.obj) {
       // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
       this.figuraApoyadaEn = "pieza";
+      this.alturaDelApoyo = new THREE.Box3().setFromObject(destino.obj.mesh).max.y;
       this.applyPose("Sentado");
       // La figura se APOYA sobre la cara superior del asiento. Aquí NO se
       // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
@@ -7074,6 +7306,9 @@ export class Editor {
       fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
       // Y la espalda contra el respaldo: un apoyo solo apoya si se toca.
       this.apoyarContraRespaldo(fig, frente, destino.punto);
+      // Sentada en un banco bajo, la pierna no cabe entre el asiento y el
+      // suelo: se estira la rodilla, como haría cualquiera.
+      this.noHundirse();
     } else {
       const maquina = this.piezaCercana(destino.punto, (o) => o.physics.fixed);
       if (maquina) {
@@ -7082,6 +7317,7 @@ export class Editor {
         frente.normalize();
       }
       this.figuraApoyadaEn = "suelo";
+      this.alturaDelApoyo = null;
       this.applyPose("De pie");
       fig.position.set(destino.punto.x, 0, destino.punto.z);
     }
@@ -7754,7 +7990,10 @@ export class Editor {
         if (!this.humanFigure) return;
         const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
         const jn = fHits[0]?.object.userData.jointName as string | undefined;
-        if (jn && (jn.startsWith("shoulder") || jn.startsWith("elbow"))) {
+        // Apoyar mano toma el miembro SUPERIOR; apoyar pie, el INFERIOR.
+        const familias =
+          this.attachTipo === "pie" ? ["hip", "knee", "ankle"] : ["shoulder", "elbow", "wrist"];
+        if (jn && familias.some((f) => jn.startsWith(f))) {
           this.attachSide = jn.endsWith("R") ? "R" : "L";
           this.bus.emit("attachModeChanged", { active: true, stage: "grip" });
         }
@@ -7773,7 +8012,8 @@ export class Editor {
         const dd = wp.distanceTo(hit.point);
         if (dd < bestD) { bestD = dd; best = lp; }
       }
-      this.handTargets.set(this.attachSide, { objectId: obj.id, local: best });
+      const destino = this.attachTipo === "pie" ? this.footTargets : this.handTargets;
+      destino.set(this.attachSide, { objectId: obj.id, local: best });
       this.cancelAttachHand();
       return;
     }

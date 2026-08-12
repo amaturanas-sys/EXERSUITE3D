@@ -159,14 +159,24 @@ export class ArticulacionesPanel {
       tt("Simetría L↔R", "Symmetry L↔R"),
     ]);
 
-    const bApoyar = el("button", { class: "tool", title: tt("Apoyar una mano en un agarre (IK)", "Rest a hand on a grip (IK)") }, [
-      tt("Apoyar mano", "Rest hand"),
+    const bApoyar = el("button", { class: "tool", title: tt("Apoyar una mano en un agarre: toca el brazo y luego el agarre", "Rest a hand on a grip: tap the arm, then the grip") }, [
+      tt("✋ Apoyar mano", "✋ Rest hand"),
     ]);
     bApoyar.addEventListener("click", () => this.editor.beginAttachHand());
-    const bSoltar = el("button", { class: "tool", title: tt("Soltar las manos apoyadas", "Release the resting hands") }, [
-      tt("Soltar manos", "Release hands"),
+    // PISAR (v0.2.52): el pie no siempre toca el suelo — en una prensa pisa la
+    // plataforma, en una extensión de rodillas queda al aire.
+    const bPisar = el("button", { class: "tool", title: tt(
+      "Pisar una superficie o pedal: toca la pierna y luego la plataforma. La pierna la resuelve la IK y el pie viaja con la pieza.",
+      "Step on a surface or pedal: tap the leg, then the platform. IK solves the leg and the foot travels with the part.",
+    ) }, [tt("🦶 Pisar", "🦶 Step on")]);
+    bPisar.addEventListener("click", () => this.editor.beginAttachFoot());
+    const bSoltar = el("button", { class: "tool", title: tt("Soltar las manos y los pies apoyados", "Release the resting hands and feet") }, [
+      tt("Soltar apoyos", "Release supports"),
     ]);
-    bSoltar.addEventListener("click", () => this.editor.detachHands());
+    bSoltar.addEventListener("click", () => {
+      this.editor.detachHands();
+      this.editor.detachFeet();
+    });
 
     this.hint = el("div", { class: "empty-hint" }, [this.hintPorDefecto]);
 
@@ -293,8 +303,9 @@ export class ArticulacionesPanel {
         this.jointBox,
       ]),
 
-      grupo(tt("Manos y simetría", "Hands and symmetry"), [
-        el("div", { class: "pose-actions" }, [bApoyar, bSoltar]),
+      grupo(tt("Apoyos y simetría", "Supports and symmetry"), [
+        el("div", { class: "pose-actions" }, [bApoyar, bPisar]),
+        el("div", { class: "pose-actions" }, [bSoltar]),
         filaSim,
       ]),
 
@@ -422,8 +433,8 @@ export class ArticulacionesPanel {
       this.hint.textContent = !active
         ? this.hintPorDefecto
         : stage === "hand"
-          ? tt("Apoyar mano: haz clic en una mano/brazo de la figura.", "Rest hand: click a hand/arm of the figure.")
-          : tt("Ahora haz clic en el agarre donde apoyar la mano.", "Now click the grip where the hand should rest.");
+          ? tt("Toca el miembro de la figura: el brazo para apoyar la mano, la pierna para pisar.", "Tap the figure's limb: the arm to rest a hand, the leg to step on something.")
+          : tt("Ahora toca la pieza donde se apoya (agarre, plataforma o pedal).", "Now tap the part it rests on (grip, platform or pedal).");
     });
     this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
       this.marcarSeleccion(name);

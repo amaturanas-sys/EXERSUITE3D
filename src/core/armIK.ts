@@ -31,6 +31,13 @@ export function solveTwoBoneIK(
   elbow: THREE.Object3D,
   wrist: THREE.Object3D,
   target: THREE.Vector3,
+  /**
+   * Hacia dónde se desplaza la articulación del medio al doblar, en MUNDO.
+   * El codo cae hacia abajo y algo atrás (valor por omisión); la RODILLA
+   * dobla al revés —la rótula va hacia delante—, así que al apoyar un pie hay
+   * que pasarle el frente de la figura o la pierna se dobla del revés.
+   */
+  pole?: THREE.Vector3,
 ): void {
   const S = shoulder.getWorldPosition(new THREE.Vector3());
   const E = elbow.getWorldPosition(new THREE.Vector3());
@@ -49,7 +56,8 @@ export function solveTwoBoneIK(
   const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
 
   // Direccion de flexion (perpendicular a dir, hacia el pole).
-  let bend = POLE.clone().sub(dir.clone().multiplyScalar(POLE.dot(dir)));
+  const polo = pole ?? POLE;
+  let bend = polo.clone().sub(dir.clone().multiplyScalar(polo.dot(dir)));
   if (bend.lengthSq() < 1e-6) {
     const alt = new THREE.Vector3(0, 0, -1);
     bend = alt.sub(dir.clone().multiplyScalar(alt.dot(dir)));

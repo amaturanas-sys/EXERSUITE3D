@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.52] — 2026-08-13
+
+### Añadido
+
+- **🦶 PISAR UNA SUPERFICIE O PEDAL.** El pie no siempre toca el suelo: en una
+  prensa de piernas **pisa la plataforma**, en una extensión de rodillas queda
+  **al aire** (cadena abierta) y sentado en un banco alto **cuelga**. Ahora
+  apoyar un pie funciona igual que apoyar una mano —se toca la pierna y luego
+  la pieza— y la IK resuelve cadera→rodilla→tobillo. El pie **viaja con la
+  pieza**: si el pedal sube, la pierna lo acompaña. Verificado: la planta se
+  posa a 33,25 cm sobre una plataforma cuya cara está a 33,5, y al subirla
+  12 cm el pie la sigue.
+
+  Dos detalles que costaron su medida. Lo que pisa es la **planta**, no el
+  tobillo, así que el objetivo de la IK sube lo que el pie cuelga por debajo
+  de él (sin eso la suela quedaba 9 cm dentro de la plataforma). Y la rodilla
+  dobla **al revés que el codo**, así que el solver recibe el frente de la
+  figura como polo; con el polo del codo la pierna se plegaba hacia delante.
+
+### Corregido
+
+- **NADA DEL CUERPO QUEDA BAJO EL SUELO NI HUNDIDO EN SU APOYO**, en ninguna
+  pose ni colocación. Sentado en el banco de fábrica —40,7 cm— el pie se metía
+  **3,12 cm bajo el suelo**, y ninguna pose lo corregía.
+
+  La corrección sigue el orden de un cuerpo real: sentado en un banco bajo,
+  una persona no se levanta del banco, **estira la rodilla** y adelanta el pie.
+  Así que primero se corrige la pierna y solo si aun estirada no llega —el
+  banco es más bajo que su pierna— se levanta la figura entera, que es
+  precisamente la señal de que ese asiento no le sirve a ese cuerpo.
+
+  La invariante **solo empuja hacia arriba**: nunca baja un miembro para
+  forzarlo a pisar, porque los pies pueden y deben flotar. Comprobado sobre
+  las nueve posturas de fábrica, la colocación en banco, la rodilla llevada a
+  su tope y el gesto de tren inferior recorrido entero: **0 cm** en todos.
+- **La figura vuelve a sentarse en su apoyo.** La invariante solo sube, así
+  que una vez levantada por una postura de pie se quedaba flotando 34 cm sobre
+  el asiento aunque se le cargara después una postura sentada. Ahora los
+  glúteos se reposan en la cara del asiento antes de aplicar la invariante, y
+  la cota del apoyo viaja en el proyecto.
+- Un pie apoyado en un pedal **manda sobre la corrección de rodilla**: la
+  pierna la resuelve su IK y tocarla desde la invariante era pelearse con ella.
+
 ## [0.2.51] — 2026-08-12
 
 ### Añadido
