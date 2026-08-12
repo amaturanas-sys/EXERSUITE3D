@@ -5,6 +5,79 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.50] — 2026-08-12
+
+### Añadido
+
+- **EL SITIO WEB HABLA LOS DOS IDIOMAS.** La página de presentación
+  (`sitio-web/`, Vercel) se sirve en español o inglés **según la preferencia
+  del visitante**: `?lang` → cookie → `Accept-Language` → español. La decisión
+  se toma UNA vez en el servidor (middleware), así que no hay parpadeo de
+  idioma ni aviso de hidratación, y `<html lang>` sale correcto. Hay conmutador
+  ES · EN —dos enlaces de verdad, que funcionan sin JavaScript y se pueden
+  compartir— y URLs propias `/es` y `/en` con `hreflang` para que exista una
+  dirección rastreable de cada idioma.
+
+  El español sigue siendo la verdad y no se mueve: el inglés es una capa
+  **opcional y esparsa** bajo la clave `en`, con la misma forma, que se
+  resuelve hoja a hoja con respaldo al español. Lo que no esté traducido se
+  sirve en español, y añadirla no cambia el tipo de ningún campo ya publicado
+  —lo que habría reventado, por ejemplo, el título del cobro que se manda a
+  Mercado Pago—. La traducción de la historia que ya vivía en un desplegable
+  se reaprovecha sola: en inglés la historia ES la sección, no un anexo.
+
+- **`/admin` edita en los dos idiomas** con pestañas Español · English, un
+  contador de traducciones pendientes y un botón **«Textos de fábrica»** por
+  sección, para adoptar la presentación nueva sin perder lo que ya se escribió.
+
+- **La aplicación enlaza al sitio del proyecto** desde el pie de su Home, con
+  la dirección **escrita a la vista** y un botón de copiar: el empaquetado de
+  escritorio puede negarse a abrir una pestaña nueva, así que quien lo lea
+  siempre puede teclearla. El enlace lleva el idioma de la app, y la web abre
+  en el mismo (`?lang=`). La dirección se puede cambiar con `VITE_SITIO_WEB`.
+
+- **Ocho capturas reales de la aplicación** en la galería del sitio, con pie
+  bilingüe: el taller completo, la instrucción por zonas, la física del cable
+  con su pila, la roldana en dos toques, la medición en centímetros, el
+  inventario, el herraje de la bisagra y la Home con su instructivo.
+
+### Cambiado
+
+- **Presentación del producto reescrita.** El titular pasa de describir la
+  categoría a decir qué se gana: comprobar que la máquina le sirve a un cuerpo
+  antes de soldarla. Se añaden la sección del problema con a quién le pasa y
+  seis preguntas frecuentes de compra (requisitos, sin conexión, formatos,
+  qué pasa en la 1.0, y qué NO es esto). Las características pasan a estar
+  ordenadas por lo que diferencia: la validación ergonómica primero.
+
+### Corregido
+
+- **El contenido guardado ya no oculta lo que trae una versión nueva.** La
+  fusión era superficial (`{...defecto, ...guardado}`), así que si el objeto
+  publicado traía una sección entera, sustituía a la de fábrica con clave y
+  todo: cualquier campo añadido después no llegaba nunca a producción. Ahora
+  la fusión es profunda, lo guardado manda y los arrays se solapan por índice
+  sin acortarse.
+- **El editor reventaba al escribir la primera traducción**: recorría la ruta
+  suponiendo que existía, y la clave `en` no está en el contenido publicado.
+  Ahora crea lo que falte por el camino, y decide entre objeto y array mirando
+  el siguiente tramo (`incluye.2` crea un array, no una clave «2»).
+- **Los mensajes de la API salían siempre en español.** Un visitante inglés
+  leía la página traducida y, al suscribirse, recibía la respuesta en español.
+  Ahora las rutas devuelven un código estable y el cliente lo traduce.
+- **La cookie de idioma se perdía justo al volver de Mercado Pago.** Se fija
+  con `SameSite=Lax` y el idioma viaja además en las URLs de vuelta, así que
+  el comprador recibe su descarga en el idioma en el que estaba leyendo.
+- **Copia de seguridad automática antes de publicar** desde `/admin`: el
+  editor guarda el documento entero, y con dos pestañas abiertas una podía
+  pisar a la otra sin dejar rastro.
+- Cifras de la presentación **corregidas contra el código**: la biblioteca
+  tiene 41 piezas en la paleta y 73 definiciones (decía 47); el registro de
+  cambios tiene 59 entradas (no 49); el mínimo de Android que declara el
+  empaquetado es 5.1 (`minSdkVersion 22`), no 7; la rejilla es de 10 cm pero
+  **no** marca cada metro; y los modelos 3D importados viven en la Biblioteca
+  del dispositivo, **no** dentro del `.json` del proyecto.
+
 ## [0.2.49] — 2026-08-12
 
 ### Cambiado

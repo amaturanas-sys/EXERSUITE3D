@@ -1730,6 +1730,26 @@ body.simulating .arrastre-panel { display: none !important; }
 .land-soporte { color: #6db3f2; text-decoration: none; }
 .land-soporte:hover { text-decoration: underline; }
 
+/* ---- v0.2.50 · Enlace al sitio del proyecto, con su dirección a la vista */
+.land-sitio {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.land-copiar {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: inherit;
+  border-radius: 5px;
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+.land-copiar:hover { border-color: #6db3f2; color: #6db3f2; }
+
 /* ---- v0.2.3 · Estética: textos centrados y botones completos */
 button.tool, .land-btn, .comp-btn .maquina-icon, .side-tab, .dock-toggle {
   text-align: center;

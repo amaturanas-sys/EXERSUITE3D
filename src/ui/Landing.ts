@@ -12,7 +12,8 @@ import {
   type PerfPreset,
   type PerfSettings,
 } from "../core/performance";
-import { getIdioma, setIdioma, t } from "../core/i18n";
+import { getIdioma, setIdioma, t, tt } from "../core/i18n";
+import { SITIO_WEB, SITIO_WEB_VISIBLE, sitioWebConIdioma } from "../core/sitio";
 import { clear, el } from "./dom";
 
 export interface LandingActions {
@@ -105,6 +106,7 @@ export class Landing {
       el("div", {}, [`EXERSUITE3D v${VERSION_APP}`]),
       el("div", {}, ["Brought to you by A. Maturana Steinbrugge"]),
       el("div", {}, [el("span", {}, ["Dudas y soporte técnico: "]), soporte]),
+      this.filaDelSitio(),
     ]);
 
     this.root = el("div", { class: "landing" }, [
@@ -124,6 +126,52 @@ export class Landing {
 
   hide(): void {
     this.root.remove();
+  }
+
+  /**
+   * ENLACE AL SITIO DEL PROYECTO (v0.2.50).
+   *
+   * La dirección se muestra ESCRITA, no escondida tras un «aquí»: en el
+   * empaquetado de escritorio la ventana puede negarse a abrir una pestaña
+   * nueva y en la tablet el enlace sale al navegador del sistema, así que
+   * quien lo lea siempre puede teclearlo o copiarlo. El botón de copiar es
+   * la red de seguridad de esos casos.
+   */
+  private filaDelSitio(): HTMLElement {
+    const enlace = el(
+      "a",
+      {
+        class: "land-soporte",
+        href: sitioWebConIdioma(),
+        target: "_blank",
+        rel: "noopener noreferrer",
+        title: tt(
+          "Página del proyecto: novedades, descargas y la historia detrás de EXERSUITE3D",
+          "Project page: news, downloads and the story behind EXERSUITE3D",
+        ),
+      },
+      [SITIO_WEB_VISIBLE],
+    );
+    const copiar = el("button", {
+      class: "land-copiar",
+      title: tt("Copiar la dirección", "Copy the address"),
+    }, ["⧉"]);
+    copiar.addEventListener("click", () => {
+      void navigator.clipboard
+        ?.writeText(SITIO_WEB)
+        .then(() => {
+          copiar.textContent = "✓";
+          setTimeout(() => (copiar.textContent = "⧉"), 1400);
+        })
+        .catch(() => {
+          /* sin portapapeles: la dirección se lee en pantalla */
+        });
+    });
+    return el("div", { class: "land-sitio" }, [
+      el("span", {}, [tt("Sitio del proyecto: ", "Project site: ")]),
+      enlace,
+      copiar,
+    ]);
   }
 
   // ------------------------------------------------------------- navegación

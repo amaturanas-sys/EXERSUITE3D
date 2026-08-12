@@ -95,11 +95,34 @@ Con esto, los pagos aprobados quedan registrados en Redis
 3. Comprueba que el enlace descarga, que un token manipulado da 403 y que
    pasada la caducidad pide regenerar.
 
+## La página en dos idiomas (español e inglés)
+
+El visitante la recibe en su idioma sin hacer nada: se decide con
+`?lang` → cookie → `Accept-Language` → español, y hay un conmutador **ES · EN**
+arriba a la derecha. Cada idioma tiene además su propia dirección, `/es` y
+`/en`, por si quieres compartir una en concreto.
+
+- **El español es la verdad.** Es lo que se guarda y lo que se sirve cuando no
+  hay traducción, así que la página nunca sale con huecos en blanco.
+- **El inglés es una capa encima**, y puede estar a medias: lo que traduzcas se
+  ve en inglés y lo demás sigue saliendo en español.
+- **Se traduce desde el mismo editor**: en `/admin`, pestaña **English**, y a
+  escribir encima de lo que veas. Al lado tienes cuántas frases llevas
+  traducidas y cuántas faltan.
+- Lo que dice el programa (botones de estado, la página de gracias, los avisos
+  del formulario) ya está en los dos idiomas y no hay que tocarlo. El propio
+  panel `/admin` se queda en español a propósito.
+
 ## Editar la página (como en Canva)
 
 - Entra en `https://tu-sitio/admin`.
 - **Pincha cualquier texto y escribe** (título, subtítulo, tarjetas, precio
   en texto, notas, pie…). Cada sección tiene su botón Mostrar/Ocultar.
+- **«Textos de fábrica»**, en cada sección, trae la redacción que venga con la
+  versión nueva de la aplicación y descarta la tuya SOLO en esa sección. Es la
+  forma de adoptar una presentación nueva sin perder el precio ni la galería.
+  (Lo que ya publicaste manda siempre: una versión nueva nunca te lo pisa
+  sola.)
 - Barra superior: color de acento, **precio y moneda** (lo que se cobra de
   verdad), añadir imágenes a la galería (pega URLs de tus capturas).
 - Escribe la contraseña (ADMIN_PASSWORD) y pulsa **Publicar cambios**: la

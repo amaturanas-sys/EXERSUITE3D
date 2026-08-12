@@ -13,8 +13,15 @@ function token() {
   return t;
 }
 
-/** Crea la preferencia de Checkout Pro y devuelve la URL de pago. */
-export async function crearPreferencia({ titulo, monto, moneda, urlBase }) {
+/**
+ * Crea la preferencia de Checkout Pro y devuelve la URL de pago.
+ *
+ * `idioma` viaja en las URLs de vuelta: el comprador regresa desde
+ * mercadopago.com, una navegación desde OTRO sitio, y no se puede dar por
+ * hecho que el navegador mande la cookie de idioma en ese salto.
+ */
+export async function crearPreferencia({ titulo, monto, moneda, urlBase, idioma = "es" }) {
+  const lang = idioma === "en" ? "en" : "es";
   // Referencia externa única por orden: mejora la conciliación y la
   // "calidad de integración" que mide el panel de Mercado Pago.
   const referencia = `exersuite3d-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -39,9 +46,9 @@ export async function crearPreferencia({ titulo, monto, moneda, urlBase }) {
       external_reference: referencia,
       notification_url: `${urlBase}/api/webhook/mp`,
       back_urls: {
-        success: `${urlBase}/gracias`,
-        pending: `${urlBase}/gracias`,
-        failure: `${urlBase}/?pago=fallido`,
+        success: `${urlBase}/gracias?lang=${lang}`,
+        pending: `${urlBase}/gracias?lang=${lang}`,
+        failure: `${urlBase}/?pago=fallido&lang=${lang}`,
       },
       auto_return: "approved",
       statement_descriptor: "EXERSUITE3D",

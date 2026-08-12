@@ -4,6 +4,12 @@
 
 # EXERSUITE3D
 
+**Sitio del proyecto: <https://exersuite3d.vercel.app>** (español e inglés,
+según la preferencia del navegador; también `/es` y `/en`). Ahí están la
+presentación, las capturas y la descarga. El código de esa página vive en
+[`sitio-web/`](sitio-web/) y su despliegue está documentado en
+[`docs/DESPLIEGUE-TIENDA.md`](docs/DESPLIEGUE-TIENDA.md).
+
 Plataforma de diseño 3D y simulación de físicas para **prototipar máquinas de
 gimnasio**. Editor estilo SketchUp / NomadSculpt con medidas exactas en
 centímetros, librería de componentes mecánicos y (próximamente) simulación de

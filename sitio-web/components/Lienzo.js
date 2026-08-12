@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { campoTraducido } from "@/lib/i18n";
 import { elegirYSubir } from "@/lib/imagenes";
 
 /**
@@ -51,7 +52,11 @@ export function nuevaImagen(url) {
   return { id: nuevoId(), tipo: "imagen", url, x: 450, y: 120, w: 300, rot: 0, opacidad: 1 };
 }
 
-export default function Lienzo({ lienzo, editable = false, clave = "", onCambiar = () => {} }) {
+export default function Lienzo({ lienzo, idioma = "es", editable = false, clave = "", onCambiar = () => {} }) {
+  // Igual que en los widgets: la traducción de un elemento va DENTRO del
+  // elemento (textoEn), porque el lienzo se duplica, se reordena y se borra.
+  const campo = (obj, nombre) => campoTraducido(obj, nombre, idioma);
+  const sufijo = idioma === "en" ? "En" : "";
   const cont = useRef(null);
   const [escala, setEscala] = useState(1);
   const [selId, setSelId] = useState(null);
@@ -380,11 +385,11 @@ export default function Lienzo({ lienzo, editable = false, clave = "", onCambiar
                   }}
                   onBlur={(e) => {
                     if (!editable) return;
-                    cambiarEl(el.id, { texto: e.currentTarget.textContent });
+                    cambiarEl(el.id, { [`texto${sufijo}`]: e.currentTarget.textContent });
                     setEditandoTexto(null);
                   }}
                 >
-                  {el.texto}
+                  {campo(el, "texto")}
                 </div>
               ) : (
                 <img src={el.url} alt="" draggable={false} style={{ width: "100%", display: "block" }} />

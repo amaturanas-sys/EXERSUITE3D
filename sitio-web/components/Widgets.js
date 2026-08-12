@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { campoTraducido } from "@/lib/i18n";
 import { elegirYSubir } from "@/lib/imagenes";
 
 /**
@@ -73,7 +74,13 @@ export function nuevoAcordeon() {
   };
 }
 
-export default function Widgets({ widgets, editable = false, clave = "", onCambiar = () => {} }) {
+export default function Widgets({ widgets, idioma = "es", editable = false, clave = "", onCambiar = () => {} }) {
+  // La traducción de un widget viaja DENTRO del widget (tituloEn, pieEn,
+  // textoEn) y no en la capa `en` del contenido: la lista se reordena, se
+  // duplica y se borra, y una capa por índice acabaría dándole a un widget
+  // el texto de otro. Regla: la traducción vive donde escribe el editor.
+  const campo = (obj, nombre) => campoTraducido(obj, nombre, idioma);
+  const sufijo = idioma === "en" ? "En" : "";
   const lista = widgets.lista || [];
   const cambiar = (nueva) => onCambiar(nueva);
   const cambiarW = (id, props) =>
@@ -118,18 +125,18 @@ export default function Widgets({ widgets, editable = false, clave = "", onCambi
             </div>
           )}
           <Titulo
-            valor={w.titulo}
+            valor={campo(w, "titulo")}
             editable={editable}
-            onCambiar={(t) => cambiarW(w.id, { titulo: t })}
+            onCambiar={(t) => cambiarW(w.id, { [`titulo${sufijo}`]: t })}
           />
           {w.tipo === "carrusel" && (
-            <Carrusel w={w} editable={editable} clave={clave} onCambiar={(p) => cambiarW(w.id, p)} />
+            <Carrusel w={w} idioma={idioma} editable={editable} clave={clave} onCambiar={(p) => cambiarW(w.id, p)} />
           )}
           {w.tipo === "acordeon" && (
-            <Acordeon w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
+            <Acordeon w={w} idioma={idioma} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
           )}
           {w.tipo === "video" && (
-            <Video w={w} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
+            <Video w={w} idioma={idioma} editable={editable} onCambiar={(p) => cambiarW(w.id, p)} />
           )}
         </div>
       ))}
@@ -154,7 +161,9 @@ function Titulo({ valor, editable, onCambiar }) {
 
 /* ------------------------------------------------------------- carrusel */
 
-function Carrusel({ w, editable, clave, onCambiar }) {
+function Carrusel({ w, idioma = "es", editable, clave, onCambiar }) {
+  const campo = (obj, nombre) => campoTraducido(obj, nombre, idioma);
+  const sufijo = idioma === "en" ? "En" : "";
   const [i, setI] = useState(0);
   const n = w.diapositivas.length;
   const ir = (j) => setI(((j % n) + n) % n);
@@ -176,7 +185,7 @@ function Carrusel({ w, editable, clave, onCambiar }) {
   return (
     <div className="carrusel">
       <div className="carrusel-marco">
-        <img src={d.imagen} alt={d.pie || ""} />
+        <img src={d.imagen} alt={campo(d, "pie") || ""} />
         {n > 1 && (
           <>
             <button className="carrusel-flecha izq" onClick={() => ir(i - 1)} aria-label="Anterior">‹</button>
@@ -184,15 +193,15 @@ function Carrusel({ w, editable, clave, onCambiar }) {
           </>
         )}
       </div>
-      {(d.pie || editable) && (
+      {(campo(d, "pie") || editable) && (
         <p
           className="carrusel-pie dim"
           data-editable={editable || undefined}
           contentEditable={editable}
           suppressContentEditableWarning
-          onBlur={(e) => editable && editarDiapo({ pie: e.currentTarget.textContent })}
+          onBlur={(e) => editable && editarDiapo({ [`pie${sufijo}`]: e.currentTarget.textContent })}
         >
-          {d.pie || "(pie de foto)"}
+          {campo(d, "pie") || "(pie de foto)"}
         </p>
       )}
       <div className="carrusel-puntos">
@@ -265,7 +274,9 @@ function Carrusel({ w, editable, clave, onCambiar }) {
 
 /* --------------------------------------------------------------- vídeo */
 
-function Video({ w, editable, onCambiar }) {
+function Video({ w, idioma = "es", editable, onCambiar }) {
+  const campo = (obj, nombre) => campoTraducido(obj, nombre, idioma);
+  const sufijo = idioma === "en" ? "En" : "";
   const info = analizarVideo(w.url);
 
   return (
@@ -287,15 +298,15 @@ function Video({ w, editable, onCambiar }) {
       ) : (
         <p className="dim">Pega la URL de un vídeo para mostrarlo aquí.</p>
       )}
-      {(w.pie || editable) && (
+      {(campo(w, "pie") || editable) && (
         <p
           className="carrusel-pie dim"
           data-editable={editable || undefined}
           contentEditable={editable}
           suppressContentEditableWarning
-          onBlur={(e) => editable && onCambiar({ pie: e.currentTarget.textContent })}
+          onBlur={(e) => editable && onCambiar({ [`pie${sufijo}`]: e.currentTarget.textContent })}
         >
-          {w.pie || "(pie del vídeo)"}
+          {campo(w, "pie") || "(pie del vídeo)"}
         </p>
       )}
       {editable && (
@@ -321,7 +332,9 @@ function Video({ w, editable, onCambiar }) {
 
 /* -------------------------------------------------- pestañas desplegables */
 
-function Acordeon({ w, editable, onCambiar }) {
+function Acordeon({ w, idioma = "es", editable, onCambiar }) {
+  const campo = (obj, nombre) => campoTraducido(obj, nombre, idioma);
+  const sufijo = idioma === "en" ? "En" : "";
   const editarItem = (j, props) =>
     onCambiar({ items: w.items.map((x, k) => (k === j ? { ...x, ...props } : x)) });
 
@@ -334,9 +347,9 @@ function Acordeon({ w, editable, onCambiar }) {
               data-editable={editable || undefined}
               contentEditable={editable}
               suppressContentEditableWarning
-              onBlur={(e) => editable && editarItem(j, { titulo: e.currentTarget.textContent })}
+              onBlur={(e) => editable && editarItem(j, { [`titulo${sufijo}`]: e.currentTarget.textContent })}
             >
-              {item.titulo}
+              {campo(item, "titulo")}
             </span>
             {editable && (
               <button
@@ -354,9 +367,9 @@ function Acordeon({ w, editable, onCambiar }) {
             data-editable={editable || undefined}
             contentEditable={editable}
             suppressContentEditableWarning
-            onBlur={(e) => editable && editarItem(j, { texto: e.currentTarget.textContent })}
+            onBlur={(e) => editable && editarItem(j, { [`texto${sufijo}`]: e.currentTarget.textContent })}
           >
-            {item.texto}
+            {campo(item, "texto")}
           </p>
         </details>
       ))}
