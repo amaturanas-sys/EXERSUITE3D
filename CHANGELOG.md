@@ -7,6 +7,13 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.2.48] — 2026-08-11
 
+### Cambiado
+
+- Cápsula del Instructivo al día: la ayuda del maniquí mostraba la ventana de
+  Articulaciones anterior, que ya no existe. Ahora enseña la ventana única en
+  modo POSAR con su selector de articulación, la figura sentada apoyando de
+  verdad y el Toolbox visible en su carril.
+
 ### Corregido
 
 - **LAS VENTANAS YA NO SE PISAN.** Auditoría de la interfaz en 5 tamaños de
