@@ -84,6 +84,12 @@ export interface HumanData {
   startPoseName?: string | null;
   startPosition?: Vec3 | null;
   startQuaternion?: Quat | null;
+  /**
+   * PARTIDA DE LA MÁQUINA (v0.2.51): dónde arrancan sus piezas móviles, por
+   * índice en la lista de objetos (los ids se rehacen al cargar). Vale para
+   * empezar la simulación en el punto de bloqueo en vez de en el diseño.
+   */
+  startParts?: { index: number; position: Vec3; quaternion: Quat }[] | null;
 }
 
 /** Espacio de trabajo del proyecto (asistente de Nuevo, v0.2.0). */

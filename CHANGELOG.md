@@ -5,6 +5,66 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.51] — 2026-08-12
+
+### Añadido
+
+- **LA PARTIDA CONGELA TAMBIÉN LA MÁQUINA.** Hay gestos cuya postura inicial
+  es incómoda de posar y sale mucho mejor empezar por el **bloqueo** —el final
+  de la fase concéntrica, justo antes de la excéntrica—, pero para eso la
+  máquina tiene que arrancar ahí y no en su diseño.
+
+  Ahora **📌 Fijar partida** congela las dos cosas: la postura del maniquí y
+  dónde están las piezas móviles. Se posa la máquina con la mano durante la
+  simulación —el único método que la mueve por su cinemática real, con la
+  bisagra describiendo su arco y el cable conservando su longitud—, se fija, y
+  cada ▶ arranca ahí. Medido en la UpperMachine: el agarre arranca a 101,1 cm
+  en vez de a 89,6, y desde ahí baja solo, que es la fase excéntrica.
+
+  **La partida vive APARTE del diseño**, no lo sobrescribe. El diseño es el
+  plano fabricable: es lo que se exporta, lo que se acota y de donde cada
+  unión saca el cero de sus topes y cada cable su longitud. Por eso el mundo
+  se construye siempre desde el diseño y solo DESPUÉS se salta a la
+  configuración congelada; construir sobre ella le cambiaría la longitud al
+  cable. Parado se sigue viendo y editando el diseño, y **🗑 Soltar máquina**
+  devuelve el arranque a él. Todo viaja en el proyecto.
+
+### Cambiado
+
+- **POSAR, reordenado por tarea.** Medido a 1024×768: el panel ocupaba 1020 px
+  con 622 visibles, así que **seis de los doce mandos caían bajo el pliegue** y
+  llegar al candado pedía bajar unos 400 px. Ahora son cuatro grupos —Partida
+  del ejercicio · Postura · Articulación · Manos y simetría—, con la gestión de
+  la biblioteca de posturas plegada y cinco rótulos retirados. Cabe sin bajar.
+- **Objetivos táctiles** del selector de articulación y de los selectores de
+  lado, de 22-24 px a 30-34: en una tableta eran imposibles de acertar.
+
+### Corregido
+
+- **SENTARSE EN EL EXTREMO DE UN BANCO.** La figura quedaba volteada, mirando
+  hacia el banco, y sus muslos lo atravesaban. La orientación se deducía del
+  NOMBRE de las piezas vecinas —«al lado contrario de la pieza fija más
+  cercana»— y en un banco plano esa pieza es una PATA, así que en el extremo
+  apuntaba hacia dentro. Medido en el banco de fábrica: **5,8 cm de muslo
+  dentro de la colchoneta en las tres posiciones** (los dos extremos y el
+  medio).
+
+  Ahora se mide: se prueban las cuatro direcciones horizontales de la caja
+  orientada del propio apoyo —así vale igual con el banco girado— y gana la que
+  deja las piernas más fuera. Resultado: **0 cm** en las tres, mirando hacia
+  fuera en los extremos y de lado en el medio, que es donde caben las piernas.
+- **El respaldo de la máquina de al lado ya no arrastra al que se sienta en un
+  banco.** La búsqueda de respaldo era global y sin radio: al no llegar nunca a
+  tocarlo, agotaba los 45 pasos del bucle y dejaba la figura **45 cm más
+  atrás**, fuera del banco. Con una UpperMachine a 200 cm, sentarse en x=45
+  terminaba en x=0.
+- **POSAR ya no depende del candado.** Desde v0.2.49 lo fija la ZONA activa, y
+  como la figura nace con solo el tren superior, seleccionar una rodilla
+  soltaba el gizmo y remitía a una ventana de «Posturas» que ya no existe:
+  **media figura era imposible de posar**. El candado dice qué mueve el gesto
+  de 8/9 en SIMULAR; POSAR posa lo que se toque. Se retira también su botón
+  duplicado del editor numérico.
+
 ## [0.2.50] — 2026-08-12
 
 ### Añadido

@@ -2771,7 +2771,10 @@ body.modo-prototipo #simbar {
 
 
 .art-lados { display: flex; gap: 4px; margin-bottom: 6px; }
-.art-lados .tool { flex: 1; font-size: 11px; padding: 4px 2px; }
+/* v0.2.51 · objetivos táctiles: 22 px de alto en una tableta es imposible
+   de acertar con el dedo. Se suben a 32-34 sin que la ventana crezca de
+   más, porque a cambio desaparecieron cinco rótulos y el candado. */
+.art-lados .tool { flex: 1; font-size: 11.5px; padding: 8px 2px; min-height: 32px; }
 .art-hint { font-size: 10.5px; color: var(--text-dim); margin: 6px 0 4px; line-height: 1.35; }
 
 .art-fila {
@@ -2828,8 +2831,9 @@ body.modo-prototipo #simbar {
 .mq-zona .art-fila { padding: 0 0 4px; font-weight: 600; }
 .mq-zona .art-lados { margin-bottom: 4px; }
 .tool.art-lado-mini {
-  font-size: 10.5px;
-  padding: 3px 2px;
+  font-size: 11px;
+  padding: 7px 2px;
+  min-height: 30px;
   min-width: 0;
 }
 .mq-zona-detalle {
@@ -2842,6 +2846,35 @@ body.modo-prototipo #simbar {
   color: #7fa9d8;
   margin-top: 2px;
 }
+.mq-partida.mq-partida-maquina { color: #7fd08a; }
+
+/* ---- v0.2.51 · POSAR agrupado por tarea, para que quepa sin bajar ---- */
+.mq-grupo {
+  border-top: 1px solid var(--line);
+  margin-top: 9px;
+  padding-top: 7px;
+}
+.mq-grupo-titulo {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+.mq-fila-postura { display: flex; gap: 6px; align-items: center; }
+.mq-fila-postura .select { flex: 1; min-width: 0; }
+.mq-fila-postura .tool { flex: 0 0 auto; }
+.mq-mas > summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 5px 0 2px;
+  list-style: none;
+}
+.mq-mas > summary::before { content: "▸ "; }
+.mq-mas[open] > summary::before { content: "▾ "; }
+.mq-mas > summary::-webkit-details-marker { display: none; }
+.mq-mas > summary:hover { color: #fff; }
 
 /* Rejilla del selector de articulación en el modo POSAR (v0.2.46). */
 .art-rejilla {
@@ -2851,6 +2884,7 @@ body.modo-prototipo #simbar {
   padding: 0 8px 8px;
 }
 .art-rejilla .tool {
-  font-size: 11.5px;
-  padding: 5px 4px;
+  font-size: 12px;
+  padding: 9px 4px;
+  min-height: 34px;
 }

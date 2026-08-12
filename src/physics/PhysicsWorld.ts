@@ -2210,6 +2210,41 @@ export class PhysicsWorld {
   }
 
   /**
+   * PUNTO DE PARTIDA DE LA MÁQUINA (v0.2.51): recoloca las piezas móviles en
+   * la configuración congelada, ya construido el mundo.
+   *
+   * El orden importa y es DELIBERADO: primero se construye desde el DISEÑO
+   * —así los cables miden su longitud real, las cuerdas su arco real y cada
+   * unión cera sus topes en la pose de fabricación— y solo DESPUÉS se mueven
+   * los cuerpos. Construir directamente sobre la pose congelada le cambiaría
+   * la longitud al cable y el cero a los topes, que es falsear la máquina.
+   *
+   * Lo que queda incoherente tras el salto —un cable que ahora está tenso, una
+   * pila que debería haber subido— lo resuelve el propio motor en los primeros
+   * pasos, que es exactamente lo que pasa en la máquina real.
+   *
+   * Las piezas SOLDADAS no se tocan: cedieron su cuerpo al anfitrión y viajan
+   * con él, así que moverlas por separado partiría el conjunto.
+   */
+  recolocarPiezas(poses: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>): number {
+    let movidas = 0;
+    for (const [id, t] of poses) {
+      const entrada = this.bodies.get(id);
+      if (!entrada || entrada.obj.id !== id) continue; // fundida: la mueve su anfitrión
+      const { body } = entrada;
+      if (body.isFixed()) continue; // anclada al suelo: no es parte del gesto
+      body.setTranslation({ x: t.p.x * S, y: t.p.y * S, z: t.p.z * S }, true);
+      body.setRotation({ x: t.q.x, y: t.q.y, z: t.q.z, w: t.q.w }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      entrada.obj.mesh.position.copy(t.p);
+      entrada.obj.mesh.quaternion.copy(t.q);
+      movidas++;
+    }
+    return movidas;
+  }
+
+  /**
    * GUARDARRAÍL DE ESTABILIDAD (v0.2.14). Dos garantías por subpaso:
    *
    * 1. NADA se desboca. Al arrancar la simulación, una pieza colocada a ojo

@@ -70,7 +70,6 @@ const DIRECCIONES_ROLDANA: Record<DireccionRoldana, THREE.Vector3> = {
 import {
   DEFAULT_HUMAN_HEIGHT,
   JOINT_DOF,
-  PARENT_JOINT,
   buildHumanFigure,
   disposeHumanFigure,
 } from "../objects/humanFigure";
@@ -906,6 +905,15 @@ export class Editor {
       // pasada. Antes el maniquí se quedaba con la última pose movida.
       this.marcarPoseDePartida();
       this.physics.añadirFigura(this.humanFigure);
+    }
+    // PARTIDA DE LA MÁQUINA: se aplica DESPUÉS de construir, nunca antes. El
+    // mundo se arma desde el diseño —cables con su longitud real y uniones con
+    // su cero de fábrica— y solo entonces se salta a la configuración
+    // congelada. Lo que quede tenso lo resuelve el motor en los primeros
+    // pasos, igual que en la máquina de verdad.
+    if (this.partidaPiezas?.size) {
+      const movidas = this.physics.recolocarPiezas(this.partidaPiezas);
+      if (movidas > 0) this.cablesDirty = true;
     }
     this.jointHelpers.visible = false;
     this.simulating = true;
@@ -2475,6 +2483,18 @@ export class Editor {
         startPoseName: this.nombreDePartida,
         startPosition: this.transformDePartida ? v3(this.transformDePartida.p) : null,
         startQuaternion: this.transformDePartida ? q4(this.transformDePartida.q) : null,
+        // Dónde arranca la MÁQUINA (v0.2.51). Se guarda por índice de pieza,
+        // igual que hacen las manos apoyadas, porque los ids se rehacen al
+        // cargar. Solo viaja lo que se movió respecto del diseño.
+        startParts: this.partidaPiezas
+          ? [...this.partidaPiezas]
+              .map(([id, t]) => ({
+                index: this.listObjects().findIndex((o) => o.id === id),
+                position: v3(t.p),
+                quaternion: q4(t.q),
+              }))
+              .filter((e) => e.index >= 0)
+          : null,
       },
     };
   }
@@ -2574,6 +2594,7 @@ export class Editor {
     this.removeHumanFigure();
     this.jointLocks.clear();
     this.reiniciarZonas();
+    this.partidaPiezas = null;
     this.poseSymmetry = false;
     this.grabDrag = null;
     this.cablesInvalidos.clear();
@@ -2789,6 +2810,23 @@ export class Editor {
       }
     } else if (data.human) {
       this.humanMode = "mannequin"; // el modo esqueleto se retiró en 0.1.7
+    }
+
+    // La partida de la MÁQUINA no depende de que haya maniquí: una estación
+    // puede querer arrancar en su bloqueo con o sin nadie sentado.
+    this.partidaPiezas = null;
+    if (data.human?.startParts?.length) {
+      const lista = this.listObjects();
+      const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+      for (const e of data.human.startParts) {
+        const o = lista[e.index];
+        if (!o) continue;
+        poses.set(o.id, {
+          p: new THREE.Vector3().fromArray(e.position),
+          q: new THREE.Quaternion().fromArray(e.quaternion),
+        });
+      }
+      if (poses.size) this.partidaPiezas = poses;
     }
 
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
@@ -4115,21 +4153,19 @@ export class Editor {
     this.select(null);
     this.selectedFigure = true;
     this.selectedJointName = name;
-    if (this.jointLocks.has(name)) {
-      // Bloqueada con el candado: se selecciona (para poder liberarla desde
-      // Posturas) pero no se posa.
-      this.gizmo.detach();
-      this.avisoTemporal(tt("🔒 Articulación bloqueada — libérala en Posturas", "🔒 Joint locked — release it in Poses"));
-    } else {
-      this.gizmo.attach(joints[name]);
-      // Posar sobre los ejes locales de la articulación y solo los naturales.
-      this.gizmo.setSpace("local");
-      const dof = JOINT_DOF[name] ?? { x: undefined, y: undefined, z: undefined };
-      this.gizmo.showX = dof.x !== undefined;
-      this.gizmo.showY = dof.y !== undefined;
-      this.gizmo.showZ = dof.z !== undefined;
-      this.setMode("rotate"); // posar = rotar la articulacion
-    }
+    // EL CANDADO NO SE MIRA AQUÍ (v0.2.51). Desde que la ZONA activa es quien
+    // lo calcula, mirarlo al posar dejaba media figura intocable: naciendo con
+    // solo el tren superior activo, seleccionar una rodilla soltaba el gizmo y
+    // remitía a una ventana de «Posturas» que ya no existe. El candado dice
+    // qué mueve el gesto de 8/9 en SIMULAR; POSAR posa lo que se toque.
+    this.gizmo.attach(joints[name]);
+    // Posar sobre los ejes locales de la articulación y solo los naturales.
+    this.gizmo.setSpace("local");
+    const dof = JOINT_DOF[name] ?? { x: undefined, y: undefined, z: undefined };
+    this.gizmo.showX = dof.x !== undefined;
+    this.gizmo.showY = dof.y !== undefined;
+    this.gizmo.showZ = dof.z !== undefined;
+    this.setMode("rotate"); // posar = rotar la articulacion
     this.emitJointSelection();
   }
 
@@ -4341,11 +4377,7 @@ export class Editor {
     const joints = this.figureJoints();
     const jn = this.selectedJointName;
     if (!joints || !jn || !joints[jn]) return;
-    if (this.jointLocks.has(jn)) {
-      this.avisoTemporal(tt("🔒 Articulación bloqueada — libérala en Posturas", "🔒 Joint locked — release it in Poses"));
-      this.emitJointSelection();
-      return;
-    }
+    // El candado es cosa de la ZONA en SIMULAR: no veta escribir grados aquí.
     // Respeta el rango natural del eje (y bloquea los ejes no articulables).
     const lim = JOINT_DOF[jn]?.[axis];
     const value = lim ? Math.max(lim[0], Math.min(lim[1], deg)) : 0;
@@ -4410,6 +4442,19 @@ export class Editor {
   private poseDePartida: PoseDef | null = null;
   private transformDePartida: { p: THREE.Vector3; q: THREE.Quaternion } | null = null;
   private nombreDePartida: string | null = null;
+  /**
+   * PARTIDA DE LA MÁQUINA (v0.2.51): dónde están sus piezas móviles al
+   * arrancar. Hay gestos cuya postura inicial es incómoda de posar y sale
+   * mucho mejor empezar por el BLOQUEO —el final de la fase concéntrica—, y
+   * para eso la máquina también tiene que arrancar en ese punto.
+   *
+   * Vive APARTE del diseño a propósito. El diseño es el plano fabricable: es
+   * lo que se exporta, lo que se acota y de donde cada unión saca el cero de
+   * sus topes y cada cable su longitud. La partida es una condición de ensayo
+   * que se le pone encima al arrancar, y por eso parado se sigue viendo y
+   * editando el diseño, sin dos estados que confundan.
+   */
+  private partidaPiezas: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
 
   /**
    * Fija la POSTURA DE PARTIDA con la pose y el sitio actuales de la figura.
@@ -4424,6 +4469,45 @@ export class Editor {
     if (nombre !== undefined) this.nombreDePartida = nombre;
     this.pitchAcomodacion.clear();
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+  }
+
+  /**
+   * 📌 FIJA LA PARTIDA COMPLETA: la postura del maniquí Y dónde está la
+   * máquina. Se usa con la simulación en marcha: se lleva el conjunto móvil
+   * con la mano hasta el punto que interesa —el bloqueo, por ejemplo—, se
+   * acomoda la figura y se fija. A partir de ahí, cada ▶ arranca ahí.
+   *
+   * Solo se guarda lo que de verdad se movió respecto del diseño: si la
+   * máquina está donde la dejó el plano, no hay nada que congelar.
+   */
+  fijarPartida(): { piezas: number; postura: boolean } {
+    this.marcarPoseDePartida();
+    const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const o of this.listObjects()) {
+      const disenada = this.saved.get(o.id);
+      const p = o.mesh.position;
+      const q = o.mesh.quaternion;
+      if (disenada && p.distanceTo(disenada.position) < 0.05 && q.angleTo(disenada.quaternion) < 1e-3) {
+        continue; // sigue en su sitio de diseño: no es parte del gesto
+      }
+      poses.set(o.id, { p: p.clone(), q: q.clone() });
+    }
+    this.partidaPiezas = poses.size ? poses : null;
+    this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+    this.scheduleAutosave();
+    return { piezas: poses.size, postura: this.poseDePartida !== null };
+  }
+
+  /** 🗑 Suelta la partida de la MÁQUINA: ▶ vuelve a arrancar en el diseño. */
+  soltarPartidaMaquina(): void {
+    this.partidaPiezas = null;
+    this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+    this.scheduleAutosave();
+  }
+
+  /** Cuántas piezas tiene congeladas la partida (0 = arranca en el diseño). */
+  piezasEnLaPartida(): number {
+    return this.partidaPiezas?.size ?? 0;
   }
 
   /** ¿Hay una postura de partida a la que volver? */
@@ -6971,15 +7055,6 @@ export class Editor {
     if (!fig) return;
     const frente = new THREE.Vector3(0, 0, 1);
     if (destino.obj) {
-      // Frente del asiento: se aleja del respaldo más cercano; si no hay
-      // respaldo, del centro de la máquina a la que pertenece la pieza.
-      const respaldo = this.piezaCercana(destino.punto, (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo");
-      const ref = respaldo ?? this.piezaCercana(destino.punto, (o) => o.physics.fixed && o.id !== destino.obj!.id);
-      if (ref) {
-        frente.copy(destino.punto).sub(ref.mesh.position).setY(0);
-        if (frente.lengthSq() < 1e-4) frente.set(0, 0, 1);
-        frente.normalize();
-      }
       // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
       this.figuraApoyadaEn = "pieza";
       this.applyPose("Sentado");
@@ -6987,6 +7062,9 @@ export class Editor {
       // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
       // y bajarla hasta que lleguen la hundiría en el asiento.
       const caja = new THREE.Box3().setFromObject(destino.obj.mesh);
+      // HACIA DÓNDE MIRA: se MIDE, no se adivina por el nombre de las piezas
+      // vecinas. Ver frenteAlSentarse.
+      frente.copy(this.frenteAlSentarse(fig, destino.obj, destino.punto, caja.max.y));
       fig.position.set(destino.punto.x, caja.max.y, destino.punto.z);
       // El origen de la raíz NO es la cara inferior del cuerpo: los glúteos y
       // los muslos cuelgan por debajo de él, así que dejarlo a ras del asiento
@@ -7161,6 +7239,89 @@ export class Editor {
     return caja.isEmpty() ? fig.position.y : caja.min.y;
   }
 
+  /**
+   * HACIA DÓNDE MIRA LA FIGURA AL SENTARSE (v0.2.51).
+   *
+   * Antes se deducía del NOMBRE de las piezas vecinas: mirar «al lado contrario
+   * del respaldo más cercano» y, sin respaldo, «al lado contrario de la pieza
+   * fija más cercana». En un banco plano esa pieza fija es una PATA, así que en
+   * el extremo del banco la figura acababa mirando hacia el propio banco y sus
+   * muslos lo atravesaban (5,8 cm medidos en el banco de fábrica, y lo mismo en
+   * el medio y en los dos extremos).
+   *
+   * Ahora se MIDE. Se prueban las cuatro direcciones horizontales del propio
+   * apoyo —las de su caja orientada, así que vale igual con el banco girado— y
+   * gana la que deja las piernas MÁS FUERA del apoyo y de la estructura. Es el
+   * criterio de verdad: uno se sienta mirando adonde caben las piernas.
+   *
+   * El respaldo sigue mandando cuando existe y está al alcance: ahí la
+   * dirección no es opinable.
+   */
+  private frenteAlSentarse(
+    fig: THREE.Group,
+    apoyo: SceneObject,
+    punto: THREE.Vector3,
+    alturaApoyo: number,
+  ): THREE.Vector3 {
+    const respaldo = this.piezaCercana(
+      punto,
+      (o) => o.id !== apoyo.id && (/respaldo|back/i.test(o.name) || o.componentId === "respaldo"),
+    );
+    if (respaldo && respaldo.mesh.position.distanceTo(punto) < 90) {
+      const d = punto.clone().sub(respaldo.mesh.position).setY(0);
+      if (d.lengthSq() > 1e-4) return d.normalize();
+    }
+
+    // Direcciones candidatas: los ejes horizontales de la caja del apoyo, en
+    // los dos sentidos. Con el apoyo girado siguen siendo sus ejes, no los del
+    // mundo, que es lo que hace que un banco en diagonal funcione igual.
+    const cajaApoyo = this.cajaDePieza(apoyo);
+    const candidatos: THREE.Vector3[] = [];
+    for (const eje of cajaApoyo.e) {
+      const h = eje.clone().setY(0);
+      if (h.lengthSq() < 0.04) continue; // eje casi vertical: no sirve de frente
+      h.normalize();
+      candidatos.push(h.clone(), h.clone().negate());
+    }
+    if (!candidatos.length) candidatos.push(new THREE.Vector3(0, 0, 1));
+
+    // Contra qué se mide: el propio apoyo (que las cajas de la estructura
+    // excluyen a propósito, por ser ergonómico) y el hierro de alrededor.
+    const cajas = [cajaApoyo, ...(this.cajasCercaDeLaFigura() ?? [])];
+    const piernas: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && /^(muslo|pierna|pie)-/.test(String(m.userData.segmentId ?? ""))) piernas.push(m);
+    });
+
+    const posOriginal = fig.position.clone();
+    const rotOriginal = fig.quaternion.clone();
+    const centro = cajaApoyo.c.clone().setY(0);
+    const haciaFuera = punto.clone().setY(0).sub(centro);
+    let mejor = candidatos[0];
+    let mejorCoste = Infinity;
+    for (const d of candidatos) {
+      fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(d.x, d.z));
+      fig.position.set(punto.x, alturaApoyo, punto.z);
+      fig.updateMatrixWorld(true);
+      fig.position.y += alturaApoyo - this.baseDeApoyoSentado(fig);
+      fig.updateMatrixWorld(true);
+      const dentro = piernas.length ? this.penetracionEnEstructura(piernas, cajas) : 0;
+      // A igualdad de estorbo, se mira HACIA FUERA del apoyo: sentado en el
+      // extremo de un banco, las piernas cuelgan por el borde y no por dentro.
+      const desempate = haciaFuera.lengthSq() > 1 ? -d.dot(haciaFuera.clone().normalize()) : 0;
+      const coste = dentro + desempate * 0.05;
+      if (coste < mejorCoste - 1e-6) {
+        mejorCoste = coste;
+        mejor = d;
+      }
+    }
+    fig.position.copy(posOriginal);
+    fig.quaternion.copy(rotOriginal);
+    fig.updateMatrixWorld(true);
+    return mejor.clone();
+  }
+
   /** Caja orientada de una pieza, en el formato de las cajas de colisión. */
   private cajaDePieza(obj: SceneObject): ReturnType<PhysicsWorld["cajasDeColision"]>[number] {
     const geo = obj.mesh.geometry;
@@ -7195,7 +7356,11 @@ export class Editor {
       cerca,
       (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo",
     );
-    if (!respaldo) return;
+    // AL ALCANCE O NADA (v0.2.51). La búsqueda es global y sin radio: en una
+    // sala con varias máquinas, el respaldo de la de al lado hacía retroceder
+    // a quien se sentaba en un banco. Como nunca llegaba a tocarlo, agotaba
+    // los 45 pasos del bucle y lo dejaba 45 cm más atrás, fuera del banco.
+    if (!respaldo || respaldo.mesh.position.distanceTo(cerca) > 90) return;
     const caja = this.cajaDePieza(respaldo);
     const espalda: THREE.Mesh[] = [];
     fig.traverse((n) => {
@@ -7479,12 +7644,10 @@ export class Editor {
           this.orbit.enabled = false;
           return;
         }
-        let jn: string | null = jn0;
-        while (jn && this.jointLocks.has(jn)) jn = PARENT_JOINT[jn] ?? null;
-        if (!jn) {
-          this.avisoTemporal(tt("🔒 Cadena bloqueada: libera alguna articulación", "🔒 Chain locked: release some joint"));
-          return;
-        }
+        // Se agarra la articulación que se ha tocado. Antes se trepaba a su
+        // padre mientras estuviera con candado, y desde que el candado lo
+        // fija la zona eso hacía inagarrable todo lo que la zona no mueve.
+        const jn: string | null = jn0;
         const joints = this.figureJoints();
         const j = joints?.[jn];
         if (j) {

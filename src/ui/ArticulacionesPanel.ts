@@ -59,11 +59,11 @@ export class ArticulacionesPanel {
   private select: HTMLSelectElement;
   private nombreNuevo: HTMLInputElement;
   private etiquetaPartida: HTMLElement;
+  private botonSoltarPartida: HTMLButtonElement;
   private symChk: HTMLInputElement;
   private hint: HTMLElement;
   private jointBox: HTMLElement;
   private jointLabel: HTMLElement;
-  private lockBtn: HTMLButtonElement;
   private jointInputs = {} as { x: HTMLInputElement; y: HTMLInputElement; z: HTMLInputElement };
   private readonly hintPorDefecto = tt(
     "Posa la figura (clic en un miembro y rótalo) y pulsa Actualizar o Guardar como…. Con Apoyar mano, fija una mano a un agarre.",
@@ -174,11 +174,23 @@ export class ArticulacionesPanel {
     // al aplicar una postura, al colocar la figura y al arrancar la
     // simulación, y aquí se puede clavar a mano en cualquier momento.
     this.etiquetaPartida = el("div", { class: "art-hint mq-partida" }, [""]);
-    const bFijarPartida = el("button", { class: "tool", title: tt("Fija la pose actual como postura de partida", "Pin the current pose as the starting one") }, [
+    const bFijarPartida = el("button", { class: "tool sim", title: tt(
+      "Congela dónde arranca el ejercicio: la postura del maniquí Y dónde está la máquina. Con la simulación en marcha, lleva antes el conjunto móvil con la mano al punto que quieras (por ejemplo el bloqueo).",
+      "Freeze where the exercise starts: the mannequin's pose AND where the machine is. With the simulation running, first drag the moving assembly by hand to the point you want (the lockout, for instance).",
+    ) }, [
       tt("📌 Fijar partida", "📌 Pin start"),
     ]);
     bFijarPartida.addEventListener("click", () => {
-      this.editor.marcarPoseDePartida(this.select.value || null);
+      const r = this.editor.fijarPartida();
+      this.hint.textContent = r.piezas
+        ? tt(
+            `Partida fijada con ${r.piezas} pieza(s) de la máquina: ▶ arrancará aquí.`,
+            `Start pinned with ${r.piezas} machine part(s): ▶ will begin here.`,
+          )
+        : tt(
+            "Partida fijada. La máquina arranca en su diseño; para congelarla, muévela con la mano durante la simulación y vuelve a fijar.",
+            "Start pinned. The machine begins at its design; to freeze it, drag it by hand while simulating and pin again.",
+          );
       this.refrescarPartida();
     });
     const bVolverPartida = el("button", { class: "tool", title: tt("Devuelve la figura a su postura de partida", "Return the figure to its starting pose") }, [
@@ -187,6 +199,19 @@ export class ArticulacionesPanel {
     bVolverPartida.addEventListener("click", () => {
       this.editor.reiniciarPoseDePartida();
       this.refrescar();
+    });
+    // Soltar solo aparece cuando hay algo que soltar: la máquina congelada.
+    this.botonSoltarPartida = el("button", { class: "tool danger", title: tt(
+      "La máquina vuelve a arrancar en su diseño (la postura del maniquí se conserva)",
+      "The machine goes back to starting at its design (the mannequin's pose is kept)",
+    ) }, [tt("🗑 Soltar máquina", "🗑 Release machine")]) as HTMLButtonElement;
+    this.botonSoltarPartida.addEventListener("click", () => {
+      this.editor.soltarPartidaMaquina();
+      this.hint.textContent = tt(
+        "La máquina vuelve a arrancar en su diseño.",
+        "The machine starts at its design again.",
+      );
+      this.refrescarPartida();
     });
 
     // Editor numérico de la articulación seleccionada.
@@ -200,14 +225,12 @@ export class ArticulacionesPanel {
       this.jointInputs[axis] = input;
       return el("div", { class: "sub" }, [el("label", {}, [axis.toUpperCase()]), input]);
     };
-    this.lockBtn = el("button", { class: "tool", title: tt("Bloquear/liberar esta articulación (las bloqueadas no se posan)", "Lock/unlock this joint (locked ones are not posed)") }, [
-      tt("🔒 Bloquear", "🔒 Lock"),
-    ]) as HTMLButtonElement;
-    this.lockBtn.addEventListener("click", () => this.editor.toggleJointLock());
+    // Sin botón de candado (v0.2.51): el candado lo fija la ZONA activa del
+    // modo SIMULAR, así que tenerlo aquí era un segundo mando para lo mismo —
+    // y encima al final de una columna que había que recorrer entera.
     this.jointBox = el("div", { class: "field" }, [
       this.jointLabel,
       el("div", { class: "row" }, [campoAngulo("x"), campoAngulo("y"), campoAngulo("z")]),
-      el("div", { class: "pose-actions" }, [this.lockBtn]),
     ]);
     this.jointBox.style.display = "none";
 
@@ -235,32 +258,46 @@ export class ArticulacionesPanel {
       return b;
     }));
 
-    this.cajaPosar = el("div", { class: "mq-seccion" }, [
-      el("div", { class: "art-hint" }, [
-        tt("Fija la POSTURA DE PARTIDA. Nada de esto depende del candado.", "Set the STARTING POSE. None of this depends on the lock."),
-      ]),
-      el("div", { class: "art-hint" }, [tt("Lado:", "Side:")]),
-      filaLadosPosar,
-      el("div", { class: "art-hint" }, [
-        tt("Elige la articulación que quieres posar:", "Pick the joint you want to pose:"),
-      ]),
-      el("div", { class: "art-rejilla" }, filasPosar),
-      el("div", { class: "field" }, [el("label", {}, [tt("Postura", "Pose")]), this.select]),
-      el("div", { class: "pose-actions" }, [bAplicar, bActualizar]),
+    // ORDEN POR TAREA, no por tipo de control (v0.2.51). Antes había que
+    // recorrer la columna entera para llegar a los grados de una articulación,
+    // y la mitad de los mandos eran rótulos. Ahora: primero se pone la figura
+    // donde va, luego se fija la referencia del ejercicio, luego la postura, y
+    // el detalle articular al final — que es el orden en que se trabaja.
+    const grupo = (titulo: string, hijos: (HTMLElement | string)[]) =>
+      el("div", { class: "mq-grupo" }, [el("div", { class: "mq-grupo-titulo" }, [titulo]), ...hijos]);
+
+    const masPosturas = el("details", { class: "mq-mas" }, [
+      el("summary", {}, [tt("Gestionar posturas", "Manage poses")]),
       el("div", { class: "field" }, [this.nombreNuevo]),
-      el("div", { class: "pose-actions" }, [bGuardar, bEliminar]),
-      el("div", { class: "pose-actions" }, [bRestaurar]),
-      el("div", { class: "art-hint" }, [
-        tt("Postura de PARTIDA (adonde vuelve el ↺ al parar la simulación):", "STARTING pose (where ↺ returns when the simulation stops):"),
+      el("div", { class: "pose-actions" }, [bGuardar, bActualizar]),
+      el("div", { class: "pose-actions" }, [bEliminar, bRestaurar]),
+    ]);
+
+    this.cajaPosar = el("div", { class: "mq-seccion" }, [
+      el("div", { class: "pose-actions" }, [bColocar, bAgarrar]),
+
+      grupo(tt("Partida del ejercicio", "Exercise start"), [
+        el("div", { class: "pose-actions" }, [bFijarPartida, bVolverPartida]),
+        this.etiquetaPartida,
+        el("div", { class: "pose-actions" }, [this.botonSoltarPartida]),
       ]),
-      el("div", { class: "pose-actions" }, [bFijarPartida, bVolverPartida]),
-      this.etiquetaPartida,
-      el("div", { class: "pose-actions" }, [bAgarrar]),
-      el("div", { class: "pose-actions" }, [bColocar]),
-      filaSim,
-      el("div", { class: "field" }, [el("label", {}, [tt("Manos (IK)", "Hands (IK)")])]),
-      el("div", { class: "pose-actions" }, [bApoyar, bSoltar]),
-      this.jointBox,
+
+      grupo(tt("Postura", "Pose"), [
+        el("div", { class: "row mq-fila-postura" }, [this.select, bAplicar]),
+        masPosturas,
+      ]),
+
+      grupo(tt("Articulación", "Joint"), [
+        filaLadosPosar,
+        el("div", { class: "art-rejilla" }, filasPosar),
+        this.jointBox,
+      ]),
+
+      grupo(tt("Manos y simetría", "Hands and symmetry"), [
+        el("div", { class: "pose-actions" }, [bApoyar, bSoltar]),
+        filaSim,
+      ]),
+
       this.hint,
     ]);
 
@@ -388,23 +425,23 @@ export class ArticulacionesPanel {
           ? tt("Apoyar mano: haz clic en una mano/brazo de la figura.", "Rest hand: click a hand/arm of the figure.")
           : tt("Ahora haz clic en el agarre donde apoyar la mano.", "Now click the grip where the hand should rest.");
     });
-    this.editor.bus.on("jointSelectionChanged", ({ name, angles, locked }) => {
+    this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
       this.marcarSeleccion(name);
       if (!name) {
         this.jointBox.style.display = "none";
         return;
       }
       this.jointBox.style.display = "block";
-      this.jointLabel.textContent = `${tt("Articulación", "Joint")}: ${name} (${tt("grados", "degrees")})${locked ? " · 🔒" : ""}`;
-      this.lockBtn.textContent = locked ? tt("🔓 Liberar", "🔓 Unlock") : tt("🔒 Bloquear", "🔒 Lock");
-      this.lockBtn.classList.toggle("active", locked);
+      this.jointLabel.textContent = `${name} (${tt("grados", "degrees")})`;
+      // Los ejes que la articulación NO tiene salen apagados; el candado ya no
+      // pinta aquí, porque posar no depende de él.
       const ejes = this.editor.getSelectedJointAxes();
       const idx = { x: 0, y: 1, z: 2 } as const;
       for (const ax of ["x", "y", "z"] as const) {
         const input = this.jointInputs[ax];
         input.value = String(angles[idx[ax]]);
-        input.disabled = !ejes[ax] || locked;
-        input.closest(".sub")?.classList.toggle("axis-off", !ejes[ax] || locked);
+        input.disabled = !ejes[ax];
+        input.closest(".sub")?.classList.toggle("axis-off", !ejes[ax]);
       }
     });
 
@@ -458,14 +495,21 @@ export class ArticulacionesPanel {
     return this.editor.ladoDeZona(id) ?? this.ladoPorZona.get(id) ?? null;
   }
 
-  /** Etiqueta de la postura de partida actual. */
+  /** Etiqueta de la partida: postura del maniquí y, si la hay, de la máquina. */
   private refrescarPartida(): void {
     const nombre = this.editor.nombrePoseDePartida();
-    this.etiquetaPartida.textContent = !this.editor.tienePoseDePartida()
-      ? tt("Sin partida fijada.", "No start pinned.")
+    const piezas = this.editor.piezasEnLaPartida();
+    const postura = !this.editor.tienePoseDePartida()
+      ? tt("sin postura fijada", "no pose pinned")
       : nombre
-        ? tt(`Partida: "${nombre}".`, `Start: "${nombre}".`)
-        : tt("Partida: la pose que tenía al fijarla.", "Start: the pose it had when pinned.");
+        ? tt(`postura "${nombre}"`, `pose “${nombre}”`)
+        : tt("la postura que tenía al fijarla", "the pose it had when pinned");
+    const maquina = piezas
+      ? tt(`máquina congelada (${piezas} pieza(s))`, `machine frozen (${piezas} part(s))`)
+      : tt("máquina en su diseño", "machine at its design");
+    this.etiquetaPartida.textContent = `▶ ${postura} · ${maquina}`;
+    this.etiquetaPartida.classList.toggle("mq-partida-maquina", piezas > 0);
+    this.botonSoltarPartida.style.display = piezas ? "" : "none";
   }
 
   private refrescar(): void {
