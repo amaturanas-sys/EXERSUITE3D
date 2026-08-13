@@ -131,7 +131,9 @@ export class ArticulacionesPanel {
     bRestaurar.addEventListener("click", () => this.editor.restoreDefaultPoses());
 
     const bAgarrar = el("button", { class: "tool", title: tt("Agarra un segmento del cuerpo y muévelo (1/2/3 lo restringe a un eje)", "Grab a body segment and move it (1/2/3 restricts it to one axis)") }, [
-      tt("✋ Agarrar maniquí", "✋ Grab mannequin"),
+      // Rótulo corto a propósito: el panel ya se titula MANIQUÍ, así que
+      // repetirlo aquí solo servía para desbordar la fila (v0.2.53).
+      tt("✋ Agarrar", "✋ Grab"),
     ]);
     bAgarrar.addEventListener("click", () => this.editor.setGrabFigure(!this.editor.isGrabFigure()));
     this.editor.bus.on("grabFigureChanged", ({ on }) => {
@@ -142,7 +144,7 @@ export class ArticulacionesPanel {
     });
 
     const bColocar = el("button", { class: "tool", title: tt("Colocar el maniquí tocando el suelo o un apoyo (asiento, respaldo, banco)", "Place the mannequin by tapping the floor or a support (seat, backrest, bench)") }, [
-      tt("🧍 Colocar maniquí", "🧍 Place mannequin"),
+      tt("🧍 Colocar", "🧍 Place"),
     ]);
     bColocar.addEventListener("click", () => {
       if (this.editor.isColocarFigura()) this.editor.cancelColocarFigura();
@@ -188,7 +190,7 @@ export class ArticulacionesPanel {
       "Congela dónde arranca el ejercicio: la postura del maniquí Y dónde está la máquina. Con la simulación en marcha, lleva antes el conjunto móvil con la mano al punto que quieras (por ejemplo el bloqueo).",
       "Freeze where the exercise starts: the mannequin's pose AND where the machine is. With the simulation running, first drag the moving assembly by hand to the point you want (the lockout, for instance).",
     ) }, [
-      tt("📌 Fijar partida", "📌 Pin start"),
+      tt("📌 Fijar", "📌 Pin"),
     ]);
     bFijarPartida.addEventListener("click", () => {
       const r = this.editor.fijarPartida();
@@ -204,7 +206,7 @@ export class ArticulacionesPanel {
       this.refrescarPartida();
     });
     const bVolverPartida = el("button", { class: "tool", title: tt("Devuelve la figura a su postura de partida", "Return the figure to its starting pose") }, [
-      tt("↺ Volver a partida", "↺ Back to start"),
+      tt("↺ Volver", "↺ Back"),
     ]);
     bVolverPartida.addEventListener("click", () => {
       this.editor.reiniciarPoseDePartida();

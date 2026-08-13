@@ -5,6 +5,29 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.53] — 2026-08-13
+
+### Corregido
+
+- **Dos botones del panel del maniquí se salían por la derecha.** «✋ Agarrar
+  maniquí» sobresalía 36 px a 800×1280 y 66 px a 1024×768, y «↺ Volver a
+  partida» 8 y 38, así que el rótulo quedaba tapado por la barra de
+  herramientas. Se vio verificando el APK publicado de la v0.2.52.
+
+  La causa es de manual: `button.tool` lleva `white-space: nowrap`, y un ítem
+  flex no encoge por debajo de su ancho de contenido mientras su `min-width`
+  sea `auto`. Con eso, el `flex: 1` de la fila no podía repartir el espacio y
+  el botón se salía. Ahora esas filas dejan encoger sus botones y la etiqueta
+  cae a dos líneas antes que salirse — vale para cualquier idioma, que es lo
+  que importa: en inglés los rótulos son otros.
+
+  Y de paso, cuatro rótulos que repetían lo que ya decía su contexto: dentro
+  de un panel titulado MANIQUÍ y de un grupo llamado «Partida del ejercicio»,
+  «Colocar maniquí» y «Volver a partida» sobraban de largo. Quedan en
+  🧍 Colocar, ✋ Agarrar, 📌 Fijar y ↺ Volver, cada uno con su explicación
+  entera en el globo de ayuda. Comprobado a 800×1280, 1280×800 y 1024×768:
+  **ningún botón se sale en ninguno**.
+
 ## [0.2.52] — 2026-08-13
 
 ### Añadido

@@ -359,6 +359,13 @@ body.simulator-mode #viewport {
 }
 .pose-actions .tool {
   flex: 1;
+  /* Un ítem flex no baja de su ancho de contenido mientras su min-width sea
+     auto, así que con el nowrap de .tool los rótulos largos («✋ Agarrar
+     maniquí», «↺ Volver a partida») se salían del panel en vez de repartirse
+     la fila. Se deja encoger y la etiqueta cae a dos líneas: en un panel de
+     230 px se lee entera, que es lo que importa. */
+  min-width: 0;
+  white-space: normal;
 }
 
 .panel-title {
