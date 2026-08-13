@@ -34,10 +34,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   sola línea, la de versión. **Nada del binario explica el fallo**, lo que
   deja como candidatas las condiciones del aparato.
 
-  Y de esas dos, una quedó descartada en el propio aparato: autorizando el
-  aviso de Play Protect con el código de seguridad, **el error persiste**.
-  Quien rechaza el paquete es el gestor de paquetes, no el antivirus. Queda
-  el conflicto de firma: ver «Sabido».
+  **Y acabó instalándose sin cambiar el APK.** Tras varios intentos fallidos
+  y tras autorizar el aviso de Play Protect con el código de seguridad del
+  aparato, la instalación pasó: el aviso sigue apareciendo, pero ya no
+  bloquea. El binario que entró es el mismo que antes fallaba.
+
+  Así que **la causa nunca quedó demostrada**, y conviene decirlo tal cual.
+  Lo único que sí quedó probado es lo de arriba: el paquete estaba bien. El
+  patrón —falla, se autoriza en Play Protect, y a la enésima entra— apunta a
+  una condición del dispositivo, no del archivo. Si hubiera sido un conflicto
+  de firma con una copia instalada, no habría pasado nunca sin desinstalar:
+  esa regla de Android no cede con reintentos.
 
 - **Una puerta que mira el binario, no el workflow.** Ni el build de
   depuración ni el cambio de llave de la v0.2.6 se ven leyendo el YAML: hay
@@ -50,11 +57,17 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Sabido
 
-- **HAY QUE DESINSTALAR LA APP ANTES DE INSTALAR, si viene de antes de la
-  v0.2.7.** Es la única causa que queda en pie, y no tiene arreglo posible
+- **Si «no se instaló la aplicación» se repite, prueba primero a reintentar
+  y a autorizar el aviso de Play Protect.** Es lo que acabó funcionando aquí,
+  con el mismo archivo que fallaba: el aviso sigue saliendo, pero deja pasar
+  la instalación. No sabemos por qué costó varios intentos.
+
+- **Si aun así no entra, y vienes de una versión ANTERIOR a la v0.2.7,
+  desinstala primero.** Esto no se llegó a comprobar en el aparato —el fallo
+  se resolvió antes—, pero el riesgo está medido y no tiene arreglo posible
   desde el lado del APK: Android no deja sustituir un paquete instalado por
-  otro firmado con una llave distinta, y el aviso que enseña es un escueto
-  «no se instaló la aplicación», sin decir por qué.
+  otro firmado con una llave distinta, y el aviso que enseña es el mismo
+  escueto «no se instaló la aplicación», sin decir por qué.
 
   El porqué está medido: hasta la v0.2.6 cada compilación del CI generaba su
   propio `debug.keystore`, así que cada versión salía con una llave distinta.
