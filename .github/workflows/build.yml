@@ -89,8 +89,31 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      # El empaquetador de Tauri se descarga WiX y NSIS de github.com la
+      # primera vez. Guardarlos evita repetir esa descarga en cada run.
+      - name: Cache de las herramientas del empaquetador (WiX + NSIS)
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\tauri
+          key: tauri-bundler-tools-${{ runner.os }}-wix314
+
       - name: Compilar app de escritorio (.exe + instaladores)
-        run: npm run tauri:build
+        shell: pwsh
+        run: |
+          # Esa descarga se cae a veces en el runner ("io: Peer disconnected")
+          # y tumbaba la release entera aunque el .exe ya estuviera compilado
+          # (así se perdió el empaquetado del tag v0.2.52). Reintentamos: el
+          # empaquetador comprueba qué archivos le faltan y solo baja esos, y
+          # la compilación de Rust ya está en caché, así que un reintento
+          # cuesta poco.
+          for ($i = 1; $i -le 3; $i++) {
+            npm run tauri:build
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "::warning::Empaquetado fallido (intento $i de 3); reintentando en 20 s"
+            Start-Sleep -Seconds 20
+          }
+          Write-Host "::error::El empaquetado de Windows falló en los 3 intentos"
+          exit 1
 
       - name: Subir ejecutable e instaladores
         uses: actions/upload-artifact@v4
