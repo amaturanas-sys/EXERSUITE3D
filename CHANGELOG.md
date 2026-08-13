@@ -32,9 +32,12 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   descargado igual al de la release. Frente a la v0.2.52 los `.dex` y
   `resources.arsc` son idénticos byte a byte y el manifiesto difiere en una
   sola línea, la de versión. **Nada del binario explica el fallo**, lo que
-  deja como candidatas las condiciones del aparato: un conflicto de firma con
-  una instalación anterior a la v0.2.7 (ver «Sabido») o un bloqueo de Play
-  Protect.
+  deja como candidatas las condiciones del aparato.
+
+  Y de esas dos, una quedó descartada en el propio aparato: autorizando el
+  aviso de Play Protect con el código de seguridad, **el error persiste**.
+  Quien rechaza el paquete es el gestor de paquetes, no el antivirus. Queda
+  el conflicto de firma: ver «Sabido».
 
 - **Una puerta que mira el binario, no el workflow.** Ni el build de
   depuración ni el cambio de llave de la v0.2.6 se ven leyendo el YAML: hay
@@ -47,19 +50,34 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Sabido
 
-- **Si tienes instalada una versión ANTERIOR a la v0.2.7 hay que
-  desinstalarla a mano.** Hasta la v0.2.6 cada compilación del CI generaba su
-  propio `debug.keystore`, así que cada versión salía con una llave distinta:
-  medidas las cinco releases con APK de entonces (v0.2.0, v0.2.1, v0.2.3,
-  v0.2.5 y v0.2.6), todas son `com.exersuite.app` y **cada una lleva un
-  certificado diferente**. Android se niega a actualizar un paquete cuando la
-  firma no coincide, y el aviso que enseña es un escueto «no se instaló la
-  aplicación». La v0.2.7 lo arregló para el futuro pero ya avisaba de que esa
-  desinstalación había que hacerla una vez. Antes de desinstalar, guarda tu
-  trabajo: **Guardar proyecto** y **Exportar ZIP de la biblioteca**, porque
-  desinstalar borra los datos locales. Mira también si la app quedó instalada
-  en otro perfil del aparato (usuario secundario o espacio infantil): mientras
-  siga ahí con la llave vieja, el conflicto no desaparece.
+- **HAY QUE DESINSTALAR LA APP ANTES DE INSTALAR, si viene de antes de la
+  v0.2.7.** Es la única causa que queda en pie, y no tiene arreglo posible
+  desde el lado del APK: Android no deja sustituir un paquete instalado por
+  otro firmado con una llave distinta, y el aviso que enseña es un escueto
+  «no se instaló la aplicación», sin decir por qué.
+
+  El porqué está medido: hasta la v0.2.6 cada compilación del CI generaba su
+  propio `debug.keystore`, así que cada versión salía con una llave distinta.
+  Descargadas las cinco releases con APK de entonces —v0.2.0, v0.2.1, v0.2.3,
+  v0.2.5 y v0.2.6—, todas son `com.exersuite.app` y **cada una lleva un
+  certificado diferente**. Desde la v0.2.7 la llave es siempre la misma, la
+  del repositorio.
+
+  El orden importa, porque **desinstalar borra los datos locales**:
+
+  1. Abre la app que tengas instalada y guarda lo tuyo: **Guardar proyecto**
+     y **Exportar ZIP de la biblioteca**. Comprueba que los archivos estén
+     fuera de la app (en Descargas o en Drive), no dentro.
+  2. Desinstala EXERSUITE3D. Si el aparato tiene más de un perfil, hazlo con
+     **⋮ → Desinstalar para todos los usuarios** desde Ajustes →
+     Aplicaciones: mientras siga instalada en un perfil secundario o en un
+     espacio infantil con la llave vieja, el conflicto no desaparece aunque
+     en tu perfil ya no la veas.
+  3. Instala el APK nuevo y recupera tus proyectos desde los archivos del
+     paso 1.
+
+  De la v0.2.7 en adelante esto no vuelve a hacer falta: todas comparten
+  llave y se actualizan encima sin desinstalar.
 
 ## [0.2.53] — 2026-08-13
 
