@@ -183,6 +183,8 @@ export type EditorEvents = {
   jointLocksChanged: { locks: string[] };
   /** Se fijó (o restauró) la POSTURA DE PARTIDA del maniquí (v0.2.49). */
   poseDePartidaChanged: { name: string | null };
+  /** Posado manual de la MÁQUINA activo/inactivo (v0.2.55). */
+  poseMaquinaChanged: { active: boolean };
   /** Modo COLOCAR MANIQUÍ activo/inactivo. */
   colocarFiguraChanged: { active: boolean };
   /** Herramienta rápida activa (barra de atajos, v0.2.13). */
@@ -853,11 +855,19 @@ export class Editor {
   }
 
   // ------------------------------------------------------------- simulacion
+  /**
+   * ¿Corre el GESTO? Posar la máquina también enciende el motor —hace falta
+   * para que las uniones y sus topes manden—, pero no es una simulación: no
+   * hay gravedad, nada se mueve solo y la interfaz no debe tratarlo como tal.
+   */
   isSimulating(): boolean {
-    return this.simulating;
+    return this.simulating && !this.modoPoseMaquina;
   }
 
   async toggleSimulation(): Promise<void> {
+    // Simular y posar la máquina son excluyentes: al arrancar el gesto, el
+    // posado se cierra congelando donde quedara.
+    if (this.modoPoseMaquina) this.terminarPoseMaquina();
     if (this.simulating) this.stopSimulation();
     else await this.startSimulation();
   }
@@ -4516,6 +4526,124 @@ export class Editor {
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size, postura: this.poseDePartida !== null };
+  }
+
+  /**
+   * POSAR LA MÁQUINA (v0.2.55). El símil del «Posar» del maniquí, pero para el
+   * mecanismo: se agarra una pieza móvil con la mano y se queda donde la
+   * dejas, como una parálisis cérea.
+   *
+   * Antes, fijar la partida obligaba a SIMULAR: arrancar la física, pelearse
+   * con un sistema en movimiento y cazar el instante bueno. Posar es lo
+   * contrario — nada se mueve solo, no hay gravedad que vencer y el tiempo no
+   * corre. Las uniones y sus topes sí mandan, así que el conjunto solo recorre
+   * los grados de libertad que de verdad tiene.
+   *
+   * Y es EXCLUYENTE con la simulación: mientras el gesto corre, la máquina
+   * está en manos de la física y posarla no tendría sentido.
+   */
+  private modoPoseMaquina = false;
+
+  posandoMaquina(): boolean {
+    return this.modoPoseMaquina;
+  }
+
+  async iniciarPoseMaquina(): Promise<void> {
+    if (this.modoPoseMaquina || this.simulating || this.startingSim) return;
+    this.startingSim = true;
+    try {
+      await PhysicsWorld.init();
+    } finally {
+      this.startingSim = false;
+    }
+
+    // Igual que al simular: el diseño se guarda para poder volver a él.
+    this.saved.clear();
+    for (const o of this.listObjects()) {
+      this.saved.set(o.id, {
+        position: o.mesh.position.clone(),
+        quaternion: o.mesh.quaternion.clone(),
+        scale: o.mesh.scale.clone(),
+      });
+    }
+
+    this.select(null);
+    this.cancelConnect();
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.endBendNodes();
+    this.physics = new PhysicsWorld();
+    this.physics.build(
+      this.listObjects(),
+      this.listJoints(),
+      this.listCables(),
+      this.cuerdasFisicas(),
+    );
+    // Se continúa desde donde quedó la partida, no desde el diseño: retocar un
+    // punto de bloqueo ya fijado no obliga a rehacerlo entero.
+    if (this.partidaPiezas?.size) {
+      const movidas = this.physics.recolocarPiezas(this.partidaPiezas);
+      if (movidas > 0) this.cablesDirty = true;
+    }
+    // El maniquí NO entra al motor aquí: se posa aparte, y metiéndolo solo
+    // estorbaría a la mano al agarrar las piezas de la máquina.
+    this.physics.modoPose(true);
+    // ASENTAR ANTES DE CEDER EL CONTROL. Sin peso que tense los cables, el
+    // conjunto móvil busca su configuración coherente — medido en la
+    // UpperMachine, el carro se recolocaba 5,6 cm. Que eso pase delante de
+    // quien va a posar parece que la máquina se mueve sola, así que se
+    // adelanta aquí y el control se entrega ya en reposo.
+    for (let i = 0; i < 150; i++) this.physics.step();
+    this.jointHelpers.visible = false;
+    this.simulating = true; // el motor corre; isSimulating() lo distingue
+    this.modoPoseMaquina = true;
+    this.setSimHerramienta("mano"); // se entra a posar, no a mirar
+    this.bus.emit("poseMaquinaChanged", { active: true });
+  }
+
+  /** Sale del posado y CONGELA donde quedó la máquina: cada ▶ arrancará ahí. */
+  terminarPoseMaquina(): { piezas: number } {
+    if (!this.modoPoseMaquina) return { piezas: 0 };
+    this.endSimInteraction();
+
+    // Solo se congela lo que de verdad se movió respecto del diseño.
+    const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const [id, t] of this.physics?.posesDePiezas() ?? []) {
+      const disenada = this.saved.get(id);
+      if (
+        disenada &&
+        t.p.distanceTo(disenada.position) < 0.05 &&
+        t.q.angleTo(disenada.quaternion) < 1e-3
+      ) {
+        continue;
+      }
+      poses.set(id, t);
+    }
+    this.partidaPiezas = poses.size ? poses : null;
+
+    this.simulating = false;
+    this.modoPoseMaquina = false;
+    this.physics?.dispose();
+    this.physics = null;
+
+    // Parado se vuelve a ver el DISEÑO, que es el plano fabricable. La partida
+    // vive aparte y se aplica al arrancar.
+    for (const o of this.listObjects()) {
+      const s = this.saved.get(o.id);
+      if (!s) continue;
+      o.mesh.position.copy(s.position);
+      o.mesh.quaternion.copy(s.quaternion);
+      o.mesh.scale.copy(s.scale);
+    }
+    this.saved.clear();
+    this.jointHelpers.visible = true;
+    this.cablesDirty = true;
+    this.rebuildAllRopes();
+    this.bus.emit("poseMaquinaChanged", { active: false });
+    this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+    this.scheduleAutosave();
+    return { piezas: poses.size };
   }
 
   /** 🗑 Suelta la partida de la MÁQUINA: ▶ vuelve a arrancar en el diseño. */

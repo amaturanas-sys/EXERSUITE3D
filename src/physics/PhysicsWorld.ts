@@ -2226,6 +2226,45 @@ export class PhysicsWorld {
    * Las piezas SOLDADAS no se tocan: cedieron su cuerpo al anfitrión y viajan
    * con él, así que moverlas por separado partiría el conjunto.
    */
+  /**
+   * MODO POSE (v0.2.55): la máquina se deja mover a mano y se queda donde la
+   * dejas, como una parálisis cérea.
+   *
+   * No es una simulación con la gravedad apagada y ya está: sin gravedad, un
+   * brazo empujado seguiría girando para siempre porque nada lo frena. Lo que
+   * lo convierte en «pose» es la AMORTIGUACIÓN muy alta, que se come la
+   * velocidad en cuanto sueltas. Las uniones y los topes siguen mandando, así
+   * que el mecanismo solo recorre los grados de libertad que de verdad tiene
+   * — igual que posar el maniquí solo dobla por sus articulaciones.
+   */
+  modoPose(activo: boolean): void {
+    if (!this.world) return;
+    this.world.gravity = activo ? { x: 0, y: 0, z: 0 } : GRAVITY;
+    for (const { body } of this.bodies.values()) {
+      if (body.isFixed()) continue;
+      body.setLinearDamping(activo ? 12 : 0);
+      body.setAngularDamping(activo ? 12 : 0);
+      if (activo) {
+        body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      }
+    }
+  }
+
+  /** Postura actual de cada pieza móvil, en cm de la escena. */
+  posesDePiezas(): Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> {
+    const out = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const [id, entrada] of this.bodies) {
+      if (entrada.obj.id !== id) continue; // fundida: la lleva su anfitrión
+      if (entrada.body.isFixed()) continue;
+      out.set(id, {
+        p: entrada.obj.mesh.position.clone(),
+        q: entrada.obj.mesh.quaternion.clone(),
+      });
+    }
+    return out;
+  }
+
   recolocarPiezas(poses: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>): number {
     let movidas = 0;
     for (const [id, t] of poses) {

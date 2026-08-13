@@ -60,6 +60,8 @@ export class ArticulacionesPanel {
   private nombreNuevo: HTMLInputElement;
   private etiquetaPartida: HTMLElement;
   private botonSoltarPartida: HTMLButtonElement;
+  private botonPosarMaquina: HTMLButtonElement;
+  private botonFigura: HTMLButtonElement;
   private symChk: HTMLInputElement;
   private hint: HTMLElement;
   private jointBox: HTMLElement;
@@ -154,6 +156,23 @@ export class ArticulacionesPanel {
       bColocar.classList.toggle("active", active),
     );
 
+    // CREAR / QUITAR EL MANIQUÍ (v0.2.55): venía de la barra de arriba, donde
+    // era el botón «Figura». Vive aquí porque es la primera decisión de todo
+    // lo que hay en esta ventana: sin figura, nada de lo demás aplica.
+    this.botonFigura = el("button", { class: "tool", title: tt(
+      "Crear o quitar el maniquí de referencia",
+      "Create or remove the reference mannequin",
+    ) }, [tt("🧍 Crear figura", "🧍 Create figure")]) as HTMLButtonElement;
+    this.botonFigura.addEventListener("click", () => void this.editor.toggleHumanFigure());
+    this.editor.bus.on("humanFigureChanged", ({ present, loading }) => {
+      this.botonFigura.classList.toggle("active", present);
+      this.botonFigura.textContent = loading
+        ? tt("Cargando…", "Loading…")
+        : present
+          ? tt("🗑 Quitar figura", "🗑 Remove figure")
+          : tt("🧍 Crear figura", "🧍 Create figure");
+    });
+
     this.symChk = el("input", { type: "checkbox" }) as HTMLInputElement;
     this.symChk.addEventListener("change", () => this.editor.setPoseSymmetry(this.symChk.checked));
     const filaSim = el("label", { class: "pose-sym", title: tt("Cada cambio en un lado del cuerpo se replica espejado en el otro", "Every change on one side is mirrored on the other") }, [
@@ -186,23 +205,33 @@ export class ArticulacionesPanel {
     // al aplicar una postura, al colocar la figura y al arrancar la
     // simulación, y aquí se puede clavar a mano en cualquier momento.
     this.etiquetaPartida = el("div", { class: "art-hint mq-partida" }, [""]);
-    const bFijarPartida = el("button", { class: "tool sim", title: tt(
-      "Congela dónde arranca el ejercicio: la postura del maniquí Y dónde está la máquina. Con la simulación en marcha, lleva antes el conjunto móvil con la mano al punto que quieras (por ejemplo el bloqueo).",
-      "Freeze where the exercise starts: the mannequin's pose AND where the machine is. With the simulation running, first drag the moving assembly by hand to the point you want (the lockout, for instance).",
-    ) }, [
-      tt("📌 Fijar", "📌 Pin"),
-    ]);
-    bFijarPartida.addEventListener("click", () => {
-      const r = this.editor.fijarPartida();
-      this.hint.textContent = r.piezas
-        ? tt(
-            `Partida fijada con ${r.piezas} pieza(s) de la máquina: ▶ arrancará aquí.`,
-            `Start pinned with ${r.piezas} machine part(s): ▶ will begin here.`,
-          )
-        : tt(
-            "Partida fijada. La máquina arranca en su diseño; para congelarla, muévela con la mano durante la simulación y vuelve a fijar.",
-            "Start pinned. The machine begins at its design; to freeze it, drag it by hand while simulating and pin again.",
-          );
+    // POSAR LA MÁQUINA (v0.2.55): el símil del «Posar» del maniquí. Antes esto
+    // era «📌 Fijar» y obligaba a SIMULAR para colocar el mecanismo: había que
+    // cazar el instante bueno de un sistema en movimiento. Ahora se posa
+    // parado, con la mano, y se queda donde lo dejas.
+    this.botonPosarMaquina = el("button", { class: "tool sim", title: tt(
+      "Posar la máquina: agarra una pieza móvil con la mano y se queda donde la dejes. Al terminar, ahí arrancará cada ▶. No disponible mientras el gesto corre.",
+      "Pose the machine: grab a moving part with the hand and it stays where you leave it. When you finish, that is where every ▶ will begin. Not available while the gesture runs.",
+    ) }, [tt("🔧 Posar máquina", "🔧 Pose machine")]) as HTMLButtonElement;
+    this.botonPosarMaquina.addEventListener("click", () => {
+      if (this.editor.posandoMaquina()) {
+        const r = this.editor.terminarPoseMaquina();
+        this.hint.textContent = r.piezas
+          ? tt(
+              `Máquina congelada con ${r.piezas} pieza(s): ▶ arrancará ahí.`,
+              `Machine frozen with ${r.piezas} part(s): ▶ will begin there.`,
+            )
+          : tt(
+              "La máquina quedó en su diseño: no hay nada que congelar.",
+              "The machine stayed at its design: nothing to freeze.",
+            );
+      } else {
+        void this.editor.iniciarPoseMaquina();
+        this.hint.textContent = tt(
+          "Posando la máquina: arrastra una pieza móvil y se quedará donde la dejes. Vuelve a pulsar para congelar la partida.",
+          "Posing the machine: drag a moving part and it will stay where you leave it. Press again to freeze the start.",
+        );
+      }
       this.refrescarPartida();
     });
     const bVolverPartida = el("button", { class: "tool", title: tt("Devuelve la figura a su postura de partida", "Return the figure to its starting pose") }, [
@@ -286,10 +315,11 @@ export class ArticulacionesPanel {
     ]);
 
     this.cajaPosar = el("div", { class: "mq-seccion" }, [
+      el("div", { class: "pose-actions" }, [this.botonFigura]),
       el("div", { class: "pose-actions" }, [bColocar, bAgarrar]),
 
       grupo(tt("Partida del ejercicio", "Exercise start"), [
-        el("div", { class: "pose-actions" }, [bFijarPartida, bVolverPartida]),
+        el("div", { class: "pose-actions" }, [this.botonPosarMaquina, bVolverPartida]),
         this.etiquetaPartida,
         el("div", { class: "pose-actions" }, [this.botonSoltarPartida]),
       ]),
@@ -419,6 +449,8 @@ export class ArticulacionesPanel {
 
     this.editor.bus.on("jointLocksChanged", () => this.refrescar());
     this.editor.bus.on("poseDePartidaChanged", () => this.refrescarPartida());
+    this.editor.bus.on("poseMaquinaChanged", () => this.refrescarPartida());
+    this.editor.bus.on("simulationChanged", () => this.refrescarPartida());
     this.editor.bus.on("posesChanged", () => this.refrescarPosturas());
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
       this.symChk.checked = this.editor.getPoseSymmetry();
@@ -523,6 +555,25 @@ export class ArticulacionesPanel {
     this.etiquetaPartida.textContent = `▶ ${postura} · ${maquina}`;
     this.etiquetaPartida.classList.toggle("mq-partida-maquina", piezas > 0);
     this.botonSoltarPartida.style.display = piezas ? "" : "none";
+
+    // POSAR MÁQUINA solo tiene sentido con el gesto parado: mientras corre, el
+    // mecanismo está en manos de la física y colocarlo a mano no significa nada.
+    const posando = this.editor.posandoMaquina();
+    const simulando = this.editor.isSimulating();
+    this.botonPosarMaquina.classList.toggle("active", posando);
+    this.botonPosarMaquina.disabled = simulando;
+    this.botonPosarMaquina.textContent = posando
+      ? tt("✓ Congelar aquí", "✓ Freeze here")
+      : tt("🔧 Posar máquina", "🔧 Pose machine");
+    this.botonPosarMaquina.title = simulando
+      ? tt(
+          "No disponible mientras el gesto corre: ahí manda la física. Detén la simulación para posar la máquina.",
+          "Not available while the gesture runs: physics is in charge there. Stop the simulation to pose the machine.",
+        )
+      : tt(
+          "Posar la máquina: agarra una pieza móvil con la mano y se queda donde la dejes.",
+          "Pose the machine: grab a moving part with the hand and it stays where you leave it.",
+        );
   }
 
   private refrescar(): void {

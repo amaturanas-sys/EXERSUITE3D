@@ -64,11 +64,19 @@ export class Toolbar {
       if (this.menuOwner === ejesBtn) this.cerrarMenu();
     });
 
-    // ---- Figura humana de referencia (acceso directo frecuente)
-    const figBtn = el("button", { class: "tool", title: "Mostrar/ocultar figura humana" }, [
-      "Figura",
-    ]);
-    figBtn.addEventListener("click", () => this.editor.toggleHumanFigure());
+    // ---- Ventana del maniquí (v0.2.55). Este botón abría y cerraba la figura;
+    // ahora abre la VENTANA, que es donde se posa, se coloca, se elige la zona
+    // que trabaja y se posa la máquina. Crear o quitar el maniquí se hace
+    // dentro de ella, junto a todo lo demás que le concierne.
+    const figBtn = el("button", {
+      class: "tool",
+      title: tt("Abrir la ventana del maniquí: posar, colocar, zonas y partida del ejercicio",
+                "Open the mannequin window: pose, place, zones and exercise start"),
+    }, [tt("🦴 Simular", "🦴 Simulate")]);
+    figBtn.addEventListener("click", () => {
+      this.editor.panelArticulaciones?.alternar();
+      figBtn.classList.toggle("active", this.editor.panelArticulaciones?.visible() ?? false);
+    });
     const figHeight = el("input", {
       class: "tool-input",
       type: "number",
@@ -82,9 +90,10 @@ export class Toolbar {
       const v = parseFloat(figHeight.value);
       if (Number.isFinite(v) && v >= 50 && v <= 250) this.editor.setHumanHeight(v);
     });
-    this.editor.bus.on("humanFigureChanged", ({ present, heightCm, loading }) => {
-      figBtn.classList.toggle("active", present);
-      figBtn.textContent = loading ? tt("Cargando…", "Loading…") : t("Figura");
+    this.editor.bus.on("humanFigureChanged", ({ heightCm, loading }) => {
+      figBtn.textContent = loading
+        ? tt("Cargando…", "Loading…")
+        : tt("🦴 Simular", "🦴 Simulate");
       figHeight.value = String(heightCm);
     });
 
