@@ -65,6 +65,7 @@ export class ArticulacionesPanel {
   private botonPosarMaquina: HTMLButtonElement;
   private selectPartidas: HTMLSelectElement;
   private masPartidas: HTMLElement;
+  private filaPartidas: HTMLElement;
   private botonFigura: HTMLButtonElement;
   private symChk: HTMLInputElement;
   private hint: HTMLElement;
@@ -274,6 +275,10 @@ export class ArticulacionesPanel {
       this.selectPartidas.value = n;
       this.hint.textContent = tt(`«${n}» guardada.`, `“${n}” saved.`);
     });
+    this.filaPartidas = el("div", { class: "row mq-fila-postura" }, [
+      this.selectPartidas,
+      bAplicarPartida,
+    ]);
     this.masPartidas = el("details", { class: "mq-mas" }, [
       el("summary", {}, [tt("Gestionar partidas", "Manage start points")]),
       el("div", { class: "pose-actions" }, [bGuardarPartida, bBorrarPartida]),
@@ -381,7 +386,7 @@ export class ArticulacionesPanel {
 
       grupo(tt("Partida del ejercicio", "Exercise start"), [
         el("div", { class: "pose-actions" }, [this.botonPosarMaquina, bVolverPartida]),
-        el("div", { class: "row mq-fila-postura" }, [this.selectPartidas, bAplicarPartida]),
+        this.filaPartidas,
         this.masPartidas,
         this.etiquetaPartida,
         el("div", { class: "pose-actions" }, [this.botonSoltarPartida]),
@@ -503,7 +508,7 @@ export class ArticulacionesPanel {
       clear(this.selectPartidas);
       for (const n of nombres) this.selectPartidas.append(el("option", { value: n }, [n]));
       if (previo && nombres.includes(previo)) this.selectPartidas.value = previo;
-      this.masPartidas.style.display = nombres.length ? "" : "none";
+      this.mostrarGestorPartidas(nombres.length > 0);
       this.refrescarPartida();
     });
     this.editor.bus.on("humanFigureChanged", ({ present, mode }) => {
@@ -548,7 +553,18 @@ export class ArticulacionesPanel {
     });
 
     this.refrescarPosturas();
+    this.mostrarGestorPartidas(this.editor.listaPartidas().length > 0);
     this.refrescar();
+  }
+
+  /**
+   * El selector de partidas y su gestor solo aparecen cuando hay alguna
+   * guardada: hasta el primer ⏹ no hay nada que elegir, y una fila vacía es
+   * alto que luego hay que desplazar.
+   */
+  private mostrarGestorPartidas(hay: boolean): void {
+    this.filaPartidas.style.display = hay ? "" : "none";
+    this.masPartidas.style.display = hay ? "" : "none";
   }
 
   /**

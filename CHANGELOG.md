@@ -54,6 +54,10 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   remo de la UpperMachine se arrastra 18 cm, ⏹ guarda «Partida 1» con 3 piezas
   congeladas, se crean «Partida 2» y «Partida 3», se recuperan y se eliminan.
 
+  El selector y su gestor **solo aparecen cuando hay alguna guardada**: hasta
+  el primer ⏹ no hay nada que elegir, y una fila vacía es alto que luego hay
+  que desplazar. Son 51 px.
+
 ## [0.2.55] — 2026-08-13
 
 ### Añadido
