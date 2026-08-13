@@ -9,21 +9,32 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Corregido
 
-- **EL APK YA NO ES UN BUILD DE DEPURACIÓN.** El APK de la v0.2.53 no se
-  instalaba en la tableta. El paquete estaba sano —lo verifiqué entero: firma
-  v1 completa sobre sus 538 entradas, bloque de firma v2 con el digest
-  recalculado coincidiendo, `resources.arsc` sin comprimir y alineado, sin
-  duplicados, sin `testOnly`, sin librerías nativas, y el SHA-256 del archivo
-  descargado igual al de la release—. Lo que fallaba era una bandera:
-  el CI compilaba `assembleDebug`, y eso marca el paquete con
-  **`android:debuggable="true"`**, que es justo lo que Play Protect y las
-  capas de seguridad de los fabricantes usan para bloquear un APK instalado
-  de lado.
+- **EL APK YA NO ES UN BUILD DE DEPURACIÓN.** El CI compilaba
+  `assembleDebug`, y eso marca el paquete con **`android:debuggable="true"`**:
+  la bandera que Play Protect y las capas de seguridad de los fabricantes
+  usan para bloquear un APK instalado de lado. Ahora compila
+  `assembleRelease`, con el **mismo** keystore del repositorio
+  —`buildTypes.release` ya lo usaba—, así que la identidad del paquete no
+  cambia y quien tenga la app instalada de la v0.2.7 en adelante sigue
+  pudiendo actualizar. El APK baja además de 15,6 a 14,0 MB.
 
-  Ahora el CI compila `assembleRelease`. Firma con el **mismo** keystore del
-  repositorio —`buildTypes.release` ya lo usaba—, así que quien tenga la app
-  instalada de la v0.2.7 en adelante puede actualizar con normalidad: la
-  identidad del paquete no cambia.
+  **Esto quita un riesgo real, pero NO está demostrado que fuera la causa**
+  del fallo de instalación de la v0.2.53. `debuggable="true"` estaba en
+  **todas** las versiones anteriores —medido en la v0.2.5, v0.2.6, v0.2.7 y
+  v0.2.52—, así que no explica por qué falla justo ésta. Publicar un build de
+  depuración estaba mal de todas formas.
+
+- **El APK de la v0.2.53 estaba sano.** Verificado entero: firma v1 completa
+  sobre sus 538 entradas con cero digests incorrectos, bloque de firma v2 con
+  el digest del contenido recalculado y coincidiendo, firma RSA válida,
+  `resources.arsc` sin comprimir y alineado a 4 bytes, sin entradas
+  duplicadas, sin `testOnly`, sin librerías nativas, y el SHA-256 del archivo
+  descargado igual al de la release. Frente a la v0.2.52 los `.dex` y
+  `resources.arsc` son idénticos byte a byte y el manifiesto difiere en una
+  sola línea, la de versión. **Nada del binario explica el fallo**, lo que
+  deja como candidatas las condiciones del aparato: un conflicto de firma con
+  una instalación anterior a la v0.2.7 (ver «Sabido») o un bloqueo de Play
+  Protect.
 
 - **Una puerta que mira el binario, no el workflow.** Ni el build de
   depuración ni el cambio de llave de la v0.2.6 se ven leyendo el YAML: hay

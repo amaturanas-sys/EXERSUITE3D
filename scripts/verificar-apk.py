@@ -2,13 +2,19 @@
 """
 Comprueba que un APK está en condiciones de instalarse antes de publicarlo.
 
-Nació de un fallo real: la v0.2.53 se publicó como build de DEPURACIÓN
-(android:debuggable="true"), que es la bandera por la que Play Protect y las
-capas de seguridad de los fabricantes bloquean un APK de origen desconocido.
-Y antes de la v0.2.7 cada runner de CI firmaba con un debug.keystore efímero,
-así que cada versión llevaba una llave distinta y Android se negaba a
-actualizar sobre la anterior. Ninguna de las dos cosas se ve mirando el
-workflow: hay que mirar el binario.
+Nació de dos defectos reales que el workflow no deja ver, porque solo se
+aprecian abriendo el binario:
+
+  · Hasta la v0.2.53 el CI publicaba builds de DEPURACIÓN
+    (android:debuggable="true"), la bandera por la que Play Protect y las
+    capas de seguridad de los fabricantes bloquean un APK de origen
+    desconocido.
+  · Antes de la v0.2.7 cada runner firmaba con un debug.keystore efímero, así
+    que cada versión llevaba una llave distinta y Android se negaba a
+    actualizar sobre la anterior.
+
+Ninguno se detecta leyendo el YAML, y el segundo ni siquiera se detecta
+mirando un APK aislado: hay que compararlo con la llave del repositorio.
 
 Uso:  python3 scripts/verificar-apk.py <ruta.apk> [--keystore <ruta>]
 
