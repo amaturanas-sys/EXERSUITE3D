@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.55] — 2026-08-13
+
+### Añadido
+
+- **POSAR LA MÁQUINA, PARADA Y A MANO.** El símil del «Posar» del maniquí,
+  pero para el mecanismo: con el gesto detenido se agarra una pieza móvil y
+  **se queda donde la dejas**, como una parálisis cérea. Al salir, ahí
+  arranca cada ▶.
+
+  Antes, fijar dónde empieza el ejercicio obligaba a SIMULAR: arrancar la
+  física, pelearse con un sistema en movimiento y cazar el instante bueno con
+  la mano. Ahora nada se mueve solo, no hay gravedad que vencer y el tiempo no
+  corre. Las uniones y sus topes sí mandan, así que el conjunto solo recorre
+  los grados de libertad que de verdad tiene — igual que posar el maniquí solo
+  dobla por sus articulaciones.
+
+  Lo que lo convierte en pose no es apagar la gravedad, es la
+  **amortiguación**: sin ella, un brazo empujado seguiría girando para siempre
+  porque nada lo frena. Y al entrar, el mundo se asienta 150 pasos antes de
+  ceder el control: sin peso que tense los cables el conjunto móvil busca su
+  configuración coherente, y en la UpperMachine el carro se recolocaba
+  **5,6 cm** delante de quien iba a posar, que parecía que la máquina se movía
+  sola. Con el asentado previo, **0 cm**.
+
+  Es **excluyente con simular**: mientras el gesto corre, el botón queda
+  deshabilitado — ahí manda la física y colocar el mecanismo a mano no
+  significaría nada. Medido: la mano lleva el remo de la UpperMachine de 196,6
+  a 176,6 cm y dos segundos después sigue exactamente ahí.
+
+- **LA CARGA DEL CONJUNTO SE EDITA SIN DESAGRUPAR.** Con la máquina
+  seleccionada como grupo, Propiedades muestra ahora una fila por cada pieza
+  que sostiene peso, con su selector rápido: el **pin de la pila** placa a
+  placa, y los **discos** del portadiscos, la barra o el cuerno de carga, uno
+  a uno. Debajo, la carga total del conjunto.
+
+  Es lo que de verdad se toca entre pasada y pasada. Antes había que
+  DESAGRUPAR la máquina, buscar la pieza suelta entre las cuarenta que la
+  componen, cambiarla y volver a agrupar. Verificado en las dos vías: la pila
+  de la UpperMachine sube de 34 a 40,8 kg al subir el pin una placa, y el
+  portadiscos del rack con torre pasa de 38 a 48 kg al montar un disco — y la
+  máquina sigue agrupada al terminar.
+
+### Cambiado
+
+- **El botón «Figura» de la barra es ahora «🦴 Simular»** y abre la ventana
+  del maniquí. Crear o quitar la figura se muda dentro de ella, que es donde
+  vive todo lo demás que le concierne: posar, colocar, las zonas que trabajan
+  y la partida del ejercicio.
+
 ## [0.2.54] — 2026-08-13
 
 ### Corregido

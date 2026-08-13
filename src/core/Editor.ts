@@ -2931,6 +2931,15 @@ export class Editor {
     return this.selectedGroupId !== null;
   }
 
+  /** Piezas de un grupo, en el orden en que se agruparon (v0.2.55). */
+  objetosDelGrupo(id: string): SceneObject[] {
+    const g = this.groups.get(id);
+    if (!g) return [];
+    return g.ids
+      .map((i) => this.objects.get(i))
+      .filter((o): o is SceneObject => o !== undefined);
+  }
+
   multiCount(): number {
     return this.multiSel.size;
   }

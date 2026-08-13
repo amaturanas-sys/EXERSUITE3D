@@ -222,6 +222,85 @@ export class PropertiesPanel {
         "Mueve/rota el grupo con el gizmo o con los números exactos de arriba. Las piezas se transforman juntas.",
       ]),
     );
+    const carga = this.cargaDelGrupoSection(id);
+    if (carga) this.body.append(carga);
+  }
+
+  /**
+   * CARGA DEL CONJUNTO (v0.2.55). Cuánto peso sostiene la máquina, editable
+   * con el grupo seleccionado — sin desagruparla.
+   *
+   * Es lo que de verdad se toca entre pasada y pasada: subir el pin de la
+   * pila, poner un disco más en el carrier, quitar uno del cuerno. Antes
+   * había que DESAGRUPAR la máquina, buscar la pieza suelta entre las
+   * cuarenta que la componen, cambiarla y volver a agrupar — y agrupar de
+   * nuevo no siempre devolvía el mismo conjunto.
+   */
+  private cargaDelGrupoSection(groupId: string): HTMLElement | null {
+    const piezas = this.editor
+      .objetosDelGrupo(groupId)
+      .filter((o) => o.stack || o.carga);
+    if (piezas.length === 0) return null;
+
+    const total = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const filas: HTMLElement[] = [];
+    const refrescarTotal = () => {
+      const kg = piezas.reduce((s, o) => s + o.effectiveMassKg(), 0);
+      total.textContent = tt(
+        `Carga del conjunto: ${roundTo(kg, 1)} kg`,
+        `Assembly load: ${roundTo(kg, 1)} kg`,
+      );
+    };
+
+    for (const obj of piezas) {
+      const valor = el("span", { class: "sim-angulo" }, [""]);
+      const nombre = el("label", {}, [obj.name]);
+
+      const pintar = () => {
+        if (obj.stack) {
+          const st = obj.stack;
+          valor.textContent = `${Math.round(st.selected)}/${Math.round(st.plateCount)} · ${roundTo(obj.effectiveMassKg(), 1)} kg`;
+        } else {
+          valor.textContent = `${obj.discosMontados()} · ${roundTo(obj.effectiveMassKg(), 1)} kg`;
+        }
+        refrescarTotal();
+      };
+
+      const aplicar = (delta: number) => {
+        if (obj.stack) {
+          const st = obj.stack;
+          st.selected = Math.max(0, Math.min(Math.round(st.selected) + delta, Math.round(st.plateCount)));
+          obj.rebuildStackVisual();
+        } else {
+          obj.params.discCount = Math.max(0, obj.discosMontados() + delta);
+          obj.rebuildCargaVisual();
+        }
+        pintar();
+        this.editor.bus.emit("objectTransformed", { object: obj });
+      };
+
+      const menos = el("button", { class: "tool", title: obj.stack
+        ? tt("Baja el pin una placa", "Move the pin down one plate")
+        : tt("Quita un disco", "Remove one plate") }, ["−"]);
+      menos.addEventListener("click", () => aplicar(-1));
+      const mas = el("button", { class: "tool", title: obj.stack
+        ? tt("Sube el pin una placa", "Move the pin up one plate")
+        : tt("Añade un disco", "Add one plate") }, ["+"]);
+      mas.addEventListener("click", () => aplicar(1));
+
+      pintar();
+      filas.push(el("div", { class: "field carga-grupo" }, [
+        nombre,
+        el("div", { class: "row" }, [menos, valor, mas]),
+      ]));
+    }
+
+    refrescarTotal();
+    return el("div", {}, [
+      el("div", { class: "panel-title" }, [tt("CARGA DEL CONJUNTO", "ASSEMBLY LOAD")]),
+      ...filas,
+      el("div", { class: "field" }, [total]),
+    ]);
   }
 
   private show(obj: SceneObject | null): void {

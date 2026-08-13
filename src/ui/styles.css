@@ -2895,3 +2895,22 @@ body.modo-prototipo #simbar {
   padding: 9px 4px;
   min-height: 34px;
 }
+
+/* CARGA DEL CONJUNTO (v0.2.55): una fila por pieza que sostiene peso, con su
+   selector rápido. Compacta a propósito — se consulta y se toca entre
+   pasada y pasada, no es un formulario. */
+.carga-grupo .row {
+  align-items: center;
+  gap: 6px;
+}
+.carga-grupo .row .tool {
+  flex: 0 0 34px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+.carga-grupo .sim-angulo {
+  flex: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
