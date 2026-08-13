@@ -46,24 +46,39 @@ jobs:
       - name: Construir bundle web y sincronizar Capacitor
         run: npm run android:sync
 
-      - name: Compilar APK de depuración
+      # APK DE RELEASE, no de depuración. Hasta la v0.2.53 se publicaba
+      # assembleDebug, y eso marca el paquete con android:debuggable="true":
+      # la bandera por la que Play Protect y las capas de seguridad de los
+      # fabricantes bloquean un APK instalado de lado. Firma con el MISMO
+      # keystore del repo (buildTypes.release ya lo usa), así que quien tenga
+      # la app instalada sigue pudiendo actualizar.
+      - name: Compilar APK de release
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       # El APK viaja con el nombre EXERSUITE3D.APK (lo espera el alojamiento
       # en HuggingFace: sin renombrados manuales).
       - name: Renombrar APK a EXERSUITE3D.APK
         run: |
-          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -n 1)
-          mv "$APK" android/app/build/outputs/apk/debug/EXERSUITE3D.APK
+          APK=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
+          mv "$APK" android/app/build/outputs/apk/release/EXERSUITE3D.APK
+
+      # Puerta: mira el BINARIO, no el workflow. Comprueba que no sea un build
+      # de depuración, que esté firmado con la llave del repo —si cambiara,
+      # nadie podría actualizar—, y que el paquete sea instalable.
+      - name: Verificar el APK antes de publicarlo
+        run: |
+          pip install --quiet pyaxmlparser
+          python3 scripts/verificar-apk.py \
+            android/app/build/outputs/apk/release/EXERSUITE3D.APK
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
         with:
-          name: exersuite3d-android-debug
-          path: android/app/build/outputs/apk/debug/EXERSUITE3D.APK
+          name: exersuite3d-android
+          path: android/app/build/outputs/apk/release/EXERSUITE3D.APK
           if-no-files-found: error
 
   windows-exe:

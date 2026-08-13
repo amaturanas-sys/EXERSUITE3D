@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.54] — 2026-08-13
+
+### Corregido
+
+- **EL APK YA NO ES UN BUILD DE DEPURACIÓN.** El APK de la v0.2.53 no se
+  instalaba en la tableta. El paquete estaba sano —lo verifiqué entero: firma
+  v1 completa sobre sus 538 entradas, bloque de firma v2 con el digest
+  recalculado coincidiendo, `resources.arsc` sin comprimir y alineado, sin
+  duplicados, sin `testOnly`, sin librerías nativas, y el SHA-256 del archivo
+  descargado igual al de la release—. Lo que fallaba era una bandera:
+  el CI compilaba `assembleDebug`, y eso marca el paquete con
+  **`android:debuggable="true"`**, que es justo lo que Play Protect y las
+  capas de seguridad de los fabricantes usan para bloquear un APK instalado
+  de lado.
+
+  Ahora el CI compila `assembleRelease`. Firma con el **mismo** keystore del
+  repositorio —`buildTypes.release` ya lo usaba—, así que quien tenga la app
+  instalada de la v0.2.7 en adelante puede actualizar con normalidad: la
+  identidad del paquete no cambia.
+
+- **Una puerta que mira el binario, no el workflow.** Ni el build de
+  depuración ni el cambio de llave de la v0.2.6 se ven leyendo el YAML: hay
+  que abrir el APK. `scripts/verificar-apk.py` corre en CI antes de publicar
+  y falla si el paquete es de depuración, si es `testOnly`, si está firmado
+  con una llave que no es la del repositorio, si `resources.arsc` va
+  comprimido o desalineado, si hay entradas sin firmar o con digest que no
+  cuadra, o si falta la firma v2. Probado contra los dos casos reales: marca
+  el APK de la v0.2.53 por depuración, y el de la v0.2.6 por llave distinta.
+
+### Sabido
+
+- **Si tienes instalada una versión ANTERIOR a la v0.2.7 hay que
+  desinstalarla a mano.** Hasta la v0.2.6 cada compilación del CI generaba su
+  propio `debug.keystore`, así que cada versión salía con una llave distinta:
+  medidas las cinco releases con APK de entonces (v0.2.0, v0.2.1, v0.2.3,
+  v0.2.5 y v0.2.6), todas son `com.exersuite.app` y **cada una lleva un
+  certificado diferente**. Android se niega a actualizar un paquete cuando la
+  firma no coincide, y el aviso que enseña es un escueto «no se instaló la
+  aplicación». La v0.2.7 lo arregló para el futuro pero ya avisaba de que esa
+  desinstalación había que hacerla una vez. Antes de desinstalar, guarda tu
+  trabajo: **Guardar proyecto** y **Exportar ZIP de la biblioteca**, porque
+  desinstalar borra los datos locales. Mira también si la app quedó instalada
+  en otro perfil del aparato (usuario secundario o espacio infantil): mientras
+  siga ahí con la llave vieja, el conflicto no desaparece.
+
 ## [0.2.53] — 2026-08-13
 
 ### Corregido
