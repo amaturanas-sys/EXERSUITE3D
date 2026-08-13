@@ -183,6 +183,8 @@ export type EditorEvents = {
   jointLocksChanged: { locks: string[] };
   /** Se fijó (o restauró) la POSTURA DE PARTIDA del maniquí (v0.2.49). */
   poseDePartidaChanged: { name: string | null };
+  /** Puntos de partida guardados y cuál se acaba de tocar (v0.2.56). */
+  partidasChanged: { nombres: string[]; activa: string | null };
   /** Posado manual de la MÁQUINA activo/inactivo (v0.2.55). */
   poseMaquinaChanged: { active: boolean };
   /** Modo COLOCAR MANIQUÍ activo/inactivo. */
@@ -204,6 +206,18 @@ export type HerramientaRapida =
 
 /** Modo de color del visor: materiales reales, por categoría o neutro. */
 export type ColorMode = "material" | "categoria" | "neutro";
+
+/**
+ * PUNTO DE PARTIDA GUARDADO (v0.2.56): una configuración ergonómica entera —
+ * dónde quedó la máquina y cómo estaba colocada la figura.
+ */
+interface PuntoDePartida {
+  piezas: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null;
+  pose: Record<string, [number, number, number]> | null;
+  poseNombre: string | null;
+  pos: THREE.Vector3 | null;
+  quat: THREE.Quaternion | null;
+}
 
 interface SavedTransform {
   position: THREE.Vector3;
@@ -4653,6 +4667,71 @@ export class Editor {
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size };
+  }
+
+  /**
+   * PUNTOS DE PARTIDA GUARDADOS (v0.2.56). Un mismo diseño se ensaya desde
+   * varias configuraciones —agarre alto y agarre bajo, asiento adelantado y
+   * atrasado— y hasta ahora solo cabía una: fijar la siguiente borraba la
+   * anterior. Ahora se guardan numerados y se recuperan como las posturas.
+   *
+   * Cada punto lleva la máquina Y la figura, porque una configuración
+   * ergonómica es el par: dónde está el mecanismo y cómo se coloca el cuerpo.
+   */
+  private partidasGuardadas = new Map<string, PuntoDePartida>();
+
+  /** Nombres de los puntos guardados, en el orden en que se crearon. */
+  listaPartidas(): string[] {
+    return [...this.partidasGuardadas.keys()];
+  }
+
+  /** Guarda el estado actual como punto de partida. Devuelve su nombre. */
+  guardarPartida(nombre?: string): string {
+    let n = nombre?.trim() ?? "";
+    if (!n) {
+      // Numerados del 1 al infinito, saltando los que ya existan.
+      let i = this.partidasGuardadas.size + 1;
+      while (this.partidasGuardadas.has(`Partida ${i}`)) i++;
+      n = `Partida ${i}`;
+    }
+    const fig = this.humanFigure;
+    this.partidasGuardadas.set(n, {
+      piezas: this.partidaPiezas
+        ? new Map([...this.partidaPiezas].map(([id, t]) => [id, { p: t.p.clone(), q: t.q.clone() }]))
+        : null,
+      pose: this.poseDePartida ? JSON.parse(JSON.stringify(this.poseDePartida)) : null,
+      poseNombre: this.nombreDePartida,
+      pos: fig ? fig.position.clone() : null,
+      quat: fig ? fig.quaternion.clone() : null,
+    });
+    this.bus.emit("partidasChanged", { nombres: this.listaPartidas(), activa: n });
+    this.scheduleAutosave();
+    return n;
+  }
+
+  /** Recupera un punto guardado: la máquina y la figura vuelven a él. */
+  aplicarPartida(nombre: string): boolean {
+    const p = this.partidasGuardadas.get(nombre);
+    if (!p) return false;
+    this.partidaPiezas = p.piezas
+      ? new Map([...p.piezas].map(([id, t]) => [id, { p: t.p.clone(), q: t.q.clone() }]))
+      : null;
+    this.poseDePartida = p.pose ? JSON.parse(JSON.stringify(p.pose)) : null;
+    this.nombreDePartida = p.poseNombre;
+    this.transformDePartida = p.pos && p.quat ? { p: p.pos.clone(), q: p.quat.clone() } : null;
+    // Con el gesto parado, devolver la figura a esa configuración es lo que
+    // deja ver el punto guardado; la máquina se aplica al arrancar.
+    if (!this.simulating) this.reiniciarPoseDePartida();
+    this.bus.emit("partidasChanged", { nombres: this.listaPartidas(), activa: nombre });
+    this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
+    this.scheduleAutosave();
+    return true;
+  }
+
+  eliminarPartida(nombre: string): void {
+    if (!this.partidasGuardadas.delete(nombre)) return;
+    this.bus.emit("partidasChanged", { nombres: this.listaPartidas(), activa: null });
+    this.scheduleAutosave();
   }
 
   /** 🗑 Suelta la partida de la MÁQUINA: ▶ vuelve a arrancar en el diseño. */

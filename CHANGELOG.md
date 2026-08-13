@@ -5,6 +5,50 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.56] — 2026-08-13
+
+### Cambiado
+
+- **POSAR, en el orden en que se trabaja.** Los grupos pasan a ser
+  **Postura → Articulación → Apoyos → Partida del ejercicio**, con crear o
+  quitar la figura, Colocar y Agarrar arriba del todo. La partida baja del
+  segundo puesto al último porque es la consecuencia de todo lo anterior, no
+  su premisa: primero decides si hay figura y dónde va, luego cómo está, y
+  solo con el cuerpo resuelto, dónde arranca la máquina.
+
+- **LA ARTICULACIÓN, EN UNA LÍNEA.** Antes había una rejilla de ocho familias
+  —Columna, Cuello, Hombro, Codo, Muñeca, Cadera, Rodilla, Tobillo— más tres
+  botones de lado y, al final de la ventana, una casilla «Simetría L↔R»: doce
+  mandos para decir algo que el usuario **ya había dicho al tocar el miembro
+  en el visor**.
+
+  Ahora un campo REFLEJA lo tocado, con nombre de persona —«Rodilla derecha»,
+  no `kneeR`, y concordando el género, que «Rodilla derecho» chirría— y a su
+  lado va el único ajuste que cambia el resultado: el interruptor
+  **Bilateral**, que dice si lo que hagas con esa articulación se replica
+  espejado en la del otro lado. Es la misma simetría de antes, pero pegada a
+  lo que afecta en vez de perdida al final de la columna.
+
+- **LA PARTIDA DEL EJERCICIO, COMO UN REPRODUCTOR.** **▶ Manipular** pone la
+  máquina en tus manos —se mueve como en simulación pero sin gravedad ni
+  tiempo, cuadro a cuadro, y se queda donde la dejes— y **⏹ Fijar partida**
+  congela ese cuadro. Antes era un solo botón que alternaba y no se entendía
+  que lo primero es MOVER y lo segundo FIJAR.
+
+### Añadido
+
+- **PUNTOS DE PARTIDA GUARDADOS, numerados del 1 en adelante.** Un mismo
+  diseño se ensaya desde varias configuraciones —agarre alto y agarre bajo,
+  asiento adelantado y atrasado— y hasta ahora solo cabía una: fijar la
+  siguiente borraba la anterior. Cada ⏹ guarda una «Partida N» y el selector
+  las recupera, igual que el gestor de posturas. Cada punto lleva **la máquina
+  Y la figura**, porque una configuración ergonómica es el par: dónde está el
+  mecanismo y cómo se coloca el cuerpo.
+
+  Verificado el ciclo entero: ▶ entra en manipulación y el botón pasa a ⏹, el
+  remo de la UpperMachine se arrastra 18 cm, ⏹ guarda «Partida 1» con 3 piezas
+  congeladas, se crean «Partida 2» y «Partida 3», se recuperan y se eliminan.
+
 ## [0.2.55] — 2026-08-13
 
 ### Añadido

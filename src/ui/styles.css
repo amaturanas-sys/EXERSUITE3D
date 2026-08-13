@@ -2914,3 +2914,26 @@ body.modo-prototipo #simbar {
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
+
+/* ARTICULACIÓN en una línea (v0.2.56): el campo dice qué tocaste y el
+   interruptor si el gesto es bilateral. Sustituye a la rejilla de ocho
+   familias, los tres botones de lado y la casilla de simetría. */
+.mq-articulacion {
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+}
+.mq-interruptor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px 2px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mq-interruptor input {
+  width: 34px;
+  height: 20px;
+  flex: none;
+  accent-color: var(--accent, #2f81f7);
+}
