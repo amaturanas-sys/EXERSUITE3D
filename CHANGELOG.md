@@ -29,6 +29,11 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   espejado en la del otro lado. Es la misma simetría de antes, pero pegada a
   lo que afecta en vez de perdida al final de la columna.
 
+  Los **grados exactos** quedan plegados bajo el nombre de la articulación:
+  posar se hace arrastrando, y esos cuatro renglones fijos costaban 39 px en
+  una ventana que ya pedía desplazarse. El resumen sigue diciendo cuál está
+  seleccionada —«Rodilla derecha (grados)»— y los números salen al abrirlo.
+
 - **LA PARTIDA DEL EJERCICIO, COMO UN REPRODUCTOR.** **▶ Manipular** pone la
   máquina en tus manos —se mueve como en simulación pero sin gravedad ni
   tiempo, cuadro a cuadro, y se queda donde la dejes— y **⏹ Fijar partida**

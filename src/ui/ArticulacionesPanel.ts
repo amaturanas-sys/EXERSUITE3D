@@ -301,7 +301,9 @@ export class ArticulacionesPanel {
     });
 
     // Editor numérico de la articulación seleccionada.
-    this.jointLabel = el("label", {}, [tt("Articulación", "Joint")]);
+    // Va dentro de un <summary>, así que es un span: un <label> se come el
+    // clic que despliega.
+    this.jointLabel = el("span", {}, [tt("Grados exactos", "Exact degrees")]);
     const campoAngulo = (axis: "x" | "y" | "z") => {
       const input = el("input", { type: "number", step: "5", value: "0" }) as HTMLInputElement;
       input.addEventListener("change", () => {
@@ -314,8 +316,12 @@ export class ArticulacionesPanel {
     // Sin botón de candado (v0.2.51): el candado lo fija la ZONA activa del
     // modo SIMULAR, así que tenerlo aquí era un segundo mando para lo mismo —
     // y encima al final de una columna que había que recorrer entera.
-    this.jointBox = el("div", { class: "field" }, [
-      this.jointLabel,
+    // PLEGADO (v0.2.56): los grados exactos se tocan de vez en cuando —posar
+    // se hace arrastrando— y ocupaban cuatro líneas fijas en una ventana que
+    // ya pedía desplazarse. Plegado, el nombre de la articulación sigue a la
+    // vista en el resumen y los números salen al abrirlo.
+    this.jointBox = el("details", { class: "mq-mas mq-grados" }, [
+      el("summary", {}, [this.jointLabel]),
       el("div", { class: "row" }, [campoAngulo("x"), campoAngulo("y"), campoAngulo("z")]),
     ]);
     this.jointBox.style.display = "none";
