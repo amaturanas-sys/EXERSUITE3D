@@ -4,7 +4,10 @@ import { ZONAS, type LadoZona, type ZonaId } from "../objects/movimientos";
 import { clear, el } from "./dom";
 
 /**
- * VENTANA DEL MANIQUÍ (v0.2.45, movimiento por zonas en v0.2.49).
+ * VENTANA DE ERGONOMÍA (v0.2.45; zonas en v0.2.49, posado de máquina en
+ * v0.2.55). Se titulaba «Maniquí», pero lo que se resuelve aquí es el
+ * ENCAJE ENTRE EL CUERPO Y LA MÁQUINA: desde la v0.2.55 también se posa el
+ * mecanismo, así que el nombre viejo se quedaba corto.
  *
  * Una sola ventana con DOS MODOS, que es como se trabaja de verdad:
  *
@@ -133,7 +136,7 @@ export class ArticulacionesPanel {
     bRestaurar.addEventListener("click", () => this.editor.restoreDefaultPoses());
 
     const bAgarrar = el("button", { class: "tool", title: tt("Agarra un segmento del cuerpo y muévelo (1/2/3 lo restringe a un eje)", "Grab a body segment and move it (1/2/3 restricts it to one axis)") }, [
-      // Rótulo corto a propósito: el panel ya se titula MANIQUÍ, así que
+      // Rótulo corto a propósito: el panel ya dice de qué va, así que
       // repetirlo aquí solo servía para desbordar la fila (v0.2.53).
       tt("✋ Agarrar", "✋ Grab"),
     ]);
@@ -437,7 +440,7 @@ export class ArticulacionesPanel {
     bSimular.addEventListener("click", () => this.setModo("simular"));
 
     this.root = el("aside", { class: "panel", id: "articulaciones" }, [
-      el("div", { class: "panel-title" }, [tt("Maniquí", "Mannequin")]),
+      el("div", { class: "panel-title" }, [tt("Ergonomía", "Ergonomics")]),
       el("div", { class: "panel-body" }, [
         el("div", { class: "mq-modos" }, [bPosar, bSimular]),
         this.cajaPosar,
