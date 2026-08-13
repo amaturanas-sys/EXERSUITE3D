@@ -49,10 +49,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Cambiado
 
-- **El botón «Figura» de la barra es ahora «🦴 Simular»** y abre la ventana
+- **El botón «Figura» de la barra es ahora «Ergonomía 🦴»** y abre la ventana
   del maniquí. Crear o quitar la figura se muda dentro de ella, que es donde
   vive todo lo demás que le concierne: posar, colocar, las zonas que trabajan
   y la partida del ejercicio.
+
+  Se llama **Ergonomía** y no «Simular» por dos razones. Una, que justo al
+  lado vive el ▶ que arranca la física, y dos botones con el mismo nombre
+  invitan a equivocarse. Y otra mejor: nombra lo que la ventana hace —el
+  encaje entre el cuerpo y la máquina— en vez del modo en que esté.
 
 ## [0.2.54] — 2026-08-13
 

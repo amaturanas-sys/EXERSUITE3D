@@ -64,15 +64,20 @@ export class Toolbar {
       if (this.menuOwner === ejesBtn) this.cerrarMenu();
     });
 
-    // ---- Ventana del maniquí (v0.2.55). Este botón abría y cerraba la figura;
-    // ahora abre la VENTANA, que es donde se posa, se coloca, se elige la zona
-    // que trabaja y se posa la máquina. Crear o quitar el maniquí se hace
-    // dentro de ella, junto a todo lo demás que le concierne.
+    // ---- ERGONOMÍA (v0.2.55). Este botón abría y cerraba la figura; ahora
+    // abre la VENTANA, que es donde se posa, se coloca, se elige la zona que
+    // trabaja y se posa la máquina. Crear o quitar el maniquí se hace dentro
+    // de ella, junto a todo lo demás que le concierne.
+    //
+    // Se llama ERGONOMÍA y no «Simular» a propósito: al lado vive el ▶ que
+    // arranca la física, y dos botones con el mismo nombre invitaban a
+    // equivocarse. Además nombra lo que la ventana hace —el encaje entre el
+    // cuerpo y la máquina— en vez del modo en que esté.
     const figBtn = el("button", {
       class: "tool",
-      title: tt("Abrir la ventana del maniquí: posar, colocar, zonas y partida del ejercicio",
-                "Open the mannequin window: pose, place, zones and exercise start"),
-    }, [tt("🦴 Simular", "🦴 Simulate")]);
+      title: tt("Ergonomía: posar y colocar el maniquí, zonas de movimiento y partida del ejercicio",
+                "Ergonomics: pose and place the mannequin, movement zones and exercise start"),
+    }, [tt("Ergonomía 🦴", "Ergonomics 🦴")]);
     figBtn.addEventListener("click", () => {
       this.editor.panelArticulaciones?.alternar();
       figBtn.classList.toggle("active", this.editor.panelArticulaciones?.visible() ?? false);
@@ -93,7 +98,7 @@ export class Toolbar {
     this.editor.bus.on("humanFigureChanged", ({ heightCm, loading }) => {
       figBtn.textContent = loading
         ? tt("Cargando…", "Loading…")
-        : tt("🦴 Simular", "🦴 Simulate");
+        : tt("Ergonomía 🦴", "Ergonomics 🦴");
       figHeight.value = String(heightCm);
     });
 
