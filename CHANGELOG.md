@@ -78,7 +78,14 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   con 622 visibles, así que **seis de los doce mandos caían bajo el pliegue** y
   llegar al candado pedía bajar unos 400 px. Ahora son cuatro grupos —Partida
   del ejercicio · Postura · Articulación · Manos y simetría—, con la gestión de
-  la biblioteca de posturas plegada y cinco rótulos retirados. Cabe sin bajar.
+  la biblioteca de posturas plegada y cinco rótulos retirados: el contenido
+  baja de 1020 a 811 px.
+
+  **Corrección posterior a la publicación:** aquí decía «Cabe sin bajar», y no
+  es cierto. Medido de nuevo sobre el APK de la v0.2.52, a 1024×768 el panel
+  muestra 629 px de los 811, así que **siguen quedando 182 px bajo el
+  pliegue**. La mejora es real —209 px menos y los mandos frecuentes ya salen
+  arriba—, pero el panel todavía pide desplazarse para llegar al final.
 - **Objetivos táctiles** del selector de articulación y de los selectores de
   lado, de 22-24 px a 30-34: en una tableta eran imposibles de acertar.
 
