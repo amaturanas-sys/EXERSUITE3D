@@ -289,19 +289,110 @@ function applySegmentOverrides(
   provider: SegmentProvider,
   skins?: SegmentSkinProvider,
 ): void {
+  const conModelo: { mesh: THREE.Mesh; geo: THREE.BufferGeometry; id: string }[] = [];
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     const id = m.userData?.segmentId as string | undefined;
     if (!m.isMesh || !id) return;
     const geo = provider(id);
-    if (!geo) return;
-    fitSegmentGeometry(m, geo);
+    if (geo) conModelo.push({ mesh: m, geo, id });
+  });
+  if (!conModelo.length) return;
+
+  // ¿Vienen troceados de un mismo cuerpo o es cada uno un modelo suelto?
+  // Si son trozos de un cuerpo, sus cajas están REPARTIDAS en el espacio y la
+  // de todos juntos es mucho más alta que la de cualquiera por separado. Si son
+  // modelos sueltos, cada uno viene centrado en su origen y las cajas se
+  // solapan, así que la unión no crece.
+  const union = new THREE.Box3();
+  let masAlta = 0;
+  for (const { geo } of conModelo) {
+    geo.computeBoundingBox();
+    union.union(geo.boundingBox!);
+    masAlta = Math.max(masAlta, geo.boundingBox!.max.y - geo.boundingBox!.min.y);
+  }
+  const alturaUnion = union.max.y - union.min.y;
+  if (masAlta > 0 && alturaUnion > masAlta * 1.5) {
+    colocarCuerpoEntero(root, conModelo);
+  } else {
+    for (const { mesh, geo } of conModelo) fitSegmentGeometry(mesh, geo);
+  }
+
+  for (const { mesh, id } of conModelo) {
     const piel = skins?.(id);
     if (piel) {
-      (m.material as THREE.Material).dispose?.();
-      m.material = piel;
+      (mesh.material as THREE.Material).dispose?.();
+      mesh.material = piel;
     }
-  });
+  }
+}
+
+/**
+ * Monta los segmentos con UNA SOLA transformación para todos, respetando la
+ * posición que traen unos respecto a otros.
+ *
+ * Encajar cada pieza por separado en su hueco —estirando su caja hasta
+ * llenarlo— rompe el cuerpo por dos sitios a la vez. Uno, cada pieza se estira
+ * distinto: medido sobre un cuerpo escaneado y troceado a mano, el pie se
+ * deformaba un 51 % y el antebrazo un 35 %, porque las primitivas del rig no
+ * tienen las proporciones de un cuerpo real (la del pie es una losa de 6,8 cm y
+ * un pie con su tobillo mide 13,7). Y dos, al deformarse distinto, las caras
+ * del corte dejan de coincidir con las de su vecina y se abren las costuras.
+ *
+ * Con una transformación común no pasa ninguna de las dos cosas: el cuerpo
+ * entra tal cual se esculpió, sin deformar, y sigue siendo continuo porque los
+ * cortes de las piezas seguían casando entre sí.
+ */
+function colocarCuerpoEntero(
+  root: THREE.Group,
+  piezas: { mesh: THREE.Mesh; geo: THREE.BufferGeometry; id: string }[],
+): void {
+  // El hueco de TODO el maniquí: la caja de las primitivas que va a sustituir.
+  root.updateMatrixWorld(true);
+  const destino = new THREE.Box3();
+  for (const { mesh } of piezas) destino.expandByObject(mesh);
+
+  const origen = new THREE.Box3();
+  for (const { geo } of piezas) origen.union(geo.boundingBox!);
+
+  const tOrigen = new THREE.Vector3();
+  const tDestino = new THREE.Vector3();
+  origen.getSize(tOrigen);
+  destino.getSize(tDestino);
+  // Escala UNIFORME por la altura: el cuerpo conserva sus proporciones, que es
+  // justo lo que se quiere conservar. La talla exacta la fija el rig después,
+  // reescalando el conjunto entero.
+  const s = tOrigen.y > 1e-6 ? tDestino.y / tOrigen.y : 1;
+
+  const cOrigen = new THREE.Vector3();
+  const cDestino = new THREE.Vector3();
+  origen.getCenter(cOrigen);
+  destino.getCenter(cDestino);
+
+  const M = new THREE.Matrix4()
+    // Los pies del cuerpo sobre los pies del maniquí; centrado en X y Z.
+    .makeTranslation(
+      cDestino.x - cOrigen.x * s,
+      destino.min.y - origen.min.y * s,
+      cDestino.z - cOrigen.z * s,
+    )
+    .multiply(new THREE.Matrix4().makeScale(s, s, s));
+
+  const sitio = new THREE.Vector3();
+  for (const { mesh, geo } of piezas) {
+    geo.applyMatrix4(M);
+    // La geometría vive en el marco de la articulación de la que cuelga; en
+    // reposo no hay giros, así que basta restarle dónde está esa articulación.
+    (mesh.parent ?? root).getWorldPosition(sitio);
+    geo.applyMatrix4(new THREE.Matrix4().makeTranslation(-sitio.x, -sitio.y, -sitio.z));
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    mesh.geometry.dispose();
+    mesh.geometry = geo;
+    mesh.position.set(0, 0, 0);
+    mesh.rotation.set(0, 0, 0);
+    mesh.scale.set(1, 1, 1);
+  }
 }
 
 /**

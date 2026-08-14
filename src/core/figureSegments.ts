@@ -73,8 +73,10 @@ class FigureSegmentManager {
     bytes: ArrayBuffer,
     ext: string,
   ): Promise<{ geo: THREE.BufferGeometry; piel: THREE.Material | null }> {
+    // Sin centrar: si los 16 vienen troceados de un mismo cuerpo, sus
+    // coordenadas dicen dónde va cada uno y el rig los monta de una pieza.
     const root = await loadModelRoot(bytes, ext);
-    return { geo: bakeComponentGeometry(root), piel: firstTexturedMaterial(root) };
+    return { geo: bakeComponentGeometry(root, false), piel: firstTexturedMaterial(root) };
   }
 
   async setUserModel(segmentId: string, file: File): Promise<void> {

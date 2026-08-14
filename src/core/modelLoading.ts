@@ -98,10 +98,20 @@ export function mergeRootGeometry(root: THREE.Object3D): THREE.BufferGeometry {
 }
 
 /**
- * Fusiona, escala a cm (heurística metros→cm) y centra en el origen: lista para
- * sustituir a la primitiva de un componente.
+ * Fusiona y escala a cm (heurística metros→cm), lista para sustituir a la
+ * primitiva de un componente.
+ *
+ * `centrar` se puede apagar para los segmentos del maniquí. Una pieza de
+ * máquina es un objeto suelto y centrarla es lo correcto; en cambio dieciséis
+ * segmentos troceados de UN MISMO cuerpo llevan en sus coordenadas la
+ * información de dónde va cada uno respecto a los demás, y centrarlos uno a uno
+ * la borra: quedarían los dieciséis amontonados en el origen y habría que
+ * adivinar la colocación pieza a pieza.
  */
-export function bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometry {
+export function bakeComponentGeometry(
+  root: THREE.Object3D,
+  centrar = true,
+): THREE.BufferGeometry {
   const merged = mergeRootGeometry(root);
   merged.computeBoundingBox();
   const size = new THREE.Vector3();
@@ -113,10 +123,12 @@ export function bakeComponentGeometry(root: THREE.Object3D): THREE.BufferGeometr
   const scale = maxDim > 0 && maxDim < 5 ? 100 : maxDim > 600 ? 0.1 : 1;
   if (scale !== 1) merged.applyMatrix4(new THREE.Matrix4().makeScale(scale, scale, scale));
 
-  merged.computeBoundingBox();
-  const center = new THREE.Vector3();
-  merged.boundingBox!.getCenter(center);
-  merged.applyMatrix4(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+  if (centrar) {
+    merged.computeBoundingBox();
+    const center = new THREE.Vector3();
+    merged.boundingBox!.getCenter(center);
+    merged.applyMatrix4(new THREE.Matrix4().makeTranslation(-center.x, -center.y, -center.z));
+  }
   merged.computeBoundingBox();
   merged.computeBoundingSphere();
   return merged;

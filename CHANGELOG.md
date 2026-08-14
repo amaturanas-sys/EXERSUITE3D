@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.59] — 2026-08-14
+
+### Corregido
+
+- **UN CUERPO TROCEADO ENTRA DE UNA PIEZA, NO SEGMENTO A SEGMENTO.** Al
+  sustituir los 16 segmentos del maniquí por las partes de un cuerpo real
+  troceado a mano, la figura salía **deformada y con las costuras abiertas**.
+
+  Cada modelo se encajaba en su hueco por separado, estirando su caja hasta
+  llenar la de la primitiva. Y las primitivas del rig no tienen proporciones de
+  cuerpo: la del pie es una losa de 6,8 cm y un pie de verdad, con su tobillo,
+  mide 13,7. Medido sobre un cuerpo escaneado y troceado a mano, **el pie se
+  deformaba un 51 %**, el antebrazo un 35 %, el brazo un 28 % y la pelvis un
+  26 %. Al deformarse cada pieza distinto, las dos caras de un mismo corte
+  dejaban de coincidir y ahí se abrían las costuras.
+
+  Ahora, cuando los segmentos vienen **troceados de un mismo cuerpo**, se
+  montan todos con **una sola transformación**, respetando la posición que
+  traen unos respecto a otros. El cuerpo entra tal cual se esculpió, sin
+  deformar, y sigue siendo continuo porque los cortes ya casaban entre sí.
+
+  Se distingue por la geometría, sin preguntar nada: si son trozos de un
+  cuerpo, sus cajas están repartidas por el espacio y la de todos juntos es
+  mucho más alta que la de cualquiera suelto; si es cada uno un modelo
+  independiente, vienen centrados en su origen y la unión no crece. Por debajo
+  del umbral se sigue encajando pieza a pieza, como hasta ahora.
+
+  Para que eso funcione, los segmentos del maniquí **ya no se centran** al
+  hornearlos. Una pieza de máquina es un objeto suelto y centrarla es lo
+  correcto; dieciséis trozos de un mismo cuerpo llevan en sus coordenadas dónde
+  va cada uno, y centrarlos uno a uno borra esa información.
+
+  Comprobado con la figura escaneada real: se arma, mide 175,0 cm para una
+  talla de 175, los pies apoyan en y=0,00, los 16 segmentos llevan su textura
+  y al doblar la rodilla derecha el tobillo se mueve 44 cm.
+
 ## [0.2.58] — 2026-08-14
 
 ### Añadido
