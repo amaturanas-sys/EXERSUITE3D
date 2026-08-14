@@ -191,8 +191,24 @@ export class Toolbar {
     this.menuOwner = null;
   }
 
+  /**
+   * Un menú abierto solo se cierra a propósito: su propio botón, Escape, o
+   * elegir un ítem que no sea un ajuste.
+   *
+   * Tocar el LIENZO no lo cierra. Antes sí, y eso impedía lo más útil de
+   * dejarlo abierto: encender «Aristas» o «Grid del suelo» y ORBITAR para ver
+   * el efecto sin perder el menú a mitad de comprobación.
+   */
   private onDocPointerDown = (e: Event): void => {
-    if (!this.menuEl.contains(e.target as Node)) this.cerrarMenu();
+    if (this.menuEl.contains(e.target as Node)) return;
+    const t = e.target as Element | null;
+    if (t?.closest?.("#viewport")) return; // orbitar, encuadrar, tocar piezas
+    // El botón que abre un menú lo CIERRA al volver a pulsarlo, y de eso se
+    // encarga su propio manejador. Si cerráramos aquí, en el pointerdown, el
+    // click posterior vería el menú ya cerrado y lo volvería a abrir: pulsar
+    // dos veces no lo cerraba nunca.
+    if (t?.closest?.(".menu-btn")) return;
+    this.cerrarMenu();
   };
 
   private item(
@@ -320,16 +336,21 @@ export class Toolbar {
       modo("rotate", "Rotar", "E"),
       modo("scale", "Escalar", "S"),
       this.sep(),
+      // HERRAMIENTA, no ajuste: al elegirla el menú se cierra, porque lo
+      // siguiente que hace el usuario es USAR el lienzo — y el popover cae
+      // justo encima. Medido en la UpperMachine a 1024×768: tapaba 22 de sus
+      // 41 piezas, así que empezar el recuadro sobre la torre de poleas era
+      // un clic muerto. Los AJUSTES de más abajo sí conservan `keep`: ahí
+      // sueles tocar varios seguidos.
       this.item("Selección de área", () => this.editor.setAreaSelect(!this.editor.isAreaSelect()), {
         check: this.editor.isAreaSelect(),
-        keep: true,
       }),
       this.item("Arrastre preciso", () => this.hooks.onPreciseToggle?.(), {
         check: this.hooks.isPreciseOn?.() ?? false,
       }),
+      // Misma razón: es una herramienta que se ejerce sobre el lienzo.
       this.item("Arrastrar piezas", () => this.editor.setDragTool(!this.editor.isDragTool()), {
         check: this.editor.isDragTool(),
-        keep: true,
       }),
       this.sep(),
       this.item(this.space === "local" ? "Espacio: Local" : "Espacio: Global", () => {

@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.57] — 2026-08-14
+
+### Corregido
+
+- **ELEGIR UNA HERRAMIENTA DEL MENÚ LO COLAPSA.** «Selección de área» y
+  «Arrastrar piezas» dejaban el desplegable abierto **encima del lienzo**, y
+  el primer gesto que empezara ahí moría sin decir nada: ni recuadro, ni
+  selección, ni aviso.
+
+  Medido con la UpperMachine: el popover ocupa 220×321 px y tapa el 5,4 % del
+  lienzo a 1440×900 y el 9 % a 1024×768 — pero el porcentaje engaña, porque
+  cae en el centro-alto y deja debajo **21 de las 41 piezas** en escritorio y
+  **22 de 41** en tableta. Empezar el recuadro sobre la torre de poleas, que
+  es lo natural, era un clic muerto.
+
+  No era un fallo suelto sino dos clases de ítem metidas en el mismo saco. Los
+  **ajustes** —Espacio, Imán, Grid del suelo, Aristas, Color— sí ganan con que
+  el menú siga abierto: se tocan varios seguidos. Las **herramientas** no: lo
+  siguiente que hace el usuario es usar el lienzo. Ahora solo los ajustes lo
+  conservan. Comprobado: el recuadro sale al primer intento y encuadra las 41
+  piezas sin repetir el gesto.
+
+- **Pulsar por segunda vez el botón de un menú ya lo cierra.** No lo hacía: el
+  `pointerdown` global lo cerraba y el `click` inmediatamente posterior lo
+  volvía a abrir, así que el botón nunca alternaba.
+
+### Cambiado
+
+- **ORBITAR YA NO CIERRA EL MENÚ ABIERTO.** Cualquier toque en el lienzo lo
+  cerraba, y eso impedía justo lo más útil de dejarlo abierto: encender
+  «Aristas» o «Grid del suelo» y **girar la cámara para ver el efecto** sin
+  perder el menú a mitad de comprobación. Ahora un menú solo se cierra a
+  propósito: su propio botón, Escape, o elegir una herramienta.
+
+### Sabido
+
+- **El carril lateral derecho ya era un atajo limpio** y no se ha tocado:
+  medido, ninguna de sus siete herramientas abre ni despliega un menú, ni
+  con los menús cerrados ni con uno abierto. Lo que parecía que los abría era
+  el propio desplegable reabriéndose solo, que es lo corregido arriba.
+
 ## [0.2.56] — 2026-08-13
 
 ### Cambiado
