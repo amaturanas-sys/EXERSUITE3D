@@ -7,6 +7,24 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.2.58] — 2026-08-14
 
+### Añadido
+
+- **EL MANIQUÍ SE PONE LA PIEL DEL MODELO.** Cuando un segmento se sustituye
+  por un modelo que trae textura —un escaneo la trae: cara, ropa, calzado—,
+  ahora el maniquí la lleva puesta. Antes se quedaba con el azul de referencia
+  y la fotografía se perdía por el camino: se cargaba la forma del cuerpo y se
+  tiraba la mitad del modelo.
+
+  El horneado funde todas las mallas en una geometría y descarta los
+  materiales, que es lo correcto para una pieza de máquina —se pinta del color
+  del proyecto— pero no para un cuerpo. Ahora, además de la geometría, se
+  guarda el primer material **con mapa** que traiga el archivo; un escaneo trae
+  uno solo para todo el cuerpo. Si el modelo no tiene textura, el segmento se
+  queda con su azul, como siempre.
+
+  La piel va **clonada** por figura: al quitar una, `disposeHumanFigure` libera
+  sus materiales, y compartir el original dejaría a las demás sin textura.
+
 ### Corregido
 
 - **UN MODELO DE SEGMENTO YA NO ENTRA DESARMADO EN EL MANIQUÍ.** Sustituir las

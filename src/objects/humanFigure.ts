@@ -91,6 +91,14 @@ export const SEGMENT_DEFS: SegmentDef[] = [
 export type SegmentProvider = (segmentId: string) => THREE.BufferGeometry | null;
 
 /**
+ * Proveedor de la PIEL de un segmento: el material del modelo cuando trae
+ * textura. Un maniquí escaneado la trae —la piel fotográfica es media mitad
+ * del modelo— y sin esto se veía la forma del cuerpo pintada del azul de
+ * referencia. Devuelve null y el segmento se queda con ese azul.
+ */
+export type SegmentSkinProvider = (segmentId: string) => THREE.Material | null;
+
+/**
  * Primitiva REAL de cada segmento (misma que usa el rig al construirse), en
  * función de la altura H. Fuente única para el maniquí y para la vista previa
  * de la Biblioteca: así cada segmento se ve como lo que es (cabeza=esfera,
@@ -148,6 +156,7 @@ export const PARENT_JOINT: Record<string, string | null> = {
 export function buildHumanFigure(
   heightCm: number,
   segments?: SegmentProvider,
+  skins?: SegmentSkinProvider,
 ): THREE.Group {
   const H = heightCm;
   const joints: Record<string, THREE.Object3D> = {};
@@ -244,7 +253,7 @@ export function buildHumanFigure(
   buildLeg("R", 0.06 * H);
 
   // Sustituye las primitivas por los modelos de segmento (ajustados a su hueco).
-  if (segments) applySegmentOverrides(root, segments);
+  if (segments) applySegmentOverrides(root, segments, skins);
 
   // Escala el rig a la altura exacta solicitada y apoya los pies en y=0.
   root.updateMatrixWorld(true);
@@ -275,13 +284,23 @@ export function buildHumanFigure(
  * ajustándolo al hueco de la primitiva original. La malla conserva su material
  * (color de referencia) y su lugar en la jerarquía articulada.
  */
-function applySegmentOverrides(root: THREE.Group, provider: SegmentProvider): void {
+function applySegmentOverrides(
+  root: THREE.Group,
+  provider: SegmentProvider,
+  skins?: SegmentSkinProvider,
+): void {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     const id = m.userData?.segmentId as string | undefined;
     if (!m.isMesh || !id) return;
     const geo = provider(id);
-    if (geo) fitSegmentGeometry(m, geo);
+    if (!geo) return;
+    fitSegmentGeometry(m, geo);
+    const piel = skins?.(id);
+    if (piel) {
+      (m.material as THREE.Material).dispose?.();
+      m.material = piel;
+    }
   });
 }
 

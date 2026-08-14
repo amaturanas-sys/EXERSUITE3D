@@ -4120,7 +4120,11 @@ export class Editor {
     this.removeHumanFigure();
 
     const token = ++this.humanToken;
-    const figure: THREE.Group = buildHumanFigure(heightCm, figureSegments.provider);
+    const figure: THREE.Group = buildHumanFigure(
+      heightCm,
+      figureSegments.provider,
+      figureSegments.skinProvider,
+    );
 
     // El usuario pudo quitar/cambiar la figura mientras cargaba.
     if (token !== this.humanToken) {

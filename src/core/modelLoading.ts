@@ -57,6 +57,29 @@ export function normalizeGeometry(g: THREE.BufferGeometry): THREE.BufferGeometry
   return out;
 }
 
+/**
+ * Primer material CON TEXTURA del modelo, o null si no trae ninguno.
+ *
+ * `mergeRootGeometry` funde todas las mallas en una sola geometría y tira los
+ * materiales, que es lo correcto para una pieza de máquina —se pinta del color
+ * del proyecto—, pero no para un segmento del maniquí escaneado: ahí la piel
+ * fotográfica ES el modelo. Se busca el primero que tenga mapa porque un
+ * escaneo trae una sola textura para todo el cuerpo.
+ */
+export function firstTexturedMaterial(root: THREE.Object3D): THREE.Material | null {
+  let out: THREE.Material | null = null;
+  root.traverse((o) => {
+    if (out) return;
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh || !mesh.material) return;
+    const mat = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as
+      | THREE.MeshStandardMaterial
+      | undefined;
+    if (mat?.map) out = mat;
+  });
+  return out;
+}
+
 /** Fusiona todas las mallas de un modelo en una sola geometría (matrices aplicadas). */
 export function mergeRootGeometry(root: THREE.Object3D): THREE.BufferGeometry {
   root.updateMatrixWorld(true);
