@@ -5,6 +5,39 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.58] — 2026-08-14
+
+### Corregido
+
+- **UN MODELO DE SEGMENTO YA NO ENTRA DESARMADO EN EL MANIQUÍ.** Sustituir las
+  partes del maniquí por modelos propios (*Biblioteca → Maniquí*) producía una
+  figura rota: la cabeza flotando sobre el cuello, los brazos despegados del
+  tronco y los pies por debajo del suelo.
+
+  La causa estaba en cómo se encajaba cada modelo en su hueco: **escala
+  uniforme igualando la dimensión más larga del modelo con la más larga de la
+  primitiva**, y luego centrar. Esa regla vale para cambiar una pieza suelta
+  por otra más bonita, pero no para armar un cuerpo, porque los segmentos
+  anatómicos tienen proporciones muy distintas de las primitivas que ocupan.
+  El pie lo enseña bien: la primitiva es una losa de 7 cm y un pie de verdad
+  mide 27 cm de alto contando el tobillo, así que se metía encogido a la
+  cuarta parte y descolgado de su sitio. El cuello igual: cilindro flaco
+  contra un cuello escaneado que trae los trapecios.
+
+  Ahora el modelo **llena el hueco eje a eje**. Cada segmento ocupa exactamente
+  el sitio que el rig le reserva: las juntas casan y el maniquí conserva las
+  medidas de las que depende toda la ventana de ERGONOMÍA. Lo que se paga es
+  que el modelo se deforma para caber, que es justo lo que se busca aquí — el
+  maniquí mantiene su talla y toma la forma del cuerpo.
+
+  Un eje plano (un plano, una calcomanía) se deja como está en ese eje, para no
+  multiplicar por infinito.
+
+  Comprobado con una figura escaneada real troceada en los 16 segmentos: se
+  arma, mide 175,0 cm para una talla de 175, los pies apoyan en y=0,00 y al
+  doblar la rodilla derecha el tobillo se mueve 44 cm y sube. Los 16 segmentos
+  usan el modelo cargado, sin un solo error de consola.
+
 ## [0.2.57] — 2026-08-14
 
 ### Corregido

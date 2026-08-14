@@ -272,9 +272,8 @@ export function buildHumanFigure(
 
 /**
  * Sustituye la geometría de cada segmento que tenga un modelo asignado,
- * ajustándolo al hueco de la primitiva original: escala uniforme para igualar la
- * dimensión más larga y lo centra donde estaba la parte. La malla conserva su
- * material (color de referencia) y su lugar en la jerarquía articulada.
+ * ajustándolo al hueco de la primitiva original. La malla conserva su material
+ * (color de referencia) y su lugar en la jerarquía articulada.
  */
 function applySegmentOverrides(root: THREE.Group, provider: SegmentProvider): void {
   root.traverse((o) => {
@@ -286,19 +285,44 @@ function applySegmentOverrides(root: THREE.Group, provider: SegmentProvider): vo
   });
 }
 
+/**
+ * Encaja el modelo en el HUECO de la primitiva estirando CADA EJE por separado,
+ * y lo centra donde estaba la parte.
+ *
+ * Antes la escala era uniforme, igualando la dimensión más larga del modelo con
+ * la más larga de la primitiva. Eso vale para sustituir una pieza suelta, pero
+ * no para armar un cuerpo: los segmentos anatómicos tienen proporciones muy
+ * distintas de las primitivas que ocupan —el pie es una losa de 7 cm y un pie
+ * de verdad mide 27 cm de alto con el tobillo; el cuello es un cilindro flaco y
+ * un cuello escaneado trae los trapecios— así que cada pieza se escalaba por su
+ * lado más largo y aterrizaba encogida y descentrada. El resultado era una
+ * figura DESARMADA: la cabeza flotando sobre el cuello, los brazos separados
+ * del tronco y los pies por debajo del suelo.
+ *
+ * Llenando el hueco eje a eje, cada segmento ocupa exactamente el sitio que el
+ * rig le reserva: las juntas casan y —lo que importa aquí— el maniquí conserva
+ * las medidas de las que depende toda la ventana de ERGONOMÍA. Lo que se paga
+ * es que el modelo se deforma para caber, que es justo lo que se quiere: el
+ * maniquí mantiene su talla y toma la forma del cuerpo.
+ */
 function fitSegmentGeometry(mesh: THREE.Mesh, geo: THREE.BufferGeometry): void {
   mesh.geometry.computeBoundingBox();
   const os = new THREE.Vector3();
   mesh.geometry.boundingBox!.getSize(os);
-  const origLongest = Math.max(os.x, os.y, os.z);
 
   geo.computeBoundingBox();
   const cs = new THREE.Vector3();
   geo.boundingBox!.getSize(cs);
-  const custLongest = Math.max(cs.x, cs.y, cs.z) || 1;
 
-  const s = origLongest / custLongest;
-  geo.applyMatrix4(new THREE.Matrix4().makeScale(s, s, s));
+  // Un eje plano (un plano, una calcomanía) no se puede estirar: se deja como
+  // está en ese eje en vez de multiplicar por infinito.
+  geo.applyMatrix4(
+    new THREE.Matrix4().makeScale(
+      cs.x > 1e-6 ? os.x / cs.x : 1,
+      cs.y > 1e-6 ? os.y / cs.y : 1,
+      cs.z > 1e-6 ? os.z / cs.z : 1,
+    ),
+  );
   // Centra el modelo donde estaba el centro de la primitiva (mesh.position, ya
   // que las primitivas están centradas en su origen local).
   geo.computeBoundingBox();
