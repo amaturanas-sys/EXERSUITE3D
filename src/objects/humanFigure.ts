@@ -62,6 +62,26 @@ function mat(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({ color: 0x2f7dd1, metalness: 0.0, roughness: 0.6 });
 }
 
+/**
+ * Desempata la profundidad entre segmentos que comparten piel.
+ *
+ * Un maniquí troceado de un cuerpo real solapa en las juntas: la carne de dos
+ * piezas ocupa el mismo sitio para que la articulación no se abra al doblarla.
+ * Ahí las dos superficies son COINCIDENTES, y con la misma profundidad el
+ * z-buffer decide píxel a píxel cuál gana: sale un moteado sucio en rodillas,
+ * codos y hombros.
+ *
+ * Dándole a cada segmento un sesgo de profundidad propio, en cada banda de
+ * solape gana siempre el mismo y el moteado desaparece. Es un desempate, no un
+ * desplazamiento: nada se mueve de sitio, así que las medidas del maniquí —de
+ * las que vive ERGONOMÍA— no cambian.
+ */
+function sesgarProfundidad(m: THREE.MeshStandardMaterial, orden: number): void {
+  m.polygonOffset = true;
+  m.polygonOffsetFactor = 0;
+  m.polygonOffsetUnits = -orden;
+}
+
 /** Segmentos reemplazables del maniquí (para modelos más estéticos). */
 export interface SegmentDef {
   id: string;
@@ -324,6 +344,9 @@ function applySegmentOverrides(
       (mesh.material as THREE.Material).dispose?.();
       mesh.material = piel;
     }
+    // Cada segmento con su sesgo, para que en las juntas gane siempre el mismo.
+    const orden = SEGMENT_DEFS.findIndex((s) => s.id === id);
+    sesgarProfundidad(mesh.material as THREE.MeshStandardMaterial, orden);
   }
 }
 

@@ -5,6 +5,92 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.60] — 2026-08-15
+
+### Añadido
+
+- **EL MANIQUÍ YA ES UN CUERPO, DE SERIE.** La figura humana sale de fábrica
+  con un cuerpo real —escaneado, troceado a mano en los 16 segmentos y con las
+  juntas trabajadas— en vez de con la torre de cápsulas, cajas y esferas de
+  antes. No hay que cargar nada: viene puesto.
+
+  Va en su **azul de referencia**, sin textura. La forma es lo que importa para
+  juzgar el encaje entre el cuerpo y la máquina; una piel fotográfica añade
+  megabytes y ruido visual sin decir nada de ergonomía.
+
+  **Las articulaciones aguantan al doblarse.** Cada pieza lleva un collarín que
+  se mete dentro de su vecina: medido, las juntas solapan entre **4,8 y 16,4 cm**
+  (media 12,2). Un segmento rígido que gira abre un hueco en su articulación
+  salvo que la carne de las dos piezas se monte una sobre otra, y eso es lo que
+  hacen esos collarines. Comprobado en sentadilla profunda con los brazos
+  flexionados: no se abre ninguna junta.
+
+  **Pesa 1,55 MB** en 16 archivos, 79.987 triángulos en total. El nivel de
+  detalle se eligió midiendo: a 80.000 triángulos el error sobre la piel que se
+  ve es de **0,79 mm en el percentil 99** sobre una figura de 175 cm. El error
+  grande de decimar —hasta 3 cm— cae entero en los collarines, que quedan
+  enterrados dentro de la pieza vecina y no se ven.
+
+  Cargarlo al arrancar cuesta **254 ms**, en paralelo con el repertorio de
+  componentes y los prefabs. Las 16 descargas van a la vez; en serie eran 16
+  idas y vueltas encadenadas con el usuario esperando (396 ms).
+
+### Cambiado
+
+- **La Biblioteca distingue el segmento de serie del tuyo.** Ahora que el
+  maniquí viene con cuerpo, la ficha de cada segmento dice si el modelo activo
+  es **de archivo** o **personalizado**, y restablecer devuelve el de serie en
+  vez de la primitiva. Antes el maniquí daba por hecho que cualquier modelo era
+  del usuario, así que siempre ponía «Modelo personalizado».
+
+### Corregido
+
+- **LAS JUNTAS DEL MANIQUÍ DEJAN DE SALIR MOTEADAS.** Rodillas, codos, hombros
+  y cuello aparecían salpicados de píxeles blancos sucios.
+
+  No era un hueco ni un fallo del modelo: era **z-fighting**. Un maniquí
+  troceado de un cuerpo real solapa en las juntas —la carne de dos piezas ocupa
+  el mismo sitio para que la articulación no se abra al doblarla—, así que ahí
+  las dos superficies son coincidentes y con la misma profundidad el z-buffer
+  decide píxel a píxel cuál gana.
+
+  Ahora cada segmento lleva su propio **sesgo de profundidad**, así que en cada
+  banda de solape gana siempre el mismo y el moteado desaparece. Es un
+  desempate, no un desplazamiento: **no se mueve un solo vértice**, de modo que
+  las medidas del maniquí —de las que vive toda la ventana de ERGONOMÍA— siguen
+  siendo exactamente las mismas, y el modelo queda tal como se esculpió.
+
+  Antes se probó a curarlo moviendo geometría: hundir el collarín por su
+  normal. Sale peor. Desvanecido por distancia al filo deja un escalón en la
+  piel visible; desvanecido por profundidad no arregla nada donde las
+  superficies son exactamente coincidentes, porque ahí el signo de la distancia
+  es una moneda al aire y se hundía la mitad de los vértices sí y la otra
+  mitad no.
+
+### Sabido
+
+- **Los apoyos y la postura sentada están rotos con el maniquí de serie.** Seis
+  pruebas que pasaban ahora fallan: `apoyos` (la planta queda 10 cm por debajo
+  de la plataforma sobre la que debería pisar), `colocar` y `maniqui-fisico`
+  (la rodilla se queda en 50° en vez de doblarse al sentarse), `maniqui-usa`,
+  `v251` (las piernas atraviesan el banco 3,9 cm) y `solape-ui`.
+
+  El patrón está localizado, no la cadena entera: la aplicación mide **la caja
+  envolvente de un segmento** para decidir dónde apoya. `baseDeApoyoSentado`
+  (`Editor.ts:7683`) toma el fondo de la caja de la pelvis como «los glúteos»,
+  y con las primitivas eso era exacto. Los segmentos de un cuerpo troceado
+  llevan collarines que se meten dentro de sus vecinos —la pelvis baja por los
+  muslos—, así que esa caja ya no mide lo que se creía. Lo mismo afecta a
+  `cuantoSeHunde` (`Editor.ts:4915`) y a `altoDelPie` (`Editor.ts:4892`).
+
+  **No etiquetar esta versión hasta arreglarlo**: son funciones centrales de
+  ERGONOMÍA.
+
+- En una postura muy forzada —rodilla a 109°, codo a 69°— el collarín rígido
+  gira y atraviesa la piel de la pieza vecina, y la junta se ve arrugada. Es
+  inherente a articular segmentos rígidos sin deformar la malla; sin collarín,
+  en ese mismo sitio habría un agujero, que es peor.
+
 ## [0.2.59] — 2026-08-14
 
 ### Corregido

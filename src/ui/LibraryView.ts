@@ -193,10 +193,13 @@ const segmentSource: LibrarySource = {
   items: () => SEGMENT_DEFS.map((s) => ({ id: s.id, label: s.label, category: "Segmentos del maniquí" })),
   has: (id) => figureSegments.has(id),
   fileName: (id) => figureSegments.fileName(id),
-  isUser: (id) => figureSegments.has(id),
-  isFile: () => false,
-  // Sin modelo del usuario, muestra la primitiva REAL del segmento (la misma
-  // que usa el maniquí): cabeza=esfera, torso=caja, muslo=cilindro…
+  // El maniquí ya viene de serie, así que hay que distinguir de dónde sale cada
+  // segmento: solo el del usuario se puede restablecer, y hacerlo devuelve el
+  // de serie, no la primitiva.
+  isUser: (id) => figureSegments.source(id) === "user",
+  isFile: (id) => figureSegments.source(id) === "file",
+  // Sin modelo, muestra la primitiva REAL del segmento (la misma que usaría el
+  // maniquí): cabeza=esfera, torso=caja, muslo=cilindro…
   previewGeometry: (id) => figureSegments.geometryClone(id) ?? defaultSegmentGeometry(id),
   previewMaterial: () => figureMat(),
   setUserModel: (id, f) => figureSegments.setUserModel(id, f),

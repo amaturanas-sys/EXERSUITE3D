@@ -1,0 +1,18 @@
+{
+ "antebrazo-L": "antebrazo-L.glb",
+ "antebrazo-R": "antebrazo-R.glb",
+ "brazo-sup-L": "brazo-sup-L.glb",
+ "brazo-sup-R": "brazo-sup-R.glb",
+ "cabeza": "cabeza.glb",
+ "cuello": "cuello.glb",
+ "mano-L": "mano-L.glb",
+ "mano-R": "mano-R.glb",
+ "muslo-L": "muslo-L.glb",
+ "muslo-R": "muslo-R.glb",
+ "pelvis": "pelvis.glb",
+ "pie-L": "pie-L.glb",
+ "pie-R": "pie-R.glb",
+ "pierna-L": "pierna-L.glb",
+ "pierna-R": "pierna-R.glb",
+ "torso": "torso.glb"
+}
