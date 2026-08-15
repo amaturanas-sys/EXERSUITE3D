@@ -67,24 +67,48 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   es una moneda al aire y se hundía la mitad de los vértices sí y la otra
   mitad no.
 
+### Corregido (continuación)
+
+- **LA PLANTA DEL PIE VUELVE A SER LA PLANTA.** Con el maniquí de serie, pisar
+  una plataforma dejaba la suela **9,8 cm por debajo** de su cara.
+
+  La aplicación medía «dónde pisa el pie» como el fondo de la CAJA de la pieza
+  del pie. Con la primitiva —una losa de 7 cm— eso era la suela. La pieza de un
+  cuerpo troceado lleva un collarín que sube 8,5 cm por la pierna para que el
+  tobillo no se abra al doblarlo, y **al girar el pie ese collarín queda más
+  bajo que la suela**: la IK corregía contra el filo del collarín, que no pisa
+  nada.
+
+  Ahora se distingue la **piel propia** del collarín. La geometría de cada
+  segmento vive en el marco de su articulación, así que lo propio es lo que
+  queda por debajo de ella y el collarín lo de arriba; la planta es el punto más
+  bajo de lo propio, ya en el mundo. Sirve igual con la pieza girada, que es
+  donde fallaba. Medido: la suela se posa a **0,33 cm** de la cara de la
+  plataforma, y sentada queda a 0,92 cm del suelo.
+
+  Lo mismo se aplica a `cuantoSeHunde`: el collarín de un segmento vive dentro
+  de su vecino, así que si asoma bajo el suelo es porque el vecino ya está
+  hundido — contarlo hacía ver hundimientos donde no los había.
+
+  Se probó a quedarse con una muestra de 256 puntos por segmento para ahorrar
+  trabajo: no vale. `noHundirse` corrige hasta bajar de 0,05 cm y una muestra no
+  tiene esa puntería; el mínimo bailaba al girar la pierna y el bucle estiraba
+  la rodilla hasta el tope.
+
 ### Sabido
 
-- **Los apoyos y la postura sentada están rotos con el maniquí de serie.** Seis
-  pruebas que pasaban ahora fallan: `apoyos` (la planta queda 10 cm por debajo
-  de la plataforma sobre la que debería pisar), `colocar` y `maniqui-fisico`
-  (la rodilla se queda en 50° en vez de doblarse al sentarse), `maniqui-usa`,
-  `v251` (las piernas atraviesan el banco 3,9 cm) y `solape-ui`.
-
-  El patrón está localizado, no la cadena entera: la aplicación mide **la caja
-  envolvente de un segmento** para decidir dónde apoya. `baseDeApoyoSentado`
-  (`Editor.ts:7683`) toma el fondo de la caja de la pelvis como «los glúteos»,
-  y con las primitivas eso era exacto. Los segmentos de un cuerpo troceado
-  llevan collarines que se meten dentro de sus vecinos —la pelvis baja por los
-  muslos—, así que esa caja ya no mide lo que se creía. Lo mismo afecta a
-  `cuantoSeHunde` (`Editor.ts:4915`) y a `altoDelPie` (`Editor.ts:4892`).
-
-  **No etiquetar esta versión hasta arreglarlo**: son funciones centrales de
-  ERGONOMÍA.
+- **Quedan cinco pruebas en rojo con el maniquí de serie**, y por eso **esta
+  versión no se debe etiquetar todavía**:
+  - `apoyos` pasa salvo una aserción, y por poco: 0,65 cm de cuerpo bajo el
+    suelo en el peor caso de un barrido de posturas (venía de 9,8 cm).
+  - `colocar` y `maniqui-fisico`: al sentarse, la rodilla se queda en **50°** en
+    vez de doblarse. No es el collarín —persiste tras corregirlo—: apunta a que
+    el esqueleto del rig y la carne del cuerpo no concuerdan. Los huesos siguen
+    midiendo lo que medían las primitivas (muslo y pierna, 40,25 cm cada uno),
+    mientras que la carne trae las proporciones del escaneo; los glúteos quedan
+    3,5 cm más altos respecto a la cadera, la pierna no llega al suelo desde el
+    banco y `noHundirse` estira la rodilla para sacarla.
+  - `maniqui-usa`, `v251` y `solape-ui`: sin revisar desde la corrección.
 
 - En una postura muy forzada —rodilla a 109°, codo a 69°— el collarín rígido
   gira y atraviesa la piel de la pieza vecina, y la junta se ve arrugada. Es

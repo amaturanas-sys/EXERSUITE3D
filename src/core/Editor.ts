@@ -4871,13 +4871,71 @@ export class Editor {
   private plantaDelPie(side: HandSide): number | null {
     const fig = this.humanFigure;
     if (!fig) return null;
-    let y: number | null = null;
+    let malla: THREE.Mesh | null = null;
     fig.traverse((n) => {
       const m = n as THREE.Mesh;
-      if (m.isMesh && m.userData.segmentId === `pie-${side}`) {
-        y = new THREE.Box3().setFromObject(m).min.y;
-      }
+      if (m.isMesh && m.userData.segmentId === `pie-${side}`) malla = m;
     });
+    if (!malla) return null;
+    // La PLANTA es un punto concreto del pie, no el fondo de su caja en el
+    // mundo. La diferencia importa desde que el maniquí es un cuerpo troceado:
+    // la pieza del pie lleva un collarín que sube 8,5 cm por la pierna para que
+    // el tobillo no se abra al doblarlo, y al girar el pie ese collarín puede
+    // quedar MÁS BAJO que la suela. Midiendo la caja, la IK creía que la planta
+    // estaba donde estaba el filo del collarín y corregía contra un punto que
+    // no pisa nada: la planta se quedaba 9,8 cm por debajo de la plataforma.
+    //
+    // Se busca el vértice más bajo en el espacio del PROPIO pie —que es una
+    // constante de la pieza— y se lleva al mundo. Así la planta sigue al pie
+    // cuando gira, y el collarín no cuenta.
+    return this.masBajoPropio(malla as THREE.Mesh);
+  }
+
+  /**
+   * Puntos de la PIEL PROPIA de un segmento, en su espacio local (cacheados).
+   *
+   * La geometría de cada segmento vive en el marco de la articulación de la que
+   * cuelga, así que el segmento propiamente dicho es lo que queda por DEBAJO de
+   * ella (y ≤ 0) y lo de arriba es el collarín que se mete en la pieza madre
+   * para que la junta no se abra al doblarla.
+   *
+   * Hace falta distinguirlos para medir. La caja envolvente en el mundo no
+   * sirve: al girar el pie, su collarín —que sube 8,5 cm por la pierna— acaba
+   * más bajo que la suela, y la IK corregía contra el filo del collarín en vez
+   * de contra la planta. Un punto local fijo tampoco: al girar, el vértice más
+   * bajo deja de ser el mismo. Hay que quedarse con los puntos propios y buscar
+   * el más bajo entre ellos ya en el mundo.
+   */
+  private pielPropia(m: THREE.Mesh): THREE.Vector3[] {
+    const cache = m.userData.pielPropia as
+      | { uuid: string; pts: THREE.Vector3[] }
+      | undefined;
+    if (cache && cache.uuid === m.geometry.uuid) return cache.pts;
+    const pos = m.geometry.getAttribute("position");
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i < pos.count; i++) {
+      const y = pos.getY(i) * m.scale.y + m.position.y;
+      if (y <= 0) pts.push(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+    }
+    // Todos, sin muestrear. Se probó con 256 repartidos para ahorrar trabajo y
+    // sale mal: `noHundirse` corrige hasta bajar de 0,05 cm de hundimiento, y
+    // una muestra no tiene esa puntería — el mínimo bailaba al girar la pierna,
+    // el bucle no convergía nunca y acababa estirando la rodilla hasta el tope.
+    // Sentarse dejaba la rodilla en 53° en vez de los 90° de sentarse.
+    m.userData.pielPropia = { uuid: m.geometry.uuid, pts };
+    return pts;
+  }
+
+  /** Punto más bajo de la PIEL PROPIA de un segmento, en el mundo. */
+  private masBajoPropio(m: THREE.Mesh): number {
+    const pts = this.pielPropia(m);
+    if (!pts.length) return new THREE.Box3().setFromObject(m).min.y;
+    const v = new THREE.Vector3();
+    let y = Infinity;
+    for (const p of pts) {
+      v.copy(p).applyMatrix4(m.matrixWorld);
+      if (v.y < y) y = v.y;
+    }
     return y;
   }
 
@@ -4921,8 +4979,12 @@ export class Editor {
       const m = n as THREE.Mesh;
       if (!m.isMesh || !m.visible || !m.userData.humanFigurePart) return;
       if (filtro && !filtro.has(String(m.userData.segmentId ?? ""))) return;
-      const c = new THREE.Box3().setFromObject(m);
-      if (c.min.y < minY) minY = c.min.y;
+      // Solo la piel PROPIA: el collarín de un segmento vive dentro de su
+      // vecino, así que si asoma por debajo del suelo es porque su vecino ya
+      // está hundido — contarlo hacía ver hundimientos donde no los había y el
+      // cuerpo se corregía solo, enderezando la rodilla al sentarse.
+      const y = this.masBajoPropio(m);
+      if (y < minY) minY = y;
     });
     return Number.isFinite(minY) ? Math.max(0, -minY) : 0;
   }
