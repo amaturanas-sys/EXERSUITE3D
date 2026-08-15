@@ -97,18 +97,30 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Sabido
 
-- **Quedan cinco pruebas en rojo con el maniquí de serie**, y por eso **esta
-  versión no se debe etiquetar todavía**:
-  - `apoyos` pasa salvo una aserción, y por poco: 0,65 cm de cuerpo bajo el
-    suelo en el peor caso de un barrido de posturas (venía de 9,8 cm).
-  - `colocar` y `maniqui-fisico`: al sentarse, la rodilla se queda en **50°** en
-    vez de doblarse. No es el collarín —persiste tras corregirlo—: apunta a que
-    el esqueleto del rig y la carne del cuerpo no concuerdan. Los huesos siguen
-    midiendo lo que medían las primitivas (muslo y pierna, 40,25 cm cada uno),
-    mientras que la carne trae las proporciones del escaneo; los glúteos quedan
-    3,5 cm más altos respecto a la cadera, la pierna no llega al suelo desde el
-    banco y `noHundirse` estira la rodilla para sacarla.
-  - `maniqui-usa`, `v251` y `solape-ui`: sin revisar desde la corrección.
+- **EL RIG NO MUEVE SUS PIVOTES AL METER UN CUERPO.** Es la causa de fondo de
+  lo que queda por arreglar, y está medida.
+
+  `colocarCuerpoEntero` mete el cuerpo con una sola transformación y deja los
+  pivotes donde los puso la geometría de las primitivas. El cuerpo escaneado
+  está de pie con las piernas abiertas, así que **su tobillo cae en x = ±26,3
+  cm y el pivote del rig sigue en ±10,2**: un brazo de palanca de 16 cm. El pie
+  no gira sobre su tobillo, ORBITA. Lo mismo en la rodilla (cuerpo ±21,2 contra
+  rig ±10,2) y, en vertical, en la columna (cuerpo 105,3 contra rig 93,3).
+
+  De ahí salen los síntomas que quedan. Sentarse: el fondo de la pelvis está
+  4,1 cm bajo la cadera en este cuerpo y 8,5 en la primitiva, así que la figura
+  se sienta 4,4 cm más abajo, la pierna ya no llega al suelo desde el banco y
+  `noHundirse` estira la rodilla de 95° a 50° para sacarla.
+
+  Arreglarlo bien es reubicar los pivotes en los centros articulares del cuerpo
+  —ya están medidos, junta a junta— pero eso cambia los largos de hueso y con
+  ellos todo lo calibrado sobre el rig, así que no es un parche.
+
+- **Quedan cinco pruebas en rojo**, y por eso **esta versión no se debe
+  etiquetar todavía**: `colocar` y `maniqui-fisico` (rodilla a 50° al
+  sentarse), `apoyos` por una sola aserción y por poco (0,65 cm de cuerpo bajo
+  el suelo en el peor caso de un barrido de posturas, viniendo de 9,8), y
+  `maniqui-usa`, `v251` y `solape-ui`, sin revisar desde las correcciones.
 
 - En una postura muy forzada —rodilla a 109°, codo a 69°— el collarín rígido
   gira y atraviesa la piel de la pieza vecina, y la junta se ve arrugada. Es

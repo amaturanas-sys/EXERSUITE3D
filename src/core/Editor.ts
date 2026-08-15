@@ -5128,6 +5128,7 @@ export class Editor {
       const suelo = target.y;
       target.y += this.altoDelPie(side);
       solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
+      this.nivelarTobillo(tobillo);
       // Y se remata con el residuo REAL: con la pierna en ángulo el tobillo no
       // queda justo encima de la planta, así que se mide dónde acabó la suela y
       // se SUBE el objetivo lo que falte.
@@ -5143,8 +5144,32 @@ export class Editor {
       if (sola !== null && suelo - sola > 0.3) {
         target.y += Math.min(suelo - sola, 8);
         solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
+        this.nivelarTobillo(tobillo);
       }
     }
+  }
+
+  /**
+   * El pie pisa PLANO: el tobillo deshace el giro que le impuso la tibia.
+   *
+   * La IK resuelve cadera y rodilla, y el pie iba solidario con la tibia. Con
+   * la primitiva —una losa centrada en el pivote— apenas se notaba. Con un
+   * cuerpo escaneado sí: sus pies están separados ±26 cm y el rig pone el
+   * pivote del tobillo en ±10, así que el pie no gira sobre su tobillo, ORBITA
+   * a 17,8 cm de él. Con la pierna en ángulo la suela acababa colgando 19 cm
+   * del tobillo en vez de los 6,75 que `altoDelPie()` da por buenos, el remate
+   * se topaba y la planta se quedaba 9,8 cm dentro de la plataforma.
+   *
+   * Nivelando, la caída vuelve a ser la que se supone y la planta se posa
+   * plana, que es lo que hace un pie al pisar — con este cuerpo y con las
+   * primitivas.
+   */
+  private nivelarTobillo(tobillo: THREE.Object3D): void {
+    if (!this.humanFigure) return;
+    tobillo.updateWorldMatrix(true, false);
+    const q = this.humanFigure.getWorldQuaternion(new THREE.Quaternion());
+    const actual = tobillo.getWorldQuaternion(new THREE.Quaternion());
+    tobillo.quaternion.premultiply(actual.invert().multiply(q));
   }
 
   /**
