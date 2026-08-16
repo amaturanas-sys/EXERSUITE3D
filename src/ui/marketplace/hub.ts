@@ -172,30 +172,66 @@ function desplegable(id: string, opciones: [string, string, string][]): HTMLSele
 }
 
 /**
- * VALORACIÓN EN DISCOS.
+ * VALORACIÓN EN DISCOS DE PESA.
  *
- * El diseñador cambió las estrellas por cinco discos de pesa, que es el mismo
- * gesto que ya usa toda la aplicación para hablar de carga, y en v0.2.67 los
- * dibujó como el disco de verdad de la marca: aro exterior grueso, buje y
- * agujero. Lleno en blanco, vacío en gris, y la cuenta escrita al lado
- * —«4/5»— porque a dieciocho píxeles contar aros cuesta.
+ * Cinco discos, llenos en blanco y vacíos en gris, más la cuenta escrita al
+ * lado —«4/5»—: a este tamaño contar aros cuesta y el número lo resuelve de un
+ * vistazo. El dato de origen sigue siendo la cadena «★★★★★ 4.9» del catálogo.
  *
- * El dibujo se quedó en DOS aros. Los cuatro radios en diagonal del disco
- * real se probaron y a este tamaño lo único que hacían era emborronar el
- * centro: cinco discos seguidos parecían una fila de tuercas.
+ * EL DISCO ES EL DE LA MARCA, REDIBUJADO A VECTOR. No hay ningún disco limpio
+ * del que partir —el del logotipo lleva el compás encima— ni trazador instalado
+ * en la máquina, así que se midió el plato del logotipo radio a radio y se
+ * volvió a levantar en SVG. Eso da lo que pidió el diseñador y además no pierde
+ * resolución: el mismo dibujo vale a 22 px en una ficha y a 500 en una lámina.
  *
- * Va en SVG y no en mapa de bits por dos razones: a este tamaño una fotografía
- * del disco sería un borrón, y el color tiene que poder cambiarlo el CSS. Todo
- * el dibujo usa `currentColor`, así que lleno y vacío son la misma pieza con
- * distinto color heredado.
+ * EL DISCO, DEFINIDO UNA SOLA VEZ.
  *
- * El dato de origen sigue siendo la cadena «★★★★★ 4.9» del catálogo: se cuentan
- * las estrellas llenas.
+ * En la rejilla del mercado hay 32 fichas × 5 discos = 160 discos. Repetir el
+ * dibujo entero 160 veces sería absurdo, y peor: cada copia traería los mismos
+ * identificadores de máscara y de arco, que en un documento tienen que ser
+ * únicos. Se define un `<symbol>` y cada disco es un `<use>` de dos líneas.
+ *
+ * LA MÁSCARA ES LO QUE HACE QUE FUNCIONE SOBRE CUALQUIER FONDO. El plato es una
+ * sola pieza de `currentColor` —blanco si está lleno, gris si no— y todo lo
+ * demás —el aro, los cuatro radios, el buje, el agujero y las letras— son
+ * AGUJEROS de verdad, no dibujos del color del fondo. Pintarlos del color de la
+ * tarjeta habría sido más corto y se habría roto en cuanto el disco apareciera
+ * sobre otra cosa.
+ *
+ * Las medidas salen del logotipo de la marca (`brand/logo-mark.png`), midiendo
+ * el plato radio a radio: aro exterior en 0,89 del radio, cuerpo hasta 0,81,
+ * buje en 0,15 y agujero en 0,072. Los radios van a 45°, 135°, 225° y 315°.
  */
-const DISCO = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
-  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"/>
-  <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="3.2"/>
-</svg>`;
+const DISCO_DEFS = `<svg class="hub-defs" aria-hidden="true" focusable="false"><defs>
+  <symbol id="disco-pesa" viewBox="0 0 100 100">
+    <path id="disco-arco-sup" d="M 17,50 A 33,33 0 0 1 83,50" fill="none"/>
+    <path id="disco-arco-inf" d="M 17,50 A 33,33 0 0 0 83,50" fill="none"/>
+    <mask id="disco-mascara">
+      <rect width="100" height="100" fill="#000"/>
+      <circle cx="50" cy="50" r="48" fill="#fff"/>
+      <circle cx="50" cy="50" r="43" fill="none" stroke="#000" stroke-width="2.4"/>
+      <g stroke="#000" stroke-width="4.6">
+        <line x1="61.31" y1="38.69" x2="78.28" y2="21.72"/>
+        <line x1="38.69" y1="38.69" x2="21.72" y2="21.72"/>
+        <line x1="38.69" y1="61.31" x2="21.72" y2="78.28"/>
+        <line x1="61.31" y1="61.31" x2="78.28" y2="78.28"/>
+      </g>
+      <circle cx="50" cy="50" r="15" fill="none" stroke="#000" stroke-width="2.6"/>
+      <circle cx="50" cy="50" r="7.2" fill="#000"/>
+      <g fill="#000" font-weight="700" text-anchor="middle">
+        <text font-size="10" letter-spacing="0.2"><textPath href="#disco-arco-sup" startOffset="50%">BARBEL</textPath></text>
+        <text font-size="7.6"><textPath href="#disco-arco-inf" startOffset="50%">STANDARD</textPath></text>
+        <text x="29" y="48" font-size="9">45</text>
+        <text x="29" y="57" font-size="9">LBS</text>
+        <text x="71" y="48" font-size="9">45</text>
+        <text x="71" y="57" font-size="9">LBS</text>
+      </g>
+    </mask>
+    <circle cx="50" cy="50" r="48" fill="currentColor" mask="url(#disco-mascara)"/>
+  </symbol>
+</defs></svg>`;
+
+const DISCO = `<svg viewBox="0 0 100 100" aria-hidden="true"><use href="#disco-pesa"/></svg>`;
 
 function discos(rating: string): HTMLElement {
   const llenos = (rating.match(/★/g) ?? []).length;
@@ -297,6 +333,12 @@ export type HubAcciones = MarketplaceAcciones & { salir?: () => void };
 
 export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
   const carrito = new Carrito();
+
+  // El símbolo del disco, una vez y antes que nada: los 160 `<use>` de la
+  // rejilla lo buscan por identificador.
+  const defs = el("div", { class: "hub-defs-caja" });
+  defs.innerHTML = DISCO_DEFS;
+  cont.append(defs);
 
   // ── Cabecera ─────────────────────────────────────────────────────────────
   // El logotipo completo —marca y nombre en una sola pieza— en vez del icono

@@ -3189,7 +3189,10 @@ body.modo-prototipo #simbar {
    entero hereda `currentColor`, así que lleno y vacío son la misma pieza con
    distinto color y no hay dos SVG que mantener. */
 .hub-discos { display: flex; align-items: center; gap: 2px; }
-.hub-disco { width: 18px; height: 18px; display: block; color: #4e5155; }
+.hub-disco { width: 22px; height: 22px; display: block; color: #4e5155; }
+.hub-disco svg { width: 100%; height: 100%; display: block; }
+/* El símbolo vive fuera de la vista pero dentro del documento. */
+.hub-defs-caja, .hub-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 .hub-disco.lleno { color: #fff; }
 .hub-nota {
   margin-left: 6px; font-size: 0.78rem; font-weight: 700;

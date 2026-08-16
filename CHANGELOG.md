@@ -5,6 +5,45 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.68] — 2026-08-16
+
+### Cambiado
+
+- **EL DISCO DE VALORACIÓN ES EL DE LA MARCA, REDIBUJADO A VECTOR.** La versión
+  de 0.2.67 era una interpretación —dos aros— y no era lo que pedía el
+  diseñador. Ahora está el plato entero: aro exterior, cuatro radios en
+  diagonal, «BARBEL» arqueado arriba, «STANDARD» arqueado abajo, «45 LBS» a
+  ambos lados, buje y agujero central. Blanco el lleno, gris el vacío.
+
+  **Por qué se redibujó en vez de recortarlo.** No hay ningún disco limpio del
+  que partir: el del logotipo (`brand/logo-mark.png`) lleva el compás encima y
+  le tapa medio plato, y en la máquina no hay `potrace` ni ningún otro trazador.
+  Así que se midió el plato del logotipo radio a radio —aro exterior en 0,89 del
+  radio, cuerpo hasta 0,81, buje en 0,15, agujero en 0,072— y se volvió a
+  levantar en SVG. Es vector de verdad: el mismo dibujo vale a 22 px en una
+  ficha y a 500 px en una lámina, sin perder resolución.
+
+  **La máscara es lo que lo hace funcionar sobre cualquier fondo.** El plato es
+  una sola pieza de `currentColor` y todo lo demás —aro, radios, buje, agujero y
+  letras— son AGUJEROS de verdad, no dibujos del color del fondo. Pintarlos del
+  color de la tarjeta habría sido más corto y se habría roto en cuanto el disco
+  apareciera sobre otra cosa.
+
+  **Se define una sola vez.** En la rejilla del mercado hay 32 fichas × 5
+  discos = 160 discos; repetir el dibujo entero 160 veces traería además los
+  mismos identificadores de máscara y de arco, que en un documento tienen que
+  ser únicos. Va un `<symbol>` en el hub y cada disco es un `<use>`.
+
+- **Los discos suben de 18 a 22 px.** Con el detalle del plato dentro, por
+  debajo de veinte se empastan en una mancha.
+
+### Sabido
+
+- **A 22 px las letras del plato no se leen**, y no pueden: son texto de siete
+  unidades sobre un dibujo de cien. Están porque a tamaños grandes el disco es
+  correcto y porque de cerca dan la textura que hace que se reconozca la pieza,
+  no para leerlas en una ficha.
+
 ## [0.2.67] — 2026-08-16
 
 ### Cambiado
