@@ -41,6 +41,22 @@ npm run preview    # sirve el build de producción
 npm run typecheck  # solo comprobación de tipos
 ```
 
+### Pruebas
+
+63 pruebas de extremo a extremo sobre el build real (Playwright + Chromium):
+manejan la aplicación como lo haría una persona y miden la escena de three.js
+desde dentro de la página, en centímetros y grados.
+
+```bash
+npm run build
+npx vite preview --port 4174 --strictPort &
+bash pruebas/correr-todo.sh          # ~35 min; resumen en pruebas/salidas/
+```
+
+Los requisitos, los rojos conocidos y cómo están escritas —incluida la regla de
+**comprobar la propiedad y no el número**— están en
+[`pruebas/LEEME.md`](pruebas/LEEME.md).
+
 ## Empaquetado (Android / Windows)
 
 El mismo bundle web (`dist/`, con `base: "./"` para cargarse desde `file://`)

@@ -7,3 +7,8 @@ dist/
 # Empaquetado nativo (fases posteriores)
 android/app/build/
 src-tauri/target/
+
+# Lo que producen las pruebas (ver pruebas/LEEME.md)
+pruebas/salidas/
+pruebas/*.png
+pruebas/*.prefab.json

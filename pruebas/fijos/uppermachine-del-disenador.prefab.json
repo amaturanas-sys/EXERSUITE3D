@@ -1,0 +1,1936 @@
+{
+  "formato": "exersuite3d-prefab",
+  "version": 2,
+  "app": "0.2.31",
+  "label": "n",
+  "piezas": [
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            3.552713678800501e-15,
+            -33.147247367867,
+            -55.07963581171841
+          ],
+          [
+            7.842386733544824e-31,
+            -25.022211769299762,
+            -84.96850836013549
+          ],
+          [
+            0,
+            -6.938893903907228e-18,
+            -90.08713129115225
+          ],
+          [
+            -7.934831370875412e-31,
+            25.022211769299766,
+            -84.99823530591593
+          ],
+          [
+            -3.9968028886505635e-15,
+            32.82777653149266,
+            -55.047343426578735
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        2.5,
+        59.9413
+      ],
+      "rotq": [
+        0,
+        0,
+        -0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        70.8256,
+        5,
+        38.1335
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -44.94996065031512,
+            0
+          ],
+          [
+            0,
+            -22.47498032515756,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            22.47498032515756,
+            0
+          ],
+          [
+            0,
+            44.94996065031512,
+            0
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        2.5,
+        17.0268
+      ],
+      "rotq": [
+        0.707107,
+        0,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5,
+        5,
+        89.8999
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 2.5,
+        "holeSpacing": 5,
+        "path": [
+          [
+            6.938893903907228e-18,
+            -64.23452582337295,
+            7.105427357601002e-15
+          ],
+          [
+            0,
+            -22.47498032515756,
+            0
+          ],
+          [
+            -0.02221176929976209,
+            17.558054627613366,
+            0.6284358836466133
+          ],
+          [
+            -0.04442353859952418,
+            57.59108958038429,
+            1.2568717672932266
+          ],
+          [
+            -0.022211769299762055,
+            77.63421037958277,
+            2.246536297579226
+          ],
+          [
+            6.245004513516506e-17,
+            97.6773311787813,
+            21.55880253083412
+          ],
+          [
+            6.245004513516506e-17,
+            116.42195181382156,
+            22.147246503210518
+          ],
+          [
+            4.163336342344337e-17,
+            145.05263251855592,
+            22.367194042125792
+          ]
+        ],
+        "ventanas": [
+          {
+            "eje": "z",
+            "u": 6.938893903907228e-18,
+            "v": 104.65700149536129,
+            "du": 3.4419917106628417,
+            "dv": 9.614000225067139
+          }
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        66.7345,
+        -15.3885
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5.042,
+        209.314,
+        27.5317
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -46.95144686580152,
+            -2.4706039816326495
+          ],
+          [
+            0,
+            -16.332310788176482,
+            -4.096061905759562
+          ],
+          [
+            0,
+            -14.928378033350366,
+            -15.965047416484776
+          ],
+          [
+            0,
+            -12.294443574983937,
+            -54.73165114040293
+          ],
+          [
+            0,
+            -11.237490162578759,
+            -67.42494097547267
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        49.4514,
+        54.507
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5,
+        38.2865,
+        69.6462
+      ]
+    },
+    {
+      "comp": "asiento",
+      "nombre": "Asiento",
+      "params": {
+        "kind": "box",
+        "width": 35,
+        "height": 6,
+        "depth": 40,
+        "bevel": 10
+      },
+      "material": "tapizado",
+      "pos": [
+        -0.0024,
+        38.497,
+        30.9101
+      ],
+      "rotq": [
+        0.026177,
+        0,
+        0,
+        0.999657
+      ],
+      "fija": true,
+      "masaKg": 2,
+      "dims": [
+        35,
+        8.0852,
+        40.2592
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -30.216921042428716,
+            -2.4706039816326495
+          ],
+          [
+            0,
+            -16.332310788176482,
+            -4.096061905759562
+          ],
+          [
+            0,
+            -14.928378033350366,
+            -15.965047416484776
+          ],
+          [
+            0,
+            -12.294443574983937,
+            -54.73165114040293
+          ],
+          [
+            0.044423538599524186,
+            -16.309898993019573,
+            -89.63921609457205
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.0024,
+        126.7962,
+        16.0853
+      ],
+      "rotq": [
+        0,
+        0.707107,
+        0.707107,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "escala": [
+        -1,
+        1,
+        1
+      ],
+      "dims": [
+        5.0489,
+        89.9769,
+        20.6809
+      ]
+    },
+    {
+      "comp": "respaldo",
+      "nombre": "Respaldo",
+      "params": {
+        "kind": "box",
+        "width": 35,
+        "height": 60,
+        "depth": 6,
+        "bevel": 5
+      },
+      "material": "tapizado",
+      "pos": [
+        -0.0024,
+        82.0492,
+        8.3514
+      ],
+      "rotq": [
+        -0.034899,
+        0,
+        0,
+        0.999391
+      ],
+      "fija": true,
+      "masaKg": 2,
+      "dims": [
+        35,
+        60.2724,
+        10.1708
+      ]
+    },
+    {
+      "comp": "respaldo",
+      "nombre": "Respaldo 2",
+      "params": {
+        "kind": "box",
+        "width": 20,
+        "height": 25,
+        "depth": 6,
+        "bevel": 5
+      },
+      "material": "tapizado",
+      "pos": [
+        0.1257,
+        125.0266,
+        5.4854
+      ],
+      "rotq": [
+        -0.034899,
+        0,
+        0,
+        0.999391
+      ],
+      "fija": true,
+      "masaKg": 2,
+      "dims": [
+        20,
+        25.3576,
+        7.7293
+      ]
+    },
+    {
+      "comp": "tubo-guia-ttp",
+      "nombre": "Tubo guía izq.",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 214,
+        "depth": 4
+      },
+      "material": "acero-pulido",
+      "pos": [
+        -6.3995,
+        106.5949,
+        -61.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        4,
+        213.792,
+        4
+      ]
+    },
+    {
+      "comp": "tubo-guia-ttp",
+      "nombre": "Tubo guía der.",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 214,
+        "depth": 4
+      },
+      "material": "acero-pulido",
+      "pos": [
+        6.9113,
+        106.5949,
+        -61.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        4,
+        213.792,
+        4
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Polea alta frontal",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.0887,
+        210.6949,
+        17.0147
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Polea alta trasera",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.0887,
+        210.6949,
+        -27.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Polea de torre",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.0887,
+        202.6949,
+        -55.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Carro: polea sup.",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.0887,
+        135.6949,
+        -32.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": false,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Carro: polea inf.",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.0887,
+        122.6949,
+        -32.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": false,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "puente-carro-ttp",
+      "nombre": "Puente del carro",
+      "params": {
+        "kind": "box",
+        "width": 3.5,
+        "height": 20.4,
+        "depth": 7.2
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.0887,
+        128.6949,
+        -32.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": false,
+      "masaKg": 0.2,
+      "dims": [
+        3.514,
+        20.4,
+        7.214
+      ]
+    },
+    {
+      "comp": "placa-polea-ttp",
+      "nombre": "Placa polea baja",
+      "params": {
+        "kind": "box",
+        "width": 19,
+        "height": 7,
+        "depth": 26
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.0887,
+        3.1949,
+        -45.5853
+      ],
+      "rotq": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "escala": [
+        -1,
+        1,
+        1
+      ],
+      "dims": [
+        19.024,
+        7,
+        26
+      ]
+    },
+    {
+      "comp": "barra-lat-ttp",
+      "nombre": "Remo de polea alta",
+      "params": {
+        "kind": "box",
+        "width": 75,
+        "height": 7,
+        "depth": 2
+      },
+      "material": "cromo",
+      "pos": [
+        -0.2087,
+        209.9419,
+        27.2447
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": false,
+      "masaKg": 4,
+      "dims": [
+        74.93,
+        6.794,
+        1.8
+      ]
+    },
+    {
+      "comp": "pletina-ttp",
+      "nombre": "Pletina TTP",
+      "params": {
+        "kind": "box",
+        "width": 45,
+        "height": 5,
+        "depth": 7
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.0887,
+        3.1949,
+        -62.0853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        45,
+        5,
+        7
+      ]
+    },
+    {
+      "comp": "bastidor-sup-ttp",
+      "nombre": "Bastidor superior TTP",
+      "params": {
+        "kind": "box",
+        "width": 32,
+        "height": 15,
+        "depth": 92.3
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.2087,
+        206.5449,
+        -18.8853
+      ],
+      "rotq": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        32.092,
+        15,
+        92.26
+      ]
+    },
+    {
+      "comp": "pila-pesos",
+      "nombre": "Bloque de pesos",
+      "params": {
+        "kind": "box",
+        "width": 25,
+        "height": 90,
+        "depth": 18,
+        "holeDiameter": 6,
+        "holeSpacing": 13.3
+      },
+      "material": "hierro-fundido",
+      "pos": [
+        0.2563,
+        52.8951,
+        -61.9853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": false,
+      "masaKg": 102,
+      "dims": [
+        25,
+        90,
+        22
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Roldana externa",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        -0.2087,
+        205.0675,
+        -19.2526
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Placa de montaje",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.8,
+        "depth": 5.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.2087,
+        208.7745,
+        -19.2526
+      ],
+      "rotq": [
+        -0.707107,
+        0,
+        0.707107,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5.8,
+        0.8,
+        5
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Mejilla de soporte",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 4.907000112533569,
+        "depth": 0.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        -2.2587,
+        206.721,
+        -19.2526
+      ],
+      "rotq": [
+        -0.707107,
+        0,
+        0.707107,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        0.8,
+        4.907,
+        4
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Mejilla de soporte",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 4.907000112533569,
+        "depth": 0.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        1.8413,
+        206.721,
+        -19.2526
+      ],
+      "rotq": [
+        -0.707107,
+        0,
+        0.707107,
+        0
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        0.8,
+        4.907,
+        4
+      ]
+    },
+    {
+      "comp": "terminal-cable",
+      "nombre": "Terminal de cable",
+      "params": {
+        "kind": "torus",
+        "radius": 2.2,
+        "tubeRadius": 0.7
+      },
+      "material": "acero-pulido",
+      "pos": [
+        0.4523,
+        7.0149,
+        -43.9595
+      ],
+      "rotq": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.1,
+      "dims": [
+        1.4,
+        5.8,
+        5.8
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Roldana externa 2",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        0.042,
+        9.107,
+        -24.8569
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Placa de montaje",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.8,
+        "depth": 5.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        5.4,
+        -24.8569
+      ],
+      "rotq": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5.8,
+        0.8,
+        5
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Mejilla de soporte",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 4.907000112533569,
+        "depth": 0.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        -2.008,
+        7.4535,
+        -24.8569
+      ],
+      "rotq": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        0.8,
+        4.907,
+        4
+      ]
+    },
+    {
+      "comp": "soporte-roldana",
+      "nombre": "Mejilla de soporte",
+      "params": {
+        "kind": "box",
+        "width": 4,
+        "height": 4.907000112533569,
+        "depth": 0.8
+      },
+      "material": "acero-negro",
+      "pos": [
+        2.092,
+        7.4535,
+        -24.8569
+      ],
+      "rotq": [
+        0,
+        -0.707107,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        0.8,
+        4.907,
+        4
+      ]
+    },
+    {
+      "comp": "roldana",
+      "nombre": "Roldana interna",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 4,
+        "radiusBottom": 4,
+        "height": 2.5
+      },
+      "material": "nylon",
+      "pos": [
+        0.042,
+        171.3915,
+        6.9021
+      ],
+      "rotq": [
+        0,
+        0,
+        -0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.3,
+      "dims": [
+        2.344,
+        7.214,
+        7.214
+      ]
+    },
+    {
+      "comp": "eje-roldana",
+      "nombre": "Eje de la roldana",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 0.9,
+        "radiusBottom": 0.9,
+        "height": 5.041991710662842
+      },
+      "material": "acero-pulido",
+      "pos": [
+        0.042,
+        171.3915,
+        6.9021
+      ],
+      "rotq": [
+        0,
+        0,
+        -0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        5.042,
+        1.8,
+        1.8
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -8.301600461866286,
+            -1.2320493349143335
+          ],
+          [
+            -1.3877787807814457e-17,
+            4.052349042223483,
+            -5.684341886080802e-14
+          ],
+          [
+            -2.0816681711721685e-17,
+            11.8458764190122,
+            1.6193861096516446
+          ],
+          [
+            -4.163336342344337e-17,
+            13.89861656019687,
+            8.089258516799696
+          ],
+          [
+            -2.0816681711721685e-17,
+            26.505176127462416,
+            10.397512408459562
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        167.535,
+        24.0002
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": false,
+      "masaKg": 4,
+      "escala": [
+        1,
+        1,
+        -1
+      ],
+      "dims": [
+        5,
+        35.3947,
+        16.5935
+      ]
+    },
+    {
+      "comp": "jota-pr",
+      "nombre": "Anclaje de cadena POWERRACK",
+      "params": {
+        "kind": "box",
+        "width": 13.2,
+        "height": 13,
+        "depth": 7.4
+      },
+      "material": "acero-negro",
+      "pos": [
+        0.042,
+        191.7771,
+        9.1569
+      ],
+      "rotq": [
+        -0.002152,
+        0.707104,
+        0.002152,
+        -0.707104
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        7.394,
+        13.0981,
+        13.279
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            -1.7763568394002505e-15,
+            -16.7061648917758,
+            -15.28106195460019
+          ],
+          [
+            -5.551115123125783e-16,
+            -15.770699796309255,
+            -32.702923555984015
+          ],
+          [
+            6.661338147750939e-16,
+            -14.835234700842712,
+            -50.12478515736784
+          ],
+          [
+            1.887379141862766e-15,
+            -13.899769605376168,
+            -67.54664675875166
+          ],
+          [
+            3.1086244689504383e-15,
+            -12.964304509909624,
+            -84.96850836013549
+          ],
+          [
+            0.29258444673767325,
+            -0.04442353859957395,
+            -93.58584300522968
+          ],
+          [
+            -3.1086244689504383e-15,
+            12.697754187260692,
+            -84.99823530591593
+          ],
+          [
+            -6.5503158452884236e-15,
+            13.857819833629154,
+            -67.52963979943455
+          ],
+          [
+            -9.992007221626409e-15,
+            15.017885479997618,
+            -50.06104429295316
+          ],
+          [
+            -1.3433698597964394e-14,
+            16.177951126366082,
+            -32.59244878647178
+          ],
+          [
+            -1.687538997430238e-14,
+            17.338016772734544,
+            -15.1238532799904
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        -0.0024,
+        65.6476,
+        24.9397
+      ],
+      "rotq": [
+        0.5,
+        -0.5,
+        0.5,
+        0.5
+      ],
+      "fija": false,
+      "masaKg": 0,
+      "dims": [
+        39.0357,
+        81.1718,
+        5.3658
+      ]
+    },
+    {
+      "comp": "terminal-cable",
+      "nombre": "Terminal de cable 2",
+      "params": {
+        "kind": "torus",
+        "radius": 2.2,
+        "tubeRadius": 0.7
+      },
+      "material": "acero-pulido",
+      "pos": [
+        -0.0776,
+        166.8214,
+        19.7493
+      ],
+      "rotq": [
+        0,
+        0.707107,
+        0,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0.1,
+      "dims": [
+        1.4,
+        5.8,
+        5.8
+      ]
+    },
+    {
+      "comp": "terminal-cable",
+      "nombre": "Terminal de cable 3",
+      "params": {
+        "kind": "torus",
+        "radius": 1,
+        "tubeRadius": 0.3
+      },
+      "material": "acero-pulido",
+      "pos": [
+        -0.2087,
+        213.3389,
+        27.2447
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": false,
+      "masaKg": 0.1,
+      "dims": [
+        2.6,
+        2.6,
+        0.6
+      ]
+    },
+    {
+      "comp": "pilar-linea",
+      "nombre": "Pilar / travesaño",
+      "params": {
+        "kind": "beam",
+        "depth": 5,
+        "width": 5,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            4.440892098500626e-16,
+            -30.060133521800257,
+            -7.107134243343481
+          ],
+          [
+            0,
+            -15.030066760900128,
+            0
+          ],
+          [
+            1.021405182655144e-14,
+            -1.104557060399781,
+            -0.10855939590225105
+          ],
+          [
+            0,
+            15.03006676090013,
+            0
+          ],
+          [
+            0,
+            30.060133521800257,
+            -7.050284276671899
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        -1.0626,
+        2.5,
+        62.0853
+      ],
+      "rotq": [
+        0,
+        0,
+        0.707107,
+        0.707107
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        62.3076,
+        5,
+        12.3171
+      ]
+    },
+    {
+      "comp": "tubo-linea",
+      "nombre": "Tubo de acero",
+      "params": {
+        "kind": "tube",
+        "radius": 1.5,
+        "path": [
+          [
+            16.957126986372145,
+            0.061551209251234695,
+            -0.7123283341547513
+          ],
+          [
+            12.95975664258323,
+            -14.990342636877983,
+            0
+          ],
+          [
+            6.263286765540514,
+            -15.362532704672859,
+            0
+          ],
+          [
+            4.321148388847288,
+            -1.9650033896175927,
+            0
+          ],
+          [
+            4.426522209174728,
+            8.855582698160063,
+            0
+          ],
+          [
+            4.964316377864687,
+            14.836873345087099,
+            0
+          ],
+          [
+            12.84590801724009,
+            20.550658907030204,
+            -0.3561641670773765
+          ],
+          [
+            18.69722545592484,
+            26.26444446897331,
+            -0.712328334154753
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        -34.2976,
+        80.7099,
+        25.652
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        17.0678,
+        44.5619,
+        3.7236
+      ]
+    },
+    {
+      "comp": "tubo-linea",
+      "nombre": "Tubo de acero",
+      "params": {
+        "kind": "tube",
+        "radius": 1.5,
+        "path": [
+          [
+            16.957126986372145,
+            0.061551209251234695,
+            -0.7123283341547513
+          ],
+          [
+            12.95975664258323,
+            -14.990342636877983,
+            0
+          ],
+          [
+            6.263286765540514,
+            -15.362532704672859,
+            0
+          ],
+          [
+            4.321148388847288,
+            -1.9650033896175927,
+            0
+          ],
+          [
+            4.426522209174728,
+            8.855582698160063,
+            0
+          ],
+          [
+            4.964316377864687,
+            14.836873345087099,
+            0
+          ],
+          [
+            12.84590801724009,
+            20.550658907030204,
+            -0.3561641670773765
+          ],
+          [
+            18.69722545592484,
+            26.26444446897331,
+            -0.712328334154753
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        34.2976,
+        80.7099,
+        25.6853
+      ],
+      "rotq": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "escala": [
+        -1,
+        1,
+        1
+      ],
+      "dims": [
+        17.0678,
+        44.5619,
+        3.7236
+      ]
+    },
+    {
+      "comp": "tubo-linea",
+      "nombre": "Tubo de acero",
+      "params": {
+        "kind": "tube",
+        "radius": 1.6,
+        "path": [
+          [
+            0,
+            -6.827808811356717,
+            0
+          ],
+          [
+            0,
+            -3.4139044056783585,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            3.413904405678358,
+            0
+          ],
+          [
+            0,
+            6.827808811356717,
+            0
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        23.0535,
+        89.6025,
+        25.3125
+      ],
+      "rotq": [
+        0.038714,
+        0,
+        -0.707965,
+        0.705185
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        13.8182,
+        3.444,
+        4.1114
+      ]
+    },
+    {
+      "comp": "tubo-linea",
+      "nombre": "Tubo de acero",
+      "params": {
+        "kind": "tube",
+        "radius": 1.6,
+        "path": [
+          [
+            0,
+            -6.827808811356717,
+            0
+          ],
+          [
+            0,
+            -3.4139044056783585,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            3.413904405678358,
+            0
+          ],
+          [
+            0,
+            6.827808811356717,
+            0
+          ]
+        ]
+      },
+      "material": "acero-negro",
+      "pos": [
+        -23.1024,
+        89.6025,
+        25.2853
+      ],
+      "rotq": [
+        -0.038239,
+        0.000033,
+        -0.70649,
+        0.706689
+      ],
+      "fija": true,
+      "masaKg": 0,
+      "dims": [
+        13.8142,
+        3.3843,
+        4.1021
+      ]
+    }
+  ],
+  "uniones": [
+    {
+      "tipo": "bisagra",
+      "fija": 2,
+      "movil": 3,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        111.6845,
+        -15.3885
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 2,
+      "movil": 3,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        55.497,
+        -15.3885
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 1,
+      "movil": 3,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        2.5,
+        52.0364
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 5,
+      "movil": 2,
+      "eje": "z",
+      "ancla": [
+        -0.0024,
+        124.3256,
+        -14.1316
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 1,
+      "movil": 2,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        2.5,
+        -15.3885
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 3,
+      "movil": 5,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        37.157,
+        -0.2246
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 33,
+      "movil": 32,
+      "eje": "x",
+      "ancla": [
+        0.042,
+        191.7527,
+        13.1569
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": false
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 32,
+      "movil": 34,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        159.2334,
+        25.2322
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 1,
+      "movil": 37,
+      "eje": "z",
+      "ancla": [
+        0.042,
+        2.5,
+        61.9767
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 34,
+      "movil": 38,
+      "eje": "z",
+      "ancla": [
+        -15.6003,
+        106.9743,
+        24.9397
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    },
+    {
+      "tipo": "bisagra",
+      "fija": 34,
+      "movil": 38,
+      "eje": "z",
+      "ancla": [
+        -17.3404,
+        80.7714,
+        24.9397
+      ],
+      "min": -90,
+      "max": 0,
+      "limites": true,
+      "bloqueada": true
+    }
+  ],
+  "cables": [
+    {
+      "nodos": [
+        {
+          "pieza": 25,
+          "local": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "pieza": 14,
+          "local": [
+            3.6067,
+            0,
+            0.0444
+          ]
+        },
+        {
+          "pieza": 26,
+          "local": [
+            -3.6061,
+            0,
+            0.0824
+          ]
+        },
+        {
+          "pieza": 21,
+          "local": [
+            3.4699,
+            0,
+            -0.9849
+          ]
+        },
+        {
+          "pieza": 30,
+          "local": [
+            2.8915,
+            0,
+            -2.1564
+          ]
+        },
+        {
+          "pieza": 35,
+          "local": [
+            0,
+            0,
+            0
+          ]
+        }
+      ]
+    },
+    {
+      "nodos": [
+        {
+          "pieza": 20,
+          "local": [
+            0,
+            45,
+            0
+          ]
+        },
+        {
+          "pieza": 12,
+          "local": [
+            3.5755,
+            0,
+            -0.4756
+          ]
+        },
+        {
+          "pieza": 13,
+          "local": [
+            -3.5698,
+            0,
+            0.5164
+          ]
+        },
+        {
+          "pieza": 11,
+          "local": [
+            2.7179,
+            0,
+            -2.3713
+          ]
+        },
+        {
+          "pieza": 10,
+          "local": [
+            -3.5898,
+            0,
+            0.3522
+          ]
+        },
+        {
+          "pieza": 17,
+          "local": [
+            0,
+            3.397,
+            0
+          ]
+        }
+      ]
+    }
+  ]
+}
