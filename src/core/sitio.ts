@@ -10,7 +10,7 @@ import { getIdioma } from "./i18n";
  */
 export const SITIO_WEB: string =
   (import.meta.env.VITE_SITIO_WEB as string | undefined)?.replace(/\/+$/, "") ||
-  "https://exersuite3d.vercel.app";
+  "https://exersuite-3-d.vercel.app";
 
 /** Cómo se lee la dirección en pantalla (sin protocolo: es más corta y clara). */
 export const SITIO_WEB_VISIBLE: string = SITIO_WEB.replace(/^https?:\/\//, "");

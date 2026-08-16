@@ -1,0 +1,344 @@
+{
+ "_generado": "pruebas/fijos/preparar-hub-sitio.py — no editar a mano",
+ "paises": {
+  "cl": {
+   "es": "Chile",
+   "en": "Chile",
+   "bandera": "🇨🇱"
+  },
+  "ar": {
+   "es": "Argentina",
+   "en": "Argentina",
+   "bandera": "🇦🇷"
+  },
+  "mx": {
+   "es": "México",
+   "en": "Mexico",
+   "bandera": "🇲🇽"
+  },
+  "es": {
+   "es": "España",
+   "en": "Spain",
+   "bandera": "🇪🇸"
+  },
+  "us": {
+   "es": "Estados Unidos",
+   "en": "United States",
+   "bandera": "🇺🇸"
+  },
+  "de": {
+   "es": "Alemania",
+   "en": "Germany",
+   "bandera": "🇩🇪"
+  },
+  "jp": {
+   "es": "Japón",
+   "en": "Japan",
+   "bandera": "🇯🇵"
+  }
+ },
+ "marcas": [
+  {
+   "id": "promax",
+   "nombre": "ProMax Fitness",
+   "corto": "ProMax",
+   "pais": "us",
+   "pyme": false,
+   "meses": 34,
+   "logo": "icono-promax.webp"
+  },
+  {
+   "id": "steelcore",
+   "nombre": "Steel Core Gym",
+   "corto": "Steel Core",
+   "pais": "us",
+   "pyme": false,
+   "meses": 26,
+   "logo": "icono-steelcore.webp"
+  },
+  {
+   "id": "titan",
+   "nombre": "Titan Commercial",
+   "corto": "Titan",
+   "pais": "mx",
+   "pyme": false,
+   "meses": 22,
+   "logo": "icono-titan.webp"
+  },
+  {
+   "id": "equipx",
+   "nombre": "EquipX Pro",
+   "corto": "EquipX",
+   "pais": "de",
+   "pyme": false,
+   "meses": 19,
+   "logo": "icono-equipx.webp"
+  },
+  {
+   "id": "flexion",
+   "nombre": "Flexion Stations",
+   "corto": "Flexion",
+   "pais": "es",
+   "pyme": true,
+   "meses": 15,
+   "logo": "icono-flexion.webp"
+  },
+  {
+   "id": "matrix",
+   "nombre": "Matrix Fitness Solutions",
+   "corto": "Matrix",
+   "pais": "jp",
+   "pyme": false,
+   "meses": 41,
+   "logo": "icono-matrix.webp"
+  },
+  {
+   "id": "optimus",
+   "nombre": "Optimus Gym Equip",
+   "corto": "Optimus",
+   "pais": "es",
+   "pyme": false,
+   "meses": 28,
+   "logo": "icono-optimus.webp"
+  },
+  {
+   "id": "revolution",
+   "nombre": "Revolution Fitness",
+   "corto": "Revolution",
+   "pais": "de",
+   "pyme": false,
+   "meses": 4,
+   "logo": "icono-revolution.webp"
+  },
+  {
+   "id": "precision",
+   "nombre": "Precision Gym",
+   "corto": "Precision",
+   "pais": "us",
+   "pyme": true,
+   "meses": 1,
+   "logo": "icono-precision.webp"
+  },
+  {
+   "id": "evolution",
+   "nombre": "Evolution Fitness Products",
+   "corto": "Evolution",
+   "pais": "cl",
+   "pyme": true,
+   "meses": 7,
+   "logo": "icono-evolution.webp"
+  }
+ ],
+ "productos": [
+  {
+   "id": "pm-brazos",
+   "marcaId": "promax",
+   "es": "Brazos de seguridad abatibles PR-Safe",
+   "en": "PR-Safe folding spotter arms",
+   "categoria": "accesorios",
+   "precio": 390,
+   "antes": 450,
+   "notaEs": "Se pliegan contra el poste y paran la barra",
+   "notaEn": "Fold against the upright and catch the bar",
+   "discos": 5,
+   "dias": 52,
+   "foto": "p-brazos.webp"
+  },
+  {
+   "id": "sc-discos",
+   "marcaId": "steelcore",
+   "es": "Set discos bumper 150 kg",
+   "en": "150 kg bumper plate set",
+   "categoria": "pesos",
+   "precio": 620,
+   "antes": 720,
+   "notaEs": "Goma vulcanizada, rebote muerto",
+   "notaEn": "Vulcanized rubber, dead bounce",
+   "discos": 5,
+   "dias": 340,
+   "foto": "p-discos-pila.webp"
+  },
+  {
+   "id": "sc-barra",
+   "marcaId": "steelcore",
+   "es": "Barra olímpica Steel Core 20 kg",
+   "en": "Steel Core 20 kg olympic bar",
+   "categoria": "pesos",
+   "precio": 245,
+   "antes": 0,
+   "notaEs": "Cromada, Ø 28 mm, moleteado medio",
+   "notaEn": "Chromed, Ø 28 mm, medium knurl",
+   "discos": 3,
+   "dias": 210,
+   "foto": "p-barra.webp"
+  },
+  {
+   "id": "ti-prensa",
+   "marcaId": "titan",
+   "es": "Prensa de piernas 45° Titan",
+   "en": "Titan 45° leg press",
+   "categoria": "maquinas",
+   "precio": 1580,
+   "antes": 1790,
+   "notaEs": "Carro sobre rodamientos, doble tope",
+   "notaEn": "Bearing-guided carriage, dual stop",
+   "discos": 4,
+   "dias": 190,
+   "foto": "p-prensa.webp"
+  },
+  {
+   "id": "ex-multigrip",
+   "marcaId": "equipx",
+   "es": "Barra de jalón multigrip EX",
+   "en": "EX multigrip lat bar",
+   "categoria": "poleas",
+   "precio": 165,
+   "antes": 0,
+   "notaEs": "Cromada, Ø 32 mm, cinco agarres",
+   "notaEn": "Chromed, Ø 32 mm, five grips",
+   "discos": 4,
+   "dias": 150,
+   "foto": "p-multigrip.webp"
+  },
+  {
+   "id": "ex-jota",
+   "marcaId": "equipx",
+   "es": "Par de jotas con rodillo UHMW",
+   "en": "UHMW roller J-hook pair",
+   "categoria": "accesorios",
+   "precio": 95,
+   "antes": 115,
+   "notaEs": "Calza en pinholes de 5 cm",
+   "notaEn": "Fits 5 cm pinholes",
+   "discos": 3,
+   "dias": 380,
+   "foto": "p-pasador.webp"
+  },
+  {
+   "id": "ex-agarres",
+   "marcaId": "equipx",
+   "es": "Par de agarres de estribo EX-Grip",
+   "en": "EX-Grip stirrup handle pair",
+   "categoria": "accesorios",
+   "precio": 75,
+   "antes": 0,
+   "notaEs": "Puño moldeado y mosquetón de acero",
+   "notaEn": "Molded grip and steel carabiner",
+   "discos": 5,
+   "dias": 24,
+   "foto": "p-agarres.webp"
+  },
+  {
+   "id": "fx-torre",
+   "marcaId": "flexion",
+   "es": "Torre de polea dual Flexion",
+   "en": "Flexion dual pulley tower",
+   "categoria": "poleas",
+   "precio": 2290,
+   "antes": 2590,
+   "notaEs": "Pila selectorizada de 90 kg",
+   "notaEn": "90 kg selectorized stack",
+   "discos": 5,
+   "dias": 300,
+   "foto": "p-torre.webp"
+  },
+  {
+   "id": "fx-estacion",
+   "marcaId": "flexion",
+   "es": "Estación de polea con banco FX-Duo",
+   "en": "FX-Duo pulley station with bench",
+   "categoria": "maquinas",
+   "precio": 1290,
+   "antes": 0,
+   "notaEs": "Jalón y extensión en 1,2 m de pared",
+   "notaEn": "Pulldown and extension in 1.2 m of wall",
+   "discos": 4,
+   "dias": 66,
+   "foto": "p-estacion.webp"
+  },
+  {
+   "id": "mx-smith",
+   "marcaId": "matrix",
+   "es": "Multipower Matrix M-Linear",
+   "en": "Matrix M-Linear multipower",
+   "categoria": "maquinas",
+   "precio": 2590,
+   "antes": 2890,
+   "notaEs": "Guías rectificadas, contrapeso ajustable",
+   "notaEn": "Ground rails, adjustable counterweight",
+   "discos": 5,
+   "dias": 320,
+   "foto": "p-smith.webp"
+  },
+  {
+   "id": "mx-cadenas",
+   "marcaId": "matrix",
+   "es": "Cadenas de seguridad (par)",
+   "en": "Safety chains (pair)",
+   "categoria": "accesorios",
+   "precio": 68,
+   "antes": 0,
+   "notaEs": "Detienen la barra como en la app",
+   "notaEn": "They stop the bar, app-style",
+   "discos": 5,
+   "dias": 265,
+   "foto": "p-cadenas.webp"
+  },
+  {
+   "id": "op-rack",
+   "marcaId": "optimus",
+   "es": "Rack Optimus O-700",
+   "en": "Optimus O-700 rack",
+   "categoria": "racks",
+   "precio": 1450,
+   "antes": 0,
+   "notaEs": "Cuatro postes, acabado en polvo",
+   "notaEn": "Four uprights, powder coated",
+   "discos": 5,
+   "dias": 285,
+   "foto": "p-rack.webp"
+  },
+  {
+   "id": "rv-torre",
+   "marcaId": "revolution",
+   "es": "Torre de poleas Revolution R-2",
+   "en": "Revolution R-2 pulley tower",
+   "categoria": "poleas",
+   "precio": 2450,
+   "antes": 0,
+   "notaEs": "Roldanas accesibles sin desmontar",
+   "notaEn": "Sheaves reachable without stripping",
+   "discos": 5,
+   "dias": 18,
+   "foto": "p-torre-poleas.webp"
+  },
+  {
+   "id": "pr-quimera",
+   "marcaId": "precision",
+   "es": "Tu diseño, fabricado",
+   "en": "Your design, built",
+   "categoria": "racks",
+   "precio": 0,
+   "antes": 0,
+   "notaEs": "Sube tu prefab .json y recibe oferta",
+   "notaEn": "Upload your .json prefab for a quote",
+   "discos": 5,
+   "dias": 6,
+   "foto": "p-quimera.webp"
+  },
+  {
+   "id": "ev-smith",
+   "marcaId": "evolution",
+   "es": "Multipower Evolution E-Linear",
+   "en": "Evolution E-Linear multipower",
+   "categoria": "maquinas",
+   "precio": 2190,
+   "antes": 2390,
+   "notaEs": "Registro de cambios publicado",
+   "notaEn": "Published change log",
+   "discos": 4,
+   "dias": 240,
+   "foto": "p-multipower.webp"
+  }
+ ]
+}

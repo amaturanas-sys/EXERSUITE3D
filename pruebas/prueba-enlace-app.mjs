@@ -32,8 +32,8 @@ for (const idioma of ["es", "en"]) {
   });
   console.log(`\n── ${idioma} ──`, JSON.stringify(info));
   ok(info.hay && info.visible, `el enlace al sitio está a la vista en la Home (${idioma})`);
-  ok(info.texto === "exersuite3d.vercel.app", `la dirección se lee escrita: "${info.texto}"`);
-  ok(info.href === `https://exersuite3d.vercel.app/?lang=${idioma}`, `y lleva el idioma de la app (${info.href})`);
+  ok(info.texto === "exersuite-3-d.vercel.app", `la dirección se lee escrita: "${info.texto}"`);
+  ok(info.href === `https://exersuite-3-d.vercel.app/?lang=${idioma}`, `y lleva el idioma de la app (${info.href})`);
   ok(info.target === "_blank" && /noopener/.test(info.rel), "abre fuera y sin exponer la ventana");
   ok(info.copiar, "y tiene botón de copiar por si la ventana no deja abrir pestañas");
   ok(idioma === "en" ? /Project site/.test(info.etiqueta) : /Sitio del proyecto/.test(info.etiqueta),

@@ -5,6 +5,57 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.71] — 2026-08-16
+
+### Cambiado
+
+- **LA DIRECCIÓN OFICIAL ES `exersuite-3-d.vercel.app`.** Estaba escrita sin
+  guiones —`exersuite3d.vercel.app`— y no era la buena. Corregida en los cinco
+  sitios donde vivía: el enlace de la Home de la aplicación (`core/sitio.ts`),
+  el README, los metadatos del sitio de marketing, la guía de despliegue y la
+  prueba que la comprueba.
+
+### Añadido
+
+- **EL SITIO OFICIAL SE PARTE EN DOS MITADES.** Arriba sigue lo de siempre
+  —presentar y vender el software—; abajo, detrás de la historia, entra una
+  **versión de escaparate del hub**.
+
+  Es a propósito una versión CORTA, no el hub metido con calzador: cuatro
+  filtros en vez de seis recorridos, ninguna ficha abre detalle, y no se puede
+  comprar nada. El botón de cada tarjeta lleva al precio del software, no a un
+  carrito, porque lo que vende la página es la aplicación.
+
+  Se puede filtrar por marca —pulsando su logotipo— y por recorrido: todo el
+  catálogo, recién lanzados, marcas recién llegadas y talleres que fabrican
+  cerca. El contador se mueve en vivo.
+
+  **Usa los tokens del sitio —tinta y papel hueso— y no el negro con naranja de
+  la aplicación.** Es la misma marca contando lo mismo, no un trozo de la app
+  pegado dentro.
+
+- **`lib/hub-datos.json`, generado, no escrito a mano.** La verdad del catálogo
+  vive en `datos.ts` y es TypeScript; el sitio es JavaScript y no puede
+  importarlo. En vez de mantener dos catálogos —que es como se desincronizan—,
+  `pruebas/fijos/preparar-hub-sitio.py` lee el de la aplicación, escribe el JSON
+  y copia las imágenes que hagan falta.
+
+  **Solo pasan los productos con fotografía**: 15 de los 35, y las 10 marcas que
+  tienen alguno. El dibujo SVG de las fichas vive en `arte.ts`, que tampoco
+  viaja al sitio, y un escaparate público con la mitad de las fichas en dibujo
+  de relleno se ve a medio hacer.
+
+### Corregido
+
+- **El hub del sitio no reaccionaba a los filtros.** El precio se formateaba con
+  `toLocaleString`, que lo pinta el servidor y lo vuelve a pintar el navegador
+  sin que los dos tengan por qué traer los mismos datos de idioma: Node escribía
+  «1,690» donde el navegador escribía «1.690». React lo veía como una página
+  distinta, tiraba la hidratación entera —error #423— y la sección se quedaba
+  sin oyentes. **Fallaba en silencio**: la página se veía perfecta y los botones
+  no hacían nada. Ahora los miles se agrupan con una expresión regular y
+  servidor y navegador escriben siempre lo mismo.
+
 ## [0.2.70] — 2026-08-16
 
 ### Añadido

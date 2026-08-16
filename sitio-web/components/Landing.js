@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Lienzo from "./Lienzo";
 import Widgets from "./Widgets";
+import Hub from "./Hub";
 import { elegirYSubir } from "@/lib/imagenes";
 import { campoTraducido, rutaDeIdioma } from "@/lib/i18n";
 import { txt, txtApi } from "@/lib/textos";
@@ -304,6 +305,24 @@ export default function Landing({
                   <T key={i} {...ed} ruta={`historia.parrafosEn.${i}`} valor={p} idiomaEdicion="es" etiqueta="p" />
                 ))}
               </details>
+            )}
+          </div>
+        </Seccion>
+      )}
+
+      {/* --------------------------------------- el hub, versión escaparate */}
+      {c.hub && (
+        <Seccion {...ed} onFabrica={onFabrica} id="hub" visible={c.hub.visible}>
+          <div id="hub">
+            {editable ? (
+              /* En el panel solo se editan los textos: el catálogo lo manda la
+                 aplicación y una rejilla viva estorbaría para escribir. */
+              <div className="contenedor">
+                <T {...ed} ruta="hub.titulo" valor={c.hub.titulo} etiqueta="h2" />
+                <T {...ed} ruta="hub.texto" valor={c.hub.texto} etiqueta="p" className="dim" />
+              </div>
+            ) : (
+              <Hub idioma={idioma} titulo={c.hub.titulo} texto={c.hub.texto} />
             )}
           </div>
         </Seccion>

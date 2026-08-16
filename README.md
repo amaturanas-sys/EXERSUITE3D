@@ -4,7 +4,7 @@
 
 # EXERSUITE3D
 
-**Sitio del proyecto: <https://exersuite3d.vercel.app>** (español e inglés,
+**Sitio del proyecto: <https://exersuite-3-d.vercel.app>** (español e inglés,
 según la preferencia del navegador; también `/es` y `/en`). Ahí están la
 presentación, las capturas y la descarga. El código de esa página vive en
 [`sitio-web/`](sitio-web/) y su despliegue está documentado en

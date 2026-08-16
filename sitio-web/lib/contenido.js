@@ -265,6 +265,23 @@ export const CONTENIDO_DEFECTO = {
     ],
   },
 
+  /**
+   * EL HUB, VERSIÓN DE ESCAPARATE (v0.2.71).
+   *
+   * Abre la mitad de abajo de la página: arriba se presenta y se vende el
+   * software, aquí se enseña que detrás hay marcas y equipos de verdad. El
+   * catálogo NO se edita desde aquí —sale del de la aplicación, ver
+   * `lib/hub-datos.json`—; lo editable es la entradilla.
+   */
+  hub: {
+    visible: true,
+    titulo: "Y dentro, un mercado de equipamiento real",
+    texto:
+      "Marcas de equipamiento comercial publican sus máquinas escaneadas en 3D. " +
+      "Las pruebas a escala real en tu propia sala antes de comprar nada: si no " +
+      "cabe, lo sabes antes de que salga de fábrica.",
+  },
+
   widgets: {
     visible: true,
     lista: [],
@@ -293,6 +310,13 @@ export const CONTENIDO_DEFECTO = {
       firma: "Built by a bodybuilder who works in healthcare, because the tool he needed did not exist.",
       botonTexto: "Buy and download",
       botonSecundario: "See what it does",
+    },
+    hub: {
+      titulo: "And inside, a marketplace of real equipment",
+      texto:
+        "Commercial equipment brands publish their 3D-scanned machines. You try them at " +
+        "true scale in your own room before buying anything: if it doesn't fit, you find " +
+        "out before it leaves the factory.",
     },
     paraQuien: {
       titulo: "The problem",

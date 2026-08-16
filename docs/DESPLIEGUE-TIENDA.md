@@ -52,7 +52,7 @@ Visitante → Página (Vercel) → botón Comprar
    | `ADMIN_PASSWORD` | contraseña del editor /admin |
    | `UPSTASH_REDIS_REST_URL` | de Upstash |
    | `UPSTASH_REDIS_REST_TOKEN` | de Upstash |
-   | `NEXT_PUBLIC_SITE_URL` | la URL pública final (p. ej. https://exersuite3d.vercel.app) |
+   | `NEXT_PUBLIC_SITE_URL` | la URL pública final (p. ej. https://exersuite-3-d.vercel.app) |
 
 3. Deploy. La página queda en `https://<proyecto>.vercel.app` (puedes
    conectar dominio propio en Settings → Domains).

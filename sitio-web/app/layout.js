@@ -27,7 +27,7 @@ const META = {
  */
 export async function generateMetadata() {
   const idioma = normalizarIdioma(headers().get(CABECERA_IDIOMA));
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://exersuite3d.vercel.app";
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://exersuite-3-d.vercel.app";
   return {
     metadataBase: new URL(base),
     ...META[idioma],
