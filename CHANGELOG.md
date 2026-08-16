@@ -5,6 +5,50 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.72] — 2026-08-16
+
+### Corregido
+
+- **Cuatro pruebas seguían midiendo el marketplace que el hub sustituyó.**
+  `paleta` y `humo-v214` llegaban a la biblioteca de modelos pulsando una
+  tarjeta `.mkc-card` que ya no existe; ahora entran por el «Ver en 3D» de una
+  ficha del mercado. `marketplace` y `catalogo` medían las siete ventanas
+  enteras —pestañas `.mk-tab`, ventanas `#mk-newcomers`— y **se retiran**: lo
+  que las sustituye lo cubre `prueba-hub` con sus 62 comprobaciones.
+
+- **`prueba-sitio` daba por rotas las imágenes diferidas.** Comprobaba
+  `complete && naturalWidth > 0`, y una imagen con `loading="lazy"` que todavía
+  no ha entrado en pantalla tiene `complete === false`. Con las quince
+  fotografías del escaparate nuevo, las quince salían «rotas» estando bien.
+  Ahora la prueba recorre la página hasta el pie antes de medir. **Es la primera
+  vez que `sitio` pasa.**
+
+### Sabido
+
+- **La batería son 62 pruebas. El estado real, medido en serie:**
+
+  | | |
+  |---|---|
+  | verdes | 55 |
+  | rojas de verdad | 7 |
+
+  Las siete: `garaje`, `garaje2`, `prototipo`, `prototipo2` y `fable-v214`
+  revientan en el asistente de proyecto nuevo sin llegar a medir nada;
+  `uppermachine` falla 5 aserciones —entran 41 piezas de 42 y 16 uniones de 18—;
+  y `v251` falla 2 —las piernas siguen entrando 2,5 cm en el banco—. Ninguna es
+  de este trabajo.
+
+- **UNA CORRECCIÓN A LO QUE DIJE EN v0.2.63.** Allí informé de que trece pruebas
+  «pasaban en serie». La comprobación que usé buscaba solo marcas `✗` en la
+  salida, y **una prueba que revienta con una excepción no capturada no imprime
+  ninguna**: se las dio por verdes estando rotas. Hay que mirar también el código
+  de salida, que es lo que hace `correr-todo.sh`. Queda escrito en el LEEME.
+
+- **El `vite preview` del 4174 se murió por tercera vez** a media tanda. No es
+  falta de memoria ni de disco —16 GB libres, 26 GB de disco—; queda sin
+  diagnosticar. Mientras tanto, conviene comprobar que sigue vivo antes de dar
+  por buena cualquier reejecución.
+
 ## [0.2.71] — 2026-08-16
 
 ### Cambiado

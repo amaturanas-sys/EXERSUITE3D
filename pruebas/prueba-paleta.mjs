@@ -16,8 +16,12 @@ await page.goto("http://127.0.0.1:4174/");
 await page.waitForTimeout(1000);
 
 // Biblioteca de modelos: las piezas ocultas de la paleta SIGUEN listadas.
-await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(500);
-await page.click(".mkc-card >> nth=0 >> button:has-text('Ver')");
+await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1200);
+// El hub sustituyó al marketplace de siete ventanas en v0.2.62: la puerta a la
+// biblioteca ya no es una tarjeta `.mkc-card` sino el «Ver en 3D» de cualquier
+// ficha del mercado.
+await page.evaluate(() => [...document.querySelectorAll(".hub-btn-card")]
+  .find((b) => /Ver en 3D|View in 3D/.test(b.textContent)).click());
 await page.waitForTimeout(1000);
 const LIB = await page.evaluate(() => {
   const t = document.body.textContent;

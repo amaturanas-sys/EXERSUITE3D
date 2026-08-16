@@ -23,6 +23,27 @@ for (const [idioma, locale, ruta] of [["es", "es-CL", "/"], ["en", "en-US", "/"]
   page.on("pageerror", (e) => rotas.push("JS " + e.message));
   await page.goto(`http://127.0.0.1:3100${ruta}`, { waitUntil: "networkidle" });
 
+  // RECORRER LA PÁGINA ANTES DE MEDIR.
+  //
+  // Desde v0.2.71 el escaparate del hub trae quince fotografías con
+  // `loading="lazy"`, y una imagen diferida que todavía no ha entrado en
+  // pantalla tiene `complete === false`: la comprobación de más abajo las
+  // contaba a todas como rotas. Se baja hasta el pie, se vuelve arriba y se
+  // espera a que no quede ninguna a medias.
+  await page.evaluate(async () => {
+    const paso = window.innerHeight * 0.8;
+    for (let y = 0; y < document.body.scrollHeight; y += paso) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    window.scrollTo(0, 0);
+  });
+  await page.waitForFunction(
+    () => [...document.querySelectorAll("img")].every((i) => i.complete),
+    null,
+    { timeout: 20000 },
+  );
+
   const info = await page.evaluate(() => ({
     lang: document.documentElement.lang,
     h1: document.querySelector("h1")?.textContent ?? "",

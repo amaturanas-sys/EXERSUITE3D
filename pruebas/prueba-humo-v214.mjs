@@ -15,18 +15,19 @@ page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
 await page.waitForTimeout(1000);
 
-// Marketplace accesible desde la landing
+// Marketplace accesible desde la landing.
+//
+// v0.2.72: el hub sustituyó al marketplace de siete ventanas. Esta prueba es de
+// HUMO —solo mira que la puerta abre y que hay algo detrás—; quien mide el hub
+// a fondo es `prueba-hub`, con sus 62 comprobaciones.
 await page.click("text=🛒 MARKETPLACE");
-await page.waitForTimeout(600);
-// v0.2.37: el hub tiene siete ventanas; la pintura vive en "Got a wish".
+await page.waitForTimeout(1200);
 const MK = await page.evaluate(() => ({
-  marcas: document.querySelectorAll(".mkc-card").length,
-  pestanas: document.querySelectorAll(".mk-tab").length,
-  demo: !!document.querySelector(".mk-demo"),
+  marcas: document.querySelectorAll(".hub-historia").length,
+  recorridos: document.querySelectorAll(".hub-tab").length,
+  fichas: document.querySelectorAll(".hub-card").length,
+  swatches: document.querySelectorAll(".od-swatch").length,
 }));
-await page.click(".mk-tab:has-text('Got a wish')");
-await page.waitForTimeout(400);
-MK.swatches = await page.evaluate(() => document.querySelectorAll(".mk-swatch").length);
 console.log("marketplace:", JSON.stringify(MK));
 
 await page.goto("http://localhost:4174/");
@@ -100,7 +101,7 @@ const UI = await page.evaluate(() => {
 console.log("sim:", JSON.stringify({ ...T1, ...UI }));
 
 const ok =
-  MK.marcas >= 5 && MK.pestanas === 7 && MK.swatches === 7 && MK.demo &&
+  MK.marcas >= 10 && MK.recorridos === 5 && MK.fichas >= 30 &&
   bendOn && bendOff &&
   T1.remoDesp > 5 && T1.cables === 2 && T1.tensionKg > 0.5 && T1.tensionKg < 500 &&
   /kg · .*lb/.test(UI.tensionUI) &&

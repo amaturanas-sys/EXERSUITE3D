@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-64 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+62 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -39,7 +39,7 @@ La suite entera tarda **unos 35 minutos**.
   ```bash
   cd sitio-web && npm run dev -- --port 3100
   ```
-  Sin él esa prueba sale en rojo; las otras 62 no la necesitan.
+  Sin él esa prueba sale en rojo; las otras 61 no la necesitan.
 
 ### Concurrencia
 
@@ -93,9 +93,28 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 
 | prueba | por qué |
 |---|---|
-| `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`, `uppermachine`, `freno`, `v251` | rojos de antes, sin revisar. Fallan también en serie |
-| `sitio` | necesita el Next.js en el 3100 (ver arriba) |
-| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie las cinco pasan |
+| `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo, no llegan a medir nada |
+| `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
+| `v251` | 2 aserciones: las piernas siguen entrando 2,5 cm en el banco |
+| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib`, `freno` | **solo** en paralelo: en serie pasan |
+
+`sitio` ya NO está en la lista: desde v0.2.72 pasa, con el Next.js levantado en el
+3100.
+
+### Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`
+
+Cuando una prueba muere con una excepción no capturada —el preview caído, un
+selector que ya no existe— no llega a imprimir ninguna marca. Un vistazo que
+solo busque `✗` la dará por buena. **Hay que mirar también el código de
+salida**, que es lo que hace `correr-todo.sh`:
+
+```bash
+out=$(node prueba-x.mjs 2>&1); code=$?
+malas=$(echo "$out" | grep -cE "✗|❌|PAGEERROR")
+[ "$code" -eq 0 ] && [ "$malas" -eq 0 ] && echo VERDE || echo ROJO
+```
+
+Este error costó dar por verdes, en v0.2.63, unas cuantas que estaban rotas.
 
 **Antes de dar por rojo nada, mira si el preview seguía vivo.** En la tanda de
 v0.2.63 el `vite preview` del 4174 se murió a media carrera y se llevó por
@@ -112,7 +131,7 @@ Las nueve del maniquí —`maniqui-serie`, `maniqui-usa`, `maniqui-fisico`,
 `apoyos`, `colocar`, `zonas`, `press-maquina`, `solape-ui` y `mano-brazo`— están
 en verde.
 
-`hub` también, con sus 62 comprobaciones. Es la única que además deja las vistas
+`hub` también, con sus 62 comprobaciones, y `sitio`, con el Next.js arriba. Es la única que además deja las vistas
 previas del hub (`hub-*.png`), que se miran, no se comparan.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la
