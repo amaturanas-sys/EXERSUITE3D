@@ -51,6 +51,11 @@ export function lamina(arte: string, clase = "hub-foto", op: Opciones = {}): HTM
     }) as HTMLImageElement;
     if (op.diferida) img.loading = "lazy";
     if (op.foco) img.style.objectPosition = op.foco;
+    // Sin esto, tirar del carril por encima de una fotografía arranca el
+    // arrastre NATIVO de imágenes del navegador, que cancela el puntero y deja
+    // el carrusel clavado a los pocos píxeles. Se vio al poner los logotipos de
+    // marca en las burbujas: el carril pasó de moverse 176 px a moverse 22.
+    img.draggable = false;
     if (!op.alt) img.setAttribute("aria-hidden", "true");
     d.append(img);
   } else {

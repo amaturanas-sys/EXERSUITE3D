@@ -3024,13 +3024,20 @@ body.modo-prototipo #simbar {
   background: conic-gradient(var(--hub-acento), var(--hub-acento-2), var(--hub-acento));
 }
 .hub-aro:not(.nuevo) { background: #3a3a3a; }
+/* Fondo BLANCO: son logotipos de marca de tinta oscura, hechos para papel. Sobre
+   el negro del hub se perderían justo las letras. Con el aro de color alrededor
+   se lee como el avatar de una marca en cualquier otro sitio. */
 .hub-aro-foto {
   width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
-  background: linear-gradient(180deg, #262a31, #1b1e24);
+  background: #fff;
   display: flex; align-items: center; justify-content: center;
 }
+/* El emblema respira dentro del círculo: pegado al borde se ve recortado. */
+.hub-aro-foto .hub-img { width: 84%; height: 84%; object-fit: contain; }
+/* 80 px, no 68: con las marcas del diseñador el nombre más largo es «Power
+   Squad» y a 68 se cortaba en «Power Squ…». */
 .hub-historia-txt {
-  font-size: 0.72rem; width: 68px; text-align: center;
+  font-size: 0.72rem; width: 80px; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .hub-historia:hover .hub-aro-foto { outline: 2px solid var(--hub-acento); outline-offset: 1px; }
@@ -3081,9 +3088,18 @@ body.modo-prototipo #simbar {
    la opacidad solo la ensuciaría contra el fondo negro. */
 .hub-banner-foto svg { width: 100%; height: 100%; display: block; opacity: 0.5; }
 .hub-banner-foto .hub-img { object-position: center 45%; }
+/* El velo tiene que ganarle a una FOTOGRAFÍA, no a un dibujo plano: sobre una
+   sala iluminada el rótulo se perdía, y en el teléfono, donde la bajada ocupa
+   tres líneas, el texto sube hasta donde el degradado ya no cubría. */
 .hub-banner::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.72) 38%,
+    rgba(0, 0, 0, 0.28) 68%,
+    transparent 100%
+  );
 }
 .hub-diapo.puesta .hub-banner { outline: 2px solid var(--hub-acento); outline-offset: -2px; }
 .hub-banner-txt { position: absolute; inset: auto 0 0 0; padding: 24px; z-index: 1; }

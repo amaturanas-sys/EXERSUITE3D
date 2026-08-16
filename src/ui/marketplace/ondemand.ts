@@ -159,14 +159,14 @@ function piso(p: Pintura): string {
 
 /** Qué silueta le toca a cada diseño abierto. */
 const SILUETA: Record<string, (p: Pintura) => string> = {
-  rack: armazon,
-  jaula: armazon,
-  smith: armazon,
-  banco: banco,
-  prensa: banco,
-  torre: torre,
-  plataforma: piso,
-  trineo: piso,
+  "pm-rack": armazon,
+  "ap-jaula": armazon,
+  "mx-smith": armazon,
+  "fx-banco": banco,
+  "ti-prensa": banco,
+  "fx-torre": torre,
+  "ps-plataforma": piso,
+  "vx-trineo": piso,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

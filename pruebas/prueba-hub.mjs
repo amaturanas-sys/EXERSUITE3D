@@ -48,7 +48,7 @@ const lamina = async (id) => {
 
 // ---- Estado de partida: mirando la primera, sin nada puesto
 const total = await cuenta();
-ok(/18 de 18|18 of 18/.test(total), `abre con el mercado entero (${total})`);
+ok(/32 de 32|32 of 32/.test(total), `abre con el mercado entero (${total})`);
 ok((await activa()) === "newarrivals", "abre mirando NewArrivals");
 ok((await puesta()) === "", "abre sin ningún recorrido puesto");
 
@@ -350,7 +350,7 @@ for (let i = 1; i <= 8; i++) await m.mouse.move(cajaH.x - i * 22, cajaH.y);
 const enVueloH = await m.evaluate(() => document.querySelector(".hub-carril").scrollLeft);
 await m.mouse.up();
 await m.waitForTimeout(400);
-ok(enVueloH > 0, `el carril de marcas se arrastra (0 → ${enVueloH})`);
+ok(enVueloH > 120, `el carril de marcas se arrastra de verdad (0 → ${enVueloH})`);
 ok(
   (await m.evaluate(() => document.querySelector("#hub-marca").value)) === "",
   "y arrastrarlo no filtra por la marca que quedó bajo el cursor",

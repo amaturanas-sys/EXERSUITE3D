@@ -45,7 +45,7 @@ import {
   precio$,
   productosNuevos,
 } from "./datos";
-import { ARTE, LOGOS } from "./arte";
+import { ARTE } from "./arte";
 import { Carrito, type MarketplaceAcciones } from "./comunes";
 import { arrastrable, suavidad } from "./carrusel";
 import { lamina } from "./imagen";
@@ -245,8 +245,9 @@ function tarjeta(p: Producto, carrito: Carrito, acciones: MarketplaceAcciones): 
 /** Burbuja de historia de una marca. */
 function burbuja(m: Marca, alPulsar: (m: Marca) => void): HTMLElement {
   const aro = el("div", { class: m.antiguedadMeses <= 4 ? "hub-aro nuevo" : "hub-aro" });
-  const foto = el("div", { class: "hub-aro-foto" });
-  foto.innerHTML = `<svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden="true">${LOGOS[m.id] ?? ""}</svg>`;
+  // El emblema va sobre blanco, como el avatar de una marca en cualquier otro
+  // sitio: son logotipos de tinta oscura y sobre el negro del hub se perderían.
+  const foto = lamina("", "hub-aro-foto", { foto: `marcas/${m.logo}` });
   aro.append(foto);
   const b = el("button", { class: "hub-historia" }, [
     aro,

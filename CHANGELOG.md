@@ -5,6 +5,89 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.66] — 2026-08-16
+
+### Cambiado
+
+- **LAS DIECISÉIS MARCAS DEL DISEÑADOR SUSTITUYEN A LAS SIETE INVENTADAS.**
+  ProMax Fitness, Steel Core Gym, Titan Commercial, EquipX Pro, Flexion
+  Stations, Iron Works Commercial, Vortex Workout, Matrix Fitness Solutions,
+  Commercial Power Squad, Optimus Gym Equip, Velocity Trainers, Apex Fitness
+  Gear, Gymnast Commercial, Revolution Fitness, Precision Gym y Evolution
+  Fitness Products. Cada una con su emblema real en la burbuja del carril.
+
+  A cada marca se le escribió lo que el hub necesita para que los recorridos
+  signifiquen algo: país, tamaño, antigüedad, lema e historia. El reparto no es
+  decorativo, lo consumen los filtros:
+
+  - **nueve son PyME** —Flexion, Iron Works, Vortex, Power Squad, Velocity,
+    Apex, Gymnast, Precision y Evolution—, que es de lo que se nutre
+    HelpYourCommunity;
+  - **cuatro llevan cuatro meses o menos** —Precision (1), Apex (2), Velocity
+    (3) y Revolution (4)—, que son las de NewComers y las únicas con el aro
+    naranja en el carril;
+  - **tres son chilenas** —Iron Works, Velocity y Evolution—, que es el país por
+    defecto y por tanto la economía local de partida.
+
+- **El catálogo pasa de 18 productos a 32, dos por marca.** Cada par se escribió
+  a la medida de su marca: Steel Core vende discos y barras, EquipX vende la
+  pieza que le falta a un rack de otro, Gymnast vende anillas y roble, Precision
+  vende «tu diseño, fabricado». Diez son estrenos, que es lo que llena
+  NewArrivals.
+
+- **Los ocho diseños de OnDemand se reparten ahora entre siete marcas** en vez
+  de concentrarse en unas pocas, y las siluetas paramétricas se repuntaron a los
+  identificadores nuevos.
+
+- **El foro y las solicitudes hablan de las marcas nuevas.** Los cinco proyectos
+  de ForMakers y los dos encargos de OnDemand mencionaban por su nombre a las
+  marcas viejas dentro del texto de las respuestas; se reescribieron.
+
+- **La burbuja del carril lleva fondo BLANCO.** Son logotipos de tinta oscura,
+  hechos para papel: sobre el negro del hub se perdían justo las letras. Con el
+  aro de color alrededor se leen como el avatar de una marca en cualquier otro
+  sitio.
+
+- **El velo del banner es más denso.** Tenía que ganarle a un dibujo plano y
+  ahora le gana a una fotografía: sobre una sala iluminada el rótulo se perdía,
+  y en el teléfono —donde la bajada ocupa tres líneas— el texto subía hasta
+  donde el degradado ya no cubría.
+
+- **La etiqueta de la burbuja pasa de 68 a 80 px**, que es lo que mide el nombre
+  más largo del juego: «Power Squad» se cortaba en «Power Squ…».
+
+### Añadido
+
+- **Los treinta y dos recortes de la lámina de marcas**, en
+  `public/marketplace/marcas/`: **216 KB** en total. De cada logotipo salen dos
+  piezas —el emblema solo, cuadrado, para la burbuja de 64 px; y el conjunto
+  completo con su nombre, para donde haya anchura—. El emblema va aparte porque
+  metiendo el logotipo entero en la burbuja el nombre saldría a dos píxeles de
+  alto.
+
+  El corte entre emblema y nombre lo busca el guion solo
+  (`pruebas/fijos/preparar-logos.py`): dentro de cada celda mira cuánta tinta hay
+  por fila y parte por el valle de la mitad de arriba. No se exige una fila
+  limpia —en varios logotipos el nombre roza el emblema y no hay ni un píxel de
+  aire—, basta con que tenga muy poca tinta comparada con la fila más cargada.
+
+### Corregido
+
+- **Arrastrar el carril por encima de una fotografía lo dejaba clavado.** Al
+  poner los logotipos en las burbujas, tirar del carril arrancaba el arrastre
+  NATIVO de imágenes del navegador, que cancela el puntero: el carril pasó de
+  moverse 176 px a moverse 22. Ninguna lámina del hub es arrastrable ya.
+
+### Sabido
+
+- **Los monogramas SVG de marca de `arte.ts` quedan sin usar.** Los sustituyen
+  los emblemas reales. Se borran cuando se limpien los módulos viejos del
+  marketplace, que siguen en disco sin que los llame nadie.
+
+- **El emblema de EquipX Pro lleva su nombre dentro**, y a 64 px no se lee. Es
+  cosa del logotipo, no del recorte: el nombre forma parte de la marca. Debajo
+  de la burbuja va escrito de todos modos.
+
 ## [0.2.65] — 2026-08-16
 
 ### Corregido

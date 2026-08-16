@@ -77,113 +77,270 @@ export interface Marca {
   /** Modelos ya levantados con escáner fotográfico 3D. */
   escaneados: number;
   seguidores: number;
+  /**
+   * Emblema recortado de la lámina de marcas, en
+   * `public/marketplace/marcas/`. Es el que va en la burbuja del carril: el
+   * logotipo entero llevaría el nombre a dos píxeles de alto.
+   */
+  logo: string;
 }
 
 export const MARCAS: Marca[] = [
   {
-    id: "ironforge",
-    nombre: "IronForge Equipment",
-    corto: "IronForge",
+    id: "promax",
+    nombre: "ProMax Fitness",
+    corto: "ProMax",
     pais: "us",
     pyme: false,
-    antiguedadMeses: 29,
-    lema: ["Acero estructural para toda la vida", "Structural steel built to last"],
+    antiguedadMeses: 34,
+    lema: ["Acero de sala para toda la vida", "Floor-grade steel built to last"],
     historia: [
-      "Fabricante de racks y accesorios de perfil 3×3\". Toda su línea está escaneada y calza con los pinholes de la biblioteca nativa.",
-      "Maker of 3×3\" racks and attachments. Their whole line is scanned and matches the native library pinholes.",
+      "El fabricante grande del hub: racks y jaulas de perfil 3×3\" con toda la línea escaneada y compatible con los pinholes de la biblioteca nativa.",
+      "The hub's big manufacturer: 3×3\" racks and cages with the whole line scanned and matching the native library pinholes.",
     ],
-    escaneados: 34,
-    seguidores: 12840,
+    escaneados: 41,
+    seguidores: 18200,
+    logo: "icono-promax.webp",
   },
   {
-    id: "andes",
-    nombre: "Andes Strength Co.",
-    corto: "Andes",
-    pais: "cl",
-    pyme: true,
-    antiguedadMeses: 18,
-    lema: ["Poleas y pesos hechos en la cordillera", "Pulleys and weights made in the Andes"],
+    id: "steelcore",
+    nombre: "Steel Core Gym",
+    corto: "Steel Core",
+    pais: "us",
+    pyme: false,
+    antiguedadMeses: 26,
+    lema: ["El peso libre bien hecho", "Free weights, done right"],
     historia: [
-      "Taller mediano de Santiago especializado en torres de polea selectorizadas. Funde sus propias placas y cromas sus barras en planta.",
-      "Mid-sized Santiago workshop focused on selectorized pulley towers. They cast their own plates and chrome their bars in house.",
+      "Discos de goma vulcanizada y barras cromadas en planta propia. Series largas y tolerancias de catálogo, sin sorpresas entre unidades.",
+      "Vulcanized rubber plates and bars chromed in their own plant. Long runs and catalog tolerances, no surprises between units.",
     ],
-    escaneados: 21,
-    seguidores: 4610,
+    escaneados: 28,
+    seguidores: 9400,
+    logo: "icono-steelcore.webp",
   },
   {
-    id: "quimera",
-    nombre: "Taller Quimera",
-    corto: "Quimera",
-    pais: "cl",
-    pyme: true,
-    antiguedadMeses: 12,
-    lema: ["Tu diseño, fabricado a pedido", "Your design, built to order"],
+    id: "titan",
+    nombre: "Titan Commercial",
+    corto: "Titan",
+    pais: "mx",
+    pyme: false,
+    antiguedadMeses: 22,
+    lema: ["Máquinas de sala para gimnasios de barrio", "Floor machines for neighborhood gyms"],
     historia: [
-      "Cinco personas, una plegadora y una mesa de corte. Fabrican por encargo a partir del prefab .json que exportes desde el Builder.",
-      "Five people, a press brake and a cutting table. They build to order straight from the .json prefab you export in the Builder.",
+      "Planta en Monterrey enfocada en máquinas de placas: precio de sala completa y servicio dentro del país, que es lo que decide una compra de veinte unidades.",
+      "Monterrey plant focused on plate-loaded machines: whole-floor pricing and in-country service, which is what decides a twenty-unit order.",
     ],
-    escaneados: 9,
-    seguidores: 2380,
+    escaneados: 33,
+    seguidores: 7600,
+    logo: "icono-titan.webp",
   },
   {
-    id: "nordwerk",
-    nombre: "Nordwerk Gym Systems",
-    corto: "Nordwerk",
+    id: "equipx",
+    nombre: "EquipX Pro",
+    corto: "EquipX",
     pais: "de",
     pyme: false,
-    antiguedadMeses: 2,
-    lema: ["Ingeniería guiada, tolerancias de taller", "Guided engineering, machine-shop tolerances"],
+    antiguedadMeses: 19,
+    lema: ["La pieza que le faltaba a tu rack", "The part your rack was missing"],
     historia: [
-      "Recién llegada al hub. Trae su multipower de guías lineales y una jaula modular; ambas ya escaneadas en alta fidelidad.",
-      "Just landed on the hub. Brings its linear-rail multipower and a modular cage, both already scanned in high fidelity.",
+      "Accesorios de precisión: jotas, barras de jalón y herrajes que calzan en perfiles de otras marcas. Publican la cota de montaje de cada pieza.",
+      "Precision attachments: J-hooks, lat bars and hardware that fit other brands' profiles. They publish the mounting dimension of every part.",
     ],
-    escaneados: 11,
-    seguidores: 730,
+    escaneados: 24,
+    seguidores: 5100,
+    logo: "icono-equipx.webp",
   },
   {
-    id: "pampa",
-    nombre: "Pampa Fierro",
-    corto: "Pampa",
+    id: "flexion",
+    nombre: "Flexion Stations",
+    corto: "Flexion",
+    pais: "es",
+    pyme: true,
+    antiguedadMeses: 15,
+    lema: ["Estaciones que caben donde vives", "Stations that fit where you live"],
+    historia: [
+      "Taller valenciano de estaciones de polea y bancos regulables. Miden el techo antes de cotizar, que es de donde salen la mitad de las devoluciones.",
+      "Valencian workshop making pulley stations and adjustable benches. They measure your ceiling before quoting, which is where half the returns come from.",
+    ],
+    escaneados: 17,
+    seguidores: 3300,
+    logo: "icono-flexion.webp",
+  },
+  {
+    id: "ironworks",
+    nombre: "Iron Works Commercial",
+    corto: "Iron Works",
+    pais: "cl",
+    pyme: true,
+    antiguedadMeses: 31,
+    lema: ["Fundición y yunque, nada más", "Foundry and anvil, nothing else"],
+    historia: [
+      "Fundición de Talcahuano: kettlebells, árboles de discos y todo lo que se hace de una pieza. Sin soldadura no hay punto por donde ceder.",
+      "A Talcahuano foundry: kettlebells, plate trees and everything made in one piece. With no weld there is no point to give way.",
+    ],
+    escaneados: 22,
+    seguidores: 4800,
+    logo: "icono-ironworks.webp",
+  },
+  {
+    id: "vortex",
+    nombre: "Vortex Workout",
+    corto: "Vortex",
     pais: "ar",
     pyme: true,
-    antiguedadMeses: 1,
-    lema: ["Hierro de campo, precio de barrio", "Country iron, neighborhood price"],
+    antiguedadMeses: 9,
+    lema: ["Entrenamiento funcional sin obra", "Functional training with no building work"],
     historia: [
-      "Herrería familiar de Rosario que pasó del portón al equipamiento. Trineos y mancuernas hexagonales fundidas a molde propio.",
-      "Family ironworks in Rosario that moved from gates to gym gear. Sleds and hex dumbbells cast in their own molds.",
+      "Bandas, trineos y anclajes portátiles para salas que se montan y se desmontan. Todo lo suyo entra por una puerta y pesa lo que una persona levanta.",
+      "Bands, sleds and portable anchors for rooms that get set up and taken down. Everything they make fits through a door and weighs what one person can lift.",
+    ],
+    escaneados: 11,
+    seguidores: 2100,
+    logo: "icono-vortex.webp",
+  },
+  {
+    id: "matrix",
+    nombre: "Matrix Fitness Solutions",
+    corto: "Matrix",
+    pais: "jp",
+    pyme: false,
+    antiguedadMeses: 41,
+    lema: ["Selectorizadas con tolerancia de taller", "Selectorized, machine-shop tolerances"],
+    historia: [
+      "La marca más antigua del hub. Multipowers de guías rectificadas y pilas selectorizadas que se sienten iguales en la unidad uno y en la trescientas.",
+      "The oldest brand on the hub. Ground-rail multipowers and selectorized stacks that feel the same on unit one and unit three hundred.",
+    ],
+    escaneados: 38,
+    seguidores: 15600,
+    logo: "icono-matrix.webp",
+  },
+  {
+    id: "powersquad",
+    nombre: "Commercial Power Squad",
+    corto: "Power Squad",
+    pais: "mx",
+    pyme: true,
+    antiguedadMeses: 13,
+    lema: ["Equipamos la sala entera", "We equip the whole floor"],
+    historia: [
+      "Cooperativa de cinco talleres de Guadalajara que cotizan juntos: se les pide el gimnasio completo y reparten la fabricación entre ellos.",
+      "A co-op of five Guadalajara workshops that quote together: ask for the whole gym and they split the build among themselves.",
+    ],
+    escaneados: 14,
+    seguidores: 2700,
+    logo: "icono-powersquad.webp",
+  },
+  {
+    id: "optimus",
+    nombre: "Optimus Gym Equip",
+    corto: "Optimus",
+    pais: "es",
+    pyme: false,
+    antiguedadMeses: 28,
+    lema: ["Lo mejor de cada categoría", "The best of each category"],
+    historia: [
+      "Catálogo corto y caro, elegido pieza a pieza. No hacen gama de entrada y lo dicen en la primera línea de su ficha.",
+      "A short, expensive catalog, chosen piece by piece. They make no entry range and they say so in the first line of their listing.",
+    ],
+    escaneados: 26,
+    seguidores: 6900,
+    logo: "icono-optimus.webp",
+  },
+  {
+    id: "velocity",
+    nombre: "Velocity Trainers",
+    corto: "Velocity",
+    pais: "cl",
+    pyme: true,
+    antiguedadMeses: 3,
+    lema: ["Para lo que se corre, no para lo que se levanta", "For what you run, not what you lift"],
+    historia: [
+      "Recién llegada. Trineos de velocidad y arneses de sprint para clubes de atletismo; vienen del mundo del rugby y se les nota en las cinchas.",
+      "Just landed. Speed sleds and sprint harnesses for athletics clubs; they come from rugby and it shows in the strapping.",
+    ],
+    escaneados: 8,
+    seguidores: 640,
+    logo: "icono-velocity.webp",
+  },
+  {
+    id: "apex",
+    nombre: "Apex Fitness Gear",
+    corto: "Apex",
+    pais: "ar",
+    pyme: true,
+    antiguedadMeses: 2,
+    lema: ["Sube tu propio techo", "Raise your own ceiling"],
+    historia: [
+      "Recién llegada. Jaulas modulares que crecen por módulos: se empieza con dos postes y se llega a seis sin cambiar nada de lo comprado.",
+      "Just landed. Modular cages that grow by modules: start with two uprights and get to six without replacing anything you bought.",
     ],
     escaneados: 6,
     seguidores: 410,
+    logo: "icono-apex.webp",
   },
   {
-    id: "kaizen",
-    nombre: "Kaizen Ironworks",
-    corto: "Kaizen",
+    id: "gymnast",
+    nombre: "Gymnast Commercial",
+    corto: "Gymnast",
     pais: "jp",
     pyme: true,
-    antiguedadMeses: 3,
-    lema: ["Una pieza mejor cada día", "One better piece every day"],
+    antiguedadMeses: 17,
+    lema: ["Madera, cincha y nada que se oxide", "Wood, webbing and nothing that rusts"],
     historia: [
-      "Fundición pequeña de Niigata. Series cortas de kettlebells y plataformas de levantamiento con acabado a mano.",
-      "Small Niigata foundry. Short runs of kettlebells and lifting platforms finished by hand.",
+      "Anillas, paralelas y plataformas de roble macizo acabadas a mano en Niigata. Series cortas y numeradas, con la veta a la vista.",
+      "Rings, parallel bars and solid oak platforms hand-finished in Niigata. Short numbered runs, grain left visible.",
     ],
-    escaneados: 7,
-    seguidores: 1290,
+    escaneados: 13,
+    seguidores: 3900,
+    logo: "icono-gymnast.webp",
   },
   {
-    id: "terrafit",
-    nombre: "TerraFit México",
-    corto: "TerraFit",
-    pais: "mx",
-    pyme: true,
-    antiguedadMeses: 14,
-    lema: ["Máquinas de sala para gimnasios de barrio", "Floor machines for neighborhood gyms"],
+    id: "revolution",
+    nombre: "Revolution Fitness",
+    corto: "Revolution",
+    pais: "de",
+    pyme: false,
+    antiguedadMeses: 4,
+    lema: ["Ingeniería que se revisa sola", "Engineering that services itself"],
     historia: [
-      "Planta en Monterrey enfocada en máquinas de placas para gimnasios chicos: precio de sala completa, servicio en el país.",
-      "Monterrey plant focused on plate-loaded machines for small gyms: whole-floor pricing, in-country service.",
+      "Recién llegada. Torres y prensas pensadas para el mantenimiento: cada punto de desgaste se alcanza sin desmontar la máquina.",
+      "Just landed. Towers and presses designed around maintenance: every wear point is reachable without stripping the machine.",
     ],
-    escaneados: 16,
-    seguidores: 3120,
+    escaneados: 12,
+    seguidores: 980,
+    logo: "icono-revolution.webp",
+  },
+  {
+    id: "precision",
+    nombre: "Precision Gym",
+    corto: "Precision",
+    pais: "us",
+    pyme: true,
+    antiguedadMeses: 1,
+    lema: ["Tu diseño, fabricado a pedido", "Your design, built to order"],
+    historia: [
+      "La más nueva del hub. Cinco personas, una plegadora y una mesa de corte: fabrican por encargo a partir del prefab .json que exportes del Builder.",
+      "The newest on the hub. Five people, a press brake and a cutting table: they build to order straight from the .json prefab you export in the Builder.",
+    ],
+    escaneados: 5,
+    seguidores: 320,
+    logo: "icono-precision.webp",
+  },
+  {
+    id: "evolution",
+    nombre: "Evolution Fitness Products",
+    corto: "Evolution",
+    pais: "cl",
+    pyme: true,
+    antiguedadMeses: 7,
+    lema: ["Cada versión corrige la anterior", "Each version fixes the last one"],
+    historia: [
+      "Taller de Santiago que publica el registro de cambios de cada máquina. Si algo se rompió en un gimnasio, la revisión siguiente lo lleva arreglado.",
+      "A Santiago workshop that publishes the change log of every machine. If something broke in one gym, the next revision ships with it fixed.",
+    ],
+    escaneados: 10,
+    seguidores: 1450,
+    logo: "icono-evolution.webp",
   },
 ];
 
@@ -229,26 +386,54 @@ export interface Producto {
 }
 
 export const CATALOGO: Producto[] = [
-  { id: "rack", marcaId: "ironforge", nombre: ["Power rack IF-700", "IF-700 power rack"], categoria: "racks", precio: 1290, antes: 1490, nota: ["Perfil 3×3\" · pruébalo en el Builder", "3×3\" profile · try it in the Builder"], rating: "★★★★★ 4.9", arte: ARTE.rack, lanzadoHaceDias: 420 },
-  { id: "torre", marcaId: "andes", nombre: ["Torre de polea dual", "Dual pulley tower"], categoria: "poleas", precio: 2150, antes: 2490, nota: ["Pila selectorizada de 90 kg", "90 kg selectorized stack"], rating: "★★★★★ 4.8", arte: ARTE.torre, lanzadoHaceDias: 300, foto: "p-torre.webp" },
-  { id: "banco", marcaId: "quimera", nombre: ["Banco plano clásico", "Classic flat bench"], categoria: "bancos", precio: 199, antes: 249, nota: ["El modelo de la biblioteca nativa", "The native library model"], rating: "★★★★★ 4.7", arte: ARTE.banco, lanzadoHaceDias: 500 },
-  { id: "jota", marcaId: "ironforge", nombre: ["Jota con rodillo UHMW", "UHMW roller J-hook"], categoria: "accesorios", precio: 89, antes: 109, nota: ["Calza en pinholes de 5 cm", "Fits 5 cm pinholes"], rating: "★★★★☆ 4.6", arte: ARTE.jota, lanzadoHaceDias: 380 },
-  { id: "cadenas", marcaId: "ironforge", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], categoria: "accesorios", precio: 59, nota: ["Detienen la barra como en la app", "They stop the bar, app-style"], rating: "★★★★★ 4.9", arte: ARTE.cadenas, lanzadoHaceDias: 260, foto: "p-cadenas.webp" },
-  { id: "barra", marcaId: "andes", nombre: ["Barra olímpica 20 kg", "20 kg olympic barbell"], categoria: "pesos", precio: 189, nota: ["Cromada, Ø 28 mm, agarre medio", "Chromed, Ø 28 mm, medium knurl"], rating: "★★★★☆ 4.5", arte: ARTE.barra, lanzadoHaceDias: 210 },
-  { id: "discos", marcaId: "quimera", nombre: ["Set discos bumper 100 kg", "100 kg bumper plate set"], categoria: "pesos", precio: 420, antes: 520, nota: ["Goma vulcanizada, rebote muerto", "Vulcanized rubber, dead bounce"], rating: "★★★★★ 4.8", arte: ARTE.discos, lanzadoHaceDias: 340 },
-  { id: "multigrip", marcaId: "andes", nombre: ["Barra de jalón multigrip", "Multigrip lat bar"], categoria: "poleas", precio: 145, nota: ["Cromada, Ø 32 mm", "Chromed, Ø 32 mm"], rating: "★★★★☆ 4.4", arte: ARTE.multigrip, lanzadoHaceDias: 150, foto: "p-multigrip.webp" },
-  { id: "arbol", marcaId: "ironforge", nombre: ["Árbol de discos", "Plate tree"], categoria: "accesorios", precio: 120, antes: 150, nota: ["Seis cuernos, base estable", "Six horns, stable base"], rating: "★★★★☆ 4.6", arte: ARTE.arbol, lanzadoHaceDias: 190 },
-  { id: "quimera", marcaId: "quimera", nombre: ["Tu diseño, fabricado", "Your design, built"], categoria: "racks", precio: 0, nota: ["Sube tu prefab .json y recibe oferta", "Upload your .json prefab for a quote"], rating: "★★★★★ 5.0", arte: ARTE.quimera, lanzadoHaceDias: 95, foto: "p-quimera.webp" },
 
-  // ---- Estrenos y marcas recién llegadas (v0.2.37)
-  { id: "jaula", marcaId: "nordwerk", nombre: ["Jaula modular NW-Kubus", "NW-Kubus modular cage"], categoria: "racks", precio: 1690, nota: ["Seis postes, dos estaciones de polea", "Six uprights, two pulley stations"], rating: "★★★★★ 4.9", arte: ARTE.jaula, lanzadoHaceDias: 11 },
-  { id: "smith", marcaId: "nordwerk", nombre: ["Multipower NW-Linear", "NW-Linear multipower"], categoria: "maquinas", precio: 2390, antes: 2690, nota: ["Guías lineales, contrapeso ajustable", "Linear rails, adjustable counterweight"], rating: "★★★★★ 4.8", arte: ARTE.smith, lanzadoHaceDias: 26, foto: "p-smith.webp" },
-  { id: "trineo", marcaId: "pampa", nombre: ["Trineo de empuje Pampa", "Pampa push sled"], categoria: "accesorios", precio: 340, nota: ["Patines de nylon, dos postes de carga", "Nylon skids, two loading posts"], rating: "★★★★★ 4.7", arte: ARTE.trineo, lanzadoHaceDias: 17 },
-  { id: "mancuernas", marcaId: "pampa", nombre: ["Mancuernas hexagonales 2–20 kg", "2–20 kg hex dumbbells"], categoria: "pesos", precio: 690, antes: 790, nota: ["Fundición propia, mango moleteado", "Own foundry, knurled handle"], rating: "★★★★☆ 4.6", arte: ARTE.mancuernas, lanzadoHaceDias: 44 },
-  { id: "kettlebell", marcaId: "kaizen", nombre: ["Kettlebell fundida 24 kg", "24 kg cast kettlebell"], categoria: "pesos", precio: 79, nota: ["Una sola pieza, asa pulida a mano", "Single piece, hand-polished handle"], rating: "★★★★★ 4.9", arte: ARTE.kettlebell, lanzadoHaceDias: 8 },
-  { id: "plataforma", marcaId: "kaizen", nombre: ["Plataforma de levantamiento", "Lifting platform"], categoria: "accesorios", precio: 520, nota: ["Roble macizo sobre goma de 20 mm", "Solid oak over 20 mm rubber"], rating: "★★★★☆ 4.6", arte: ARTE.plataforma, lanzadoHaceDias: 33 },
-  { id: "prensa", marcaId: "terrafit", nombre: ["Prensa de piernas 45° TF-45", "TF-45 45° leg press"], categoria: "maquinas", precio: 1450, antes: 1690, nota: ["Carro sobre rodamientos, doble tope", "Bearing-guided carriage, dual stop"], rating: "★★★★☆ 4.5", arte: ARTE.prensa, lanzadoHaceDias: 72 },
-  { id: "bandas", marcaId: "terrafit", nombre: ["Bandas de resistencia (juego 5)", "Resistance bands (set of 5)"], categoria: "accesorios", precio: 45, antes: 59, nota: ["De 5 a 60 kg de asistencia", "5 to 60 kg of assistance"], rating: "★★★★☆ 4.3", arte: ARTE.bandas, lanzadoHaceDias: 130 },
+  { id: "pm-rack", marcaId: "promax", nombre: ["Power rack ProMax PR-9", "ProMax PR-9 power rack"], categoria: "racks", precio: 1690, antes: 1890, nota: ["Perfil 3×3\" · pruébalo en el Builder", "3×3\" profile · try it in the Builder"], rating: "★★★★★ 4.9", arte: ARTE.rack, lanzadoHaceDias: 420 },
+  { id: "pm-jaula", marcaId: "promax", nombre: ["Jaula perimetral PM-Kubus", "PM-Kubus perimeter cage"], categoria: "racks", precio: 2490, nota: ["Seis postes y dos estaciones de polea", "Six uprights and two pulley stations"], rating: "★★★★★ 4.9", arte: ARTE.jaula, lanzadoHaceDias: 260 },
+
+  { id: "sc-discos", marcaId: "steelcore", nombre: ["Set discos bumper 150 kg", "150 kg bumper plate set"], categoria: "pesos", precio: 620, antes: 720, nota: ["Goma vulcanizada, rebote muerto", "Vulcanized rubber, dead bounce"], rating: "★★★★★ 4.9", arte: ARTE.discos, lanzadoHaceDias: 340 },
+  { id: "sc-barra", marcaId: "steelcore", nombre: ["Barra olímpica Steel Core 20 kg", "Steel Core 20 kg olympic bar"], categoria: "pesos", precio: 245, nota: ["Cromada, Ø 28 mm, moleteado medio", "Chromed, Ø 28 mm, medium knurl"], rating: "★★★★☆ 4.5", arte: ARTE.barra, lanzadoHaceDias: 210 },
+
+  { id: "ti-prensa", marcaId: "titan", nombre: ["Prensa de piernas 45° Titan", "Titan 45° leg press"], categoria: "maquinas", precio: 1580, antes: 1790, nota: ["Carro sobre rodamientos, doble tope", "Bearing-guided carriage, dual stop"], rating: "★★★★☆ 4.5", arte: ARTE.prensa, lanzadoHaceDias: 190 },
+  { id: "ti-jammer", marcaId: "titan", nombre: ["Torre de jammer arms TI-2", "TI-2 jammer arm tower"], categoria: "maquinas", precio: 1340, nota: ["Brazos independientes, ocho alturas", "Independent arms, eight heights"], rating: "★★★★☆ 4.5", arte: ARTE.smith, lanzadoHaceDias: 120 },
+
+  { id: "ex-multigrip", marcaId: "equipx", nombre: ["Barra de jalón multigrip EX", "EX multigrip lat bar"], categoria: "poleas", precio: 165, nota: ["Cromada, Ø 32 mm, cinco agarres", "Chromed, Ø 32 mm, five grips"], rating: "★★★★☆ 4.5", arte: ARTE.multigrip, lanzadoHaceDias: 150, foto: "p-multigrip.webp" },
+  { id: "ex-jota", marcaId: "equipx", nombre: ["Par de jotas con rodillo UHMW", "UHMW roller J-hook pair"], categoria: "accesorios", precio: 95, antes: 115, nota: ["Calza en pinholes de 5 cm", "Fits 5 cm pinholes"], rating: "★★★★☆ 4.5", arte: ARTE.jota, lanzadoHaceDias: 380 },
+
+  { id: "fx-torre", marcaId: "flexion", nombre: ["Torre de polea dual Flexion", "Flexion dual pulley tower"], categoria: "poleas", precio: 2290, antes: 2590, nota: ["Pila selectorizada de 90 kg", "90 kg selectorized stack"], rating: "★★★★★ 4.9", arte: ARTE.torre, lanzadoHaceDias: 300, foto: "p-torre.webp" },
+  { id: "fx-banco", marcaId: "flexion", nombre: ["Banco regulable de 7 posiciones", "7-position adjustable bench"], categoria: "bancos", precio: 320, nota: ["Respaldo escalonado, ruedas de traslado", "Stepped backrest, transport wheels"], rating: "★★★★☆ 4.5", arte: ARTE.banco, lanzadoHaceDias: 175 },
+
+  { id: "iw-kettle", marcaId: "ironworks", nombre: ["Kettlebell fundida 24 kg", "24 kg cast kettlebell"], categoria: "pesos", precio: 72, nota: ["Una sola pieza, asa pulida a mano", "Single piece, hand-polished handle"], rating: "★★★★★ 4.9", arte: ARTE.kettlebell, lanzadoHaceDias: 95 },
+  { id: "iw-arbol", marcaId: "ironworks", nombre: ["Árbol de discos de seis cuernos", "Six-horn plate tree"], categoria: "accesorios", precio: 135, antes: 165, nota: ["Base ancha, no vuelca cargado", "Wide base, won't tip when loaded"], rating: "★★★★☆ 4.5", arte: ARTE.arbol, lanzadoHaceDias: 230 },
+
+  { id: "vx-bandas", marcaId: "vortex", nombre: ["Bandas de resistencia (juego 5)", "Resistance bands (set of 5)"], categoria: "accesorios", precio: 49, antes: 62, nota: ["De 5 a 60 kg de asistencia", "5 to 60 kg of assistance"], rating: "★★★★☆ 4.5", arte: ARTE.bandas, lanzadoHaceDias: 140 },
+  { id: "vx-trineo", marcaId: "vortex", nombre: ["Trineo de empuje Vortex", "Vortex push sled"], categoria: "accesorios", precio: 365, nota: ["Patines de nylon, dos postes de carga", "Nylon skids, two loading posts"], rating: "★★★★★ 4.9", arte: ARTE.trineo, lanzadoHaceDias: 78 },
+
+  { id: "mx-smith", marcaId: "matrix", nombre: ["Multipower Matrix M-Linear", "Matrix M-Linear multipower"], categoria: "maquinas", precio: 2590, antes: 2890, nota: ["Guías rectificadas, contrapeso ajustable", "Ground rails, adjustable counterweight"], rating: "★★★★★ 4.9", arte: ARTE.smith, lanzadoHaceDias: 320, foto: "p-smith.webp" },
+  { id: "mx-cadenas", marcaId: "matrix", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], categoria: "accesorios", precio: 68, nota: ["Detienen la barra como en la app", "They stop the bar, app-style"], rating: "★★★★★ 4.9", arte: ARTE.cadenas, lanzadoHaceDias: 265, foto: "p-cadenas.webp" },
+
+  { id: "ps-banco", marcaId: "powersquad", nombre: ["Banco plano de sala", "Commercial flat bench"], categoria: "bancos", precio: 210, nota: ["El modelo de la biblioteca nativa", "The native library model"], rating: "★★★★☆ 4.5", arte: ARTE.banco, lanzadoHaceDias: 500 },
+  { id: "ps-plataforma", marcaId: "powersquad", nombre: ["Plataforma de levantamiento", "Lifting platform"], categoria: "accesorios", precio: 540, nota: ["Roble macizo sobre goma de 20 mm", "Solid oak over 20 mm rubber"], rating: "★★★★☆ 4.5", arte: ARTE.plataforma, lanzadoHaceDias: 205 },
+
+  { id: "op-rack", marcaId: "optimus", nombre: ["Rack Optimus O-700", "Optimus O-700 rack"], categoria: "racks", precio: 1450, nota: ["Cuatro postes, acabado en polvo", "Four uprights, powder coated"], rating: "★★★★★ 4.9", arte: ARTE.rack, lanzadoHaceDias: 285 },
+  { id: "op-mancuernas", marcaId: "optimus", nombre: ["Mancuernas hexagonales 2–30 kg", "2–30 kg hex dumbbells"], categoria: "pesos", precio: 890, antes: 990, nota: ["Fundición propia, mango moleteado", "Own foundry, knurled handle"], rating: "★★★★☆ 4.5", arte: ARTE.mancuernas, lanzadoHaceDias: 160 },
+
+  { id: "vl-trineo", marcaId: "velocity", nombre: ["Trineo de velocidad VT-Sprint", "VT-Sprint speed sled"], categoria: "accesorios", precio: 320, nota: ["Bajo y ancho: no cabecea al tirar", "Low and wide: no nosing under pull"], rating: "★★★★★ 4.9", arte: ARTE.trineo, lanzadoHaceDias: 12 },
+  { id: "vl-bandas", marcaId: "velocity", nombre: ["Bandas de sprint con arnés", "Sprint bands with harness"], categoria: "accesorios", precio: 78, nota: ["Arnés acolchado, dos cinchas de tiro", "Padded harness, two pull straps"], rating: "★★★★☆ 4.5", arte: ARTE.bandas, lanzadoHaceDias: 21 },
+
+  { id: "ap-jaula", marcaId: "apex", nombre: ["Jaula modular Apex A-6", "Apex A-6 modular cage"], categoria: "racks", precio: 1790, nota: ["Crece de dos postes a seis por módulos", "Grows from two uprights to six"], rating: "★★★★★ 4.9", arte: ARTE.jaula, lanzadoHaceDias: 9 },
+  { id: "ap-barra", marcaId: "apex", nombre: ["Barra olímpica Apex 20 kg", "Apex 20 kg olympic bar"], categoria: "pesos", precio: 198, nota: ["Cromada, casquillos sobre agujas", "Chromed, needle-bearing sleeves"], rating: "★★★★☆ 4.5", arte: ARTE.barra, lanzadoHaceDias: 30 },
+
+  { id: "gy-anillas", marcaId: "gymnast", nombre: ["Anillas de madera con cinchas", "Wooden rings with straps"], categoria: "accesorios", precio: 88, nota: ["Abedul laminado, cincha de 4,5 m", "Laminated birch, 4.5 m strap"], rating: "★★★★★ 4.9", arte: ARTE.multigrip, lanzadoHaceDias: 110 },
+  { id: "gy-plataforma", marcaId: "gymnast", nombre: ["Plataforma de roble macizo", "Solid oak platform"], categoria: "accesorios", precio: 580, nota: ["Acabada a mano, numerada", "Hand-finished, numbered"], rating: "★★★★★ 4.9", arte: ARTE.plataforma, lanzadoHaceDias: 33 },
+
+  { id: "rv-torre", marcaId: "revolution", nombre: ["Torre de poleas Revolution R-2", "Revolution R-2 pulley tower"], categoria: "poleas", precio: 2450, nota: ["Roldanas accesibles sin desmontar", "Sheaves reachable without stripping"], rating: "★★★★★ 4.9", arte: ARTE.torre, lanzadoHaceDias: 18 },
+  { id: "rv-prensa", marcaId: "revolution", nombre: ["Prensa de piernas RV-45", "RV-45 leg press"], categoria: "maquinas", precio: 1690, nota: ["Engrase de carro desde fuera", "Carriage greasing from outside"], rating: "★★★★☆ 4.5", arte: ARTE.prensa, lanzadoHaceDias: 40 },
+
+  { id: "pr-quimera", marcaId: "precision", nombre: ["Tu diseño, fabricado", "Your design, built"], categoria: "racks", precio: 0, nota: ["Sube tu prefab .json y recibe oferta", "Upload your .json prefab for a quote"], rating: "★★★★★ 4.9", arte: ARTE.quimera, lanzadoHaceDias: 6, foto: "p-quimera.webp" },
+  { id: "pr-jota", marcaId: "precision", nombre: ["Jotas de precisión con rodillo", "Precision roller J-hooks"], categoria: "accesorios", precio: 105, nota: ["Cortadas a la cota de tu rack", "Cut to your rack's dimension"], rating: "★★★★★ 4.9", arte: ARTE.jota, lanzadoHaceDias: 55 },
+
+  { id: "ev-smith", marcaId: "evolution", nombre: ["Multipower Evolution E-Linear", "Evolution E-Linear multipower"], categoria: "maquinas", precio: 2190, antes: 2390, nota: ["Registro de cambios publicado", "Published change log"], rating: "★★★★☆ 4.5", arte: ARTE.smith, lanzadoHaceDias: 240 },
+  { id: "ev-discos", marcaId: "evolution", nombre: ["Set discos bumper 100 kg", "100 kg bumper plate set"], categoria: "pesos", precio: 445, antes: 520, nota: ["Goma reciclada, rebote muerto", "Recycled rubber, dead bounce"], rating: "★★★★☆ 4.5", arte: ARTE.discos, lanzadoHaceDias: 130 },
 ];
 
 export const CATEGORIAS: [Categoria | "todo", string, string][] = [
@@ -286,7 +471,7 @@ export interface Personaliza {
 }
 
 export const PERSONALIZABLES: Record<string, Personaliza> = {
-  rack: {
+  "pm-rack": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 6,
@@ -296,7 +481,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "cadenas", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], precio: 59 },
     ],
   },
-  jaula: {
+  "ap-jaula": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 8,
@@ -306,7 +491,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "almacenaje", nombre: ["Postes de almacenaje de discos", "Plate storage posts"], precio: 95 },
     ],
   },
-  banco: {
+  "fx-banco": {
     partes: ["estructura", "tapiz"],
     lettering: true,
     semanas: 4,
@@ -315,7 +500,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "ruedas", nombre: ["Ruedas de traslado y asa", "Transport wheels and handle"], precio: 45 },
     ],
   },
-  torre: {
+  "fx-torre": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 7,
@@ -325,7 +510,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "pila", nombre: ["Pila ampliada a 120 kg", "Stack upgraded to 120 kg"], precio: 310 },
     ],
   },
-  prensa: {
+  "ti-prensa": {
     partes: ["estructura", "tapiz"],
     lettering: true,
     semanas: 9,
@@ -334,7 +519,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "portadiscos", nombre: ["Cuatro cuernos portadiscos", "Four plate horns"], precio: 90 },
     ],
   },
-  smith: {
+  "mx-smith": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 8,
@@ -343,7 +528,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "banco", nombre: ["Banco plano a juego", "Matching flat bench"], precio: 199 },
     ],
   },
-  plataforma: {
+  "ps-plataforma": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 5,
@@ -352,7 +537,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
       { id: "cerco", nombre: ["Cerco de acero perimetral", "Perimeter steel frame"], precio: 160 },
     ],
   },
-  trineo: {
+  "vx-trineo": {
     partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 3,
@@ -411,7 +596,7 @@ export interface Historia {
 
 export const HISTORIAS: Historia[] = [
   {
-    marcaId: "nordwerk",
+    marcaId: "matrix",
     diapositivas: [
       { arte: ARTE.smith, titulo: ["Multipower NW-Linear", "NW-Linear multipower"], texto: ["Guías lineales rectificadas: la barra baja sin juego lateral.", "Ground linear rails: the bar tracks with no lateral play."] },
       { arte: ARTE.jaula, titulo: ["Jaula NW-Kubus", "NW-Kubus cage"], texto: ["Seis postes, dos estaciones de polea y perfil compatible con tus jotas.", "Six uprights, two pulley stations, profile compatible with your J-hooks."] },
@@ -419,41 +604,41 @@ export const HISTORIAS: Historia[] = [
     ],
   },
   {
-    marcaId: "pampa",
+    marcaId: "apex",
     diapositivas: [
       { arte: ARTE.trineo, titulo: ["Trineo de empuje", "Push sled"], texto: ["Patines de nylon para pasto sintético y cemento pulido.", "Nylon skids for turf and polished concrete."] },
       { arte: ARTE.mancuernas, titulo: ["Hexagonales de molde propio", "Hex dumbbells, own mold"], texto: ["De 2 a 20 kg, mango moleteado a máquina.", "2 to 20 kg, machine-knurled handle."] },
     ],
   },
   {
-    marcaId: "kaizen",
+    marcaId: "gymnast",
     diapositivas: [
       { arte: ARTE.kettlebell, titulo: ["Fundida en una pieza", "Cast in one piece"], texto: ["Sin soldadura en el asa: se pule a mano hasta que no engancha.", "No weld on the handle: hand-polished until it stops catching."] },
       { arte: ARTE.plataforma, titulo: ["Plataforma de roble", "Oak platform"], texto: ["Roble macizo sobre goma de 20 mm; series de veinte al mes.", "Solid oak over 20 mm rubber; runs of twenty a month."] },
     ],
   },
   {
-    marcaId: "ironforge",
+    marcaId: "promax",
     diapositivas: [
       { arte: ARTE.rack, titulo: ["IF-700 en oferta", "IF-700 on sale"], texto: ["El rack de siempre, perfil 3×3\", con 13 % de descuento este mes.", "The usual rack, 3×3\" profile, 13 % off this month."] },
       { arte: ARTE.jota, titulo: ["Jotas con rodillo UHMW", "UHMW roller J-hooks"], texto: ["El rodillo evita que el moleteado se coma la pintura del poste.", "The roller keeps the knurl from eating the upright's paint."] },
     ],
   },
   {
-    marcaId: "andes",
+    marcaId: "flexion",
     diapositivas: [
       { arte: ARTE.torre, titulo: ["Torre de polea dual", "Dual pulley tower"], texto: ["Pila de 90 kg fundida en casa; relación 1:1 y 2:1 en la misma columna.", "90 kg stack cast in house; 1:1 and 2:1 ratios on the same column."] },
       { arte: ARTE.barra, titulo: ["Cromado en planta", "Chromed on site"], texto: ["Barra de 20 kg, Ø 28 mm, agarre medio; garantía de por vida al eje.", "20 kg bar, Ø 28 mm, medium knurl; lifetime shaft warranty."] },
     ],
   },
   {
-    marcaId: "quimera",
+    marcaId: "precision",
     diapositivas: [
       { arte: ARTE.quimera, titulo: ["Tu prefab, fabricado", "Your prefab, built"], texto: ["Exporta el .json desde el Builder y te devolvemos oferta en 72 h.", "Export the .json from the Builder and we quote you back in 72 h."] },
     ],
   },
   {
-    marcaId: "terrafit",
+    marcaId: "titan",
     diapositivas: [
       { arte: ARTE.prensa, titulo: ["Prensa 45° TF-45", "TF-45 45° press"], texto: ["Carro sobre rodamientos y doble tope de seguridad.", "Bearing-guided carriage and dual safety stop."] },
       { arte: ARTE.bandas, titulo: ["Juego de cinco bandas", "Set of five bands"], texto: ["De 5 a 60 kg de asistencia, látex en capas.", "5 to 60 kg of assistance, layered latex."] },
@@ -504,7 +689,7 @@ export const HILOS: HiloMaker[] = [
     arte: ARTE.torre,
     respuestas: [
       { autor: "R. Salinas", texto: ["La altura del carro es la que reparte el recorrido entre las dos estaciones, ¿verdad? Bajarlo alarga el jalón.", "The carriage height is what splits travel between the two stations, right? Lowering it lengthens the pulldown."] },
-      { autor: "Andes Strength Co.", deMarca: "andes", texto: ["Nos interesa. Podemos cotizar el bastidor cortado a medida si nos pasas el .json.", "We're interested. We can quote the frame cut to size if you send us the .json."] },
+      { autor: "Flexion Stations", deMarca: "flexion", texto: ["Nos interesa. Podemos cotizar el bastidor cortado a medida si nos pasas el .json.", "We're interested. We can quote the frame cut to size if you send us the .json."] },
       { autor: "Alberto M.", texto: ["Va en camino. El brazo pesa 19 kg y es el único contrapeso, ojo con eso al escalarlo.", "On its way. The arm weighs 19 kg and is the only counterweight — watch that when scaling it."] },
     ],
   },
@@ -522,9 +707,9 @@ export const HILOS: HiloMaker[] = [
     haceDias: 9,
     apoyos: 96,
     arte: ARTE.rack,
-    patrocinio: { objetivo: 40, logrado: 27, marcas: ["pampa", "quimera"] },
+    patrocinio: { objetivo: 40, logrado: 27, marcas: ["apex", "precision"] },
     respuestas: [
-      { autor: "Pampa Fierro", deMarca: "pampa", texto: ["Podemos hacer la bisagra en fundición. Nos faltan 13 reservas para que salga el molde.", "We can cast the hinge. We need 13 more reservations to justify the mold."] },
+      { autor: "Apex Fitness Gear", deMarca: "apex", texto: ["Podemos hacer la bisagra en fundición. Nos faltan 13 reservas para que salga el molde.", "We can cast the hinge. We need 13 more reservations to justify the mold."] },
       { autor: "D. Kovac", texto: ["Reservé una. ¿La bisagra lleva pasador de 12 o de 16?", "Reserved one. Is the hinge pin 12 or 16 mm?"] },
     ],
   },
@@ -561,7 +746,7 @@ export const HILOS: HiloMaker[] = [
     apoyos: 143,
     arte: ARTE.prensa,
     respuestas: [
-      { autor: "Nordwerk Gym Systems", deMarca: "nordwerk", texto: ["El perfil es sensato. Cuidado con el rozamiento del cable en el borde de la leva.", "The profile is sound. Mind the cable friction at the cam edge."] },
+      { autor: "Matrix Fitness Solutions", deMarca: "matrix", texto: ["El perfil es sensato. Cuidado con el rozamiento del cable en el borde de la leva.", "The profile is sound. Mind the cable friction at the cam edge."] },
       { autor: "Hana K.", texto: ["Le puse una garganta de 6 mm y una guarda; con eso el cable no salta.", "I gave it a 6 mm groove and a keeper; the cable no longer jumps."] },
     ],
   },
@@ -579,9 +764,9 @@ export const HILOS: HiloMaker[] = [
     haceDias: 5,
     apoyos: 38,
     arte: ARTE.banco,
-    patrocinio: { objetivo: 10, logrado: 6, marcas: ["terrafit"] },
+    patrocinio: { objetivo: 10, logrado: 6, marcas: ["titan"] },
     respuestas: [
-      { autor: "TerraFit México", deMarca: "terrafit", texto: ["Tenemos el molde del tapiz. Con seis confirmados ya cerramos el precio de serie.", "We have the upholstery mold. With six confirmed we can lock the run price."] },
+      { autor: "Titan Commercial", deMarca: "titan", texto: ["Tenemos el molde del tapiz. Con seis confirmados ya cerramos el precio de serie.", "We have the upholstery mold. With six confirmed we can lock the run price."] },
     ],
   },
 ];
@@ -610,27 +795,27 @@ export const DESEOS: Deseo[] = [
   {
     id: "d-jaula",
     titulo: ["Jaula corta para techo de 2,05 m", "Short cage for a 2.05 m ceiling"],
-    marcaId: "nordwerk",
+    marcaId: "matrix",
     estado: "presupuestado",
     haceDias: 6,
     arte: ARTE.jaula,
     mensajes: [
       { de: "tú", texto: ["Adjunto el prefab. Necesito la misma jaula pero 25 cm más baja, sin perder el recorrido del jalón.", "Prefab attached. I need the same cage 25 cm shorter without losing pulldown travel."] },
-      { de: "Nordwerk Gym Systems", deMarca: "nordwerk", texto: ["Se puede: bajamos el travesaño y subimos la roldana al interior del perfil. Presupuesto adjunto.", "Doable: we drop the crossbeam and move the sheave inside the profile. Quote attached."] },
+      { de: "Matrix Fitness Solutions", deMarca: "matrix", texto: ["Se puede: bajamos el travesaño y subimos la roldana al interior del perfil. Presupuesto adjunto.", "Doable: we drop the crossbeam and move the sheave inside the profile. Quote attached."] },
       { de: "tú", texto: ["¿La roldana interna mantiene el ángulo de salida del cable?", "Does the internal sheave keep the cable's exit angle?"] },
-      { de: "Nordwerk Gym Systems", deMarca: "nordwerk", texto: ["Sí, con una segunda roldana de reenvío. Te mandamos el .json corregido para que lo simules.", "Yes, with a second idler. We'll send the corrected .json so you can simulate it."] },
+      { de: "Matrix Fitness Solutions", deMarca: "matrix", texto: ["Sí, con una segunda roldana de reenvío. Te mandamos el .json corregido para que lo simules.", "Yes, with a second idler. We'll send the corrected .json so you can simulate it."] },
     ],
   },
   {
     id: "d-banco",
     titulo: ["Banco con respaldo de 7 posiciones", "Bench with a 7-position backrest"],
-    marcaId: "quimera",
+    marcaId: "precision",
     estado: "fabricando",
     haceDias: 21,
     arte: ARTE.banco,
     mensajes: [
       { de: "tú", texto: ["Quiero el banco de la biblioteca pero con respaldo escalonado y tapiz rojo.", "I want the library bench but with a stepped backrest and red upholstery."] },
-      { de: "Taller Quimera", deMarca: "quimera", texto: ["Cortado y soldado. Entramos a tapicería esta semana.", "Cut and welded. Upholstery starts this week."] },
+      { de: "Precision Gym", deMarca: "precision", texto: ["Cortado y soldado. Entramos a tapicería esta semana.", "Cut and welded. Upholstery starts this week."] },
     ],
   },
 ];
