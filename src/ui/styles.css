@@ -2971,6 +2971,12 @@ body.modo-prototipo #simbar {
   inset: 0;
   z-index: 55; /* sobre la Landing (50), bajo el botón de salir (60) */
   overflow-y: auto;
+  /* La cabecera es pegajosa y opaca: sin esto, cada scrollIntoView deja el
+     título de la sección DEBAJO de ella y se aterriza sobre el párrafo. */
+  scroll-padding-top: 78px;
+  /* Por debajo de ~350 px la cabecera no encoge más; que no convierta el hub
+     entero en una panorámica que se arrastra de lado. */
+  overflow-x: hidden;
   background: var(--hub-fondo);
   color: var(--hub-texto);
   font-family: "DM Sans", system-ui, sans-serif;
@@ -2986,7 +2992,11 @@ body.modo-prototipo #simbar {
 .hub-cabecera-int {
   max-width: 1180px; margin: 0 auto; padding: 12px 16px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-width: 0;
 }
+/* El nombre es lo único que puede ceder: la salida y el sello son controles. */
+.hub-marca { min-width: 0; }
+.hub-marca h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-marca { display: flex; align-items: center; gap: 12px; }
 .hub-logo img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: block; }
 .hub-marca h1 {
@@ -3103,7 +3113,7 @@ body.modo-prototipo #simbar {
   padding: 9px 14px 9px 34px; font: inherit; font-size: 0.87rem;
 }
 .hub-buscar::placeholder { color: #777; }
-.hub-buscar:focus, .hub-select:focus, .hub-input:focus {
+.hub .hub-buscar:focus, .hub .hub-select:focus, .hub .hub-input:focus {
   outline: none; border-color: var(--hub-acento);
 }
 .hub-select {
@@ -3190,7 +3200,13 @@ body.modo-prototipo #simbar {
 }
 .hub-campo { display: flex; flex-direction: column; gap: 5px; }
 .hub-campo > span { font-size: 0.85rem; color: #ccc; }
-.hub-input {
+/* Va calificado con `.hub` a propósito. El editor tiene un
+   `input[type="text"], input[type="number"], select.select` de especificidad
+   (0,1,1) que le gana a una clase suelta (0,1,0) por mucho que esté más abajo
+   en el fichero: sin esto, los campos de TEXTO del hub —y solo esos, no los de
+   correo ni los `textarea`— salían con la piel azulada del Builder y 7 px más
+   bajos que sus hermanos del mismo formulario. */
+.hub .hub-input {
   background: var(--hub-hueco); color: #fff;
   border: 1px solid var(--hub-borde-2); border-radius: 8px;
   padding: 9px 12px; font: inherit; font-size: 0.87rem; width: 100%;
@@ -3218,6 +3234,7 @@ body.modo-prototipo #simbar {
   border: 1px solid var(--hub-borde-2); border-radius: 999px;
   padding: 7px 14px; font-family: inherit;
   font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  white-space: nowrap;
 }
 .hub-volver:hover { border-color: var(--hub-acento); color: #fff; }
 @media (max-width: 640px) { .hub-volver-cola { display: none; } }
@@ -3293,7 +3310,13 @@ body.modo-prototipo #simbar {
   border-radius: 8px; padding: 9px 12px; cursor: pointer;
 }
 .od-extra:hover { border-color: var(--hub-borde-2); }
+/* El `input:focus { outline: none }` del editor (0,1,1) alcanza también a estas
+   casillas, y el hub solo repone el indicador para .hub-buscar, .hub-select y
+   .hub-input. Sin esto, el control que decide el precio no se ve al tabular. */
 .od-check { accent-color: var(--hub-acento); width: 15px; height: 15px; }
+.hub .od-check:focus-visible {
+  outline: 2px solid var(--hub-acento); outline-offset: 2px;
+}
 .od-extra-nombre { font-size: 0.85rem; }
 .od-extra-precio { font-size: 0.82rem; color: var(--hub-tenue-2); font-variant-numeric: tabular-nums; }
 

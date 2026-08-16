@@ -112,7 +112,7 @@ Las nueve del maniquí —`maniqui-serie`, `maniqui-usa`, `maniqui-fisico`,
 `apoyos`, `colocar`, `zonas`, `press-maquina`, `solape-ui` y `mano-brazo`— están
 en verde.
 
-`hub` también, con sus 42 comprobaciones. Es la única que además deja las vistas
+`hub` también, con sus 62 comprobaciones. Es la única que además deja las vistas
 previas del hub (`hub-*.png`), que se miran, no se comparan.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la

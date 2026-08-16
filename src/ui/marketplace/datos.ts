@@ -353,7 +353,7 @@ export const PERSONALIZABLES: Record<string, Personaliza> = {
     ],
   },
   trineo: {
-    partes: ["estructura"],
+    partes: ["estructura", "detalle"],
     lettering: true,
     semanas: 3,
     extras: [

@@ -203,14 +203,25 @@ export function panelForMakers(acciones: MarketplaceAcciones = {}): HTMLElement 
   const lista = el("div", { class: "fm-lista" });
   const cuenta = el("p", { class: "hub-cuenta" });
 
+  // Las fichas se construyen UNA vez y el filtro solo las esconde. Rehacerlas en
+  // cada filtrado era más corto de escribir y borraba lo que el usuario hubiera
+  // hecho encima —el ♥ dado, las respuestas desplegadas—, porque ese estado vive
+  // en la propia tarjeta. Es el mismo trato que reciben las del mercado.
+  const fichas = HILOS.slice()
+    .sort((a, b) => a.haceDias - b.haceDias)
+    .map((h) => ({ h, nodo: tarjetaProyecto(h) }));
+  for (const { nodo } of fichas) lista.append(nodo);
+
   const pintar = (): void => {
-    const vistos = HILOS.filter((h) => filtro === "todo" || h.etiqueta === filtro).sort(
-      (a, b) => a.haceDias - b.haceDias,
-    );
-    lista.replaceChildren(...vistos.map(tarjetaProyecto));
+    let vistos = 0;
+    for (const { h, nodo } of fichas) {
+      const ok = filtro === "todo" || h.etiqueta === filtro;
+      nodo.classList.toggle("oculto", !ok);
+      if (ok) vistos++;
+    }
     cuenta.textContent = tt(
-      `${vistos.length} de ${HILOS.length} proyectos`,
-      `${vistos.length} of ${HILOS.length} projects`,
+      `${vistos} de ${HILOS.length} proyectos`,
+      `${vistos} of ${HILOS.length} projects`,
     );
   };
 

@@ -73,7 +73,15 @@ interface Pintura {
 
 function grabado(x: number, y: number, t: string, ancla = "middle"): string {
   if (!t) return "";
-  const limpio = t.slice(0, 14).replace(/[<>&]/g, "");
+  // Se ESCAPA, no se borra: «Barras & Cía» es un rótulo perfectamente
+  // normal, y suprimiendo el «&» el lienzo enseñaría algo distinto de lo que
+  // el usuario tiene escrito. El recorte va antes que el escapado para que
+  // los catorce caracteres sean los suyos y no los de la entidad.
+  const limpio = t
+    .slice(0, 14)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
   return `<text x="${x}" y="${y}" text-anchor="${ancla}" font-size="11"
     font-weight="900" letter-spacing="1.2" fill="#f2f2f2" opacity="0.92">${limpio}</text>`;
 }
@@ -190,10 +198,16 @@ function tarjetaSolicitud(d: Deseo): HTMLElement {
   const mandar = (): void => {
     const txt = entrada.value.trim();
     if (!txt) return;
+    // El texto va como nodo, no como cadena: `el()` traduce a sus hijos de tipo
+    // cadena, y el diccionario tiene entradas de una palabra —«Peso», «Cable»,
+    // «Ver»— que reescribirían el mensaje de una persona. Lo que escribe el
+    // usuario es contenido, no interfaz.
+    const cuerpo = el("span", { class: "od-msg-txt" });
+    cuerpo.append(document.createTextNode(txt));
     mensajes.append(
       el("div", { class: "od-msg" }, [
         el("span", { class: "od-msg-de" }, [tt("Tú", "You")]),
-        el("span", { class: "od-msg-txt" }, [txt]),
+        cuerpo,
       ]),
     );
     entrada.value = "";
@@ -244,9 +258,18 @@ export function panelOnDemand(acciones: MarketplaceAcciones = {}): HTMLElement {
   // ---- Vista previa
   const lienzo = el("div", { class: "od-lienzo" });
   const repintar = (): void => {
+    // Una parte que la ficha no abre no puede acabar pintada de un color que no
+    // se puede tocar: se le da el de la estructura. Es el cinturón por si una
+    // silueta y su ficha dejan de concordar.
+    const usable: Pintura = {
+      estructura: pintura.estructura,
+      tapiz: ficha.partes.includes("tapiz") ? pintura.tapiz : pintura.estructura,
+      detalle: ficha.partes.includes("detalle") ? pintura.detalle : pintura.estructura,
+      texto: pintura.texto,
+    };
     lienzo.innerHTML = `<svg viewBox="0 0 320 200" width="100%" height="100%"
       role="img" aria-label="${tt("Vista previa de la personalización", "Personalization preview")}"
-      >${(SILUETA[elegido.id] ?? armazon)(pintura)}</svg>`;
+      >${(SILUETA[elegido.id] ?? armazon)(usable)}</svg>`;
   };
 
   // ---- Partes que se pintan

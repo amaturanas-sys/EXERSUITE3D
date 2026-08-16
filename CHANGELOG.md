@@ -5,6 +5,114 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.65] — 2026-08-16
+
+### Corregido
+
+Catorce defectos del hub nuevo, encontrados por una revisión adversarial de
+cuatro lentes —gesto, estado, datos y CSS— sobre el código de 0.2.63/0.2.64 y
+confirmados uno a uno contra el build. Ninguno lo cazaba la batería.
+
+**El gesto**
+
+- **Arrastre fantasma: el carrusel se movía con el ratón SUELTO.** El gesto solo
+  se cerraba con el `pointerup` que llegara al propio carril. Bastaba pulsar la
+  lámina, salir por abajo sin recorrer 6 px en horizontal —el gesto de toda la
+  vida para cancelar un clic— y soltar sobre el mercado: ese `pointerup` no
+  llegaba nunca, el gesto quedaba abierto para siempre y el siguiente **paseo**
+  del cursor arrastraba el carril. Peor aún, la clase `arrastrando` se quedaba
+  pegada, con el imán apagado y el `ResizeObserver` mudo —su guarda es esa misma
+  clase—, así que el carrusel no volvía a centrarse ni redimensionando.
+
+  Ahora el gesto se cierra desde la VENTANA, no desde el carril, y `pointermove`
+  comprueba `e.buttons`: si el botón ya no está pulsado, se cierra solo. Las
+  escuchas de ventana se ponen al empezar el gesto y se quitan al terminarlo,
+  que de paso deja de acumularlas cada vez que se abre el hub.
+
+- **Pulsar la lámina a media animación entraba en el recorrido EQUIVOCADO.** El
+  oyente de `scroll` reescribía `vista` en cada cuadro del deslizamiento suave,
+  así que durante ~600 ms después de pulsar una pestaña la lámina de debajo del
+  cursor y `vista` eran valores intermedios. Medido: pulsar la pestaña ForMakers
+  y hacer clic 150 ms después dejaba **NewArrivals** puesto con la pestaña
+  ForMakers marcada; pulsando la lámina de destino no entraba nada hasta
+  pasados ~700 ms. Ahora, mientras dura el viaje manda el destino y no lo que se
+  vea de camino, con un plazo de 900 ms por si la animación se interrumpe.
+
+- **Un segundo puntero mataba el arrastre a medias.** Un toque con el dedo
+  durante un arrastre con ratón limpiaba el seguro anticlic y salía sin quitar
+  la clase: el arrastre terminaba filtrando por la marca que quedó debajo. Cada
+  evento se compara ahora contra el `pointerId` del gesto en curso.
+
+- **En un carril que NO desborda, el clic moría en silencio.** Las siete
+  burbujas de marca caben de sobra en un escritorio de 1280 px, así que tirar de
+  ellas no mueve nada — pero el seguro anticlic se armaba igual y se comía el
+  clic. Ocho píxeles de temblor y la marca no se seleccionaba. Ahora el gesto ni
+  siquiera empieza si no hay nada que desplazar.
+
+- **El seguro anticlic caduca.** Se armaba al soltar y solo se desarmaba con el
+  siguiente puntero; si el arrastre acababa fuera de la página no había clic que
+  lo consumiera y se comía el siguiente, que puede venir del teclado. Ahora vale
+  400 ms.
+
+**Los datos**
+
+- **El trineo se pintaba con un color que su ficha no dejaba tocar.** `piso()`
+  usa `detalle` en cuatro elementos y `PERSONALIZABLES.trineo` solo declaraba
+  `estructura`, de modo que la plataforma de carga arrastraba el color que
+  hubiera quedado del diseño anterior. El trineo declara ahora `detalle`, y la
+  vista previa ya no puede pintar una parte que la ficha no abra: si no está
+  declarada, va del color de la estructura.
+
+- **Filtrar el foro borraba los apoyos dados y las respuestas abiertas.** Cada
+  filtrado rehacía las cinco fichas desde cero y con ellas el estado que vive
+  dentro. Ahora se construyen una vez y el filtro solo las esconde, igual que
+  hace el mercado con sus tarjetas.
+
+- **El grabado BORRABA `<`, `>` y `&` en vez de escaparlos**, así que el lienzo
+  enseñaba algo distinto de lo escrito. «Barras & Cía» es un rótulo normal. De
+  paso, el recorte a 14 caracteres se hacía antes del borrado y un texto con `&`
+  pintaba trece.
+
+- **El mensaje que el usuario escribe a la marca pasaba por el diccionario de
+  traducción** y se reescribía solo: `el()` traduce a sus hijos de tipo cadena, y
+  el diccionario tiene entradas de una palabra —«Peso», «Cable», «Ver»—. Lo que
+  teclea una persona es contenido, no interfaz, y ahora va como nodo de texto.
+
+**El CSS**
+
+- **La cabecera pegajosa se comía el título de la ventana recién abierta.** El
+  hub es el contenedor de scroll y no declaraba `scroll-padding-top`, así que
+  cada `scrollIntoView` dejaba el título DEBAJO de la cabecera opaca: de los 38
+  px del rótulo «OnDemand» se veían 3. Es justo el gesto que la reforma quiere
+  lucir. Ahora 78 px.
+
+- **Los campos de TEXTO del hub salían con la piel del Builder.** El
+  `input[type="text"]` del editor tiene especificidad (0,1,1) y le ganaba a
+  `.hub-input` (0,1,0) por mucho que estuviera más abajo: fondo azulado, radio
+  de 5 px y 31 px de alto contra los 38 de sus hermanos del mismo formulario.
+  Solo los de tipo texto, lo que se veía como una mezcla dentro de la misma
+  caja. Calificados con `.hub`.
+
+- **Las casillas de «Piezas extra» no marcaban el foco.** El `input:focus {
+  outline: none }` del editor las alcanzaba y el hub solo reponía el indicador
+  para tres clases que ellas no llevan. Son las que suman recargo: el control
+  que decide el precio.
+
+- **«← Volver» se partía en dos líneas por debajo de 380 px** y engordaba la
+  cabecera pegajosa de 65 a 75 px en toda la página. A 360 px —el ancho más
+  común de un Android, que es el destino del APK— el botón medía 50 px de alto.
+
+- **Por debajo de ~350 px el hub entero ganaba barra horizontal**, se arrastraba
+  de lado y el sello HUB salía cortado. Ahora el nombre cede con puntos
+  suspensivos y el eje X está cerrado.
+
+### Añadido
+
+- **`prueba-hub` pasa de 42 a 62 comprobaciones.** Las veinte nuevas cubren
+  exactamente lo que se escapó: el arrastre fantasma, el clic a media animación,
+  el estado del foro al filtrar, el encaje bajo la cabecera, la piel de los
+  campos, el foco de las casillas y la cabecera a 360 y 320 px.
+
 ## [0.2.64] — 2026-08-16
 
 ### Añadido

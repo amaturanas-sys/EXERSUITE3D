@@ -114,13 +114,47 @@ ok((await puesta()) === "", "arrastrar NO entra en el recorrido");
 ok((await cuenta()) === total, "y por tanto no toca el mercado");
 
 // Y el clic siguiente NO se pierde: el carril solo se traga el que cierra el
-// arrastre. Aquí es donde se cazó el fallo de v0.2.62.
+// arrastre. Aquí es donde se cazó el fallo de v0.2.62. El arrastre dejó el
+// carrusel en NewComers, así que esa es la lámina que está delante.
 await p.evaluate(() => { document.querySelector(".hub").scrollTop = 0; });
 await p.waitForTimeout(300);
 await lamina("newcomers");
 ok((await puesta()) === "newcomers", "tras arrastrar, el clic siguiente sí entra");
 await lamina("newcomers");
 ok((await puesta()) === "", "y el de después lo quita");
+
+// ---- 7b. Arrastre FANTASMA: soltar el botón fuera del carrusel no puede dejar
+// el gesto abierto. Antes de v0.2.65, el siguiente paseo del ratón —sin pulsar
+// nada— arrastraba el carril y dejaba el imán apagado para siempre.
+await p.evaluate(() => { document.querySelector(".hub").scrollTop = 0; });
+await p.waitForTimeout(400);
+const c2 = await p.evaluate(() => {
+  const r = document.querySelector(".hub-carrusel").getBoundingClientRect();
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2, abajo: r.bottom + 80 };
+});
+const slAntes = await desplazado();
+await p.mouse.move(c2.x, c2.y);
+await p.mouse.down();
+await p.mouse.move(c2.x, c2.abajo); // solo vertical: no cruza el umbral
+await p.mouse.up();                 // se suelta FUERA del carrusel
+await p.waitForTimeout(300);
+await p.mouse.move(c2.x - 300, c2.y); // paseo sin pulsar
+await p.mouse.move(c2.x - 600, c2.y);
+await p.waitForTimeout(300);
+ok((await desplazado()) === slAntes, "pasear el ratón suelto no arrastra el carrusel");
+ok(
+  !(await p.evaluate(() => document.querySelector(".hub-carrusel").classList.contains("arrastrando"))),
+  "y no deja la clase de arrastre pegada",
+);
+
+// ---- 7c. La lámina entra aunque se pulse con el carrusel aún deslizándose.
+await p.evaluate(() => document.querySelector('.hub-tab[data-rec="community"]').click());
+await p.waitForTimeout(120); // a mitad de la animación
+await p.evaluate(() => document.querySelector('.hub-diapo[data-rec="community"] .hub-banner').click());
+await p.waitForTimeout(900);
+ok((await puesta()) === "community", `pulsar a media animación entra en el recorrido PEDIDO (${await puesta()})`);
+await lamina("community");
+ok((await puesta()) === "", "y se deshace");
 
 // ---- 7. OnDemand cambia la ventana de abajo
 await pestana("ondemand");
@@ -172,7 +206,9 @@ await lamina("formakers");
 ok(!(await visible(".hub-mercado")), "ForMakers esconde el mercado");
 ok(await visible(".hub-formakers"), "ForMakers enseña su panel");
 ok(!(await visible(".hub-ondemand")), "y esconde el de OnDemand");
-const proyectos = await p.evaluate(() => document.querySelectorAll(".fm-proyecto").length);
+const visibles = () => p.evaluate(() =>
+  [...document.querySelectorAll(".fm-proyecto")].filter((n) => !n.classList.contains("oculto")).length);
+const proyectos = await visibles();
 ok(proyectos === 5, `ForMakers lista los 5 proyectos (${proyectos})`);
 const barras = await p.evaluate(() => document.querySelectorAll(".fm-barra-relleno").length);
 ok(barras === 2, `dos proyectos llevan barra de financiación (${barras})`);
@@ -184,12 +220,27 @@ await p.evaluate(() => {
 await p.waitForTimeout(400);
 await p.screenshot({ path: "hub-8-formakers.png" });
 
-// El filtro por etiqueta del foro.
+// El filtro por etiqueta del foro NO puede borrar lo que el usuario hizo
+// encima: se apoya un proyecto, se filtra y se vuelve, y el apoyo sigue ahí.
+await p.evaluate(() => document.querySelector(".fm-apoyo").click());
+await p.waitForTimeout(200);
+const apoyado = await p.evaluate(() => document.querySelector(".fm-apoyo").textContent);
+ok(/185/.test(apoyado), `el apoyo sube en vivo (${apoyado})`);
+
 await p.evaluate(() => [...document.querySelectorAll(".fm-chip")]
   .find((c) => /patrocinio|sponsorship/i.test(c.textContent)).click());
 await p.waitForTimeout(500);
-const soloPatro = await p.evaluate(() => document.querySelectorAll(".fm-proyecto").length);
+const soloPatro = await visibles();
 ok(soloPatro === 2, `el filtro de patrocinio deja 2 proyectos (${soloPatro})`);
+
+await p.evaluate(() => [...document.querySelectorAll(".fm-chip")]
+  .find((c) => /todo el foro|whole forum/i.test(c.textContent)).click());
+await p.waitForTimeout(400);
+ok((await visibles()) === 5, "volver a «todo el foro» los devuelve los cinco");
+ok(
+  /185/.test(await p.evaluate(() => document.querySelector(".fm-apoyo").textContent)),
+  "y el apoyo dado sigue puesto: filtrar no rehace las fichas",
+);
 
 // ---- 9. Volver al mercado
 await p.evaluate(() => document.querySelector(".hub").scrollTop = 0);
@@ -220,6 +271,59 @@ await p.evaluate(() => {
 });
 await p.waitForTimeout(400);
 await p.screenshot({ path: "hub-4-unirse.png" });
+
+// ---- 10. La cabecera pegajosa no puede taparle el título a la ventana que se
+// acaba de abrir: el contenedor de scroll necesita `scroll-padding-top`.
+await p.evaluate(() => document.querySelector('.hub-tab[data-rec="ondemand"]').click());
+await p.waitForTimeout(700);
+await lamina("ondemand");
+await p.waitForTimeout(900);
+const encaje = await p.evaluate(() => {
+  const cab = document.querySelector(".hub-cabecera").getBoundingClientRect();
+  const tit = document.querySelector(".hub-ondemand .hub-titulo").getBoundingClientRect();
+  return { cabecera: Math.round(cab.bottom), titulo: Math.round(tit.top) };
+});
+ok(
+  encaje.titulo >= encaje.cabecera,
+  `el título queda BAJO la cabecera, no detrás (cabecera ${encaje.cabecera}, título ${encaje.titulo})`,
+);
+
+// ---- 11. Los campos de texto del hub no pueden salir con la piel del Builder.
+const piel = await p.evaluate(() => {
+  const i = document.querySelector(".od-letras");
+  const s = getComputedStyle(i);
+  return { fondo: s.backgroundColor, alto: Math.round(i.getBoundingClientRect().height) };
+});
+ok(piel.fondo === "rgb(13, 13, 13)", `el campo de texto lleva el fondo del hub (${piel.fondo})`);
+ok(piel.alto >= 36, `y la altura de sus hermanos (${piel.alto} px)`);
+
+// ---- 12. La casilla que decide el precio tiene que verse al tabular.
+const foco = await p.evaluate(() => {
+  const c = document.querySelector(".od-check");
+  c.focus();
+  const s = getComputedStyle(c);
+  return { estilo: s.outlineStyle, ancho: s.outlineWidth };
+});
+ok(foco.estilo !== "none" && foco.ancho !== "0px", `la casilla marca el foco (${foco.estilo} ${foco.ancho})`);
+
+// ---- 13 y 14. La cabecera en pantallas estrechas: ni se parte en dos líneas
+// ni desborda. 360 px es el ancho más común de un Android, que es el destino.
+for (const ancho of [360, 320]) {
+  await p.setViewportSize({ width: ancho, height: 800 });
+  await p.waitForTimeout(400);
+  const cab = await p.evaluate(() => {
+    const h = document.querySelector(".hub");
+    const c = document.querySelector(".hub-cabecera");
+    return {
+      alto: Math.round(c.getBoundingClientRect().height),
+      desborde: h.scrollWidth - h.clientWidth,
+    };
+  });
+  ok(cab.alto <= 68, `a ${ancho} px la cabecera no engorda (${cab.alto} px)`);
+  ok(cab.desborde <= 0, `a ${ancho} px el hub no gana barra horizontal (${cab.desborde})`);
+}
+await p.setViewportSize({ width: 1280, height: 1000 });
+await p.waitForTimeout(300);
 
 // ---- Teléfono
 const m = await b.newPage({ viewport: { width: 390, height: 844 } });

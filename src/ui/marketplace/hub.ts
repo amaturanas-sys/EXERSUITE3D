@@ -337,6 +337,22 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
 
   /** Qué diapositiva se está mirando. Mirar no es entrar. */
   let vista = 0;
+  /**
+   * ADÓNDE VA EL DESLIZAMIENTO SUAVE EN CURSO.
+   *
+   * Sin esto, `vista` se iba con la animación: el oyente de `scroll` la
+   * reescribía en cada cuadro con la lámina que pasaba por delante, así que
+   * pulsar la lámina antes de que el carrusel se parara entraba en un recorrido
+   * INTERMEDIO —o en ninguno—. Mientras dura el viaje manda el destino, no lo
+   * que se vea de camino.
+   *
+   * El plazo es la red de seguridad: si la animación se interrumpe —el usuario
+   * agarra el carril a media caricia— nadie avisa de que ya no va a llegar, y
+   * sin caducidad `vista` se quedaría congelada.
+   */
+  let viajando: number | null = null;
+  let viajeHasta = 0;
+  const PLAZO_VIAJE = 900;
   /** Qué recorrido está PUESTO, que es lo único que cambia la ventana. */
   let puesto: Recorrido | null = null;
 
@@ -424,7 +440,10 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
 
   const mostrar = (i: number, suave = true): void => {
     vista = Math.max(0, Math.min(RECORRIDOS.length - 1, i));
-    pista.scrollTo({ left: diapos[vista].offsetLeft, behavior: suave ? suavidad() : "auto" });
+    const modo = suave ? suavidad() : "auto";
+    viajando = modo === "smooth" ? vista : null;
+    viajeHasta = performance.now() + PLAZO_VIAJE;
+    pista.scrollTo({ left: diapos[vista].offsetLeft, behavior: modo });
     pintarEstado();
   };
 
@@ -487,6 +506,12 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     pendiente = requestAnimationFrame(() => {
       pendiente = 0;
       const i = cerca();
+      if (viajando !== null && performance.now() < viajeHasta) {
+        // Va de camino: lo que pasa por delante no cuenta como mirar.
+        if (i === viajando) viajando = null;
+        return;
+      }
+      viajando = null;
       if (i !== vista) {
         vista = i;
         pintarEstado();
