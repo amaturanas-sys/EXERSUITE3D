@@ -5,6 +5,45 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.69] — 2026-08-16
+
+### Añadido
+
+- **TRES FOTOGRAFÍAS NUEVAS, SEIS RECORTES, TRES PRODUCTOS NUEVOS.** De las
+  imágenes que mandó el diseñador, tres eran nuevas y de mucha mejor calidad que
+  lo que había. Cada una traía **más de un producto dentro**, así que de cada
+  una salen varios recortes: usarlas enteras habría dejado cinco tarjetas
+  enseñando la misma escena.
+
+  | recorte | de dónde | dónde va |
+  |---|---|---|
+  | `p-agarres` | los dos agarres de estribo | **producto nuevo**: EquipX «Par de agarres de estribo EX-Grip», $75 |
+  | `p-discos-pila` | la pila de discos del fondo de esa misma foto | ficha *Set discos bumper 150 kg*, que estaba con dibujo |
+  | `p-brazos` | los brazos de seguridad sobre el rack | **producto nuevo**: ProMax «Brazos de seguridad abatibles PR-Safe», $390 |
+  | `p-pasador` | el recuadro de detalle de esa misma foto | ficha *Par de jotas con rodillo UHMW* |
+  | `p-estacion` | la estación de polea del garaje | **producto nuevo**: Flexion «Estación de polea con banco FX-Duo», $1.290 |
+  | `rec-formakers` | el garaje entero | sustituye al banner de ForMakers |
+
+  Los tres productos nuevos se le dieron a la marca a la que le tocaban por lo
+  que vende cada una: los agarres a EquipX —«la pieza que le faltaba a tu
+  rack»—, los brazos de seguridad a ProMax, que hace los racks, y la estación a
+  Flexion, cuyo lema es «estaciones que caben donde vives».
+
+- **El catálogo pasa de 32 a 35 productos**, y de cinco fichas con fotografía a
+  **diez**.
+
+### Cambiado
+
+- **El banner de ForMakers cambia por el mismo garaje mejor iluminado.** Era la
+  versión oscura de la misma sala; la nueva se ve, y encima enseña el banco de
+  trabajo y el panel de herramientas, que es de lo que habla el recorrido.
+
+### Sabido
+
+- **`public/marketplace/` va por 996 KB.** Sigue siendo menos de lo que ocupa el
+  maniquí, pero conviene mirarlo cuando entren las fotografías de las trece
+  fichas que aún llevan dibujo.
+
 ## [0.2.68] — 2026-08-16
 
 ### Cambiado

@@ -48,7 +48,7 @@ const lamina = async (id) => {
 
 // ---- Estado de partida: mirando la primera, sin nada puesto
 const total = await cuenta();
-ok(/32 de 32|32 of 32/.test(total), `abre con el mercado entero (${total})`);
+ok(/35 de 35|35 of 35/.test(total), `abre con el mercado entero (${total})`);
 ok((await activa()) === "newarrivals", "abre mirando NewArrivals");
 ok((await puesta()) === "", "abre sin ningún recorrido puesto");
 
