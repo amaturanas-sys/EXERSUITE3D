@@ -175,18 +175,39 @@ function desplegable(id: string, opciones: [string, string, string][]): HTMLSele
  * VALORACIÓN EN DISCOS.
  *
  * El diseñador cambió las estrellas por cinco discos de pesa, que es el mismo
- * gesto que ya usa toda la aplicación para hablar de carga. El dato de origen
- * sigue siendo la cadena «★★★★★ 4.9» del catálogo: se cuentan las estrellas
- * llenas.
+ * gesto que ya usa toda la aplicación para hablar de carga, y en v0.2.67 los
+ * dibujó como el disco de verdad de la marca: aro exterior grueso, buje y
+ * agujero. Lleno en blanco, vacío en gris, y la cuenta escrita al lado
+ * —«4/5»— porque a dieciocho píxeles contar aros cuesta.
+ *
+ * El dibujo se quedó en DOS aros. Los cuatro radios en diagonal del disco
+ * real se probaron y a este tamaño lo único que hacían era emborronar el
+ * centro: cinco discos seguidos parecían una fila de tuercas.
+ *
+ * Va en SVG y no en mapa de bits por dos razones: a este tamaño una fotografía
+ * del disco sería un borrón, y el color tiene que poder cambiarlo el CSS. Todo
+ * el dibujo usa `currentColor`, así que lleno y vacío son la misma pieza con
+ * distinto color heredado.
+ *
+ * El dato de origen sigue siendo la cadena «★★★★★ 4.9» del catálogo: se cuentan
+ * las estrellas llenas.
  */
+const DISCO = `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
+  <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="4"/>
+  <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="3.2"/>
+</svg>`;
+
 function discos(rating: string): HTMLElement {
   const llenos = (rating.match(/★/g) ?? []).length;
   const fila = el("div", { class: "hub-discos" });
   fila.setAttribute("role", "img");
   fila.setAttribute("aria-label", tt(`${llenos} de 5`, `${llenos} of 5`));
   for (let i = 0; i < 5; i++) {
-    fila.append(el("span", { class: i < llenos ? "hub-disco lleno" : "hub-disco" }));
+    const d = el("span", { class: i < llenos ? "hub-disco lleno" : "hub-disco" });
+    d.innerHTML = DISCO;
+    fila.append(d);
   }
+  fila.append(el("span", { class: "hub-nota" }, [`${llenos}/5`]));
   return fila;
 }
 
@@ -278,17 +299,17 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
   const carrito = new Carrito();
 
   // ── Cabecera ─────────────────────────────────────────────────────────────
+  // El logotipo completo —marca y nombre en una sola pieza— en vez del icono
+  // pequeño más un <h1> repitiendo lo que el propio logotipo ya dice.
   const logo = el("div", { class: "hub-logo" });
-  logo.innerHTML = `<img src="${import.meta.env.BASE_URL}brand/favicon-32.png" alt="" width="40" height="40">`;
-  // En el teléfono la cabecera no da para la frase entera; la cola se esconde.
-  const volver = el("button", { class: "hub-volver" }, [
-    tt("← Volver", "← Back"),
-    el("span", { class: "hub-volver-cola" }, [tt(" a EXERSUITE3D", " to EXERSUITE3D")]),
-  ]);
+  logo.innerHTML =
+    `<img src="${import.meta.env.BASE_URL}brand/logo-hub.webp" alt="EXERSUITE3D">`;
+  // El logotipo ya dice el nombre, así que el botón no tiene que repetirlo.
+  const volver = el("button", { class: "hub-volver" }, [tt("← Volver", "← Back")]);
   volver.addEventListener("click", () => acciones.salir?.());
   const cabecera = el("header", { class: "hub-cabecera" }, [
     el("div", { class: "hub-cabecera-int" }, [
-      el("div", { class: "hub-marca" }, [logo, el("h1", {}, ["EXERSUITE3D"])]),
+      el("div", { class: "hub-marca" }, [logo]),
       el("div", { class: "hub-cabecera-der" }, [
         ...(acciones.salir ? [volver] : []),
         el("span", { class: "hub-sello" }, ["HUB"]),

@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.67] — 2026-08-16
+
+### Cambiado
+
+- **LOS DISCOS DE VALORACIÓN SE DIBUJAN COMO EL DISCO DE LA MARCA.** Eran cinco
+  círculos naranjas, planos, llenos o vacíos. Ahora son cinco discos de pesa
+  —aro exterior grueso, buje y agujero—, **blancos los llenos y grises los
+  vacíos**, con la cuenta escrita al lado: «4/5». A dieciocho píxeles contar
+  aros cuesta, y el número lo resuelve de un vistazo.
+
+  Van en SVG y no en mapa de bits por dos razones: a este tamaño una fotografía
+  del disco sería un borrón, y el color tiene que poder cambiarlo el CSS. Todo
+  el dibujo hereda `currentColor`, así que lleno y vacío son la misma pieza con
+  distinto color y no hay dos ficheros que mantener.
+
+  **El dibujo se quedó en dos aros.** Los cuatro radios en diagonal del disco
+  real se probaron y a este tamaño lo único que hacían era emborronar el centro:
+  cinco discos seguidos parecían una fila de tuercas.
+
+- **La cabecera enseña el logotipo grande y ya no repite el nombre en texto.**
+  Antes había un icono redondo de 40 px más un `<h1>` diciendo «EXERSUITE3D» al
+  lado; ahora va el logotipo completo a 64 px —44 en el teléfono—, que trae el
+  nombre dentro. Se recortó el aire transparente del original a
+  `brand/logo-hub.webp`, 12 KB: sin recortar, el 20 % de la altura era margen
+  vacío y el logotipo se veía pequeño por mucho que se agrandara la caja.
+
+- **El botón de salida se queda en «← Volver».** Decía «← Volver a EXERSUITE3D»
+  con la cola escondida en el teléfono; ahora que el logotipo dice el nombre a
+  dos dedos de distancia, repetirlo sobraba, y de paso desaparece la media
+  query que lo recortaba.
+
+- **Siete productos bajan a tres discos.** Con todo el catálogo entre cuatro y
+  cinco, el aro vacío casi no aparecía y el widget nuevo no se veía trabajar.
+
 ## [0.2.66] — 2026-08-16
 
 ### Cambiado

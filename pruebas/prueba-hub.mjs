@@ -319,7 +319,7 @@ for (const ancho of [360, 320]) {
       desborde: h.scrollWidth - h.clientWidth,
     };
   });
-  ok(cab.alto <= 68, `a ${ancho} px la cabecera no engorda (${cab.alto} px)`);
+  ok(cab.alto <= 80, `a ${ancho} px la cabecera no engorda (${cab.alto} px)`);
   ok(cab.desborde <= 0, `a ${ancho} px el hub no gana barra horizontal (${cab.desborde})`);
 }
 await p.setViewportSize({ width: 1280, height: 1000 });

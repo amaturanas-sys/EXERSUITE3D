@@ -2973,7 +2973,7 @@ body.modo-prototipo #simbar {
   overflow-y: auto;
   /* La cabecera es pegajosa y opaca: sin esto, cada scrollIntoView deja el
      título de la sección DEBAJO de ella y se aterriza sobre el párrafo. */
-  scroll-padding-top: 78px;
+  scroll-padding-top: 96px;
   /* Por debajo de ~350 px la cabecera no encoge más; que no convierta el hub
      entero en una panorámica que se arrastra de lado. */
   overflow-x: hidden;
@@ -2994,13 +2994,16 @@ body.modo-prototipo #simbar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   min-width: 0;
 }
-/* El nombre es lo único que puede ceder: la salida y el sello son controles. */
+/* El logotipo es lo único que puede ceder: la salida y el sello son controles. */
 .hub-marca { min-width: 0; }
-.hub-marca h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hub-marca { display: flex; align-items: center; gap: 12px; }
-.hub-logo img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: block; }
-.hub-marca h1 {
-  margin: 0; font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em;
+/* El logotipo completo, no el icono recortado en redondo: trae el nombre
+   dentro, así que sustituye al <h1> que antes lo repetía al lado. Se le da
+   ALTURA y se deja que el ancho salga de la proporción; `contain` evita que un
+   logotipo de otra forma se recorte. */
+.hub-logo img {
+  height: 64px; width: auto; max-width: 100%;
+  object-fit: contain; display: block;
 }
 .hub-sello {
   background: var(--hub-acento); color: #fff;
@@ -3182,13 +3185,16 @@ body.modo-prototipo #simbar {
 }
 .hub-precio { color: var(--hub-acento); font-size: 1.2rem; font-weight: 900; }
 
-/* La valoración, en discos de pesa: el mismo gesto que usa el editor. */
-.hub-discos { display: flex; gap: 3px; }
-.hub-disco {
-  width: 17px; height: 17px; border-radius: 50%;
-  border: 2px solid var(--hub-acento); display: inline-block;
+/* La valoración, en discos de pesa: el mismo gesto que usa el editor. El dibujo
+   entero hereda `currentColor`, así que lleno y vacío son la misma pieza con
+   distinto color y no hay dos SVG que mantener. */
+.hub-discos { display: flex; align-items: center; gap: 2px; }
+.hub-disco { width: 18px; height: 18px; display: block; color: #4e5155; }
+.hub-disco.lleno { color: #fff; }
+.hub-nota {
+  margin-left: 6px; font-size: 0.78rem; font-weight: 700;
+  color: var(--hub-tenue); font-variant-numeric: tabular-nums;
 }
-.hub-disco.lleno { background: var(--hub-acento); }
 
 .hub-card-acciones { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
 .hub-btn-card {
@@ -3253,7 +3259,7 @@ body.modo-prototipo #simbar {
   white-space: nowrap;
 }
 .hub-volver:hover { border-color: var(--hub-acento); color: #fff; }
-@media (max-width: 640px) { .hub-volver-cola { display: none; } }
+@media (max-width: 640px) { .hub-logo img { height: 44px; } }
 
 /* ═══════════ Las dos ventanas que no son tienda ═══════════ */
 .hub-panel { padding: 30px 0 50px; }
