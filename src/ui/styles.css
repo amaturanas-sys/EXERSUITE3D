@@ -1,3 +1,10 @@
+/* DM Sans, empaquetada: el hub la necesita y la aplicación tiene que
+   funcionar sin red dentro del APK y del ejecutable de Windows. */
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
+@import "@fontsource/dm-sans/700.css";
+@import "@fontsource/dm-sans/900.css";
+
 :root {
   /* Identidad EXERSUITE3D: monocroma industrial (tinta + papel hueso). */
   --ink: #111418;
@@ -2936,4 +2943,239 @@ body.modo-prototipo #simbar {
   height: 20px;
   flex: none;
   accent-color: var(--accent, #2f81f7);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL HUB (v0.2.62) — reforma sobre la maqueta conceptual del diseñador.
+
+   Sistema propio, deliberadamente separado del resto de la aplicación: la
+   tienda no se parece al editor. Un solo acento, el naranja #e5440f, contra
+   negros muy oscuros. Tipografía DM Sans, empaquetada (no CDN: la aplicación
+   tiene que funcionar sin red dentro del APK y del ejecutable de Windows).
+   ═══════════════════════════════════════════════════════════════════════════ */
+.hub {
+  --hub-acento: #e5440f;
+  --hub-acento-2: #ff6b35;
+  --hub-acento-osc: #c9380b;
+  --hub-fondo: #000;
+  --hub-panel: #111;
+  --hub-card: #1a1a1a;
+  --hub-hueco: #0d0d0d;
+  --hub-borde: #2a2a2a;
+  --hub-borde-2: #3a3a3a;
+  --hub-texto: #fff;
+  --hub-tenue: #9a9a9a;
+  --hub-tenue-2: #666;
+
+  position: fixed;
+  inset: 0;
+  z-index: 55; /* sobre la Landing (50), bajo el botón de salir (60) */
+  overflow-y: auto;
+  background: var(--hub-fondo);
+  color: var(--hub-texto);
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+.hub-int { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+
+/* ---- Cabecera ---- */
+.hub-cabecera {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--hub-panel);
+  border-bottom: 1px solid var(--hub-borde);
+}
+.hub-cabecera-int {
+  max-width: 1180px; margin: 0 auto; padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.hub-marca { display: flex; align-items: center; gap: 12px; }
+.hub-logo img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: block; }
+.hub-marca h1 {
+  margin: 0; font-size: 1.35rem; font-weight: 900; letter-spacing: -0.02em;
+}
+.hub-sello {
+  background: var(--hub-acento); color: #fff;
+  padding: 4px 13px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+}
+
+/* ---- Historias ---- */
+.hub-historias { background: var(--hub-panel); border-bottom: 1px solid var(--hub-borde); padding: 16px 0; }
+.hub-carril {
+  display: flex; gap: 20px; overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: none;
+}
+.hub-carril::-webkit-scrollbar { display: none; }
+.hub-historia {
+  flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  background: none; border: 0; padding: 0; cursor: pointer; color: inherit;
+}
+.hub-aro {
+  padding: 3px; border-radius: 50%;
+  background: conic-gradient(var(--hub-acento), var(--hub-acento-2), var(--hub-acento));
+}
+.hub-aro:not(.nuevo) { background: #3a3a3a; }
+.hub-aro-foto {
+  width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
+  background: linear-gradient(180deg, #262a31, #1b1e24);
+  display: flex; align-items: center; justify-content: center;
+}
+.hub-historia-txt {
+  font-size: 0.72rem; width: 68px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hub-historia:hover .hub-aro-foto { outline: 2px solid var(--hub-acento); outline-offset: 1px; }
+.hub-historia:focus-visible .hub-aro-foto { outline: 2px solid var(--hub-acento-2); outline-offset: 2px; }
+
+/* ---- Pestañas + banner ---- */
+.hub-recorridos { padding: 24px 0 8px; }
+.hub-tabs {
+  display: flex; gap: 4px; overflow-x: auto;
+  border-bottom: 1px solid #333; margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.hub-tabs::-webkit-scrollbar { display: none; }
+.hub-tab {
+  flex: 0 0 auto; background: none; border: 0;
+  border-bottom: 3px solid transparent; color: #888;
+  padding: 8px 16px; font: inherit; font-size: 0.87rem; font-weight: 700;
+  white-space: nowrap; cursor: pointer;
+}
+.hub-tab:hover { color: #ccc; }
+.hub-tab.activa { border-bottom-color: var(--hub-acento); color: #fff; }
+
+.hub-banner {
+  position: relative; border-radius: 12px; overflow: hidden;
+  height: 300px; background: var(--hub-card);
+}
+.hub-banner-foto { position: absolute; inset: 0; }
+.hub-banner-foto svg { width: 100%; height: 100%; display: block; opacity: 0.5; }
+.hub-banner::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%);
+}
+.hub-banner-txt { position: absolute; inset: auto 0 0 0; padding: 24px; z-index: 1; }
+.hub-banner-txt h2 { margin: 0; font-size: 1.6rem; font-weight: 900; }
+.hub-banner-txt p { margin: 4px 0 0; color: #d1d1d1; font-size: 0.95rem; }
+
+/* ---- Mercado ---- */
+.hub-mercado { padding: 32px 0 40px; }
+.hub-titulo { margin: 0 0 20px; font-size: 1.8rem; font-weight: 900; }
+.hub-filtros { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.hub-buscar-caja { position: relative; flex: 1 1 220px; }
+.hub-buscar-caja::before {
+  content: "⌕"; position: absolute; left: 12px; top: 50%; transform: translateY(-52%);
+  color: var(--hub-tenue); font-size: 1.1rem; pointer-events: none;
+}
+.hub-buscar {
+  width: 100%; background: var(--hub-card); color: #fff;
+  border: 1px solid var(--hub-borde-2); border-radius: 9px;
+  padding: 9px 14px 9px 34px; font: inherit; font-size: 0.87rem;
+}
+.hub-buscar::placeholder { color: #777; }
+.hub-buscar:focus, .hub-select:focus, .hub-input:focus {
+  outline: none; border-color: var(--hub-acento);
+}
+.hub-select {
+  background: var(--hub-card); color: #fff;
+  border: 1px solid var(--hub-borde-2); border-radius: 9px;
+  padding: 9px 12px; font: inherit; font-size: 0.87rem; cursor: pointer;
+}
+.hub-filtros-pie { margin-bottom: 18px; }
+.hub-cuenta { font-size: 0.8rem; color: var(--hub-tenue-2); }
+
+.hub-rejilla {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+}
+.hub-card {
+  background: var(--hub-card); border: 1px solid var(--hub-borde);
+  border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color 0.15s;
+}
+.hub-card:hover { border-color: var(--hub-acento); }
+.hub-foto {
+  height: 190px; background: linear-gradient(180deg, #262a31, #1b1e24);
+  display: block; overflow: hidden;
+}
+.hub-foto svg { width: 100%; height: 100%; display: block; }
+.hub-card-cuerpo { padding: 16px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.hub-card-nombre { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.hub-card-marca { margin: 0; color: var(--hub-tenue); font-size: 0.85rem; }
+.hub-card-pie {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px;
+}
+.hub-precio { color: var(--hub-acento); font-size: 1.2rem; font-weight: 900; }
+
+/* La valoración, en discos de pesa: el mismo gesto que usa el editor. */
+.hub-discos { display: flex; gap: 3px; }
+.hub-disco {
+  width: 17px; height: 17px; border-radius: 50%;
+  border: 2px solid var(--hub-acento); display: inline-block;
+}
+.hub-disco.lleno { background: var(--hub-acento); }
+
+.hub-card-acciones { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+.hub-btn-card {
+  flex: 1; background: transparent; color: #ddd;
+  border: 1px solid var(--hub-borde-2); border-radius: 8px;
+  padding: 8px 10px; font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+}
+.hub-btn-card:hover { border-color: var(--hub-acento); color: #fff; }
+.hub-btn-card.ok { background: var(--hub-acento); border-color: var(--hub-acento); color: #fff; }
+.hub-vacio { text-align: center; color: var(--hub-tenue-2); padding: 40px 0; }
+
+/* ---- Unirse ---- */
+.hub-unirse { border-top: 1px solid var(--hub-borde); padding: 56px 0; }
+.hub-unirse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+.hub-parrafo { color: var(--hub-tenue); line-height: 1.6; margin: 0 0 22px; }
+.hub-unirse-foto {
+  height: 190px; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(180deg, #262a31, #1b1e24);
+}
+.hub-unirse-foto svg { width: 100%; height: 100%; display: block; }
+.hub-form {
+  background: var(--hub-card); border: 1px solid var(--hub-borde);
+  border-radius: 12px; padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.hub-campo { display: flex; flex-direction: column; gap: 5px; }
+.hub-campo > span { font-size: 0.85rem; color: #ccc; }
+.hub-input {
+  background: var(--hub-hueco); color: #fff;
+  border: 1px solid var(--hub-borde-2); border-radius: 8px;
+  padding: 9px 12px; font: inherit; font-size: 0.87rem; width: 100%;
+}
+.hub-area { resize: vertical; min-height: 74px; }
+.hub-enviar {
+  background: var(--hub-acento); color: #fff; border: 0; border-radius: 9px;
+  padding: 13px; font: inherit; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+  margin-top: 4px;
+}
+.hub-enviar:hover { background: var(--hub-acento-osc); }
+.hub-aviso { margin: 0; text-align: center; color: #4ade80; font-size: 0.85rem; }
+
+/* ---- Pie ---- */
+.hub-pie { border-top: 1px solid var(--hub-borde); padding: 22px 16px 34px; text-align: center; }
+.hub-pie p { margin: 0; color: var(--hub-tenue-2); font-size: 0.85rem; }
+.hub-pie-demo { margin-top: 6px !important; font-size: 0.76rem !important; opacity: 0.75; }
+
+/* Volver a la aplicación: el hub ocupa la pantalla entera, así que necesita
+   una salida propia. Va en la cabecera, que es pegajosa y por tanto siempre
+   está a la vista sin taparle nada al contenido. */
+.hub-cabecera-der { display: flex; align-items: center; gap: 12px; }
+.hub-volver {
+  background: transparent; color: var(--hub-tenue);
+  border: 1px solid var(--hub-borde-2); border-radius: 999px;
+  padding: 7px 14px; font-family: inherit;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer;
+}
+.hub-volver:hover { border-color: var(--hub-acento); color: #fff; }
+@media (max-width: 640px) { .hub-volver-cola { display: none; } }
+
+.hub .oculto { display: none !important; }
+
+@media (max-width: 780px) {
+  .hub-unirse-grid { grid-template-columns: 1fr; gap: 28px; }
+  .hub-banner { height: 220px; }
+  .hub-banner-txt h2 { font-size: 1.3rem; }
 }

@@ -5,6 +5,73 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.62] — 2026-08-16
+
+### Cambiado
+
+- **EL HUB DEL MARKETPLACE, REHECHO SOBRE LA MAQUETA CONCEPTUAL.** Las siete
+  ventanas con barra lateral —recién llegadas, estrenos, economía local, vitrina
+  digital, foro maker, encargos e incorporación— desaparecen como ventanas. En
+  su lugar hay **una sola página** que ocupa la pantalla entera y se recorre de
+  arriba abajo, con esta estructura:
+
+  | franja | qué lleva |
+  |---|---|
+  | cabecera | logo + EXERSUITE3D, salida a la aplicación, sello `HUB` |
+  | historias | las 7 marcas en burbuja con anillo, permanentes |
+  | recorridos | 5 pestañas + el banner ilustrado del recorrido activo |
+  | mercado | buscador, 3 desplegables, contador y la rejilla de 18 productos |
+  | JOINEXERSUITE3D | el texto y la lámina a un lado, el formulario al otro |
+  | pie | la advertencia de maqueta |
+
+  Los cinco recorridos son **NewArrivals** (7 productos), **NewComers** (6, de
+  las marcas recién llegadas), **HelpYourCommunity** (12, de las PyME),
+  **OnDemand** (1, los que no llevan precio) y **ForMakers** (los 18). La
+  pestaña filtra la rejilla además de cambiar el banner.
+
+  El foro maker y los encargos quedan **fuera** de esta versión: la maqueta no
+  les da sitio y aún hay que decidir dónde van.
+
+- **La salida vive en la cabecera, no flotando.** Como el hub tapa la ventana
+  entera necesita una salida propia; estaba fija abajo a la izquierda y se
+  superponía a las tarjetas del mercado. Ahora va en la cabecera, que es
+  pegajosa y por tanto siempre está a la vista sin taparle nada al contenido. En
+  pantallas de 640 px o menos se recorta a «← Volver».
+
+- **DM Sans empaquetada, no traída de un CDN.** La tipografía entra por
+  `@fontsource/dm-sans` (400/500/700/900) y viaja dentro del bundle. Un
+  `@import` a Google Fonts no serviría: dentro del APK y del ejecutable de
+  Windows no hay red garantizada.
+
+### Corregido
+
+- **El hub se abría detrás de la Home.** La capa quedó en `z-index: 40` y la
+  Landing está en 50, así que el hub se montaba en el DOM —los nodos estaban
+  todos ahí— pero no se veía nada. Ahora en 55.
+
+- **`playwright-core` volvió al repositorio, declarado.** La batería lo importa
+  en las 63 pruebas, pero nunca estuvo en `package.json`: vivía suelto en
+  `node_modules`, y la primera instalación de una dependencia se lo llevó por
+  delante al reconciliar contra el lockfile. Queda en `devDependencies`, que es
+  donde debía estar desde que la batería entró al repositorio en 0.2.61.
+
+### Sabido
+
+- **Las láminas de los productos, los banners y la ilustración del formulario
+  son dibujos vectoriales de relleno.** Están para que se vea la composición;
+  las fotografías reales entran más adelante.
+
+- **OnDemand tiene un solo producto y ForMakers no filtra.** Los otros tres
+  recorridos salen de una propiedad real del catálogo; estos dos todavía no
+  tienen definido qué los distingue.
+
+- **Las siete ventanas viejas siguen en disco y ya no las llama nadie.**
+  `index.ts`, `descubrir.ts`, `vitrina.ts`, `makers.ts`, `deseo.ts` y
+  `unirse.ts` quedan huérfanos —el bundle los descarta— y se conservan a
+  propósito: guardan el contenido del foro y de los encargos, que hay que
+  recolocar antes de borrarlos. `chipsSeleccion()` y `encabezado()` siguen sin
+  usarse, igual que antes.
+
 ## [0.2.61] — 2026-08-16
 
 ### Añadido

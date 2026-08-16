@@ -1,7 +1,7 @@
 import type { ProjectData } from "../core/project";
 import { version as VERSION_APP } from "../../package.json";
 import { renderInstructivo } from "./Instructivo";
-import { renderMarketplace } from "./marketplace";
+import { renderHub } from "./marketplace/hub";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { borrarCaptura, listarCapturas } from "../core/capturas";
@@ -184,9 +184,30 @@ export class Landing {
     if (v === "builder") this.renderBuilder();
     else if (v === "simulator") this.renderSimulador();
     else if (v === "instructivo") this.renderInstructivoVista();
-    else if (v === "marketplace")
-      renderMarketplace(this.contenido, { verBiblioteca: () => this.actions.onExploreLibrary() });
+    else if (v === "marketplace") this.abrirHub();
     else this.renderSettings();
+  }
+
+  /**
+   * EL HUB, A PANTALLA COMPLETA (v0.2.62).
+   *
+   * La tienda no comparte marco con el editor: la maqueta del diseñador tiene
+   * cabecera propia y no lleva la navegación lateral, así que se monta sobre
+   * toda la ventana y se sale con un botón fijo que devuelve a la Home.
+   */
+  private abrirHub(): void {
+    const capa = el("div", { class: "hub" });
+    renderHub(capa, {
+      salir: () => {
+        capa.remove();
+        this.setVista("instructivo");
+      },
+      verBiblioteca: () => {
+        capa.remove();
+        this.actions.onExploreLibrary();
+      },
+    });
+    document.body.append(capa);
   }
 
   private accion(texto: string, primary: boolean, fn: () => void): HTMLElement {
