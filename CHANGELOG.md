@@ -19,21 +19,31 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   megabytes y ruido visual sin decir nada de ergonomía.
 
   **Las articulaciones aguantan al doblarse.** Cada pieza lleva un collarín que
-  se mete dentro de su vecina: medido, las juntas solapan entre **4,8 y 16,4 cm**
-  (media 12,2). Un segmento rígido que gira abre un hueco en su articulación
+  se mete dentro de su vecina: medido, las juntas solapan entre **1,6 y 34 cm**,
+  y las superficies se tocan (0,03 a 0,31 cm). Un segmento rígido que gira abre un hueco en su articulación
   salvo que la carne de las dos piezas se monte una sobre otra, y eso es lo que
   hacen esos collarines. Comprobado en sentadilla profunda con los brazos
   flexionados: no se abre ninguna junta.
 
-  **Pesa 1,55 MB** en 16 archivos, 79.987 triángulos en total. El nivel de
-  detalle se eligió midiendo: a 80.000 triángulos el error sobre la piel que se
-  ve es de **0,79 mm en el percentil 99** sobre una figura de 175 cm. El error
-  grande de decimar —hasta 3 cm— cae entero en los collarines, que quedan
-  enterrados dentro de la pieza vecina y no se ven.
+  **Pesa 0,97 MB** en 16 archivos, 53.052 triángulos. El modelo llega ya
+  optimizado y con las piezas cerradas —las 17 son volúmenes estancos—, así que
+  solo se ha tocado la cabeza: traía 54.736 de los 95.788 triángulos del
+  conjunto, el 57 % del presupuesto en el 7 % de la superficie. Aligerada a
+  12.000, el error sobre su superficie es de **0,17 mm en el percentil 99**.
+
+  El modelo trae **17 piezas** y el rig tiene 16 huecos: la de más es un
+  abdomen entre la pelvis y el torso. Va fundido con la **pelvis**, que es la
+  raíz, porque el rig dobla en la columna —que cae justo ahí— y así el pecho
+  bascula por encima de un vientre quieto, como en un cuerpo. Pasarlo al torso
+  es cambiar una línea.
 
   Cargarlo al arrancar cuesta **254 ms**, en paralelo con el repertorio de
   componentes y los prefabs. Las 16 descargas van a la vez; en serie eran 16
   idas y vueltas encadenadas con el usuario esperando (396 ms).
+
+  El OBJ viene en **cuadriláteros**, no en triángulos. Leyendo solo tres de los
+  cuatro índices se pierde medio polígono en cada cara y la figura sale moteada,
+  se ve a través de ella; hay que partir cada quad en dos.
 
 ### Cambiado
 
