@@ -97,6 +97,17 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 | `sitio` | necesita el Next.js en el 3100 (ver arriba) |
 | `atraviesa`, `cable-oculto`, `800-debug`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie las cinco pasan |
 
+**Antes de dar por rojo nada, mira si el preview seguía vivo.** En la tanda de
+v0.2.63 el `vite preview` del 4174 se murió a media carrera y se llevó por
+delante a las nueve que corrían en ese momento. En la salida se ve claro:
+
+```
+page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:4174/
+```
+
+Eso no es un fallo de la aplicación. Se levanta otra vez el preview y se repiten
+esas pruebas.
+
 Las nueve del maniquí —`maniqui-serie`, `maniqui-usa`, `maniqui-fisico`,
 `apoyos`, `colocar`, `zonas`, `press-maquina`, `solape-ui` y `mano-brazo`— están
 en verde.

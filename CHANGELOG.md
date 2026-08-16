@@ -111,6 +111,19 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 - **El carril de marcas solo desborda en pantallas estrechas.** En 1280 px las
   siete burbujas caben y arrastrarlo no mueve nada, que es lo correcto.
 
+- **Estado de la batería: 64 pruebas, las mismas nueve rojas de siempre.**
+  `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`, `uppermachine`,
+  `freno`, `v251` y `sitio` —esta última necesita el Next.js en el 3100—. Este
+  trabajo no rompió ninguna.
+
+  La tanda completa marcó **veintidós** en rojo, y trece de ellas pasaron al
+  repetirlas en serie. La causa no fue contención: **el `vite preview` del 4174
+  se murió a media tanda** y las que estaban corriendo en ese momento
+  —`catalogo`, `marketplace`, `paleta`, `humo-v214`, `menus-v257`,
+  `posar-maquina`, `pilar-vertical`, `press-maquina` y la propia `hub`— cayeron
+  con `ERR_CONNECTION_REFUSED`. Antes de dar por rojo nada de una tanda
+  completa, conviene mirar si la salida dice eso.
+
 ## [0.2.62] — 2026-08-16
 
 ### Cambiado
