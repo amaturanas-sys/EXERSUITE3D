@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.70] — 2026-08-16
+
+### Añadido
+
+- **Cinco fichas más con fotografía**, exprimiendo lo que quedaba en el material
+  que ya había: la barra cromada con sus discos (de la sesión de estudio del
+  rack) para *Barra olímpica Steel Core*, el multipower y la torre de poleas de
+  la sala moderna para *Multipower Evolution* y *Torre de poleas Revolution*, el
+  rack del garaje oscuro —que se quedó libre al cambiar el banner de ForMakers—
+  para *Rack Optimus O-700*, y las prensas de la nave para *Prensa de piernas
+  45° Titan*.
+
+  **La regla que decidió qué entraba:** la zona de origen tiene que medir al
+  menos unos 450 px de ancho, porque por debajo de eso ampliar hasta los 640 del
+  hueco se nota y una ficha borrosa es peor que el dibujo al que sustituye. Esa
+  regla dejó fuera la kettlebell de la pared, el rack del garaje claro y las
+  bandas colgadas: los objetos están en las fotografías, pero ocupan 240 o 330
+  píxeles y no aguantan el recorte.
+
+### Sabido
+
+- **Quince de las treinta y cinco fichas tienen fotografía; veinte siguen con
+  dibujo.** No es por dejarlo a medias: **el material fotográfico está
+  agotado**. Todas las imágenes disponibles ya están haciendo un trabajo —cinco
+  son banners de recorrido, dos son secciones y quince son fichas— y seguir
+  recortando de ellas solo repetiría la misma sala en varias tarjetas.
+
+  Lo que falta necesita fotografía nueva, y estos son los asuntos:
+
+  | familia | fichas |
+  |---|---|
+  | racks y jaulas | Power rack PR-9, Jaula PM-Kubus, Jaula Apex A-6 |
+  | bancos | Banco regulable 7 posiciones, Banco plano de sala |
+  | peso libre | Kettlebell 24 kg, Mancuernas hexagonales, Barra Apex, Discos bumper 100 kg |
+  | accesorios | Árbol de discos, Bandas de resistencia, Bandas de sprint, Trineo de empuje, Trineo de velocidad, Plataforma de levantamiento, Plataforma de roble, Anillas de madera, Jotas de precisión |
+  | máquinas | Torre de jammer arms TI-2, Prensa RV-45 |
+
+  **No hay generación de imágenes en esta sesión**: el servidor MCP que la traía
+  se desconectó. Con él —o con fotografías nuevas— se completan las veinte en
+  una tanda.
+
 ## [0.2.69] — 2026-08-16
 
 ### Añadido
