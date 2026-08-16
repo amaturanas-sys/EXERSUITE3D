@@ -261,6 +261,108 @@ export function productosNuevos(): Producto[] {
   return CATALOGO.filter((p) => p.lanzadoHaceDias <= 90).sort((a, b) => a.lanzadoHaceDias - b.lanzadoHaceDias);
 }
 
+// ------------------------------------------------------------- OnDemand
+/**
+ * QUÉ ADMITE PERSONALIZAR UN DISEÑO ABIERTO.
+ *
+ * OnDemand no es un catálogo aparte: son productos del catálogo de siempre que
+ * su marca abre a modificación. Por eso la tabla va POR FUERA del producto,
+ * indexada por su `id` — así se abre o se cierra un diseño sin tocar la ficha.
+ */
+export interface Personaliza {
+  /** Qué partes se pintan. `tapiz` sólo donde hay acolchado. */
+  partes: ("estructura" | "tapiz" | "detalle")[];
+  /** Admite grabado o serigrafía de un texto propio. */
+  lettering: boolean;
+  /** Piezas extra de fábrica, con su recargo sobre el precio de lista. */
+  extras: { id: string; nombre: [string, string]; precio: number }[];
+  /** Plazo de fabricación del pedido personalizado, en semanas. */
+  semanas: number;
+}
+
+export const PERSONALIZABLES: Record<string, Personaliza> = {
+  rack: {
+    partes: ["estructura", "detalle"],
+    lettering: true,
+    semanas: 6,
+    extras: [
+      { id: "jotas", nombre: ["Par de jotas con rodillo UHMW", "UHMW roller J-hook pair"], precio: 89 },
+      { id: "dominadas", nombre: ["Barra de dominadas multiagarre", "Multi-grip pull-up bar"], precio: 140 },
+      { id: "cadenas", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], precio: 59 },
+    ],
+  },
+  jaula: {
+    partes: ["estructura", "detalle"],
+    lettering: true,
+    semanas: 8,
+    extras: [
+      { id: "polea", nombre: ["Tercera estación de polea", "Third pulley station"], precio: 480 },
+      { id: "plataforma", nombre: ["Plataforma de roble integrada", "Integrated oak platform"], precio: 520 },
+      { id: "almacenaje", nombre: ["Postes de almacenaje de discos", "Plate storage posts"], precio: 95 },
+    ],
+  },
+  banco: {
+    partes: ["estructura", "tapiz"],
+    lettering: true,
+    semanas: 4,
+    extras: [
+      { id: "respaldo", nombre: ["Respaldo regulable de 7 posiciones", "7-position adjustable backrest"], precio: 120 },
+      { id: "ruedas", nombre: ["Ruedas de traslado y asa", "Transport wheels and handle"], precio: 45 },
+    ],
+  },
+  torre: {
+    partes: ["estructura", "detalle"],
+    lettering: true,
+    semanas: 7,
+    extras: [
+      { id: "multigrip", nombre: ["Barra de jalón multigrip", "Multigrip lat bar"], precio: 145 },
+      { id: "triangulo", nombre: ["Agarre en triángulo", "Triangle grip"], precio: 55 },
+      { id: "pila", nombre: ["Pila ampliada a 120 kg", "Stack upgraded to 120 kg"], precio: 310 },
+    ],
+  },
+  prensa: {
+    partes: ["estructura", "tapiz"],
+    lettering: true,
+    semanas: 9,
+    extras: [
+      { id: "tope", nombre: ["Doble tope de seguridad reforzado", "Reinforced dual safety stop"], precio: 130 },
+      { id: "portadiscos", nombre: ["Cuatro cuernos portadiscos", "Four plate horns"], precio: 90 },
+    ],
+  },
+  smith: {
+    partes: ["estructura", "detalle"],
+    lettering: true,
+    semanas: 8,
+    extras: [
+      { id: "contrapeso", nombre: ["Contrapeso ampliado", "Extended counterweight"], precio: 180 },
+      { id: "banco", nombre: ["Banco plano a juego", "Matching flat bench"], precio: 199 },
+    ],
+  },
+  plataforma: {
+    partes: ["estructura", "detalle"],
+    lettering: true,
+    semanas: 5,
+    extras: [
+      { id: "anclajes", nombre: ["Anclajes de bandas empotrados", "Recessed band anchors"], precio: 70 },
+      { id: "cerco", nombre: ["Cerco de acero perimetral", "Perimeter steel frame"], precio: 160 },
+    ],
+  },
+  trineo: {
+    partes: ["estructura"],
+    lettering: true,
+    semanas: 3,
+    extras: [
+      { id: "arnes", nombre: ["Arnés y cinchas de arrastre", "Harness and pull straps"], precio: 65 },
+      { id: "patines", nombre: ["Juego de patines de repuesto", "Spare skid set"], precio: 40 },
+    ],
+  },
+};
+
+/** Los diseños que su marca abrió a personalización. */
+export function catalogoOnDemand(): Producto[] {
+  return CATALOGO.filter((p) => p.id in PERSONALIZABLES);
+}
+
 export function productosDe(marcaId: string): Producto[] {
   return CATALOGO.filter((p) => p.marcaId === marcaId);
 }

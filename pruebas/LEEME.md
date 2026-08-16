@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-63 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+64 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -100,6 +100,9 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 Las nueve del maniquí —`maniqui-serie`, `maniqui-usa`, `maniqui-fisico`,
 `apoyos`, `colocar`, `zonas`, `press-maquina`, `solape-ui` y `mano-brazo`— están
 en verde.
+
+`hub` también, con sus 42 comprobaciones. Es la única que además deja las vistas
+previas del hub (`hub-*.png`), que se miran, no se comparan.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la
 sección «Sabido».

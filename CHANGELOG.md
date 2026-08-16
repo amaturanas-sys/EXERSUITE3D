@@ -5,6 +5,112 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.63] — 2026-08-16
+
+### Añadido
+
+- **MIRAR Y ENTRAR SON DOS GESTOS DISTINTOS.** Las cinco pestañas de recorridos
+  pasan a ser un **carrusel**, y el reparto de trabajo cambia:
+
+  - la **pestaña MUEVE** el carrusel y no toca nada más. Hojear los cinco
+    recorridos ya no reordena la página bajo el cursor;
+  - **pulsar la lámina grande** es lo que **ENTRA** en el recorrido. Volver a
+    pulsarla lo deshace, igual que el marbete que aparece junto al contador.
+
+  Cada lámina lleva ahora su llamada a la acción con la cuenta dentro —«Ver los
+  7 equipos →»— que es lo que dice que la fotografía se pulsa. La pestaña del
+  recorrido puesto queda marcada con un punto, que puede no ser la que se está
+  mirando.
+
+  Consecuencia: el hub **abre con el mercado entero**, 18 de 18. Antes abría con
+  NewArrivals ya aplicado y 7 productos, sin que nadie lo hubiera pedido.
+
+- **Los dos carruseles se arrastran con el cursor.** El dedo ya lo hacía —una
+  caja con `overflow-x: auto` trae el gesto nativo, con su inercia y su rebote,
+  y reimplementarlo sale peor—, pero el ratón no hacía nada sobre una barra que
+  además está escondida. El módulo nuevo (`carrusel.ts`) solo se mete cuando
+  `pointerType` es `mouse`. Dos cuidados que no se ven:
+
+  - **un arrastre no es un clic**: al soltar, el navegador dispara `click` en lo
+    que quede debajo, así que arrastrar el carril de marcas habría filtrado por
+    la marca sobre la que se soltó. Se traga en fase de captura;
+  - **el imán pelea con el arrastre**: con `scroll-snap-type: x mandatory` el
+    navegador corrige cada asignación de `scrollLeft` y el carril se queda
+    pegado a la lámina de partida. Se apaga mientras dura el gesto.
+
+- **ONDEMAND ES UNA VENTANA, NO UN FILTRO.** Son diseños que su marca abre a
+  modificación, y ahora se pueden modificar de verdad:
+
+  - **ocho diseños abiertos** de los dieciocho del mercado (`PERSONALIZABLES` en
+    `datos.ts`, indexada por `id` de producto para poder abrir o cerrar un
+    diseño sin tocar su ficha);
+  - **pintura por partes** —estructura, tapizado, detalles, según lo que lleve
+    cada equipo— sobre nueve colores de fábrica;
+  - **grabado o serigrafía** de hasta 14 caracteres;
+  - **piezas extra** con su recargo, y el total recalculándose;
+  - **«Prototipar en 3D»**, que lleva al Builder: la silueta de aquí sirve para
+    decidir rápido entre dos colores, la estética se decide sobre el modelo;
+  - debajo, **tus solicitudes** —los antiguos «encargos»— con sus cuatro estados
+    y el hilo abierto con la marca.
+
+  **La vista previa se pinta de verdad.** Las ilustraciones de `arte.ts` llevan
+  la paleta cocida dentro de la cadena —se generan una vez al cargar el módulo—
+  y no hay forma de recolorearlas sin rehacerlas. Así que `ondemand.ts` dibuja
+  cuatro siluetas paramétricas propias —bastidor, banco, torre y suelo— que
+  reciben los colores y el texto como argumentos, y reparte los ocho diseños
+  entre ellas.
+
+- **FORMAKERS ES EL TABLÓN TIPO KICKSTARTER.** Diseñadores independientes
+  enseñan lo que están haciendo y buscan con qué sacarlo adelante: respaldo de
+  la comunidad, o una marca que se sume a fabricarlo. Cinco proyectos, filtro
+  por lo que se busca (diseño original · patrocinio · equipo de trabajo), barra
+  de financiación con las reservas conseguidas sobre el objetivo y las marcas
+  interesadas en los dos que la piden, apoyos en vivo, respuestas plegables y un
+  compositor para publicar el propio.
+
+- **`pruebas/prueba-hub.mjs`**, 42 comprobaciones sobre los dos gestos, el
+  arrastre, el intercambio de ventana, el personalizador y el foro. La batería
+  pasa de 63 a 64.
+
+### Cambiado
+
+- **La ventana de abajo se cambia entera, no se filtra.** Tres de los cinco
+  recorridos son cortes del mismo catálogo y se quedan en el mercado
+  filtrándolo; OnDemand y ForMakers no son tienda, así que sustituyen al mercado
+  en lugar de recortarlo. El tipo `Destino` lo hace explícito.
+
+- **El foro maker y los encargos vuelven al hub.** En 0.2.62 quedaron fuera
+  porque la maqueta no les daba sitio; ahora tienen el suyo. `makers.ts` y
+  `deseo.ts` quedan superados por `formakers.ts` y `ondemand.ts`.
+
+- **Pulsar una marca del carril quita antes el panel puesto.** Una marca son sus
+  productos, y el filtro habría caído sobre un mercado escondido.
+
+### Corregido
+
+- **El carril se comía el primer clic después de cada arrastre.** El seguro que
+  distingue arrastrar de pulsar se armaba al soltar y solo se desarmaba en el
+  siguiente `pointerdown`. Parecía lo seguro y no lo era: un clic de teclado
+  sobre la llamada a la acción no trae puntero ninguno, así que se habría comido
+  el primer Intro después de cada arrastre, y un toque con el dedo detrás de un
+  arrastre con el ratón tampoco reponía el estado. Ahora se traga **un** clic y
+  se desarma acto seguido, y cualquier puntero limpia el estado al bajar.
+  Lo cazó `prueba-hub`.
+
+### Sabido
+
+- **Las láminas siguen siendo dibujos vectoriales de relleno**, tanto en los
+  banners como en las fichas de producto. Las cuatro siluetas del personalizador
+  son esquemáticas a propósito: lo que tiene que quedar claro es qué se está
+  pintando, no cómo va a quedar el acabado real.
+
+- **`makers.ts`, `deseo.ts`, `index.ts`, `descubrir.ts`, `vitrina.ts` y
+  `unirse.ts` siguen en disco sin que los llame nadie.** El bundle los descarta.
+  Se borran cuando el hub nuevo esté cerrado.
+
+- **El carril de marcas solo desborda en pantallas estrechas.** En 1280 px las
+  siete burbujas caben y arrastrarlo no mueve nada, que es lo correcto.
+
 ## [0.2.62] — 2026-08-16
 
 ### Cambiado

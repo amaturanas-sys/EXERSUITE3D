@@ -1,18 +1,33 @@
 /**
- * EL HUB (v0.2.62) — reforma sobre la maqueta conceptual del diseñador.
+ * EL HUB (v0.2.63) — reforma sobre la maqueta conceptual del diseñador.
  *
  * Cambia la ESTRUCTURA, no solo la piel. Antes eran siete ventanas y cada una
- * era una página entera; ahora hay una sola página con tres franjas fijas y una
- * banda que cambia:
+ * era una página entera; ahora hay una sola página que se recorre de arriba
+ * abajo:
  *
- *   CABECERA     logotipo + sello HUB
+ *   CABECERA     logotipo, salida a la aplicación y sello HUB
  *   HISTORIAS    las siete marcas, permanentes y arriba del todo (antes vivían
  *                enterradas dentro de la Vitrina, en la cuarta pestaña)
- *   PESTAÑAS     cinco recorridos curados; cada uno pinta su banner
- *   MERCADO      el catálogo COMPLETO, siempre visible, con buscador y tres
- *                desplegables (antes estaba repartido en cuatro ventanas que
- *                vendían lo mismo con distinto filtro)
+ *   RECORRIDOS   un carrusel de cinco láminas; las pestañas lo NAVEGAN
+ *   VENTANA      lo que hay debajo: el mercado, OnDemand o ForMakers
  *   UNIRSE       alta de marca, al pie de la misma página
+ *
+ * DOS GESTOS DISTINTOS, Y NO DA IGUAL CUÁL. La pestaña **mueve** el carrusel y
+ * nada más: enseña la lámina del recorrido sin tocar lo de abajo. Lo que
+ * **entra** en un recorrido es pulsar la lámina grande. Así hojear los cinco
+ * recorridos es gratis —no reordena la página bajo el cursor— y entrar es un
+ * acto deliberado. El carrusel se arrastra además con el cursor, igual que con
+ * el dedo (ver `carrusel.ts`).
+ *
+ * ADÓNDE LLEVA CADA RECORRIDO. Tres de los cinco son cortes del mismo catálogo
+ * y se quedan en el mercado, filtrándolo. Los otros dos NO son tienda y por eso
+ * la ventana de abajo se cambia entera:
+ *
+ *   · ONDEMAND   diseños que su marca abre a modificación — color, grabado,
+ *                piezas extra— y que el cliente puede prototipar en 3D antes
+ *                de decidir la estética;
+ *   · FORMAKERS  el tablón tipo Kickstarter de los diseñadores independientes,
+ *                que buscan respaldo de la comunidad o una marca que se sume.
  *
  * El maniquí de la aplicación no entra aquí: esto es la tienda.
  */
@@ -32,21 +47,27 @@ import {
 } from "./datos";
 import { ARTE, LOGOS } from "./arte";
 import { Carrito, type MarketplaceAcciones } from "./comunes";
+import { arrastrable, suavidad } from "./carrusel";
+import { panelOnDemand } from "./ondemand";
+import { panelForMakers } from "./formakers";
 
 /**
  * LOS CINCO RECORRIDOS.
  *
- * Cada pestaña es un banner y —esto es lo que hay que decidir— también un
- * FILTRO del mercado de abajo. Sin el filtro, cambiar de pestaña solo cambia
- * una fotografía y las cinco enseñan el mismo catálogo.
+ * Cada uno es una lámina del carrusel y un destino. El destino manda sobre qué
+ * pasa con la ventana de abajo al ENTRAR en el recorrido: `mercado` la deja
+ * donde está y le aplica un filtro; `panel` la cambia por otra cosa.
  */
+type Destino =
+  | { tipo: "mercado"; filtro: ((p: Producto) => boolean) | null }
+  | { tipo: "panel"; panel: "ondemand" | "formakers" };
+
 interface Recorrido {
   id: string;
   etiqueta: string;
   titulo: [string, string];
   bajada: [string, string];
-  /** Qué deja pasar al mercado. `null` = el catálogo entero. */
-  filtro: ((p: Producto) => boolean) | null;
+  destino: Destino;
   arte: string;
 }
 
@@ -63,7 +84,7 @@ const RECORRIDOS: Recorrido[] = [
       "Los últimos equipos 3D listos para prototipar tu espacio",
       "The latest 3D equipment, ready to prototype your space",
     ],
-    filtro: (p) => ESTRENOS.has(p.id),
+    destino: { tipo: "mercado", filtro: (p) => ESTRENOS.has(p.id) },
     arte: ARTE.jaula,
   },
   {
@@ -74,7 +95,7 @@ const RECORRIDOS: Recorrido[] = [
       "Marcas que acaban de entrar y estrenan su vitrina digital",
       "Brands that just joined and are opening their digital showcase",
     ],
-    filtro: (p) => NUEVAS.has(p.marcaId),
+    destino: { tipo: "mercado", filtro: (p) => NUEVAS.has(p.marcaId) },
     arte: ARTE.trineo,
   },
   {
@@ -85,7 +106,7 @@ const RECORRIDOS: Recorrido[] = [
       "Talleres que fabrican cerca: envío corto, repuestos a mano",
       "Workshops that build nearby: short shipping, spares at hand",
     ],
-    filtro: (p) => PYMES.has(p.marcaId),
+    destino: { tipo: "mercado", filtro: (p) => PYMES.has(p.marcaId) },
     arte: ARTE.banco,
   },
   {
@@ -93,10 +114,10 @@ const RECORRIDOS: Recorrido[] = [
     etiqueta: "OnDemand",
     titulo: ["OnDemand", "OnDemand"],
     bajada: [
-      "Tu diseño, fabricado: manda el prefab y recibe una valoración",
-      "Your design, built: send the prefab and get a real quote",
+      "Diseños de marca que se pintan, se graban y se amplían a tu gusto",
+      "Brand designs you can paint, engrave and extend to taste",
     ],
-    filtro: (p) => p.precio === 0,
+    destino: { tipo: "panel", panel: "ondemand" },
     arte: ARTE.quimera,
   },
   {
@@ -104,10 +125,10 @@ const RECORRIDOS: Recorrido[] = [
     etiqueta: "ForMakers",
     titulo: ["ForMakers", "ForMakers"],
     bajada: [
-      "Diseños originales, patrocinio y equipos de trabajo",
-      "Original designs, sponsorship and work groups",
+      "Proyectos de la comunidad buscando respaldo o una marca que se sume",
+      "Community projects looking for backing, or a brand to join in",
     ],
-    filtro: null,
+    destino: { tipo: "panel", panel: "formakers" },
     arte: ARTE.escaner,
   },
 ];
@@ -275,9 +296,13 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     el("div", { class: "hub-int" }, [carril]),
   ]);
 
-  // ── Pestañas + banner ────────────────────────────────────────────────────
+  // ── Recorridos: pestañas que navegan + carrusel que entra ────────────────
   const nav = el("nav", { class: "hub-tabs" });
-  const banner = el("div", { class: "hub-banner" });
+  const pista = el("div", { class: "hub-carrusel" });
+  pista.setAttribute("role", "group");
+  pista.setAttribute("aria-roledescription", tt("carrusel", "carousel"));
+  const diapos: HTMLElement[] = [];
+  const rotulos: HTMLElement[] = [];
 
   // ── Mercado ──────────────────────────────────────────────────────────────
   const buscador = el("input", {
@@ -299,21 +324,30 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     tt("No se encontraron productos.", "No products found."),
   ]);
   const cuenta = el("span", { class: "hub-cuenta" });
+  /** Se enciende con un recorrido puesto y es la forma corta de quitarlo. */
+  const marbete = el("button", { class: "hub-marbete oculto", type: "button" });
 
   const tarjetas = CATALOGO.map((p) => ({ p, nodo: tarjeta(p, carrito, acciones) }));
   for (const { nodo } of tarjetas) rejilla.append(nodo);
 
-  let recorrido: Recorrido = RECORRIDOS[0];
+  /** Qué diapositiva se está mirando. Mirar no es entrar. */
+  let vista = 0;
+  /** Qué recorrido está PUESTO, que es lo único que cambia la ventana. */
+  let puesto: Recorrido | null = null;
+
+  const filtroPuesto = (): ((p: Producto) => boolean) | null =>
+    puesto && puesto.destino.tipo === "mercado" ? puesto.destino.filtro : null;
 
   const filtrar = (): void => {
     const q = buscador.value.trim().toLowerCase();
     const cat = selCat.value;
     const mk = selMarca.value;
     const pr = PRECIOS.find(([v]) => v === selPrecio.value)?.[3] ?? (() => true);
+    const rec = filtroPuesto();
     let visibles = 0;
     for (const { p, nodo } of tarjetas) {
       const ok =
-        (!recorrido.filtro || recorrido.filtro(p)) &&
+        (!rec || rec(p)) &&
         (!q || nodo.dataset.busca!.includes(q)) &&
         (!cat || p.categoria === cat) &&
         (!mk || p.marcaId === mk) &&
@@ -328,37 +362,152 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     );
   };
 
-  const irA = (r: Recorrido): void => {
-    recorrido = r;
-    for (const b of [...nav.children]) {
-      b.classList.toggle("activa", (b as HTMLElement).dataset.rec === r.id);
+  // ── El carrusel ──────────────────────────────────────────────────────────
+  //
+  // La diapositiva a la vista se calcula por `offsetLeft` y no por
+  // `índice × ancho`: así el hueco entre láminas, el ancho del móvil o
+  // cualquier lámina que en el futuro no ocupe el 100 % siguen dando la cuenta
+  // correcta sin tocar esto.
+  const cerca = (): number => {
+    let mejor = 0;
+    let d = Infinity;
+    for (let i = 0; i < diapos.length; i++) {
+      const dd = Math.abs(diapos[i].offsetLeft - pista.scrollLeft);
+      if (dd < d) {
+        d = dd;
+        mejor = i;
+      }
     }
-    banner.replaceChildren(
-      lamina(r.arte, "hub-banner-foto"),
-      el("div", { class: "hub-banner-txt" }, [
-        el("h2", {}, [tt(r.titulo[0], r.titulo[1])]),
-        el("p", {}, [tt(r.bajada[0], r.bajada[1])]),
-      ]),
-    );
-    filtrar();
+    return mejor;
   };
 
-  for (const r of RECORRIDOS) {
-    const b = el("button", { class: "hub-tab" }, [r.etiqueta]);
+  /** Cuántos equipos deja ver un recorrido de mercado, para el rótulo. */
+  const cuantos = (r: Recorrido): number =>
+    r.destino.tipo !== "mercado"
+      ? 0
+      : r.destino.filtro
+        ? CATALOGO.filter(r.destino.filtro).length
+        : CATALOGO.length;
+
+  const rotulo = (r: Recorrido): string => {
+    const on = puesto?.id === r.id;
+    if (r.destino.tipo === "panel") {
+      return on
+        ? tt("← Volver al mercado", "← Back to the market")
+        : tt(`Entrar en ${r.etiqueta} →`, `Enter ${r.etiqueta} →`);
+    }
+    return on
+      ? tt("✕ Quitar el filtro", "✕ Clear the filter")
+      : tt(`Ver los ${cuantos(r)} equipos →`, `See the ${cuantos(r)} items →`);
+  };
+
+  const pintarEstado = (): void => {
+    for (let i = 0; i < RECORRIDOS.length; i++) {
+      const r = RECORRIDOS[i];
+      const b = nav.children[i] as HTMLElement;
+      b.classList.toggle("activa", i === vista);
+      b.classList.toggle("puesta", puesto?.id === r.id);
+      b.setAttribute("aria-current", i === vista ? "true" : "false");
+      diapos[i].classList.toggle("puesta", puesto?.id === r.id);
+      diapos[i].setAttribute("aria-hidden", i === vista ? "false" : "true");
+      rotulos[i].replaceChildren(rotulo(r));
+    }
+    const on = puesto !== null;
+    marbete.classList.toggle("oculto", !on);
+    if (on) marbete.replaceChildren(`${puesto!.etiqueta}  ✕`);
+  };
+
+  const mostrar = (i: number, suave = true): void => {
+    vista = Math.max(0, Math.min(RECORRIDOS.length - 1, i));
+    pista.scrollTo({ left: diapos[vista].offsetLeft, behavior: suave ? suavidad() : "auto" });
+    pintarEstado();
+  };
+
+  /** ENTRAR en un recorrido: lo único que toca la ventana de abajo. */
+  const entrar = (r: Recorrido): void => {
+    puesto = puesto?.id === r.id ? null : r;
+    const panel = puesto?.destino.tipo === "panel" ? puesto.destino.panel : null;
+    mercado.classList.toggle("oculto", panel !== null);
+    panelOD.classList.toggle("oculto", panel !== "ondemand");
+    panelFM.classList.toggle("oculto", panel !== "formakers");
+    filtrar();
+    pintarEstado();
+    const abajo = panel === "ondemand" ? panelOD : panel === "formakers" ? panelFM : mercado;
+    abajo.scrollIntoView({ behavior: suavidad(), block: "start" });
+  };
+
+  for (let i = 0; i < RECORRIDOS.length; i++) {
+    const r = RECORRIDOS[i];
+
+    // La pestaña SOLO navega.
+    const b = el("button", { class: "hub-tab", type: "button" }, [r.etiqueta]);
     b.dataset.rec = r.id;
-    b.addEventListener("click", () => irA(r));
+    b.addEventListener("click", () => mostrar(i));
     nav.append(b);
+
+    // La lámina es la que entra.
+    const cta = el("button", { class: "hub-cta", type: "button" });
+    const diapo = el("div", { class: "hub-diapo" }, [
+      el("div", { class: "hub-banner" }, [
+        lamina(r.arte, "hub-banner-foto"),
+        el("div", { class: "hub-banner-txt" }, [
+          el("h2", {}, [tt(r.titulo[0], r.titulo[1])]),
+          el("p", {}, [tt(r.bajada[0], r.bajada[1])]),
+          cta,
+        ]),
+      ]),
+    ]);
+    diapo.dataset.rec = r.id;
+    // Pulsar una lámina que no está centrada la centra; entrar exige tenerla
+    // delante, que es lo que pidió el diseñador.
+    diapo.addEventListener("click", () => (i === vista ? entrar(r) : mostrar(i)));
+    diapos.push(diapo);
+    rotulos.push(cta);
+    pista.append(diapo);
   }
+
+  marbete.addEventListener("click", () => {
+    if (puesto) entrar(puesto);
+  });
+
+  // Arrastre con el cursor y ajuste al soltar; el dedo ya lo hacía solo.
+  arrastrable(pista, () => mostrar(cerca()));
+
+  // El desplazamiento nativo —rueda, dedo, teclado— también manda en la
+  // pestaña marcada. Se lee en el siguiente cuadro para no leer el `scrollLeft`
+  // una vez por píxel.
+  let pendiente = 0;
+  pista.addEventListener("scroll", () => {
+    if (pendiente) return;
+    pendiente = requestAnimationFrame(() => {
+      pendiente = 0;
+      const i = cerca();
+      if (i !== vista) {
+        vista = i;
+        pintarEstado();
+      }
+    });
+  });
+
+  // Al cambiar el ancho, la diapositiva a la vista se queda a medio camino.
+  new ResizeObserver(() => {
+    if (pista.classList.contains("arrastrando")) return;
+    pista.scrollLeft = diapos[vista].offsetLeft;
+  }).observe(pista);
 
   for (const m of MARCAS) {
     carril.append(
       burbuja(m, (mm) => {
+        // Una marca son sus PRODUCTOS: si abajo hay un panel puesto, se quita
+        // primero, porque si no el filtro caería sobre un mercado escondido.
+        if (puesto && puesto.destino.tipo === "panel") entrar(puesto);
         selMarca.value = mm.id;
         filtrar();
-        document.querySelector(".hub-mercado")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        mercado.scrollIntoView({ behavior: suavidad(), block: "start" });
       }),
     );
   }
+  arrastrable(carril);
 
   buscador.addEventListener("input", filtrar);
   for (const s of [selCat, selMarca, selPrecio]) s.addEventListener("change", filtrar);
@@ -372,11 +521,17 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
         selMarca,
         selPrecio,
       ]),
-      el("div", { class: "hub-filtros-pie" }, [cuenta]),
+      el("div", { class: "hub-filtros-pie" }, [cuenta, marbete]),
       rejilla,
       vacio,
     ]),
   ]);
+
+  // ── Las dos ventanas que NO son tienda ───────────────────────────────────
+  const panelOD = panelOnDemand(acciones);
+  const panelFM = panelForMakers(acciones);
+  panelOD.classList.add("oculto");
+  panelFM.classList.add("oculto");
 
   // ── Unirse ───────────────────────────────────────────────────────────────
   const enviar = el("button", { class: "hub-enviar", type: "button" }, [
@@ -433,14 +588,19 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     cabecera,
     historias,
     el("section", { class: "hub-recorridos" }, [
-      el("div", { class: "hub-int" }, [nav, banner]),
+      el("div", { class: "hub-int" }, [nav, pista]),
     ]),
     mercado,
+    panelOD,
+    panelFM,
     unirse,
     pie,
   );
 
-  irA(RECORRIDOS[0]);
+  // Se abre en la primera lámina y con el mercado ENTERO: mirar no es entrar,
+  // así que hasta que no se pulse una lámina no hay ningún recorrido puesto.
+  mostrar(0, false);
+  filtrar();
   // El país guardado sigue mandando en el orden del carril de historias.
   void paisUsuario();
 }
