@@ -119,6 +119,24 @@ export type SegmentProvider = (segmentId: string) => THREE.BufferGeometry | null
 export type SegmentSkinProvider = (segmentId: string) => THREE.Material | null;
 
 /**
+ * ESQUELETO PROPIO del maniquí: dónde articula de verdad el cuerpo que se está
+ * montando, en centímetros, con los pies en y=0 y a 175 cm de talla.
+ *
+ * Sin esto el rig gira sobre los pivotes que heredó de sus primitivas, y esos
+ * pivotes son los de una figura de cilindros, no los de un cuerpo. La
+ * diferencia no es cosmética: con el maniquí de serie los pivotes se mueven
+ * entre 2,3 y 10,1 cm —el hombro es el que más—, así que el segmento no giraba
+ * sobre su articulación sino que ORBITABA alrededor de ella, y con ello se iba
+ * al garete todo lo que la aplicación mide encima del maniquí: dónde pisa,
+ * cuánto se hunde en un asiento, a qué altura le queda un agarre.
+ *
+ * Las claves son las mismas que las de `joints` (spine, neck, shoulderL…). Se
+ * usa solo si vienen TODAS y si además hay modelo para los dieciséis segmentos:
+ * mezclar pivotes de un cuerpo con geometría de otro es peor que no tocar nada.
+ */
+export type SegmentJointProvider = () => Record<string, [number, number, number]> | null;
+
+/**
  * Primitiva REAL de cada segmento (misma que usa el rig al construirse), en
  * función de la altura H. Fuente única para el maniquí y para la vista previa
  * de la Biblioteca: así cada segmento se ve como lo que es (cabeza=esfera,
@@ -177,6 +195,7 @@ export function buildHumanFigure(
   heightCm: number,
   segments?: SegmentProvider,
   skins?: SegmentSkinProvider,
+  esqueleto?: SegmentJointProvider,
 ): THREE.Group {
   const H = heightCm;
   const joints: Record<string, THREE.Object3D> = {};
@@ -273,7 +292,7 @@ export function buildHumanFigure(
   buildLeg("R", 0.06 * H);
 
   // Sustituye las primitivas por los modelos de segmento (ajustados a su hueco).
-  if (segments) applySegmentOverrides(root, segments, skins);
+  if (segments) applySegmentOverrides(root, joints, segments, skins, esqueleto?.() ?? null);
 
   // Escala el rig a la altura exacta solicitada y apoya los pies en y=0.
   root.updateMatrixWorld(true);
@@ -306,8 +325,10 @@ export function buildHumanFigure(
  */
 function applySegmentOverrides(
   root: THREE.Group,
+  joints: Record<string, THREE.Object3D>,
   provider: SegmentProvider,
   skins?: SegmentSkinProvider,
+  esqueleto?: Record<string, [number, number, number]> | null,
 ): void {
   const conModelo: { mesh: THREE.Mesh; geo: THREE.BufferGeometry; id: string }[] = [];
   root.traverse((o) => {
@@ -332,8 +353,20 @@ function applySegmentOverrides(
     masAlta = Math.max(masAlta, geo.boundingBox!.max.y - geo.boundingBox!.min.y);
   }
   const alturaUnion = union.max.y - union.min.y;
-  if (masAlta > 0 && alturaUnion > masAlta * 1.5) {
-    colocarCuerpoEntero(root, conModelo);
+  const cuerpoEntero = masAlta > 0 && alturaUnion > masAlta * 1.5;
+  // El esqueleto solo vale si viene ENTERO y el cuerpo también: con la mitad de
+  // los pivotes movidos y la otra mitad donde los dejaron las primitivas, la
+  // figura sale peor que sin tocar nada.
+  const propio =
+    esqueleto &&
+    cuerpoEntero &&
+    conModelo.length === SEGMENT_DEFS.length &&
+    Object.keys(PARENT_JOINT).every((n) => Array.isArray(esqueleto[n]))
+      ? esqueleto
+      : null;
+  if (propio) recolocarPivotes(root, joints, propio);
+  if (cuerpoEntero) {
+    colocarCuerpoEntero(root, conModelo, propio != null);
   } else {
     for (const { mesh, geo } of conModelo) fitSegmentGeometry(mesh, geo);
   }
@@ -348,6 +381,33 @@ function applySegmentOverrides(
     const orden = SEGMENT_DEFS.findIndex((s) => s.id === id);
     sesgarProfundidad(mesh.material as THREE.MeshStandardMaterial, orden);
   }
+}
+
+/**
+ * Lleva los pivotes del rig a donde articula el cuerpo de verdad.
+ *
+ * El esqueleto viene en coordenadas absolutas (pies en y=0), y la jerarquía del
+ * rig es relativa: cada pivote cuelga del anterior. Restando el sitio de la
+ * articulación madre se pasa de una cosa a la otra. Los pivotes sin madre
+ * —columna y caderas— quedan medidos desde la raíz, que con esqueleto propio se
+ * queda en el SUELO, entre los pies, en vez de a la altura de la cadera.
+ *
+ * Nada se rota: solo se mueven los centros de giro. Los rangos articulares y las
+ * posturas siguen contando desde el mismo cero.
+ */
+function recolocarPivotes(
+  root: THREE.Group,
+  joints: Record<string, THREE.Object3D>,
+  esqueleto: Record<string, [number, number, number]>,
+): void {
+  for (const [nombre, pivote] of Object.entries(joints)) {
+    const j = esqueleto[nombre];
+    if (!j) continue;
+    const madre = PARENT_JOINT[nombre];
+    const p = madre ? esqueleto[madre] : null;
+    pivote.position.set(j[0] - (p?.[0] ?? 0), j[1] - (p?.[1] ?? 0), j[2] - (p?.[2] ?? 0));
+  }
+  root.updateMatrixWorld(true);
 }
 
 /**
@@ -369,6 +429,7 @@ function applySegmentOverrides(
 function colocarCuerpoEntero(
   root: THREE.Group,
   piezas: { mesh: THREE.Mesh; geo: THREE.BufferGeometry; id: string }[],
+  propio = false,
 ): void {
   // El hueco de TODO el maniquí: la caja de las primitivas que va a sustituir.
   root.updateMatrixWorld(true);
@@ -392,14 +453,20 @@ function colocarCuerpoEntero(
   origen.getCenter(cOrigen);
   destino.getCenter(cDestino);
 
-  const M = new THREE.Matrix4()
-    // Los pies del cuerpo sobre los pies del maniquí; centrado en X y Z.
-    .makeTranslation(
-      cDestino.x - cOrigen.x * s,
-      destino.min.y - origen.min.y * s,
-      cDestino.z - cOrigen.z * s,
-    )
-    .multiply(new THREE.Matrix4().makeScale(s, s, s));
+  // Con esqueleto propio no hay nada que encajar: los pivotes ya se movieron al
+  // sitio del cuerpo y la geometría viene medida en ese mismo espacio —175 cm,
+  // pies en y=0—, así que entra tal cual. La talla que pida quien lo llame la
+  // pone el reescalado final del rig.
+  const M = propio
+    ? new THREE.Matrix4()
+    : new THREE.Matrix4()
+        // Los pies del cuerpo sobre los pies del maniquí; centrado en X y Z.
+        .makeTranslation(
+          cDestino.x - cOrigen.x * s,
+          destino.min.y - origen.min.y * s,
+          cDestino.z - cOrigen.z * s,
+        )
+        .multiply(new THREE.Matrix4().makeScale(s, s, s));
 
   const sitio = new THREE.Vector3();
   for (const { mesh, geo } of piezas) {

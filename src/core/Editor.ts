@@ -4124,6 +4124,7 @@ export class Editor {
       heightCm,
       figureSegments.provider,
       figureSegments.skinProvider,
+      figureSegments.jointProvider,
     );
 
     // El usuario pudo quitar/cambiar la figura mientras cargaba.
@@ -4913,9 +4914,16 @@ export class Editor {
     if (cache && cache.uuid === m.geometry.uuid) return cache.pts;
     const pos = m.geometry.getAttribute("position");
     const pts: THREE.Vector3[] = [];
+    // La PELVIS es la raíz: no cuelga de ninguna articulación, así que no tiene
+    // collarín «de arriba» que descontar y toda ella es piel propia. El criterio
+    // de «por debajo del pivote» vale para los segmentos que cuelgan de uno, no
+    // para ella — y desde que el maniquí trae esqueleto propio la raíz está en
+    // el SUELO, con lo que ese criterio no le dejaba ni un punto y se caía a
+    // medir su caja sin decirlo.
+    const raiz = m.userData.jointName === "";
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i) * m.scale.y + m.position.y;
-      if (y <= 0) pts.push(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+      if (raiz || y <= 0) pts.push(new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
     }
     // Todos, sin muestrear. Se probó con 256 repartidos para ahorrar trabajo y
     // sale mal: `noHundirse` corrige hasta bajar de 0,05 cm de hundimiento, y

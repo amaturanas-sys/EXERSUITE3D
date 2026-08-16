@@ -5,6 +5,162 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.61] — 2026-08-16
+
+### Añadido
+
+- **EL MANIQUÍ GIRA DONDE GIRA UN CUERPO.** El rig ya no articula sobre los
+  pivotes que heredó de sus primitivas de cilindros y cajas: los coloca en los
+  centros articulares del cuerpo que está montando.
+
+  Era la causa de fondo anotada en 0.2.60. El pivote del tobillo estaba a 10,2
+  cm del eje y el tobillo del cuerpo cae en otro sitio, así que el pie no giraba
+  sobre el tobillo: **orbitaba** a varios centímetros de él. Con eso mal, todo lo
+  que ERGONOMÍA mide encima del maniquí —dónde pisa, cuánto se hunde en un
+  asiento, a qué altura le queda un agarre— estaba midiendo sobre un esqueleto
+  que no era el de la figura que se ve.
+
+  Cuánto se movió cada pivote, en el maniquí de 175 cm:
+
+  | articulación | rig antes | cuerpo ahora | se mueve |
+  |---|---|---|---|
+  | columna  | (0, 93,3, 0)      | (0, 100,0, +1,4)      | 6,8 cm |
+  | cuello   | (0, 144,2, 0)     | (0, 146,4, −0,7)      | 2,3 cm |
+  | hombro   | (∓25,5, 139,1, 0) | (∓16,2, 136,0, −2,3)  | 10,1 cm |
+  | codo     | (∓25,5, 112,0, 0) | (∓25,9, 114,1, −2,3)  | 3,2 cm |
+  | muñeca   | (∓25,5, 86,5, 0)  | (∓28,7, 84,7, −2,3)   | 4,4 cm |
+  | cadera   | (∓10,2, 84,8, 0)  | (∓8,5, 90,5, +0,2)    | 5,9 cm |
+  | rodilla  | (∓10,2, 45,8, 0)  | (∓13,4, 51,8, +0,2)   | 6,8 cm |
+  | tobillo  | (∓10,2, 6,8, 0)   | (∓13,3, 11,5, +0,2)   | 5,7 cm |
+
+  Con ello cambian los largos de hueso, que ahora son los del cuerpo y no los de
+  la torre de primitivas: muslo 39,0 (era 40,2), pierna 40,3 (40,2), brazo 23,9
+  (28,0), antebrazo 29,5 (26,2), tronco 46,4 (52,5).
+
+  **De dónde salen los números.** El modelo nuevo trae el maniquí montado además
+  de desmontado, y de la copia montada se leen las juntas directamente. Las
+  piezas vecinas solapan a propósito —el modelador engordó los puntos de
+  contacto para que la articulación no se abra al doblarla—, así que la junta es
+  el centro del **volumen que comparten**. Cruzar sus cajas no vale: la caja del
+  torso se traga el brazo entero y deja el hombro 11 cm por debajo de donde
+  está.
+
+  El manifiesto del maniquí de serie declara ahora ese esqueleto en una clave
+  `juntas`. El rig lo usa solo si viene entero y si además hay modelo para los
+  dieciséis segmentos; con la mitad de los pivotes movidos y la otra mitad
+  donde los dejó la primitiva, la figura sale peor que sin tocar nada.
+
+### Cambiado
+
+- **EL MANIQUÍ SE PONE A PLOMO.** El cuerpo está esculpido en **pose A** —el
+  brazo abre 30,6°, el codo 22,1°, la cadera 16,0° y la rodilla 4,6°— y las
+  posturas de la aplicación dan sus ángulos contando desde un hueso que cuelga a
+  plomo. Dejándolo tal cual, «De pie» salía despatarrado y «Sentado» con las
+  rodillas hacia fuera.
+
+  Cada segmento gira **sobre su propia junta** hasta enderezar la cadena. Es un
+  giro rígido: no deforma nada, y como el centro de giro es la junta, el solape
+  que cura la articulación sigue exactamente donde estaba. Al pie y a la mano se
+  les devuelve su orientación girándolos de vuelta sobre tobillo y muñeca —que
+  es justo para lo que existen esas dos articulaciones—, y así la planta queda
+  plana contra el suelo.
+
+  El giro se parte en dos, y no por gusto:
+
+  - **Sagital** (lo que el hueso cuelga hacia delante): se quita **entero**. Es
+    el que descuadra las bisagras — el codo llegaba 22° flexionado, así que su
+    cero no era su cero y su tope de hiperextensión (+15°) era inalcanzable.
+    Quitarlo mueve la mano hacia atrás, donde no hay nada con que chocar.
+  - **Frontal** (la abducción, lo que el miembro abre de lado): se quita **lo
+    que el cuerpo aguanta**. A plomo del todo, la mano se mete **11,2 cm dentro
+    del muslo** y un muslo 5,9 dentro del otro; el cuerpo está esculpido abierto
+    precisamente para que la mano libre la pierna. Se busca por bisección el
+    mayor giro que no añade más de 1 cm de carne compartida sobre la que el
+    modelo ya trae, y quedan **cadera 7,4°** (de 16,0) y **hombro 23,9°** (de
+    30,6).
+
+  Medido después: las juntas siguen solapando de 1,8 a 11,5 cm, y donde no debe
+  haber contacto no lo hay salvo el roce natural de la mano contra el muslo
+  (0,9 cm) y de los muslos entre sí en la entrepierna (4,6, viniendo de 3,7 en
+  el esculpido).
+
+- **El abdomen pasa al torso.** El modelo trae 17 piezas y el rig tiene 16
+  huecos; la de más es un vientre entre la pelvis y el pecho. En 0.2.60 iba con
+  la pelvis; ahora va con el **torso**, y la columna dobla a **100 cm** del
+  suelo en vez de a 109. A 109 la bisagra es torácica; a 100 cae justo encima de
+  la pelvis, que es donde empieza la flexión del tronco, y además el vientre
+  acompaña al pecho al inclinarse, como en un cuerpo.
+
+- **El maniquí de serie pasa al modelo nuevo**, con las superficies rehechas y
+  la cabeza reducida a la proporción del cuerpo. **47.024 triángulos y 0,86 MB**
+  (venía de 53.052 y 0,97). La cabeza sigue siendo la pieza cara —54.736 de los
+  95.760 triángulos del conjunto—; aligerada a 6.000, el error sobre su
+  superficie es de **0,30 mm en el percentil 99**.
+
+### Sabido
+
+- **La junta se estima donde las dos piezas comparten carne, y eso arrastra
+  cuando el collarín no reparte a los dos lados.** Donde el solape monta a
+  caballo de la articulación el número sale bueno: la rodilla cae a 51,8 cm y en
+  un cuerpo de 175 está sobre los 50. Donde el collarín sube solo por un lado,
+  tira: el **tobillo** sale a 11,5 cm cuando el maléolo anda por los 7, y el
+  **hombro** a 136 cm y ±16,2 cuando la cabeza del húmero está más cerca de 142
+  y ±19 —el collarín del brazo se hunde 11 cm dentro del torso y se lleva el
+  centro hacia dentro y hacia abajo—. Se nota poco: la flexión plantar levanta
+  el talón algo más de la cuenta y el brazo cuelga un poco más pegado al cuerpo.
+
+- **La pose de reposo conserva 23,9° de abducción de hombro y 7,4° de cadera**,
+  que es lo que el cuerpo esculpido permite sin que la mano entre en el muslo.
+  Los ángulos de las posturas cuentan desde ahí, no desde un miembro a plomo
+  perfecto.
+
+- **`prueba-apoyos` mide con una caja lo que la aplicación dejó de contar.** Su
+  única aserción roja da 0,76 cm de cuerpo bajo el suelo llevando el gesto
+  inferior al final de su recorrido. Medido pieza a pieza: la **piel** del pie
+  está exactamente en 0,00 —`noHundirse` la deja clavada en el suelo— y lo que
+  baja a −0,76 es el **collarín** del pie, que vive dentro de la pierna y que
+  desde 0.2.60 no cuenta como planta a propósito. El ayudante `__bajoSuelo` de
+  la prueba sigue usando la caja del segmento; su hermano `__pie`, en el mismo
+  fichero, ya usa la piel propia.
+
+- **La raíz de la figura pasa a estar en el SUELO**, entre los pies, en vez de a
+  la altura de la cadera: con esqueleto propio los pivotes se miden desde ahí.
+  Los proyectos guardados no se ven afectados —al cargarlos, `reapoyarFigura`
+  vuelve a posar la figura por su apoyo guardado, no por la `y` cruda—, pero
+  cualquier prueba que lea `humanFigure.position.y` como si significara algo
+  necesita revisión: `prueba-press-maquina` da por sentado que sentarse deja esa
+  `y` por encima de 10 y ahora vale −37,4, con la figura correctamente sentada;
+  `prueba-zonas` hace lo mismo. Las dos miden además lo bajo que queda el cuerpo
+  con la caja del segmento, y ven el collarín (−0,17 cm) igual que `apoyos`.
+
+- **`prueba-zonas` pide un recorrido de puño que este brazo no da.** La tracción
+  devuelve el puño de 47,6 a 30,8 cm —16,8 cm, y por detrás de los 32,3 de
+  partida— y la prueba pide más de 20. El brazo del cuerpo es más corto que el
+  del rig de primitivas (24,2 contra 28,0 el húmero), así que el umbral vuelve a
+  estar calibrado sobre la torre de cilindros.
+
+- **`prueba-colocar` y `prueba-maniqui-fisico` esperan una rodilla que este
+  cuerpo no puede dar.** Sentado en un asiento de 42,5 cm la rodilla queda en
+  **59°** (venía de 50–53) y las dos piden más de 60. No es un fallo de la postura: la rodilla de este cuerpo
+  está a 51,8 cm del suelo, así que 42,5 es un asiento BAJO para él y la pierna
+  tiene que estirarse hacia delante, como haría cualquiera. El umbral estaba
+  calibrado sobre el rig de primitivas, cuya pierna por debajo de la rodilla era
+  más corta.
+
+- **Estado de la batería: 63 pruebas, 4 en rojo por lo anterior**
+  —`colocar`, `maniqui-fisico`, `zonas` y `press-maquina`—, todas por umbrales
+  calibrados sobre el rig de primitivas, no por el comportamiento. Vuelven a
+  verde `maniqui-serie`, `apoyos`, `maniqui-usa`, `solape-ui` y `800-debug`. El
+  resto de rojos son los de siempre (`garaje`, `garaje2`, `prototipo`,
+  `prototipo2`, `fable-v214`, `uppermachine`, `freno`, `v251`), más `sitio`, que
+  necesita el Next.js en el 3100, y `atraviesa` y `cable-oculto`, que fallan solo
+  al correr en paralelo.
+
+- En una postura muy forzada el collarín rígido gira y atraviesa la piel de la
+  pieza vecina, y la junta se ve arrugada. Es inherente a articular segmentos
+  rígidos sin deformar la malla; sin collarín, en ese mismo sitio habría un
+  agujero, que es peor.
+
 ## [0.2.60] — 2026-08-15
 
 ### Añadido

@@ -36,6 +36,8 @@ class FigureSegmentManager {
   private skins = new Map<string, THREE.Material>();
   private info = new Map<string, { fileName: string; updatedAt: number; source: Fuente }>();
   private fileModels = new Map<string, Piel>();
+  // Dónde articula el cuerpo de serie, tal como lo declara su manifiesto.
+  private juntas: Record<string, [number, number, number]> | null = null;
   private listeners = new Set<() => void>();
   private loaded: Promise<void> | null = null;
 
@@ -146,6 +148,20 @@ class FigureSegmentManager {
     } catch {
       return;
     }
+    // El maniquí de serie declara además DÓNDE ARTICULA. Sin eso el rig gira
+    // sobre los pivotes de sus primitivas de cilindros, que no son los de un
+    // cuerpo: se le iban entre 2,3 y 10,1 cm. La clave "juntas" no es un
+    // segmento, así que el bucle de abajo la descarta sola.
+    const juntas = (manifest as { juntas?: unknown }).juntas;
+    if (juntas && typeof juntas === "object") {
+      const leidas: Record<string, [number, number, number]> = {};
+      for (const [nombre, v] of Object.entries(juntas as Record<string, unknown>)) {
+        if (Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === "number")) {
+          leidas[nombre] = [v[0], v[1], v[2]];
+        }
+      }
+      if (Object.keys(leidas).length) this.juntas = leidas;
+    }
     // Las 16 descargas, a la vez. En serie son 16 idas y vueltas encadenadas y
     // esto corre en el arranque, con el usuario esperando; el horneado sí va
     // uno detrás de otro, que es CPU y solaparlo no gana nada.
@@ -211,6 +227,14 @@ class FigureSegmentManager {
   /** Proveedores para buildHumanFigure. */
   provider = (segmentId: string): THREE.BufferGeometry | null => this.geometryClone(segmentId);
   skinProvider = (segmentId: string): THREE.Material | null => this.materialClone(segmentId);
+  /**
+   * El esqueleto del maniquí de serie. Se entrega mientras el cuerpo de serie
+   * esté completo; si el usuario sustituye algún segmento suelto sigue siendo la
+   * mejor descripción disponible de dónde articula la figura, y el rig lo
+   * descarta él solo cuando no cuadra.
+   */
+  jointProvider = (): Record<string, [number, number, number]> | null =>
+    this.fileModels.size === VALID.size ? this.juntas : null;
 }
 
 export const figureSegments = new FigureSegmentManager();

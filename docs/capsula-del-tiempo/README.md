@@ -578,3 +578,23 @@ estándar — 41 piezas, 16 uniones y 2 cables — y se inserta desde la paleta
 con un clic, con su brazo compuesto rígido y su jalón moviendo la pila.
 
 - [`v236-uppermachine-libreria.png`](2026-08-09/v236-uppermachine-libreria.png)
+
+## 2026-08-16 — 5 capturas
+
+v0.2.61: el maniquí de serie pasa al modelo con el cuerpo montado y
+desmontado, y de la copia montada salen los CENTROS ARTICULARES de verdad.
+Con ellos el rig deja de girar sobre los pivotes que heredó de sus
+primitivas de cilindros —se mueven entre 2,3 y 10,1 cm— y el cuerpo se pone
+a plomo girando cada segmento sobre su propia junta.
+
+- [`modelo-montado-y-desmontado.png`](2026-08-16/modelo-montado-y-desmontado.png)
+  — las dos copias que trae el OBJ: 17 piezas montadas y las mismas
+  separadas.
+- [`esqueleto-medido.png`](2026-08-16/esqueleto-medido.png) — el maniquí ya
+  enderezado con su esqueleto encima, de frente y de perfil.
+- [`maniqui-de-pie.png`](2026-08-16/maniqui-de-pie.png) — en la aplicación,
+  en su azul de referencia.
+- [`maniqui-sentado.png`](2026-08-16/maniqui-sentado.png) — la postura
+  «Sentado» conserva ya los 95° de rodilla.
+- [`maniqui-sentadilla.png`](2026-08-16/maniqui-sentadilla.png) — sentadilla
+  profunda con los brazos flexionados: ninguna junta se abre.
