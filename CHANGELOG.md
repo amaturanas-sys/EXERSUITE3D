@@ -127,34 +127,40 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   la altura de la cadera: con esqueleto propio los pivotes se miden desde ahí.
   Los proyectos guardados no se ven afectados —al cargarlos, `reapoyarFigura`
   vuelve a posar la figura por su apoyo guardado, no por la `y` cruda—, pero
-  cualquier prueba que lea `humanFigure.position.y` como si significara algo
-  necesita revisión: `prueba-press-maquina` da por sentado que sentarse deja esa
-  `y` por encima de 10 y ahora vale −37,4, con la figura correctamente sentada;
-  `prueba-zonas` hace lo mismo. Las dos miden además lo bajo que queda el cuerpo
-  con la caja del segmento, y ven el collarín (−0,17 cm) igual que `apoyos`.
+  cualquier código que leyera `humanFigure.position.y` como si significara algo
+  necesitaba revisión.
 
-- **`prueba-zonas` pide un recorrido de puño que este brazo no da.** La tracción
-  devuelve el puño de 47,6 a 30,8 cm —16,8 cm, y por detrás de los 32,3 de
-  partida— y la prueba pide más de 20. El brazo del cuerpo es más corto que el
-  del rig de primitivas (24,2 contra 28,0 el húmero), así que el umbral vuelve a
-  estar calibrado sobre la torre de cilindros.
+- **Cuatro pruebas medían con reglas del rig viejo, y se han reescrito para
+  medir la PROPIEDAD en vez del número.** Así no hay que recalibrarlas con el
+  próximo cuerpo:
 
-- **`prueba-colocar` y `prueba-maniqui-fisico` esperan una rodilla que este
-  cuerpo no puede dar.** Sentado en un asiento de 42,5 cm la rodilla queda en
-  **59°** (venía de 50–53) y las dos piden más de 60. No es un fallo de la postura: la rodilla de este cuerpo
-  está a 51,8 cm del suelo, así que 42,5 es un asiento BAJO para él y la pierna
-  tiene que estirarse hacia delante, como haría cualquiera. El umbral estaba
-  calibrado sobre el rig de primitivas, cuya pierna por debajo de la rodilla era
-  más corta.
+  - *¿Está sentada?* Antes: `humanFigure.position.y > 10`, que no distinguía
+    nada —con la raíz a la altura de la cadera esa `y` pasaba de 10 tanto
+    sentada como de pie— y que al bajar la raíz al suelo pasó a fallar sin que
+    nada se hubiera roto. Ahora: los glúteos posados en la cara del asiento.
+    Medido, 42,54 contra 42,54 cm.
+  - *¿Toma la postura sentada?* Antes: rodilla > 60°, calibrado sobre la pierna
+    del rig de cilindros. El ángulo de un cuerpo sentado lo fija el ASIENTO: la
+    postura pide 95° y `noHundirse` estira hasta que la planta llega al suelo,
+    así que depende de lo alto que sea el asiento y de lo larga que sea la
+    pierna. Ahora se comprueba que está **tan doblada como el asiento permite**:
+    doblarla 6° más tiene que meter la planta bajo el suelo. Medido: 59°, planta
+    a 0,48 cm, y a 65° se hunde a −1,01. Sigue cazando el fallo de 0.2.60, que
+    dejaba 50–53° teniendo 59 disponibles.
+  - *¿Queda algo bajo el suelo?* Antes: la caja del segmento, que incluye el
+    collarín que la aplicación dejó de contar en 0.2.60 a propósito. Ahora: la
+    piel propia. Medido, lo más bajo del cuerpo a 0,48 cm.
+  - *¿La tracción devuelve el puño?* Antes: 20 cm de recorrido, que depende de
+    lo largo que sea el brazo (el húmero del cuerpo mide 24,2 cm contra los 28,0
+    del rig). Ahora: que lo devuelva **al menos a donde estaba antes de
+    empujar**. Medido: 32,3 → 47,6 → 30,8 cm.
 
-- **Estado de la batería: 63 pruebas, 4 en rojo por lo anterior**
-  —`colocar`, `maniqui-fisico`, `zonas` y `press-maquina`—, todas por umbrales
-  calibrados sobre el rig de primitivas, no por el comportamiento. Vuelven a
-  verde `maniqui-serie`, `apoyos`, `maniqui-usa`, `solape-ui` y `800-debug`. El
-  resto de rojos son los de siempre (`garaje`, `garaje2`, `prototipo`,
-  `prototipo2`, `fable-v214`, `uppermachine`, `freno`, `v251`), más `sitio`, que
-  necesita el Next.js en el 3100, y `atraviesa` y `cable-oculto`, que fallan solo
-  al correr en paralelo.
+- **Estado de la batería: 63 pruebas.** Verdes las del maniquí —`maniqui-serie`,
+  `apoyos`, `maniqui-usa`, `colocar`, `maniqui-fisico`, `zonas`,
+  `press-maquina`, `solape-ui` y `800-debug`—. Los rojos que quedan son los de
+  siempre (`garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`,
+  `uppermachine`, `freno`, `v251`), más `sitio`, que necesita el Next.js en el
+  3100, y `atraviesa` y `cable-oculto`, que fallan solo al correr en paralelo.
 
 - En una postura muy forzada el collarín rígido gira y atraviesa la piel de la
   pieza vecina, y la junta se ve arrugada. Es inherente a articular segmentos
