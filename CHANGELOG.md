@@ -155,12 +155,15 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
     del rig). Ahora: que lo devuelva **al menos a donde estaba antes de
     empujar**. Medido: 32,3 → 47,6 → 30,8 cm.
 
-- **Estado de la batería: 63 pruebas.** Verdes las del maniquí —`maniqui-serie`,
-  `apoyos`, `maniqui-usa`, `colocar`, `maniqui-fisico`, `zonas`,
-  `press-maquina`, `solape-ui` y `800-debug`—. Los rojos que quedan son los de
-  siempre (`garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`,
-  `uppermachine`, `freno`, `v251`), más `sitio`, que necesita el Next.js en el
-  3100, y `atraviesa` y `cable-oculto`, que fallan solo al correr en paralelo.
+- **Estado de la batería: 63 pruebas.** Corrida entera y con cada rojo repetido
+  en serie para separar contención de fallo real:
+
+  - **Nueve rojas de verdad**, todas de antes de este trabajo: `garaje`,
+    `garaje2`, `prototipo`, `prototipo2`, `fable-v214`, `uppermachine`, `freno`
+    y `v251`, más `sitio`, que necesita el Next.js en el 3100.
+  - **Cinco solo en paralelo**: `atraviesa`, `cable-oculto`, `800-debug`,
+    `800-debug3` y `uppermachine-lib` pasan las cinco al correrlas en serie.
+  - **Las nueve del maniquí, en verde.**
 
 - En una postura muy forzada el collarín rígido gira y atraviesa la piel de la
   pieza vecina, y la junta se ve arrugada. Es inherente a articular segmentos

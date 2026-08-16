@@ -4,6 +4,7 @@
 // ⌂ Volver restaura. v0.2.29: zoom de la foto y perilla de inclinación.
 import { chromium } from "playwright-core";
 import fs from "node:fs";
+const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -69,7 +70,7 @@ console.log("entrada:", JSON.stringify({ ...S0, ...S1 }));
 
 // Flujo con la foto real del garaje.
 const inputFoto = await page.$("#proto-viewer input[type=file]");
-await inputFoto.setInputFiles("foto-garaje.jpg");
+await inputFoto.setInputFiles(AQUI + "fijos/foto-garaje.jpg");
 await page.waitForTimeout(1000);
 await page.evaluate(() => {
   const ed = window.exersuite.editor;

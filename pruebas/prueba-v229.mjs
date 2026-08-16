@@ -3,6 +3,7 @@
 // de inclinación que calza el suelo del modelo con el de la foto; (C) el
 // encuadre completo (offset + zoom) se replica en la producción por capas.
 import { chromium } from "playwright-core";
+const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -35,7 +36,7 @@ await page.waitForTimeout(800);
 await page.click("text=▶ SIMULADOR"); await page.waitForTimeout(500);
 await page.click("text=↻  Sesión anterior"); await page.waitForTimeout(4000);
 await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(500);
-await page.setInputFiles("#proto-viewer input[type=file]", "foto-garaje.jpg");
+await page.setInputFiles("#proto-viewer input[type=file]", AQUI + "fijos/foto-garaje.jpg");
 await page.waitForTimeout(1200);
 
 // A) Zoom de la foto: rueda, pinza (dos punteros) y control fino.

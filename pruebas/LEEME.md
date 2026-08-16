@@ -45,7 +45,8 @@ La suite entera tarda **unos 35 minutos**.
 
 `correr-todo.sh` corre **tres a la vez** (`N=3`). Subirlo hace fallar a las que
 miden tiempos de simulación —`atraviesa` y `cable-oculto` son las primeras en
-caer— y bajarlo a 1 tarda el triple sin arreglar nada más. Se puede cambiar con
+caer, y con ellas `800-debug`, `800-debug3` y `uppermachine-lib`— y bajarlo a 1
+tarda el triple sin arreglar nada más. Se puede cambiar con
 `N=1 bash pruebas/correr-todo.sh`.
 
 Si una prueba falla en la tanda completa pero pasa sola, es esto.
@@ -88,11 +89,17 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
+Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
+
 | prueba | por qué |
 |---|---|
+| `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`, `uppermachine`, `freno`, `v251` | rojos de antes, sin revisar. Fallan también en serie |
 | `sitio` | necesita el Next.js en el 3100 (ver arriba) |
-| `atraviesa`, `cable-oculto` | solo fallan al correr en paralelo |
-| `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214`, `uppermachine`, `freno`, `v251` | rojos de antes, sin revisar |
+| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie las cinco pasan |
+
+Las nueve del maniquí —`maniqui-serie`, `maniqui-usa`, `maniqui-fisico`,
+`apoyos`, `colocar`, `zonas`, `press-maquina`, `solape-ui` y `mano-brazo`— están
+en verde.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la
 sección «Sabido».
@@ -104,5 +111,7 @@ sección «Sabido».
   maniquí (la planta del pie, la piel más baja, la rodilla al tope, sentada
   sobre un apoyo).
 - `correr-todo.sh` — corre todas y resume.
-- `fijos/` — datos de entrada que alguna prueba necesita (prefabs).
+- `fijos/` — datos de entrada que alguna prueba necesita: los dos prefabs de la
+  UpperMachine y `foto-garaje.jpg`, la fotografía que cargan las cinco pruebas
+  del prototipo sobre foto.
 - `salidas/` — lo que producen. No se versiona.

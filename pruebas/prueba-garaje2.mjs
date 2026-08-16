@@ -1,6 +1,7 @@
 // Prueba REAL completa: garaje del usuario → calce → fijar → sol → producir.
 import { chromium } from "playwright-core";
 import fs from "node:fs";
+const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -31,7 +32,7 @@ await page.evaluate(() => {
 await page.evaluate(() => document.querySelector("#sec-prototipo .panel-title").click());
 await page.waitForTimeout(300);
 const inputFoto = await page.$("#sec-prototipo input[type=file]");
-await inputFoto.setInputFiles("foto-garaje.jpg");
+await inputFoto.setInputFiles(AQUI + "fijos/foto-garaje.jpg");
 await page.waitForTimeout(1000);
 await page.evaluate(() => {
   const ed = window.exersuite.editor;

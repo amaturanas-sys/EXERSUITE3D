@@ -3,6 +3,7 @@
 // inventario (roldana visible; cable/base-apoyo/fulcro ocultos),
 // (D) arrastre de la foto de fondo en el prototipo.
 import { chromium } from "playwright-core";
+const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -198,7 +199,7 @@ await page.click("text=↻  Sesión anterior");
 await page.waitForTimeout(4000);
 await page.click("#simbar button:has-text('Prototipo')");
 await page.waitForTimeout(500);
-await page.setInputFiles("#proto-viewer input[type=file]", "foto-garaje.jpg");
+await page.setInputFiles("#proto-viewer input[type=file]", AQUI + "fijos/foto-garaje.jpg");
 await page.waitForTimeout(1200);
 const D0 = await page.evaluate(() => ({
   calce: document.body.classList.contains("modo-calce"),
