@@ -34,6 +34,7 @@ import {
   precio$,
 } from "./datos";
 import type { MarketplaceAcciones } from "./comunes";
+import { lamina } from "./imagen";
 
 /** Paleta de fábrica: lo que la marca puede pintar sin recargo. */
 const COLORES: [string, string, string][] = [
@@ -165,8 +166,9 @@ const SILUETA: Record<string, (p: Pintura) => string> = {
 /** Hilo de una solicitud ya enviada, con su estado y su conversación. */
 function tarjetaSolicitud(d: Deseo): HTMLElement {
   const m = marca(d.marcaId);
-  const arte = el("div", { class: "od-sol-arte" });
-  arte.innerHTML = `<svg viewBox="0 0 200 130" width="100%" height="100%" aria-hidden="true">${d.arte}</svg>`;
+  // Las solicitudes siguen con el dibujo: son encargos de un diseño MODIFICADO,
+  // así que ninguna fotografía de catálogo los retrata.
+  const arte = lamina(d.arte, "od-sol-arte");
 
   const mensajes = el(
     "div",

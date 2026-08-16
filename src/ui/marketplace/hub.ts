@@ -48,6 +48,7 @@ import {
 import { ARTE, LOGOS } from "./arte";
 import { Carrito, type MarketplaceAcciones } from "./comunes";
 import { arrastrable, suavidad } from "./carrusel";
+import { lamina } from "./imagen";
 import { panelOnDemand } from "./ondemand";
 import { panelForMakers } from "./formakers";
 
@@ -69,6 +70,10 @@ interface Recorrido {
   bajada: [string, string];
   destino: Destino;
   arte: string;
+  /** Fotografía del banner, en `public/marketplace/`. */
+  foto: string;
+  /** Encuadre vertical del banner, si el centro no sirve. */
+  foco?: string;
 }
 
 const NUEVAS = new Set(marcasNuevas().map((m) => m.id));
@@ -86,6 +91,7 @@ const RECORRIDOS: Recorrido[] = [
     ],
     destino: { tipo: "mercado", filtro: (p) => ESTRENOS.has(p.id) },
     arte: ARTE.jaula,
+    foto: "rec-newarrivals.webp",
   },
   {
     id: "newcomers",
@@ -97,6 +103,7 @@ const RECORRIDOS: Recorrido[] = [
     ],
     destino: { tipo: "mercado", filtro: (p) => NUEVAS.has(p.marcaId) },
     arte: ARTE.trineo,
+    foto: "rec-newcomers.webp",
   },
   {
     id: "community",
@@ -108,6 +115,8 @@ const RECORRIDOS: Recorrido[] = [
     ],
     destino: { tipo: "mercado", filtro: (p) => PYMES.has(p.marcaId) },
     arte: ARTE.banco,
+    foto: "rec-community.webp",
+    foco: "center 22%",
   },
   {
     id: "ondemand",
@@ -119,6 +128,7 @@ const RECORRIDOS: Recorrido[] = [
     ],
     destino: { tipo: "panel", panel: "ondemand" },
     arte: ARTE.quimera,
+    foto: "rec-ondemand.webp",
   },
   {
     id: "formakers",
@@ -130,6 +140,7 @@ const RECORRIDOS: Recorrido[] = [
     ],
     destino: { tipo: "panel", panel: "formakers" },
     arte: ARTE.escaner,
+    foto: "rec-formakers.webp",
   },
 ];
 
@@ -179,14 +190,6 @@ function discos(rating: string): HTMLElement {
   return fila;
 }
 
-/** Lámina de un producto: SVG de la hoja de arte, encuadrado como fotografía. */
-function lamina(arte: string, clase = "hub-foto"): HTMLElement {
-  const d = el("div", { class: clase });
-  d.innerHTML = `<svg viewBox="0 0 200 130" preserveAspectRatio="xMidYMid slice"
-    width="100%" height="100%" aria-hidden="true">${arte}</svg>`;
-  return d;
-}
-
 /** Tarjeta de producto del mercado. */
 function tarjeta(p: Producto, carrito: Carrito, acciones: MarketplaceAcciones): HTMLElement {
   const art = el("article", { class: "hub-card" });
@@ -226,7 +229,9 @@ function tarjeta(p: Producto, carrito: Carrito, acciones: MarketplaceAcciones): 
   ver.addEventListener("click", () => acciones.verBiblioteca?.());
 
   art.append(
-    lamina(p.arte),
+    // Las fichas que ya tienen fotografía la enseñan; el resto, su dibujo. Van
+    // diferidas: de dieciocho tarjetas, en pantalla caben tres.
+    lamina(p.arte, "hub-foto", { foto: p.foto, diferida: true }),
     el("div", { class: "hub-card-cuerpo" }, [
       el("h3", { class: "hub-card-nombre" }, [tt(p.nombre[0], p.nombre[1])]),
       el("p", { class: "hub-card-marca" }, [marca(p.marcaId).nombre]),
@@ -449,7 +454,7 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
     const cta = el("button", { class: "hub-cta", type: "button" });
     const diapo = el("div", { class: "hub-diapo" }, [
       el("div", { class: "hub-banner" }, [
-        lamina(r.arte, "hub-banner-foto"),
+        lamina(r.arte, "hub-banner-foto", { foto: r.foto, foco: r.foco }),
         el("div", { class: "hub-banner-txt" }, [
           el("h2", {}, [tt(r.titulo[0], r.titulo[1])]),
           el("p", {}, [tt(r.bajada[0], r.bajada[1])]),
@@ -555,7 +560,14 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
             "Are you a fitness equipment brand? Request our 3D photographic scanning service and publish your products in the Hub. Your customers will be able to see your range, prototype their spaces and request custom builds.",
           ),
         ]),
-        lamina(ARTE.escaner, "hub-unirse-foto"),
+        lamina(ARTE.escaner, "hub-unirse-foto", {
+          foto: "unirse.webp",
+          alt: tt(
+            "Sala de máquinas de un gimnasio grande, con las filas de equipos alineadas",
+            "The floor of a large gym, rows of equipment lined up",
+          ),
+          diferida: true,
+        }),
       ]),
       el("form", { class: "hub-form" }, [
         campoHub(tt("Nombre de la Marca", "Brand name"), "text"),

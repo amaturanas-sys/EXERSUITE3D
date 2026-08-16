@@ -5,6 +5,74 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.64] — 2026-08-16
+
+### Añadido
+
+- **FOTOGRAFÍA DE VERDAD EN EL HUB.** Doce fotografías del diseñador entran al
+  marketplace en los huecos que les corresponden. Adónde va cada una y por qué:
+
+  | hueco | fotografía |
+  |---|---|
+  | banner **NewArrivals** | sala moderna con multipower y torre de poleas |
+  | banner **NewComers** | hilera de mancuernas — el género que estrena una marca |
+  | banner **HelpYourCommunity** | garaje con la bandera de Chile: cerca, de barrio |
+  | banner **OnDemand** | cabina de pintura: alguien pintando una pieza a soplete |
+  | banner **ForMakers** | garaje de hormigón con banco, herramientas y dorsales |
+  | **JOINEXERSUITE3D** | nave enorme en blanco y negro, filas de máquinas |
+  | **«Publica el tuyo»** de ForMakers | garaje luminoso con banco de trabajo |
+  | ficha *Torre de polea dual* | placa selectorizada con el pasador amarillo |
+  | ficha *Multipower NW-Linear* | dos multipowers alineados |
+  | ficha *Barra de jalón multigrip* | agarre de polea colgando |
+  | ficha *Tu diseño, fabricado* | soldadura, chispas |
+  | ficha *Cadenas de seguridad* | mosquetón de un cable |
+
+  La de OnDemand es la que más manda: el recorrido va de pintar, grabar y
+  ampliar un diseño, y la fotografía es exactamente eso ocurriendo.
+
+- **`imagen.ts`, un solo hueco para foto o dibujo.** El que llama pasa la foto
+  si la tiene y no se entera del resto: el SVG lleva
+  `preserveAspectRatio="slice"` y la fotografía `object-fit: cover`, que hacen
+  lo mismo —llenar recortando lo que sobre—, así que el CSS del hueco no tiene
+  que distinguirlos. Trece de las dieciocho fichas siguen con su dibujo y se ven
+  en la misma rejilla sin saltar.
+
+- **Encuadre por lámina.** La bandera del garaje chileno cuelga en el tercio de
+  arriba y el recorte apaisado del banner se la comía. `foco` fija el
+  `object-position` de esa lámina en `center 22%`; las demás siguen por el
+  centro.
+
+### Cambiado
+
+- **Las fotografías viajan dentro del paquete**, en `public/marketplace/`,
+  recortadas al encuadre en que se usan y en WebP: **636 KB las doce**, contra
+  los 6,2 MB que suman los originales. Dentro del APK y del ejecutable de
+  Windows no hay red garantizada, así que no valía enlazarlas de fuera. Los
+  originales del diseñador no se tocan.
+
+- **Las de las fichas van diferidas** (`loading="lazy"`): de dieciocho tarjetas
+  caben tres en pantalla. Las cinco de los banners no, porque el carrusel se
+  hojea y una lámina en blanco al llegar a ella sería peor que el byte que
+  ahorra.
+
+- **Nivelado leve de las fotos de ficha** —`saturate(.88) brightness(.94)`—
+  porque vienen de luces distintas y saltaban al lado del dibujo plano. El
+  banner no lo lleva: ahí el degradado que oscurece el pie ya hace el trabajo.
+
+### Sabido
+
+- **La fotografía de *Cadenas de seguridad* es un mosquetón, no una cadena.** Es
+  la pieza del juego de doce que peor calza con su ficha; se puso porque es
+  herraje de seguridad sobre cable y porque el hueco alternativo era el dibujo.
+  Cámbiese en cuanto haya una foto de cadenas.
+
+- **Trece fichas de producto y las dos solicitudes de OnDemand siguen con
+  dibujo.** Las solicitudes seguirán así aunque lleguen más fotos: son encargos
+  de un diseño MODIFICADO, y ninguna fotografía de catálogo los retrata.
+
+- **Las cuatro siluetas del personalizador siguen siendo dibujo**, y tienen que
+  serlo: son las que se repintan en vivo.
+
 ## [0.2.63] — 2026-08-16
 
 ### Añadido

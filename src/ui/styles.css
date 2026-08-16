@@ -3066,7 +3066,11 @@ body.modo-prototipo #simbar {
   height: 300px; background: var(--hub-card); cursor: pointer;
 }
 .hub-banner-foto { position: absolute; inset: 0; }
+/* El dibujo se atenúa para que el rótulo se lea encima; la fotografía no lo
+   necesita —el degradado de abajo ya la oscurece donde va el texto— y bajarle
+   la opacidad solo la ensuciaría contra el fondo negro. */
 .hub-banner-foto svg { width: 100%; height: 100%; display: block; opacity: 0.5; }
+.hub-banner-foto .hub-img { object-position: center 45%; }
 .hub-banner::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent 70%);
@@ -3133,6 +3137,16 @@ body.modo-prototipo #simbar {
   display: block; overflow: hidden;
 }
 .hub-foto svg { width: 100%; height: 100%; display: block; }
+
+/* Fotografía dentro de un hueco de lámina. `cover` hace lo mismo que el
+   `preserveAspectRatio="slice"` del dibujo al que sustituye: llenar el hueco
+   recortando lo que sobre, de modo que el CSS del hueco no tiene que saber si
+   dentro hay foto o dibujo. */
+.hub-img { width: 100%; height: 100%; display: block; object-fit: cover; }
+/* En la rejilla del mercado conviven cinco fotografías con trece dibujos. Las
+   fotos vienen de sitios y luces distintas y saltan al lado del dibujo plano;
+   un nivelado leve las acerca sin que parezcan lavadas. */
+.hub-foto .hub-img { filter: saturate(0.88) brightness(0.94); }
 .hub-card-cuerpo { padding: 16px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
 .hub-card-nombre { margin: 0; font-size: 1.05rem; font-weight: 700; }
 .hub-card-marca { margin: 0; color: var(--hub-tenue); font-size: 0.85rem; }
@@ -3423,6 +3437,10 @@ body.modo-prototipo #simbar {
   background: var(--hub-card); border: 1px solid var(--hub-borde);
   border-radius: 12px; padding: 20px 22px;
   display: flex; flex-direction: column; gap: 12px;
+}
+.fm-comp-foto {
+  border-radius: 10px; overflow: hidden; aspect-ratio: 12 / 5;
+  background: var(--hub-hueco);
 }
 .fm-comp-titulo { margin: 0; font-size: 1.1rem; font-weight: 900; }
 .fm-compositor .hub-parrafo { margin: 0; }

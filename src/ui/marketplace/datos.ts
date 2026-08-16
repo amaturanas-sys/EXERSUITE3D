@@ -221,23 +221,28 @@ export interface Producto {
   arte: string;
   /** Días desde el lanzamiento (≤ 90 ⇒ estreno). */
   lanzadoHaceDias: number;
+  /**
+   * Fotografía de la ficha, dentro de `public/marketplace/`. Sin ella va el
+   * dibujo de `arte`, que es lo que tienen todavía la mayoría.
+   */
+  foto?: string;
 }
 
 export const CATALOGO: Producto[] = [
   { id: "rack", marcaId: "ironforge", nombre: ["Power rack IF-700", "IF-700 power rack"], categoria: "racks", precio: 1290, antes: 1490, nota: ["Perfil 3×3\" · pruébalo en el Builder", "3×3\" profile · try it in the Builder"], rating: "★★★★★ 4.9", arte: ARTE.rack, lanzadoHaceDias: 420 },
-  { id: "torre", marcaId: "andes", nombre: ["Torre de polea dual", "Dual pulley tower"], categoria: "poleas", precio: 2150, antes: 2490, nota: ["Pila selectorizada de 90 kg", "90 kg selectorized stack"], rating: "★★★★★ 4.8", arte: ARTE.torre, lanzadoHaceDias: 300 },
+  { id: "torre", marcaId: "andes", nombre: ["Torre de polea dual", "Dual pulley tower"], categoria: "poleas", precio: 2150, antes: 2490, nota: ["Pila selectorizada de 90 kg", "90 kg selectorized stack"], rating: "★★★★★ 4.8", arte: ARTE.torre, lanzadoHaceDias: 300, foto: "p-torre.webp" },
   { id: "banco", marcaId: "quimera", nombre: ["Banco plano clásico", "Classic flat bench"], categoria: "bancos", precio: 199, antes: 249, nota: ["El modelo de la biblioteca nativa", "The native library model"], rating: "★★★★★ 4.7", arte: ARTE.banco, lanzadoHaceDias: 500 },
   { id: "jota", marcaId: "ironforge", nombre: ["Jota con rodillo UHMW", "UHMW roller J-hook"], categoria: "accesorios", precio: 89, antes: 109, nota: ["Calza en pinholes de 5 cm", "Fits 5 cm pinholes"], rating: "★★★★☆ 4.6", arte: ARTE.jota, lanzadoHaceDias: 380 },
-  { id: "cadenas", marcaId: "ironforge", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], categoria: "accesorios", precio: 59, nota: ["Detienen la barra como en la app", "They stop the bar, app-style"], rating: "★★★★★ 4.9", arte: ARTE.cadenas, lanzadoHaceDias: 260 },
+  { id: "cadenas", marcaId: "ironforge", nombre: ["Cadenas de seguridad (par)", "Safety chains (pair)"], categoria: "accesorios", precio: 59, nota: ["Detienen la barra como en la app", "They stop the bar, app-style"], rating: "★★★★★ 4.9", arte: ARTE.cadenas, lanzadoHaceDias: 260, foto: "p-cadenas.webp" },
   { id: "barra", marcaId: "andes", nombre: ["Barra olímpica 20 kg", "20 kg olympic barbell"], categoria: "pesos", precio: 189, nota: ["Cromada, Ø 28 mm, agarre medio", "Chromed, Ø 28 mm, medium knurl"], rating: "★★★★☆ 4.5", arte: ARTE.barra, lanzadoHaceDias: 210 },
   { id: "discos", marcaId: "quimera", nombre: ["Set discos bumper 100 kg", "100 kg bumper plate set"], categoria: "pesos", precio: 420, antes: 520, nota: ["Goma vulcanizada, rebote muerto", "Vulcanized rubber, dead bounce"], rating: "★★★★★ 4.8", arte: ARTE.discos, lanzadoHaceDias: 340 },
-  { id: "multigrip", marcaId: "andes", nombre: ["Barra de jalón multigrip", "Multigrip lat bar"], categoria: "poleas", precio: 145, nota: ["Cromada, Ø 32 mm", "Chromed, Ø 32 mm"], rating: "★★★★☆ 4.4", arte: ARTE.multigrip, lanzadoHaceDias: 150 },
+  { id: "multigrip", marcaId: "andes", nombre: ["Barra de jalón multigrip", "Multigrip lat bar"], categoria: "poleas", precio: 145, nota: ["Cromada, Ø 32 mm", "Chromed, Ø 32 mm"], rating: "★★★★☆ 4.4", arte: ARTE.multigrip, lanzadoHaceDias: 150, foto: "p-multigrip.webp" },
   { id: "arbol", marcaId: "ironforge", nombre: ["Árbol de discos", "Plate tree"], categoria: "accesorios", precio: 120, antes: 150, nota: ["Seis cuernos, base estable", "Six horns, stable base"], rating: "★★★★☆ 4.6", arte: ARTE.arbol, lanzadoHaceDias: 190 },
-  { id: "quimera", marcaId: "quimera", nombre: ["Tu diseño, fabricado", "Your design, built"], categoria: "racks", precio: 0, nota: ["Sube tu prefab .json y recibe oferta", "Upload your .json prefab for a quote"], rating: "★★★★★ 5.0", arte: ARTE.quimera, lanzadoHaceDias: 95 },
+  { id: "quimera", marcaId: "quimera", nombre: ["Tu diseño, fabricado", "Your design, built"], categoria: "racks", precio: 0, nota: ["Sube tu prefab .json y recibe oferta", "Upload your .json prefab for a quote"], rating: "★★★★★ 5.0", arte: ARTE.quimera, lanzadoHaceDias: 95, foto: "p-quimera.webp" },
 
   // ---- Estrenos y marcas recién llegadas (v0.2.37)
   { id: "jaula", marcaId: "nordwerk", nombre: ["Jaula modular NW-Kubus", "NW-Kubus modular cage"], categoria: "racks", precio: 1690, nota: ["Seis postes, dos estaciones de polea", "Six uprights, two pulley stations"], rating: "★★★★★ 4.9", arte: ARTE.jaula, lanzadoHaceDias: 11 },
-  { id: "smith", marcaId: "nordwerk", nombre: ["Multipower NW-Linear", "NW-Linear multipower"], categoria: "maquinas", precio: 2390, antes: 2690, nota: ["Guías lineales, contrapeso ajustable", "Linear rails, adjustable counterweight"], rating: "★★★★★ 4.8", arte: ARTE.smith, lanzadoHaceDias: 26 },
+  { id: "smith", marcaId: "nordwerk", nombre: ["Multipower NW-Linear", "NW-Linear multipower"], categoria: "maquinas", precio: 2390, antes: 2690, nota: ["Guías lineales, contrapeso ajustable", "Linear rails, adjustable counterweight"], rating: "★★★★★ 4.8", arte: ARTE.smith, lanzadoHaceDias: 26, foto: "p-smith.webp" },
   { id: "trineo", marcaId: "pampa", nombre: ["Trineo de empuje Pampa", "Pampa push sled"], categoria: "accesorios", precio: 340, nota: ["Patines de nylon, dos postes de carga", "Nylon skids, two loading posts"], rating: "★★★★★ 4.7", arte: ARTE.trineo, lanzadoHaceDias: 17 },
   { id: "mancuernas", marcaId: "pampa", nombre: ["Mancuernas hexagonales 2–20 kg", "2–20 kg hex dumbbells"], categoria: "pesos", precio: 690, antes: 790, nota: ["Fundición propia, mango moleteado", "Own foundry, knurled handle"], rating: "★★★★☆ 4.6", arte: ARTE.mancuernas, lanzadoHaceDias: 44 },
   { id: "kettlebell", marcaId: "kaizen", nombre: ["Kettlebell fundida 24 kg", "24 kg cast kettlebell"], categoria: "pesos", precio: 79, nota: ["Una sola pieza, asa pulida a mano", "Single piece, hand-polished handle"], rating: "★★★★★ 4.9", arte: ARTE.kettlebell, lanzadoHaceDias: 8 },

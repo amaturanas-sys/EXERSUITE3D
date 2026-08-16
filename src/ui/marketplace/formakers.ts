@@ -32,6 +32,7 @@ import {
   nombrePais,
 } from "./datos";
 import type { MarketplaceAcciones } from "./comunes";
+import { lamina } from "./imagen";
 
 const NOMBRE_ETIQUETA: Record<EtiquetaHilo, [string, string]> = {
   diseno: ["Diseño original", "Original design"],
@@ -71,9 +72,7 @@ function financiacion(h: HiloMaker): HTMLElement[] {
 
 /** Ficha de un proyecto. */
 function tarjetaProyecto(h: HiloMaker): HTMLElement {
-  const arte = el("div", { class: "fm-arte" });
-  arte.innerHTML = `<svg viewBox="0 0 200 130" preserveAspectRatio="xMidYMid slice"
-    width="100%" height="100%" aria-hidden="true">${h.arte}</svg>`;
+  const arte = lamina(h.arte, "fm-arte", { diferida: true });
 
   const respuestas = el(
     "div",
@@ -170,6 +169,14 @@ function compositor(): HTMLElement {
   });
 
   return el("div", { class: "fm-compositor" }, [
+    lamina("", "fm-comp-foto", {
+      foto: "fm-publica.webp",
+      alt: tt(
+        "Un garaje con banco de trabajo, herramientas y un rack plegado contra la pared",
+        "A garage with a workbench, tools and a rack folded against the wall",
+      ),
+      diferida: true,
+    }),
     el("h3", { class: "fm-comp-titulo" }, [tt("Publica el tuyo", "Publish yours")]),
     el("p", { class: "hub-parrafo" }, [
       tt(
