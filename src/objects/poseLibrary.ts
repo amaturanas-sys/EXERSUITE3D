@@ -12,13 +12,49 @@ const STORAGE_KEY_V1 = "exersuite.poses.v1";
 
 export const BUILTIN_POSES: PoseMap = {
   "De pie": {},
+  /**
+   * SENTADILLA PROFUNDA, medida sobre el modelo del diseñador (v0.2.75).
+   *
+   * Los ángulos anteriores —cadera 70, rodilla 110, tobillo 20, columna 25—
+   * los puse a ojo y daban una sentadilla A MEDIAS: la figura bajaba, pero la
+   * cadena no cerraba. Con la espinilla clavada casi vertical, la rodilla no
+   * podía adelantarse, y sin rodilla adelante la cadera no tenía dónde ir, así
+   * que el tronco se quedaba tieso. Se veía a alguien empezando a sentarse, no
+   * a alguien en el fondo de una sentadilla.
+   *
+   * Estos salen de MEDIR el modelo, no de estimarlos. En él la figura baja al
+   * 52 % de su altura de pie, y sacando los puntos de la silueta sagital —la
+   * rodilla es lo más adelantado, el glúteo lo más atrasado, el tobillo donde
+   * la pierna se estrecha sobre el pie— quedan:
+   *
+   *   espinilla  37,6° hacia delante        muslo   82° (casi horizontal)
+   *   tronco     44,7° hacia delante        rodilla 119,5° de flexión
+   *   cadera    126,6° de flexión           tobillo 37,6° de dorsiflexión
+   *
+   * Que el muslo salga horizontal y la cadera a la altura de la rodilla es la
+   * comprobación de que es una sentadilla PARALELA de verdad y no un amago.
+   *
+   * OJO CON LA CADERA: aquí NO va el ángulo anatómico de flexión (los 126,6°
+   * que forman tronco y muslo). En este esqueleto la cadera es la RAÍZ de la
+   * pierna —`PARENT_JOINT.hipL` es `null`—, así que `hipX` se mide contra la
+   * vertical de la figura y no contra el tronco. Poniendo los 127 anatómicos
+   * el muslo apuntaba hacia ARRIBA, la espinilla salía casi vertical (7°) y el
+   * pie se iba treinta centímetros hacia delante: una postura que parecía una
+   * sentadilla en la captura y no lo era por dentro. Lo que va aquí son los
+   * 82° que el muslo se separa de la vertical, y entonces la cadena cierra
+   * sola: 82 − 120 = −38 de espinilla, que es justo la dorsiflexión del
+   * tobillo, y por eso la planta queda plana en el suelo.
+   */
   Sentadilla: {
-    hipL: [-70, 0, 0], hipR: [-70, 0, 0],
-    kneeL: [110, 0, 0], kneeR: [110, 0, 0],
-    // 20° de dorsiflexión es el tope humano; estaba en 30 y ninguna
-    // acomodación podía sostener la planta desde un ángulo imposible.
-    ankleL: [-20, 0, 0], ankleR: [-20, 0, 0],
-    spine: [25, 0, 0],
+    hipL: [-82, 0, 0], hipR: [-82, 0, 0],
+    kneeL: [120, 0, 0], kneeR: [120, 0, 0],
+    // 38° de dorsiflexión. Aquí ponía 20 «porque es el tope humano», y no lo
+    // es: 20 es el tope SIN CARGA y de pie. En una sentadilla profunda con el
+    // talón en el suelo el tobillo pasa de 35, y el modelo lo enseña. Con 20,
+    // la espinilla no podía inclinarse y toda la postura salía incongruente —
+    // que es exactamente lo que había que arreglar.
+    ankleL: [-38, 0, 0], ankleR: [-38, 0, 0],
+    spine: [45, 0, 0],
     shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
   },
   Sentado: {

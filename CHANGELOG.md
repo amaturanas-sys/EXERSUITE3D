@@ -5,6 +5,60 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.75] — 2026-08-17
+
+### Cambiado
+
+- **La sentadilla del maniquí es ahora una sentadilla de verdad.** Los ángulos
+  anteriores —cadera 70, rodilla 110, tobillo 20, columna 25— estaban puestos a
+  ojo y daban una postura A MEDIAS: la figura bajaba, pero la cadena no cerraba.
+  Con la espinilla clavada casi vertical la rodilla no podía adelantarse, sin
+  rodilla adelante la cadera no tenía dónde ir, y el tronco se quedaba tieso. Se
+  veía a alguien empezando a sentarse.
+
+  Los nuevos salen de **medir el modelo** que envió el diseñador, no de
+  estimarlos: en él la figura baja al 52 % de su altura de pie, y sacando los
+  puntos de la silueta sagital —la rodilla es lo más adelantado, el glúteo lo
+  más atrasado, el tobillo donde la pierna se estrecha sobre el pie— quedan la
+  espinilla a **37,6°**, el muslo a **82°** (horizontal), el tronco a **44,7°**
+  y **119,5°** de flexión de rodilla. La aplicación reproduce hoy 38 / 82 / 45,
+  con la planta plana en el suelo.
+
+- **La dorsiflexión del tobillo sube de 20° a 40°.** Estaba topada en 20 con la
+  nota de que era «el tope humano», y no lo es: 20° es el tope de pie y sin
+  carga. En cuclillas, con el peso encima y el talón en el suelo, el tobillo
+  pasa de 35 — es la articulación que decide si alguien puede bajar del todo, y
+  por eso los levantadores usan cuña. Con el tope viejo la espinilla no podía
+  inclinarse y **ninguna** sentadilla podía salir congruente.
+
+### Sabido
+
+- **En la cadera NO va el ángulo anatómico de flexión.** Cuesta un rato verlo y
+  conviene dejarlo escrito: los 126,6° que forman tronco y muslo en el modelo
+  NO son lo que espera `hipL`. En este esqueleto la cadera es la RAÍZ de la
+  pierna (`PARENT_JOINT.hipL` es `null`), así que su ángulo se mide contra la
+  vertical de la figura y no contra el tronco. Poniendo los 127 anatómicos, el
+  muslo apuntaba hacia arriba, la espinilla salía casi vertical (7°) y el pie se
+  iba treinta centímetros hacia delante: una postura que en la captura parecía
+  una sentadilla y por dentro no lo era. Lo que va son los **82°** que el muslo
+  se separa de la vertical, y entonces la cadena cierra sola — 82 − 120 = −38 de
+  espinilla, que es justo la dorsiflexión del tobillo, y de ahí que la planta
+  quede plana.
+
+- **La figura queda al 68 % de su altura de pie y el modelo al 52 %.** La
+  diferencia es el cuello: en el modelo la cabeza va metida hacia el pecho y
+  aquí se queda neutra. Las cuatro articulaciones que se pidieron —espalda,
+  cadera, rodilla y tobillo— sí coinciden con lo medido.
+
+- **El `.obj` trae tres mallas y solo una es la sentadilla.** `Mesh_33` es la
+  figura de pie (referencia), `Mesh_11` la sentadilla profunda —es la única con
+  el doble de profundidad sagital, 0,365 frente a 0,179— y `Mesh_2` una tercera
+  postura que no se ha usado. `Mesh_11` no comparte topología con las otras dos,
+  así que sus ángulos hubo que sacarlos de la geometría y no de un Kabsch por
+  hueso.
+
+- Prueba nueva, `sentadilla`: la batería pasa a **64**.
+
 ## [0.2.74] — 2026-08-17
 
 ### Añadido

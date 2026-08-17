@@ -52,10 +52,19 @@ export const JOINT_DOF: Record<string, AxisLimits> = {
   hipR: { x: [-135, 30], y: [-45, 45], z: [-20, 45] },
   kneeL: { x: [-5, 150] },
   kneeR: { x: [-5, 150] },
-  // Tobillo: 50° de flexión plantar (punta abajo) contra 20° de dorsiflexión,
+  // Tobillo: 50° de flexión plantar (punta abajo) contra 40° de dorsiflexión,
   // y la inversión (planta hacia dentro) mayor que la eversión.
-  ankleL: { x: [-20, 50], z: [-15, 30] },
-  ankleR: { x: [-20, 50], z: [-30, 15] },
+  //
+  // La dorsiflexión estuvo topada en 20° con la nota de que era «el tope
+  // humano». No lo es: 20° es el tope de pie y SIN CARGA. En cuclillas, con el
+  // peso encima y el talón en el suelo, el tobillo pasa de 35 — es la
+  // articulación que decide si alguien puede bajar del todo, y por eso los
+  // levantadores usan cuña. Medido en el modelo del diseñador: 37,6°.
+  //
+  // Con el tope en 20 la espinilla no podía inclinarse, la rodilla no se
+  // adelantaba y la sentadilla entera salía a medias (v0.2.75).
+  ankleL: { x: [-40, 50], z: [-15, 30] },
+  ankleR: { x: [-40, 50], z: [-30, 15] },
 };
 
 function mat(): THREE.MeshStandardMaterial {

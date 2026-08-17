@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-63 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+64 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -156,6 +156,14 @@ en verde.
 
 `hub` también, con sus 62 comprobaciones, y `sitio`, con el Next.js arriba. Es la única que además deja las vistas
 previas del hub (`hub-*.png`), que se miran, no se comparan.
+
+`sentadilla` (v0.2.75) mide que la postura de sentadilla sea CONGRUENTE y no
+solo baja. No comprueba los cuatro números de la biblioteca de posturas —eso
+sería comprobar que una constante vale lo que vale— sino las relaciones que
+hacen que una sentadilla sea una sentadilla: la espinilla inclinada, el muslo
+en la horizontal, la planta plana en el suelo, y que la cadena cuadre entre sí
+(muslo − rodilla = espinilla). Los umbrales salen de medir el modelo del
+diseñador, no de la aplicación.
 
 `placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
 FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra
