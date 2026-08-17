@@ -115,14 +115,22 @@ contaban milisegundos en vez de esperar a que pasara algo.
   mide lo desahogada que va la máquina. Con la batería al lado daba por
   inservibles dos ganchos de cuatro que funcionan.
 
-Desde v0.2.75 las dos esperan **a que la magnitud se quede quieta**, con tope
-por si nunca se para. Dos trampas al escribir esa espera, las dos pisadas:
+Desde v0.2.75 esperan **a que la magnitud se quede quieta**, con tope por si
+nunca se para. Dos trampas al escribir esa espera, y las dos las pisé:
 
 - **Hay que exigir que se haya MOVIDO antes de aceptar la quietud.** Si no, se
-  acepta la de los primeros milisegundos —cuando la animación todavía no ha
-  arrancado— y se lee un cero por bueno.
+  acepta la de los primeros milisegundos —cuando todavía no ha arrancado nada—
+  y se lee el valor de salida por bueno. Esto mordió DOS veces: en `hub` daba
+  un cero por bueno, y en `placa-dentada` daba por inservibles los cuatro
+  ganchos de una placa que en serie los sujeta todos, porque con la batería al
+  lado la simulación avanza tan pocos pasos entre lecturas que la barra parece
+  quieta estando en el aire.
 - **Dos lecturas quietas no bastan.** El desplazamiento suave hace mesetas a
   media animación: medido, 131, 131 y de ahí saltó a 1447.
+
+La comprobación de que una espera así está bien escrita es correrla **con la
+máquina cargada a propósito** —tres pruebas más en paralelo— y ver que sigue
+verde. Si solo se prueba en una máquina ociosa, no se ha probado.
 
 ### Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`
 

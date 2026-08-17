@@ -39,19 +39,29 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
  * altura se quede quieta tres lecturas seguidas, con un tope por si algo cae
  * para siempre.
  */
-const reposar = async (id, tope = 20000) => {
-  await page.waitForTimeout(500);   // que arranque la caída antes de medirla
-  let previo = null;
+const reposar = async (id, tope = 30000) => {
+  const leer = () => page.evaluate(
+    (i) => window.exersuite.editor.objects.get(i).mesh.position.y, id);
+  const salida = await leer();
+  let previo = salida;
   let quietos = 0;
+  let cayo = false;
   for (let t = 0; t < tope; t += 150) {
-    const y = await page.evaluate((i) => window.exersuite.editor.objects.get(i).mesh.position.y, id);
-    if (previo !== null && Math.abs(y - previo) < 0.03) {
-      if (++quietos >= 3) return y;
+    await page.waitForTimeout(150);
+    const y = await leer();
+    // HAY QUE VERLA CAER ANTES DE DARLA POR ASENTADA. Es la misma trampa que
+    // en el carrusel del hub, y aquí muerde más fuerte: con la batería entera
+    // al lado, la simulación avanza tan pocos pasos entre lecturas que la
+    // barra parece quieta cuando todavía está en el aire, recién soltada. Sin
+    // este requisito la prueba daba por inservibles los CUATRO ganchos —no
+    // dos, los cuatro— de una placa que en serie los sujeta todos.
+    if (Math.abs(y - salida) > 1) cayo = true;
+    if (Math.abs(y - previo) < 0.03) {
+      if (++quietos >= 4 && cayo) return y;
     } else {
       quietos = 0;
     }
     previo = y;
-    await page.waitForTimeout(150);
   }
   return previo;
 };
