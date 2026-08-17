@@ -169,6 +169,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // Sonda de la malla real: 30 filas de pinholes pasantes por el eje X,
     // paso 5,0 cm, fila mas cercana al centro en y=-1,13.
     holeStepCm: 5,
+    calceFilas: 30,
     ejeCalce: "x",
     calceFase: -1.13,
     description:
@@ -344,6 +345,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // paso 5,5 cm, fila mas cercana al centro en y=+1,13. Los dos agujeros
     // del eje Z (paso 7,5, solo abajo) son ACCESORIOS de union: no calzan.
     holeStepCm: 5.5,
+    calceFilas: 10,
     ejeCalce: "x",
     calceFase: 1.13,
     description:

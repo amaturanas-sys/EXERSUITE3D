@@ -201,6 +201,20 @@ export interface ComponentDefinition {
    */
   calceFase?: number;
   /**
+   * FILAS REALES de pinholes de calce que tiene la malla.
+   *
+   * Sin esto, la rejilla se extendía hasta 2 cm de las puntas del poste y se
+   * inventaba agujeros que no existen: en la media columna POWERRACK el panel
+   * anunciaba «agujero X de 19» donde la malla tiene 10, y la jota podía subir
+   * casi medio metro por encima del pinhole más alto, calzada sobre acero
+   * macizo con el pin apoyado en la nada.
+   *
+   * Solo lo llevan las piezas cuya malla se sondeó de verdad; en las
+   * primitivas sin malla escaneada la rejilla es sintética y no hay nada que
+   * contradecir.
+   */
+  calceFilas?: number;
+  /**
    * Punto local [x, z] del MANGUITO DE ENSAMBLE (cm): el espacio de la pieza
    * diseñado para abrazar el pilar (jotas, brazos de seguridad). Al calzar,
    * el eje del poste pasa por este punto — la pieza queda COLOCADA en la

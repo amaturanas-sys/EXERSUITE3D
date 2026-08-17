@@ -345,6 +345,8 @@ export class Editor {
 
   // Piezas de línea (pilar/travesaño/tubo): trazado por dos puntos + bending.
   private lineMode: "beam" | "tube" | null = null;
+  /** Dónde se pulsó con la herramienta de línea, para distinguir clic de arrastre. */
+  private lineDown: { x: number; y: number } | null = null;
   private lineParams: PrimitiveParams | null = null;
   private linePendingA: THREE.Vector3 | null = null;
   private bendTarget: SceneObject | null = null;
@@ -1178,6 +1180,11 @@ export class Editor {
       o.mesh.position.add(delta);
       this.bus.emit("objectTransformed", { object: o });
     }
+    // LAS UNIONES VAN CON LAS PIEZAS. El gizmo ya lo hacía y este camino no,
+    // así que mover un grupo con las flechas dejaba la bolita del marcador y
+    // el eje clavados en el sitio anterior; al simular, la bisagra pivotaba
+    // alrededor de ese punto viejo y el conjunto se desencajaba.
+    this.transformarUniones(new THREE.Matrix4().makeTranslation(dx, dy, dz), ids);
     // Reubica el gizmo colectivo para que siga a las piezas desplazadas.
     if (this.multiSel.size > 0) this.refreshMultiGizmo(true);
     else if (this.selectedGroupId) {
@@ -1356,7 +1363,15 @@ export class Editor {
       if (defPoste?.holeStepCm) {
         paso = defPoste.holeStepCm;
         fase = defPoste.calceFase ?? 0;
-        lim = largo / 2 - 2;
+        // Hasta donde llegan los agujeros DE VERDAD. Si la malla se sondeó,
+        // manda su recuento de filas; si no, la rejilla es sintética y llega
+        // casi al extremo, que es lo que había para todas. Sin este tope, la
+        // rejilla se inventaba agujeros: la media columna POWERRACK anunciaba
+        // 19 donde la malla tiene 10, y la jota podía subir medio metro por
+        // encima del último pinhole, calzada sobre acero macizo.
+        lim = defPoste.calceFilas
+          ? ((defPoste.calceFilas - 1) / 2) * defPoste.holeStepCm + 0.01
+          : largo / 2 - 2;
         ejePinLocal = defPoste.ejeCalce ?? null;
       } else if (o.params.kind === "beam" && (o.params.holeDiameter ?? 0) > 0.1) {
         const holeR = (o.params.holeDiameter ?? 0) / 2;
@@ -1634,7 +1649,15 @@ export class Editor {
       if (defPoste?.holeStepCm) {
         paso = defPoste.holeStepCm;
         fase = defPoste.calceFase ?? 0;
-        lim = largo / 2 - 2;
+        // Hasta donde llegan los agujeros DE VERDAD. Si la malla se sondeó,
+        // manda su recuento de filas; si no, la rejilla es sintética y llega
+        // casi al extremo, que es lo que había para todas. Sin este tope, la
+        // rejilla se inventaba agujeros: la media columna POWERRACK anunciaba
+        // 19 donde la malla tiene 10, y la jota podía subir medio metro por
+        // encima del último pinhole, calzada sobre acero macizo.
+        lim = defPoste.calceFilas
+          ? ((defPoste.calceFilas - 1) / 2) * defPoste.holeStepCm + 0.01
+          : largo / 2 - 2;
       } else if (o.params.kind === "beam" && (o.params.holeDiameter ?? 0) > 0.1) {
         const holeR = (o.params.holeDiameter ?? 0) / 2;
         const spacing = Math.max(o.params.holeSpacing ?? 5, holeR * 2 + 0.5);
@@ -2571,6 +2594,25 @@ export class Editor {
               .filter((e) => e.index >= 0)
           : null,
       },
+      // PUNTOS DE PARTIDA GUARDADOS (v0.2.77). Vivían solo en memoria: se
+      // perdían al cerrar y, peor, seguían ofreciéndose tras cargar otro
+      // proyecto, apuntando a piezas que ya no existían.
+      partidas: [...this.partidasGuardadas].map(([nombre, pt]) => ({
+        nombre,
+        piezas: pt.piezas
+          ? [...pt.piezas]
+              .map(([id, t]) => ({
+                index: this.listObjects().findIndex((o) => o.id === id),
+                position: v3(t.p),
+                quaternion: q4(t.q),
+              }))
+              .filter((e) => e.index >= 0)
+          : null,
+        pose: pt.pose ? (JSON.parse(JSON.stringify(pt.pose)) as Record<string, [number, number, number]>) : null,
+        poseNombre: pt.poseNombre,
+        position: pt.pos ? v3(pt.pos) : null,
+        quaternion: pt.quat ? q4(pt.quat) : null,
+      })),
     };
   }
 
@@ -2643,13 +2685,49 @@ export class Editor {
     this.select(obj);
   }
 
+  /**
+   * APAGA TODAS LAS HERRAMIENTAS DE COLOCACIÓN, de una vez.
+   *
+   * Existe porque la lista se había vuelto imposible de recordar: hay nueve
+   * modos que capturan el clic del visor —cable, freno, cuerda, línea, unión,
+   * mano, roldana, terminal y placa dentada— y cada sitio que necesitaba
+   * apagarlos cancelaba los que su autor tenía en la cabeza ese día.
+   *
+   * De ahí salieron dos fallos de la auditoría, y los dos se sentían como si la
+   * aplicación no obedeciera:
+   *
+   *   · «+ Bisagra» solo apagaba el cable, así que con la roldana a medias el
+   *     botón se iluminaba, el panel anunciaba «clic en la 1.ª pieza» y el clic
+   *     siguiente seguía plantando roldanas. Pedías una bisagra y salía otra
+   *     cosa.
+   *   · `clearScene` solo apagaba el doblado y la línea, así que «Nuevo
+   *     proyecto» dejaba la línea guía azul de la roldana flotando sobre una
+   *     escena vacía, con la herramienta viva y apuntando a una viga que ya no
+   *     existía. Un clic junto a esa línea fantasma plantaba una roldana
+   *     entera.
+   *
+   * Añadir un modo nuevo y olvidarse de esta lista vuelve a abrir el mismo
+   * agujero, así que lo que se añada va AQUÍ y no en cada sitio.
+   */
+  cancelarHerramientas(): void {
+    this.cancelCable();
+    this.cancelFrenoCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.cancelRoldana();
+    this.cancelPlacaDentada();
+    this.cancelColocarFigura();
+    this.endBendNodes();
+  }
+
   /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
   clearScene(): void {
     // "Nuevo" con la física corriendo: detenla antes de vaciar (si no, el
     // mundo sigue haciendo step sobre mallas liberadas).
     if (this.simulating) this.stopSimulation();
-    this.endBendNodes();
-    this.cancelLine();
+    this.cancelarHerramientas();
     this.select(null);
     for (const o of this.objects.values()) {
       this.sceneManager.content.remove(o.mesh);
@@ -2670,6 +2748,11 @@ export class Editor {
     this.jointLocks.clear();
     this.reiniciarZonas();
     this.partidaPiezas = null;
+    // Y los puntos guardados: son de ESTE proyecto. Si sobreviven, el selector
+    // sigue ofreciendo los del anterior y aplicarlos manda el maniquí a donde
+    // estaba en otra escena.
+    this.partidasGuardadas.clear();
+    this.bus.emit("partidasChanged", { nombres: [], activa: null });
     this.poseSymmetry = false;
     this.grabDrag = null;
     this.cablesInvalidos.clear();
@@ -2683,8 +2766,29 @@ export class Editor {
     if (!this.applyingHistory) this.resetHistory();
   }
 
+  /**
+   * ¿Tiene esto pinta de proyecto? Se mira ANTES de tocar nada.
+   *
+   * Cargar vaciaba la escena y solo después descubría que el fichero no valía,
+   * así que elegir por error un `.json` que no es un proyecto —un prefab
+   * exportado desde la propia aplicación, que se llama igual y sale en el mismo
+   * selector— avisaba «Archivo de proyecto no válido» con la escena YA vacía y
+   * el deshacer borrado. Todo el trabajo sin guardar, perdido por un clic en el
+   * fichero de al lado.
+   */
+  static pareceProyecto(data: unknown): data is ProjectData {
+    if (!data || typeof data !== "object") return false;
+    const d = data as Partial<ProjectData>;
+    return typeof d.version === "number" && Array.isArray(d.objects);
+  }
+
   /** Reemplaza la escena con la de un proyecto serializado. */
   async loadProject(data: ProjectData): Promise<void> {
+    // Se comprueba aquí y no solo en quien llama: por debajo, lo primero que
+    // hace la carga es vaciar la escena, y de ahí no se vuelve.
+    if (!Editor.pareceProyecto(data)) {
+      throw new Error("El archivo no es un proyecto de EXERSUITE3D");
+    }
     if (this.simulating) this.stopSimulation();
     this.autosaveSuspended = true;
     try {
@@ -2907,6 +3011,33 @@ export class Editor {
         });
       }
       if (poses.size) this.partidaPiezas = poses;
+    }
+
+    // Puntos de partida guardados (v0.2.77), por índice como los de arriba.
+    if (data.partidas?.length) {
+      const lista = this.listObjects();
+      for (const pd of data.partidas) {
+        const piezas = pd.piezas?.length ? new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>() : null;
+        for (const e of pd.piezas ?? []) {
+          const o = lista[e.index];
+          if (!o) continue;
+          piezas?.set(o.id, {
+            p: new THREE.Vector3().fromArray(e.position),
+            q: new THREE.Quaternion().fromArray(e.quaternion),
+          });
+        }
+        this.partidasGuardadas.set(pd.nombre, {
+          piezas: piezas && piezas.size ? piezas : null,
+          pose: (pd.pose as PoseDef | null) ?? null,
+          poseNombre: pd.poseNombre,
+          pos: pd.position ? new THREE.Vector3().fromArray(pd.position) : null,
+          quat: pd.quaternion ? new THREE.Quaternion().fromArray(pd.quaternion) : null,
+        });
+      }
+      this.bus.emit("partidasChanged", {
+        nombres: this.listaPartidas(),
+        activa: this.nombreDePartida,
+      });
     }
 
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
@@ -4671,9 +4802,20 @@ export class Editor {
     // adelanta aquí y el control se entrega ya en reposo.
     for (let i = 0; i < 150; i++) this.physics.step();
     this.jointHelpers.visible = false;
+    // Se apagan las herramientas de colocación ANTES de encender el motor: a
+    // partir de aquí sus clics no llegarían a ninguna parte.
+    this.cancelarHerramientas();
+    this.select(null);
     this.simulating = true; // el motor corre; isSimulating() lo distingue
     this.modoPoseMaquina = true;
     this.setSimHerramienta("mano"); // se entra a posar, no a mirar
+    // Y SE REPLIEGA LA INTERFAZ DE EDICIÓN, como al simular. Encender
+    // `simulating` sin avisar dejaba la paleta, la barra superior y la de
+    // herramientas a la vista y habilitadas, pero medias muertas: se pulsaba
+    // «Colocar» en un pilar y no pasaba absolutamente nada, ni un aviso. Y las
+    // piezas de colocación directa sí entraban, pero sin física, porque el
+    // mundo ya estaba construido.
+    this.bus.emit("simulationChanged", { running: true });
     this.bus.emit("poseMaquinaChanged", { active: true });
   }
 
@@ -4701,6 +4843,8 @@ export class Editor {
     this.modoPoseMaquina = false;
     this.physics?.dispose();
     this.physics = null;
+    // La interfaz de edición vuelve (se replegó al entrar a posar).
+    this.bus.emit("simulationChanged", { running: false });
 
     // Parado se vuelve a ver el DISEÑO, que es el plano fabricable. La partida
     // vive aparte y se aplica al arrancar.
@@ -5283,7 +5427,9 @@ export class Editor {
   /** Entra en modo "conectar": clic en pieza A y luego en pieza B. */
   beginConnect(kind: JointKind): void {
     if (this.simulating) return;
-    this.cancelCable();
+    // Todas, no solo el cable: si quedaba una a medias, se comía el clic con
+    // el que el usuario creía estar eligiendo la primera pieza.
+    this.cancelarHerramientas();
     this.connectMode = kind;
     this.pendingA = null;
     this.select(null);
@@ -6032,7 +6178,22 @@ export class Editor {
         line.userData.cableId = cable.id;
         this.cableVisuals.add(line);
       }
-      line.geometry.setFromPoints(pts);
+      // SE REESCRIBE EL BÚFER, no se cambia por otro. `setFromPoints` fabrica
+      // un atributo NUEVO en cada llamada, y three.js no borra el búfer de GPU
+      // del que sustituye: durante la simulación esto corre en cada fotograma,
+      // así que la memoria de vídeo crecía sin parar hasta arrastrar la pestaña
+      // o perder el contexto WebGL. Parar la simulación no recuperaba nada.
+      // Mientras el número de nodos no cambie, se escribe encima; y cuando
+      // cambia, se suelta el búfer viejo antes de pedir otro.
+      const attr = line.geometry.getAttribute("position") as THREE.BufferAttribute | undefined;
+      if (attr && attr.count === pts.length) {
+        for (let i = 0; i < pts.length; i++) attr.setXYZ(i, pts[i].x, pts[i].y, pts[i].z);
+        attr.needsUpdate = true;
+        line.geometry.computeBoundingSphere();
+      } else {
+        line.geometry.dispose();
+        line.geometry.setFromPoints(pts);
+      }
       this.actualizarFrenos(cable, pts, frenosVivos);
       // Validación del diagrama Cables/Poleas: rojo si el trazado atraviesa
       // material sólido o entra desalineado al plano de una roldana. Es una
@@ -8607,22 +8768,13 @@ export class Editor {
     // bloqueado, el segundo punto sale de la recta del eje bajo el puntero
     // (no necesita tocar nada: el eje Y se traza apuntando al cielo).
     if (this.lineMode) {
-      const pick = this.pickLinePlacePoint();
-      if (!this.linePendingA) {
-        if (!pick) return;
-        this.linePendingA = pick.point.clone();
-        this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
-      } else {
-        const b = this.axisLock
-          ? this.lockedLinePoint(this.linePendingA)
-          : (pick?.point ?? null);
-        if (!b) return;
-        this.createLinePiece(this.linePendingA, b);
-        this.linePendingA = null;
-        if (this.placementLine) this.placementLine.visible = false;
-        this.bus.emit("dragMeasure", { text: null });
-        this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });
-      }
+      // EL PUNTO SE FIJA AL SOLTAR, no al pulsar, y solo con el botón
+      // izquierdo. Fijándolo al pulsar no había manera de girar la vista para
+      // mirar dónde iba a caer el otro extremo: el arrastre de órbita plantaba
+      // el punto de inicio y el siguiente creaba un pilar entre dos sitios que
+      // nadie había elegido. Y el arrastre derecho, que solo encuadra, hacía
+      // lo mismo. Se recuerda dónde se pulsó y se compara al soltar.
+      this.lineDown = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
       return;
     }
 
@@ -8887,7 +9039,44 @@ export class Editor {
   };
 
   /** Suelta el nodo de doblado o el agarre de simulación al levantar el puntero. */
-  private onPointerUp = (): void => {
+  /**
+   * Fija el punto de la herramienta de línea (el de inicio o el de fin).
+   * Lo llama `onPointerUp` cuando el gesto fue un CLIC y no un arrastre.
+   */
+  private fijarPuntoLinea(): void {
+    if (!this.lineMode) return;
+    const pick = this.pickLinePlacePoint();
+    if (!this.linePendingA) {
+      if (!pick) return;
+      this.linePendingA = pick.point.clone();
+      this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
+    } else {
+      const b = this.axisLock
+        ? this.lockedLinePoint(this.linePendingA)
+        : (pick?.point ?? null);
+      if (!b) return;
+      this.createLinePiece(this.linePendingA, b);
+      this.linePendingA = null;
+      if (this.placementLine) this.placementLine.visible = false;
+      this.bus.emit("dragMeasure", { text: null });
+      this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });
+    }
+  }
+
+  private onPointerUp = (ev: PointerEvent): void => {
+    // Herramienta de línea: el clic fija punto; el arrastre era para orbitar.
+    if (this.lineMode) {
+      const d = this.lineDown;
+      this.lineDown = null;
+      if (!d) return;
+      if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) > 6) return;
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      this.fijarPuntoLinea();
+      return;
+    }
     if (this.marquee) {
       this.finishMarquee();
       return;
@@ -8902,6 +9091,20 @@ export class Editor {
     }
     if (this.dragMove) {
       const starts = this.dragMove.starts;
+      // Mismo motivo que en el desplazamiento con flechas: las uniones cuyas
+      // dos piezas se han movido tienen que moverse con ellas.
+      const primero = [...starts.keys()][0];
+      const orig = primero ? starts.get(primero) : undefined;
+      const ahora = primero ? this.objects.get(primero)?.mesh.position : undefined;
+      if (orig && ahora) {
+        const d = ahora.clone().sub(orig);
+        if (d.lengthSq() > 1e-10) {
+          this.transformarUniones(
+            new THREE.Matrix4().makeTranslation(d.x, d.y, d.z),
+            [...starts.keys()],
+          );
+        }
+      }
       this.dragMove = null;
       this.orbit.enabled = true;
       this.bus.emit("dragMeasure", { text: null });

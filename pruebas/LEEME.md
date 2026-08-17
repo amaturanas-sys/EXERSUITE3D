@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-64 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+65 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -156,6 +156,14 @@ en verde.
 
 `hub` también, con sus 62 comprobaciones, y `sitio`, con el Next.js arriba. Es la única que además deja las vistas
 previas del hub (`hub-*.png`), que se miran, no se comparan.
+
+`auditoria` (v0.2.77) reproduce los fallos del barrido adversarial, uno por
+bloque: la herramienta que se come el clic de la siguiente, la línea guía que
+sobrevive a «Nuevo proyecto», el arrastre de órbita que plantaba geometría, el
+agujero que reventaba el perfil, el movimiento a mano que no avisaba, el .json
+ajeno que vaciaba la escena, el ancla que se quedaba clavada y las partidas que
+se colaban entre proyectos. No comprueban que el arreglo esté puesto —eso lo
+diría un grep— sino que el fallo ya no pasa.
 
 `sentadilla` (v0.2.75) mide que la postura de sentadilla sea CONGRUENTE y no
 solo baja. No comprueba los cuatro números de la biblioteca de posturas —eso

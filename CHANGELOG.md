@@ -5,6 +5,94 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.77] — 2026-08-17
+
+Los doce hallazgos GRAVES que quedaban de la auditoría adversarial. Con los
+tres de v0.2.76, quedan corregidos los 2 críticos y los 13 graves; siguen
+abiertos 12 de gravedad media y baja.
+
+### Corregido
+
+**Herramientas que no se apagaban.** Había nueve modos que capturan el clic del
+visor y cada sitio que necesitaba apagarlos cancelaba los que su autor recordaba
+ese día. De ahí salían dos fallos que se sentían como desobediencia:
+
+- **«+ Bisagra» y «+ Corredera» solo apagaban el cable.** Con la roldana a
+  medias, el botón se iluminaba, el panel anunciaba «clic en la 1.ª pieza» y el
+  clic siguiente seguía plantando roldanas. Pedías una bisagra y salía otra cosa.
+- **«Nuevo proyecto», «Cargar» y Deshacer dejaban viva la roldana**, con su
+  línea guía azul flotando sobre una escena vacía y apuntando a una viga que ya
+  no existía. Un clic junto a esa línea fantasma plantaba una roldana entera.
+
+Ahora hay **un solo apagado** (`cancelarHerramientas`) y lo usan todos. Añadir
+un modo nuevo y olvidarse de esa lista vuelve a abrir el agujero, así que lo
+que se añada va ahí y no en cada sitio.
+
+**No se podía girar la vista mientras se trazaba.** La herramienta de línea
+fijaba el punto al PULSAR y con cualquier botón: el arrastre de órbita marcaba
+el inicio y el siguiente creaba un pilar entre dos sitios que nadie eligió; el
+arrastre derecho, que solo encuadra, hacía lo mismo. Ahora el punto se fija al
+SOLTAR, solo con el botón izquierdo y solo si el puntero no viajó.
+
+**La rejilla de calce inventaba agujeros.** Se extendía hasta 2 cm de las
+puntas del poste sin mirar cuántos pinholes tiene la malla: la media columna
+POWERRACK anunciaba «agujero X de 19» donde tiene 10, y la jota subía medio
+metro por encima del último agujero real, calzada sobre acero macizo con el pin
+apoyado en la nada. Los recuentos ya estaban sondeados y anotados en comentarios
+(30 filas y 10); ahora se hacen cumplir.
+
+**Las uniones se quedaban atrás.** Mover un grupo con las flechas o con la
+herramienta Arrastrar movía las piezas pero dejaba el ancla de la bisagra
+clavada en el sitio anterior; al simular, pivotaba alrededor del punto viejo y
+el conjunto se desencajaba. Con el gizmo sí funcionaba: eran los otros dos
+caminos, que no llamaban a `transformarUniones`.
+
+**El inspector movía piezas en silencio.** Escribir una coordenada o unos
+grados no avisaba por el bus: la cadena o el cable anclados seguían dibujados en
+el sitio viejo, colgando en el aire; la barra de medida no cambiaba; y el
+proyecto no quedaba marcado como modificado, así que ni ofrecía guardar al salir
+ni Ctrl+Z deshacía el movimiento.
+
+**El ⌀ de agujero no tenía tope.** Un valor mayor que el perfil dibujaba los
+agujeros como material FUERA de la viga y le engordaba la caja de colisión —16
+cm de alto donde el perfil son 5—, así que en simulación chocaba con cosas que
+no toca. Se acota al 90 % del lado menor.
+
+**«▶ Manipular» encendía el motor sin replegar la interfaz.** La paleta, la
+barra superior y la de herramientas seguían a la vista y habilitadas, pero
+medias muertas: se pulsaba «Colocar» en un pilar y no pasaba nada, ni un aviso.
+Ahora repliega como la simulación, y al salir vuelve.
+
+**Cargar un `.json` ajeno vaciaba la escena.** Elegir por error un prefab —que
+se llama igual y sale en el mismo selector— avisaba «Archivo de proyecto no
+válido» con la escena YA vacía y el deshacer borrado. Ahora se comprueba antes
+de tocar nada.
+
+**Los puntos de partida no viajaban.** Se perdían al cerrar y, peor, seguían
+ofreciéndose tras «Nuevo proyecto»: al aplicar uno, la máquina arrancaba en su
+diseño y el maniquí saltaba a la posición que tenía en el otro proyecto. Ahora
+se guardan en el fichero, por índice de pieza como las manos apoyadas.
+
+**El «Bloque de peso» no podía deslizar por sus tubos.** Son 4 cm de plancha
+contra un umbral de abrazo de 5, así que el motor lo veía macizo contra los
+tubos que lo atraviesan y lo despedía de lado. Pero su grosor no es lo que
+decide: tiene **orificios pasantes**, está hecho para enhebrarse. A las piezas
+que los declaran se les pide menos recorrido interior.
+
+**El cable fugaba memoria de vídeo.** `setFromPoints` fabrica un atributo nuevo
+en cada llamada y three.js no borra el búfer del que sustituye; esto corre en
+cada fotograma de simulación, así que una sesión larga con cables iba
+degradándose hasta arrastrar la pestaña o perder el contexto WebGL, y parar no
+recuperaba nada. Ahora se reescribe el búfer y solo se pide otro cuando cambia
+el número de nodos.
+
+### Sabido
+
+- Prueba nueva, `auditoria`: reproduce cada fallo con la secuencia que lo
+  destapó. La batería pasa a **65**. Escribirla cazó de paso dos montajes míos
+  que daban verde sin ejercitar nada — la primera versión del ancla «pasaba»
+  porque el grupo no llegaba a moverse.
+
 ## [0.2.76] — 2026-08-17
 
 Los tres primeros hallazgos de la auditoría adversarial previa a la release

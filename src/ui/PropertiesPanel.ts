@@ -617,9 +617,21 @@ export class PropertiesPanel {
       input.addEventListener("change", () => {
         const v = parseFloat(input.value);
         if (!Number.isFinite(v) || v < 0) return;
-        (obj.params[key] as number) = v;
+        // EL AGUJERO NO PUEDE SER MÁS GORDO QUE EL PERFIL. Sin tope, los
+        // agujeros se dibujaban como material FUERA de la viga: la pieza salía
+        // sucia y con la caja de colisión engordada —16 cm de alto donde el
+        // perfil son 5—, así que en simulación chocaba con cosas que no toca y
+        // los calces la medían mal. Se deja el 90 % del lado menor, que es lo
+        // que aguanta sin comerse las paredes.
+        if (key === "holeDiameter") {
+          const lado = Math.min(obj.params.width ?? 5, obj.params.depth ?? 5);
+          (obj.params[key] as number) = Math.min(v, lado * 0.9);
+        } else {
+          (obj.params[key] as number) = v;
+        }
         obj.rebuildGeometry();
         this.editor.bus.emit("objectTransformed", { object: obj });
+        input.value = String(roundTo((obj.params[key] as number) ?? 0, 2));
       });
       return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
     };
@@ -825,7 +837,14 @@ export class PropertiesPanel {
         input.dataset.pos = ax;
         input.addEventListener("change", () => {
           const v = parseFloat(input.value);
-          if (Number.isFinite(v)) obj.mesh.position[ax] = v;
+          if (!Number.isFinite(v)) return;
+          obj.mesh.position[ax] = v;
+          // AVISAR POR EL BUS, como hace el gizmo. Mover la pieza a mano y no
+          // decirlo dejaba la cadena, la correa o el cable anclados a ella
+          // dibujados en el sitio viejo, colgando en el aire; la barra de
+          // medida sin cambiar; y el proyecto sin marcar como modificado, así
+          // que ni ofrecía guardar al salir ni Ctrl+Z deshacía el movimiento.
+          this.editor.bus.emit("objectTransformed", { object: obj });
         });
         return el("div", { class: "sub" }, [el("label", {}, [ax.toUpperCase()]), input]);
       }),
@@ -843,7 +862,9 @@ export class PropertiesPanel {
         input.dataset.rot = ax;
         input.addEventListener("change", () => {
           const v = parseFloat(input.value);
-          if (Number.isFinite(v)) obj.mesh.rotation[ax] = degToRad(v);
+          if (!Number.isFinite(v)) return;
+          obj.mesh.rotation[ax] = degToRad(v);
+          this.editor.bus.emit("objectTransformed", { object: obj });
         });
         return el("div", { class: "sub" }, [el("label", {}, [ax.toUpperCase()]), input]);
       }),

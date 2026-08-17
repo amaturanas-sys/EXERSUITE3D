@@ -704,7 +704,17 @@ export class PhysicsWorld {
         // moverse en horizontal, clavado y sin transmisión).
         const abrazo =
           tam.x * Math.abs(g.eje.x) + tam.y * Math.abs(g.eje.y) + tam.z * Math.abs(g.eje.z);
-        if (abrazo < 5) continue;
+        // UNA PIEZA CON ORIFICIOS PASANTES ESTÁ HECHA PARA ENHEBRARSE, y su
+        // grosor no dice nada: el «Bloque de peso» son 30 × 4 × 18 con dos
+        // agujeros que abrazan los tubos, y sus 4 cm no llegaban al listón de
+        // 5, así que el motor lo veía macizo contra los tubos que lo
+        // atraviesan y lo despedía de lado. La «Pila de pesos» en el mismo
+        // sitio funcionaba, con lo que parecía cosa de la escena y no de la
+        // pieza. A esas se les pide menos recorrido interior; el listón alto
+        // sigue para las demás, y de los falsos positivos por proximidad ya se
+        // encarga el solape axial de abajo.
+        const pasante = (d.obj.params.holeDiameter ?? 0) > 0;
+        if (abrazo < (pasante ? 2 : 5)) continue;
         // Y EL TUBO TIENE QUE ESTAR AHÍ (v0.2.76). La comprobación de arriba
         // proyecta el centro de la móvil sobre la recta de la guía, pero esa
         // recta es INFINITA: sirve igual una pieza ensartada en el tubo que

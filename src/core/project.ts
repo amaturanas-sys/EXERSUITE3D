@@ -120,6 +120,24 @@ export interface WorkspaceData {
   paredes?: ("N" | "S" | "E" | "O")[];
 }
 
+/**
+ * PUNTO DE PARTIDA GUARDADO (v0.2.77), tal como viaja en el fichero.
+ *
+ * Los puntos de partida se guardaban solo en memoria: se perdían al cerrar y,
+ * peor, seguían ofrecidos tras «Nuevo proyecto» — al aplicar uno, la máquina
+ * arrancaba en su diseño y el maniquí saltaba a la posición que tenía en el
+ * proyecto anterior. Las piezas van POR ÍNDICE, como las manos apoyadas,
+ * porque los identificadores se rehacen al cargar.
+ */
+export interface PartidaData {
+  nombre: string;
+  piezas: { index: number; position: Vec3; quaternion: Quat }[] | null;
+  pose: Record<string, Vec3> | null;
+  poseNombre: string | null;
+  position: Vec3 | null;
+  quaternion: Quat | null;
+}
+
 export interface ProjectData {
   version: number;
   objects: ObjData[];
@@ -129,4 +147,6 @@ export interface ProjectData {
   groups: GroupData[];
   human: HumanData;
   workspace?: WorkspaceData;
+  /** Puntos de partida guardados (v0.2.77). */
+  partidas?: PartidaData[];
 }

@@ -1,4 +1,5 @@
-import type { ColorMode, Editor, TransformMode } from "../core/Editor";
+import { Editor } from "../core/Editor";
+import type { ColorMode, TransformMode } from "../core/Editor";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { addRecent } from "../core/recentStore";
 import { parsearPrefab, serializarPrefab } from "../core/prefabIO";
@@ -446,6 +447,14 @@ export class Toolbar {
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
+      // Se avisa ANTES de tocar la escena. Un prefab exportado desde la propia
+      // aplicación se llama igual y sale en el mismo selector.
+      if (!Editor.pareceProyecto(data)) {
+        window.alert(
+          "Ese archivo no es un proyecto de EXERSUITE3D (¿es un prefab?). No se ha tocado nada.",
+        );
+        return;
+      }
       await this.editor.loadProject(data);
       void addRecent(file.name.replace(/\.[^.]+$/, ""), data, Date.now()).catch(() => {});
     } catch (err) {
