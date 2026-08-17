@@ -9,7 +9,8 @@ export type PrimitiveKind =
   | "torus"
   | "plane"
   | "beam" // perfil de acero (pilar/travesano) trazado entre dos puntos
-  | "tube"; // tubo de acero trazado entre dos puntos
+  | "tube" // tubo de acero trazado entre dos puntos
+  | "dentada"; // placa de acero con ganchos, atornillada al costado de un pilar
 
 /**
  * Parametros dimensionales de una primitiva, SIEMPRE en centimetros (o grados/segmentos).
@@ -79,6 +80,22 @@ export interface PrimitiveParams {
    * prefabs.
    */
   ventanas?: VentanaRect[];
+  /**
+   * PLACA DENTADA (v0.2.73): cuántos ganchos lleva y cada cuánto.
+   *
+   * Son parámetros PROPIOS y no heredados del pilar: la placa se atornilla a
+   * las caras que NO llevan pinholes, así que su grilla no tiene por qué
+   * coincidir con la del poste. El largo de la plancha sale de estos dos —lo
+   * que se pide es «doce ganchos cada cinco centímetros», y dejar el largo
+   * suelto daría placas que terminan a medio diente—.
+   */
+  dientes?: number;
+  /** Distancia entre centros de dientes (cm). */
+  dienteEspaciado?: number;
+  /** Alto de la repisa del diente (cm). Por defecto, 0,4 del paso. */
+  dienteAlto?: number;
+  /** Cuánto vuela el diente por delante de la plancha (cm). */
+  dienteVuelo?: number;
   /**
    * VOLTEO / ESPEJADO (v0.2.32): ejes locales en los que la pieza está
    * espejada. Se hornea en la GEOMETRÍA en lugar de usar una escala

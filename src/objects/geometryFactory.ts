@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { degToRad } from "../core/units";
 import { buildBeamGeometry, buildTubeGeometry } from "./linePieces";
+import { buildDentadaGeometry } from "./placaDentada";
 import type { PrimitiveParams } from "./types";
 
 // Construye una BufferGeometry a partir de parametros en centimetros.
@@ -130,6 +131,9 @@ export function buildGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   // no el doblado/torsion legado de las primitivas.
   if (p.kind === "beam") return buildBeamGeometry(p);
   if (p.kind === "tube") return buildTubeGeometry(p);
+  // La placa dentada se fabrica entera —plancha, ganchos y pernos— desde su
+  // número de dientes y su paso; no admite el doblado/torsión de abajo.
+  if (p.kind === "dentada") return buildDentadaGeometry(p);
   const bend = degToRad(p.bendDeg ?? 0);
   const twist = degToRad(p.twistDeg ?? 0);
   const deform = Math.abs(bend) > 1e-4 || Math.abs(twist) > 1e-4;

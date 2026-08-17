@@ -82,6 +82,31 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Atril/repisa de discos: los discos se ensamblan por su orificio central y quedan suspendidos.",
   },
   {
+    /**
+     * PLACA DENTADA (v0.2.73): hace de fila de jotas con una sola plancha.
+     *
+     * Va en las caras del pilar que NO llevan pinholes, así que no calza en
+     * ninguna grilla: se atornilla. Por eso no tiene `calceLocal` ni
+     * `frenteCalce` —no hay pin que meter en ningún agujero— y sí
+     * `asientoBarra`, porque sus doce ganchos tienen que retener la barra
+     * igual que los de una jota.
+     */
+    id: "placa-dentada",
+    label: "Placa dentada (upright)",
+    category: "estructural",
+    materialId: "acero-negro",
+    defaults: {
+      kind: "dentada",
+      dientes: 12,
+      dienteEspaciado: 5,
+    },
+    physics: { massKg: 0, fixed: true },
+    asientoBarra: true,
+    description:
+      "Plancha de acero con ganchos que se atornilla al costado de un pilar: " +
+      "hace de fila de jotas con mucho menos material.",
+  },
+  {
     id: "j-hook",
     paleta: "oculta",
     label: "Gancho J / soporte barra",
