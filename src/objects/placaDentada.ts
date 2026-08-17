@@ -1,5 +1,5 @@
 /**
- * PLACA DENTADA (upright dentado) — v0.2.73.
+ * PLACA DENTADA (upright dentado) — v0.2.74.
  *
  * Una sola plancha de acero atornillada al COSTADO de un pilar, con ganchos
  * recortados en su canto, que hace el trabajo de una fila de jotas con mucho
@@ -74,33 +74,39 @@ export const DENTADA_PROPORCIONES = {
   grosorCm: 0.8,
   /** Ancho de la espina cuando no hay cara de la que copiarlo (cm). */
   espinaCm: 5,
-  /**
-   * GARGANTA MÍNIMA (cm), y de dónde sale este número.
-   *
-   * El `.obj` dibuja la garganta a la medida de una barra olímpica de verdad:
-   * 2,87 cm, el diámetro del eje, sin una décima de holgura. En este proyecto
-   * eso NO sirve, y por una razón que no se ve mirando la barra: su collider
-   * es UN cilindro del radio MÁS GRANDE de la malla —el de las mangas—, así
-   * que para el motor la barra mide 6,94 cm de gruesa de punta a punta. Con
-   * la garganta del modelo, la barra se queda posada ENCIMA de los dientes y
-   * rueda hasta caerse. Se ve una placa perfecta que no agarra nada.
-   *
-   * Así que la garganta se mide contra la barra que simula el motor, no
-   * contra la que se dibuja: 6,94 más un centímetro de holgura. El gancho
-   * sale más ancho que el del modelo del diseñador, y es el precio de que
-   * funcione. El día que la barra tenga un collider que siga su perfil —
-   * mangas gordas, eje fino, como ya hacen las vigas dobladas— este suelo
-   * baja solo y el gancho recupera las proporciones del `.obj`. Mientras
-   * tanto, `dienteVuelo` deja ponerlas a mano.
-   */
-  gargantaMin: 8,
+  /** Holgura de la garganta sobre el diámetro de la barra (cm). */
+  holguraBarra: 1.06,
   /** Labio mínimo (cm): menos acero que esto no retiene nada. */
-  dedoMin: 1.4,
-  /** El labio tiene que llegar al menos a media barra, o no la encierra. */
-  dedoAltoMin: 0.45,
+  dedoMin: 1.6,
+  /** Cuánto pasa el labio del EJE de la barra (cm). Por debajo, no la encierra. */
+  labioSobreEje: 0.15,
+  /** Suelo de acero bajo la cuna (cm): menos, y la barra lo hunde. */
+  rampaMin: 2.5,
+  /** Holgura de la boca de entrada sobre el diámetro de la barra (cm). */
+  holguraBoca: 0.5,
 } as const;
 
-export const DENTADA_PASO_DEF = 8;
+/**
+ * LA BARRA, TAL COMO LA VE EL MOTOR (cm de diámetro).
+ *
+ * No es la que se dibuja. El collider de `barra-olimpica` es UN cilindro del
+ * radio MÁS GRANDE de su malla —el de las mangas—, así que para la física la
+ * barra mide 6,94 cm de gruesa de punta a punta, aunque el eje se vea fino.
+ *
+ * Todo el gancho se dimensiona contra ESTE número, porque es el que decide si
+ * la barra entra o no. El `.obj` del diseñador dibuja la garganta a la medida
+ * de una barra de verdad —2,87 cm, sin una décima de holgura—, y con esa
+ * medida aquí la barra se queda posada encima de los dientes: una placa
+ * perfecta que no agarra nada.
+ *
+ * Es UNA constante a propósito. El día que la barra tenga un collider que siga
+ * su perfil (mangas gordas, eje fino, como ya hacen las vigas dobladas), se
+ * cambia aquí y el gancho entero —garganta, labio y paso mínimo— recupera solo
+ * las proporciones del modelo.
+ */
+export const DENTADA_BARRA_CM = 6.94;
+
+export const DENTADA_PASO_DEF = 12.5;
 export const DENTADA_DIENTES_DEF = 6;
 
 /**
@@ -128,10 +134,101 @@ export function huecoDentada(p: PrimitiveParams): { vuelo: number; garganta: num
   // Proporciones del modelo…
   const vueloObj = Math.max(1, p.dienteVuelo ?? R.vuelo * paso);
   const gargantaObj = R.garganta * vueloObj;
-  // …y los suelos que las hacen servir para algo.
-  const garganta = Math.max(gargantaObj, R.gargantaMin);
+  // …y el suelo que las hace servir para algo: por la garganta tiene que
+  // caber la barra.
+  const garganta = Math.max(gargantaObj, DENTADA_BARRA_CM + R.holguraBarra);
   const dedo = Math.max(vueloObj - gargantaObj, R.dedoMin);
   return { vuelo: garganta + dedo, garganta };
+}
+
+/** Alto del labio: siempre por encima del EJE de la barra, o no la encierra. */
+function altoLabio(p: PrimitiveParams, paso: number): number {
+  const R = DENTADA_PROPORCIONES;
+  const suelo = DENTADA_BARRA_CM / 2 + R.labioSobreEje;
+  const alto = Math.max(p.dienteAlto ?? R.dedoAlto * paso, suelo);
+  // Y nunca tan alto que tape la boca por la que la barra tiene que entrar.
+  return Math.min(alto, Math.max(suelo, paso - DENTADA_BARRA_CM - R.holguraBoca));
+}
+
+/**
+ * EL FALDÓN MÁS HONDO QUE AÚN DEJA ENTRAR LA BARRA.
+ *
+ * Aquí está el nudo de toda la pieza, y conviene dejarlo escrito porque no se
+ * ve mirando el dibujo. Para meter la barra en un gancho INTERMEDIO hay que
+ * pasarla por el pasillo que queda entre la punta del dedo de ese gancho y el
+ * FALDÓN del gancho de arriba. Ese pasillo es lo primero que se estrangula
+ * cuando los dientes se juntan, y estrangularlo no se nota en la placa: se ve
+ * preciosa, la barra se posa encima de los dientes y no baja.
+ *
+ * El faldón va de (espina, asiento−rampa) a (canto, asiento), así que la
+ * distancia de la punta del dedo a esa recta sale en forma cerrada. Pidiendo
+ * que sea al menos el diámetro de la barra queda una cuadrática en la rampa
+ * —con el coeficiente de segundo grado NEGATIVO, porque el dedo es más fino
+ * que la barra—, y su raíz positiva es el faldón máximo.
+ */
+function rampaMaxima(paso: number, vuelo: number, dedo: number, dedoAlto: number, chaflan: number): number {
+  const D = DENTADA_BARRA_CM;
+  const A = vuelo * (paso - dedoAlto - chaflan);
+  const c = D * D - dedo * dedo;
+  if (c <= 0) return Infinity; // dedo más gordo que la barra: nada estrangula
+  const disc = A * A * dedo * dedo + c * (A * A - D * D * vuelo * vuelo);
+  if (disc < 0) return 0; // a este paso no cabe ni con el faldón plano
+  return Math.max(0, (-A * dedo + Math.sqrt(disc)) / c);
+}
+
+/**
+ * EL PASO MÍNIMO ENTRE GANCHOS, que es lo que hace que la placa sirva.
+ *
+ * Un gancho tiene que poder RECIBIR una barra, y no solo sostenerla. Si los
+ * dientes se juntan más de la cuenta, la barra ya no entra en ninguno salvo
+ * en el de arriba del todo —que no tiene nada encima— y la placa se convierte
+ * en un adorno con un solo sitio útil. Medido: al paso de 8 cm que traía la
+ * pieza al nacer, de doce ganchos sujetaba UNO.
+ *
+ * Tres condiciones, y manda la más exigente:
+ *
+ *   · LA BOCA. Por el canto exterior, entre el alto del dedo de un gancho y
+ *     el faldón del siguiente, tiene que caber la barra: paso − labio ≥ ⌀.
+ *   · EL PASILLO. La barra tiene que poder colarse en diagonal entre la punta
+ *     del dedo y el faldón de arriba (ver `rampaMaxima`).
+ *   · EL SUELO. Bajo la cuna tiene que quedar acero de verdad: si el faldón se
+ *     aplana para dejar sitio, la cuna se queda sin fondo y la barra lo hunde.
+ *
+ * Con la barra de 6,94 que simula el motor salen 11,9 cm. Con una barra de
+ * verdad, de 2,9, saldrían menos de 6 — el suelo lo pone la barra, no el
+ * capricho: en cuanto `DENTADA_BARRA_CM` adelgace, esto baja solo.
+ */
+export function pasoMinimoDentada(p: PrimitiveParams): number {
+  // PUNTO FIJO, y no una cuenta de una pasada. El mínimo depende del tamaño
+  // del gancho, y el gancho depende un poco del paso —el labio exterior
+  // engorda con él—, así que la cuenta se muerde la cola. Sin resolverla, el
+  // mínimo que enseña el panel y el paso al que la pieza acaba quedándose se
+  // separan un par de décimas, y no hay manera de escribir el número que el
+  // propio panel está pidiendo. Converge en dos vueltas: la dependencia es
+  // floja (la derivada anda por 0,05).
+  let paso = p.dienteEspaciado ?? DENTADA_PASO_DEF;
+  for (let i = 0; i < 3; i++) paso = minimoParaHueco({ ...p, dienteEspaciado: paso });
+  return paso;
+}
+
+function minimoParaHueco(p: PrimitiveParams): number {
+  const R = DENTADA_PROPORCIONES;
+  const D = DENTADA_BARRA_CM;
+  const { vuelo, garganta } = huecoDentada(p);
+  const dedo = vuelo - garganta;
+  const labio = D / 2 + R.labioSobreEje;
+
+  // 1) La boca de entrada.
+  const porBoca = D + labio + R.holguraBoca;
+
+  // 2 y 3) El pasillo con el faldón en su mínimo estructural: se despeja el
+  // paso de la misma ecuación que resuelve `rampaMaxima`, ahora con la rampa
+  // fijada en su suelo.
+  const r = R.rampaMin;
+  const K = (D * Math.hypot(r, vuelo) + dedo * r) / vuelo;
+  const porPasillo = (K + labio) / (1 - R.chaflan);
+
+  return Math.max(porBoca, porPasillo);
 }
 
 /** Cuánto sobresale la placa de la cara en la que se apoya. */
@@ -187,8 +284,12 @@ export interface MedidasDentada {
  */
 export function medidasDentada(p: PrimitiveParams): MedidasDentada {
   const R = DENTADA_PROPORCIONES;
-  const paso = Math.max(2, p.dienteEspaciado ?? DENTADA_PASO_DEF);
   const { vuelo, garganta } = huecoDentada(p);
+  // EL PASO NUNCA BAJA DE SU MÍNIMO, aunque se pida. Se prefiere una placa con
+  // menos ganchos y todos útiles a una con muchos y uno solo que reciba la
+  // barra: el usuario ve enseguida que los ganchos se separaron, y no ve nunca
+  // que dejaron de servir.
+  const paso = Math.max(pasoMinimoDentada(p), p.dienteEspaciado ?? DENTADA_PASO_DEF);
   // El ancho que llega es el TOTAL; la espina es lo que queda descontado el
   // vuelo, y nunca menos de un centímetro de respaldo.
   const ancho = Math.max(vuelo + 1, p.width ?? R.espinaCm + vuelo);
@@ -209,6 +310,17 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
   // largo, sobra por igual arriba y abajo.
   const sobra = (largo - (dientes - 1) * paso) / 2;
 
+  const dedoAlto = altoLabio(p, paso);
+  const chaflan = R.chaflan * paso;
+  // EL FALDÓN CEDE ANTES QUE EL PASO. Es la pieza del perfil que se puede
+  // recortar sin que el gancho deje de ser un gancho: la cuna, el labio y la
+  // garganta los manda la barra, pero la diagonal de debajo solo tiene que
+  // dejar sitio para meterla. Cuando los dientes se juntan, se aplana.
+  const rampa = Math.max(
+    R.rampaMin,
+    Math.min(R.rampa * paso, rampaMaxima(paso, vuelo, vuelo - garganta, dedoAlto, chaflan)),
+  );
+
   return {
     paso,
     dientes,
@@ -217,11 +329,9 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
     vuelo,
     garganta,
     dedo: vuelo - garganta,
-    // El labio, alto como para encerrar media barra: uno de dos centímetros
-    // sobre una barra de siete no la retiene, la deja rodar por encima.
-    dedoAlto: p.dienteAlto ?? Math.max(R.dedoAlto * paso, garganta * R.dedoAltoMin),
-    chaflan: R.chaflan * paso,
-    rampa: R.rampa * paso,
+    dedoAlto,
+    chaflan,
+    rampa,
     grosor: p.depth ?? R.grosorCm,
     largo,
     cantoEspina: ancho / 2 - vuelo,

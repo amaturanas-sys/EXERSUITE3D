@@ -137,10 +137,16 @@ previas del hub (`hub-*.png`), que se miran, no se comparan.
 
 `placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
 FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra
-sobre un gancho. Que la placa se vea bien no dice nada — el fallo que encontró
-fue justamente una placa impecable que la barra atravesaba, porque el motor la
-había tomado por riel de guía. Deja `placa-dentada.png` y
-`placa-dentada-diagonal.png`.
+sobre **cada uno** de sus ganchos. Que la placa se vea bien no dice nada — los
+dos fallos que ha encontrado eran invisibles en la geometría: una placa
+impecable que la barra atravesaba (el motor la había tomado por riel de guía) y
+otra, también impecable, en la que la barra no ENTRABA en ningún gancho salvo
+el de arriba.
+
+De ahí la regla de esta prueba: **la barra se suelta sobre todos los ganchos, no
+sobre uno**. La primera versión probaba el de más arriba, que es el único sin
+otro diente encima, y por eso daba verde con once ganchos inservibles. Deja
+`placa-dentada.png` y `placa-dentada-diagonal.png`.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la
 sección «Sabido».

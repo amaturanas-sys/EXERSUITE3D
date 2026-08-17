@@ -5,6 +5,71 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.74] — 2026-08-17
+
+### Añadido
+
+- **El intervalo entre ganchos de la placa dentada se puede elegir**, que es
+  lo que decide a cuántas alturas distintas se puede dejar la barra. Se
+  pregunta al empezar a colocarla y se puede cambiar después, con la placa
+  seleccionada, en el panel de propiedades (**Ganchos de la placa**), junto al
+  número de ganchos. El panel dice en todo momento cuántos ganchos hay, cada
+  cuánto y en qué largo de placa.
+
+  Cambiar el intervalo **no cambia el largo** de la plancha: manda lo que se
+  trazó sobre el pilar, y lo que se recalcula es cuántos ganchos caben dentro.
+  Solo crece si se piden a mano más de los que entran.
+
+### Corregido
+
+- **De doce ganchos, solo servía uno.** Al intervalo con el que nació la pieza
+  —8 cm— una barra soltada sobre cualquier gancho que no fuera el de más
+  arriba se quedaba **posada encima de los dientes** en vez de entrar en la
+  cuna. Medido soltando una barra sobre cada uno de los doce: sujetaba **1**.
+
+  El de arriba funcionaba porque es el único que no tiene otro diente encima —
+  y era justo el que probaba la prueba de v0.2.73. La placa se veía impecable.
+
+  La causa es que el diente **escalaba con el intervalo**: separar los ganchos
+  agrandaba también el diente, de modo que el pasillo por el que la barra tiene
+  que colarse —entre la punta de un dedo y el faldón del gancho de arriba— casi
+  no crecía. Ahora la cuna, el labio y la garganta los manda **la barra**, y el
+  faldón es lo que cede: se aplana cuando los dientes se juntan. Y hay un
+  **intervalo mínimo** que se hace cumplir, calculado de tres condiciones —que
+  quepa la barra por la boca, que quepa por el pasillo y que bajo la cuna quede
+  acero de verdad—. Con la barra de este proyecto salen **11,9 cm**; el de
+  fábrica pasa de 8 a **12,5**.
+
+  Medido de nuevo, soltando una barra sobre **cada** gancho: 7/7 a 12,5 cm,
+  6/6 a 15, 4/4 a 20 y 3/3 a 26.
+
+- **Cambiar el intervalo despegaba la placa del pilar.** El gancho crece con el
+  intervalo, y el ancho que guarda la pieza es el TOTAL —espina más vuelo—, así
+  que al engordar el vuelo lo que encogía era la **espina**, justo la parte que
+  apoyaba en la cara del poste: la placa se corría hacia dentro y sus ganchos se
+  metían en el pilar. Tampoco se veía; lo que fallaba era la barra, que empezaba
+  a chocar con el poste. Ahora se conserva la espina, se recalcula el ancho y la
+  pieza se corre media diferencia de vuelo para seguir apoyada donde estaba.
+
+- **La placa ya no ofrece controles que no hacen nada.** Doblar y retorcer no
+  la afectan —su geometría se genera antes de esa fase—, así que el panel deja
+  de enseñarlos.
+
+### Sabido
+
+- **12,5 cm entre ganchos parece mucho al lado de los 5 cm de una grilla de
+  pinholes, y lo manda la barra.** Su collider es un cilindro del radio mayor
+  de la malla —el de las mangas—, así que para el motor mide 6,94 cm de gruesa
+  de punta a punta; un gancho tiene que dejar pasar eso más el labio que lo
+  encierra. Con una barra de verdad, de 2,9, el mínimo bajaría de 6 cm. Es una
+  sola constante, `DENTADA_BARRA_CM`: el día que la barra tenga un collider que
+  siga su perfil, el mínimo, la garganta y el labio se ajustan solos.
+
+- **`window.exersuite.dentada`** expone las medidas resueltas de la pieza para
+  las pruebas. No es un adorno: la prueba tiene que soltar la barra en el CENTRO
+  de la garganta, y recalcular ese centro en el guion sería copiar la fórmula —
+  si la fórmula se equivoca, la copia se equivoca igual y la prueba pasa.
+
 ## [0.2.73] — 2026-08-17
 
 ### Añadido

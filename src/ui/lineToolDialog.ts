@@ -113,6 +113,49 @@ export function configureBeam(): Promise<PrimitiveParams | null> {
   );
 }
 
+/**
+ * Configura una PLACA DENTADA antes de trazarla: el intervalo entre ganchos.
+ *
+ * Es lo único que se pregunta, porque es lo único que no se puede deducir. El
+ * ancho lo copia la placa de la cara del pilar y el largo sale de los dos
+ * puntos que se tracen; el intervalo, en cambio, es una decisión de diseño —
+ * a cuántas alturas distintas se quiere poder dejar la barra.
+ *
+ * El mínimo se enseña y se hace cumplir. Por debajo de él la barra deja de
+ * entrar en los ganchos de en medio, y eso NO SE VE: la placa sale con todos
+ * sus dientes dibujados y la barra se queda posada encima.
+ */
+export function configurarDentada(minimoCm: number): Promise<PrimitiveParams | null> {
+  const sugerido = Math.max(minimoCm, 12.5);
+  const paso = el("input", {
+    type: "number",
+    value: String(Math.round(sugerido * 10) / 10),
+    step: "0.5",
+    min: String(Math.round(minimoCm * 10) / 10),
+  }) as HTMLInputElement;
+  const aviso = el("p", { class: "hint" }, []);
+  const revisar = () => {
+    const v = parseFloat(paso.value);
+    aviso.textContent =
+      Number.isFinite(v) && v < minimoCm
+        ? `Mínimo ${Math.round(minimoCm * 10) / 10} cm: por debajo, la barra no entra en los ganchos de en medio.`
+        : "Cada cuánto se repite el gancho a lo largo de la placa. Son las alturas a las que se podrá dejar la barra.";
+  };
+  paso.addEventListener("input", revisar);
+  revisar();
+
+  const fila = el("div", { class: "field" }, [
+    el("label", {}, ["Intervalo entre ganchos (cm)"]),
+    paso,
+    aviso,
+  ]);
+
+  return dialog("Nueva placa dentada", [fila], () => ({
+    kind: "dentada",
+    dienteEspaciado: Math.max(minimoCm, parseFloat(paso.value) || sugerido),
+  }));
+}
+
 /** Configura un tubo de acero. */
 export function configureTube(): Promise<PrimitiveParams | null> {
   const nominal = selectField(

@@ -8,7 +8,8 @@ import {
 import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
-import { configureBeam, configureTube } from "./lineToolDialog";
+import { configurarDentada, configureBeam, configureTube } from "./lineToolDialog";
+import { pasoMinimoDentada } from "../objects/placaDentada";
 import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
@@ -390,8 +391,11 @@ export class ComponentPalette {
         this.editor.beginRoldana();
       } else if (def.id === "placa-dentada") {
         // Herramienta en tres toques (v0.2.73): cara del pilar → principio →
-        // final. El ancho no se pregunta: lo copia de la cara.
-        this.editor.beginPlacaDentada();
+        // final. Solo se pregunta el INTERVALO entre ganchos: el ancho lo copia
+        // de la cara y el largo sale de los dos puntos.
+        void configurarDentada(pasoMinimoDentada(def.defaults)).then(
+          (cfg) => cfg && this.editor.beginPlacaDentada(cfg.dienteEspaciado),
+        );
       } else if (def.id === "terminal-cable") {
         // Punto de anclaje de cable sobre una cara (ojal terminal).
         this.editor.beginTerminalCable();

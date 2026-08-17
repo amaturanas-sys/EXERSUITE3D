@@ -19,6 +19,7 @@ import { componentModels } from "./core/componentModels";
 import { figureSegments } from "./core/figureSegments";
 import { prefabsMaquina } from "./core/prefabsMaquina";
 import { parsearPrefab, prefabDeFabrica, serializarPrefab } from "./core/prefabIO";
+import { medidasDentada, pasoMinimoDentada } from "./objects/placaDentada";
 import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
@@ -267,6 +268,12 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // Utilidades del ciclo de prefabs expuestas en el gancho de depuración
     // (las suites de verificación ejercitan exportar→validar→insertar).
     prefabIO: { serializarPrefab, parsearPrefab },
+    // Medidas resueltas de la PLACA DENTADA. La prueba tiene que soltar la
+    // barra en el CENTRO de la garganta, y ese centro depende de cuentas que
+    // no se pueden deducir de los params sueltos. Calcularlas otra vez en el
+    // guion de prueba seria copiar la formula: si la formula se equivoca, la
+    // copia se equivoca igual y la prueba pasa.
+    dentada: { medidas: medidasDentada, pasoMinimo: pasoMinimoDentada },
   };
   return ed;
 }

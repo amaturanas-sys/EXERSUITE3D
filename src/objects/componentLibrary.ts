@@ -104,7 +104,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: {
       kind: "dentada",
       dientes: 6,
-      dienteEspaciado: 8,
+      // 12,5 cm entre ganchos. Parece mucho al lado de los 5 cm de una grilla
+      // de pinholes, y lo manda la barra: por debajo de ~11,9 la barra ya no
+      // ENTRA en un gancho intermedio, solo en el de arriba del todo.
+      dienteEspaciado: 12.5,
     },
     physics: { massKg: 0, fixed: true },
     description:

@@ -1,9 +1,16 @@
+import * as THREE from "three";
 import type { Editor } from "../core/Editor";
 import type { SceneObject } from "../objects/SceneObject";
 import type { PrimitiveParams } from "../objects/types";
 import { MATERIAL_PRESETS } from "../objects/materials";
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { tt } from "../core/i18n";
+import {
+  DENTADA_BARRA_CM,
+  dientesQueCaben,
+  medidasDentada,
+  pasoMinimoDentada,
+} from "../objects/placaDentada";
 import { clear, el } from "./dom";
 
 /** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
@@ -316,7 +323,12 @@ export class PropertiesPanel {
       return;
     }
     const isLine = obj.params.kind === "beam" || obj.params.kind === "tube";
-    const parametric = !obj.imported && !obj.customModel && !isLine;
+    // La placa dentada lleva su propia sección: sus medidas no son «ancho,
+    // alto y fondo» sino ganchos e intervalo, y doblarla o retorcerla no hace
+    // nada —su geometría se genera antes de esa fase— así que enseñar esos
+    // controles sería prometer algo que no pasa.
+    const isDentada = obj.params.kind === "dentada";
+    const parametric = !obj.imported && !obj.customModel && !isLine && !isDentada;
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
     if (obj.customModel) this.body.append(this.customModelHint());
@@ -324,6 +336,7 @@ export class PropertiesPanel {
       this.body.append(this.dimSection(obj));
     }
     if (isLine) this.body.append(this.lineSection(obj));
+    if (isDentada) this.body.append(this.dentadaSection(obj));
     this.body.append(this.transformSection(obj));
     if (parametric) {
       this.body.append(this.deformSection(obj));
@@ -447,6 +460,143 @@ export class PropertiesPanel {
       el("label", {}, [tt("Discos montados (por el orificio central)", "Mounted plates (through the center hole)")]),
       el("div", { class: "row" }, [menos, cuenta, mas]),
       total,
+    ]);
+  }
+
+  /**
+   * PLACA DENTADA: el intervalo entre ganchos, que es lo que decide a cuántas
+   * alturas se puede dejar la barra.
+   *
+   * El intervalo tiene un MÍNIMO que no se puede saltar, y el panel lo dice en
+   * vez de dejar que el usuario lo descubra en simulación. Por debajo de él la
+   * barra deja de caber por el hueco que queda entre un gancho y el de arriba,
+   * y la placa sigue viéndose perfecta: los ganchos están ahí, dibujados, y la
+   * barra se queda posada encima sin entrar en ninguno. Es el fallo más caro
+   * de esta pieza, porque no se ve.
+   *
+   * El largo de la plancha NO cambia al tocar el intervalo: manda lo que se
+   * trazó sobre el pilar, y lo que se recalcula es cuántos ganchos caben
+   * dentro. Solo crece si se piden a mano más de los que entran.
+   */
+  private dentadaSection(obj: SceneObject): HTMLElement {
+    const p = obj.params;
+    const m = medidasDentada(p);
+    const minimo = pasoMinimoDentada(p);
+    const largo = p.height ?? m.largo;
+
+    const nota = el("p", { class: "hint" }, []);
+    const pintarNota = () => {
+      const mm = medidasDentada(obj.params);
+      clear(nota);
+      nota.append(
+        tt(
+          `${mm.dientes} ganchos cada ${roundTo(mm.paso, 1)} cm en ${roundTo(mm.largo, 0)} cm de placa.`,
+          `${mm.dientes} hooks every ${roundTo(mm.paso, 1)} cm over ${roundTo(mm.largo, 0)} cm of plate.`,
+        ),
+      );
+      // El mínimo solo se explica cuando aprieta: si el usuario está lejos de
+      // él, la advertencia es ruido.
+      if (mm.paso <= minimo + 0.6) {
+        nota.append(
+          el("strong", {}, [
+            tt(
+              ` Mínimo ${roundTo(minimo, 1)} cm: por debajo, la barra (⌀ ${DENTADA_BARRA_CM} cm) ya no entra en los ganchos de en medio.`,
+              ` Minimum ${roundTo(minimo, 1)} cm: below that the bar (⌀ ${DENTADA_BARRA_CM} cm) no longer fits into the middle hooks.`,
+            ),
+          ]),
+        );
+      }
+    };
+
+    /**
+     * Aplica un intervalo nuevo SIN despegar la placa de su pilar.
+     *
+     * Hace falta porque el gancho crece con el intervalo: a más separación,
+     * más vuelo. Y el `width` que guarda la pieza es el ancho TOTAL —espina
+     * más vuelo—, así que si se deja quieto mientras el vuelo engorda, lo que
+     * se encoge es la ESPINA, que es justo la parte que tenía que quedar sobre
+     * la cara del pilar. La placa se desliza hacia dentro del poste y sus
+     * ganchos se meten en él. No salta a la vista: la placa sigue pareciendo
+     * bien puesta y lo que falla es la barra, que ahora choca con el pilar.
+     *
+     * Así que se conserva la espina y se recalcula el ancho, y la pieza se
+     * corre media diferencia de vuelo por su propio eje X —que es hacia donde
+     * miran los ganchos— para que el respaldo siga apoyado donde estaba.
+     */
+    const aplicar = (paso: number, dientes: number) => {
+      const antes = medidasDentada(obj.params);
+      obj.params.dienteEspaciado = paso;
+      obj.params.dientes = dientes;
+      const vueloNuevo = medidasDentada({ ...obj.params, width: undefined }).vuelo;
+      obj.params.width = antes.espina + vueloNuevo;
+      const desplazamiento = (vueloNuevo - antes.vuelo) / 2;
+      if (Math.abs(desplazamiento) > 1e-6) {
+        const ejeGanchos = new THREE.Vector3(1, 0, 0).applyQuaternion(obj.mesh.quaternion);
+        obj.mesh.position.addScaledVector(ejeGanchos, desplazamiento);
+      }
+      obj.rebuildGeometry();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      pintarNota();
+    };
+
+    const campo = (
+      label: string,
+      valor: number,
+      step: string,
+      min: number,
+      alCambiar: (v: number) => void,
+    ) => {
+      const input = el("input", {
+        type: "number",
+        value: String(roundTo(valor, 1)),
+        step,
+        min: String(min),
+      });
+      input.addEventListener("change", () => {
+        const v = parseFloat(input.value);
+        if (!Number.isFinite(v)) return;
+        alCambiar(v);
+        // El campo se reescribe con lo que la pieza aceptó de verdad: si se
+        // pidió un intervalo por debajo del mínimo, aquí se ve corregido.
+        input.value = String(roundTo(medidasDentada(obj.params).paso, 1));
+      });
+      return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
+    };
+
+    const paso = campo(
+      tt("Intervalo entre ganchos (cm)", "Hook interval (cm)"),
+      m.paso,
+      "0.5",
+      roundTo(minimo, 1),
+      (v) => {
+        // Al cambiar el intervalo se recalculan los ganchos que caben en el
+        // largo YA TRAZADO. Sin esto la plancha crecería sola para alojar los
+        // que había, y se saldría del pilar sobre el que se dibujó.
+        const real = Math.max(minimo, v);
+        aplicar(real, dientesQueCaben(largo, real));
+      },
+    );
+
+    const cuenta = el("div", { class: "sub" }, []);
+    const inputN = el("input", {
+      type: "number",
+      value: String(m.dientes),
+      step: "1",
+      min: "1",
+    });
+    inputN.addEventListener("change", () => {
+      const v = parseInt(inputN.value, 10);
+      if (!Number.isFinite(v) || v < 1) return;
+      aplicar(medidasDentada(obj.params).paso, v);
+      inputN.value = String(medidasDentada(obj.params).dientes);
+    });
+    cuenta.append(el("label", {}, [tt("Ganchos", "Hooks")]), inputN);
+
+    pintarNota();
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Ganchos de la placa", "Plate hooks")]),
+      el("div", { class: "row" }, [paso, cuenta]),
+      nota,
     ]);
   }
 

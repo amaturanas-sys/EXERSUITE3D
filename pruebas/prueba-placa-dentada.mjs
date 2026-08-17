@@ -109,8 +109,11 @@ if (m.hay) {
     `la espina copia el ancho de la cara (7,6) y el gancho vuela ${vuelo.toFixed(2)} cm`);
 
   // --- Los ganchos van al paso configurado y caben los que caben.
-  ok(m.params.dienteEspaciado === 8, "el paso entre ganchos es el configurado (8 cm)");
-  ok(m.params.dientes === 7, `en 60 cm a paso 8 caben 7 ganchos: salieron ${m.params.dientes}`);
+  // El intervalo de fábrica son 12,5 cm, y no es capricho: por debajo de ~12
+  // la barra deja de entrar en los ganchos de en medio (ver el bloque 3).
+  ok(Math.abs(m.params.dienteEspaciado - 12.5) < 0.01,
+    `el paso entre ganchos es el de fábrica (${m.params.dienteEspaciado} cm)`);
+  ok(m.params.dientes === 4, `en 60 cm a paso 12,5 caben 4 ganchos: salieron ${m.params.dientes}`);
 
   // --- SE APOYA en la cara +Z que se tocó, no la atraviesa ni flota.
   const hueco = m.caja.min[2] - m.pilar.max[2];
@@ -145,18 +148,22 @@ ok(tapa.sinCara !== false, "tocar la tapa del extremo no elige cara (la placa co
 ok(tapa.antes === tapa.despues, "y no planta nada");
 
 // ---------------------------------------------------------------------------
-// 3. LO QUE IMPORTA: una barra soltada sobre los ganchos se queda en ellos.
+// 3. LO QUE IMPORTA: una barra soltada sobre CADA gancho se queda en él.
+//
+// En TODOS, no solo en el de arriba. Es la comprobación que faltaba en la
+// primera versión de esta prueba y que dejó pasar el fallo más gordo de la
+// pieza: al paso con el que nació —8 cm— la barra solo entraba en el gancho
+// de más arriba, el único que no tiene otro diente encima. Los otros once
+// estaban dibujados y no servían para nada, y la placa se veía perfecta.
 //
 // Hace falta un rack de VERDAD, con sus dos montantes: una barra de 220 cm
 // apoyada en una sola plancha de 8 mm se vuelca, y con razón. Los dos pilares
 // se separan por Z —que es la dirección en la que corre la barra a través de
 // las gargantas— y las dos placas miran al mismo lado.
 // ---------------------------------------------------------------------------
-const fisica = await page.evaluate(async () => {
+const rack = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
-  const placaA = [...ed.objects.values()].find((o) => o.componentId === "placa-dentada");
-
   // Segundo montante, 120 cm por detrás, con su placa en la cara −Z y los
   // ganchos hacia el mismo +X que la primera.
   const pilarB = ed.addComponent("montante-rack");
@@ -166,63 +173,66 @@ const fisica = await page.evaluate(async () => {
   ed.elegirCaraDentada(pilarB, new T.Vector3(2.6, 115, 116.2), new T.Vector3(0, 0, -1));
   ed.colocarPlacaDentada(new T.Vector3(0, 80, 120), new T.Vector3(0, 140, 120));
   ed.cancelPlacaDentada();
-  const placaB = [...ed.objects.values()].filter((o) => o.componentId === "placa-dentada")[1];
-
-  const cA = new T.Box3().setFromObject(placaA.mesh);
-  const cB = placaB ? new T.Box3().setFromObject(placaB.mesh) : null;
-  // La barra CRUZA las dos gargantas: su eje va por Z, no por X. Se suelta
-  // dentro del hueco del gancho y desde un palmo corto — naciendo pegada a
-  // la espina el motor la expulsaría de un empujón. Así se re-enracka de
-  // verdad.
-  const barra = ed.addComponent("barra-olimpica");
-  const cajaBarra = new T.Box3().setFromObject(barra.mesh);
+  const placas = [...ed.objects.values()].filter((o) => o.componentId === "placa-dentada");
+  const pl = placas[0];
+  // Las medidas RESUELTAS de la pieza, no una copia de la fórmula: si la
+  // fórmula se equivoca, una copia se equivocaría igual y la prueba pasaría.
+  const md = window.exersuite.dentada.medidas(pl.params);
+  const cajaBarra = new T.Box3().setFromObject(ed.addComponent("barra-olimpica").mesh);
   const radio = (cajaBarra.max.x - cajaBarra.min.x) / 2;
-  const pilarA = [...ed.objects.values()].find((o) => o.componentId === "montante-rack");
-  const cantoPilar = new T.Box3().setFromObject(pilarA.mesh).max.x;
-  const cx = cantoPilar + (cA.max.x - cantoPilar) * 0.42;   // dentro de la garganta
-  const cy = cA.max.y - 6;                                  // un gancho alto
-  barra.mesh.position.set(cx, cy + 5, 60);
-  barra.mesh.quaternion.setFromAxisAngle(new T.Vector3(1, 0, 0), Math.PI / 2);
-  barra.physics = { ...barra.physics, fixed: false };
-  ed.bus.emit("objectTransformed", { object: barra });
+  for (const o of [...ed.objects.values()]) if (o.componentId === "barra-olimpica") ed.removeObject(o);
   return {
-    id: barra.id,
-    xSoltada: cx,
-    yGancho: cy,
+    dosPlacas: placas.length === 2,
     radio,
-    cantoPilar,
-    bordePlaca: cA.max.x,
-    dosPlacas: !!cB,
-    zB: cB ? (cB.min.z + cB.max.z) / 2 : null,
+    paso: md.paso,
+    minimo: window.exersuite.dentada.pasoMinimo(pl.params),
+    // Centro de la garganta en mundo: por ahí entra la barra.
+    xGarganta: pl.mesh.position.x + (md.cantoEspina + md.caraDedo) / 2,
+    asientos: [...Array(md.dientes)].map((_, i) => pl.mesh.position.y + md.asiento(i)),
+    piePlaca: pl.mesh.position.y + md.asiento(0) - md.paso,
   };
 });
-ok(fisica.dosPlacas, "la segunda placa se coloca en la cara −Z del otro montante");
+ok(rack.dosPlacas, "la segunda placa se coloca en la cara −Z del otro montante");
+ok(rack.paso >= rack.minimo - 0.01,
+  `el intervalo entre ganchos respeta su mínimo (${rack.paso.toFixed(2)} ≥ ${rack.minimo.toFixed(2)} cm)`);
+ok(rack.asientos.length >= 4,
+  `la placa trazada tiene ganchos de sobra para la prueba (${rack.asientos.length})`);
 
-await page.evaluate(() => window.exersuite.editor.toggleSimulation());
-await page.waitForTimeout(4500);
+const sujetan = [];
+for (let i = 0; i < rack.asientos.length; i++) {
+  const y = rack.asientos[i];
+  const id = await page.evaluate(({ y, x, radio }) => {
+    const ed = window.exersuite.editor;
+    const T = window.exersuite.THREE;
+    if (ed.simulating) ed.stopSimulation();
+    for (const o of [...ed.objects.values()]) if (o.componentId === "barra-olimpica") ed.removeObject(o);
+    const b = ed.addComponent("barra-olimpica");
+    // Centrada en la garganta y desde un palmo corto: naciendo pegada a la
+    // espina el motor la expulsaría de un empujón.
+    b.mesh.position.set(x, y + radio + 3, 60);
+    b.mesh.quaternion.setFromAxisAngle(new T.Vector3(1, 0, 0), Math.PI / 2);
+    b.physics = { ...b.physics, fixed: false };
+    ed.bus.emit("objectTransformed", { object: b });
+    return b.id;
+  }, { y, x: rack.xGarganta, radio: rack.radio });
+  await page.evaluate(() => window.exersuite.editor.toggleSimulation());
+  await page.waitForTimeout(2600);
+  const fin = await page.evaluate((id) => {
+    const b = window.exersuite.editor.objects.get(id);
+    return { pos: b.mesh.position.toArray(), simulando: window.exersuite.editor.simulating === true };
+  }, id);
+  if (i === 0) ok(fin.simulando, "la simulación está corriendo");
+  sujetan.push(Math.abs(fin.pos[1] - (y + rack.radio)) < 1.2);
+  if (i === Math.floor(rack.asientos.length / 2)) {
+    await page.screenshot({ path: "salidas/placa-dentada.png" });
+  }
+  await page.evaluate(() => window.exersuite.editor.stopSimulation());
+  await page.waitForTimeout(250);
+}
 
-const reposo = await page.evaluate((id) => {
-  const ed = window.exersuite.editor;
-  const T = window.exersuite.THREE;
-  const barra = ed.objects.get(id);
-  const placa = [...ed.objects.values()].find((o) => o.componentId === "placa-dentada");
-  const caja = new T.Box3().setFromObject(placa.mesh);
-  return {
-    pos: barra.mesh.position.toArray(),
-    simulando: ed.simulating === true,
-    placa: { min: caja.min.toArray(), max: caja.max.toArray() },
-  };
-}, fisica.id);
+ok(sujetan.every(Boolean),
+  `la barra se SIENTA en los ${sujetan.length} ganchos, no solo en el de arriba (sujetan ${sujetan.filter(Boolean).length})`);
 
-ok(reposo.simulando, "la simulación está corriendo");
-ok(reposo.pos[1] > reposo.placa.min[1],
-  `la barra queda RETENIDA por un gancho y no cae al suelo (y=${reposo.pos[1].toFixed(1)}, pie de la placa ${reposo.placa.min[1].toFixed(1)})`);
-ok(Math.abs(reposo.pos[1] - (fisica.yGancho + fisica.radio)) < 1,
-  `y SE SIENTA en la cuna del gancho sobre el que se soltó (y=${reposo.pos[1].toFixed(2)}, cuna ${(fisica.yGancho + fisica.radio).toFixed(2)})`);
-ok(reposo.pos[0] > fisica.cantoPilar && reposo.pos[0] < fisica.bordePlaca,
-  `sin escapar por la boca: sigue entre el canto del pilar y el dedo (x=${reposo.pos[0].toFixed(2)} en [${fisica.cantoPilar.toFixed(1)}, ${fisica.bordePlaca.toFixed(1)}])`);
-
-await page.screenshot({ path: "salidas/placa-dentada.png" });
 
 // ---------------------------------------------------------------------------
 // 4. En un PILAR DIAGONAL: la trayectoria es el eje de la pieza, no la vertical.
@@ -271,6 +281,76 @@ ok(rDiag.hay && Math.abs(rDiag.largo - 50) < 1.5,
   `con el largo trazado (${rDiag.largo?.toFixed(1)} cm de 50)`);
 
 await page.screenshot({ path: "salidas/placa-dentada-diagonal.png" });
+
+// ---------------------------------------------------------------------------
+// 5. EL INTERVALO SE PUEDE CAMBIAR, y al cambiarlo la placa NO se despega.
+//
+// Es lo que pidió el usuario y tiene una trampa que no se ve: el gancho crece
+// con el intervalo, y el `width` que guarda la pieza es el ancho TOTAL. Si se
+// deja quieto mientras el vuelo engorda, lo que encoge es la ESPINA — justo la
+// parte que apoyaba en la cara del pilar—, la placa se corre hacia dentro del
+// poste y los ganchos se meten en él. La placa sigue pareciendo bien puesta;
+// lo que falla es la barra, que ahora choca con el pilar.
+// ---------------------------------------------------------------------------
+await page.evaluate(() => window.exersuite.editor.stopSimulation());
+await page.waitForTimeout(400);
+
+const panel = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const pl = [...ed.objects.values()].find((o) => o.componentId === "placa-dentada");
+  const pilar = [...ed.objects.values()].find((o) => o.componentId === "montante-rack");
+  const caraPilar = new T.Box3().setFromObject(pilar.mesh);
+  const antes = window.exersuite.dentada.medidas(pl.params);
+  ed.select(pl);
+  const leer = () => {
+    const md = window.exersuite.dentada.medidas(pl.params);
+    const caja = new T.Box3().setFromObject(pl.mesh);
+    return {
+      paso: md.paso, dientes: md.dientes, largo: md.largo, espina: md.espina,
+      // La espina tiene que seguir cubriendo la cara del pilar: su canto
+      // interior, pegado al canto −X del poste.
+      cantoEspina: pl.mesh.position.x + md.cantoEspina,
+      minX: caja.min.x, maxY: caja.max.y, minY: caja.min.y,
+    };
+  };
+  const campos = () => [...document.querySelectorAll("#inspector input[type=number]")];
+  const antesUI = leer();
+  // El campo del intervalo: el primero de la sección de ganchos.
+  const etiqueta = [...document.querySelectorAll("#inspector .sub label")]
+    .find((l) => l.textContent.includes("Intervalo"));
+  const input = etiqueta?.parentElement?.querySelector("input");
+  if (!input) return { hayCampo: false, campos: campos().length };
+  input.value = "18";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  const tras18 = leer();
+  // Y por debajo del mínimo: la pieza tiene que rechazarlo.
+  input.value = "4";
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  const tras4 = leer();
+  return {
+    hayCampo: true,
+    minimo: window.exersuite.dentada.pasoMinimo(pl.params),
+    cantoPilar: caraPilar.min.x,
+    antes: antesUI, tras18, tras4, anchoCaraOriginal: antes.espina,
+  };
+});
+
+ok(panel.hayCampo, "el panel de propiedades ofrece el intervalo entre ganchos");
+if (panel.hayCampo) {
+  ok(Math.abs(panel.tras18.paso - 18) < 0.01,
+    `escribir 18 en el panel deja el intervalo en 18 (salió ${panel.tras18.paso.toFixed(2)})`);
+  ok(panel.tras18.dientes < panel.antes.dientes,
+    `y al separarlos caben menos ganchos: ${panel.antes.dientes} → ${panel.tras18.dientes}`);
+  ok(Math.abs(panel.tras18.largo - panel.antes.largo) < 0.01,
+    `sin que la plancha cambie de largo (${panel.tras18.largo.toFixed(1)} cm, era ${panel.antes.largo.toFixed(1)})`);
+  ok(Math.abs(panel.tras18.espina - panel.anchoCaraOriginal) < 0.01,
+    `la espina sigue midiendo lo que la cara del pilar (${panel.tras18.espina.toFixed(2)} cm)`);
+  ok(Math.abs(panel.tras18.cantoEspina - (panel.cantoPilar + panel.anchoCaraOriginal)) < 0.15,
+    `y la placa NO se despega: su espina sigue sobre la cara (canto en ${panel.tras18.cantoEspina.toFixed(2)})`);
+  ok(Math.abs(panel.tras4.paso - panel.minimo) < 0.01,
+    `pedir 4 cm lo sube al mínimo ${panel.minimo.toFixed(2)} en vez de dibujar ganchos por los que no entra la barra`);
+}
 
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0

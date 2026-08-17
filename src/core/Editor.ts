@@ -17,7 +17,6 @@ import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
 import {
-  DENTADA_PASO_DEF,
   dientesQueCaben,
   medidasDentada,
   vueloDentada,
@@ -316,6 +315,8 @@ export class Editor {
   } | null = null;
   /** Primer punto trazado (el principio de la placa). */
   private dentadaA: THREE.Vector3 | null = null;
+  /** Intervalo entre ganchos elegido en el diálogo de la herramienta (cm). */
+  private dentadaPaso: number | undefined;
   /** Línea guía y marca del primer punto. */
   private dentadaGuia: THREE.Object3D[] = [];
   /**
@@ -6325,8 +6326,9 @@ export class Editor {
    * Vale igual en un pilar diagonal: la trayectoria es el eje mayor de la
    * pieza tocada, no la vertical del mundo.
    */
-  beginPlacaDentada(): void {
+  beginPlacaDentada(paso?: number): void {
     if (this.simulating) return;
+    this.dentadaPaso = paso;
     this.cancelCable();
     this.cancelRope();
     this.cancelLine();
@@ -6530,7 +6532,12 @@ export class Editor {
 
     const placa = this.addComponent("placa-dentada");
     const p = placa.params;
-    const paso = p.dienteEspaciado ?? DENTADA_PASO_DEF;
+    if (this.dentadaPaso != null) p.dienteEspaciado = this.dentadaPaso;
+    // El paso se resuelve por `medidasDentada`, que impone su mínimo: pedir
+    // ganchos más juntos de lo que la barra admite los separa igualmente, y
+    // la cuenta tiene que salir del paso REAL o sobrarían dientes.
+    const paso = medidasDentada(p).paso;
+    p.dienteEspaciado = paso;
     p.width = c.anchoCara + vueloDentada(p);
     p.height = largo;
     p.dientes = dientesQueCaben(largo, paso);
