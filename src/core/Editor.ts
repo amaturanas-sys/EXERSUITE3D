@@ -951,6 +951,11 @@ export class Editor {
     this.cancelCable();
     this.cancelRope();
     this.cancelLine();
+    // Los modos de DOS FASES también, o quedan armados sobre una escena que
+    // ya no está quieta: la roldana con su línea guía azul encendida y la
+    // placa dentada apuntando a una cara que se está moviendo.
+    this.cancelRoldana();
+    this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
     this.physics.build(
@@ -4637,6 +4642,11 @@ export class Editor {
     this.cancelCable();
     this.cancelRope();
     this.cancelLine();
+    // Los modos de DOS FASES también, o quedan armados sobre una escena que
+    // ya no está quieta: la roldana con su línea guía azul encendida y la
+    // placa dentada apuntando a una cara que se está moviendo.
+    this.cancelRoldana();
+    this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
     this.physics.build(
@@ -5450,6 +5460,14 @@ export class Editor {
    * lo que gira: la bisagra deja de ser una abstracción invisible.
    */
   instalarBisagra(a: SceneObject, b: SceneObject, cfg: ConfigBisagra): Joint | null {
+    // NO SE MONTA HERRAJE CON LA MÁQUINA EN MARCHA (v0.2.76). Esto se llama
+    // desde una promesa —el panel de la bisagra— que puede resolverse mucho
+    // después de abrirse, y entre medias cabe pulsar ▶. Si llega aquí con la
+    // simulación corriendo, las posiciones que lee son las que escribe el
+    // motor, así que las placas y el pasador se colocan donde las piezas
+    // estaban A MITAD DE CAÍDA; al parar, las piezas vuelven a su sitio y el
+    // herraje se queda flotando, soldado a algo que ya no está ahí.
+    if (this.simulating) return null;
     if (a === b) return null;
     const ca = a.mesh.getWorldPosition(new THREE.Vector3());
     const cb = b.mesh.getWorldPosition(new THREE.Vector3());
@@ -6673,6 +6691,9 @@ export class Editor {
     tipo: "interna" | "externa",
     dir: DireccionRoldana,
   ): void {
+    // Igual que la bisagra: el panel de la roldana se resuelve tarde y entre
+    // medias se puede haber arrancado la simulación.
+    if (this.simulating) return;
     const { ejeMundo } = this.ejeMayorMundo(host);
     // Dirección pedida en los ejes GLOBALES del proyecto (v0.2.28): arriba/
     // abajo = ±Y, derecha/izquierda = ±X, anterior/posterior = ±Z. Al no

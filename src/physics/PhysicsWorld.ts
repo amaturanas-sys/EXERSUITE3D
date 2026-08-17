@@ -8,6 +8,7 @@ import type { SceneObject } from "../objects/SceneObject";
 import { cuerdasColision, pathIsStraight } from "../objects/linePieces";
 import { getDefinition } from "../objects/componentLibrary";
 import { cajasDentada } from "../objects/placaDentada";
+import { espejoDe } from "../objects/espejar";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
 
@@ -704,6 +705,22 @@ export class PhysicsWorld {
         const abrazo =
           tam.x * Math.abs(g.eje.x) + tam.y * Math.abs(g.eje.y) + tam.z * Math.abs(g.eje.z);
         if (abrazo < 5) continue;
+        // Y EL TUBO TIENE QUE ESTAR AHÍ (v0.2.76). La comprobación de arriba
+        // proyecta el centro de la móvil sobre la recta de la guía, pero esa
+        // recta es INFINITA: sirve igual una pieza ensartada en el tubo que
+        // una posada sobre su punta, o a un metro por encima. Con eso, un
+        // contrapeso dejado sobre un pilar quedaba «guiado» por él, y como el
+        // guiado no choca con su guía, se hundía dentro del pilar y bajaba
+        // atravesándolo hasta el suelo. En la geometría no se veía nada.
+        //
+        // Un manguito de verdad SOLAPA con el tramo del tubo. Se exige el
+        // mismo recorrido interior que promete el abrazo.
+        const sMovil = centroD.dot(g.eje);
+        const sGuia = g.centro.dot(g.eje);
+        const solape =
+          Math.min(sMovil + abrazo / 2, sGuia + g.largo / 2) -
+          Math.max(sMovil - abrazo / 2, sGuia - g.largo / 2);
+        if (solape < 5) continue;
         if (eje && Math.abs(eje.dot(g.eje)) < 0.99) continue;
         usadas.add(g.cuerpo);
         if (!eje) {
@@ -1702,6 +1719,16 @@ export class PhysicsWorld {
    */
   private collidersDentada(obj: SceneObject): R.ColliderDesc[] {
     const esc = obj.mesh.scale;
+    // EL ESPEJO HAY QUE APLICARLO A MANO (v0.2.76). Voltear una pieza no la
+    // escala en negativo —eso daría semiejes imposibles— sino que HORNEA el
+    // espejo en los vértices de la malla. La placa, en cambio, no declara sus
+    // cajas leyendo la malla sino calculándolas de sus medidas, así que se
+    // quedaban sin voltear: donde el usuario veía los ganchos, la física tenía
+    // la losa lisa de la espina, y los ganchos de verdad flotaban diez
+    // centímetros al otro lado, dentro del pilar. Espejar una caja alineada a
+    // los ejes es solo cambiarle el signo al centro; el tamaño no se toca.
+    const esp = espejoDe(obj.params.espejo);
+    const sg: [number, number, number] = [esp[0] ? -1 : 1, esp[1] ? -1 : 1, esp[2] ? -1 : 1];
     const out: R.ColliderDesc[] = [];
     for (const c of cajasDentada(obj.params)) {
       const cd = RAPIER.ColliderDesc.cuboid(
@@ -1709,7 +1736,11 @@ export class PhysicsWorld {
         Math.max((c.tam[1] / 2) * Math.abs(esc.y) * S, 0.002),
         Math.max((c.tam[2] / 2) * Math.abs(esc.z) * S, 0.002),
       );
-      cd.setTranslation(c.centro[0] * esc.x * S, c.centro[1] * esc.y * S, c.centro[2] * esc.z * S);
+      cd.setTranslation(
+        c.centro[0] * sg[0] * esc.x * S,
+        c.centro[1] * sg[1] * esc.y * S,
+        c.centro[2] * sg[2] * esc.z * S,
+      );
       // Acero contra acero moleteado: agarra y no rebota.
       cd.setRestitution(0.02).setFriction(0.9);
       out.push(cd);

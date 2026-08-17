@@ -96,7 +96,7 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 | `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo, no llegan a medir nada |
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
 | `v251` | 2 aserciones: las piernas siguen entrando 2,5 cm en el banco |
-| `freno` | 2 aserciones: la pila recibe 12,5 cm de recorrido donde espera 13,1. **También en serie** — hasta v0.2.73 esta ficha lo daba por verde y no lo estaba |
+| `freno` | **INTERMITENTE** desde v0.2.76: medido 2 verdes de 3 en serie. Antes era rojo constante (12,5 cm de recorrido donde espera 13,1); el arreglo de las guías lo movió pero no lo estabilizó. Mide recorrido simulado con espera de reloj, igual que `atraviesa` |
 | `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie pasan (verificado en v0.2.75) |
 | `atraviesa` | **INTERMITENTE**, y no «solo en paralelo» como decía esta ficha hasta v0.2.75: medido con la máquina tranquila y en serie, 2 verdes de 3. Pasó en la tanda en paralelo y falló en serie a continuación, o sea que el paralelismo no es la variable. Mide recorridos simulados y no espera a que la pila se asiente |
 

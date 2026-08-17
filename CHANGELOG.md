@@ -5,6 +5,70 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.76] — 2026-08-17
+
+Los tres primeros hallazgos de la auditoría adversarial previa a la release
+(70 agentes: ocho rastreadores sobre subsistemas distintos y dos verificadores
+por hallazgo con el encargo de tumbarlo). Sobrevivieron 27; aquí van los dos
+críticos y el que afecta a la pieza nueva.
+
+### Corregido
+
+- **CRÍTICO — la recta de una guía era infinita, y cualquier pieza alineada con
+  un pilar lo atravesaba.** Un contrapeso dejado sobre la punta de un pilar no
+  se apoyaba: al arrancar la simulación pegaba un salto hacia abajo, se metía
+  dentro del pilar y bajaba atravesándolo hasta el suelo, además de quedar
+  clavado a esa vertical sin poder volcar. Nada lo delataba en la geometría.
+
+  El detector de guías proyectaba el centro de la pieza móvil sobre la recta
+  de la guía y solo comprobaba que ese punto cayera dentro de la caja de la
+  MÓVIL — nunca que la móvil solapara con el TRAMO del tubo. Así, una pieza
+  posada sobre la punta entraba en el criterio igual que un manguito ensartado,
+  y como el guiado no choca con su guía (esa exclusión existe para que los
+  manguitos deslicen sin rozamiento), el pilar se volvía un fantasma. Ahora se
+  exige solape axial real: el tubo tiene que atravesar de verdad ≥ 5 cm del
+  volumen de la móvil, que es justo lo que ya prometía el comentario del abrazo.
+
+  Medido: el contrapeso caía de y=250 hasta el suelo; ahora se queda en 219,2,
+  apoyado sobre la punta del pilar.
+
+- **CRÍTICO — los paneles de roldana y bisagra sobrevivían a entrar en
+  simulación y montaban el herraje dentro del mundo en marcha.** Con el panel
+  abierto se podía pulsar ▶ (el panel no se oculta: la regla que repliega la
+  interfaz de edición no lo alcanza) y luego «Instalar bisagra». Las placas y el
+  pasador se colocaban según dónde estaban las piezas EN ESE INSTANTE; al parar,
+  las piezas volvían a su pose de diseño y el herraje se quedaba flotando,
+  soldado a algo que ya no estaba ahí — y al siguiente ▶ esas soldaduras pegaban
+  un tirón.
+
+  Los dos instaladores se ejecutan desde una promesa que puede resolverse mucho
+  después de abrirse el panel, y validaban que las piezas existieran (defensa
+  contra el borrado) pero no que la simulación estuviera parada. Ahora llevan el
+  mismo guardia de entrada que todos los `begin*`, y arrancar la simulación
+  cancela además los modos de roldana y placa dentada, que quedaban armados
+  sobre una escena en movimiento.
+
+- **Voltear una placa dentada dejaba los ganchos físicos en el lado contrario
+  al que se ve.** Voltear no escala en negativo —eso daría semiejes
+  imposibles— sino que HORNEA el espejo en los vértices; y la placa no declara
+  sus cajas leyendo la malla, sino calculándolas de sus medidas, así que se
+  quedaban sin voltear. Donde el usuario veía los ganchos, la física tenía la
+  losa lisa de la espina, y los ganchos de verdad flotaban diez centímetros al
+  otro lado, dentro del pilar. Medido: malla y física coinciden ahora al 100 %.
+
+### Sabido
+
+- **`freno` pasa de rojo constante a INTERMITENTE, y no está arreglado.** El
+  arreglo de las guías movió su medida (antes daba 12,5 cm de recorrido donde
+  espera 13,1) pero no la estabilizó: medido 2 verdes de 3 en serie. Junto con
+  `atraviesa`, son las dos que quedan midiendo recorrido simulado con espera de
+  reloj — la misma enfermedad que se corrigió en `hub` y `placa-dentada` en
+  v0.2.75.
+
+- **Quedan 24 hallazgos confirmados sin tocar**, de gravedad alta para abajo,
+  repartidos por herramientas, interfaz y datos. Ninguno es de las piezas
+  nuevas. Están inventariados para decidir cuáles entran en la release.
+
 ## [0.2.75] — 2026-08-17
 
 ### Cambiado
