@@ -16,6 +16,12 @@ import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
+import {
+  DENTADA_PASO_DEF,
+  dientesQueCaben,
+  medidasDentada,
+  vueloDentada,
+} from "../objects/placaDentada";
 import { SnapManager, localSnapPoints } from "./snapping";
 
 /**
@@ -126,6 +132,8 @@ export type EditorEvents = {
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
   /** Modo "colocar roldana" (interna/externa) sobre la cara de una pieza. */
   roldanaModeChanged: { active: boolean };
+  /** Modo "colocar placa dentada": cara del pilar + dos puntos de trayectoria. */
+  dentadaModeChanged: { active: boolean };
   /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
   lineModeChanged: { active: boolean; kind: "beam" | "tube" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
@@ -283,6 +291,33 @@ export class Editor {
   private roldanaHost: SceneObject | null = null;
   /** Línea azul del eje mayor de la estructura elegida. */
   private roldanaAxisLine: THREE.Line | null = null;
+  /**
+   * Colocación de PLACAS DENTADAS (v0.2.73), en tres toques: la cara del
+   * pilar —que además dice por qué canto salen los ganchos— y los dos puntos
+   * de la trayectoria que marcan principio y fin de la plancha.
+   */
+  private dentadaMode = false;
+  private dentadaHost: SceneObject | null = null;
+  /** La cara elegida, resuelta en ejes de MUNDO. */
+  private dentadaCara: {
+    /** Trayectoria del pilar, orientada cuesta arriba. */
+    eje: THREE.Vector3;
+    /** Normal de la cara, saliendo del pilar. */
+    normal: THREE.Vector3;
+    /** Canto por el que vuelan los ganchos. */
+    ganchos: THREE.Vector3;
+    /** Ancho de la cara: lo que copia la espina de la placa. */
+    anchoCara: number;
+    /** Media anchura del pilar en la dirección de la normal. */
+    saliente: number;
+    /** Semilargo de la trayectoria. */
+    half: number;
+    centro: THREE.Vector3;
+  } | null = null;
+  /** Primer punto trazado (el principio de la placa). */
+  private dentadaA: THREE.Vector3 | null = null;
+  /** Línea guía y marca del primer punto. */
+  private dentadaGuia: THREE.Object3D[] = [];
   /**
    * Diálogo de configuración de la roldana (lo inyecta la UI): tipo
    * interna/externa + dirección en ejes GLOBALES (arriba/abajo/derecha/
@@ -2990,6 +3025,7 @@ export class Editor {
     this.cancelRope();
     this.cancelConnect();
     this.cancelRoldana();
+    this.cancelPlacaDentada();
     this.endBendNodes();
     if (this.herramienta === tool) return;
     const eraArea = this.herramienta === "area";
@@ -6191,6 +6227,7 @@ export class Editor {
     this.cancelLine();
     this.cancelConnect();
     this.cancelAttachHand();
+    this.cancelPlacaDentada();
     this.select(null);
     this.roldanaMode = true;
     this.terminalMode = false;
@@ -6269,6 +6306,266 @@ export class Editor {
     this.requestRender();
   }
 
+  // -------------------------------------------------- placa dentada (upright)
+  /**
+   * Entra en modo "colocar placa dentada" EN TRES TOQUES (v0.2.73):
+   *
+   *   1. La CARA del pilar donde va la placa. El toque dice dos cosas a la
+   *      vez: qué cara —la placa se atornilla ahí— y hacia qué canto salen
+   *      los ganchos, que es el canto más cercano al punto tocado. Se ve al
+   *      instante, porque la línea guía se dibuja sobre ESE canto: si salió
+   *      del lado que no era, se vuelve a tocar la cara por el otro lado.
+   *   2. y 3. Los dos puntos de la línea guía: principio y fin de la placa.
+   *      De ahí salen su largo y su ubicación.
+   *
+   * El ANCHO no se pregunta: la espina copia el ancho de la cara y el gancho
+   * vuela por delante del canto. Una placa más estrecha que su pilar no
+   * apoyaría, y una más ancha se comería el canto de al lado.
+   *
+   * Vale igual en un pilar diagonal: la trayectoria es el eje mayor de la
+   * pieza tocada, no la vertical del mundo.
+   */
+  beginPlacaDentada(): void {
+    if (this.simulating) return;
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.cancelRoldana();
+    this.select(null);
+    this.dentadaMode = true;
+    this.limpiarGuiaDentada();
+    this.bus.emit("dentadaModeChanged", { active: true });
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        "Placa dentada: toca la CARA del pilar donde va (del lado por el que quieres que salgan los ganchos). Esc termina",
+        "Toothed plate: tap the pillar FACE it mounts on (on the side you want the hooks to face). Esc ends",
+      ),
+    });
+  }
+
+  cancelPlacaDentada(): void {
+    if (!this.dentadaMode) return;
+    this.dentadaMode = false;
+    this.limpiarGuiaDentada();
+    this.bus.emit("dentadaModeChanged", { active: false });
+    this.bus.emit("dragMeasure", { text: null });
+  }
+
+  /** Borra la guía de la placa y olvida la cara y el primer punto. */
+  private limpiarGuiaDentada(): void {
+    for (const o of this.dentadaGuia) {
+      this.sceneManager.scene.remove(o);
+      const m = o as THREE.Mesh | THREE.Line;
+      m.geometry?.dispose();
+      (m.material as THREE.Material | undefined)?.dispose();
+    }
+    this.dentadaGuia = [];
+    this.dentadaHost = null;
+    this.dentadaCara = null;
+    this.dentadaA = null;
+    this.requestRender();
+  }
+
+  /**
+   * Fase 1: descompone la pieza tocada en sus tres ejes locales y reparte
+   * papeles — el más largo es la TRAYECTORIA, el más paralelo a la cara
+   * tocada es la NORMAL, y el que sobra es el ANCHO de la cara, que es lo
+   * que la placa copia.
+   *
+   * Tocar la TAPA del extremo no vale: por ahí no corre nada.
+   */
+  private elegirCaraDentada(host: SceneObject, punto: THREE.Vector3, normal: THREE.Vector3): void {
+    this.limpiarGuiaDentada();
+    host.mesh.updateMatrixWorld(true);
+    const q = host.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const ls = host.localSizeAbs();
+    const ejes = [
+      { v: new THREE.Vector3(1, 0, 0).applyQuaternion(q), len: ls.x },
+      { v: new THREE.Vector3(0, 1, 0).applyQuaternion(q), len: ls.y },
+      { v: new THREE.Vector3(0, 0, 1).applyQuaternion(q), len: ls.z },
+    ];
+    let iMax = 0;
+    let iNor = 0;
+    for (let i = 1; i < 3; i++) {
+      if (ejes[i].len > ejes[iMax].len) iMax = i;
+      if (Math.abs(ejes[i].v.dot(normal)) > Math.abs(ejes[iNor].v.dot(normal))) iNor = i;
+    }
+    if (iNor === iMax) {
+      this.bus.emit("dragMeasure", {
+        text: tt(
+          "Esa es la TAPA del extremo: la placa corre a lo largo del pilar. Toca una cara lateral",
+          "That is the end cap: the plate runs along the pillar. Tap a side face",
+        ),
+      });
+      return;
+    }
+    const iAnc = 3 - iMax - iNor;
+
+    // La trayectoria se orienta CUESTA ARRIBA: la boca de los ganchos mira
+    // en esa dirección, y una placa con los ganchos boca abajo no sujeta
+    // nada. En un pilar vertical esto es la vertical; en uno diagonal, la
+    // subida de la diagonal.
+    const eje = ejes[iMax].v.clone().normalize();
+    if (eje.y < 0) eje.negate();
+    const nrm = ejes[iNor].v.clone().normalize();
+    if (nrm.dot(normal) < 0) nrm.negate();
+    // Los ganchos salen por el canto MÁS CERCANO al punto tocado.
+    const lateral = new THREE.Vector3().crossVectors(eje, nrm).normalize();
+    const centro = host.mesh.getWorldPosition(new THREE.Vector3());
+    const lado = punto.clone().sub(centro).dot(lateral) < 0 ? -1 : 1;
+    const ganchos = lateral.multiplyScalar(lado);
+
+    this.dentadaHost = host;
+    this.dentadaCara = {
+      eje,
+      normal: nrm,
+      ganchos,
+      anchoCara: ls.getComponent(iAnc),
+      saliente: ls.getComponent(iNor) / 2,
+      half: ls.getComponent(iMax) / 2,
+      centro,
+    };
+    this.dibujarGuiaDentada();
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `Cara de ${host.name} (${ls.getComponent(iAnc).toFixed(1)} cm de ancho). Los ganchos saldrán por el canto de la línea azul — si es el otro, Esc y vuelve a empezar. Toca el PRINCIPIO de la placa`,
+        `Face of ${host.name} (${ls.getComponent(iAnc).toFixed(1)} cm wide). Hooks will face the blue line's edge — if it's the wrong one, Esc and start over. Tap the plate's START`,
+      ),
+    });
+  }
+
+  /** La línea guía, dibujada sobre el canto por el que saldrán los ganchos. */
+  private dibujarGuiaDentada(): void {
+    const c = this.dentadaCara;
+    if (!c) return;
+    for (const o of this.dentadaGuia) {
+      this.sceneManager.scene.remove(o);
+      const m = o as THREE.Mesh | THREE.Line;
+      m.geometry?.dispose();
+      (m.material as THREE.Material | undefined)?.dispose();
+    }
+    this.dentadaGuia = [];
+    // Sobre la cara y pegada al canto de los ganchos: se ve DÓNDE va y hacia
+    // dónde abre antes de tocar nada.
+    const base = c.centro
+      .clone()
+      .addScaledVector(c.normal, c.saliente + 0.5)
+      .addScaledVector(c.ganchos, c.anchoCara / 2);
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        base.clone().addScaledVector(c.eje, -c.half),
+        base.clone().addScaledVector(c.eje, c.half),
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x2563eb, depthTest: false }),
+    );
+    line.renderOrder = 999;
+    this.sceneManager.scene.add(line);
+    this.dentadaGuia.push(line);
+
+    if (this.dentadaA) {
+      const bola = new THREE.Mesh(
+        new THREE.SphereGeometry(1.4, 12, 8),
+        new THREE.MeshBasicMaterial({ color: 0xf97316, depthTest: false }),
+      );
+      bola.position.copy(this.dentadaA).addScaledVector(c.normal, c.saliente + 0.5).addScaledVector(c.ganchos, c.anchoCara / 2);
+      bola.renderOrder = 1000;
+      this.sceneManager.scene.add(bola);
+      this.dentadaGuia.push(bola);
+    }
+    this.requestRender();
+  }
+
+  /**
+   * Punto de la TRAYECTORIA que el puntero señala. Si el rayo toca el propio
+   * pilar, se proyecta ese impacto sobre el eje; si no, se busca el punto del
+   * eje más cercano al rayo (así se puede señalar al aire junto al pilar).
+   * Devuelve `null` cuando el puntero anda lejos: el usuario está orbitando.
+   */
+  private puntoTrayectoriaDentada(hit: THREE.Intersection | undefined): THREE.Vector3 | null {
+    const c = this.dentadaCara;
+    if (!c) return null;
+    let s: number;
+    if (hit) {
+      s = hit.point.clone().sub(c.centro).dot(c.eje);
+    } else {
+      const ray = this.raycaster.ray;
+      const w0 = c.centro.clone().sub(ray.origin);
+      const b = c.eje.dot(ray.direction);
+      const denom = 1 - b * b;
+      if (denom < 1e-6) return null; // eje mirando de frente
+      const t = (b * ray.direction.dot(w0) - c.eje.dot(w0)) / denom;
+      const pEje = c.centro.clone().addScaledVector(c.eje, t);
+      if (ray.distanceToPoint(pEje) > Math.max(18, c.half * 0.25)) return null;
+      s = t;
+    }
+    s = THREE.MathUtils.clamp(s, -c.half, c.half);
+    return c.centro.clone().addScaledVector(c.eje, s);
+  }
+
+  /**
+   * Crea la placa entre los dos puntos trazados.
+   *
+   * El ancho sale de la cara y el largo de los dos puntos; los ganchos se
+   * reparten al paso configurado y salen los que quepan. La placa se apoya
+   * sobre la cara —de ahí el medio grosor— y se corre medio vuelo de lado,
+   * que es lo que deja la espina centrada en la cara con el gancho entero por
+   * fuera del canto.
+   */
+  private colocarPlacaDentada(a: THREE.Vector3, b: THREE.Vector3): void {
+    const c = this.dentadaCara;
+    const host = this.dentadaHost;
+    if (!c || !host) return;
+    const largo = a.distanceTo(b);
+    if (largo < 4) {
+      this.bus.emit("dragMeasure", {
+        text: tt(
+          "Los dos puntos están casi encima: separa el final del principio",
+          "The two points are on top of each other: move the end away from the start",
+        ),
+      });
+      return;
+    }
+
+    const placa = this.addComponent("placa-dentada");
+    const p = placa.params;
+    const paso = p.dienteEspaciado ?? DENTADA_PASO_DEF;
+    p.width = c.anchoCara + vueloDentada(p);
+    p.height = largo;
+    p.dientes = dientesQueCaben(largo, paso);
+    placa.rebuildGeometry();
+
+    const m = medidasDentada(p);
+    // Ejes de la placa: Y por la trayectoria, X hacia los ganchos y Z el
+    // grosor. La plancha es simétrica en su grosor, así que da igual por cuál
+    // de las dos caras quede mirando su +Z — lo que importa es que la espina
+    // caiga sobre el pilar.
+    const ejeZ = new THREE.Vector3().crossVectors(c.ganchos, c.eje).normalize();
+    placa.mesh.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(c.ganchos, c.eje, ejeZ),
+    );
+    placa.mesh.position
+      .copy(a)
+      .add(b)
+      .multiplyScalar(0.5)
+      .addScaledVector(c.normal, c.saliente + m.grosor / 2)
+      .addScaledVector(c.ganchos, m.vuelo / 2);
+    placa.physics = { ...placa.physics, fixed: true };
+
+    this.bus.emit("objectTransformed", { object: placa });
+    this.select(null);
+    this.dentadaA = null;
+    this.dibujarGuiaDentada();
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `✓ ${placa.name}: ${m.dientes} ganchos cada ${m.paso.toFixed(0)} cm en ${m.largo.toFixed(0)} cm — toca otra cara o Esc para terminar`,
+        `✓ ${placa.name}: ${m.dientes} hooks every ${m.paso.toFixed(0)} cm over ${m.largo.toFixed(0)} cm — tap another face or Esc to finish`,
+      ),
+    });
+    this.requestRender();
+  }
+
   /**
    * Entra en modo "colocar terminal de cable": el siguiente toque sobre la
    * cara de una pieza coloca ahí el ojal de anclaje (diagrama Punto de
@@ -6281,6 +6578,7 @@ export class Editor {
     this.cancelLine();
     this.cancelConnect();
     this.cancelAttachHand();
+    this.cancelPlacaDentada();
     this.select(null);
     this.roldanaMode = false;
     this.limpiarEjeRoldana();
@@ -6572,6 +6870,7 @@ export class Editor {
     this.cancelConnect();
     this.cancelAttachHand();
     this.cancelRoldana();
+    this.cancelPlacaDentada();
     this.select(null);
     this.ropeMode = kind;
     this.ropePendingA = null;
@@ -8400,6 +8699,40 @@ export class Editor {
       return;
     }
 
+    // Modo "colocar placa dentada" en tres toques: cara → principio → fin.
+    if (this.dentadaMode) {
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hit = hits[0];
+      const hid = hit?.object.userData.sceneObjectId as string | undefined;
+      const hostD = hid ? this.objects.get(hid) : undefined;
+      // Se elige cara cuando aún no hay ninguna, o cuando se toca OTRA pieza
+      // sin tener un trazo a medias. Un toque sobre el mismo pilar con la
+      // cara ya elegida es un punto de la trayectoria, no otra cara: si
+      // reeligiera, el segundo toque nunca llegaría a marcar el principio.
+      const cambiaPieza = hostD != null && hostD !== this.dentadaHost && !this.dentadaA;
+      if (hostD && hit?.face && (!this.dentadaCara || cambiaPieza)) {
+        const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
+        this.elegirCaraDentada(hostD, hit.point.clone(), n);
+        return;
+      }
+      if (!this.dentadaCara) return; // aún no hay cara: se está orbitando
+      const punto = this.puntoTrayectoriaDentada(hostD === this.dentadaHost ? hit : undefined);
+      if (!punto) return;
+      if (!this.dentadaA) {
+        this.dentadaA = punto;
+        this.dibujarGuiaDentada();
+        this.bus.emit("dragMeasure", {
+          text: tt(
+            "Principio marcado. Toca el FINAL de la placa sobre la línea",
+            "Start marked. Tap the plate's END along the line",
+          ),
+        });
+        return;
+      }
+      this.colocarPlacaDentada(this.dentadaA, punto);
+      return;
+    }
+
     // Modo "colocar roldana" en dos pasos: estructura → punto del eje azul.
     if (this.roldanaMode) {
       // Con el panel de configuración abierto se puede ORBITAR en vivo: los
@@ -8667,6 +9000,7 @@ export class Editor {
         this.cancelRope();
         this.cancelLine();
         this.cancelRoldana();
+        this.cancelPlacaDentada();
         this.cancelAttachHand();
         this.endBendNodes();
         this.select(null);

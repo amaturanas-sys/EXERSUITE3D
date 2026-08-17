@@ -7,6 +7,7 @@ let RAPIER: typeof R;
 import type { SceneObject } from "../objects/SceneObject";
 import { cuerdasColision, pathIsStraight } from "../objects/linePieces";
 import { getDefinition } from "../objects/componentLibrary";
+import { cajasDentada } from "../objects/placaDentada";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
 
@@ -627,6 +628,17 @@ export class PhysicsWorld {
       dims.sort((a, b) => b[0] - a[0]);
       const [largo, ejeLocal] = dims[0];
       if (largo < 20 || largo < 4 * dims[1][0]) continue;
+      // UNA PLANCHA NO ES UN RIEL (v0.2.73). La prueba de esbeltez mira el
+      // largo contra el lado mediano y da por tubo cualquier cosa alargada,
+      // incluida una PLACA: la dentada mide 12 × 60 × 0,8 y pasaba el examen
+      // de sobra. Como consecuencia el motor la tomaba por guía, tomaba la
+      // barra apoyada por carro guiado y EXCLUÍA el contacto entre ambas —
+      // la barra atravesaba los ganchos despacio, como si la placa fuese un
+      // fantasma, y no había forma de verlo mirando la geometría.
+      //
+      // Un riel tiene sección MACIZA: sus dos lados cortos se parecen. Si uno
+      // es mucho menor que el otro, es chapa, y por una chapa no desliza nada.
+      if (dims[1][0] > 4 * dims[2][0]) continue;
       const eje = axisVector(ejeLocal).applyQuaternion(f.obj.mesh.quaternion).normalize();
       esbeltas.push({
         centro: f.obj.mesh.position.clone(),
@@ -1605,6 +1617,13 @@ export class PhysicsWorld {
    */
   private colliderDescs(obj: SceneObject): R.ColliderDesc[] {
     const p = obj.params;
+    // La placa dentada DECLARA sus cajas (v0.2.73): son seis cunas apiladas
+    // una encima de otra, y el muestreo con rayos verticales de las jotas
+    // saca de eso un solo canal. Sobre un pilar diagonal, ni eso.
+    if (p.kind === "dentada") {
+      const cajas = this.collidersDentada(obj);
+      if (cajas.length) return cajas;
+    }
     // Jotas y brazos de seguridad: el asiento CÓNCAVO real de la malla
     // (v0.2.15) — la caja lisa dejaba resbalar la barra fuera del gancho.
     if (getDefinition(obj.componentId)?.asientoBarra) {
@@ -1664,6 +1683,34 @@ export class PhysicsWorld {
         ((yTop + bb.min.y) / 2) * esc.y * S,
         (ejeZ ? sc : zMid) * esc.z * S,
       );
+      cd.setRestitution(0.02).setFriction(0.9);
+      out.push(cd);
+    }
+    return out;
+  }
+
+  /**
+   * CAJAS DE LA PLACA DENTADA (v0.2.73), tomadas de su propio perfil.
+   *
+   * La placa sabe dónde están sus cunas —las calculó para dibujarse— así que
+   * aquí no se adivina nada: se traducen sus cajas locales a colliders. Cada
+   * gancho aporta el bloque de su cuna y el dedo que la cierra por fuera; la
+   * espina, entera, hace de pared interior de todas.
+   *
+   * Con eso la barra que cae en un gancho queda RETENIDA por los tres lados y
+   * abierta solo por arriba, que es como funciona una jota.
+   */
+  private collidersDentada(obj: SceneObject): R.ColliderDesc[] {
+    const esc = obj.mesh.scale;
+    const out: R.ColliderDesc[] = [];
+    for (const c of cajasDentada(obj.params)) {
+      const cd = RAPIER.ColliderDesc.cuboid(
+        Math.max((c.tam[0] / 2) * Math.abs(esc.x) * S, 0.002),
+        Math.max((c.tam[1] / 2) * Math.abs(esc.y) * S, 0.002),
+        Math.max((c.tam[2] / 2) * Math.abs(esc.z) * S, 0.002),
+      );
+      cd.setTranslation(c.centro[0] * esc.x * S, c.centro[1] * esc.y * S, c.centro[2] * esc.z * S);
+      // Acero contra acero moleteado: agarra y no rebota.
       cd.setRestitution(0.02).setFriction(0.9);
       out.push(cd);
     }

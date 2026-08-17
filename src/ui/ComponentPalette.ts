@@ -388,6 +388,10 @@ export class ComponentPalette {
         // Herramienta en dos pasos (v0.2.26): estructura → punto del eje
         // azul → tipo + dirección (el diálogo aparece al elegir el punto).
         this.editor.beginRoldana();
+      } else if (def.id === "placa-dentada") {
+        // Herramienta en tres toques (v0.2.73): cara del pilar → principio →
+        // final. El ancho no se pregunta: lo copia de la cara.
+        this.editor.beginPlacaDentada();
       } else if (def.id === "terminal-cable") {
         // Punto de anclaje de cable sobre una cara (ojal terminal).
         this.editor.beginTerminalCable();
@@ -398,7 +402,12 @@ export class ComponentPalette {
       } else this.editor.addComponent(def.id);
     });
     // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
-    if (!def.placement && def.id !== "roldana" && def.id !== "terminal-cable") {
+    if (
+      !def.placement &&
+      def.id !== "roldana" &&
+      def.id !== "terminal-cable" &&
+      def.id !== "placa-dentada"
+    ) {
       if (def.id === "puente-carro-ttp") {
         this.habilitarArrastre(btn, (suelo) => this.editor.insertarCarroDoble(suelo));
       } else {

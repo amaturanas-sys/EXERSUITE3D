@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-62 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+63 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -96,7 +96,8 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 | `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo, no llegan a medir nada |
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
 | `v251` | 2 aserciones: las piernas siguen entrando 2,5 cm en el banco |
-| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib`, `freno` | **solo** en paralelo: en serie pasan |
+| `freno` | 2 aserciones: la pila recibe 12,5 cm de recorrido donde espera 13,1. **También en serie** — hasta v0.2.73 esta ficha lo daba por verde y no lo estaba |
+| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie pasan |
 
 `sitio` ya NO está en la lista: desde v0.2.72 pasa, con el Next.js levantado en el
 3100.
@@ -133,6 +134,13 @@ en verde.
 
 `hub` también, con sus 62 comprobaciones, y `sitio`, con el Next.js arriba. Es la única que además deja las vistas
 previas del hub (`hub-*.png`), que se miran, no se comparan.
+
+`placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
+FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra
+sobre un gancho. Que la placa se vea bien no dice nada — el fallo que encontró
+fue justamente una placa impecable que la barra atravesaba, porque el motor la
+había tomado por riel de guía. Deja `placa-dentada.png` y
+`placa-dentada-diagonal.png`.
 
 El estado al día de cada versión está en el [CHANGELOG](../CHANGELOG.md), en la
 sección «Sabido».

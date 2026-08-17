@@ -5,6 +5,91 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.73] — 2026-08-17
+
+### Añadido
+
+- **Placa dentada (upright dentado): una plancha que hace de fila de jotas.**
+  Donde había seis jotas —cada una con su manguito, su pin y su rodillo— hay
+  ahora una sola plancha de acero con los ganchos recortados en el canto.
+
+  Se coloca con una herramienta de **tres toques**:
+
+  1. La **cara del pilar** donde va. El toque dice dos cosas a la vez: qué cara
+     —ahí se atornilla— y por qué canto salen los ganchos, que es el más
+     cercano al punto tocado. Se ve al momento, porque la línea guía se dibuja
+     sobre ese canto.
+  2. y 3. Los **dos puntos de la trayectoria**: principio y final. De ahí salen
+     el largo y la ubicación.
+
+  El **ancho no se pregunta**: la espina copia el ancho de la cara y el gancho
+  vuela entero por delante del canto. Una placa más estrecha que su pilar no
+  apoyaría; una más ancha se comería el canto de al lado. El **número y el paso
+  de los ganchos** se configuran como los pinholes de un pilar, y son suyos —la
+  placa va en las caras que NO llevan pinholes, así que no hereda esa grilla.
+
+  Vale igual sobre un **elemento diagonal**: la trayectoria es el eje mayor de
+  la pieza tocada, no la vertical del mundo. Tocar la tapa de un extremo no
+  vale y lo dice.
+
+  Y **agarra de verdad**: sus cunas son colisión, no dibujo. Una barra soltada
+  sobre un gancho se sienta en él y no rueda hacia fuera.
+
+### Corregido
+
+- **Una plancha se hacía pasar por riel de guía, y la barra la atravesaba.**
+  El detector de guías daba por tubo cualquier pieza fija alargada —«el largo
+  es cuatro veces el lado mediano»—, y la placa dentada, de 12 × 60 × 0,8, lo
+  cumplía de sobra. Consecuencia: el motor la tomaba por guía, tomaba la barra
+  apoyada por carro guiado y **excluía el contacto entre las dos**, que es lo
+  que hace la exclusión guía↔guiado para que los manguitos deslicen sin
+  rozamiento. La barra bajaba despacio a través de los ganchos, como si la
+  placa fuese un fantasma, y no había forma de verlo mirando la geometría.
+
+  Ahora, además del largo, se mira la **sección**: un riel la tiene maciza —sus
+  dos lados cortos se parecen—, y si uno es mucho menor que el otro es chapa, y
+  por una chapa no desliza nada.
+
+- **Los pernos de la placa no llegaban a la malla.** `mergeGeometries` rechaza
+  mezclar geometrías con índice y sin él, y lo avisa **por consola sin lanzar**:
+  la placa salía entera y sin un solo perno.
+
+### Sabido
+
+- **La garganta del gancho es más ancha que la del modelo de referencia, y es a
+  propósito.** El `.obj` del diseñador dibuja el hueco a la medida justa de una
+  barra olímpica: 2,87 cm, sin holgura. Aquí no sirve, por algo que no se ve
+  mirando la barra — su collider es UN cilindro del radio más grande de la
+  malla, el de las mangas, así que para el motor la barra mide **6,94 cm de
+  gruesa de punta a punta**. Con la garganta del modelo, la barra se quedaba
+  posada encima de los dientes y rodaba hasta caerse: una placa preciosa que no
+  agarraba nada.
+
+  Así que la garganta se mide contra la barra que SIMULA el motor y no contra
+  la que se dibuja. El gancho sale más ancho que el del `.obj` —vuela 9,6 cm en
+  vez de 4,5— y es el precio de que funcione. El día que la barra tenga un
+  collider que siga su perfil (mangas gordas, eje fino, como ya hacen las vigas
+  dobladas), ese suelo baja solo y el gancho recupera las proporciones del
+  modelo. Mientras tanto, `dienteVuelo` deja ponerlas a mano.
+
+- **Las medidas salen de medir el `.obj`, no de mirarlo.** Rasterizando la
+  silueta de sus tres placas —una de un diente, dos de seis— y midiendo el
+  pilar al que va adosada la tercera: paso 0,3188, vuelo 0,1747, espina 0,1931,
+  garganta 0,1103, grosor 0,0154. Tomando los pinholes del pilar (0,1949) como
+  las 2" del modelo real, la unidad del fichero son 26 cm; con eso la sección
+  del pilar da **5,0 × 7,0 cm**, que es exactamente el perfil del montante TTP
+  de este proyecto, y la garganta da el diámetro de una barra olímpica. Dos
+  comprobaciones independientes que cierran la escala.
+
+- **El grosor no se respeta: el `.obj` da 4 mm y la pieza lleva 8.** Una
+  plancha de 4 mm con 9,6 cm de vuelo y una barra cargada encima se dobla. Es
+  el parámetro `depth`, así que quien quiera los 4 mm del modelo los pone.
+
+- `prueba-freno` falla 2 aserciones **también en serie**, y no es de este
+  trabajo: sin este cambio da 12,5 cm de recorrido donde espera 13,1, y con él
+  13,0. Se corrige la ficha de [LEEME](pruebas/LEEME.md), que la daba por verde
+  en serie.
+
 ## [0.2.72] — 2026-08-16
 
 ### Corregido

@@ -87,9 +87,15 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
      *
      * Va en las caras del pilar que NO llevan pinholes, así que no calza en
      * ninguna grilla: se atornilla. Por eso no tiene `calceLocal` ni
-     * `frenteCalce` —no hay pin que meter en ningún agujero— y sí
-     * `asientoBarra`, porque sus doce ganchos tienen que retener la barra
-     * igual que los de una jota.
+     * `frenteCalce` — no hay pin que meter en ningún agujero.
+     *
+     * TAMPOCO lleva `asientoBarra`: esa marca manda muestrear la malla con
+     * rayos verticales para encontrar UN canal, y aquí hay seis, apilados
+     * (y en un pilar diagonal, ni siquiera verticales). La placa declara sus
+     * propias cajas de colisión en `cajasDentada`.
+     *
+     * No se arrastra a la escena: se coloca con su herramienta, que le saca
+     * el ancho a la cara del pilar y el largo a los dos puntos trazados.
      */
     id: "placa-dentada",
     label: "Placa dentada (upright)",
@@ -101,10 +107,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       dienteEspaciado: 8,
     },
     physics: { massKg: 0, fixed: true },
-    asientoBarra: true,
     description:
       "Plancha de acero con ganchos recortados en el canto, atornillada al " +
-      "costado de un pilar: hace de fila de jotas con mucho menos material.",
+      "costado de un pilar: hace de fila de jotas con mucho menos material. " +
+      "Se coloca tocando la cara del pilar y trazando principio y final.",
   },
   {
     id: "j-hook",
