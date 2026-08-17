@@ -97,14 +97,14 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "acero-negro",
     defaults: {
       kind: "dentada",
-      dientes: 12,
-      dienteEspaciado: 5,
+      dientes: 6,
+      dienteEspaciado: 8,
     },
     physics: { massKg: 0, fixed: true },
     asientoBarra: true,
     description:
-      "Plancha de acero con ganchos que se atornilla al costado de un pilar: " +
-      "hace de fila de jotas con mucho menos material.",
+      "Plancha de acero con ganchos recortados en el canto, atornillada al " +
+      "costado de un pilar: hace de fila de jotas con mucho menos material.",
   },
   {
     id: "j-hook",

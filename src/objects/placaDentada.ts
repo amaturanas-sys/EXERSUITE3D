@@ -1,31 +1,35 @@
 /**
  * PLACA DENTADA (upright dentado) — v0.2.73.
  *
- * Una sola plancha de acero grueso con ganchos recortados que se atornilla al
- * COSTADO de un pilar y hace el trabajo de una fila de jotas con mucho menos
- * material: donde antes había doce jotas —cada una con su manguito, su pin y su
+ * Una sola plancha de acero atornillada al COSTADO de un pilar, con ganchos
+ * RECORTADOS en su canto, que hace el trabajo de una fila de jotas con mucho
+ * menos material: donde había seis jotas —cada una con su manguito, su pin y su
  * rodillo— hay una placa y sus pernos.
  *
- * DÓNDE VA. En las caras del pilar que NO llevan pinholes, que son las
- * perpendiculares a `ejeCalce`. No hereda nada de la grilla del poste: el paso
- * de sus dientes es cosa suya y se configura aparte. Sirve igual sobre un
- * elemento diagonal, porque la placa se orienta por el eje mayor del anfitrión
- * y no por la vertical del mundo.
+ * EL DIENTE ES UNA MUESCA, NO UNA REPISA. Es el punto que costó entender del
+ * modelo del diseñador: la placa es PLANA de punta a punta y el gancho es el
+ * perfil de su borde, no un saliente pegado encima. Por eso la geometría se
+ * hace extruyendo un contorno 2D y no apilando cajas — con cajas los dientes
+ * volaban por delante de la placa, que es justo lo que no son.
  *
- * LA FORMA SALE DEL `.obj` DEL DISEÑADOR. Midiéndolo diente a diente: doce
- * dientes de paso constante, cada uno de 0,4 pasos de alto, con un vuelo de
- * 1,44 pasos sobre una placa de 0,13 pasos de grosor. Tomando el paso como los
- * 5 cm que ya usa el proyecto, eso es una placa de 59 × 9,5 × 0,6 cm con doce
- * ganchos que vuelan 7,2 cm — medidas de acero real, no de dibujo.
+ * DÓNDE VA. En las caras del pilar que NO llevan pinholes. No hereda nada de la
+ * grilla del poste: su paso es cosa suya. Sirve igual sobre un elemento
+ * diagonal, porque se orienta por el eje mayor del anfitrión y no por la
+ * vertical del mundo.
  *
- * EL PERFIL DEL DIENTE ES LO QUE IMPORTA. Cada gancho es una J tumbada: una
- * REPISA que sale de la placa y un LABIO que sube en el extremo. Con la placa
- * de respaldo, eso da las tres caras que retienen la barra —suelo, tope
- * delantero y respaldo— y es lo que la física muestrea para que la barra se
- * quede en el diente en vez de resbalar por una caja lisa.
+ * LAS MEDIDAS SALEN DEL `.obj`, rasterizando su silueta: seis muescas de paso
+ * 0,314, con 0,172 de fondo —el 47 % del ancho de la placa— y 0,095 de boca,
+ * sobre una plancha de 1,962 × 0,368. Tomando los pinholes del pilar como los
+ * 5 cm del proyecto, eso es una placa de 50 × 9,4 cm con dientes cada 8,1 cm y
+ * muescas de 4,4 cm de fondo.
  *
- * Ejes locales: la placa corre por **Y**, apoya su espalda en **−Z** y los
- * dientes vuelan hacia **+Z**. El ancho de la plancha es **X**.
+ * EL PERFIL DEL GANCHO ES LO QUE RETIENE LA BARRA. La muesca entra, baja a un
+ * asiento y vuelve a salir por encima: el labio que queda sobre el asiento es
+ * el que impide que la barra ruede hacia fuera. Con la placa de respaldo, esas
+ * son las tres caras que la física tiene que ver.
+ *
+ * Ejes locales: la placa corre por **Y**, su plano es **X-Y** y el grosor va en
+ * **Z**. Las muescas se recortan en el canto **+X**.
  */
 
 import * as THREE from "three";
@@ -34,34 +38,34 @@ import type { PrimitiveParams } from "./types";
 
 /** Proporciones medidas en el `.obj`, en múltiplos del paso entre dientes. */
 export const DENTADA_PROPORCIONES = {
-  /** Ancho de la plancha. */
-  ancho: 1.91,
-  /** Grosor de la plancha. */
-  grosor: 0.13,
-  /** Cuánto vuela el diente por delante de la plancha. */
-  vuelo: 1.44,
-  /** Alto de la repisa del diente. */
-  alto: 0.4,
+  /** Ancho de la plancha, en múltiplos del paso entre dientes. */
+  ancho: 1.17,
+  /** Grosor de la plancha. El `.obj` da 0,048; se sube a acero de 8 mm. */
+  grosor: 0.10,
+  /** Fondo de la muesca: el 47 % del ancho de la plancha. */
+  fondo: 0.55,
+  /** Boca de la muesca (lo que mide de alto por donde entra la barra). */
+  boca: 0.30,
 } as const;
 
-export const DENTADA_PASO_DEF = 5;
-export const DENTADA_DIENTES_DEF = 12;
+export const DENTADA_PASO_DEF = 8;
+export const DENTADA_DIENTES_DEF = 6;
 
 /** Medidas en centímetros de una placa, resueltas desde sus params. */
 export interface MedidasDentada {
   paso: number;
   dientes: number;
+  /** Ancho de la plancha (eje X). */
   ancho: number;
+  /** Grosor de la plancha (eje Z). */
   grosor: number;
-  vuelo: number;
-  alto: number;
-  /** Alto del labio que sube en el extremo del diente. */
-  labio: number;
-  /** Grosor del labio. */
-  labioGrosor: number;
+  /** Cuánto entra la muesca desde el canto. */
+  fondo: number;
+  /** Alto de la boca por la que entra la barra. */
+  boca: number;
   /** Largo total de la plancha (eje Y). */
   largo: number;
-  /** Y del centro del diente `i`, en coordenadas locales. */
+  /** Y del centro de la muesca `i`, en coordenadas locales. */
   centroDiente: (i: number) => number;
 }
 
@@ -69,76 +73,94 @@ export interface MedidasDentada {
  * Resuelve las medidas de una placa.
  *
  * El largo se deduce de los dientes y el paso —no al revés— porque lo que el
- * usuario pide es «doce ganchos cada cinco centímetros»; dejar el largo suelto
- * daría placas que terminan a medio diente. Se le dan medio paso de margen por
- * cada extremo, que es lo que enseña el `.obj`.
+ * usuario pide es «seis ganchos cada ocho centímetros»; dejarlo suelto daría
+ * placas que terminan a medio diente. Medio paso de margen por extremo, que es
+ * lo que enseña el `.obj`.
  */
 export function medidasDentada(p: PrimitiveParams): MedidasDentada {
-  const paso = Math.max(1, p.dienteEspaciado ?? DENTADA_PASO_DEF);
+  const paso = Math.max(2, p.dienteEspaciado ?? DENTADA_PASO_DEF);
   const dientes = Math.max(1, Math.round(p.dientes ?? DENTADA_DIENTES_DEF));
   const R = DENTADA_PROPORCIONES;
-  const alto = p.dienteAlto ?? R.alto * paso;
-  const vuelo = p.dienteVuelo ?? R.vuelo * paso;
-  const largo = (dientes - 1) * paso + paso;
+  const ancho = p.width ?? R.ancho * paso;
+  const largo = dientes * paso;
   return {
     paso,
     dientes,
-    ancho: p.width ?? R.ancho * paso,
+    ancho,
     grosor: p.depth ?? R.grosor * paso,
-    vuelo,
-    alto,
-    labio: alto * 1.25,
-    labioGrosor: Math.max(0.8, vuelo * 0.17),
+    // El fondo nunca puede comerse la plancha entera: se deja al menos un
+    // tercio del ancho de espalda, que es lo que le da rigidez a la placa.
+    fondo: Math.min(p.dienteVuelo ?? R.fondo * paso, ancho * 0.66),
+    boca: p.dienteAlto ?? R.boca * paso,
     largo,
     centroDiente: (i) => -largo / 2 + paso / 2 + i * paso,
   };
 }
 
-function caja(w: number, h: number, d: number, x: number, y: number, z: number): THREE.BufferGeometry {
-  const g = new THREE.BoxGeometry(w, h, d);
-  g.translate(x, y, z);
-  return g;
+/**
+ * EL CONTORNO DE LA PLACA, recorrido a favor de las agujas del reloj.
+ *
+ * Se sube por el canto +X abriendo una muesca en cada diente. La muesca no es
+ * un rectángulo: entra, BAJA a un asiento y sale por encima, de modo que el
+ * material que queda arriba de la boca sobresale sobre el asiento. Ese voladizo
+ * es el labio, y es lo único que impide que la barra ruede hacia fuera — un
+ * corte recto la dejaría escapar sola.
+ */
+function contornoDentada(m: MedidasDentada): THREE.Shape {
+  const X = m.ancho / 2;
+  const Y = m.largo / 2;
+  const f = m.fondo;
+  const b = m.boca;
+
+  const s = new THREE.Shape();
+  s.moveTo(-X, -Y);
+  s.lineTo(X, -Y); // canto de abajo
+
+  for (let i = 0; i < m.dientes; i++) {
+    const yc = m.centroDiente(i);
+    // Se sube por el canto hasta la boca de la muesca.
+    s.lineTo(X, yc - b / 2);
+    // Entrada y asiento: la barra cae hasta el fondo redondeado.
+    s.quadraticCurveTo(X - f * 0.45, yc - b / 2 - f * 0.18, X - f, yc - b * 0.1);
+    // Respaldo y salida: se vuelve al canto por encima del asiento.
+    s.quadraticCurveTo(X - f * 0.5, yc + b * 0.55, X - f * 0.16, yc + b * 0.72);
+    // El labio, que queda volado sobre el asiento.
+    s.lineTo(X, yc + b * 0.95);
+  }
+
+  s.lineTo(X, Y);
+  s.lineTo(-X, Y); // canto de arriba
+  s.closePath(); // espalda: la cara que se atornilla al pilar
+  return s;
 }
 
 /**
- * La placa entera: plancha + un gancho por diente.
+ * La placa entera: el contorno extruido más los pernos de fijación.
  *
- * Los ganchos se fusionan en UNA geometría en vez de dejarse como hijos porque
- * la pieza tiene que comportarse como una sola plancha de acero —se selecciona,
- * se mueve y se voltea entera— y porque la física la lee de la malla.
+ * Todo se fusiona en UNA geometría porque la pieza tiene que comportarse como
+ * una sola plancha de acero —se selecciona, se mueve y se voltea entera— y
+ * porque la física la lee de la malla.
  */
 export function buildDentadaGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const m = medidasDentada(p);
-  const partes: THREE.BufferGeometry[] = [
-    // La plancha. Su espalda queda en −Z, que es la cara que se atornilla.
-    caja(m.ancho, m.largo, m.grosor, 0, 0, -m.grosor / 2),
-  ];
+  const plancha = new THREE.ExtrudeGeometry(contornoDentada(m), {
+    depth: m.grosor,
+    bevelEnabled: false,
+    curveSegments: 8,
+  });
+  // La extrusión crece hacia +Z desde z=0; se centra en el grosor.
+  plancha.translate(0, 0, -m.grosor / 2);
+  const partes: THREE.BufferGeometry[] = [plancha];
 
-  for (let i = 0; i < m.dientes; i++) {
-    const y = m.centroDiente(i);
-    // La repisa: sale de la cara delantera de la plancha hacia +Z.
-    partes.push(caja(m.ancho, m.alto, m.vuelo, 0, y, m.vuelo / 2));
-    // El labio: sube en el extremo y es el tope que retiene la barra.
-    partes.push(
-      caja(
-        m.ancho,
-        m.labio,
-        m.labioGrosor,
-        0,
-        y + m.alto / 2 + m.labio / 2,
-        m.vuelo - m.labioGrosor / 2,
-      ),
-    );
-  }
-
-  // Pernos de fijación: dos por extremo, hundidos en la plancha. Son detalle,
-  // no estructura, pero sin ellos la placa parece flotar pegada al poste.
-  const rPerno = Math.max(0.5, m.paso * 0.08);
-  for (const y of [-m.largo / 2 + m.paso * 0.45, m.largo / 2 - m.paso * 0.45]) {
-    for (const x of [-m.ancho * 0.28, m.ancho * 0.28]) {
-      const g = new THREE.CylinderGeometry(rPerno, rPerno, m.grosor * 1.6, 10);
+  // Pernos de fijación: dos por extremo, en la espalda. Son detalle, no
+  // estructura, pero sin ellos la placa parece pegada al poste con saliva.
+  const rPerno = Math.max(0.4, m.paso * 0.05);
+  const xPerno = -m.ancho / 2 + Math.max(1.2, m.ancho * 0.16);
+  for (const y of [-m.largo / 2 + m.paso * 0.3, m.largo / 2 - m.paso * 0.3]) {
+    for (const dx of [0, Math.max(2, m.ancho * 0.22)]) {
+      const g = new THREE.CylinderGeometry(rPerno, rPerno, m.grosor * 1.5, 10);
       g.rotateX(Math.PI / 2);
-      g.translate(x, y, -m.grosor / 2);
+      g.translate(xPerno + dx, y, 0);
       partes.push(g);
     }
   }
@@ -172,11 +194,12 @@ export function asientosDentada(p: PrimitiveParams): AsientoDiente[] {
   const m = medidasDentada(p);
   const out: AsientoDiente[] = [];
   for (let i = 0; i < m.dientes; i++) {
-    const y = m.centroDiente(i);
-    const fondo = m.vuelo - m.labioGrosor;
+    const yc = m.centroDiente(i);
+    // El hueco útil: desde el fondo de la muesca hasta el canto, y desde el
+    // asiento hasta el labio.
     out.push({
-      centro: [0, y + m.alto / 2 + m.labio / 2, fondo / 2],
-      tam: [m.ancho, m.labio, fondo],
+      centro: [m.ancho / 2 - m.fondo / 2, yc, 0],
+      tam: [m.fondo, m.boca, m.grosor],
     });
   }
   return out;
