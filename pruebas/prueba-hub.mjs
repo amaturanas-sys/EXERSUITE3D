@@ -37,13 +37,48 @@ const visible = (sel) => p.evaluate((s) => {
   const n = document.querySelector(s);
   return !!n && !n.classList.contains("oculto");
 }, sel);
+/**
+ * Espera a que el carrusel DEJE DE MOVERSE, en vez de contar hasta un número.
+ *
+ * El viaje del carrusel dura 900 ms (PLAZO_VIAJE) y esto esperaba 700: pasaba
+ * de milagro, y el día que la máquina iba cargada —la batería entera más otros
+ * trabajos— llegaba tarde y daba por roto un hub que estaba bien. Una prueba
+ * que miente bajo carga es peor que una que falla siempre, porque enseña a no
+ * mirarla. Ahora se espera a que el desplazamiento se quede quieto tres
+ * lecturas seguidas, con tope por si nunca se para.
+ */
+const quieto = async (tope = 8000) => {
+  const inicio = await desplazado();
+  let previo = inicio;
+  let quietos = 0;
+  let movido = false;
+  for (let t = 0; t < tope; t += 100) {
+    await p.waitForTimeout(100);
+    const v = await desplazado();
+    if (Math.abs(v - inicio) > 0.5) movido = true;
+    // CUATRO lecturas quietas, no dos: el desplazamiento suave hace MESETAS a
+    // media animación (medido: 131, 131, y de ahí saltó a 1447), así que con
+    // un listón corto se da por terminado un viaje que va por la mitad.
+    if (Math.abs(v - previo) < 0.5) {
+      // Y solo vale la quietud DESPUÉS de haberse movido: si no, se acepta la
+      // de los primeros milisegundos, cuando la animación aún no ha arrancado,
+      // y se lee un cero por bueno. El respiro de 1,2 s es para la pestaña que
+      // ya estaba puesta, que no tiene adónde moverse.
+      if (++quietos >= 4 && (movido || t >= 1200)) return v;
+    } else {
+      quietos = 0;
+    }
+    previo = v;
+  }
+  return previo;
+};
 const pestana = async (id) => {
   await p.evaluate((s) => document.querySelector(`.hub-tab[data-rec="${s}"]`).click(), id);
-  await p.waitForTimeout(700);
+  await quieto();
 };
 const lamina = async (id) => {
   await p.evaluate((s) => document.querySelector(`.hub-diapo[data-rec="${s}"] .hub-banner`).click(), id);
-  await p.waitForTimeout(700);
+  await quieto();
 };
 
 // ---- Estado de partida: mirando la primera, sin nada puesto

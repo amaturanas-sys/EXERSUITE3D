@@ -28,6 +28,34 @@ await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTi
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
+/**
+ * Espera a que una pieza DEJE DE CAER, en vez de contar hasta un número.
+ *
+ * La simulación avanza por `requestAnimationFrame`, así que un tope de reloj
+ * no mide pasos de física: mide lo desahogada que iba la máquina. Con la
+ * batería entera corriendo al lado, los 2,6 s que aquí bastaban se quedaban en
+ * la mitad de pasos y la barra todavía estaba en el aire — la prueba daba por
+ * inservibles dos ganchos de cuatro que funcionan. Ahora se espera a que la
+ * altura se quede quieta tres lecturas seguidas, con un tope por si algo cae
+ * para siempre.
+ */
+const reposar = async (id, tope = 20000) => {
+  await page.waitForTimeout(500);   // que arranque la caída antes de medirla
+  let previo = null;
+  let quietos = 0;
+  for (let t = 0; t < tope; t += 150) {
+    const y = await page.evaluate((i) => window.exersuite.editor.objects.get(i).mesh.position.y, id);
+    if (previo !== null && Math.abs(y - previo) < 0.03) {
+      if (++quietos >= 3) return y;
+    } else {
+      quietos = 0;
+    }
+    previo = y;
+    await page.waitForTimeout(150);
+  }
+  return previo;
+};
+
 // ---------------------------------------------------------------------------
 // 1. Un pilar vertical y la herramienta en tres toques, todo por la API del
 //    editor: los toques se simulan situando la cámara y proyectando puntos,
@@ -216,7 +244,7 @@ for (let i = 0; i < rack.asientos.length; i++) {
     return b.id;
   }, { y, x: rack.xGarganta, radio: rack.radio });
   await page.evaluate(() => window.exersuite.editor.toggleSimulation());
-  await page.waitForTimeout(2600);
+  await reposar(id);
   const fin = await page.evaluate((id) => {
     const b = window.exersuite.editor.objects.get(id);
     return { pos: b.mesh.position.toArray(), simulando: window.exersuite.editor.simulating === true };

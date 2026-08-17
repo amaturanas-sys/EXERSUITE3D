@@ -97,10 +97,32 @@ Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
 | `v251` | 2 aserciones: las piernas siguen entrando 2,5 cm en el banco |
 | `freno` | 2 aserciones: la pila recibe 12,5 cm de recorrido donde espera 13,1. **También en serie** — hasta v0.2.73 esta ficha lo daba por verde y no lo estaba |
-| `atraviesa`, `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie pasan |
+| `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie pasan (verificado en v0.2.75) |
+| `atraviesa` | **INTERMITENTE**, y no «solo en paralelo» como decía esta ficha hasta v0.2.75: medido con la máquina tranquila y en serie, 2 verdes de 3. Pasó en la tanda en paralelo y falló en serie a continuación, o sea que el paralelismo no es la variable. Mide recorridos simulados y no espera a que la pila se asiente |
 
 `sitio` ya NO está en la lista: desde v0.2.72 pasa, con el Next.js levantado en el
 3100.
+
+### Esperar por RELOJ es la primera causa de rojo mentiroso
+
+Dos pruebas daban por rotas cosas que funcionaban, y las dos por lo mismo:
+contaban milisegundos en vez de esperar a que pasara algo.
+
+- `hub` esperaba **700 ms** el viaje del carrusel, que dura **900** (`PLAZO_VIAJE`).
+  Pasaba de milagro; el día que la máquina iba cargada, llegaba tarde.
+- `placa-dentada` esperaba **2,6 s** a que cayera una barra. La simulación
+  avanza por `requestAnimationFrame`, así que ese tope no mide pasos de física:
+  mide lo desahogada que va la máquina. Con la batería al lado daba por
+  inservibles dos ganchos de cuatro que funcionan.
+
+Desde v0.2.75 las dos esperan **a que la magnitud se quede quieta**, con tope
+por si nunca se para. Dos trampas al escribir esa espera, las dos pisadas:
+
+- **Hay que exigir que se haya MOVIDO antes de aceptar la quietud.** Si no, se
+  acepta la de los primeros milisegundos —cuando la animación todavía no ha
+  arrancado— y se lee un cero por bueno.
+- **Dos lecturas quietas no bastan.** El desplazamiento suave hace mesetas a
+  media animación: medido, 131, 131 y de ahí saltó a 1447.
 
 ### Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`
 
