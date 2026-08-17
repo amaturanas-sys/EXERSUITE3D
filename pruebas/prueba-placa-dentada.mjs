@@ -352,6 +352,40 @@ if (panel.hayCampo) {
     `pedir 4 cm lo sube al mínimo ${panel.minimo.toFixed(2)} en vez de dibujar ganchos por los que no entra la barra`);
 }
 
+// ---------------------------------------------------------------------------
+// 6. UN PROYECTO VIEJO NO ESTIRA LA PLACA, y una cifra absurda no cuelga nada.
+//
+// Los proyectos guardados antes de que existiera el intervalo mínimo traen sus
+// ganchos cada 8 cm. Al abrirlos el paso sube al mínimo, y si con él se
+// estirara la plancha para alojar los ganchos que había, la placa se saldría
+// por los dos extremos del pilar sobre el que se dibujó: de 100 cm a 146. Lo
+// que sobra son ganchos, no plancha.
+// ---------------------------------------------------------------------------
+const viejo = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const med = window.exersuite.dentada.medidas;
+  // Una placa tal como la guardaba v0.2.73: paso 8 y doce ganchos en 100 cm.
+  const antiguo = med({ kind: "dentada", height: 100, width: 18, dienteEspaciado: 8, dientes: 12 });
+  // Y las cifras imposibles que puede traer un fichero tocado a mano.
+  const cero = med({ kind: "dentada", height: 100, width: 18, dienteEspaciado: 0, dientes: 12 });
+  const bestial = med({ kind: "dentada", height: 100, width: 18, dienteEspaciado: 12.5, dientes: 999999 });
+  return {
+    largo: antiguo.largo, dientes: antiguo.dientes, paso: antiguo.paso,
+    ceroDientes: cero.dientes, ceroPaso: cero.paso,
+    bestialDientes: bestial.dientes,
+  };
+});
+
+ok(Math.abs(viejo.largo - 100) < 0.01,
+  `una placa de v0.2.73 conserva su largo al abrirla (${viejo.largo.toFixed(1)} cm, no 146)`);
+ok(viejo.dientes < 12 && viejo.dientes >= 4,
+  `y lo que se recorta son los ganchos: 12 → ${viejo.dientes}`);
+ok(viejo.paso > 11.5, `con el paso subido al mínimo (${viejo.paso.toFixed(2)} cm, era 8)`);
+ok(Number.isFinite(viejo.ceroDientes) && viejo.ceroDientes >= 1 && viejo.ceroPaso > 11.5,
+  `un intervalo de 0 en el fichero no da infinitos ganchos (${viejo.ceroDientes} a ${viejo.ceroPaso.toFixed(2)} cm)`);
+ok(viejo.bestialDientes <= 200,
+  `y 999.999 ganchos se topan en ${viejo.bestialDientes}, que es lo que separa una placa fea de una pestaña colgada`);
+
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0
   ? "\nTODO OK" : `\n${fallos.length} fallos, ${errores.length} errores de página`);

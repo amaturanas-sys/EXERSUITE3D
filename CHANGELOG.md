@@ -55,6 +55,18 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
   la afectan —su geometría se genera antes de esa fase—, así que el panel deja
   de enseñarlos.
 
+- **Abrir un proyecto de v0.2.73 estiraba la placa.** Traía sus ganchos cada
+  8 cm; al subir el paso al mínimo, la plancha crecía para alojar los que había
+  —de 100 cm a 146— y se salía por los dos extremos del pilar sobre el que se
+  dibujó. Pedir más ganchos SÍ estira la placa, porque es una decisión; que la
+  estire un mínimo que el usuario no pidió, no. Ahora lo que se recorta son los
+  ganchos.
+
+- **Un intervalo de 0 colgaba la pestaña.** `dientesQueCaben` devolvía
+  `Infinity` y el contorno se ponía a dibujar ganchos para siempre. No sale del
+  panel —valida— pero sí de un fichero de proyecto tocado a mano. Ahora hay
+  suelo y un tope de 200 ganchos, que a 12 cm de paso son 24 metros de placa.
+
 ### Sabido
 
 - **12,5 cm entre ganchos parece mucho al lado de los 5 cm de una grilla de

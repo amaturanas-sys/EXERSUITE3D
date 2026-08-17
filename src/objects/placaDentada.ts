@@ -236,10 +236,20 @@ export function vueloDentada(p: PrimitiveParams): number {
   return huecoDentada(p).vuelo;
 }
 
+/**
+ * Tope de ganchos por plancha. No es una regla de diseño: es un cortafuegos.
+ * Cada gancho son dos cajas de colisión y una vuelta del contorno, así que un
+ * número disparatado —un `paso` a cero, un proyecto tocado a mano— no da una
+ * placa fea, cuelga la pestaña. A 12 cm de paso, 200 ganchos son 24 metros.
+ */
+const DENTADA_DIENTES_MAX = 200;
+
 /** Cuántos ganchos caben en una plancha de este largo, a este paso. */
 export function dientesQueCaben(largo: number, paso: number): number {
+  if (!(paso > 0) || !Number.isFinite(largo)) return 1;
   // Cabe n si largo ≥ (n−1)·paso + 2·margen, y margen = 0,58·paso.
-  return Math.max(1, Math.floor(largo / paso - 2 * DENTADA_PROPORCIONES.margen + 1));
+  const n = Math.floor(largo / paso - 2 * DENTADA_PROPORCIONES.margen + 1);
+  return Math.min(DENTADA_DIENTES_MAX, Math.max(1, n));
 }
 
 /** Medidas en centímetros de una placa, resueltas desde sus params. */
@@ -297,12 +307,25 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
 
   const margen = R.margen * paso;
   const trazado = p.height ?? 0;
-  const dientes =
+  let dientes =
     p.dientes != null
-      ? Math.max(1, Math.round(p.dientes))
+      ? Math.min(DENTADA_DIENTES_MAX, Math.max(1, Math.round(p.dientes) || 1))
       : trazado > 0
         ? dientesQueCaben(trazado, paso)
         : DENTADA_DIENTES_DEF;
+
+  // SI EL PASO SE SUBIÓ SOLO, SOBRAN GANCHOS — no falta plancha.
+  //
+  // Pedir más ganchos de los que caben ESTIRA la placa, y eso está bien: es
+  // una decisión del usuario. Pero cuando el paso lo sube el mínimo —un
+  // proyecto guardado antes de que ese mínimo existiera, con sus ganchos cada
+  // 8 cm— estirar sería obedecer a nadie: la placa se saldría por los dos
+  // extremos del pilar sobre el que se dibujó (de 100 cm a 146). Lo que sobra
+  // entonces son ganchos, así que se recortan a los que caben en lo trazado.
+  if (trazado > 0 && p.dienteEspaciado != null && paso > p.dienteEspaciado + 1e-6) {
+    dientes = Math.min(dientes, dientesQueCaben(trazado, paso));
+  }
+
   const minimo = (dientes - 1) * paso + 2 * margen;
   const largo = Math.max(trazado, minimo);
 
