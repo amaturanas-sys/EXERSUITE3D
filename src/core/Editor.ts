@@ -1063,8 +1063,9 @@ export class Editor {
     // su cero de fábrica— y solo entonces se salta a la configuración
     // congelada. Lo que quede tenso lo resuelve el motor en los primeros
     // pasos, igual que en la máquina de verdad.
-    if (this.partidaPiezas?.size) {
-      const movidas = this.physics.recolocarPiezas(this.partidaPiezas);
+    const partida = this.partidaVigente();
+    if (partida) {
+      const movidas = this.physics.recolocarPiezas(partida);
       if (movidas > 0) this.cablesDirty = true;
     }
     this.jointHelpers.visible = false;
@@ -4754,6 +4755,75 @@ export class Editor {
   }
 
   /** Limita una articulación a su eje/rango natural. */
+  /**
+   * DÓNDE PISA CADA PIE, en el suelo y en coordenadas de mundo.
+   *
+   * Se toma el centro de la planta —el centro de la caja del pie proyectado a
+   * y=0—, que es lo que un levantador llama «donde tengo el pie»: no cambia al
+   * flexionar el tobillo ni al girar la puntera.
+   */
+  private huellaDeLosPies(): { L: THREE.Vector3; R: THREE.Vector3 } | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    fig.updateMatrixWorld(true);
+    const pie = (lado: HandSide): THREE.Vector3 | null => {
+      const c = this.centroSegmento(`pie-${lado}`);
+      return c ? new THREE.Vector3(c.x, 0, c.z) : null;
+    };
+    const L = pie("L");
+    const R = pie("R");
+    return L && R ? { L, R } : null;
+  }
+
+  /**
+   * LOS PIES SE QUEDAN DONDE PISAN (v0.2.91).
+   *
+   * Regla del diseñador: «los pies deben anclarse al sitio donde pisa». El rig
+   * está enraizado en la PELVIS —`PARENT_JOINT.hipL` es null, la cadera es la
+   * raíz de la pierna—, así que flexionar la cadera columpia las piernas y son
+   * los PIES los que viajan por el suelo mientras la pelvis se queda quieta. Y
+   * `reapoyarFigura` solo corrige ALTURA, nunca el arrastre horizontal.
+   *
+   * Medido antes de esto, entre el bloqueo y el suelo del peso muerto los pies
+   * patinaban 27,7 cm hacia delante —y la barra se iba con ellos 37 cm, cuando
+   * la regla sagital dice que sube y baja a plomo sobre el medio del pie—. En
+   * las sentadillas la estampa era otra: la postura de fondo abduce la cadera
+   * 36,5° y la de arriba no, así que el maniquí ABRÍA las piernas 14,3 cm por
+   * lado al bajar, como si se recolocara en mitad del gesto.
+   *
+   * Un cuerpo real hace lo contrario: planta los pies, y todo lo demás —la
+   * pelvis, el tronco, la barra— se acomoda a ellos. Como la pelvis es la RAÍZ
+   * del rig, restituirlo es exactamente devolver la figura al sitio donde sus
+   * huellas vuelven a caer sobre sus marcas.
+   *
+   * No se toca nada de esto si la figura está sentada en una pieza (lo que la
+   * sostiene es el asiento) ni si algún pie está APOYADO en una plataforma (ahí
+   * manda la IK del pie, y pelearse con ella sería deshacerla cada fotograma).
+   */
+  private plantarLosPies(huella: { L: THREE.Vector3; R: THREE.Vector3 } | null): void {
+    const fig = this.humanFigure;
+    if (!fig || !huella) return;
+    if (this.figuraApoyadaEn !== "suelo" || this.footTargets.size > 0) return;
+    const ahora = this.huellaDeLosPies();
+    if (!ahora) return;
+    // TRASLACIÓN PURA en el plano del suelo. La altura ya la resolvió
+    // `reapoyarFigura`, y tocarla aquí levantaría o hundiría las plantas.
+    //
+    // Y SOLO TRASLACIÓN, a propósito. La primera versión también ajustaba la
+    // ABDUCCIÓN para conservar la anchura de la estampa, y era pasarse: la
+    // apertura de la puntera es CONSECUENCIA de la abducción (v0.2.80, decisión
+    // del diseñador), así que retocarla para cuadrar centímetros le borraba al
+    // pie sus 36° de rotación externa y dejaba la sentadilla con los pies
+    // rectos. La anchura se resuelve donde le toca —en la postura, que ahora
+    // lleva la estampa puesta desde arriba— y aquí solo se impide que el
+    // cuerpo camine.
+    const medioAntes = huella.L.clone().add(huella.R).multiplyScalar(0.5);
+    const medioAhora = ahora.L.clone().add(ahora.R).multiplyScalar(0.5);
+    fig.position.x += medioAntes.x - medioAhora.x;
+    fig.position.z += medioAntes.z - medioAhora.z;
+    fig.updateMatrixWorld(true);
+  }
+
   private clampJoint(jn: string): void {
     const joints = this.figureJoints();
     if (!joints || !joints[jn]) return;
@@ -4846,10 +4916,20 @@ export class Editor {
    * adonde vuelve el ↺. Y la figura NO se re-aterriza si está apoyada en una
    * pieza: cargar una postura sobre un banco la tiraba al suelo.
    */
-  applyPose(name: string): void {
+  /**
+   * `replantar` distingue COLOCARSE de LEVANTAR, que es la diferencia que pide
+   * el gesto real. Elegir un ejercicio, o colocar al maniquí, ESTABLECE la
+   * estampa: los pies van adonde diga la postura y ése pasa a ser su sitio.
+   * Moverse DENTRO del ejercicio —de arriba al fondo y vuelta— no puede
+   * moverlos: nadie se recoloca a mitad de una repetición.
+   */
+  applyPose(name: string, replantar = true): void {
     const joints = this.figureJoints();
     const def = getPose(name);
     if (!joints || !def) return;
+    // DÓNDE PISABA, antes de tocar una sola articulación: la postura cambia la
+    // forma del cuerpo, no el sitio donde el maniquí tiene los pies puestos.
+    const huella = replantar ? this.huellaDeLosPies() : null;
     for (const g of Object.values(joints)) g.rotation.set(0, 0, 0);
     for (const [jn, [x, y, z]] of Object.entries(def)) {
       const j = joints[jn];
@@ -4859,6 +4939,7 @@ export class Editor {
     // fuera de su rango: desde ahí ninguna primitiva puede volver a entrar.
     for (const jn of Object.keys(def)) if (joints[jn]) this.clampJoint(jn);
     this.reapoyarFigura();
+    this.plantarLosPies(huella);
     this.marcarPoseDePartida(name);
     if (this.physics && this.humanFigure) this.physics.añadirFigura(this.humanFigure);
     this.updateHandIK();
@@ -4886,6 +4967,58 @@ export class Editor {
    * editando el diseño, sin dos estados que confundan.
    */
   private partidaPiezas: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
+  /**
+   * El DISEÑO de esas mismas piezas, para poder volver a él. La partida se ve
+   * en pantalla mientras el maniquí está delante (ver `sincronizarPartidaVisible`)
+   * y hay que saber a qué se vuelve cuando el maniquí se va.
+   */
+  private disenoDePartida: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
+
+  /**
+   * LA PARTIDA DE LA MÁQUINA ES DEL MANIQUÍ (v0.2.91), y esto lo pidió el
+   * diseñador con todas las letras: «en ausencia del maniquí la configuración
+   * de la máquina vuelve al default para seguir diseñando; cuando la simulación
+   * comienza se dispondrá la máquina en pose de último fotograma sólo cuando el
+   * maniquí está presente».
+   *
+   * Tiene sentido: la partida es una CONDICIÓN DE ENSAYO —dónde hay que dejar
+   * el conjunto móvil para que un cuerpo concreto pueda empezar el gesto—, no
+   * una propiedad de la máquina. Sin nadie que la use, lo que hay que ver y
+   * medir es el plano fabricable.
+   */
+  private partidaVigente(): Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null {
+    if (!this.humanFigure || this.humanMode !== "mannequin") return null;
+    return this.partidaPiezas?.size ? this.partidaPiezas : null;
+  }
+
+  /**
+   * PONE LAS MALLAS EN LA PARTIDA, O LAS DEVUELVE AL DISEÑO.
+   *
+   * Antes la partida vivía sólo dentro del motor: parado se veía siempre el
+   * diseño y la configuración congelada no aparecía hasta darle a ▶. Con el
+   * maniquí delante eso rompía lo primero que hay que poder hacer —apoyarle la
+   * mano en el mando—, porque el mando estaba dibujado donde lo dejó el plano y
+   * no donde de verdad va a estar al empezar el gesto: la mano perseguía un
+   * sitio vacío. Ahora, con maniquí, se VE la partida; sin maniquí, el plano.
+   */
+  private sincronizarPartidaVisible(): void {
+    if (this.simulating) return; // manda el motor
+    const mostrar = this.partidaVigente();
+    const fuente = mostrar ?? this.disenoDePartida;
+    if (!fuente) return;
+    for (const [id, t] of fuente) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      o.mesh.position.copy(t.p);
+      o.mesh.quaternion.copy(t.q);
+      o.mesh.updateMatrixWorld(true);
+    }
+    this.cablesDirty = true;
+    this.rebuildAllRopes();
+    this.updateHandIK();
+    this.updateFootIK();
+    this.requestRender();
+  }
 
   /**
    * Fija la POSTURA DE PARTIDA con la pose y el sitio actuales de la figura.
@@ -4924,6 +5057,7 @@ export class Editor {
       poses.set(o.id, { p: p.clone(), q: q.clone() });
     }
     this.partidaPiezas = poses.size ? poses : null;
+    this.recordarDisenoDePartida();
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size, postura: this.poseDePartida !== null };
@@ -4988,8 +5122,9 @@ export class Editor {
     );
     // Se continúa desde donde quedó la partida, no desde el diseño: retocar un
     // punto de bloqueo ya fijado no obliga a rehacerlo entero.
-    if (this.partidaPiezas?.size) {
-      const movidas = this.physics.recolocarPiezas(this.partidaPiezas);
+    const partidaPrevia = this.partidaVigente();
+    if (partidaPrevia) {
+      const movidas = this.physics.recolocarPiezas(partidaPrevia);
       if (movidas > 0) this.cablesDirty = true;
     }
     // El maniquí NO entra al motor aquí: se posa aparte, y metiéndolo solo
@@ -5043,6 +5178,14 @@ export class Editor {
       poses.set(id, t);
     }
     this.partidaPiezas = poses.size ? poses : null;
+    this.disenoDePartida = poses.size
+      ? new Map(
+          [...poses.keys()]
+            .map((id) => [id, this.saved.get(id)] as const)
+            .filter((par): par is [string, SavedTransform] => !!par[1])
+            .map(([id, sv]) => [id, { p: sv.position.clone(), q: sv.quaternion.clone() }]),
+        )
+      : null;
 
     this.simulating = false;
     this.modoPoseMaquina = false;
@@ -5065,6 +5208,9 @@ export class Editor {
     this.jointHelpers.visible = true;
     this.cablesDirty = true;
     this.rebuildAllRopes();
+    // Con el maniquí delante la máquina se queda A LA VISTA en su partida: es
+    // el estado sobre el que hay que apoyarle las manos y los pies.
+    this.sincronizarPartidaVisible();
     this.bus.emit("poseMaquinaChanged", { active: false });
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
@@ -5139,13 +5285,29 @@ export class Editor {
   /** 🗑 Suelta la partida de la MÁQUINA: ▶ vuelve a arrancar en el diseño. */
   soltarPartidaMaquina(): void {
     this.partidaPiezas = null;
+    this.sincronizarPartidaVisible();
+    this.disenoDePartida = null;
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
   }
 
   /** Cuántas piezas tiene congeladas la partida (0 = arranca en el diseño). */
   piezasEnLaPartida(): number {
-    return this.partidaPiezas?.size ?? 0;
+    return this.partidaVigente()?.size ?? 0;
+  }
+
+  /** Apunta el diseño de las piezas congeladas, para poder volver a él. */
+  private recordarDisenoDePartida(): void {
+    if (!this.partidaPiezas?.size) {
+      this.disenoDePartida = null;
+      return;
+    }
+    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const id of this.partidaPiezas.keys()) {
+      const sv = this.saved.get(id);
+      if (sv) diseno.set(id, { p: sv.position.clone(), q: sv.quaternion.clone() });
+    }
+    this.disenoDePartida = diseno.size ? diseno : null;
   }
 
   /** ¿Hay una postura de partida a la que volver? */
@@ -5630,7 +5792,10 @@ export class Editor {
     // toca desde el primer momento.
     for (const z of ZONAS) this.activarZona(z.id, null);
     this.activarZona(ej.zona, "sim");
-    this.aplicarPosturaBarra("arriba");
+    // ELEGIR EJERCICIO ES COLOCARSE: la postura de arriba trae consigo la
+    // estampa —la apertura y el sitio de los pies— y a partir de ahí manda
+    // ella. Replantar aquí sería arrastrar la estampa del ejercicio anterior.
+    this.aplicarPosturaBarra("arriba", false);
     this.bus.emit("barraManiquiChanged", {
       objectId: obj.id,
       ejercicio: ejercicioId,
@@ -5641,11 +5806,11 @@ export class Editor {
   }
 
   /** Aplica uno de los dos extremos del recorrido del ejercicio puesto. */
-  aplicarPosturaBarra(cual: "arriba" | "fondo"): boolean {
+  aplicarPosturaBarra(cual: "arriba" | "fondo", replantar = true): boolean {
     const enlace = this.barraManiqui;
     const ej = enlace ? EJERCICIO_BARRA_POR_ID[enlace.ejercicio] : null;
     if (!ej) return false;
-    this.applyPose(cual === "arriba" ? ej.arriba : ej.fondo);
+    this.applyPose(cual === "arriba" ? ej.arriba : ej.fondo, replantar);
     if (enlace?.rackeada) return true;
     this.sincronizarBarraManiqui();
     return true;
@@ -8705,7 +8870,7 @@ export class Editor {
       // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
       this.figuraApoyadaEn = "pieza";
       this.alturaDelApoyo = new THREE.Box3().setFromObject(destino.obj.mesh).max.y;
-      this.applyPose("Sentado");
+      this.applyPose("Sentado", false);
       // La figura se APOYA sobre la cara superior del asiento. Aquí NO se
       // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
       // y bajarla hasta que lleguen la hundiría en el asiento.
@@ -8734,7 +8899,7 @@ export class Editor {
       }
       this.figuraApoyadaEn = "suelo";
       this.alturaDelApoyo = null;
-      this.applyPose("De pie");
+      this.applyPose("De pie", false);
       fig.position.set(destino.punto.x, 0, destino.punto.z);
     }
     fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));

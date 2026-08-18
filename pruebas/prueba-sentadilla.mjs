@@ -237,7 +237,13 @@ for (const [arriba, fondo] of [["Sentadilla frontal (arriba)", F], ["Sentadilla 
   const alto = await altura();
   const muneca = await respectoA("wristL", "shoulderL");
   const etq = arriba.includes("frontal") ? "frontal" : "trasera";
-  ok(Math.abs(alto - dePie) < 1, `${etq} arriba: la figura está estirada (${alto.toFixed(0)} cm)`);
+  // 2,5 cm y no 1: desde v0.2.91 la postura de arriba YA LLEVA LA ESTAMPA de
+  // sentadilla —los pies abiertos a 60 cm—, porque el diseñador pidió que los
+  // pies se anclen al sitio donde pisan y nadie los abre a mitad de bajada.
+  // Plantarse con esa apertura cuesta 2 cm de estatura, que es lo que le cuesta
+  // a cualquiera: sigue siendo estar de pie con las piernas estiradas, que es
+  // lo que esta comprobación vigila.
+  ok(Math.abs(alto - dePie) < 2.5, `${etq} arriba: la figura está estirada (${alto.toFixed(0)} cm frente a ${dePie.toFixed(0)} de pie)`);
   ok(Math.abs(muneca[2] - fondo.muneca[2]) < 1 && Math.abs(muneca[1] - fondo.muneca[1]) < 1,
     `${etq} arriba: el rack es el mismo que en el fondo (mano ${JSON.stringify(muneca)})`);
 }

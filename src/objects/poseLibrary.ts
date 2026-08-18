@@ -124,6 +124,18 @@ export const BUILTIN_POSES: PoseMap = {
   "Sentadilla frontal (arriba)": {
     // De pie bajo la barra: piernas rectas, tronco a plomo y el rack ya hecho.
     // En el modelo los brazos de la figura de pie y los del fondo son idénticos.
+    // LA ESTAMPA DE SENTADILLA YA ESTÁ PUESTA DE PIE (v0.2.91). Nadie se coloca
+    // bajo la barra con los pies juntos y los abre a mitad de bajada: la
+    // apertura se elige ANTES, y de ahí en adelante los pies no se mueven.
+    // Sin esto el maniquí abría 14,3 cm por lado al descender —medido—, que es
+    // el gesto de quien se recoloca, no el de quien levanta.
+    //
+    // 10,4° de abducción es lo que iguala la anchura del fondo (60,5 cm entre
+    // los centros de los pies), resuelto contra el modelo. Con la rodilla recta
+    // el tobillo deshace exactamente la abducción —de ahí que los dos ángulos
+    // coincidan— y la planta queda plana.
+    hipL: [0, 0, -10.4], hipR: [0, 0, 10.4],
+    ankleL: [0, 0, 10.4], ankleR: [0, 0, -10.4],
     shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
     elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
@@ -134,9 +146,30 @@ export const BUILTIN_POSES: PoseMap = {
     wristL: [25, 0, 25], wristR: [25, 0, -25],
   },
   "Sentadilla frontal (fondo)": {
-    hipL: [-79, 3, -36.5], hipR: [-79, -3, 36.5],
+    // LA PIERNA DEL FONDO, RESUELTA POR GEOMETRÍA (v0.2.91) y no a ojo.
+    //
+    // Con los pies ya anclados, el sitio de la barra deja de depender de dónde
+    // esté la pelvis: la pelvis es la RAÍZ del rig, así que plantar el pie
+    // equivale a decir «la pelvis se coloca donde haga falta para que el pie
+    // caiga en su marca». Y entonces el recorrido de la barra sale de una sola
+    // cuenta: la barra va rígida al tronco, luego se desplaza EXACTAMENTE lo
+    // que se desplace el pie respecto de la cadera.
+    //
+    // Para que no se desplace nada, el PIE tiene que quedar respecto de la
+    // pelvis donde estaba de pie: 9,1 cm por delante. La RODILLA no se toca
+    // —son los 126° medidos sobre el modelo del diseñador—, así que queda una
+    // sola incógnita, la cadera, y el tobillo no es libre: cierra la cadena
+    // (`tobillo = −(cadera + rodilla)`).
+    //
+    // Resuelto así, la barra pasa de irse 8,6 cm hacia atrás a quedarse en
+    // 0,0, y de los tres ángulos DOS eran ya los correctos: −78,61 de cadera
+    // frente a los −79 estimados y 9,01 de tobillo frente a 9. El que estaba
+    // mal era el tobillo en X, −43 en vez de −47,39, y por eso la barra se
+    // iba: 4° de tobillo son 8,6 cm de barra. La profundidad baja de 45,9 a
+    // 43,2 cm, que es CONSECUENCIA y no objetivo — la marca la da el modelo.
+    hipL: [-78.61, 3, -36.5], hipR: [-78.61, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-43, 0, 9], ankleR: [-43, 0, -9],
+    ankleL: [-47.39, 0, 9.01], ankleR: [-47.39, 0, -9.01],
     // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
     spine: [0, 0, 0],
     shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
@@ -149,6 +182,22 @@ export const BUILTIN_POSES: PoseMap = {
     wristL: [25, 0, 25], wristR: [25, 0, -25],
   },
   "Sentadilla trasera (arriba)": {
+    // EL MISMO TRONCO QUE EN EL FONDO. Con la barra sobre los trapecios uno no
+    // está perfectamente vertical arriba y se inclina 3° al bajar: se está ya
+    // con esos 3°, y así el punto de apoyo de la barra no viaja con el pecho.
+    spine: [3, 0, 0],
+    // LA ESTAMPA DE SENTADILLA YA ESTÁ PUESTA DE PIE (v0.2.91). Nadie se coloca
+    // bajo la barra con los pies juntos y los abre a mitad de bajada: la
+    // apertura se elige ANTES, y de ahí en adelante los pies no se mueven.
+    // Sin esto el maniquí abría 14,3 cm por lado al descender —medido—, que es
+    // el gesto de quien se recoloca, no el de quien levanta.
+    //
+    // 10,4° de abducción es lo que iguala la anchura del fondo (60,5 cm entre
+    // los centros de los pies), resuelto contra el modelo. Con la rodilla recta
+    // el tobillo deshace exactamente la abducción —de ahí que los dos ángulos
+    // coincidan— y la planta queda plana.
+    hipL: [0, 0, -10.4], hipR: [0, 0, 10.4],
+    ankleL: [0, 0, 10.4], ankleR: [0, 0, -10.4],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
     // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
@@ -156,10 +205,12 @@ export const BUILTIN_POSES: PoseMap = {
     wristL: [19.5, 0, 13], wristR: [19.5, 0, -13],
   },
   "Sentadilla trasera (fondo)": {
-    // Misma pierna, exactamente, que la frontal.
-    hipL: [-79, 3, -36.5], hipR: [-79, -3, 36.5],
+    // Misma pierna que la frontal, resuelta igual (ver la frontal). Cambia el
+    // parámetro porque la caída es de 45,4 cm y no de 45,9: la barra sobre los
+    // trapecios arranca más alta que sobre las clavículas.
+    hipL: [-78.61, 3, -36.5], hipR: [-78.61, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-43, 0, 9], ankleR: [-43, 0, -9],
+    ankleL: [-47.39, 0, 9.01], ankleR: [-47.39, 0, -9.01],
     // 3°, no 18: es lo que de verdad se adelanta el pecho respecto de la pelvis.
     spine: [3, 0, 0],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
@@ -229,10 +280,29 @@ export const BUILTIN_POSES: PoseMap = {
    */
   "Peso muerto (bloqueo)": {
     neck: [19, 0, 0],
+    // LA BARRA SOBRE EL MEDIO DEL PIE, también arriba (v0.2.91). La misma
+    // regla sagital que gobierna el arranque vale en el bloqueo, y no se
+    // cumplía: con los brazos colgando a plomo la barra quedaba 9,1 cm POR
+    // DETRÁS de la vertical del medio del pie, porque el hombro del rig cae
+    // sobre el tobillo y el medio del pie está 9,1 cm por delante de él.
+    //
+    // Lo que lo resuelve no es un truco: arriba la barra DESCANSA EN LOS
+    // MUSLOS y son ellos los que empujan el brazo hacia delante. 9,41° de
+    // flexión de hombro —resueltos contra el modelo— dejan la barra en z=9,12
+    // contra un medio del pie en 9,11.
+    shoulderL: [-9.41, 0, 0], shoulderR: [-9.41, 0, 0],
   },
   "Press vertical (rack)": {
-    shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
-    elbowL: [-150, 80, 0], elbowR: [-150, -80, 0],
+    // LA BARRA SALE DEL RACK POR LA MISMA VERTICAL por la que sube al bloqueo.
+    // Con el hombro en −30 y el codo en −150 el punto de partida quedaba 2,4 cm
+    // por detrás y el press describía una coma en vez de una recta.
+    //
+    // El desvío cero no lo da un punto sino una CURVA de pares hombro/codo, y
+    // sobre ella hay que elegir: cuanto más flexionado el hombro, más recorrido
+    // le queda al empuje pero menos rango tiene el press. Se toma −40/−141,18
+    // porque deja 7,9 cm de empuje —margen de sobra— con 37,6 cm de recorrido.
+    shoulderL: [-40, 0, 0], shoulderR: [-40, 0, 0],
+    elbowL: [-141.18, 80, 0], elbowR: [-141.18, -80, 0],
   },
   /** Bloqueo del press: codos extendidos y barra sobre el medio del pie. */
   "Press vertical (bloqueo)": {
