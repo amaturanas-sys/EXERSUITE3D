@@ -605,7 +605,13 @@ export class ArticulacionesPanel {
     // La barra puede cambiar sin pasar por este panel (cargar un proyecto,
     // vaciar la escena, borrar la pieza), así que la caja se refresca desde el
     // editor y no desde sus propios botones.
-    this.editor.bus.on("barraManiquiChanged", () => this.refrescarBarra());
+    this.editor.bus.on("barraManiquiChanged", () => {
+      this.refrescarBarra();
+      // Poner una barra activa la zona de su ejercicio, así que las casillas
+      // de SIMULAR también hay que ponerlas al día: si no, marcaban «tren
+      // superior» mientras el maniquí ya estaba armado para un peso muerto.
+      this.refrescar();
+    });
     this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
       this.marcarSeleccion(name);
       if (!name) {

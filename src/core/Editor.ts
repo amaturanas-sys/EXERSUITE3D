@@ -96,6 +96,7 @@ import {
   type PoseDef,
 } from "../objects/poseLibrary";
 import {
+  ZONAS,
   ZONA_POR_ID,
   articulacionesDeZona,
   ladosDe,
@@ -3515,6 +3516,12 @@ export class Editor {
   moverPrimitiva(sentido: SentidoMov, pasoDeg = 5): number {
     const joints = this.figureJoints();
     if (!joints) return 0;
+    // SENTIDO Y PASO TIENEN QUE SER NÚMEROS. Sin esto, llamar con basura —un
+    // "empuje" en vez de un +1 desde un guion, un campo de texto vacío— metía
+    // NaN en las rotaciones, y de ahí no se vuelve: el maniquí entero deja de
+    // tener posición y hay que rehacerlo. Un return silencioso es preferible a
+    // un cuerpo destruido.
+    if ((sentido !== 1 && sentido !== -1) || !Number.isFinite(pasoDeg)) return 0;
     if (this.zonasActivas.size === 0) {
       this.avisoTemporal(
         tt(
@@ -5481,6 +5488,12 @@ export class Editor {
     if (!obj) obj = this.addComponent("barra-olimpica");
     this.barraManiqui = { objectId: obj.id, ejercicio: ejercicioId, rackeada: false };
     this.apoyoBarraLocal = null;
+    // LA ZONA DEL EJERCICIO, puesta con la barra. Elegir «peso muerto» y tener
+    // que ir a marcar «bisagra» a mano en la otra pestaña era pedir dos veces
+    // lo mismo: la barra ya dice qué se está haciendo. Así el 8/9 mueve lo que
+    // toca desde el primer momento.
+    for (const z of ZONAS) this.activarZona(z.id, null);
+    this.activarZona(ej.zona, "sim");
     this.aplicarPosturaBarra("arriba");
     this.bus.emit("barraManiquiChanged", {
       objectId: obj.id,

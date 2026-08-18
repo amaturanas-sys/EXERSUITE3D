@@ -274,6 +274,30 @@ ok(guardado.yDePie > guardado.y0 + 10,
 ok(guardado.recargada.shoulder === -120 && Math.abs(guardado.recargada.y - guardado.y0) < 0.01,
   `y recargar la guardada devuelve sus ángulos exactos (hombro ${guardado.recargada.shoulder}°, y=${guardado.recargada.y} cm)`);
 
+// 6) EL SENTIDO DEL GESTO TIENE QUE SER UN NÚMERO (+1 o −1).
+//
+// Llamando a `moverPrimitiva` con basura —un "empuje" en vez de un +1 desde un
+// guion, un campo vacío— la aritmética metía NaN en las rotaciones, y de ahí no
+// se vuelve: el maniquí entero pierde su posición y hay que rehacerlo. Esto
+// comprueba que la basura se ignora y el cuerpo sigue en pie.
+const basura = await page.evaluate(() => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  ed.applyPose("De pie");
+  const antes = new T.Box3().setFromObject(ed.humanFigure);
+  const movidas = [
+    ed.moverPrimitiva("empuje", 5),
+    ed.moverPrimitiva(1, Number.NaN),
+    ed.moverPrimitiva(0, 5),
+  ];
+  const c = new T.Box3().setFromObject(ed.humanFigure).getCenter(new T.Vector3());
+  return { movidas, sano: Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z),
+    alto: +(antes.max.y - antes.min.y).toFixed(1) };
+});
+console.log("\n6) SENTIDO INVÁLIDO:", JSON.stringify(basura));
+ok(basura.movidas.every((n) => n === 0), "un sentido o un paso inválidos no mueven nada");
+ok(basura.sano && basura.alto > 150,
+  `y el maniquí sigue entero, sin NaN en las articulaciones (${basura.alto} cm)`);
+
 console.log("\nERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();

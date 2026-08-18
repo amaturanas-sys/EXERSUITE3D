@@ -5,6 +5,38 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.84] — 2026-08-18
+
+### Añadido
+
+**Poner la barra deja armado el ejercicio entero.** Elegir «peso muerto» y
+tener que ir a marcar «bisagra» a mano en la otra pestaña era pedir dos veces lo
+mismo: la barra ya dice qué se está haciendo. Ahora cada configuración activa su
+zona de movimiento —inferior para las sentadillas, superior para el press,
+bisagra para el peso muerto— y solo esa, así que el 8/9 mueve lo que toca desde
+el primer momento.
+
+Con eso la función se cierra de punta a punta: se elige el ejercicio, la barra
+aparece en las manos con sus discos, se pulsa el empuje y la barra sube. Medido:
+41 cm en el peso muerto, 20 en la sentadilla frontal, 6 en el press.
+
+### Corregido
+
+**Un sentido de gesto inválido destruía el maniquí.** `moverPrimitiva` espera
++1 o −1; llamándola con otra cosa —un `"empuje"` en vez de un `1` desde un
+guion, un campo vacío— la aritmética metía **NaN** en las rotaciones, y de ahí
+no se vuelve: la figura entera pierde su posición y hay que rehacerla. Lo
+encontré escribiendo la prueba del gesto, equivocándome yo mismo al llamarla.
+Ahora un sentido o un paso que no sean números se ignoran y el cuerpo se queda
+como estaba.
+
+### Pruebas
+
+`prueba-barra-maniqui.mjs` sube a 50: comprueba que cada configuración deja
+armada su zona y solo esa, y que el empuje mueve la barra de verdad.
+`prueba-zonas.mjs` gana la regresión del sentido inválido — que la basura no
+mueva nada y que el maniquí siga entero.
+
 ## [0.2.83] — 2026-08-18
 
 ### Corregido

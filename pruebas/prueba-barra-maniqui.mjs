@@ -301,6 +301,41 @@ const bloqueo = await medir();
 ok(bloqueo.discoAlSuelo > 40,
   `y al bloquear la levanta del suelo (${bloqueo.discoAlSuelo} cm)`);
 
+// ---- 7b. PONER LA BARRA ARMA LA ZONA DEL EJERCICIO
+//
+// Elegir «peso muerto» y tener que ir a marcar «bisagra» a mano en la otra
+// pestaña era pedir dos veces lo mismo: la barra ya dice qué se está haciendo.
+// Sin esto, el 8/9 movía el tren superior mientras el maniquí estaba armado
+// para tirar del suelo.
+for (const [ej, zona] of [["sentadilla-frontal", "inferior"], ["sentadilla-trasera", "inferior"],
+                          ["press-vertical", "superior"], ["peso-muerto", "bisagra"]]) {
+  await poner(ej);
+  const zonas = await p.evaluate(() => [...window.exersuite.editor.zonasDeMovimiento().keys()]);
+  ok(zonas.length === 1 && zonas[0] === zona,
+    `${ej}: deja armada la zona «${zona}» y solo esa (${JSON.stringify(zonas)})`);
+}
+
+// ---- 7c. Y EL GESTO MUEVE LA BARRA
+//
+// Es el final del recorrido de la función: elegir el ejercicio, pulsar el
+// empuje y ver subir la barra. Si la primitiva mueve el cuerpo pero la barra
+// se queda donde estaba, no sirve para dimensionar nada.
+for (const [ej, subeAlEmpujar] of [["peso-muerto", true], ["press-vertical", true],
+                                   ["sentadilla-frontal", true]]) {
+  await poner(ej);
+  await postura("fondo");
+  const recorrido = await p.evaluate(() => {
+    const ed = window.exersuite.editor;
+    const obj = ed.listObjects().find((o) => o.id === ed.getBarraManiqui().objectId);
+    const y0 = obj.mesh.position.y;
+    for (let i = 0; i < 12; i++) ed.moverPrimitiva(1, 5);
+    ed.sincronizarBarraManiqui();
+    return +(obj.mesh.position.y - y0).toFixed(1);
+  });
+  ok(subeAlEmpujar ? recorrido > 5 : recorrido < -5,
+    `${ej}: el empuje mueve la barra ${recorrido} cm — el gesto la lleva consigo`);
+}
+
 // ---- 8. RACKEAR sobre un soporte de verdad
 await p.evaluate(() => window.exersuite.editor.insertarMaquina("rack-sentadillas"));
 await p.waitForTimeout(800);
