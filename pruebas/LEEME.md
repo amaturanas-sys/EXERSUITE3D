@@ -89,19 +89,26 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
-Medido corriendo la batería entera y volviendo a correr en serie cada rojo:
+Medido en la tanda EN SERIE de v0.2.86 (66 pruebas, preview y sitio levantados):
+**59 verdes y 7 rojos**, y los siete vienen de antes.
 
 | prueba | por qué |
 |---|---|
-| `garaje`, `garaje2`, `prototipo`, `prototipo2`, `fable-v214` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo, no llegan a medir nada |
+| `garaje`, `garaje2`, `prototipo`, `prototipo2` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo (`Cannot read properties of null (reading 'click')`), no llegan a medir nada |
+| `fable-v214` | rojo de antes: se agota el tiempo antes de arrancar |
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
-| `v251` | 2 aserciones: las piernas siguen entrando 2,5 cm en el banco |
-| `freno` | **INTERMITENTE** desde v0.2.76: medido 2 verdes de 3 en serie. Antes era rojo constante (12,5 cm de recorrido donde espera 13,1); el arreglo de las guías lo movió pero no lo estabilizó. Mide recorrido simulado con espera de reloj, igual que `atraviesa` |
-| `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3`, `uppermachine-lib` | **solo** en paralelo: en serie pasan (verificado en v0.2.75) |
-| `atraviesa` | **INTERMITENTE**, y no «solo en paralelo» como decía esta ficha hasta v0.2.75: medido con la máquina tranquila y en serie, 2 verdes de 3. Pasó en la tanda en paralelo y falló en serie a continuación, o sea que el paralelismo no es la variable. Mide recorridos simulados y no espera a que la pila se asiente |
+| `v251` | 1 aserción: las piernas siguen entrando 2,5 cm en el banco |
 
-`sitio` ya NO está en la lista: desde v0.2.72 pasa, con el Next.js levantado en el
-3100.
+**Lo que dejó de estar en rojo en esta tanda**, y conviene no volver a apuntarlo
+sin medirlo: `freno` y `atraviesa` —que estaban como INTERMITENTES— salieron
+verdes; `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3` y
+`uppermachine-lib` también, que era lo esperado porque solo caían en paralelo; y
+`sitio` pasa con el Next.js en el 3100.
+
+Dos rojos de esta tanda NO estaban en esta lista y eran regresión de v0.2.81:
+`ergonomia-v256` y `v251` afirmaban que POSAR tiene cuatro grupos, y el grupo
+BARRA lo dejó en cinco. Corregidas las dos aserciones: lo que protegen no es el
+número sino que POSAR siga agrupado por tarea.
 
 ### Esperar por RELOJ es la primera causa de rojo mentiroso
 

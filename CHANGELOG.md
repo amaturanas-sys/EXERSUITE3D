@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.87] — 2026-08-18
+
+Batería completa en serie sobre el build final, para cerrar la release.
+
+**59 verdes y 7 rojos de 66**, y los siete rojos vienen de antes: `garaje`,
+`garaje2`, `prototipo` y `prototipo2` revientan en el asistente de proyecto
+nuevo, `fable-v214` se agota antes de arrancar, `uppermachine` deja 5
+aserciones y `v251` una (las piernas entran 2,5 cm en el banco).
+
+Lo que dejó de estar en rojo, medido y no supuesto: **`freno` y `atraviesa`
+salieron verdes** —estaban fichados como intermitentes—, y con ellas
+`cable-oculto`, `800-debug`, `800-debug2`, `800-debug3` y `uppermachine-lib`,
+que solo caían en paralelo. `sitio` pasa con el Next.js levantado.
+
+### Corregido
+
+**Dos aserciones que rompió el grupo BARRA de v0.2.81.** `ergonomia-v256` y
+`v251` afirmaban que POSAR tiene cuatro grupos por tarea, y añadir BARRA lo dejó
+en cinco. No es un defecto de la aplicación sino de las pruebas, y se corrigen
+diciendo lo que de verdad protegen: no el número, sino que POSAR siga agrupado
+por tarea y no vuelva a ser una columna de mandos sueltos. BARRA va entre
+Postura y Articulación porque es parte del «qué ejercicio» —elegirla fija las
+dos posturas del recorrido y la zona de movimiento— y la articulación es el
+afinado de lo ya elegido.
+
+### Cambiado
+
+`pruebas/LEEME.md` recoge la medición de hoy en su ficha de rojos conocidos, que
+llevaba desde v0.2.75 sin rehacerse.
+
 ## [0.2.86] — 2026-08-18
 
 ### Corregido

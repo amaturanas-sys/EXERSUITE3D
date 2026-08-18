@@ -226,7 +226,10 @@ const nueva = async (w = 1280, h = 900) => {
   ok(r.seleccionada === "kneeL" && r.despues === 70,
     `y AUN ASÍ se puede posar: ${r.antes}° → ${r.despues}° (antes el candado lo impedía y remitía a una ventana que ya no existe)`);
   ok(!r.candados, "el botón de candado ya no está en POSAR: lo manda la zona en SIMULAR");
-  ok(r.grupos.length === 4, `POSAR queda en 4 grupos por tarea (${r.grupos.join(" · ")})`);
+  // Cinco desde v0.2.81: BARRA se suma a Postura, Articulación, Apoyos y
+  // Partida. Lo que esta aserción protege no es el número sino que POSAR siga
+  // AGRUPADO POR TAREA y no vuelva a ser una columna de mandos sueltos.
+  ok(r.grupos.length === 5, `POSAR queda en 5 grupos por tarea (${r.grupos.join(" · ")})`);
   ok(!r.desborda, `y cabe sin bajar en 900 px de alto (${r.alto} px de contenido en ${r.hueco} px de hueco)`);
   await page.close();
 }

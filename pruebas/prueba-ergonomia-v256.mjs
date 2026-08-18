@@ -47,8 +47,15 @@ const orden = await p.evaluate(() => {
   };
 });
 console.log("grupos:", JSON.stringify(orden.grupos));
-ok(JSON.stringify(orden.grupos) === JSON.stringify(["Postura", "Articulación", "Apoyos", "Partida del ejercicio"]),
-  `el orden es Postura → Articulación → Apoyos → Partida (${orden.grupos.join(" · ")})`);
+// BARRA entra entre Postura y Articulación en v0.2.81. El orden de POSAR es el
+// de la tarea real —primero dónde va la figura, luego QUÉ EJERCICIO hace, luego
+// el detalle articular, luego dónde se apoya y al final la partida—, y la barra
+// es parte del «qué ejercicio»: elegirla fija las dos posturas del recorrido y
+// la zona de movimiento. Va después de Postura porque se apoya en ella, y antes
+// de Articulación porque la articulación es el afinado de lo ya elegido.
+ok(JSON.stringify(orden.grupos)
+    === JSON.stringify(["Postura", "Barra", "Articulación", "Apoyos", "Partida del ejercicio"]),
+  `el orden es Postura → Barra → Articulación → Apoyos → Partida (${orden.grupos.join(" · ")})`);
 ok(orden.antesDelPrimerGrupo.some((t) => /figura/i.test(t)), "1.a — quitar/crear figura arriba del todo");
 ok(orden.antesDelPrimerGrupo.some((t) => /Colocar/.test(t)) &&
    orden.antesDelPrimerGrupo.some((t) => /Agarrar/.test(t)), "1.a — Colocar y Agarrar se mantienen arriba");
