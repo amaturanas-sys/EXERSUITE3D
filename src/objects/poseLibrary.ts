@@ -139,6 +139,65 @@ export const BUILTIN_POSES: PoseMap = {
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
   },
+  /**
+   * PRESS VERTICAL Y PESO MUERTO (v0.2.79). Estos NO salen del .obj del
+   * diseñador —allí solo hay sentadillas—, así que no se estiman a ojo: se
+   * resuelven contra las restricciones que las láminas de referencia dan como
+   * reglas del gesto, ajustando el rig con el mismo descenso por coordenadas
+   * que las sentadillas.
+   *
+   * Lo que manda en el peso muerto es LA BARRA, no el cuerpo: centro a 22,5 cm
+   * del suelo (radio del disco de 45) y sobre el METATARSO, no sobre el centro
+   * del pie. A partir de ahí, brazos verticales, planta plana, cadera por
+   * encima de la rodilla y hombros sobre la barra. Sale a 22,7 cm de altura,
+   * 1,1 cm por delante del metatarso, brazo a 2° de la plomada y cadera 4 cm
+   * sobre la rodilla.
+   *
+   * EL PRECIO, y conviene saberlo: el brazo del rig es corto. De pie, su mano
+   * queda a 79,9 cm del suelo, unos 6 cm más alta que la de una persona de
+   * 175. Esos centímetros hay que pagarlos bajando más el cuerpo, y se pagan
+   * en dos sitios: tronco a 61° de la vertical (una persona real ronda 55) y
+   * espinilla a 35° (una real, 15-20). Es decir, la BARRA queda donde tiene
+   * que quedar y el cuerpo llega a ella algo más agachado y con la rodilla más
+   * adelantada de lo que enseña la lámina. Arreglarlo de verdad es alargar el
+   * húmero del rig, que toca todas las posturas ya medidas y no entra aquí.
+   */
+  "Peso muerto (suelo)": {
+    hipL: [-84, 0, 0], hipR: [-84, 0, 0],
+    kneeL: [119, 0, 0], kneeR: [119, 0, 0],
+    ankleL: [-35, 0, 0], ankleR: [-35, 0, 0],
+    spine: [61, 0, 0],
+    // El hombro cuelga de la columna: inclinar el tronco se lleva el brazo con
+    // él. Estos −59 son lo que hay que devolver para que el brazo caiga a
+    // plomo, que es la primera regla de la lámina («arms are kept straight»).
+    shoulderL: [-59, 0, 0], shoulderR: [-59, 0, 0],
+  },
+  /** Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando. */
+  "Peso muerto (bloqueo)": {},
+  /**
+   * SALIDA DEL PRESS VERTICAL. No es el rack de la sentadilla frontal, y la
+   * lámina lo dice: allí el codo va ARRIBA, aquí el ANTEBRAZO VA VERTICAL bajo
+   * la barra, con las manos justo por fuera del hombro y el codo por delante
+   * de la barra. Resuelto: antebrazo a 0,5° de la vertical, muñeca 10,3 cm
+   * sobre el hombro (altura de clavícula), mano 10,1 cm por fuera y codo 2,6
+   * cm por delante de la muñeca.
+   *
+   * Los ±80 de torsión del codo son los que colocan ese codo POR DELANTE de la
+   * barra; sin ellos se va 0,6 cm por detrás. En un cilindro no se ve girar,
+   * pero es lo que cambia dónde cae el codo.
+   */
+  "Press vertical (rack)": {
+    shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
+    elbowL: [-150, 80, 0], elbowR: [-150, -80, 0],
+  },
+  /** Bloqueo del press: codos extendidos y barra sobre el medio del pie. */
+  "Press vertical (bloqueo)": {
+    // −166 y no −180: con el brazo del todo vertical la mano se iba detrás de
+    // la vertical del pie. Así la barra queda sobre el medio del pie (0,2 cm)
+    // y la mano 15,9 cm por encima de la cabeza.
+    shoulderL: [-166, 0, 0], shoulderR: [-166, 0, 0],
+    elbowL: [0, 0, 0], elbowR: [0, 0, 0],
+  },
   Sentado: {
     hipL: [-85, 0, 0], hipR: [-85, 0, 0],
     kneeL: [95, 0, 0], kneeR: [95, 0, 0],

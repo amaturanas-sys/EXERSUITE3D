@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.79] — 2026-08-18
+
+Primer trozo de la barra en manos del maniquí: las cuatro posturas que faltaban
+para que las configuraciones con barra tengan principio y final.
+
+### Añadido
+
+**«Press vertical (rack)», «Press vertical (bloqueo)», «Peso muerto (suelo)» y
+«Peso muerto (bloqueo)».** Estas no salen del `.obj` del diseñador —allí solo
+hay sentadillas—, así que no se estiman a ojo: se resuelven contra las reglas
+que dan las láminas de referencia, ajustando el rig con el mismo descenso por
+coordenadas que las sentadillas.
+
+- **Peso muerto.** Manda LA BARRA, no el cuerpo: centro a 22,5 cm del suelo
+  (radio del disco de 45) y sobre el METATARSO, no sobre el centro del pie. A
+  partir de ahí, brazos verticales, planta plana, cadera por encima de la
+  rodilla y hombros sobre la barra. Sale a 22,7 cm de altura, 1,1 cm por
+  delante del metatarso, brazo a 2° de la plomada y cadera 4 cm sobre la
+  rodilla.
+- **Press vertical.** La salida NO es el rack de la sentadilla frontal, y eso
+  lo corrigen las láminas: allí el codo va arriba, aquí el ANTEBRAZO VA
+  VERTICAL bajo la barra. Queda a 0,5° de la plomada, con la muñeca 15,2 cm
+  sobre el hombro (altura de clavícula), la mano 7,7 cm por fuera y el codo
+  10,9 cm por delante. El bloqueo pone la mano a 190,9 cm, 15,9 sobre la
+  cabeza y la barra sobre el medio del pie.
+
+**El precio, y conviene que esté escrito:** el brazo del rig es corto. De pie,
+su mano queda a 79,9 cm del suelo, unos 6 cm más alta que la de una persona de
+175. Esos centímetros se pagan bajando más el cuerpo, y se pagan en el peso
+muerto: tronco a 61° de la vertical contra los ~55 de la lámina, y espinilla a
+35° contra 15-20. La barra queda donde tiene que quedar; el cuerpo llega a ella
+algo más plegado que en el dibujo. Alargar el húmero toca todas las posturas ya
+medidas y no entra aquí.
+
 ## [0.2.78] — 2026-08-18
 
 La secuencia de sentadilla con barra que mandó el diseñador —cuatro figuras:
