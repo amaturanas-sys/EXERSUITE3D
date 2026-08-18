@@ -2907,12 +2907,11 @@ body.modo-prototipo #simbar {
   margin-bottom: 5px;
 }
 /* HACIA DÓNDE MIRA EL MANIQUÍ (v0.2.91): dos giros de cuarto y el número
-   exacto, en una fila que cabe en el ancho del panel. */
-.mq-fila-rumbo { display: flex; gap: 6px; align-items: center; }
-.mq-fila-rumbo .mq-etiqueta { flex: 0 0 auto; opacity: 0.75; font-size: 12px; }
-.mq-fila-rumbo .mq-num { flex: 1; min-width: 0; width: 100%; }
-.mq-fila-rumbo .mq-unidad { flex: 0 0 auto; opacity: 0.6; font-size: 12px; }
-.mq-fila-rumbo .tool { flex: 0 0 auto; }
+   exacto, EN LA MISMA FILA que «Colocar» y «Agarrar» — el panel ya roza la
+   barra de simulación en una tablet de 800×1280 y una fila más la solapaba. */
+.mq-rumbo { display: flex; gap: 2px; align-items: center; flex: 0 0 auto; }
+.mq-rumbo .mq-num { width: 46px; flex: 0 0 auto; text-align: center; }
+.mq-rumbo .tool { flex: 0 0 auto; padding-left: 6px; padding-right: 6px; }
 
 .mq-fila-postura { display: flex; gap: 6px; align-items: center; }
 .mq-fila-postura .select { flex: 1; min-width: 0; }

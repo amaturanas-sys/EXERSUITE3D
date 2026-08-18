@@ -4998,12 +4998,6 @@ export class Editor {
    * editando el diseño, sin dos estados que confundan.
    */
   private partidaPiezas: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
-  /**
-   * El DISEÑO de esas mismas piezas, para poder volver a él. La partida se ve
-   * en pantalla mientras el maniquí está delante (ver `sincronizarPartidaVisible`)
-   * y hay que saber a qué se vuelve cuando el maniquí se va.
-   */
-  private disenoDePartida: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
 
   /**
    * LA PARTIDA DE LA MÁQUINA ES DEL MANIQUÍ (v0.2.91), y esto lo pidió el
@@ -5023,29 +5017,26 @@ export class Editor {
   }
 
   /**
-   * PONE LAS MALLAS EN LA PARTIDA, O LAS DEVUELVE AL DISEÑO.
+   * LAS MALLAS GUARDAN EL DISEÑO. SIEMPRE.
    *
-   * Antes la partida vivía sólo dentro del motor: parado se veía siempre el
-   * diseño y la configuración congelada no aparecía hasta darle a ▶. Con el
-   * maniquí delante eso rompía lo primero que hay que poder hacer —apoyarle la
-   * mano en el mando—, porque el mando estaba dibujado donde lo dejó el plano y
-   * no donde de verdad va a estar al empezar el gesto: la mano perseguía un
-   * sitio vacío. Ahora, con maniquí, se VE la partida; sin maniquí, el plano.
+   * Esta función llegó a mover las piezas a la partida mientras el maniquí
+   * estaba delante, para que se viera dónde iba a arrancar el gesto. Fue un
+   * error caro y conviene dejarlo escrito: PARADO, LAS MALLAS SON EL DISEÑO, y
+   * media aplicación cuenta con ello. `startSimulation` saca de ellas el estado
+   * al que volver (`saved`) y construye con ellas el mundo físico —los cables
+   * miden ahí su longitud de reposo y las uniones su cero—, `fijarPartida`
+   * compara contra ellas para saber qué se movió de verdad, y exportar y acotar
+   * leen de ellas el plano fabricable. Dibujar la partida encima envenenaba las
+   * cuatro cosas a la vez: la máquina arrancaba con cables mal medidos, al
+   * parar se «restauraba» la partida ENCIMA del diseño —que se perdía— y cada
+   * ▶/⏹ lo empeoraba un poco más.
+   *
+   * Lo que hacía falta no era mover nada, sino que la MANO supiera adónde
+   * apuntar: eso lo resuelve `updateHandIK`, que compone el marco del agarre
+   * desde la partida cuando la hay. Aquí sólo se reencaminan los apoyos.
    */
   private sincronizarPartidaVisible(): void {
     if (this.simulating) return; // manda el motor
-    const mostrar = this.partidaVigente();
-    const fuente = mostrar ?? this.disenoDePartida;
-    if (!fuente) return;
-    for (const [id, t] of fuente) {
-      const o = this.objects.get(id);
-      if (!o) continue;
-      o.mesh.position.copy(t.p);
-      o.mesh.quaternion.copy(t.q);
-      o.mesh.updateMatrixWorld(true);
-    }
-    this.cablesDirty = true;
-    this.rebuildAllRopes();
     this.updateHandIK();
     this.updateFootIK();
     this.requestRender();
@@ -5088,7 +5079,6 @@ export class Editor {
       poses.set(o.id, { p: p.clone(), q: q.clone() });
     }
     this.partidaPiezas = poses.size ? poses : null;
-    this.recordarDisenoDePartida();
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size, postura: this.poseDePartida !== null };
@@ -5223,14 +5213,6 @@ export class Editor {
       poses.set(id, t);
     }
     this.partidaPiezas = poses.size ? poses : null;
-    this.disenoDePartida = poses.size
-      ? new Map(
-          [...poses.keys()]
-            .map((id) => [id, this.saved.get(id)] as const)
-            .filter((par): par is [string, SavedTransform] => !!par[1])
-            .map(([id, sv]) => [id, { p: sv.position.clone(), q: sv.quaternion.clone() }]),
-        )
-      : null;
 
     this.simulating = false;
     this.modoPoseMaquina = false;
@@ -5331,7 +5313,6 @@ export class Editor {
   soltarPartidaMaquina(): void {
     this.partidaPiezas = null;
     this.sincronizarPartidaVisible();
-    this.disenoDePartida = null;
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
   }
@@ -5339,20 +5320,6 @@ export class Editor {
   /** Cuántas piezas tiene congeladas la partida (0 = arranca en el diseño). */
   piezasEnLaPartida(): number {
     return this.partidaVigente()?.size ?? 0;
-  }
-
-  /** Apunta el diseño de las piezas congeladas, para poder volver a él. */
-  private recordarDisenoDePartida(): void {
-    if (!this.partidaPiezas?.size) {
-      this.disenoDePartida = null;
-      return;
-    }
-    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
-    for (const id of this.partidaPiezas.keys()) {
-      const sv = this.saved.get(id);
-      if (sv) diseno.set(id, { p: sv.position.clone(), q: sv.quaternion.clone() });
-    }
-    this.disenoDePartida = diseno.size ? diseno : null;
   }
 
   /** ¿Hay una postura de partida a la que volver? */
@@ -5395,6 +5362,61 @@ export class Editor {
   }
 
   /**
+   * A QUÉ ALTURA SE PISA bajo el maniquí (v0.2.91): la cara superior de lo que
+   * haya debajo de las plantas, o 0 si sólo hay suelo.
+   *
+   * `ground()` clava el punto más bajo de la figura en y=0, que es el SUELO del
+   * proyecto y no la superficie que se está pisando. De pie sobre la plataforma
+   * de una prensa, o sobre el estribo de una máquina, la planta se hundía
+   * dentro de la pieza —el cuerpo bajaba hasta el suelo— y la pisada no quedaba
+   * fijada a nada.
+   */
+  private superficieBajoLosPies(): number {
+    const fig = this.humanFigure;
+    if (!fig) return 0;
+    fig.updateMatrixWorld(true);
+    const rayo = new THREE.Raycaster();
+    const abajo = new THREE.Vector3(0, -1, 0);
+    let alto = 0;
+    for (const lado of ["L", "R"] as const) {
+      const m = this.mallaSegmento(`pie-${lado}`);
+      if (!m) continue;
+      const caja = new THREE.Box3().setFromObject(m);
+      const c = caja.getCenter(new THREE.Vector3());
+      // El rayo sale de ENCIMA del pie: saliendo del centro, con la planta ya
+      // metida en la plataforma, el primer choque sería la cara de abajo.
+      rayo.set(new THREE.Vector3(c.x, caja.max.y + 2, c.z), abajo);
+      for (const golpe of rayo.intersectObjects(this.sceneManager.content.children, true)) {
+        // Sólo cuenta lo que está bajo la planta y a un paso de ella: una
+        // pieza a un metro por debajo no es donde se pisa.
+        const y = golpe.point.y;
+        if (y > caja.max.y + 0.01) continue;
+        if (caja.min.y - y > 30) break; // demasiado abajo: se pisa el suelo
+        alto = Math.max(alto, y);
+        break;
+      }
+    }
+    return alto;
+  }
+
+  /** Sube la figura lo justo para que las plantas descansen en esa superficie. */
+  private pisarLaSuperficie(): void {
+    const fig = this.humanFigure;
+    if (!fig) return;
+    const superficie = this.superficieBajoLosPies();
+    if (superficie <= 0.05) return; // el suelo; ya lo dejó `ground`
+    fig.updateMatrixWorld(true);
+    let planta = Infinity;
+    for (const lado of ["L", "R"] as const) {
+      const m = this.mallaSegmento(`pie-${lado}`);
+      if (m) planta = Math.min(planta, new THREE.Box3().setFromObject(m).min.y);
+    }
+    if (!Number.isFinite(planta)) return;
+    fig.position.y += superficie - planta;
+    fig.updateMatrixWorld(true);
+  }
+
+  /**
    * Re-apoya la figura CONSERVANDO su apoyo (v0.2.49).
    *
    * `ground()` la clavaba siempre en y=0: un maniquí sentado en un banco a
@@ -5407,6 +5429,7 @@ export class Editor {
     if (!fig) return;
     if (this.figuraApoyadaEn === "suelo") {
       (fig.userData.ground as (() => void) | undefined)?.();
+      this.pisarLaSuperficie();
       return;
     }
     // Sobre una pieza, los glúteos vuelven a posarse en la cara del asiento.

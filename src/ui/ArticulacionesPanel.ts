@@ -254,10 +254,11 @@ export class ArticulacionesPanel {
       const v = parseFloat(this.rumbo.value);
       if (Number.isFinite(v)) this.editor.setRumboFigura(v);
     });
-    this.filaRumbo = el("div", { class: "row mq-fila-rumbo" }, [
-      el("span", { class: "mq-etiqueta" }, [tt("Mira a", "Facing")]),
-      bIzq, this.rumbo, el("span", { class: "mq-unidad" }, ["°"]), bDer,
-    ]);
+    // VA EN LA MISMA FILA QUE «Colocar» y «Agarrar», sin añadir alto: el panel
+    // ya roza la barra de simulación en una tablet de 800×1280, y una fila más
+    // la solapaba. El número lleva su propia ayuda, así que no hace falta
+    // etiqueta ni unidad.
+    this.filaRumbo = el("span", { class: "mq-rumbo" }, [bIzq, this.rumbo, bDer]);
     const pintarRumbo = () => { this.rumbo.value = String(this.editor.rumboFigura()); };
     this.editor.bus.on("figuraRumboChanged", pintarRumbo);
     this.editor.bus.on("humanFigureChanged", pintarRumbo);
@@ -472,8 +473,7 @@ export class ArticulacionesPanel {
     // al último porque es la consecuencia de todo lo anterior, no su premisa.
     this.cajaPosar = el("div", { class: "mq-seccion" }, [
       el("div", { class: "pose-actions" }, [this.botonFigura]),
-      el("div", { class: "pose-actions" }, [bColocar, bAgarrar]),
-      this.filaRumbo,
+      el("div", { class: "pose-actions" }, [bColocar, bAgarrar, this.filaRumbo]),
 
       grupo(tt("Postura", "Pose"), [
         el("div", { class: "row mq-fila-postura" }, [this.select, bAplicar]),

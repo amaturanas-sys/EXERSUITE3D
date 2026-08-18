@@ -62,36 +62,58 @@ const b = await p.evaluate(async () => {
   ed.physics.release?.();
   for (let i = 0; i < 20; i++) ed.physics.step(1 / 60);
   const r = ed.terminarPoseMaquina();
-  const conManiqui = pieza.mesh.position.y;
+  const trasPosar = pieza.mesh.position.y;
   const congeladas = ed.piezasEnLaPartida();
-  // Se va el maniquí: la máquina vuelve al plano.
+  // ▶ CON MANIQUÍ: el motor arranca en la partida.
+  ed.startSimulation();
+  for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
+  await new Promise((x) => setTimeout(x, 200));
+  const alArrancar = pieza.mesh.position.y;
+  ed.stopSimulation();
+  await new Promise((x) => setTimeout(x, 400));
+  const trasParar = pieza.mesh.position.y;
+  // Y OTRA VEZ, dos ciclos más: el plano no puede irse derivando.
+  for (let k = 0; k < 2; k++) {
+    ed.startSimulation();
+    for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
+    await new Promise((x) => setTimeout(x, 150));
+    ed.stopSimulation();
+    await new Promise((x) => setTimeout(x, 300));
+  }
+  const trasTresCiclos = pieza.mesh.position.y;
+  // Sin maniquí la partida no rige.
   ed.removeHumanFigure();
   await new Promise((x) => setTimeout(x, 200));
-  const sinManiqui = pieza.mesh.position.y;
   const congeladasSin = ed.piezasEnLaPartida();
-  // Vuelve el maniquí: vuelve la partida, sin haberla vuelto a fijar.
-  await ed.addHumanFigure();
-  await new Promise((x) => setTimeout(x, 700));
-  const otraVez = pieza.mesh.position.y;
-  return { entra, piezas: r.piezas, disenoY, conManiqui: +conManiqui.toFixed(1),
-    sinManiqui: +sinManiqui.toFixed(1), otraVez: +otraVez.toFixed(1),
+  return { entra, piezas: r.piezas, disenoY,
+    trasPosar: +trasPosar.toFixed(1), alArrancar: +alArrancar.toFixed(1),
+    trasParar: +trasParar.toFixed(1), trasTresCiclos: +trasTresCiclos.toFixed(1),
     congeladas, congeladasSin };
 });
 ok(b.entra, "con maniquí delante sí se entra a posar la máquina");
 ok(b.piezas > 0 && b.congeladas > 0, `la partida congela lo que se movió (${b.piezas} pieza(s))`);
-ok(Math.abs(b.conManiqui - b.disenoY) > 5,
-  `con el maniquí, la máquina se VE en su partida y no en el plano (${b.conManiqui} frente a ${b.disenoY} cm)`);
-ok(Math.abs(b.sinManiqui - b.disenoY) < 0.5,
-  `sin maniquí vuelve al diseño para seguir diseñando (${b.sinManiqui} cm)`);
+// PARADO, LA MALLA ES EL DISEÑO. Llegó a dibujarse la partida encima y fue un
+// desastre: `startSimulation` saca de las mallas el estado al que volver y
+// construye con ellas el mundo —los cables miden ahí su reposo y las uniones su
+// cero—, así que la máquina arrancaba mal armada y al parar se «restauraba» la
+// partida ENCIMA del plano, que se perdía. Cada ▶/⏹ lo empeoraba.
+ok(Math.abs(b.trasPosar - b.disenoY) < 0.5,
+  `parado se sigue viendo el DISEÑO, no la partida (${b.trasPosar} vs ${b.disenoY} cm)`);
+ok(Math.abs(b.alArrancar - b.disenoY) > 5,
+  `pero ▶ arranca en la partida (${b.alArrancar} cm, diseño ${b.disenoY})`);
+ok(Math.abs(b.trasParar - b.disenoY) < 0.5,
+  `y ⏹ devuelve el plano intacto (${b.trasParar} cm)`);
+ok(Math.abs(b.trasTresCiclos - b.disenoY) < 0.5,
+  `tres ciclos ▶/⏹ y el plano NO deriva (${b.trasTresCiclos} cm)`);
 ok(b.congeladasSin === 0, "y sin maniquí la partida no cuenta (0 piezas congeladas)");
-ok(Math.abs(b.otraVez - b.conManiqui) < 0.5,
-  `al volver el maniquí vuelve su partida, sin refijarla (${b.otraVez} cm)`);
 
 // ── 3. Se puede APOYAR LA MANO con la máquina posada ──────────────────────
 const c = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  // El bloque anterior se lleva al maniquí para comprobar la partida sin él.
+  if (!ed.humanFigure) { await ed.addHumanFigure(); await new Promise((r) => setTimeout(r, 700)); }
   const mando = ed.addComponent("prim-cylinder");
   mando.params = { kind: "cylinder", radiusTop: 2, radiusBottom: 2, height: 60 };
   mando.rebuildGeometry();
