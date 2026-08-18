@@ -2874,6 +2874,25 @@ body.modo-prototipo #simbar {
 }
 .mq-partida.mq-partida-maquina { color: #7fd08a; }
 
+/* ---- v0.2.81 · barra en manos del maniquí ---- */
+.mq-barra { display: flex; gap: 6px; align-items: center; }
+.mq-etq {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  flex: 0 0 auto;
+}
+.mq-barra .num { width: 56px; flex: 0 0 auto; }
+.mq-barra .tool { flex: 1; min-width: 0; }
+.mq-nota {
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.3;
+  margin-top: 4px;
+  min-height: 13px;
+}
+
 /* ---- v0.2.51 · POSAR agrupado por tarea, para que quepa sin bajar ---- */
 .mq-grupo {
   border-top: 1px solid var(--line);

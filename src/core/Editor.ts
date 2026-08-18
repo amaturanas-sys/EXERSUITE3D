@@ -16,6 +16,14 @@ import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
+import { espejoDe } from "../objects/espejar";
+import {
+  EJERCICIO_BARRA_POR_ID,
+  sitioDeLaBarra,
+  type AgarreBarra,
+  type ApoyosBarra,
+  type GanchoBarra,
+} from "../objects/barraManiqui";
 import {
   dientesQueCaben,
   medidasDentada,
@@ -154,6 +162,12 @@ export type EditorEvents = {
     name: string | null;
     angles: [number, number, number];
     locked: boolean;
+  };
+  /** El maniquí cogió, cambió o soltó su barra (v0.2.81). */
+  barraManiquiChanged: {
+    objectId: string | null;
+    ejercicio: string | null;
+    rackeada: boolean;
   };
   /** Estado de la figura humana de referencia. */
   humanFigureChanged: {
@@ -420,6 +434,14 @@ export class Editor {
 
   /** Manos apoyadas en agarres (IK): lado -> objeto + punto local. */
   private handTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
+  /**
+   * BARRA EN MANOS (v0.2.81): la pieza que el maniquí lleva puesta y en qué
+   * configuración. `null` = no lleva ninguna. Mientras esté puesta, la barra
+   * NO se posa a mano: su sitio lo dicta el cuerpo en cada frame.
+   */
+  private barraManiqui:
+    | { objectId: string; ejercicio: string; rackeada: boolean }
+    | null = null;
   private attachMode = false;
   private attachSide: HandSide | null = null;
   /** Qué se está apoyando: la mano (hombro/codo) o el pie (cadera/rodilla). */
@@ -866,6 +888,8 @@ export class Editor {
     this.updateStackAnimation();
     this.updateHandIK();
     this.updateFootIK();
+    // La barra sujeta va DESPUÉS de la IK: se cuelga del cuerpo ya resuelto.
+    this.sincronizarBarraManiqui();
     if (this.cablesDirty) {
       this.updateCableVisuals();
       this.cablesDirty = false;
@@ -2584,6 +2608,14 @@ export class Editor {
         // Dónde arranca la MÁQUINA (v0.2.51). Se guarda por índice de pieza,
         // igual que hacen las manos apoyadas, porque los ids se rehacen al
         // cargar. Solo viaja lo que se movió respecto del diseño.
+        // BARRA EN MANOS (v0.2.81), por índice como startParts.
+        barra: this.barraManiqui
+          ? {
+              index: this.listObjects().findIndex((o) => o.id === this.barraManiqui?.objectId),
+              ejercicio: this.barraManiqui.ejercicio,
+              rackeada: this.barraManiqui.rackeada,
+            }
+          : null,
         startParts: this.partidaPiezas
           ? [...this.partidaPiezas]
               .map(([id, t]) => ({
@@ -2747,6 +2779,10 @@ export class Editor {
     this.removeHumanFigure();
     this.jointLocks.clear();
     this.reiniciarZonas();
+    // La barra del maniquí se va con las piezas: dejar el enlace vivo apuntaba
+    // a un id que ya no existe.
+    this.barraManiqui = null;
+    this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
     this.partidaPiezas = null;
     // Y los puntos guardados: son de ESTE proyecto. Si sobreviven, el selector
     // sigue ofreciendo los del anterior y aplicarlos manda el maniquí a donde
@@ -3011,6 +3047,25 @@ export class Editor {
         });
       }
       if (poses.size) this.partidaPiezas = poses;
+    }
+
+    // BARRA EN MANOS (v0.2.81). Si el índice ya no apunta a nada —la pieza se
+    // borró en otra sesión— se abre sin barra en vez de dejar un enlace roto
+    // que el bucle de frame tendría que limpiar en el primer fotograma.
+    if (data.human?.barra && data.human.barra.index >= 0) {
+      const o = this.listObjects()[data.human.barra.index];
+      if (o && EJERCICIO_BARRA_POR_ID[data.human.barra.ejercicio]) {
+        this.barraManiqui = {
+          objectId: o.id,
+          ejercicio: data.human.barra.ejercicio,
+          rackeada: !!data.human.barra.rackeada,
+        };
+        this.bus.emit("barraManiquiChanged", {
+          objectId: o.id,
+          ejercicio: data.human.barra.ejercicio,
+          rackeada: !!data.human.barra.rackeada,
+        });
+      }
     }
 
     // Puntos de partida guardados (v0.2.77), por índice como los de arriba.
@@ -5262,6 +5317,349 @@ export class Editor {
 
   hasAttachedHands(): boolean {
     return this.handTargets.size > 0;
+  }
+
+  // ---------------------------------------- BARRA EN MANOS (v0.2.81)
+  //
+  // La barra no se posa: la lleva puesta el cuerpo. Cada frame se recoloca
+  // desde los apoyos del maniquí, así que sigue a la postura, al arrastre de
+  // una articulación y al giro de la figura entera sin que nadie la toque.
+
+  /** Centro de un segmento del maniquí en el mundo (o null si no está). */
+  private centroSegmento(id: string): THREE.Vector3 | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    const hallados: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === id) hallados.push(m);
+    });
+    const m = hallados[0];
+    if (!m) return null;
+    return new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3());
+  }
+
+  /** Los cuatro puntos del cuerpo de los que cuelga la barra. */
+  private apoyosDeLaBarra(): ApoyosBarra | null {
+    const fig = this.humanFigure;
+    const joints = this.figureJoints();
+    if (!fig || !joints || this.humanMode !== "mannequin") return null;
+    fig.updateMatrixWorld(true);
+    const manoL = this.centroSegmento("mano-L");
+    const manoR = this.centroSegmento("mano-R");
+    const hL = joints.shoulderL;
+    const hR = joints.shoulderR;
+    const tronco = joints.spine;
+    if (!manoL || !manoR || !hL || !hR || !tronco) return null;
+    return {
+      hombroL: hL.getWorldPosition(new THREE.Vector3()),
+      hombroR: hR.getWorldPosition(new THREE.Vector3()),
+      manoL,
+      manoR,
+      tronco: tronco.getWorldQuaternion(new THREE.Quaternion()),
+      alturaCm: this.humanHeight,
+    };
+  }
+
+  /**
+   * Recoloca la barra sujeta. Se llama desde el bucle de frame, así que da
+   * igual por qué camino se movió el maniquí: la barra llega igual.
+   *
+   * En SIMULACIÓN la barra sujeta no cae ni la empujan las piezas: se la
+   * teletransporta a su sitio y se le anula la velocidad, que es la forma
+   * honrada de decir «esto lo sostiene una persona». Lo que sí hace es empujar
+   * a lo que se le ponga delante, y por eso sirve para ver si entra en el
+   * gancho o si choca con el travesaño.
+   */
+  sincronizarBarraManiqui(): void {
+    const enlace = this.barraManiqui;
+    if (!enlace) return;
+    const obj = this.objects.get(enlace.objectId);
+    const ej = EJERCICIO_BARRA_POR_ID[enlace.ejercicio];
+    if (!obj || !ej) {
+      // La pieza se borró o el ejercicio ya no existe: se suelta el enlace en
+      // vez de arrastrar una referencia muerta frame tras frame.
+      this.barraManiqui = null;
+      this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
+      return;
+    }
+    // Rackeada: la sostiene el gancho, no el cuerpo. Seguir colgándola de las
+    // manos la arrancaría del soporte en el primer fotograma.
+    if (enlace.rackeada) return;
+    const apoyos = this.apoyosDeLaBarra();
+    if (!apoyos) return;
+    const { pos, quat } = sitioDeLaBarra(ej.agarre as AgarreBarra, apoyos);
+    obj.mesh.position.copy(pos);
+    obj.mesh.quaternion.copy(quat);
+    obj.mesh.updateMatrixWorld(true);
+    if (this.simulating && this.physics) {
+      this.physics.recolocarPiezas(new Map([[obj.id, { p: pos, q: quat }]]));
+    }
+    this.requestRender();
+  }
+
+  /** Qué barra lleva puesta el maniquí, si lleva alguna. */
+  getBarraManiqui(): { objectId: string; ejercicio: string; rackeada: boolean } | null {
+    return this.barraManiqui ? { ...this.barraManiqui } : null;
+  }
+
+  /**
+   * Le pone al maniquí la barra de un ejercicio y lo deja en su postura alta.
+   *
+   * Si ya llevaba una, se reaprovecha la misma pieza —con sus discos— en vez
+   * de sembrar barras por la escena cada vez que se cambia de ejercicio.
+   */
+  ponerBarraEnManos(ejercicioId: string): SceneObject | null {
+    const ej = EJERCICIO_BARRA_POR_ID[ejercicioId];
+    if (!ej || !this.humanFigure || this.humanMode !== "mannequin") return null;
+    let obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) ?? null : null;
+    if (!obj) obj = this.addComponent("barra-olimpica");
+    this.barraManiqui = { objectId: obj.id, ejercicio: ejercicioId, rackeada: false };
+    this.aplicarPosturaBarra("arriba");
+    this.bus.emit("barraManiquiChanged", {
+      objectId: obj.id,
+      ejercicio: ejercicioId,
+      rackeada: false,
+    });
+    this.scheduleAutosave();
+    return obj;
+  }
+
+  /** Aplica uno de los dos extremos del recorrido del ejercicio puesto. */
+  aplicarPosturaBarra(cual: "arriba" | "fondo"): boolean {
+    const enlace = this.barraManiqui;
+    const ej = enlace ? EJERCICIO_BARRA_POR_ID[enlace.ejercicio] : null;
+    if (!ej) return false;
+    this.applyPose(cual === "arriba" ? ej.arriba : ej.fondo);
+    if (enlace?.rackeada) return true;
+    this.sincronizarBarraManiqui();
+    return true;
+  }
+
+  /**
+   * Suelta la barra. Por omisión la deja en la escena donde estaba —es una
+   * pieza más y puede seguir siendo útil ahí—; con `borrar` la retira.
+   */
+  soltarBarraDelManiqui(borrar = false): void {
+    const enlace = this.barraManiqui;
+    if (!enlace) return;
+    this.barraManiqui = null;
+    if (borrar) {
+      const obj = this.objects.get(enlace.objectId);
+      if (obj) this.removeObject(obj);
+    }
+    this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
+    this.scheduleAutosave();
+  }
+
+  /** Discos por lado montados en la barra sujeta. */
+  discosBarra(): number {
+    const obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) : null;
+    return obj ? obj.discosMontados() : 0;
+  }
+
+  /** Carga la barra sujeta con `n` discos (se reparten a los dos lados). */
+  setDiscosBarra(n: number): void {
+    const obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) : null;
+    if (!obj) return;
+    obj.params.discCount = Math.max(0, Math.round(n));
+    obj.rebuildCargaVisual();
+    this.bus.emit("objectTransformed", { object: obj });
+    this.sincronizarBarraManiqui();
+    this.scheduleAutosave();
+  }
+
+  /** Peso total de la barra sujeta con su carga (kg). */
+  pesoBarraKg(): number {
+    const obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) : null;
+    return obj ? obj.effectiveMassKg() : 0;
+  }
+
+  // ------------------------------------ RACKEAR LA BARRA (v0.2.81)
+  //
+  // Un rack se diseña para que la barra ENTRE y SALGA de él, así que el
+  // maniquí tiene que poder dejarla en los ganchos y volver a cogerla. Los
+  // ganchos no se declaran a mano: se leen de las piezas que ya saben recibir
+  // una barra —las que llevan `asientoBarra` y las placas dentadas, que
+  // declaran un asiento por diente—.
+
+  /**
+   * Asiento de una jota en coordenadas LOCALES: el fondo del canal en J.
+   *
+   * Se muestrea la cara de arriba con rayos verticales a lo largo del brazo y
+   * se coge la muestra MÁS BAJA. No es un detalle: la cara superior de una
+   * jota sube en el tope delantero y en el respaldo, y quedarse con el máximo
+   * —o con el centro de la caja— pondría la barra encaramada en el borde en
+   * vez de sentada en el canal, que es justo donde no se queda.
+   */
+  private asientoDeJota(obj: SceneObject): { local: THREE.Vector3; ejeLocal: THREE.Vector3 } | null {
+    const geo = obj.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    if (!bb) return null;
+    const spanX = bb.max.x - bb.min.x;
+    const spanZ = bb.max.z - bb.min.z;
+    if (spanX < 0.2 || spanZ < 0.2 || bb.max.y - bb.min.y < 0.2) return null;
+    // El brazo del gancho corre por el eje horizontal MÁS LARGO; la barra
+    // descansa ATRAVESADA sobre él, o sea por el más corto.
+    const brazoEnZ = spanZ >= spanX;
+    const largo = brazoEnZ ? spanZ : spanX;
+    const n = Math.min(48, Math.max(8, Math.round(largo / 1.2)));
+    const paso = largo / n;
+    const malla = new THREE.Mesh(geo);
+    malla.updateMatrixWorld();
+    const ray = new THREE.Raycaster();
+    const abajo = new THREE.Vector3(0, -1, 0);
+    const xMid = (bb.min.x + bb.max.x) / 2;
+    const zMid = (bb.min.z + bb.max.z) / 2;
+    let mejor: THREE.Vector3 | null = null;
+    for (let i = 0; i < n; i++) {
+      const sc = (brazoEnZ ? bb.min.z : bb.min.x) + (i + 0.5) * paso;
+      const origen = new THREE.Vector3(brazoEnZ ? xMid : sc, bb.max.y + 5, brazoEnZ ? sc : zMid);
+      ray.set(origen, abajo);
+      const hit = ray.intersectObject(malla, false)[0];
+      if (!hit) continue;
+      if (!mejor || hit.point.y < mejor.y) mejor = hit.point.clone();
+    }
+    if (!mejor) return null;
+    return {
+      local: mejor,
+      ejeLocal: brazoEnZ ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1),
+    };
+  }
+
+  /** Radio del eje de la barra sujeta (lo que se hunde en el asiento). */
+  private radioBarra(obj: SceneObject): number {
+    return (obj.params.radiusTop ?? 1.45) * Math.abs(obj.mesh.scale.x || 1);
+  }
+
+  /**
+   * Todos los sitios de la escena donde una barra puede quedarse apoyada, con
+   * el punto donde iría su EJE y la dirección en la que se tumba.
+   */
+  ganchosDeBarra(radio = 1.45): GanchoBarra[] {
+    const out: GanchoBarra[] = [];
+    for (const obj of this.objects.values()) {
+      obj.mesh.updateMatrixWorld(true);
+      const q = obj.mesh.getWorldQuaternion(new THREE.Quaternion());
+      if (obj.params.kind === "dentada") {
+        // La placa declara un asiento por diente: el suelo de cada cuna está
+        // en `asiento(i)` y la barra se sienta un radio por encima, medido en
+        // el ARRIBA DE LA PLACA (que en un pilar diagonal no es la vertical).
+        const m = medidasDentada(obj.params);
+        const esp = espejoDe(obj.params.espejo);
+        const sx = esp[0] ? -1 : 1;
+        const sy = esp[1] ? -1 : 1;
+        for (let i = 0; i < m.dientes; i++) {
+          const local = new THREE.Vector3(
+            ((m.cantoEspina + m.caraDedo) / 2) * sx,
+            (m.asiento(i) + radio) * sy,
+            0,
+          );
+          out.push({
+            objectId: obj.id,
+            nombre: `${obj.name} · diente ${i + 1}`,
+            punto: local.applyMatrix4(obj.mesh.matrixWorld),
+            eje: new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize(),
+          });
+        }
+        continue;
+      }
+      if (!getDefinition(obj.componentId)?.asientoBarra) continue;
+      const a = this.asientoDeJota(obj);
+      if (!a) continue;
+      const punto = a.local.clone();
+      punto.y += radio / Math.abs(obj.mesh.scale.y || 1);
+      out.push({
+        objectId: obj.id,
+        nombre: obj.name,
+        punto: punto.applyMatrix4(obj.mesh.matrixWorld),
+        eje: a.ejeLocal.applyQuaternion(q).normalize(),
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Deja la barra en el soporte más cercano y libera al maniquí.
+   *
+   * Un rack tiene DOS ganchos y la barra se apoya en los dos, así que no basta
+   * con el más cercano: se busca su PAREJA —otro asiento a la misma cota, con
+   * el mismo eje y separado a lo largo de él— y la barra se centra entre
+   * ambos. Con un solo gancho en la escena se centra en él, que es lo único
+   * que se puede hacer y al menos deja ver si la altura sirve.
+   */
+  rackearBarra(): boolean {
+    const enlace = this.barraManiqui;
+    if (!enlace || enlace.rackeada) return false;
+    const obj = this.objects.get(enlace.objectId);
+    if (!obj) return false;
+    const ganchos = this.ganchosDeBarra(this.radioBarra(obj));
+    if (!ganchos.length) return false;
+
+    const centro = obj.mesh.position.clone();
+    const ejeBarra = new THREE.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+    // El más cercano medido sobre la RECTA de la barra, no sobre su centro: un
+    // gancho está a un metro del centro y aun así es el suyo.
+    let mejor = ganchos[0];
+    let mejorD = Infinity;
+    for (const g of ganchos) {
+      const d = g.punto.clone().sub(centro);
+      const dPerp = d.clone().sub(ejeBarra.clone().multiplyScalar(d.dot(ejeBarra))).length();
+      if (dPerp < mejorD) { mejorD = dPerp; mejor = g; }
+    }
+
+    // La pareja: mismo eje, misma cota y separada a lo largo del eje.
+    let pareja: GanchoBarra | null = null;
+    let mejorSep = 0;
+    for (const g of ganchos) {
+      if (g === mejor || g.objectId === mejor.objectId) continue;
+      if (Math.abs(g.eje.dot(mejor.eje)) < 0.98) continue;
+      const d = g.punto.clone().sub(mejor.punto);
+      if (Math.abs(d.y) > 2) continue;
+      const sep = Math.abs(d.dot(mejor.eje));
+      if (sep < 20 || sep > 200) continue;      // ni pegados ni de otro rack
+      if (d.clone().sub(mejor.eje.clone().multiplyScalar(d.dot(mejor.eje))).length() > 8) continue;
+      if (sep > mejorSep) { mejorSep = sep; pareja = g; }
+    }
+
+    const pos = pareja ? mejor.punto.clone().add(pareja.punto).multiplyScalar(0.5) : mejor.punto.clone();
+    const eje = pareja
+      ? pareja.punto.clone().sub(mejor.punto).normalize()
+      : mejor.eje.clone();
+    obj.mesh.position.copy(pos);
+    obj.mesh.quaternion.copy(
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje),
+    );
+    obj.mesh.updateMatrixWorld(true);
+    this.barraManiqui = { ...enlace, rackeada: true };
+    if (this.simulating && this.physics) {
+      this.physics.recolocarPiezas(new Map([[obj.id, { p: pos, q: obj.mesh.quaternion.clone() }]]));
+    }
+    this.bus.emit("barraManiquiChanged", {
+      objectId: obj.id,
+      ejercicio: enlace.ejercicio,
+      rackeada: true,
+    });
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
+    return true;
+  }
+
+  /** El maniquí vuelve a coger la barra del soporte y se pone en guardia. */
+  desrackearBarra(): boolean {
+    const enlace = this.barraManiqui;
+    if (!enlace || !enlace.rackeada) return false;
+    this.barraManiqui = { ...enlace, rackeada: false };
+    this.aplicarPosturaBarra("arriba");
+    this.bus.emit("barraManiquiChanged", {
+      objectId: enlace.objectId,
+      ejercicio: enlace.ejercicio,
+      rackeada: false,
+    });
+    this.scheduleAutosave();
+    return true;
   }
 
   // ------------------------------------------- PISAR una superficie (v0.2.52)

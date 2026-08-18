@@ -191,6 +191,14 @@ hombro en la frontal y DETRÁS en la trasera. Ojo con la identidad plana `muslo
 pierna del plano sagital; el ángulo que se conserva es el de la rodilla medido
 en 3D.
 
+`barra-maniqui` (v0.2.81) comprueba que la BARRA y el CUERPO estén de acuerdo.
+Un rack se dimensiona por dónde queda la barra cargada, así que una barra que
+se despega del cuerpo, que se queda plantada cuando la figura baja o que no cae
+donde la espera el gancho arruina la medida sin que se note en la captura. La
+comprobación que más vale no mide contra una constante sino contra el SUELO: en
+la salida del peso muerto el disco tiene que APOYAR. Si la figura no llega a la
+barra, flota — y eso es exactamente lo que pasaba antes de corregir la postura.
+
 `placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
 FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra
 sobre **cada uno** de sus ganchos. Que la placa se vea bien no dice nada — los

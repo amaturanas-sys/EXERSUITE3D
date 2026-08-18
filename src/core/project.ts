@@ -94,6 +94,12 @@ export interface HumanData {
    * empezar la simulación en el punto de bloqueo en vez de en el diseño.
    */
   startParts?: { index: number; position: Vec3; quaternion: Quat }[] | null;
+  /**
+   * BARRA EN MANOS (v0.2.81): qué pieza de la escena lleva puesta el maniquí y
+   * en qué configuración. Va por ÍNDICE en la lista de objetos, igual que
+   * `startParts`, porque los ids se rehacen al cargar.
+   */
+  barra?: { index: number; ejercicio: string; rackeada?: boolean } | null;
 }
 
 /** Espacio de trabajo del proyecto (asistente de Nuevo, v0.2.0). */

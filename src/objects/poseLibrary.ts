@@ -147,36 +147,42 @@ export const BUILTIN_POSES: PoseMap = {
    *
    * LA REGLA DEL PESO MUERTO la fijó el diseñador y es de vista sagital: una
    * vertical imaginaria pasa por el MEDIO DEL PIE, la barra y los brazos, que
-   * caen a plomo en línea recta hasta los hombros. Y con proporciones
-   * estándar, quien no llega a la barra compensa con MÁS FLEXIÓN DE RODILLA Y
-   * CADERA, no inclinando más el tronco. Esta postura cumple las dos cosas:
-   * barra 0,6 cm del medio del pie, hombro 0,9 cm de esa misma vertical, brazo
-   * a 1,5° de la plomada, planta plana y cadera 2,7 cm POR ENCIMA de la
-   * rodilla (que es lo que separa un peso muerto de una cargada desde el
-   * fondo).
+   * caen a plomo en línea recta hasta los hombros.
    *
-   * LO QUE CUESTA, y conviene tenerlo escrito: con este esqueleto el alcance
-   * del brazo —del hombro al centro de la mano— es de 56 cm. Con la espinilla
-   * en los 15° que enseña la lámina, la mano no baja de 28,5 cm por mucha
-   * cadera que se flexione; para llegar a los 22,5 cm del disco de 45 hay que
-   * adelantar la rodilla hasta los 49° y aun así la mano queda a 26,7. Es
-   * decir: la vertical y la cadera sobre la rodilla se respetan, y lo que cede
-   * son cuatro centímetros de altura de barra.
+   * Y LA FIRMA DE LA BISAGRA ES LA ESPINILLA CASI VERTICAL. Esto me costó dos
+   * intentos. Con «compensa con más flexión de rodilla y cadera» entendí la
+   * ARTICULACIÓN del rig y adelanté la rodilla 49°, y salió una cargada desde
+   * el fondo, no un peso muerto: en una bisagra la flexión de cadera es el
+   * TRONCO sobre el fémur, que en este esqueleto vive en `spine` porque la
+   * pelvis es la raíz y no rota. La rodilla apenas rebasa el tobillo (15°), la
+   * cadera se va atrás y arriba, y el tronco baja.
+   *
+   * Resuelto contra esas reglas: barra a 21,9 cm —los discos de 44 tocan el
+   * suelo—, 0,2 cm del medio del pie, hombro a 1,1 cm de esa misma vertical,
+   * brazo a 1,2° de la plomada, planta plana, espinilla a 15° y cadera 6,9 cm
+   * POR ENCIMA de la rodilla.
+   *
+   * EL TRONCO SALE A 78° de la vertical, más horizontal que en la lámina. No
+   * es un ajuste a ojo: con la espinilla clavada en 15° y la barra a la altura
+   * del disco, es lo único que queda. El alcance del brazo de este esqueleto
+   * —del hombro al centro de la mano— es de 56 cm, y cada centímetro que le
+   * falta al brazo lo paga la columna.
    */
   "Peso muerto (suelo)": {
-    hipL: [-86, 0, 0], hipR: [-86, 0, 0],
-    kneeL: [135, 0, 0], kneeR: [135, 0, 0],
-    ankleL: [-49, 0, 0], ankleR: [-49, 0, 0],
-    spine: [31.5, 0, 0],
+    hipL: [-79.8, 0, 0], hipR: [-79.8, 0, 0],
+    kneeL: [94.8, 0, 0], kneeR: [94.8, 0, 0],
+    ankleL: [-15, 0, 0], ankleR: [-15, 0, 0],
+    spine: [78, 0, 0],
     // El hombro cuelga de la columna: inclinar el tronco se lleva el brazo con
-    // él. Estos −30 son lo que hay que devolver para que el brazo caiga a
+    // él. Estos −76,8 son lo que hay que devolver para que el brazo caiga a
     // plomo, que es la primera regla de la lámina («arms are kept straight»).
-    shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
+    shoulderL: [-76.8, 0, 0], shoulderR: [-76.8, 0, 0],
     // LA MIRADA FIJA UN PUNTO A DOS METROS por delante de donde pisa, en el
-    // suelo: es lo que mantiene la técnica y protege el cuello. Resuelto
-    // contra ese blanco, la desviación queda en 0,1° y la vista sale 29° bajo
-    // la horizontal con la cabeza a 100 cm.
-    neck: [-2.5, 0, 0],
+    // suelo: es lo que mantiene la técnica y protege el cuello. Con el tronco
+    // casi horizontal hace falta bastante extensión para llegar a ese blanco;
+    // resuelto contra él, la desviación queda en 0,1° y la vista sale 26° bajo
+    // la horizontal.
+    neck: [-51.8, 0, 0],
   },
   /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.

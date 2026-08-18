@@ -1,6 +1,7 @@
 import type { Editor } from "../core/Editor";
 import { tt } from "../core/i18n";
 import { ZONAS, type LadoZona, type ZonaId } from "../objects/movimientos";
+import { EJERCICIOS_BARRA } from "../objects/barraManiqui";
 import { clear, el } from "./dom";
 
 /**
@@ -59,6 +60,12 @@ export class ArticulacionesPanel {
 
   // --- modo POSAR ---
   private select: HTMLSelectElement;
+  // --- barra en manos (v0.2.81)
+  private selectBarra: HTMLSelectElement;
+  private botonRack: HTMLButtonElement;
+  private discosBarra: HTMLInputElement;
+  private etiquetaBarra: HTMLElement;
+  private cajaBarra: HTMLElement;
   private nombreNuevo: HTMLInputElement;
   private etiquetaPartida: HTMLElement;
   private botonSoltarPartida: HTMLButtonElement;
@@ -81,6 +88,70 @@ export class ArticulacionesPanel {
     // ------------------------------------------------------ modo POSAR
     this.select = el("select", { class: "select" }) as HTMLSelectElement;
     this.select.addEventListener("change", () => this.editor.applyPose(this.select.value));
+
+    // BARRA EN MANOS (v0.2.81). Un ejercicio con barra no es una postura: son
+    // DOS —el final alto y el final bajo— y una carga. Por eso aquí no hay un
+    // selector de posturas más, sino el ejercicio, sus dos extremos y los
+    // discos, que es lo que se necesita para dimensionar un rack.
+    this.selectBarra = el("select", { class: "select" }) as HTMLSelectElement;
+    this.selectBarra.append(
+      el("option", { value: "" }, [tt("Sin barra", "No barbell")]),
+      ...EJERCICIOS_BARRA.map((e) => el("option", { value: e.id }, [tt(e.es, e.en)])),
+    );
+    this.selectBarra.addEventListener("change", () => {
+      if (this.selectBarra.value) this.editor.ponerBarraEnManos(this.selectBarra.value);
+      else this.editor.soltarBarraDelManiqui();
+      this.refrescarBarra();
+    });
+
+    const bArriba = el("button", { class: "tool", title: tt("Llevar la figura al final ALTO del recorrido", "Take the figure to the TOP of the range") }, [
+      tt("△ Arriba", "△ Top"),
+    ]);
+    bArriba.addEventListener("click", () => { this.editor.aplicarPosturaBarra("arriba"); this.refrescarBarra(); });
+    const bFondo = el("button", { class: "tool", title: tt("Llevar la figura al final BAJO del recorrido", "Take the figure to the BOTTOM of the range") }, [
+      tt("▽ Fondo", "▽ Bottom"),
+    ]);
+    bFondo.addEventListener("click", () => { this.editor.aplicarPosturaBarra("fondo"); this.refrescarBarra(); });
+
+    this.discosBarra = el("input", {
+      type: "number", class: "input num", min: "0", step: "1", value: "0",
+      title: tt("Discos montados (se reparten a los dos lados)", "Plates loaded (split between both sides)"),
+    }) as HTMLInputElement;
+    this.discosBarra.addEventListener("change", () => {
+      this.editor.setDiscosBarra(+this.discosBarra.value || 0);
+      this.refrescarBarra();
+    });
+
+    this.botonRack = el("button", { class: "tool", title: tt("Dejar la barra en el gancho más cercano, o volver a cogerla", "Leave the barbell on the nearest hook, or take it back") }, [
+      tt("⤓ Rackear", "⤓ Rack"),
+    ]) as HTMLButtonElement;
+    this.botonRack.addEventListener("click", () => {
+      const b = this.editor.getBarraManiqui();
+      if (!b) return;
+      const hecho = b.rackeada ? this.editor.desrackearBarra() : this.editor.rackearBarra();
+      if (!hecho && !b.rackeada) {
+        this.etiquetaBarra.textContent = tt(
+          "No hay ningún gancho en la escena donde dejarla.",
+          "There is no hook in the scene to leave it on.",
+        );
+        return;
+      }
+      this.refrescarBarra();
+    });
+
+    this.etiquetaBarra = el("div", { class: "mq-nota" }, [""]);
+    const filaBarra = el("div", { class: "pose-actions" }, [bArriba, bFondo]);
+    const filaCarga = el("div", { class: "mq-barra" }, [
+      el("span", { class: "mq-etq" }, [tt("Discos", "Plates")]),
+      this.discosBarra,
+      this.botonRack,
+    ]);
+    this.cajaBarra = el("div", {}, [
+      el("div", { class: "row" }, [this.selectBarra]),
+      filaBarra,
+      filaCarga,
+      this.etiquetaBarra,
+    ]);
 
     const bAplicar = el("button", { class: "tool", title: tt("Aplicar la postura", "Apply the pose") }, [
       tt("Aplicar", "Apply"),
@@ -373,6 +444,8 @@ export class ArticulacionesPanel {
         masPosturas,
       ]),
 
+      grupo(tt("Barra", "Barbell"), [this.cajaBarra]),
+
       grupo(tt("Articulación", "Joint"), [
         this.campoArticulacion,
         filaSim,
@@ -529,6 +602,10 @@ export class ArticulacionesPanel {
           ? tt("Toca el miembro de la figura: el brazo para apoyar la mano, la pierna para pisar.", "Tap the figure's limb: the arm to rest a hand, the leg to step on something.")
           : tt("Ahora toca la pieza donde se apoya (agarre, plataforma o pedal).", "Now tap the part it rests on (grip, platform or pedal).");
     });
+    // La barra puede cambiar sin pasar por este panel (cargar un proyecto,
+    // vaciar la escena, borrar la pieza), así que la caja se refresca desde el
+    // editor y no desde sus propios botones.
+    this.editor.bus.on("barraManiquiChanged", () => this.refrescarBarra());
     this.editor.bus.on("jointSelectionChanged", ({ name, angles }) => {
       this.marcarSeleccion(name);
       if (!name) {
@@ -553,6 +630,7 @@ export class ArticulacionesPanel {
     });
 
     this.refrescarPosturas();
+    this.refrescarBarra();
     this.mostrarGestorPartidas(this.editor.listaPartidas().length > 0);
     this.refrescar();
   }
@@ -614,6 +692,34 @@ export class ArticulacionesPanel {
 
   visible(): boolean {
     return this.root.style.display !== "none";
+  }
+
+  /**
+   * Pone al día la caja de la barra: qué ejercicio lleva, cuántos discos, el
+   * peso total y si está rackeada.
+   *
+   * El peso se lee del EDITOR y no se calcula aquí: la barra pesa lo que pesa
+   * la pieza con su carga, y recalcularlo en la interfaz sería tener dos
+   * versiones del mismo número esperando a desacordarse.
+   */
+  private refrescarBarra(): void {
+    const b = this.editor.getBarraManiqui();
+    this.selectBarra.value = b?.ejercicio ?? "";
+    const hay = !!b;
+    this.discosBarra.disabled = !hay;
+    this.botonRack.disabled = !hay;
+    if (hay) {
+      this.discosBarra.value = String(this.editor.discosBarra());
+      this.botonRack.textContent = b.rackeada
+        ? tt("⤒ Desrackear", "⤒ Unrack")
+        : tt("⤓ Rackear", "⤓ Rack");
+      const kg = Math.round(this.editor.pesoBarraKg() * 10) / 10;
+      this.etiquetaBarra.textContent = b.rackeada
+        ? tt(`${kg} kg, apoyada en el soporte.`, `${kg} kg, resting on the support.`)
+        : tt(`${kg} kg en las manos.`, `${kg} kg in hand.`);
+    } else {
+      this.etiquetaBarra.textContent = "";
+    }
   }
 
   private refrescarPosturas(): void {

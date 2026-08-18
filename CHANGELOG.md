@@ -5,6 +5,70 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.81] — 2026-08-18
+
+**La barra en manos del maniquí.** Hasta aquí la figura posaba sola: se le daba
+una sentadilla frontal y se veía a alguien sujetando aire. Un rack se
+dimensiona por dónde queda la barra CARGADA, así que ahora la barra es una
+pieza de verdad de la escena, con sus discos y su peso, colgada del cuerpo.
+
+### Añadido
+
+**Cuatro configuraciones con barra** —sentadilla frontal, sentadilla trasera,
+press vertical y peso muerto—, cada una con sus DOS extremos del recorrido: un
+ejercicio no es una postura, y un rack se mide por dónde queda la barra arriba
+(para colgarla) y dónde queda abajo (para que los brazos de seguridad la cojan
+si falla).
+
+**Dónde se apoya la barra, que no es lo mismo en las cuatro:**
+
+- En los dos RACKS la barra no la sujetan las manos, la sostiene el CUERPO —
+  deltoides y clavículas en la frontal, trapecios en la trasera—. Su sitio va
+  medido contra la ARTICULACIÓN DEL HOMBRO y en el marco del tronco: 11,9 cm
+  por delante y 4,8 por encima en la frontal, 5,7 por detrás y 6,9 por encima
+  en la trasera. Si el tronco se inclina, la barra se inclina con él.
+- En press y peso muerto la barra SÍ va en las manos, así que su sitio es el
+  punto medio entre los dos puños. Anclarla al hombro aquí dejaría una barra
+  flotando lejos del agarre en cuanto el brazo se mueve.
+
+**Carga de discos y peso real.** Los discos se montan sobre la barra con el
+mismo mecanismo que el resto de piezas cargables, y el peso total sale de la
+pieza: cuatro discos de 20 sobre una barra de 20 son 100 kg.
+
+**Rackear y desrackear sobre soportes de verdad.** Los ganchos no se declaran a
+mano: se leen de las piezas que ya saben recibir una barra —las que llevan
+`asientoBarra` y las placas dentadas, que declaran un asiento por diente—. Un
+rack tiene DOS ganchos, así que no basta el más cercano: se busca su pareja
+—mismo eje, misma cota, separada a lo largo de él— y la barra se centra entre
+ambos. Rackeada, la sostiene el gancho: agacharse ya no se la lleva.
+
+**La barra sigue al cuerpo sin que nadie la toque.** Se recoloca en el bucle de
+frame, después de resolver la IK, así que da igual por qué camino se movió el
+maniquí —una postura, el arrastre de una articulación, girar la figura entera,
+la simulación—: la barra llega igual.
+
+### Corregido
+
+**La salida del peso muerto, otra vez, y esta con una prueba física detrás.**
+Con «compensa con más flexión de rodilla y cadera» entendí la ARTICULACIÓN del
+rig y adelanté la rodilla 49°: salió una cargada desde el fondo, no un peso
+muerto. En una bisagra la flexión de cadera es el TRONCO sobre el fémur, que en
+este esqueleto vive en `spine` porque la pelvis es la raíz y no rota. Rehecha
+con la espinilla casi vertical (15°), la cadera se va atrás y arriba —6,9 cm
+por encima de la rodilla— y el tronco baja.
+
+Lo que lo confirma no es una captura: **los discos APOYAN en el suelo**. Con la
+postura anterior flotaban 4,7 cm, que era la física diciendo que la figura no
+llegaba a la barra.
+
+### Pruebas
+
+`prueba-barra-maniqui.mjs` (24 comprobaciones). Mide relaciones: que la barra
+va delante del hombro en la frontal y detrás en la trasera, que en press y peso
+muerto va en el puño, que baja con la figura sin despegarse del trapecio, que
+el disco apoya en el suelo en la salida del peso muerto, y que rackearla la
+deja a la altura del gancho y agacharse ya no se la lleva.
+
 ## [0.2.80] — 2026-08-18
 
 Corrección del diseñador sobre la salida del peso muerto.
