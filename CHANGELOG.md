@@ -5,6 +5,61 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.78] — 2026-08-18
+
+La secuencia de sentadilla con barra que mandó el diseñador —cuatro figuras:
+de pie y fondo de una **sentadilla frontal** y de una **trasera**— medida y
+metida en el maniquí como cuatro posturas.
+
+### Añadido
+
+**Cuatro posturas nuevas:** «Sentadilla frontal (arriba)», «Sentadilla frontal
+(fondo)», «Sentadilla trasera (arriba)» y «Sentadilla trasera (fondo)». Salen
+de medir el `.obj`, no de estimarlas a ojo: en la pareja frontal cada parte del
+cuerpo viene como objeto propio, así que muslo, tibia, pie, brazo, antebrazo y
+mano se miden como segmentos y los centros articulares se sacan de donde dos
+mallas vecinas se solapan. Los grados que quedan en la biblioteca son el
+resultado de **ajustar el rig contra esas direcciones** —un descenso por
+coordenadas sobre los ejes que cada articulación tiene—, con un residuo de ~1°
+en la pierna y en el brazo frontal y ~6° en el trasero, que es lo que se puede
+pedir cuando el tronco y los brazos de esa pareja vienen fundidos en una sola
+malla.
+
+**Lo que enseña el modelo, y no es lo que yo esperaba:**
+
+- **Las piernas son las mismas en las dos sentadillas.** No parecidas: los
+  extremos de muslo, tibia y pie coinciden unidad a unidad entre la figura
+  frontal y la trasera. Lo único que distingue un ejercicio del otro es dónde
+  va la barra y qué hacen los brazos para sujetarla.
+- **El tronco casi no cambia.** Registrando la malla del pecho de la figura de
+  pie sobre la del fondo —es la misma malla, vértice a vértice, así que la
+  rotación entre ambas es exacta— el giro sale 0,0° en las dos. Lo único que se
+  mueve en la trasera es que el pecho se adelanta 3,4° respecto de la pelvis.
+  Las dos bajan con el tronco a plomo.
+- **La barra**, medida contra la articulación del hombro: 12 cm DELANTE en la
+  frontal (deltoides y clavícula) y 5,7 cm DETRÁS en la trasera (trapecios).
+- **El pie sale abierto 36° sin orientarlo a mano.** No se pone en ninguna
+  parte: cae solo de la abducción de cadera más la flexión y la rodilla, y da
+  36,0° contra los 36,2° medidos.
+
+### Corregido
+
+**El tope de dorsiflexión de tobillo se documentaba con una medida mala.** La
+nota decía 49,5° citando este mismo modelo; midiendo sobre los centros
+articulares en vez de sobre el eje de la malla salen 43,0°. El tope se queda en
+50 —es un tope, no un valor por defecto—, pero la cifra que lo justifica ahora
+es la buena.
+
+### Pruebas
+
+`prueba-sentadilla.mjs` cubre también las dos sentadillas con barra. Comprueba
+relaciones, no constantes: que las dos comparten pierna, que la rodilla flexiona
+126° **en 3D** —la identidad plana `muslo − rodilla = espinilla` deja de valer
+en cuanto la cadera abre 36° y saca la pierna del plano sagital—, que la planta
+queda plana y el pie abierto, y que la mano cae DELANTE del hombro en la frontal
+y DETRÁS en la trasera, que es lo que hace que sean dos ejercicios y no uno con
+dos nombres.
+
 ## [0.2.77] — 2026-08-17
 
 Los doce hallazgos GRAVES que quedaban de la auditoría adversarial. Con los

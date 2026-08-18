@@ -181,6 +181,16 @@ en la horizontal, la planta plana en el suelo, y que la cadena cuadre entre sí
 (muslo − rodilla = espinilla). Los umbrales salen de medir el modelo del
 diseñador, no de la aplicación.
 
+Desde v0.2.78 cubre además las dos sentadillas CON BARRA. Ahí protege los dos
+hechos que salieron de medir la secuencia del diseñador: que frontal y trasera
+**comparten pierna** —en el modelo los extremos de muslo, tibia y pie coinciden
+unidad a unidad, así que si alguien afina una y no la otra esto lo caza— y que
+lo único que las separa es el rack, medido por dónde cae la mano: DELANTE del
+hombro en la frontal y DETRÁS en la trasera. Ojo con la identidad plana `muslo
+− rodilla = espinilla`: en estas NO vale, porque la cadera abre 36° y saca la
+pierna del plano sagital; el ángulo que se conserva es el de la rodilla medido
+en 3D.
+
 `placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
 FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra
 sobre **cada uno** de sus ganchos. Que la placa se vea bien no dice nada — los

@@ -57,6 +57,88 @@ export const BUILTIN_POSES: PoseMap = {
     spine: [45, 0, 0],
     shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
   },
+  /**
+   * SENTADILLA FRONTAL Y TRASERA (v0.2.78), medidas sobre la secuencia que
+   * mandó el diseñador: cuatro figuras con barra —de pie y fondo de cada una—.
+   *
+   * No están leídas de la captura: el .obj trae cada parte del cuerpo como
+   * objeto propio en la pareja frontal, así que muslo, tibia, pie, brazo,
+   * antebrazo y mano se miden como SEGMENTOS, y los centros articulares salen
+   * de donde dos mallas vecinas se solapan. Los grados que van aquí abajo no
+   * son esas medidas transcritas, sino el resultado de AJUSTAR EL RIG contra
+   * ellas: un descenso por coordenadas sobre los ejes que cada articulación
+   * tiene, buscando que los segmentos del maniquí apunten adonde apuntan los
+   * del modelo. El residuo es ~1° en la pierna y en el brazo frontal y ~6° en
+   * el trasero, que es lo que se puede pedir cuando el tronco y los brazos de
+   * esa pareja vienen fundidos en una sola malla y hay que sacarlos por cortes.
+   *
+   * LO QUE ENSEÑA EL MODELO, y es lo interesante: las PIERNAS hacen lo mismo en
+   * las dos. Los extremos de muslo, tibia y pie de la figura frontal y de la
+   * trasera coinciden unidad a unidad una vez restada la separación entre
+   * ambas: no se parecen, son la misma pierna. Lo que distingue una sentadilla
+   * de la otra es SOLO dónde va la barra y qué hacen los brazos para sujetarla.
+   *
+   * Dónde va la barra, medido contra la articulación del hombro —no contra una
+   * caja envolvente, que es lo que me había desviado antes—: 107 unidades (12
+   * cm) DELANTE del hombro en la frontal, sobre deltoides y clavícula, y 51
+   * unidades (5,7 cm) DETRÁS en la trasera, sobre los trapecios.
+   *
+   * EL TRONCO CASI NO CAMBIA, y esto corrige lo que yo mismo había escrito
+   * aquí. Registrando la malla del pecho de la figura de pie sobre la del
+   * fondo —es la misma malla, vértice a vértice, así que la rotación rígida
+   * entre ambas es exacta— el giro sale 0,0° en las dos sentadillas. Lo único
+   * que se mueve en la trasera es que el pecho se adelanta 20,8 unidades
+   * respecto de la pelvis sobre un tronco de 350: 3,4°. Así que las dos bajan
+   * con el tronco a plomo y la trasera solo 3° más inclinada. Tiene sentido en
+   * una sentadilla trasera ALTA como esta —barra sobre el trapecio, no sobre
+   * la espina de la escápula—; lo que no tenía sentido eran los 18° que puse
+   * antes, sacados de la inclinación de una caja envolvente que en realidad
+   * medía los brazos.
+   *
+   * LOS BRAZOS son la diferencia de verdad. En la frontal el codo se va
+   * ADELANTE y ABAJO (46° de flexión de hombro) y el antebrazo se pliega 126°
+   * para devolver la mano al hombro, por debajo de la barra. En la trasera el
+   * hombro apenas flexiona 19°, abre 26° hacia afuera y el codo cae 21 cm por
+   * debajo del hombro mientras el antebrazo sube a la barra por detrás. Ese
+   * codo pide más flexión de la que da el tope humano, así que se queda en los
+   * −150 del rango: es agarre cerrado de sentadilla trasera, y ahí el codo va
+   * al máximo de verdad.
+   *
+   * EL PIE NO SE ORIENTA A MANO. Sale girado 36° hacia afuera —igual que en el
+   * modelo, 36,2°— solo por la abducción de cadera, la flexión y la rodilla;
+   * el eje largo del pie del maniquí acaba en (−0,583, 0, 0,812) contra el
+   * (−0,591, 0, 0,807) medido. Y la planta queda plana (su normal sale
+   * (0,000, 1,000, 0,000)), que es la comprobación de que la cadena cierra.
+   */
+  "Sentadilla frontal (arriba)": {
+    // De pie bajo la barra: piernas rectas, tronco a plomo y el rack ya hecho.
+    // En el modelo los brazos de la figura de pie y los del fondo son idénticos.
+    shoulderL: [-50, -24.5, -10.5], shoulderR: [-50, 24.5, 10.5],
+    elbowL: [-121, -22, 0], elbowR: [-121, 22, 0],
+  },
+  "Sentadilla frontal (fondo)": {
+    hipL: [-79, 3, -36.5], hipR: [-79, -3, 36.5],
+    kneeL: [126, 0, 0], kneeR: [126, 0, 0],
+    ankleL: [-43, 0, 9], ankleR: [-43, 0, -9],
+    // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
+    spine: [0, 0, 0],
+    shoulderL: [-50, -24.5, -10.5], shoulderR: [-50, 24.5, 10.5],
+    elbowL: [-121, -22, 0], elbowR: [-121, 22, 0],
+  },
+  "Sentadilla trasera (arriba)": {
+    shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
+    elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
+  },
+  "Sentadilla trasera (fondo)": {
+    // Misma pierna, exactamente, que la frontal.
+    hipL: [-79, 3, -36.5], hipR: [-79, -3, 36.5],
+    kneeL: [126, 0, 0], kneeR: [126, 0, 0],
+    ankleL: [-43, 0, 9], ankleR: [-43, 0, -9],
+    // 3°, no 18: es lo que de verdad se adelanta el pecho respecto de la pelvis.
+    spine: [3, 0, 0],
+    shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
+    elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
+  },
   Sentado: {
     hipL: [-85, 0, 0], hipR: [-85, 0, 0],
     kneeL: [95, 0, 0], kneeR: [95, 0, 0],

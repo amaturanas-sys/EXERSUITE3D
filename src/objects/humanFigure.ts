@@ -63,8 +63,16 @@ export const JOINT_DOF: Record<string, AxisLimits> = {
   //
   // Con el tope en 20 la espinilla no podía inclinarse, la rodilla no se
   // adelantaba y la sentadilla entera salía a medias (v0.2.75).
-  ankleL: { x: [-40, 50], z: [-15, 30] },
-  ankleR: { x: [-40, 50], z: [-30, 15] },
+  //
+  // Sube de 40 a 50 en v0.2.78. Dos modelos del diseñador, medidos aparte, dan
+  // 37,6° en una sentadilla profunda a peso corporal y 43,0° en una con barra
+  // —esta segunda medida sobre los centros articulares, no sobre el eje de la
+  // malla, que se desviaba unos seis grados—: con la barra encima la rodilla
+  // viaja más adelante y el tobillo tiene que acompañar. El tope se deja en 50
+  // y no en 43 a propósito: es el margen de lo que un tobillo flexible da con
+  // el talón en el suelo, y es un TOPE, no un valor por defecto.
+  ankleL: { x: [-50, 50], z: [-15, 30] },
+  ankleR: { x: [-50, 50], z: [-30, 15] },
 };
 
 function mat(): THREE.MeshStandardMaterial {
