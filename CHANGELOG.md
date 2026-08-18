@@ -5,6 +5,22 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.85] — 2026-08-18
+
+Documentación al día para la release.
+
+### Cambiado
+
+- **Instructivo:** la barra en manos del maniquí entra en la ficha «¿Cómo uso el
+  maniquí?» — las cuatro configuraciones y sus dos extremos, por qué el apoyo no
+  es el mismo en un rack que en un press, el rackeo sobre los ganchos de la
+  escena y que elegir un ejercicio deja armada su zona de movimiento.
+- **`pruebas/LEEME.md`:** la batería pasa a 66 pruebas y se documentan los dos
+  fallos de apoyo que solo se vieron midiendo, más la aserción que hubo que
+  retirar por estar mal escrita.
+- **Cápsula del tiempo:** entrada del 18 de agosto con seis capturas del ciclo
+  v0.2.78–v0.2.84.
+
 ## [0.2.84] — 2026-08-18
 
 ### Añadido

@@ -1,6 +1,6 @@
 # Batería de pruebas de EXERSUITE3D
 
-65 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
+66 pruebas de extremo a extremo que corren **sobre el build real** con Playwright
 sobre Chromium: levantan la aplicación, la manejan como la manejaría una persona
 —clics en la paleta, arrastres, la herramienta de colocar— y comprueban lo que
 sale midiendo la escena de three.js desde dentro de la página.
@@ -198,6 +198,24 @@ donde la espera el gancho arruina la medida sin que se note en la captura. La
 comprobación que más vale no mide contra una constante sino contra el SUELO: en
 la salida del peso muerto el disco tiene que APOYAR. Si la figura no llega a la
 barra, flota — y eso es exactamente lo que pasaba antes de corregir la postura.
+
+Desde v0.2.83 protege además los DOS fallos de apoyo que solo se vieron
+midiendo, porque ninguno se notaba en una captura: que la barra APOYE en la piel
+y no se hunda en ella —se mide la distancia de cada vértice al EJE de la barra,
+que es un cilindro tumbado y toca por donde quiere—, y que la mano la SUJETE en
+vez de apoyarse encima, con el puño envolviéndola. En su primera versión la mano
+quedaba 8,2 cm por encima del eje y el puño 54° cruzado con la barra.
+
+Ojo con una aserción que se RETIRÓ de aquí: decía que en los racks la barra no
+debía estar en el puño. Era falsa — en un rack frontal la mano la toca, y debe
+tocarla. Lo que distingue un rack de un press no es si la mano llega, sino QUIÉN
+SOSTIENE la barra, y eso se comprueba doblando el codo: en el rack la barra no
+se inmuta, en el press se va con la mano.
+
+Y desde v0.2.84, que elegir un ejercicio deja armada su ZONA de movimiento y
+solo esa, y que el empuje mueve la barra de verdad — 41 cm en el peso muerto,
+20 en la sentadilla frontal, 6 en el press—, que es el recorrido completo de la
+función de punta a punta.
 
 `placa-dentada` (v0.2.73) mide la herramienta de tres toques y, sobre todo, la
 FÍSICA: monta un rack de dos montantes con su placa cada uno y suelta una barra

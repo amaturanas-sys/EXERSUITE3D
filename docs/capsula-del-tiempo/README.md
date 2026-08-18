@@ -4,7 +4,7 @@ Archivo histórico de las CAPTURAS DE PANTALLA generadas durante el
 desarrollo asistido del proyecto: cada imagen proviene de las sesiones de
 verificación automatizada (Playwright sobre el build real) con las que se
 validó cada cambio antes de publicarlo. Organizadas por fecha, documentan
-los avances desde el editor inicial (v0.1.x) hasta el ciclo v0.2.6.
+los avances desde el editor inicial (v0.1.x) hasta el ciclo v0.2.8.
 
 ## 2026-06-29 — 49 capturas
 
@@ -578,6 +578,33 @@ estándar — 41 piezas, 16 uniones y 2 cables — y se inserta desde la paleta
 con un clic, con su brazo compuesto rígido y su jalón moviendo la pila.
 
 - [`v236-uppermachine-libreria.png`](2026-08-09/v236-uppermachine-libreria.png)
+
+## 2026-08-18 — 6 capturas
+
+v0.2.78–v0.2.84: el maniquí deja de posar solo. De la secuencia de sentadillas
+del diseñador salen las dos sentadillas con barra medidas; de las láminas de
+referencia, el press vertical y el peso muerto; y la BARRA pasa a ser una pieza
+de verdad, con sus discos y su peso, colgada del cuerpo y rackeable sobre los
+ganchos de la escena.
+
+Las tres correcciones que hicieron falta están en las imágenes, porque ninguna
+se veía en una captura antes de medirla: la barra estaba METIDA en el pecho 1,3
+cm, la mano se apoyaba ENCIMA en vez de sujetarla, y el puño quedaba 54°
+cruzado con la barra en lugar de envolverla.
+
+- [`rack-frontal.png`](2026-08-18/rack-frontal.png) — la barra sobre deltoides
+  y clavículas, con el puño envolviéndola por extensión de muñeca.
+- [`rack-trasero.png`](2026-08-18/rack-trasero.png) — detrás del cuello,
+  apoyada en la repisa del trapecio.
+- [`sentadilla-frontal-fondo.png`](2026-08-18/sentadilla-frontal-fondo.png) —
+  el fondo, con el pie abierto 36° que sale solo de la abducción de cadera.
+- [`peso-muerto-salida.png`](2026-08-18/peso-muerto-salida.png) — la salida del
+  suelo: los discos APOYAN, que es la física diciendo que la figura llega a la
+  barra.
+- [`press-bloqueo.png`](2026-08-18/press-bloqueo.png) — el bloqueo del press,
+  con la barra sobre el medio del pie.
+- [`panel-barra.png`](2026-08-18/panel-barra.png) — el grupo BARRA de la
+  ventana del maniquí: ejercicio, los dos extremos, discos y rackeo.
 
 ## 2026-08-16 — 5 capturas
 
