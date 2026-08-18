@@ -5,6 +5,50 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.83] — 2026-08-18
+
+### Corregido
+
+**El rack frontal: la mano se apoyaba ENCIMA de la barra en vez de sujetarla.**
+Otra corrección del diseñador, y la medida le da la razón: con la barra puesta,
+el centro de la mano quedaba 8,2 cm POR ENCIMA del eje. En un rack frontal los
+dedos van POR DEBAJO y retienen la barra para que no ruede hacia delante y se
+caiga; una mano encima la empuja, no la sostiene.
+
+Los ángulos nuevos son un ajuste contra CINCO medidas de la figura frontal del
+.obj —mano 0,8 cm bajo el eje, agarre a 34,1 cm de la línea media, codo 25,1 cm
+bajo la barra y 8,5 por delante—. Quedan: mano 1,2 cm del eje, agarre 34,4 y
+codo −27,3 / +0,4.
+
+Dos cosas que aprendí midiendo y que no habría acertado a ojo:
+
+- **El agarre ancho no es para llegar**, es para el codo. Con agarre estrecho la
+  mano alcanza la barra perfectamente; lo que compra la anchura es altura de
+  codo, que es lo que impide que la barra ruede. Es exactamente la compensación
+  que describió el diseñador para la falta de rango de hombro, codo y muñeca.
+- **En el modelo el codo NO va alto**: va veinticinco centímetros por debajo de
+  la barra. Yo lo había supuesto arriba.
+
+**Extensión de muñeca, para que el puño ENVUELVA la barra.** Con la mano en su
+sitio la postura todavía se veía mal: el eje de empuñadura del puño quedaba 54°
+cruzado con el de la barra y la mano parecía pegada al lado en vez de agarrando.
+Con extensión de muñeca baja a 10,6° en la frontal y a 2,2° en la trasera.
+Comprobado antes de aplicarlo que la X positiva es extensión —con el brazo
+colgando lleva la mano hacia atrás— y no flexión, que es lo que el ajuste había
+elegido por su cuenta.
+
+### Pruebas
+
+`prueba-barra-maniqui.mjs` sube a 43. Tres guardias nuevas: que la mano está EN
+la barra y no encima, que el puño la envuelve en lugar de apoyarse de lado, y
+que lo consigue con extensión de muñeca.
+
+Y una aserción vieja RETIRADA porque era mía y estaba mal: decía que en los
+racks la barra no debía estar en el puño. La toca, y debe tocarla. Lo que
+distingue un rack de un press no es si la mano llega, sino QUIÉN SOSTIENE la
+barra — se comprueba doblando el codo: en el rack la barra no se inmuta, en el
+press se va con la mano.
+
 ## [0.2.82] — 2026-08-18
 
 ### Corregido

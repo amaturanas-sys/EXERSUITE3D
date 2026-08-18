@@ -95,9 +95,20 @@ export const BUILTIN_POSES: PoseMap = {
    * antes, sacados de la inclinación de una caja envolvente que en realidad
    * medía los brazos.
    *
-   * LOS BRAZOS son la diferencia de verdad. En la frontal el codo se va
-   * ADELANTE y ABAJO (46° de flexión de hombro) y el antebrazo se pliega 126°
-   * para devolver la mano al hombro, por debajo de la barra. En la trasera el
+   * LOS BRAZOS son la diferencia de verdad, y el rack frontal los tuve mal dos
+   * veces. LA MANO NO SUJETA LA BARRA POR ENCIMA: en un rack frontal los dedos
+   * van POR DEBAJO y la retienen para que no ruede hacia delante y se caiga.
+   * Midiéndolo con la barra puesta, mi primera versión dejaba la mano 8,2 cm
+   * por ENCIMA del eje —apoyada sobre la barra, empujándola— y eso no sujeta
+   * nada.
+   *
+   * Los ángulos de ahora son un ajuste contra CINCO medidas de la figura
+   * frontal del .obj: mano 0,8 cm por debajo del eje, agarre a 34,1 cm de la
+   * línea media, y codo 25,1 cm bajo la barra y 8,5 por delante. Salen mano
+   * 0,1 cm del eje, agarre 37,6 y codo −24,5 / +3,9. Y ojo con el codo: en el
+   * modelo del diseñador NO va alto, va veinticinco centímetros por debajo de
+   * la barra. El agarre ancho es lo que compensa la falta de rango de hombro,
+   * codo y muñeca, tal y como lo describió él. En la trasera el
    * hombro apenas flexiona 19°, abre 26° hacia afuera y el codo cae 21 cm por
    * debajo del hombro mientras el antebrazo sube a la barra por detrás. Ese
    * codo pide más flexión de la que da el tope humano, así que se queda en los
@@ -113,8 +124,14 @@ export const BUILTIN_POSES: PoseMap = {
   "Sentadilla frontal (arriba)": {
     // De pie bajo la barra: piernas rectas, tronco a plomo y el rack ya hecho.
     // En el modelo los brazos de la figura de pie y los del fondo son idénticos.
-    shoulderL: [-50, -24.5, -10.5], shoulderR: [-50, 24.5, 10.5],
-    elbowL: [-121, -22, 0], elbowR: [-121, 22, 0],
+    shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
+    elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
+    // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
+    // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
+    // el de la barra y la mano se ve pegada al lado, no agarrando; con ella
+    // baja a 10,6°. Comprobado que la X positiva es extensión —con el brazo
+    // colgando lleva la mano hacia atrás— y no flexión.
+    wristL: [25, 0, 25], wristR: [25, 0, -25],
   },
   "Sentadilla frontal (fondo)": {
     hipL: [-79, 3, -36.5], hipR: [-79, -3, 36.5],
@@ -122,12 +139,21 @@ export const BUILTIN_POSES: PoseMap = {
     ankleL: [-43, 0, 9], ankleR: [-43, 0, -9],
     // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
     spine: [0, 0, 0],
-    shoulderL: [-50, -24.5, -10.5], shoulderR: [-50, 24.5, 10.5],
-    elbowL: [-121, -22, 0], elbowR: [-121, 22, 0],
+    shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
+    elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
+    // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
+    // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
+    // el de la barra y la mano se ve pegada al lado, no agarrando; con ella
+    // baja a 10,6°. Comprobado que la X positiva es extensión —con el brazo
+    // colgando lleva la mano hacia atrás— y no flexión.
+    wristL: [25, 0, 25], wristR: [25, 0, -25],
   },
   "Sentadilla trasera (arriba)": {
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
+    // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
+    // y el brazo va pegado; la extensión lo deja en 2,2°.
+    wristL: [19.5, 0, 13], wristR: [19.5, 0, -13],
   },
   "Sentadilla trasera (fondo)": {
     // Misma pierna, exactamente, que la frontal.
@@ -138,6 +164,9 @@ export const BUILTIN_POSES: PoseMap = {
     spine: [3, 0, 0],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
+    // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
+    // y el brazo va pegado; la extensión lo deja en 2,2°.
+    wristL: [19.5, 0, 13], wristR: [19.5, 0, -13],
   },
   /**
    * PRESS VERTICAL Y PESO MUERTO (v0.2.79). Estos NO salen del .obj del

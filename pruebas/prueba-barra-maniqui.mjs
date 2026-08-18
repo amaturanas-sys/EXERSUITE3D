@@ -102,10 +102,30 @@ ok(frontalArriba.vsHombro[1] > 0 && traseraArriba.vsHombro[1] > 0,
 ok(frontalArriba.vsHombro[2] - traseraArriba.vsHombro[2] > 12,
   `las dos no están en el mismo sitio (${(frontalArriba.vsHombro[2] - traseraArriba.vsHombro[2]).toFixed(1)} cm de separación)`);
 
-// Y en los dos racks la sostiene el CUERPO, no la mano: la barra no coincide
-// con el punto medio de las manos.
-ok(frontalArriba.vsMano > 4,
-  `frontal: la barra NO está en el puño, la sostiene el cuerpo (${frontalArriba.vsMano} cm de la mano)`);
+// EN LOS RACKS MANDA EL CUERPO; EN PRESS Y PESO MUERTO, LA MANO. Y no se
+// distingue por si la mano toca la barra —en un rack frontal la toca, y debe
+// tocarla: los dedos la retienen para que no ruede—, sino por QUIÉN LA
+// SOSTIENE. Se comprueba moviendo el codo: si la barra la lleva el tronco, no
+// se inmuta; si la lleva la mano, se va con ella.
+const moverCodo = () => p.evaluate(() => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  const enlace = ed.getBarraManiqui();
+  const obj = ed.listObjects().find((o) => o.id === enlace.objectId);
+  const antes = obj.mesh.position.clone();
+  const J = ed.figureJoints();
+  for (const s of ["L", "R"]) J["elbow" + s].rotation.x += T.MathUtils.degToRad(15);
+  ed.humanFigure.updateMatrixWorld(true);
+  ed.sincronizarBarraManiqui();
+  return +obj.mesh.position.distanceTo(antes).toFixed(1);
+});
+await poner("sentadilla-frontal");
+const quietaRack = await moverCodo();
+await poner("press-vertical");
+const sigueMano = await moverCodo();
+ok(quietaRack < 0.5,
+  `rack: doblar el codo NO mueve la barra, la sostiene el cuerpo (${quietaRack} cm)`);
+ok(sigueMano > 3,
+  `press: doblar el codo SÍ la mueve, la sostiene la mano (${sigueMano} cm)`);
 
 // ---- 2b. LA BARRA APOYA EN LA PIEL, NI HUNDIDA NI FLOTANDO
 //
@@ -154,6 +174,79 @@ for (const [ej, etq] of [["sentadilla-frontal", "frontal"], ["sentadilla-trasera
     `${etq}: no atraviesa cuello ni cabeza (${cuello} / ${cabeza} cm)`);
   ok(mano < 1, `${etq}: la mano llega a la barra (${mano} cm)`);
 }
+
+// ---- 2c. LA MANO SUJETA LA BARRA, NO SE APOYA ENCIMA
+//
+// En un rack frontal los dedos van POR DEBAJO de la barra y la retienen para
+// que no ruede hacia delante y se caiga; eso es lo que exige flexibilidad de
+// hombro, codo y muñeca, y lo que se compensa con un agarre más ancho. Mi
+// primera versión dejaba la mano 8,2 cm por ENCIMA del eje —apoyada sobre la
+// barra, empujándola—, que es lo contrario y no sujeta nada.
+//
+// No vale medir la distancia al eje a secas: la barra mide 2,2 m, así que una
+// mano puede estar «a la distancia correcta» y sin embargo colocada donde no
+// toca. Lo que se mide es el desvío PERPENDICULAR al eje, y por separado a qué
+// distancia del centro cae el agarre.
+const agarre = () => p.evaluate(() => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  const enlace = ed.getBarraManiqui();
+  const obj = ed.listObjects().find((o) => o.id === enlace.objectId);
+  const f = ed.humanFigure;
+  f.updateMatrixWorld(true); obj.mesh.updateMatrixWorld(true);
+  const seg = (s) => { let m = null; f.traverse((n) => { if (n.isMesh && n.userData.segmentId === s) m = n; }); return m; };
+  const cen = (s) => new T.Box3().setFromObject(seg(s)).getCenter(new T.Vector3());
+  const J = ed.figureJoints();
+  const eje = new T.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+  const d = cen("mano-L").sub(obj.mesh.position);
+  const alo = d.dot(eje);
+  const perp = d.clone().sub(eje.clone().multiplyScalar(alo));
+  const codo = J.elbowL.getWorldPosition(new T.Vector3()).sub(obj.mesh.position);
+  const perpCodo = codo.clone().sub(eje.clone().multiplyScalar(codo.dot(eje)));
+  return { alto: +perp.y.toFixed(1), fondo: +perp.z.toFixed(1), ancho: +Math.abs(alo).toFixed(1),
+    codoAlto: +perpCodo.y.toFixed(1), codoFondo: +perpCodo.z.toFixed(1) };
+});
+
+await poner("sentadilla-frontal");
+const fr = await agarre();
+ok(Math.abs(fr.alto) < 2 && Math.abs(fr.fondo) < 2,
+  `frontal: la mano está EN la barra, no encima (${fr.alto} cm sobre el eje, ${fr.fondo} de fondo)`);
+ok(fr.ancho > 28 && fr.ancho < 45,
+  `frontal: agarre ancho, que es lo que compensa el rango de hombro y muñeca (${fr.ancho} cm del centro; el modelo da 34,1)`);
+ok(fr.codoAlto < -15 && fr.codoFondo > 0,
+  `frontal: el codo cae por debajo de la barra y por delante (${fr.codoAlto} / ${fr.codoFondo} cm; el modelo da −25,1 / +8,5)`);
+
+// EL PUÑO ENVUELVE LA BARRA. Con la mano puesta en el sitio todavía puede
+// verse mal: si el eje de empuñadura del puño —el que en reposo apunta como
+// apuntaría una barra atravesada en la mano— queda cruzado con el de la barra,
+// la mano se ve pegada al lado en vez de agarrando. Sin extensión de muñeca
+// ese cruce era de 54°.
+const puno = () => p.evaluate(() => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  const obj = ed.listObjects().find((o) => o.id === ed.getBarraManiqui().objectId);
+  const f = ed.humanFigure;
+  f.updateMatrixWorld(true); obj.mesh.updateMatrixWorld(true);
+  let m = null;
+  f.traverse((n) => { if (n.isMesh && n.userData.segmentId === "mano-L") m = n; });
+  const eje = new T.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+  const g = new T.Vector3(1, 0, 0).applyQuaternion(m.getWorldQuaternion(new T.Quaternion())).normalize();
+  return +T.MathUtils.radToDeg(Math.acos(Math.min(1, Math.abs(g.dot(eje))))).toFixed(1);
+});
+const punoFrontal = await puno();
+ok(punoFrontal < 15,
+  `frontal: el puño ENVUELVE la barra, no se apoya de lado (${punoFrontal}° de cruce)`);
+const munecaFrontal = await p.evaluate(() => {
+  const T = window.exersuite.THREE;
+  return +T.MathUtils.radToDeg(window.exersuite.editor.figureJoints().wristL.rotation.x).toFixed(1);
+});
+ok(munecaFrontal > 10,
+  `frontal: y lo consigue con EXTENSIÓN de muñeca (${munecaFrontal}°), no doblándola hacia dentro`);
+
+await poner("sentadilla-trasera");
+const tr = await agarre();
+const punoTrasero = await puno();
+ok(punoTrasero < 15, `trasera: el puño también envuelve la barra (${punoTrasero}° de cruce)`);
+ok(Math.abs(tr.alto) < 4 && Math.abs(tr.fondo) < 4,
+  `trasera: la mano también agarra la barra (${tr.alto} / ${tr.fondo} cm)`);
 
 // ---- 3. En press y peso muerto la barra VA EN LA MANO
 for (const ej of ["press-vertical", "peso-muerto"]) {
