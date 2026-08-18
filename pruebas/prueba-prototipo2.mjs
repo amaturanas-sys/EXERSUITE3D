@@ -44,9 +44,22 @@ await page.evaluate(() => {
 });
 
 // Paso 3: cargar la foto → modo calce (foto debajo, fondo fuera, caucho).
-await page.evaluate(() => document.querySelector("#sec-prototipo .panel-title").click());
+// LA HERRAMIENTA DE PROTOTIPO VIVE EN EL VISOR, no en el Builder. Se compone
+// el espacio con las medidas del lugar real y se fotografía en el visor, que es
+// donde no hay gizmos ni paneles que salgan en la foto. Esta prueba buscaba el
+// panel viejo del Builder —«#sec-prototipo»— y reventaba antes de medir nada:
+// era la prueba la que estaba desfasada, no la aplicación.
+await page.waitForTimeout(1200);                      // que cuaje el autoguardado
+await page.click("#toolbar button:has-text('Home')"); await page.waitForTimeout(500);
+// El aviso de salida solo sale si hay cambios sin guardar: en unas pruebas
+// aparece y en otras no, así que se atiende si está y se sigue si no.
+const avisoSalida = page.locator("button:has-text('Salir sin guardar')");
+if (await avisoSalida.count()) { await avisoSalida.first().click(); await page.waitForTimeout(800); }
+await page.click("text=▶ SIMULADOR"); await page.waitForTimeout(500);
+await page.click("text=↻  Sesión anterior"); await page.waitForTimeout(4000);
+await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(600);
 await page.waitForTimeout(300);
-const inputFoto = await page.$("#sec-prototipo input[type=file]");
+const inputFoto = await page.$("#proto-viewer input[type=file]");
 await inputFoto.setInputFiles("foto-lugar.png");
 await page.waitForTimeout(1000);
 const S1 = await page.evaluate(() => {
@@ -66,7 +79,7 @@ console.log("calce:", JSON.stringify(S1));
 await page.screenshot({ path: "v216-calce.png" });
 
 // Paso 4: fijar perspectiva (órbita bloqueada, aparece el dial del sol).
-await page.click("#sec-prototipo button:has-text('Fijar perspectiva')");
+await page.click("#proto-viewer button:has-text('Fijar perspectiva')");
 await page.waitForTimeout(400);
 const S2 = await page.evaluate(() => ({
   bloqueada: window.exersuite.editor.isOrbitaBloqueada(),
@@ -87,10 +100,10 @@ console.log("fijar:", JSON.stringify(S2), "luz:", JSON.stringify(luz0), "→", J
 await page.screenshot({ path: "v216-sol.png" });
 
 // Paso 5: producir la fotografía (capas: foto + suelo caucho + sombras).
-await page.click("#sec-prototipo button:has-text('Producir fotografía')");
+await page.click("#proto-viewer button:has-text('Producir fotografía')");
 await page.waitForTimeout(1200);
 const S3 = await page.evaluate(() => ({
-  boton: document.querySelector("#sec-prototipo .proto-btn.primario").textContent,
+  boton: document.querySelector("#proto-viewer .proto-btn.primario").textContent,
 }));
 const compuesta = await page.evaluate(() => new Promise((res) => {
   const req = indexedDB.open("exersuite3d");
@@ -107,8 +120,10 @@ const compuesta = await page.evaluate(() => new Promise((res) => {
 if (compuesta) fs.writeFileSync("v216-prototipo-producido.png", Buffer.from(compuesta.split(",")[1], "base64"));
 console.log("producir:", JSON.stringify({ ...S3, galeria: !!compuesta }));
 
-// Salida limpia.
-await page.click("#sec-prototipo button:has-text('Quitar foto')");
+// Salida limpia. El «Quitar foto» del panel viejo del Builder es hoy el
+// «⌂ Volver» del visor: deja el calce, devuelve la órbita y restaura el fondo,
+// que es justo lo que comprueba S4.
+await page.click("#proto-viewer button:has-text('Volver')");
 await page.waitForTimeout(400);
 const S4 = await page.evaluate(() => ({
   calce: window.exersuite.editor.isModoCalce(),

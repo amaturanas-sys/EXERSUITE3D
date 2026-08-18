@@ -29,9 +29,22 @@ await page.evaluate(() => {
 });
 
 // Paso 3: foto + calce orbital.
-await page.evaluate(() => document.querySelector("#sec-prototipo .panel-title").click());
+// LA HERRAMIENTA DE PROTOTIPO VIVE EN EL VISOR, no en el Builder. Se compone
+// el espacio con las medidas del lugar real y se fotografía en el visor, que es
+// donde no hay gizmos ni paneles que salgan en la foto. Esta prueba buscaba el
+// panel viejo del Builder —«#sec-prototipo»— y reventaba antes de medir nada:
+// era la prueba la que estaba desfasada, no la aplicación.
+await page.waitForTimeout(1200);                      // que cuaje el autoguardado
+await page.click("#toolbar button:has-text('Home')"); await page.waitForTimeout(500);
+// El aviso de salida solo sale si hay cambios sin guardar: en unas pruebas
+// aparece y en otras no, así que se atiende si está y se sigue si no.
+const avisoSalida = page.locator("button:has-text('Salir sin guardar')");
+if (await avisoSalida.count()) { await avisoSalida.first().click(); await page.waitForTimeout(800); }
+await page.click("text=▶ SIMULADOR"); await page.waitForTimeout(500);
+await page.click("text=↻  Sesión anterior"); await page.waitForTimeout(4000);
+await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(600);
 await page.waitForTimeout(300);
-const inputFoto = await page.$("#sec-prototipo input[type=file]");
+const inputFoto = await page.$("#proto-viewer input[type=file]");
 await inputFoto.setInputFiles(AQUI + "fijos/foto-garaje.jpg");
 await page.waitForTimeout(1000);
 await page.evaluate(() => {
@@ -45,7 +58,7 @@ await page.waitForTimeout(600);
 
 // Paso 4: fijar perspectiva y arrastrar el sol hacia las ventanas del
 // portón (luz desde la derecha y atrás → sombras hacia el frente-izquierda).
-await page.click("#sec-prototipo button:has-text('Fijar perspectiva')");
+await page.click("#proto-viewer button:has-text('Fijar perspectiva')");
 await page.waitForTimeout(400);
 const dial = await page.$(".proto-dial");
 const box = await dial.boundingBox();
@@ -58,9 +71,9 @@ const luz = await page.evaluate(() => window.exersuite.editor.sceneManager.key.p
 await page.screenshot({ path: "garaje-2-fijado-sol.png" });
 
 // Paso 5: producir la fotografía.
-await page.click("#sec-prototipo button:has-text('Producir fotografía')");
+await page.click("#proto-viewer button:has-text('Producir fotografía')");
 await page.waitForTimeout(1500);
-const boton = await page.evaluate(() => document.querySelector("#sec-prototipo .proto-btn.primario").textContent);
+const boton = await page.evaluate(() => document.querySelector("#proto-viewer .proto-btn.primario").textContent);
 const compuesta = await page.evaluate(() => new Promise((res) => {
   const req = indexedDB.open("exersuite3d");
   req.onsuccess = () => {

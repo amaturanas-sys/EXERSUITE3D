@@ -216,12 +216,20 @@ export const BUILTIN_POSES: PoseMap = {
   /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.
    *
-   * El cuello se queda NEUTRO a propósito. Manteniendo la misma marca del
-   * suelo a dos metros, desde la cabeza ya erguida haría falta bajar la
-   * barbilla 38°, y eso ya no protege nada: la marca sirve mientras el tronco
-   * está inclinado, que es cuando el cuello corre peligro.
+   * EL CUELLO, A MITAD DE CAMINO, y esto lo decidió el diseñador. Manteniendo
+   * la misma marca del suelo a dos metros, desde la cabeza ya erguida harían
+   * falta 38° de barbilla abajo —es literalmente lo que pasa si no despegas la
+   * vista del sitio—; con el cuello neutro, la mirada se va al frente. Los 19°
+   * son el punto medio: quien relaja la vista al subir sin llegar a levantar la
+   * cabeza.
+   *
+   * Que quede claro de dónde sale, porque no es como los demás ángulos de este
+   * archivo: la salida del peso muerto está RESUELTA contra un blanco medible
+   * —el punto del suelo— y esto es un criterio, no una medida.
    */
-  "Peso muerto (bloqueo)": {},
+  "Peso muerto (bloqueo)": {
+    neck: [19, 0, 0],
+  },
   "Press vertical (rack)": {
     shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
     elbowL: [-150, 80, 0], elbowR: [-150, -80, 0],

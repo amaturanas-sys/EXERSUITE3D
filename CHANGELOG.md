@@ -5,6 +5,48 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.89] — 2026-08-18
+
+Dos decisiones del diseñador y los cuatro rojos que llevaban versiones sin
+revisar.
+
+### Corregido
+
+**`garaje`, `garaje2`, `prototipo` y `prototipo2` no estaban rotas por un fallo
+de la aplicación.** Llevaban versiones fichadas como «rojos de antes, sin
+revisar», reventando con `reading 'click' of null` antes de medir nada. La
+causa: **la herramienta de PROTOTIPO se mudó del Builder al visor** y las cuatro
+seguían buscando el panel viejo, `#sec-prototipo`, que ya no existe. Reescritas
+al camino real —componer en el Builder, Home → ▶ SIMULADOR → sesión anterior, y
+📸 Prototipo en la barra—, **las cuatro pasan**. Con ellas la batería sube de 59
+a 63 verdes de 66.
+
+Dos cosas más salieron de ahí, y quedan escritas en vez de disimuladas:
+
+- `prueba-prototipo` medía los botones «Pantalla verde» y «Captura compuesta»,
+  que **no existen** desde que la herramienta se rehízo. Esa parte se retira: la
+  pantalla verde sigue en la API del editor pero no la alcanza ningún mando de
+  la interfaz, así que comprobarla sería medir código muerto y dar una sensación
+  de cobertura que no existe. El rodaje de hoy —cargar, calzar, fijar y
+  producir— lo cubre `prueba-prototipo2` de punta a punta.
+- `prueba-prototipo` no ponía ni una pieza antes de saltar al visor, así que no
+  había sesión que recuperar. Ahora compone algo que fotografiar, que es de lo
+  que va la herramienta.
+
+### Cambiado
+
+**El cuello en el bloqueo del peso muerto pasa a 19°**, a mitad de camino entre
+la mirada al frente y la marca del suelo. Lo decidió el diseñador. Conviene
+saber que no es como los demás ángulos del archivo: la salida está RESUELTA
+contra un blanco medible —el punto del suelo a dos metros— y esto es un
+criterio.
+
+**El alcance del brazo del esqueleto se queda como está** (56 cm de hombro a
+centro de mano, contra los ~65 de la norma antropométrica). El esqueleto sale
+del modelo del diseñador y él decide que refleje su modelo; el coste ya está
+escrito donde toca: el peso muerto se inclina más de lo que enseña la lámina
+porque el brazo no llega.
+
 ## [0.2.88] — 2026-08-18
 
 ### Corregido

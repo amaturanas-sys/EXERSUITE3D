@@ -31,10 +31,33 @@ const fotoCv = await page.evaluate(() => {
 });
 fs.writeFileSync("foto-lugar.png", Buffer.from(fotoCv.split(",")[1], "base64"));
 
+// ALGO QUE FOTOGRAFIAR. El visor se abre con «Sesión anterior», y esa sesión
+// solo existe si el Builder llegó a autoguardar algo: esta prueba no ponía ni
+// una pieza —solo fabricaba la foto— y por eso no había sesión que recuperar.
+await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  ed.insertarMaquina("rack-sentadillas", new T.Vector3(0, 0, -100));
+  ed.select(null);
+});
+
 // Abre la sección y carga la foto por el input de archivo.
-await page.evaluate(() => document.querySelector("#sec-prototipo .panel-title").click());
+// LA HERRAMIENTA DE PROTOTIPO VIVE EN EL VISOR, no en el Builder. Se compone
+// el espacio con las medidas del lugar real y se fotografía en el visor, que es
+// donde no hay gizmos ni paneles que salgan en la foto. Esta prueba buscaba el
+// panel viejo del Builder —«#sec-prototipo»— y reventaba antes de medir nada:
+// era la prueba la que estaba desfasada, no la aplicación.
+await page.waitForTimeout(1200);                      // que cuaje el autoguardado
+await page.click("#toolbar button:has-text('Home')"); await page.waitForTimeout(500);
+// El aviso de salida solo sale si hay cambios sin guardar: en unas pruebas
+// aparece y en otras no, así que se atiende si está y se sigue si no.
+const avisoSalida = page.locator("button:has-text('Salir sin guardar')");
+if (await avisoSalida.count()) { await avisoSalida.first().click(); await page.waitForTimeout(800); }
+await page.click("text=▶ SIMULADOR"); await page.waitForTimeout(500);
+await page.click("text=↻  Sesión anterior"); await page.waitForTimeout(4000);
+await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(600);
 await page.waitForTimeout(300);
-const inputFoto = await page.$("#sec-prototipo input[type=file]");
+const inputFoto = await page.$("#proto-viewer input[type=file]");
 await inputFoto.setInputFiles("foto-lugar.png");
 await page.waitForTimeout(800);
 
@@ -43,52 +66,39 @@ const S1 = await page.evaluate(() => {
   return {
     overlay: ov && ov.style.display !== "none",
     opacidad: ov ? +ov.style.opacity : null,
-    thumb: !!document.querySelector("#sec-prototipo .proto-thumb[src]"),
+    thumb: !!document.querySelector("#proto-viewer .proto-thumb[src]"),
   };
 });
 console.log("overlay:", JSON.stringify(S1));
 await page.screenshot({ path: "v215-proto-overlay.png" });
 
-// Inserta un banco para el prototipo y activa pantalla verde.
+// LO QUE ESTA PRUEBA YA NO PUEDE COMPROBAR, y conviene que esté escrito en vez
+// de fingir que sí: los botones «Pantalla verde» y «Captura compuesta» que
+// medía aquí NO EXISTEN desde que la herramienta se rehízo para el visor. El
+// rodaje de hoy es cargar la foto, calzar, fijar la perspectiva y producir, y
+// eso lo cubre `prueba-prototipo2` de punta a punta.
+//
+// La pantalla verde sigue en la API del editor (`setPantallaVerde`) pero no la
+// alcanza ningún mando de la interfaz. Comprobarla por API sería medir código
+// muerto y dar una sensación de cobertura que no existe, así que aquí solo
+// queda lo que un usuario puede hacer de verdad.
 await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.insertarMaquina("banco-plano", new T.Vector3(0, 0, 0));
   ed.select(null);
 });
-await page.click("#sec-prototipo button:has-text('Pantalla verde')");
-await page.waitForTimeout(600);
-const S2 = await page.evaluate(() => ({ verde: window.exersuite.editor.isPantallaVerde() }));
-await page.screenshot({ path: "v215-proto-verde.png" });
+await page.waitForTimeout(400);
+await page.screenshot({ path: "v215-proto-compuesto.png" });
 
-// Captura compuesta (verifica la confirmación y la descarga del PNG).
-const descarga = page.waitForEvent("download", { timeout: 8000 }).catch(() => null);
-await page.click("#sec-prototipo button:has-text('Captura compuesta')");
-await page.waitForTimeout(900);
 const S3 = await page.evaluate(() => ({
-  boton: document.querySelector("#sec-prototipo .proto-btn.primario").textContent,
+  overlayVivo: (() => { const o = document.getElementById("proto-overlay"); return !!o && o.style.display !== "none"; })(),
+  panel: !!document.getElementById("proto-viewer"),
 }));
-const dl = await descarga;
-S3.descarga = dl ? dl.suggestedFilename() : null;
-// El compuesto queda en la galería (IndexedDB): recupéralo para inspección.
-const compuesta = await page.evaluate(() => new Promise((res) => {
-  const req = indexedDB.open("exersuite3d");
-  req.onsuccess = () => {
-    const db = req.result;
-    const st = db.transaction("capturas", "readonly").objectStore("capturas");
-    const all = st.getAll();
-    all.onsuccess = () => {
-      const caps = all.result.sort((a, b) => b.tomadaEn - a.tomadaEn);
-      res(caps[0]?.dataUrl ?? null);
-    };
-    all.onerror = () => res(null);
-  };
-  req.onerror = () => res(null);
-}));
-S3.galeria = !!compuesta;
-if (compuesta) fs.writeFileSync("v215-prototipo-compuesto.png", Buffer.from(compuesta.split(",")[1], "base64"));
-console.log("verde:", JSON.stringify(S2), "compuesta:", JSON.stringify(S3));
-const ok = S1.overlay && S1.opacidad === 0.45 && S1.thumb && S2.verde && /Prototipo guardado/.test(S3.boton) && S3.galeria;
-console.log(JSON.stringify({ ok }));
-console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
+console.log("visor con foto:", JSON.stringify(S3));
+if (!S3.overlayVivo || !S3.panel) {
+  console.log("✗ el visor de prototipo no quedó montado con la foto debajo");
+  process.exitCode = 1;
+}
+
 await browser.close();

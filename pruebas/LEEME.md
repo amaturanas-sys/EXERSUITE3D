@@ -89,26 +89,31 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
-Medido en la tanda EN SERIE de v0.2.86 (66 pruebas, preview y sitio levantados):
-**59 verdes y 7 rojos**, y los siete vienen de antes.
+Medido en serie en v0.2.89: **63 verdes y 3 rojos** de 66.
 
 | prueba | por qué |
 |---|---|
-| `garaje`, `garaje2`, `prototipo`, `prototipo2` | rojos de antes, sin revisar. Revientan en el asistente de proyecto nuevo (`Cannot read properties of null (reading 'click')`), no llegan a medir nada |
 | `fable-v214` | rojo de antes: se agota el tiempo antes de arrancar |
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
 | `v251` | 1 aserción: las piernas siguen entrando 2,5 cm en el banco |
 
-**Lo que dejó de estar en rojo en esta tanda**, y conviene no volver a apuntarlo
-sin medirlo: `freno` y `atraviesa` —que estaban como INTERMITENTES— salieron
-verdes; `cable-oculto`, `800-debug`, `800-debug2`, `800-debug3` y
-`uppermachine-lib` también, que era lo esperado porque solo caían en paralelo; y
-`sitio` pasa con el Next.js en el 3100.
+**Los cuatro rojos del asistente ya no lo son.** `garaje`, `garaje2`,
+`prototipo` y `prototipo2` llevaban versiones reventando con
+`reading 'click' of null` y se daban por «rojos de antes, sin revisar». No era
+la aplicación: **la herramienta de PROTOTIPO se mudó del Builder al visor** y
+las cuatro seguían buscando el panel viejo, `#sec-prototipo`, que ya no existe.
+Reescritas al camino real —componer en el Builder, Home → ▶ SIMULADOR → sesión
+anterior, y 📸 Prototipo en la barra—, las cuatro pasan.
 
-Dos rojos de esta tanda NO estaban en esta lista y eran regresión de v0.2.81:
-`ergonomia-v256` y `v251` afirmaban que POSAR tiene cuatro grupos, y el grupo
-BARRA lo dejó en cinco. Corregidas las dos aserciones: lo que protegen no es el
-número sino que POSAR siga agrupado por tarea.
+Y de paso quedó escrito lo que `prueba-prototipo` YA NO puede comprobar: los
+botones «Pantalla verde» y «Captura compuesta» que medía no existen desde que
+la herramienta se rehízo. La pantalla verde sigue en la API del editor pero no
+la alcanza ningún mando, así que comprobarla sería medir código muerto y dar
+una sensación de cobertura que no existe.
+
+`freno` y `atraviesa`, fichadas como intermitentes, llevan dos tandas en verde
+en serie. `cable-oculto`, los tres `800-debug` y `uppermachine-lib` solo caen en
+paralelo. `sitio` pasa con el Next.js en el 3100.
 
 ### Esperar por RELOJ es la primera causa de rojo mentiroso
 
