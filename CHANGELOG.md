@@ -5,6 +5,87 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.90] — 2026-08-18
+
+Los once hallazgos de la segunda auditoría, arreglados de raíz y con una
+prueba cada uno.
+
+### Corregido
+
+**La mano del maniquí se quedaba armada.** Encenderla se apodera del puntero:
+cada clic en el lienzo agarra un segmento. Cambiar de herramienta, pulsar
+Escape o cancelar apagaban el modo por dentro pero dejaban la mano puesta, y
+el lienzo seguía manipulando la figura sin nada en pantalla que lo dijera.
+Ahora los tres caminos la sueltan.
+
+**El inspector hablaba de piezas que ya no existían.** Con varias marcadas y
+Supr, el panel se quedaba diciendo «3 piezas seleccionadas» y ofreciendo
+campos de posición y rotación que no movían nada: `removeObject` sólo avisa
+por `selectionChanged` cuando la borrada era la pieza única, y aquí no lo era.
+
+**Ctrl+D no hacía nada con varias piezas marcadas.** Con multiselección
+`selected` es nulo y el atajo se iba por el `return` sin duplicar ni avisar.
+Ahora duplica todas y deja las copias marcadas, listas para moverlas en
+bloque.
+
+**El panel del costado derecho se quedaba colgado.** Los de la roldana y la
+bisagra se añadían al `<body>` con la clase que repliega la ventana del
+maniquí, y sólo ellos sabían quitarla: al cambiar de herramienta o volver a la
+Home quedaban a la vista con los botones muertos y el maniquí escondido, sin
+pista de cómo recuperarlo. El carril tiene ahora **un dueño** (`dialogoDerecha`):
+quien abre cierra al anterior, y cualquiera puede cerrar el que haya sin saber
+cuál es.
+
+**Duplicar o pegar una máquina sustituida daba una caja gris.** Una máquina
+estándar reemplazada por el modelo del usuario vive como un `prim-box` anclado
+con `modeloMaquina` y la geometría del modelo encima; copiarla sólo llevaba
+los `params` y salía lo de debajo. Cargar el proyecto ya lo hacía bien: ese
+mismo trabajo está ahora en un sitio al que llaman los tres caminos. De paso,
+pegar tampoco copiaba el `stack` de la pila de pesos.
+
+**Dos tramos de columna apilados dejaban el carro sin guía.** El recorrido que
+permite cada tubo se INTERSECABA, y con dos tramos contiguos la intersección
+es vacía: el carro salía del filtro sin guía y se desplomaba por fuera de la
+torre (16 cm de deriva, medido). Además, el tramo de arriba —coaxial y más
+corto— pasaba por **espaciador**, con lo que frenaba en el empalme en vez de
+prolongar el recorrido. Ahora un espaciador tiene que ir MONTADO SOBRE la
+guía —compartir su tramo—, los tramos que se tocan se funden, y la columna se
+prolonga en cadena aunque el carro todavía no haya llegado a los tramos de más
+allá.
+
+**Dos nodos de cable en el mismo cuerpo se pisaban.** Pasa con dos roldanas
+empotradas en la misma viga, y con cualquier aparejo 2:1 armado sobre una sola
+pieza: los solventes escribían la velocidad del cuerpo una vez por nodo y la
+segunda pisaba a la primera, además de contar dos veces la misma inercia. El
+bloque recibía el tirón del tramo interno —horizontal— y se iba de lado: 112 cm
+de deriva y 89 cm de subida, medidos. Ahora cada cuerpo entra una vez, con la
+SUMA de los gradientes de sus nodos.
+
+**Volver a la Home dejaba oyentes vivos.** El render bajo demanda cuelga quince
+oyentes de `window` y del lienzo y el cierre sólo soltaba los seis con nombre:
+el editor anterior seguía pidiendo cuadros sobre un renderer destruido y se
+quedaba entero en memoria. Cada oyente deja ahora apuntado cómo soltarse.
+
+**Acortar un pilar trazado lo hacía CRECER.** El largo de una pieza recta es el
+de su polilínea. Al tirar de la punta hacia dentro los nodos de en medio se
+quedaban pasados del extremo: la polilínea iba, volvía y volvía a ir, y un
+pilar de 100 cm acortado a 30 medía 120. Los nodos se reparten ahora por la
+cuerda, y una polilínea que se dobla sobre sí misma deja de contar como recta.
+
+**La mano quedaba armada tras posar la máquina.** Posar la entrega a propósito;
+al salir se quedaba puesta y el siguiente ▶ arrancaba con la máquina viva bajo
+el cursor —justo lo que la herramienta de órbita por omisión (v0.2.41) está
+para evitar—. Al salir se devuelve la que había.
+
+### Verificación
+
+`prueba-auditoria2` reproduce los once, uno por bloque: **32 comprobaciones,
+todas en verde**. Como en la primera tanda, no comprueban que el arreglo esté
+puesto —eso lo diría un `grep`— sino que el fallo ya no pasa. Comprobado
+además al revés: con la física anterior, los bloques de la torre apilada y del
+aparejo de un solo cuerpo **fallan**; con el reparto de nodos anterior, falla
+el del pilar acortado.
+
 ## [0.2.89] — 2026-08-18
 
 Dos decisiones del diseñador y los cuatro rojos que llevaban versiones sin

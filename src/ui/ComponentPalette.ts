@@ -1,4 +1,5 @@
 import type { Editor } from "../core/Editor";
+import { abrirDialogoDerecha, cerrarDialogoDerecha } from "./dialogoDerecha";
 import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
@@ -31,15 +32,28 @@ type RoldanaConfig = {
 function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
   return new Promise((resolve) => {
     let tipo: "interna" | "externa" = "externa";
+    let resuelto = false;
     const terminar = (v: RoldanaConfig | null): void => {
+      if (resuelto) return;
+      resuelto = true;
       window.removeEventListener("keydown", alTeclado);
       panel.remove();
-      document.body.classList.remove("dialogo-derecha");
       resolve(v);
+    };
+    // El carril derecho tiene UN dueño: quien abra cierra al anterior, y
+    // cualquiera —cambiar de herramienta, volver a la Home— puede cerrar el que
+    // haya sin saber cuál es. Antes solo este panel podía cerrarse a sí mismo y
+    // se quedaba colgado con los botones muertos, escondiendo el maniquí.
+    const cerrarYResolver = (v: RoldanaConfig | null): void => {
+      // PRIMERO se resuelve con lo elegido y DESPUÉS se descuelga del carril:
+      // el cierre registrado allí resuelve con `null`, y `terminar` sólo hace
+      // caso a la primera llamada —así una dirección elegida no se pierde—.
+      terminar(v);
+      cerrarDialogoDerecha();
     };
     // Esc cierra el panel (misma tecla que termina la herramienta).
     const alTeclado = (ev: KeyboardEvent): void => {
-      if (ev.key === "Escape") terminar(null);
+      if (ev.key === "Escape") cerrarYResolver(null);
     };
     window.addEventListener("keydown", alTeclado);
 
@@ -66,12 +80,12 @@ function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
         el("span", { class: "rold-icono" }, [icono]),
         el("span", {}, [titulo]),
       ]);
-      b.addEventListener("click", () => terminar({ tipo, dir: v }));
+      b.addEventListener("click", () => cerrarYResolver({ tipo, dir: v }));
       return b;
     };
 
     const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
-    cerrar.addEventListener("click", () => terminar(null));
+    cerrar.addEventListener("click", () => cerrarYResolver(null));
 
     const panel = el("aside", { id: "rold-panel" }, [
       el("div", { class: "rold-head" }, [
@@ -120,8 +134,9 @@ function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
     pintarTipo();
     document.body.append(panel);
     // El carril derecho aloja UNA ventana a la vez: mientras este diálogo
-    // esté abierto, la del maniquí se repliega (v0.2.48).
-    document.body.classList.add("dialogo-derecha");
+    // esté abierto, la del maniquí se repliega (v0.2.48). Lo registra el módulo
+    // del carril, que es quien pone y quita la clase del <body>.
+    abrirDialogoDerecha(() => terminar(null));
   });
 }
 

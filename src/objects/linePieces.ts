@@ -30,22 +30,54 @@ export function straightPath(lengthCm: number): [number, number, number][] {
   return nodes;
 }
 
-/** True si todos los nodos son colineales (la pieza sigue recta). */
+/**
+ * True si todos los nodos son colineales Y VAN EN ORDEN (la pieza sigue recta).
+ *
+ * El orden importa tanto como la colinealidad: el largo de una pieza recta se
+ * mide como la LONGITUD DE LA POLILÍNEA, no como la distancia entre extremos.
+ * Un nodo intermedio que se quede PASADO del extremo —lo que ocurre al acortar
+ * un poste tirando de su punta hacia dentro— sigue estando sobre la recta, pero
+ * la polilínea va, vuelve y va otra vez: el largo sale mayor que la cuerda y la
+ * pieza CRECE al acortarla. Con el recorrido de ida se comporta como recta; sin
+ * él es una pieza plegada, y como tal se construye.
+ */
 export function pathIsStraight(path: [number, number, number][] | undefined): boolean {
-  if (!path || path.length < 3) return true;
+  return recorridoDelPath(path) === "recta";
+}
+
+/**
+ * True si los nodos están SOBRE la recta de los extremos, vayan en el orden que
+ * vayan. Es lo que hay que preguntar antes de re-repartirlos: una pieza recta
+ * acortada por la punta es esto —colineal pero desordenada— y se arregla
+ * repartiendo, no tratándola como doblada.
+ */
+export function pathIsCollinear(path: [number, number, number][] | undefined): boolean {
+  return recorridoDelPath(path) !== "doblada";
+}
+
+/** Colinealidad y orden de una polilínea, en una sola pasada. */
+function recorridoDelPath(
+  path: [number, number, number][] | undefined,
+): "recta" | "plegada" | "doblada" {
+  if (!path || path.length < 3) return "recta";
   const a = new THREE.Vector3(...path[0]);
   const b = new THREE.Vector3(...path[path.length - 1]);
   const dir = b.clone().sub(a);
   const len = dir.length();
-  if (len < 1e-6) return true;
+  if (len < 1e-6) return "recta";
   dir.divideScalar(len);
   const tmp = new THREE.Vector3();
+  let anterior = 0;
+  let ordenada = true;
   for (let i = 1; i < path.length - 1; i++) {
     tmp.set(...path[i]).sub(a);
-    const d = tmp.clone().sub(dir.clone().multiplyScalar(tmp.dot(dir))).length();
-    if (d > 0.05) return false; // medio milimetro de tolerancia
+    const t = tmp.dot(dir);
+    const d = tmp.clone().sub(dir.clone().multiplyScalar(t)).length();
+    if (d > 0.05) return "doblada"; // medio milimetro de tolerancia
+    if (t < anterior - 0.05 || t > len + 0.05) ordenada = false; // retrocede o se pasa
+    anterior = t;
   }
-  return true;
+  return ordenada ? "recta" : "plegada";
 }
 
 /** Longitud de la polilinea de nodos (cm). */

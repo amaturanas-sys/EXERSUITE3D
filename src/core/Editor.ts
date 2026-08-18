@@ -15,7 +15,12 @@ import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
-import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces";
+import {
+  pathIsCollinear,
+  pathIsStraight,
+  straightPath,
+  tramosCalce,
+} from "../objects/linePieces";
 import { espejoDe } from "../objects/espejar";
 import {
   EJERCICIO_BARRA_POR_ID,
@@ -165,6 +170,11 @@ export type EditorEvents = {
     angles: [number, number, number];
     locked: boolean;
   };
+  /**
+   * Cerrar el diálogo del costado derecho (roldana/bisagra), lo escuche quien
+   * lo escuche. El núcleo no sabe de paneles: avisa y la interfaz obedece.
+   */
+  dialogosCerrar: Record<string, never>;
   /** El maniquí cogió, cambió o soltó su barra (v0.2.81). */
   barraManiquiChanged: {
     objectId: string | null;
@@ -246,6 +256,22 @@ interface SavedTransform {
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
   scale: THREE.Vector3;
+}
+
+/**
+ * Le devuelve a una pieza su condición de máquina estándar SUSTITUIDA.
+ *
+ * Una máquina de la biblioteca que el usuario reemplazó por su propio modelo se
+ * guarda como un `prim-box` con `modeloMaquina` puesto y la geometría del
+ * modelo aplicada encima. Al duplicar o pegar sólo se copiaban los `params`, y
+ * la copia salía como lo que hay debajo: una caja gris. Cargar el proyecto ya
+ * lo hacía bien; esto es lo mismo, en un sitio al que puedan llamar los tres.
+ */
+function aplicarModeloMaquina(obj: SceneObject, clave: string | null | undefined): void {
+  if (!clave) return;
+  obj.modeloMaquina = clave;
+  const g = componentModels.geometryClone(clave);
+  if (g) obj.applyCustomGeometry(g);
 }
 
 /**
@@ -855,31 +881,55 @@ export class Editor {
   private installRenderOnDemand(): void {
     const bump = (): void => this.requestRender();
     for (const ev of ["pointerdown", "pointerup", "wheel", "keydown", "touchstart", "touchend"]) {
-      window.addEventListener(ev, bump, { passive: true, capture: true });
+      this.escuchar(window, ev, bump, { passive: true, capture: true });
     }
     // El movimiento del puntero solo repinta arrastrando o sobre el lienzo
     // (previsualizaciones de colocación/línea/doblado con el cursor).
-    window.addEventListener(
+    this.escuchar(
+      window,
       "pointermove",
-      (e: PointerEvent) => {
-        if (e.buttons > 0 || e.target === this.sceneManager.renderer.domElement) bump();
+      (e) => {
+        const pe = e as PointerEvent;
+        if (pe.buttons > 0 || pe.target === this.sceneManager.renderer.domElement) bump();
       },
       { passive: true, capture: true },
     );
-    window.addEventListener("touchmove", bump, { passive: true, capture: true });
-    window.addEventListener("resize", () => this.requestRender(5));
+    this.escuchar(window, "touchmove", bump, { passive: true, capture: true });
+    this.escuchar(window, "resize", () => this.requestRender(5));
     // Arrastre sobre el lienzo (orbitar, gizmo, doblado…): activa la escala
     // de movimiento de la resolución dinámica.
     const canvas = this.sceneManager.renderer.domElement;
-    canvas.addEventListener("pointerdown", () => (this.canvasDragging = true), { passive: true });
-    canvas.addEventListener("touchstart", () => (this.canvasDragging = true), { passive: true });
+    this.escuchar(canvas, "pointerdown", () => (this.canvasDragging = true), { passive: true });
+    this.escuchar(canvas, "touchstart", () => (this.canvasDragging = true), { passive: true });
     for (const ev of ["pointerup", "pointercancel", "touchend", "touchcancel"]) {
-      window.addEventListener(ev, () => (this.canvasDragging = false), {
+      this.escuchar(window, ev, () => (this.canvasDragging = false), {
         passive: true,
         capture: true,
       });
     }
   }
+
+  /**
+   * OYENTE CON RECIBO (v0.2.90).
+   *
+   * El render bajo demanda cuelga quince oyentes de `window` y del lienzo, y
+   * `dispose()` sólo soltaba los seis que tienen un método con nombre: al
+   * volver a la Home y abrir otro proyecto, los del editor anterior seguían
+   * vivos, pidiendo cuadros sobre un renderer ya destruido y sujetando al
+   * editor entero en memoria. Cada `escuchar` deja apuntado cómo soltarse.
+   */
+  private escuchar(
+    destino: Window | HTMLElement,
+    evento: string,
+    fn: (e: Event) => void,
+    opciones?: AddEventListenerOptions,
+  ): void {
+    destino.addEventListener(evento, fn, opciones);
+    this.oyentes.push(() => destino.removeEventListener(evento, fn, opciones));
+  }
+
+  /** Cómo soltar cada oyente instalado con `escuchar` (se drena en `dispose`). */
+  private oyentes: Array<() => void> = [];
 
   private loop = (): void => {
     if (!this.running) return;
@@ -1836,9 +1886,23 @@ export class Editor {
    */
   private normalizarPathRecto(obj: SceneObject): void {
     const path = obj.params.path;
-    if (!path || path.length < 2 || !pathIsStraight(path)) return;
-    const a = path[0];
-    const b = path[path.length - 1];
+    if (!path || path.length < 2 || !pathIsCollinear(path)) return;
+    const a = [...path[0]] as [number, number, number];
+    const b = [...path[path.length - 1]] as [number, number, number];
+    // REPARTO de los nodos intermedios (v0.2.90). El largo de una pieza recta
+    // es el de su POLILÍNEA. Al acortar un poste tirando de la punta hacia
+    // dentro, los nodos de en medio se quedaban donde estaban —ahora PASADOS
+    // del extremo—, la polilínea iba y volvía, y la pieza CRECÍA en vez de
+    // menguar. Repartidos por la cuerda, el largo vuelve a ser la distancia
+    // entre extremos, que es lo que el usuario está viendo y arrastrando.
+    for (let i = 1; i < path.length - 1; i++) {
+      const t = i / (path.length - 1);
+      path[i] = [
+        a[0] + (b[0] - a[0]) * t,
+        a[1] + (b[1] - a[1]) * t,
+        a[2] + (b[2] - a[2]) * t,
+      ];
+    }
     const mid = new THREE.Vector3(
       (a[0] + b[0]) / 2,
       (a[1] + b[1]) / 2,
@@ -2059,6 +2123,9 @@ export class Editor {
       obj.rebuildGeometry();
     }
     obj.setMaterial(src.materialId);
+    // Máquina estándar SUSTITUIDA: la copia también es esa máquina. Sin esto la
+    // copia quedaba con la caja gris del `prim-box` que le sirve de soporte.
+    aplicarModeloMaquina(obj, src.modeloMaquina);
     obj.physics = { ...src.physics };
     obj.mesh.position.copy(src.mesh.position).add(offset);
     obj.mesh.quaternion.copy(src.mesh.quaternion);
@@ -2069,6 +2136,31 @@ export class Editor {
   duplicateSelected(): void {
     if (this.selectedGroupId) {
       this.duplicateSelectedGroup();
+      return;
+    }
+    // MULTISELECCIÓN. Faltaba: con varias piezas marcadas con Ctrl+clic,
+    // `this.selected` es null y el Ctrl+D se iba por el `return` sin hacer
+    // nada ni decirlo, que desde fuera se ve como que la aplicación se colgó.
+    // Las copias quedan seleccionadas, que es lo que uno espera para moverlas
+    // en bloque a continuación.
+    if (!this.selected && this.multiSel.size >= 2) {
+      const copias: SceneObject[] = [];
+      for (const id of [...this.multiSel]) {
+        const src = this.objects.get(id);
+        if (src) copias.push(this.duplicateObject(src, new THREE.Vector3(20, 0, 20)));
+      }
+      if (!copias.length) return;
+      this.select(null);
+      for (const id of this.multiSel) {
+        const o = this.objects.get(id);
+        if (o) this.setHighlight(o, false);
+      }
+      this.multiSel = new Set(copias.map((o) => o.id));
+      for (const o of copias) this.setHighlight(o, true);
+      this.refreshMultiGizmo(true);
+      this.bus.emit("selectionChanged", { selected: null });
+      this.bus.emit("groupingChanged", { multi: this.multiSel.size, groupSelected: false });
+      for (const o of copias) this.bus.emit("objectTransformed", { object: o });
       return;
     }
     if (!this.selected) return;
@@ -2760,6 +2852,12 @@ export class Editor {
     this.cancelPlacaDentada();
     this.cancelColocarFigura();
     this.endBendNodes();
+    // «✋ Agarrar» faltaba aquí, y su rama de onPointerDown hace `return`
+    // INCONDICIONAL: con ella encendida el visor se quedaba sordo —ni
+    // seleccionar, ni deseleccionar, ni ninguna otra herramienta— y no había
+    // manera de apagarla salvo volver a Ergonomía y pulsar el mismo botón.
+    this.setGrabFigure(false);
+    this.bus.emit("dialogosCerrar", {});
   }
 
   /** Vacia la escena (objetos, articulaciones, cables, grupos, figura). */
@@ -2861,6 +2959,8 @@ export class Editor {
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
     window.removeEventListener("pointerup", this.onPointerUp);
+    for (const soltar of this.oyentes) soltar();
+    this.oyentes = [];
     this.endBendNodes();
     if (this.placementLine) {
       this.sceneManager.scene.remove(this.placementLine);
@@ -2911,11 +3011,7 @@ export class Editor {
         obj.rebuildGeometry();
         obj.setMaterial(od.materialId);
         // Máquina estándar sustituida: recupera su modelo de la biblioteca.
-        if (od.modeloMaquina) {
-          obj.modeloMaquina = od.modeloMaquina;
-          const g = componentModels.geometryClone(od.modeloMaquina);
-          if (g) obj.applyCustomGeometry(g);
-        }
+        aplicarModeloMaquina(obj, od.modeloMaquina);
         obj.mesh.position.fromArray(od.position);
         obj.mesh.quaternion.fromArray(od.quaternion);
         obj.mesh.scale.fromArray(od.scale);
@@ -3228,6 +3324,10 @@ export class Editor {
     this.cancelRoldana();
     this.cancelPlacaDentada();
     this.endBendNodes();
+    // Y con ellos el panel de configuración: cancelar el modo por dentro
+    // dejaba el diálogo colgado con los botones muertos.
+    this.setGrabFigure(false);
+    this.bus.emit("dialogosCerrar", {});
     if (this.herramienta === tool) return;
     const eraArea = this.herramienta === "area";
     this.herramienta = tool;
@@ -3263,6 +3363,8 @@ export class Editor {
   private simTool: "mano" | "orbitar" = "orbitar";
   /** Pieza resaltada bajo el puntero con la mano (la que se agarraría). */
   private manoHover: SceneObject | null = null;
+  /** Herramienta de simulación anterior al posado, para reponerla al salir. */
+  private simToolPrevio: "mano" | "orbitar" = "orbitar";
 
   setSimHerramienta(tool: "mano" | "orbitar"): void {
     if (this.simTool === tool) return;
@@ -3800,9 +3902,11 @@ export class Editor {
           ...d.params,
           path: d.params.path?.map((n) => [...n] as [number, number, number]),
         };
+        if (d.stack) obj.stack = { ...d.stack };
         obj.rebuildGeometry();
       }
       obj.setMaterial(d.materialId);
+      aplicarModeloMaquina(obj, d.modeloMaquina);
       obj.physics = { ...d.physics };
       obj.mesh.position.fromArray(d.position).add(offset);
       obj.mesh.quaternion.fromArray(d.quaternion);
@@ -4904,7 +5008,12 @@ export class Editor {
     this.select(null);
     this.simulating = true; // el motor corre; isSimulating() lo distingue
     this.modoPoseMaquina = true;
-    this.setSimHerramienta("mano"); // se entra a posar, no a mirar
+    // Se entra a posar, no a mirar. Se apunta la herramienta que había para
+    // devolverla al salir: la mano se elige A PROPÓSITO (v0.2.41) y el posado
+    // la dejaba puesta, así que el siguiente ▶ arrancaba con la máquina viva
+    // bajo el cursor sin que nadie lo hubiera pedido.
+    this.simToolPrevio = this.simTool;
+    this.setSimHerramienta("mano");
     // Y SE REPLIEGA LA INTERFAZ DE EDICIÓN, como al simular. Encender
     // `simulating` sin avisar dejaba la paleta, la barra superior y la de
     // herramientas a la vista y habilitadas, pero medias muertas: se pulsaba
@@ -4937,6 +5046,7 @@ export class Editor {
 
     this.simulating = false;
     this.modoPoseMaquina = false;
+    this.setSimHerramienta(this.simToolPrevio);
     this.physics?.dispose();
     this.physics = null;
     // La interfaz de edición vuelve (se replegó al entrar a posar).
@@ -9737,6 +9847,7 @@ export class Editor {
         this.cancelPlacaDentada();
         this.cancelAttachHand();
         this.endBendNodes();
+        this.setGrabFigure(false);
         this.select(null);
         break;
     }

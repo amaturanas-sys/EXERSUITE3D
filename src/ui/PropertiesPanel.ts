@@ -97,7 +97,14 @@ export class PropertiesPanel {
     });
     // Multiselección: el panel ofrece la transformación numérica del bloque.
     this.editor.bus.on("groupingChanged", ({ multi, groupSelected }) => {
-      if (multi >= 2 && !groupSelected) this.showMulti(multi);
+      if (multi >= 2 && !groupSelected) { this.showMulti(multi); return; }
+      // Y AL DESHACERSE LA MULTISELECCIÓN, VACIARSE. Faltaba esta rama: al
+      // borrar varias piezas con Supr, `removeObject` solo avisa por
+      // `selectionChanged` si la borrada era la pieza única seleccionada —y
+      // aquí no lo era—, así que el único evento que llegaba era este. El
+      // panel se quedaba diciendo «3 piezas seleccionadas» con campos que ya
+      // no movían nada.
+      if (multi < 2 && !groupSelected && !this.editor.getSelected()) this.show(null);
     });
     this.editor.bus.on("grupoTransformado", () => this.refreshGrupoInputs());
     this.show(null);

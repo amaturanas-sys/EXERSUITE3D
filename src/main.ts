@@ -1,4 +1,9 @@
 import "./ui/styles.css";
+import {
+  abrirDialogoDerecha,
+  cerrarDialogoDerecha,
+  hayDialogoDerecha,
+} from "./ui/dialogoDerecha";
 import { descargarArchivo } from "./core/descargas";
 import { el } from "./ui/dom";
 import * as THREE from "three";
@@ -158,6 +163,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
   aplicarModo();
   ed.bus.on("workspaceChanged", aplicarModo);
 
+  // El carril derecho lo cierra quien lo pida: el núcleo avisa y aquí se
+  // obedece, sin que Editor.ts tenga que saber de paneles.
+  ed.bus.on("dialogosCerrar", () => cerrarDialogoDerecha());
+
   const inspector = new PropertiesPanel(ed);
   const joints = new JointsPanel(ed);
   // VENTANA DEL MANIQUÍ (v0.2.45): una sola con dos modos — POSAR fija la
@@ -269,6 +278,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // Utilidades del ciclo de prefabs expuestas en el gancho de depuración
     // (las suites de verificación ejercitan exportar→validar→insertar).
     prefabIO: { serializarPrefab, parsearPrefab },
+    // El carril derecho, para que la verificación pueda comprobar que hay UN
+    // dueño: quien abre cierra al anterior y cualquiera puede cerrar el que
+    // haya (cambiar de herramienta, volver a la Home).
+    dialogoDerecha: { abrirDialogoDerecha, cerrarDialogoDerecha, hayDialogoDerecha },
     // Medidas resueltas de la PLACA DENTADA. La prueba tiene que soltar la
     // barra en el CENTRO de la garganta, y ese centro depende de cuentas que
     // no se pueden deducir de los params sueltos. Calcularlas otra vez en el
@@ -361,6 +374,9 @@ async function goHome(): Promise<void> {
     // No retener el editor destruido desde la consola de depuración.
     (window as unknown as { exersuite?: unknown }).exersuite = undefined;
   }
+  // Y el diálogo del costado derecho, que vivía suelto en <body>: sin esto se
+  // quedaba flotando sobre la pantalla de inicio hasta recargar.
+  cerrarDialogoDerecha();
   showLanding();
 }
 

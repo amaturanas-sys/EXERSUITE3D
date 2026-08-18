@@ -660,7 +660,22 @@ export class PhysicsWorld {
         // Distancia lateral entre rectas (coaxialidad).
         const d = a.centro.clone().sub(b.centro);
         const lateral = d.clone().addScaledVector(b.eje, -d.dot(b.eje)).length();
-        if (lateral < 3) {
+        if (lateral >= 3) continue;
+        // UN TUBO APILADO NO ES UN TOPE (v0.2.90). Coaxial y más corto valía
+        // para declararlo espaciador, y dos medias columnas puestas una sobre
+        // otra —caso normal al armar una torre por tramos— hacían que la de
+        // arriba pasara por tope de la de abajo: el carro se frenaba en el
+        // empalme, justo donde tenía que seguir subiendo.
+        //
+        // Un espaciador va MONTADO SOBRE la guía: comparte su tramo. Un tramo
+        // apilado va a continuación y no solapa. Se pide que la corta esté
+        // metida en el largo de la otra para tomarla por tope.
+        const sA = a.centro.dot(b.eje);
+        const sB = b.centro.dot(b.eje);
+        const solapeAxial =
+          Math.min(sA + a.largo / 2, sB + b.largo / 2) -
+          Math.max(sA - a.largo / 2, sB - b.largo / 2);
+        if (solapeAxial > a.largo / 2) {
           a.esStopper = true;
           break;
         }
@@ -690,9 +705,13 @@ export class PhysicsWorld {
       bbox.expandByScalar(1); // cm de tolerancia del abrazo
       const centroD = d.obj.mesh.position;
       let eje: THREE.Vector3 | null = null;
-      let sMin = -Infinity;
-      let sMax = Infinity;
       let halfD = 0;
+      // Tramos de tubo (extremos ABSOLUTOS sobre el eje) y sus cuerpos: se
+      // unen abajo, una vez visto todo el juego de guías de esta móvil.
+      const tramos: [number, number][] = [];
+      const cuerposGuia: R.RigidBody[] = [];
+      // Tubos que pasan por la recta de la móvil, con cuánto la atraviesan.
+      const candidatas: { g: (typeof guiasTubo)[number]; solape: number }[] = [];
       for (const g of guiasTubo) {
         const delta = centroD.clone().sub(g.centro);
         const p = g.centro.clone().addScaledVector(g.eje, delta.dot(g.eje));
@@ -730,26 +749,88 @@ export class PhysicsWorld {
         const solape =
           Math.min(sMovil + abrazo / 2, sGuia + g.largo / 2) -
           Math.max(sMovil - abrazo / 2, sGuia - g.largo / 2);
-        if (solape < 5) continue;
-        if (eje && Math.abs(eje.dot(g.eje)) < 0.99) continue;
-        usadas.add(g.cuerpo);
-        if (!eje) {
-          eje = g.eje.clone();
-          // Semiextensión de la móvil a lo largo del eje (soporte del AABB).
-          halfD =
-            (tam.x * Math.abs(eje.x) + tam.y * Math.abs(eje.y) + tam.z * Math.abs(eje.z)) / 2;
-        }
-        // Recorrido del CENTRO: la móvil completa se queda sobre el tubo.
-        const s0 = centroD.dot(eje);
-        const sG = g.centro.dot(eje);
-        sMin = Math.max(sMin, sG - g.largo / 2 + halfD - s0);
-        sMax = Math.min(sMax, sG + g.largo / 2 - halfD - s0);
+        candidatas.push({ g, solape });
       }
-      if (!eje || sMin > sMax) continue;
+      // La móvil está ENSARTADA en las de solape ≥ 5; las demás están en su
+      // misma recta pero más allá (el resto de la columna, todavía sin
+      // alcanzar). El eje lo fija la primera ensartada: sin ninguna, no hay
+      // guiado por mucha recta que pase por al lado.
+      const ensartadas = candidatas.filter((c) => c.solape >= 5);
+      if (ensartadas.length === 0) continue;
+      eje = ensartadas[0].g.eje.clone();
+      // Semiextensión de la móvil a lo largo del eje (soporte del AABB).
+      halfD = (tam.x * Math.abs(eje.x) + tam.y * Math.abs(eje.y) + tam.z * Math.abs(eje.z)) / 2;
+      const prolongaciones: { tramo: [number, number]; cuerpo: R.RigidBody }[] = [];
+      for (const c of candidatas) {
+        if (Math.abs(eje.dot(c.g.eje)) < 0.99) continue;
+        const sG = c.g.centro.dot(eje);
+        const tramo: [number, number] = [sG - c.g.largo / 2, sG + c.g.largo / 2];
+        if (c.solape >= 5) {
+          cuerposGuia.push(c.g.cuerpo);
+          tramos.push(tramo);
+        } else {
+          prolongaciones.push({ tramo, cuerpo: c.g.cuerpo });
+        }
+      }
+      // TRAMOS EN SERIE (v0.2.90): antes se INTERSECABA el recorrido que
+      // permitía cada tubo. Con una sola columna daba igual, pero con dos
+      // medias columnas empalmadas los dos recorridos son contiguos y su
+      // intersección es VACÍA: el carro salía del `continue` sin guía ninguna
+      // y se desplomaba por fuera de la torre. Un empalme es UNA guía larga,
+      // así que los tramos que se tocan se FUNDEN, y de la recta resultante se
+      // toma el trozo donde está metida la móvil.
+      tramos.sort((a, b) => a[0] - b[0]);
+      const sMovil = centroD.dot(eje);
+      let ini = tramos[0][0];
+      let fin = tramos[0][1];
+      let mejor: [number, number] | null = null;
+      let mejorSolape = 0;
+      const cerrarTramo = (): void => {
+        const solape =
+          Math.min(sMovil + halfD, fin) - Math.max(sMovil - halfD, ini);
+        if (solape > mejorSolape) {
+          mejorSolape = solape;
+          mejor = [ini, fin];
+        }
+      };
+      for (let i = 1; i < tramos.length; i++) {
+        // 1 cm de holgura: el empalme de dos tubos nunca es exacto.
+        if (tramos[i][0] <= fin + 1) {
+          fin = Math.max(fin, tramos[i][1]);
+          continue;
+        }
+        cerrarTramo();
+        ini = tramos[i][0];
+        fin = tramos[i][1];
+      }
+      cerrarTramo();
+      if (!mejor) continue;
+      // Y LA COLUMNA SIGUE MÁS ALLÁ. Los tramos que la móvil todavía no
+      // alcanza se absorben si TOCAN el recorrido ya reunido —y en cadena, que
+      // una torre puede armarse de tres tramos—. Sin esto el carro frenaba en
+      // seco en el empalme: el tubo de continuación existía, pero como aún no
+      // lo abrazaba no contaba, y el recorrido terminaba justo ahí.
+      let [tramoIni, tramoFin] = mejor as [number, number];
+      for (let crecio = true; crecio; ) {
+        crecio = false;
+        for (let k = prolongaciones.length - 1; k >= 0; k--) {
+          const [a2, b2] = prolongaciones[k].tramo;
+          if (a2 > tramoFin + 1 || b2 < tramoIni - 1) continue; // no toca
+          tramoIni = Math.min(tramoIni, a2);
+          tramoFin = Math.max(tramoFin, b2);
+          cuerposGuia.push(prolongaciones[k].cuerpo);
+          prolongaciones.splice(k, 1);
+          crecio = true;
+        }
+      }
+      // Recorrido del CENTRO: la móvil completa se queda sobre el tubo.
+      let sMin = tramoIni + halfD - sMovil;
+      let sMax = tramoFin - halfD - sMovil;
+      if (sMin > sMax) continue;
       // 4) STOPPERS: los espaciadores asentados en la guía acotan la caída
       //    (o el ascenso) — el carrier se DETIENE al tocarlos, sin llegar a
       //    la platina inferior.
-      const s0 = centroD.dot(eje);
+      const s0 = sMovil;
       for (const st of stoppers) {
         if (Math.abs(st.eje.dot(eje)) < 0.99) continue;
         const delta = centroD.clone().sub(st.centro);
@@ -760,9 +841,13 @@ export class PhysicsWorld {
         const stBot = sSt - st.largo / 2;
         if (stTop <= s0) sMin = Math.max(sMin, stTop + halfD - s0);
         else if (stBot >= s0) sMax = Math.min(sMax, stBot - halfD - s0);
-        usadas.add(st.cuerpo);
+        cuerposGuia.push(st.cuerpo);
       }
       if (sMin > sMax) continue;
+      // Las guías se marcan AQUÍ, ya sabiendo que esta móvil quedó guiada: si
+      // se descarta a mitad de camino, sus tubos no deben perder el contacto
+      // con las demás piezas guiadas de la escena.
+      for (const c of cuerposGuia) usadas.add(c);
       guiados.add(d.body);
       const q = d.obj.mesh.quaternion;
       this.guias.push({
@@ -1061,6 +1146,60 @@ export class PhysicsWorld {
   }
 
   /**
+   * NODOS AGRUPADOS POR CUERPO (v0.2.90).
+   *
+   * Un mismo cuerpo puede aparecer VARIAS VECES en un cable: dos roldanas
+   * empotradas en la misma viga resuelven las dos al cuerpo compuesto del
+   * anfitrión, y un cable que pasa por ambas lo lista dos veces. Los solventes
+   * recorrían los nodos uno a uno y escribían la velocidad (o la posición) del
+   * cuerpo en cada vuelta: la segunda escritura PISABA la primera en lugar de
+   * sumarse, y la masa efectiva contaba dos veces la misma inercia. El cable
+   * quedaba flojo por un lado y tironeaba por el otro, sin que la geometría
+   * mostrase nada raro.
+   *
+   * Aquí cada cuerpo aparece UNA vez, con la SUMA de los gradientes de sus
+   * nodos —que es exactamente la derivada de la longitud respecto a ese
+   * cuerpo— y sus índices, por si el llamante necesita mirar sus vecinos.
+   */
+  private nodosPorCuerpo(
+    bodies: R.RigidBody[],
+    J: { x: number; y: number; z: number }[],
+  ): {
+    body: R.RigidBody;
+    im: number;
+    J: { x: number; y: number; z: number };
+    indices: number[];
+  }[] {
+    const porCuerpo = new Map<
+      number,
+      {
+        body: R.RigidBody;
+        im: number;
+        J: { x: number; y: number; z: number };
+        indices: number[];
+      }
+    >();
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      let e = porCuerpo.get(b.handle);
+      if (!e) {
+        e = {
+          body: b,
+          im: b.isDynamic() ? 1 / b.mass() : 0,
+          J: { x: 0, y: 0, z: 0 },
+          indices: [],
+        };
+        porCuerpo.set(b.handle, e);
+      }
+      e.J.x += J[i].x;
+      e.J.y += J[i].y;
+      e.J.z += J[i].z;
+      e.indices.push(i);
+    }
+    return [...porCuerpo.values()];
+  }
+
+  /**
    * Restriccion de cable inextensible y unilateral, a nivel de VELOCIDAD,
    * aplicada a TODOS los nodos dinamicos (extremos y poleas moviles). Solo tira:
    * si hay holgura (L <= rest) o ya no se alarga (vrel <= 0) no hace nada.
@@ -1078,15 +1217,16 @@ export class PhysicsWorld {
     if (C <= 0) return;
 
     const p = bodies.map((_, i) => this.nodeWorld(entry, i0 + i));
-    const J = this.cableGradients(p);
-    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    const nodos = this.nodosPorCuerpo(bodies, this.cableGradients(p));
     let effMass = 0;
-    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    for (const nd of nodos) effMass += nd.im * (nd.J.x ** 2 + nd.J.y ** 2 + nd.J.z ** 2);
     if (effMass <= 0) return;
 
-    const v = bodies.map((b) => b.linvel());
     let vrel = 0;
-    for (let i = 0; i < n; i++) vrel += J[i].x * v[i].x + J[i].y * v[i].y + J[i].z * v[i].z;
+    for (const nd of nodos) {
+      const v = nd.body.linvel();
+      vrel += nd.J.x * v.x + nd.J.y * v.y + nd.J.z * v.z;
+    }
     // Estabilización Baumgarte: el exceso de longitud se recobra por
     // VELOCIDAD (repartida por masas, dinámica coherente) en lugar de
     // teletransportar posiciones — sin esto, el reparto posicional bombea
@@ -1096,11 +1236,12 @@ export class PhysicsWorld {
     if (vrel <= objetivo) return;
 
     const lambda = (objetivo - vrel) / effMass;
-    for (let i = 0; i < n; i++) {
-      if (im[i] <= 0) continue;
-      const k = im[i] * lambda;
-      bodies[i].setLinvel(
-        { x: v[i].x + J[i].x * k, y: v[i].y + J[i].y * k, z: v[i].z + J[i].z * k },
+    for (const nd of nodos) {
+      if (nd.im <= 0) continue;
+      const k = nd.im * lambda;
+      const v = nd.body.linvel();
+      nd.body.setLinvel(
+        { x: v.x + nd.J.x * k, y: v.y + nd.J.y * k, z: v.z + nd.J.z * k },
         true,
       );
     }
@@ -1135,23 +1276,24 @@ export class PhysicsWorld {
     const C = segLen.reduce((a, b) => a + b, 0) - restLength - holgura;
     if (C <= 0) return;
 
-    const J = this.cableGradients(p);
-    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    const nodos = this.nodosPorCuerpo(bodies, this.cableGradients(p));
     let effMass = 0;
-    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    for (const nd of nodos) effMass += nd.im * (nd.J.x ** 2 + nd.J.y ** 2 + nd.J.z ** 2);
     if (effMass <= 0) return;
 
     const lambda = -C / effMass;
-    for (let i = 0; i < n; i++) {
-      if (im[i] <= 0) continue;
-      let dx = im[i] * lambda * J[i].x;
-      let dy = im[i] * lambda * J[i].y;
-      let dz = im[i] * lambda * J[i].z;
-      // No cruzar una polea adyacente en un solo paso.
-      const adj = Math.min(
-        i > 0 ? segLen[i - 1] : Infinity,
-        i < n - 1 ? segLen[i] : Infinity,
-      );
+    for (const nd of nodos) {
+      if (nd.im <= 0) continue;
+      let dx = nd.im * lambda * nd.J.x;
+      let dy = nd.im * lambda * nd.J.y;
+      let dz = nd.im * lambda * nd.J.z;
+      // No cruzar una polea adyacente en un solo paso: manda el vecino más
+      // cercano de TODOS los nodos que este cuerpo tenga en el cable.
+      let adj = Infinity;
+      for (const i of nd.indices) {
+        if (i > 0) adj = Math.min(adj, segLen[i - 1]);
+        if (i < n - 1) adj = Math.min(adj, segLen[i]);
+      }
       const mag = Math.hypot(dx, dy, dz);
       const max = 0.9 * adj;
       if (mag > max && mag > 0) {
@@ -1159,8 +1301,8 @@ export class PhysicsWorld {
         dx *= s; dy *= s; dz *= s;
       }
       // El delta se aplica al CENTRO del cuerpo (el anclaje se mueve con el).
-      const c = bodies[i].translation();
-      bodies[i].setTranslation({ x: c.x + dx, y: c.y + dy, z: c.z + dz }, true);
+      const c = nd.body.translation();
+      nd.body.setTranslation({ x: c.x + dx, y: c.y + dy, z: c.z + dz }, true);
     }
   }
 
@@ -1185,36 +1327,38 @@ export class PhysicsWorld {
     if (C <= 0) return;
 
     const p = bodies.map((_, i) => this.nodeWorld(entry, i0 + i));
-    const J = this.cableGradients(p);
-    const im = bodies.map((b) => (b.isDynamic() ? 1 / b.mass() : 0));
+    const nodos = this.nodosPorCuerpo(bodies, this.cableGradients(p));
     let effMass = 0;
-    for (let i = 0; i < n; i++) effMass += im[i] * (J[i].x ** 2 + J[i].y ** 2 + J[i].z ** 2);
+    for (const nd of nodos) effMass += nd.im * (nd.J.x ** 2 + nd.J.y ** 2 + nd.J.z ** 2);
     if (effMass <= 0) return;
 
     if (posicional) {
       const lambda = C / effMass;
-      for (let i = 0; i < n; i++) {
-        if (im[i] <= 0) continue;
-        const k = im[i] * lambda;
-        const c = bodies[i].translation();
-        bodies[i].setTranslation(
-          { x: c.x + J[i].x * k, y: c.y + J[i].y * k, z: c.z + J[i].z * k },
+      for (const nd of nodos) {
+        if (nd.im <= 0) continue;
+        const k = nd.im * lambda;
+        const c = nd.body.translation();
+        nd.body.setTranslation(
+          { x: c.x + nd.J.x * k, y: c.y + nd.J.y * k, z: c.z + nd.J.z * k },
           true,
         );
       }
       return;
     }
-    const v = bodies.map((b) => b.linvel());
     let vrel = 0;
-    for (let i = 0; i < n; i++) vrel += J[i].x * v[i].x + J[i].y * v[i].y + J[i].z * v[i].z;
+    for (const nd of nodos) {
+      const v = nd.body.linvel();
+      vrel += nd.J.x * v.x + nd.J.y * v.y + nd.J.z * v.z;
+    }
     const objetivo = Math.min(15 * C, 2.5); // m/s: el tramo debe dejar de acortarse
     if (vrel >= objetivo) return;
     const lambda = (objetivo - vrel) / effMass;
-    for (let i = 0; i < n; i++) {
-      if (im[i] <= 0) continue;
-      const k = im[i] * lambda;
-      bodies[i].setLinvel(
-        { x: v[i].x + J[i].x * k, y: v[i].y + J[i].y * k, z: v[i].z + J[i].z * k },
+    for (const nd of nodos) {
+      if (nd.im <= 0) continue;
+      const k = nd.im * lambda;
+      const v = nd.body.linvel();
+      nd.body.setLinvel(
+        { x: v.x + nd.J.x * k, y: v.y + nd.J.y * k, z: v.z + nd.J.z * k },
         true,
       );
     }

@@ -1,4 +1,5 @@
 import type { ConfigBisagra, Editor } from "../core/Editor";
+import { abrirDialogoDerecha, cerrarDialogoDerecha } from "./dialogoDerecha";
 import type { Joint } from "../physics/joints";
 import { roundTo } from "../core/units";
 import { tt } from "../core/i18n";
@@ -17,14 +18,27 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     let eje: ConfigBisagra["eje"] = "auto";
     let tamano = 8;
     let cara: NonNullable<ConfigBisagra["cara"]> = "auto";
+    let resuelto = false;
     const terminar = (v: ConfigBisagra | null): void => {
+      if (resuelto) return;
+      resuelto = true;
       window.removeEventListener("keydown", alTeclado);
       panel.remove();
-      document.body.classList.remove("dialogo-derecha");
       resolve(v);
     };
+    // El carril derecho tiene UN dueño: quien abra cierra al anterior, y
+    // cualquiera —cambiar de herramienta, volver a la Home— puede cerrar el que
+    // haya sin saber cuál es. Antes solo este panel podía cerrarse a sí mismo y
+    // se quedaba colgado con los botones muertos, escondiendo el maniquí.
+    const cerrarYResolver = (v: ConfigBisagra | null): void => {
+      // PRIMERO se resuelve con lo elegido y DESPUÉS se descuelga del carril:
+      // el cierre registrado allí resuelve con `null`, y `terminar` sólo hace
+      // caso a la primera llamada —así una dirección elegida no se pierde—.
+      terminar(v);
+      cerrarDialogoDerecha();
+    };
     const alTeclado = (ev: KeyboardEvent): void => {
-      if (ev.key === "Escape") terminar(null);
+      if (ev.key === "Escape") cerrarYResolver(null);
     };
     window.addEventListener("keydown", alTeclado);
 
@@ -76,7 +90,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     instalar.addEventListener("click", () => {
       const min = parseFloat(minIn.value);
       const max = parseFloat(maxIn.value);
-      terminar({
+      cerrarYResolver({
         eje,
         tamano,
         cara,
@@ -86,7 +100,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     });
 
     const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
-    cerrar.addEventListener("click", () => terminar(null));
+    cerrar.addEventListener("click", () => cerrarYResolver(null));
 
     const panel = el("aside", { id: "bisagra-panel" }, [
       el("div", { class: "rold-head" }, [
@@ -149,8 +163,9 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     pintar();
     document.body.append(panel);
     // El carril derecho aloja UNA ventana a la vez: mientras este diálogo
-    // esté abierto, la del maniquí se repliega (v0.2.48).
-    document.body.classList.add("dialogo-derecha");
+    // esté abierto, la del maniquí se repliega (v0.2.48). Lo registra el módulo
+    // del carril, que es quien pone y quita la clase del <body>.
+    abrirDialogoDerecha(() => terminar(null));
   });
 }
 
