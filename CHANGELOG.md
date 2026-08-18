@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.80] — 2026-08-18
+
+Corrección del diseñador sobre la salida del peso muerto.
+
+### Corregido
+
+**La regla es de vista sagital, y la puso él:** una vertical imaginaria pasa
+por el MEDIO DEL PIE, la barra y los brazos, que caen a plomo en línea recta
+hasta los hombros. Y con proporciones estándar, quien no llega a la barra
+compensa con MÁS FLEXIÓN DE RODILLA Y CADERA, no inclinando más el tronco —
+que es justo lo que hacía la versión de v0.2.79, con el tronco a 61° y la
+barra 7 cm por delante del medio del pie.
+
+Rehecha contra esa regla: barra a 0,6 cm del medio del pie, hombro a 0,9 cm de
+esa misma vertical, brazo a 1,5° de la plomada, planta plana y cadera 2,7 cm
+**por encima** de la rodilla, que es lo que separa un peso muerto de una
+cargada desde el fondo. El tronco baja de 61° a 31,5° y la rodilla se adelanta
+de 35° a 49°.
+
+De las tres repartos posibles se eligió este. Los otros dos cumplían la
+vertical pero uno sentaba la cadera 2 cm por DEBAJO de la rodilla y el otro se
+llevaba la barra 7 cm por delante del pie. Lo que cede aquí son cuatro
+centímetros de altura de barra: el alcance del brazo de este esqueleto es de
+56 cm del hombro al centro de la mano, y con la espinilla en los 15° de la
+lámina la mano no baja de 28,5 cm por mucha cadera que se flexione.
+
+**La mirada fija un punto a dos metros por delante de donde pisa, en el
+suelo** — mantiene la técnica y protege el cuello. Resuelto contra ese blanco,
+la desviación queda en 0,1° y la vista sale 29° bajo la horizontal. En el
+bloqueo el cuello se deja NEUTRO a propósito: mantener la misma marca con el
+tronco ya erguido pediría bajar la barbilla 38°, y ahí ya no protege nada.
+
+**La apertura del pie en las sentadillas se queda en los 36° medidos.** No se
+pone a mano: es consecuencia de la abducción de cadera, y así es como sale en
+un cuerpo real.
+
 ## [0.2.79] — 2026-08-18
 
 Primer trozo de la barra en manos del maniquí: las cuatro posturas que faltaban
