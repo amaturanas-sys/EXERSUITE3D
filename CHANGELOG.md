@@ -5,6 +5,31 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.86] — 2026-08-18
+
+### Corregido
+
+Dos estados de la barra que no se invalidaban. Ninguno de los dos rompía nada a
+la vista, y por eso convenía cazarlos antes de la release.
+
+- **Quitar el maniquí dejaba la barra enlazada a un cuerpo inexistente:** la
+  pieza se quedaba clavada donde estuviera, el panel seguía anunciando «100 kg
+  en las manos» y el ⤒ Desrackear no tenía a quién devolvérsela. Ahora la
+  suelta — y la deja en la escena, porque es una pieza más y puede seguir
+  siendo útil.
+- **Cambiar la talla del maniquí dejaba el apoyo calculado contra el cuerpo
+  ANTERIOR.** El punto de contacto se guarda en coordenadas del tronco para no
+  recalcularlo por fotograma, pero con otra talla esa malla es otra: la barra
+  habría quedado flotando o metida en el pecho. Ahora se recalcula.
+
+Y ojo con el parecido entre los dos: cambiar la talla también reconstruye la
+figura por dentro, pero es el MISMO maniquí, así que ahí la barra NO se suelta
+— perder el ejercicio al mover el cursor de la altura sería desconcertante.
+
+### Pruebas
+
+`prueba-barra-maniqui.mjs` sube a 54 con los dos casos y su diferencia.
+
 ## [0.2.85] — 2026-08-18
 
 Documentación al día para la release.

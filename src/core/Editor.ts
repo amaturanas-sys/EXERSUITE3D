@@ -4360,7 +4360,9 @@ export class Editor {
             quaternion: this.humanFigure.quaternion.clone(),
           }
         : this.lastFigureTransform;
-    this.removeHumanFigure();
+    this.removeHumanFigure(true);
+    // La malla del tronco se rehace: el apoyo guardado era de la anterior.
+    this.apoyoBarraLocal = null;
 
     const token = ++this.humanToken;
     const figure: THREE.Group = buildHumanFigure(
@@ -4396,7 +4398,13 @@ export class Editor {
     this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
   }
 
-  removeHumanFigure(): void {
+  /**
+   * Quita la figura. `rehaciendo` la usa `addHumanFigure` cuando solo la está
+   * reconstruyendo —otra talla, otro modelo—: ahí la barra puesta NO se suelta,
+   * porque el maniquí sigue siendo el mismo y perder el ejercicio al mover el
+   * cursor de la altura sería desconcertante.
+   */
+  removeHumanFigure(rehaciendo = false): void {
     if (!this.humanFigure) return;
     this.lastFigureTransform = {
       position: this.humanFigure.position.clone(),
@@ -4412,6 +4420,20 @@ export class Editor {
     this.humanToken++;
     this.handTargets.clear();
     this.footTargets.clear();
+    // LA BARRA SE VA CON EL MANIQUÍ. Quitando la figura, el enlace quedaba
+    // apuntando a un cuerpo que ya no existe: la pieza se quedaba clavada
+    // donde estuviera, la interfaz seguía anunciando «100 kg en las manos» y
+    // el ⤒ Desrackear no tenía a quién devolvérsela. La barra se queda en la
+    // escena —es una pieza más y puede seguir siendo útil— pero suelta.
+    if (this.barraManiqui && !rehaciendo) {
+      this.barraManiqui = null;
+      this.apoyoBarraLocal = null;
+      this.bus.emit("barraManiquiChanged", {
+        objectId: null,
+        ejercicio: null,
+        rackeada: false,
+      });
+    }
     this.cancelAttachHand();
     this.emitHumanState(false, false);
   }
@@ -4419,6 +4441,10 @@ export class Editor {
   /** Cambia la altura (cm) reconstruyendo la figura y conservando su transform. */
   setHumanHeight(heightCm: number): void {
     this.humanHeight = heightCm;
+    // El apoyo de la barra se calculó contra la malla del tronco ANTERIOR: con
+    // otra talla esa malla es otra, y el punto guardado dejaría la barra
+    // flotando o metida en el pecho. Se tira y se recalcula.
+    this.apoyoBarraLocal = null;
     if (!this.humanFigure) return;
     void this.addHumanFigure(heightCm);
   }

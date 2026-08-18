@@ -382,6 +382,40 @@ const recogida = await medir();
 ok(recogida.vsHombro[2] < -2,
   `al desrackear vuelve al trapecio (${recogida.vsHombro[2]} cm del hombro)`);
 
+// ---- 8b. QUITAR EL MANIQUÍ SUELTA LA BARRA; CAMBIARLE LA TALLA, NO
+//
+// Son dos casos que se parecen y no lo son. Quitando la figura, el enlace se
+// quedaba apuntando a un cuerpo inexistente: la pieza clavada donde estuviera,
+// la interfaz anunciando «100 kg en las manos» y el ⤒ Desrackear sin nadie a
+// quien devolvérsela. Cambiando la TALLA la figura también se reconstruye por
+// dentro, pero es el mismo maniquí y perder el ejercicio al mover el cursor de
+// la altura sería desconcertante.
+await poner("sentadilla-trasera");
+const conOtraTalla = await p.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  ed.setHumanHeight(190);
+  await new Promise((r) => setTimeout(r, 1500));
+  const b = ed.getBarraManiqui();
+  return { ejercicio: b?.ejercicio ?? null };
+});
+ok(conOtraTalla.ejercicio === "sentadilla-trasera",
+  `cambiar la talla del maniquí NO le quita la barra (${conOtraTalla.ejercicio})`);
+const trasTalla = await medir();
+ok(Math.abs(trasTalla.vsHombro[2]) > 2 && trasTalla.vsHombro[1] > 0,
+  `y el apoyo se recalcula para el cuerpo nuevo (${JSON.stringify(trasTalla.vsHombro)})`);
+
+const sinFigura = await p.evaluate(() => {
+  const ed = window.exersuite.editor;
+  ed.setHumanHeight(175);
+  ed.toggleHumanFigure();
+  return { barra: ed.getBarraManiqui(), sigueLaPieza: ed.listObjects().some((o) => o.componentId === "barra-olimpica") };
+});
+ok(sinFigura.barra === null, "quitar el maniquí SUELTA la barra");
+ok(sinFigura.sigueLaPieza, "pero la deja en la escena: es una pieza más");
+await p.evaluate(() => window.exersuite.editor.toggleHumanFigure());
+await p.waitForTimeout(1500);
+await poner("sentadilla-trasera");
+
 // ---- 9. SOBREVIVE AL GUARDADO
 // `loadProject` es ASÍNCRONO —recarga el maniquí y sus mallas—, así que hay
 // que esperarlo: leer el enlace en el mismo tick daba «null» y parecía un
