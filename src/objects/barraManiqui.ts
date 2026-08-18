@@ -277,11 +277,29 @@ export function sitioDeLaBarra(
   const der = agarre === "manos" ? a.manoR : a.hombroR;
 
   // El EJE de la barra sale de la línea que une los dos apoyos, no de una
-  // horizontal fija: si el maniquí está girado en la escena, o una postura
-  // queda asimétrica, la barra acompaña.
+  // horizontal fija: si el maniquí está girado en la escena la barra acompaña.
   let eje = der.clone().sub(izq);
   if (eje.lengthSq() < 1e-6) eje = new THREE.Vector3(1, 0, 0).applyQuaternion(a.tronco);
   eje.normalize();
+
+  // PERO UNA BARRA ES UN SÓLIDO RÍGIDO Y NO SE ALABEA (v0.2.91). La cabecera
+  // prometía esta ortogonalización desde el principio; el código no la hacía, y
+  // la barra copiaba LITERALMENTE la recta entre los dos apoyos. Cualquier
+  // asimetría la torcía sin tope: una sola mano apoyada en una pieza, una zona
+  // armada en un solo lado, una articulación editada con la simetría
+  // desmarcada. Medido: rotar UN codo 45° la inclinaba y le corría el centro
+  // 7 cm. En una barra de verdad eso no pasa — son las manos las que se
+  // acomodan a ella.
+  //
+  // Se proyecta el eje sobre el plano perpendicular al ARRIBA DEL TRONCO, que
+  // es lo que hace que siga acompañando al maniquí cuando está tumbado o
+  // girado, en vez de clavarla a la horizontal del mundo. La componente que se
+  // descarta es exactamente la inclinación espuria.
+  const arriba = new THREE.Vector3(0, 1, 0).applyQuaternion(a.tronco).normalize();
+  const nivelado = eje.clone().addScaledVector(arriba, -eje.dot(arriba));
+  // Si el eje viene casi paralelo al tronco, la proyección se queda sin
+  // dirección y no hay nada que enderezar: se respeta lo que había.
+  if (nivelado.lengthSq() > 1e-4) eje.copy(nivelado.normalize());
   // La malla de la barra es un cilindro tumbado sobre su eje Y local, así que
   // lo que hay que llevar sobre `eje` es +Y.
   const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);

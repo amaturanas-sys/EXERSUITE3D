@@ -2906,6 +2906,14 @@ body.modo-prototipo #simbar {
   color: var(--text-dim);
   margin-bottom: 5px;
 }
+/* HACIA DÓNDE MIRA EL MANIQUÍ (v0.2.91): dos giros de cuarto y el número
+   exacto, en una fila que cabe en el ancho del panel. */
+.mq-fila-rumbo { display: flex; gap: 6px; align-items: center; }
+.mq-fila-rumbo .mq-etiqueta { flex: 0 0 auto; opacity: 0.75; font-size: 12px; }
+.mq-fila-rumbo .mq-num { flex: 1; min-width: 0; width: 100%; }
+.mq-fila-rumbo .mq-unidad { flex: 0 0 auto; opacity: 0.6; font-size: 12px; }
+.mq-fila-rumbo .tool { flex: 0 0 auto; }
+
 .mq-fila-postura { display: flex; gap: 6px; align-items: center; }
 .mq-fila-postura .select { flex: 1; min-width: 0; }
 .mq-fila-postura .tool { flex: 0 0 auto; }

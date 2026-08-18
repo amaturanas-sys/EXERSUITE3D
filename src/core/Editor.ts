@@ -23,11 +23,13 @@ import {
 } from "../objects/linePieces";
 import { espejoDe } from "../objects/espejar";
 import {
+  EJERCICIOS_BARRA,
   EJERCICIO_BARRA_POR_ID,
   apoyoEnElTronco,
   sitioDeLaBarra,
   type AgarreBarra,
   type ApoyosBarra,
+  type EjercicioBarra,
   type GanchoBarra,
 } from "../objects/barraManiqui";
 import {
@@ -175,6 +177,8 @@ export type EditorEvents = {
    * lo escuche. El núcleo no sabe de paneles: avisa y la interfaz obedece.
    */
   dialogosCerrar: Record<string, never>;
+  /** El maniquí cambió de rumbo (hacia dónde mira), en grados. */
+  figuraRumboChanged: { grados: number };
   /** El maniquí cogió, cambió o soltó su barra (v0.2.81). */
   barraManiquiChanged: {
     objectId: string | null;
@@ -2842,13 +2846,13 @@ export class Editor {
    * Añadir un modo nuevo y olvidarse de esta lista vuelve a abrir el mismo
    * agujero, así que lo que se añada va AQUÍ y no en cada sitio.
    */
-  cancelarHerramientas(): void {
+  cancelarHerramientas(conservarApoyo = false): void {
     this.cancelCable();
     this.cancelFrenoCable();
     this.cancelRope();
     this.cancelLine();
     this.cancelConnect();
-    this.cancelAttachHand();
+    if (!conservarApoyo) this.cancelAttachHand();
     this.cancelRoldana();
     this.cancelPlacaDentada();
     this.cancelColocarFigura();
@@ -4498,6 +4502,13 @@ export class Editor {
       this.alturaDelApoyo = null;
     }
     this.marcarPoseDePartida(this.nombreDePartida ?? null);
+    // CON MANIQUÍ, LA MÁQUINA SE VE EN SU PARTIDA: es el estado sobre el que
+    // hay que apoyarle las manos y los pies, y verla en el plano dejaba los
+    // mandos dibujados donde no van a estar cuando empiece el gesto.
+    this.sincronizarPartidaVisible();
+    // Los apoyos que sobrevivieron a la reconstrucción vuelven a resolverse.
+    this.updateHandIK();
+    this.updateFootIK();
     if (wasSelected) this.selectFigure();
     this.emitHumanState(true, false);
     this.bus.emit("jointLocksChanged", { locks: [...this.jointLocks] });
@@ -4523,8 +4534,15 @@ export class Editor {
     disposeHumanFigure(this.humanFigure);
     this.humanFigure = null;
     this.humanToken++;
-    this.handTargets.clear();
-    this.footTargets.clear();
+    // LOS APOYOS SOBREVIVEN A REHACER EL CUERPO, igual que la barra de aquí
+    // abajo. Están guardados como PIEZA + PUNTO LOCAL, que no dependen del
+    // cuerpo para nada: al mover el cursor de la talla —que es justo lo que se
+    // hace para comprobar la ergonomía— se borraban sin decir nada y las manos
+    // volvían a quedarse donde dijera la postura.
+    if (!rehaciendo) {
+      this.handTargets.clear();
+      this.footTargets.clear();
+    }
     // LA BARRA SE VA CON EL MANIQUÍ. Quitando la figura, el enlace quedaba
     // apuntando a un cuerpo que ya no existe: la pieza se quedaba clavada
     // donde estuviera, la interfaz seguía anunciando «100 kg en las manos» y
@@ -4540,6 +4558,10 @@ export class Editor {
       });
     }
     this.cancelAttachHand();
+    // SIN MANIQUÍ, LA MÁQUINA VUELVE AL DISEÑO. La partida es una condición de
+    // ensayo de un cuerpo concreto; sin nadie que la use, lo que hay que ver y
+    // acotar es el plano fabricable.
+    if (!rehaciendo) this.sincronizarPartidaVisible();
     this.emitHumanState(false, false);
   }
 
@@ -4940,6 +4962,15 @@ export class Editor {
     for (const jn of Object.keys(def)) if (joints[jn]) this.clampJoint(jn);
     this.reapoyarFigura();
     this.plantarLosPies(huella);
+    // LA POSTURA DE UN EJERCICIO CON BARRA TRAE LA BARRA (v0.2.91). Las ocho
+    // posturas de barra salen en la lista general de posturas, y aplicarlas
+    // desde ahí sólo movía el cuerpo: la figura bajaba a la sentadilla y la
+    // barra cargada se quedaba en los ganchos, o el peso muerto arrancaba con
+    // los puños cerrados sobre una barra en el suelo que nadie tocaba. Es
+    // mímica, no un gesto. Si la postura pertenece a un ejercicio, se enlaza la
+    // barra —adoptando la que ya esté en la escena—, se desrackea y se arma su
+    // zona, exactamente igual que si se hubiera elegido en el selector.
+    this.engancharBarraDeLaPostura(name);
     this.marcarPoseDePartida(name);
     if (this.physics && this.humanFigure) this.physics.añadirFigura(this.humanFigure);
     this.updateHandIK();
@@ -5085,6 +5116,18 @@ export class Editor {
 
   async iniciarPoseMaquina(): Promise<void> {
     if (this.modoPoseMaquina || this.simulating || this.startingSim) return;
+    // POSAR LA MÁQUINA ES PARA ALGUIEN. Sin maniquí no hay a quién acomodarle
+    // el mecanismo, y la partida que saliera de aquí no se aplicaría nunca
+    // (ver `partidaVigente`): más vale decirlo que dejar posar en balde.
+    if (!this.humanFigure || this.humanMode !== "mannequin") {
+      this.avisoTemporal(
+        tt(
+          "Trae primero al maniquí: la máquina se posa PARA él, y sin nadie delante vuelve a su diseño.",
+          "Bring the mannequin in first: the machine is posed FOR them, and with nobody there it returns to its design.",
+        ),
+      );
+      return;
+    }
     this.startingSim = true;
     try {
       await PhysicsWorld.init();
@@ -5138,8 +5181,10 @@ export class Editor {
     for (let i = 0; i < 150; i++) this.physics.step();
     this.jointHelpers.visible = false;
     // Se apagan las herramientas de colocación ANTES de encender el motor: a
-    // partir de aquí sus clics no llegarían a ninguna parte.
-    this.cancelarHerramientas();
+    // partir de aquí sus clics no llegarían a ninguna parte. El APOYO sí se
+    // conserva: posar la máquina y apoyar en ella la mano son el mismo gesto
+    // en dos tiempos, y apagarlo al entrar obligaba a volver a pulsarlo.
+    this.cancelarHerramientas(true);
     this.select(null);
     this.simulating = true; // el motor corre; isSimulating() lo distingue
     this.modoPoseMaquina = true;
@@ -5628,6 +5673,28 @@ export class Editor {
     this.handTargets.clear();
   }
 
+  /**
+   * QUÉ HAY APOYADO Y EN QUÉ, para que el panel pueda decirlo.
+   *
+   * `hasAttachedHands`/`hasAttachedFeet` existían y no los llamaba nadie: el
+   * diseñador no tenía forma de distinguir «la mano está apoyada pero no llega»
+   * de «nunca llegué a apoyarla», que son dos problemas distintos con el mismo
+   * aspecto —un puño en el aire—.
+   */
+  apoyosPuestos(): { tipo: "mano" | "pie"; lado: "L" | "R"; pieza: string }[] {
+    const out: { tipo: "mano" | "pie"; lado: "L" | "R"; pieza: string }[] = [];
+    for (const [tipo, mapa] of [
+      ["mano", this.handTargets],
+      ["pie", this.footTargets],
+    ] as const) {
+      for (const [lado, t] of mapa) {
+        const o = this.objects.get(t.objectId);
+        if (o) out.push({ tipo, lado, pieza: o.name });
+      }
+    }
+    return out;
+  }
+
   hasAttachedHands(): boolean {
     return this.handTargets.size > 0;
   }
@@ -5783,15 +5850,22 @@ export class Editor {
     const ej = EJERCICIO_BARRA_POR_ID[ejercicioId];
     if (!ej || !this.humanFigure || this.humanMode !== "mannequin") return null;
     let obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) ?? null : null;
-    if (!obj) obj = this.addComponent("barra-olimpica");
+    // SE ADOPTA LA BARRA QUE YA ESTÁ EN LA ESCENA (v0.2.91). Antes sólo se
+    // reutilizaba la que ya estuviera enlazada: la barra que el usuario había
+    // colocado desde la paleta, cargado con discos y dejado en los ganchos era
+    // invisible para este código y se sembraba OTRA, descargada, en el origen.
+    // De ahí venía la estampa de la barra en diagonal con las manos cerca de un
+    // extremo: no era la barra del maniquí, era una pieza suelta que nadie
+    // movía. Se prefiere la más cercana a las manos, que es la que el usuario
+    // tiene delante.
+    if (!obj) obj = this.barraLibreMasCerca() ?? this.addComponent("barra-olimpica");
     this.barraManiqui = { objectId: obj.id, ejercicio: ejercicioId, rackeada: false };
     this.apoyoBarraLocal = null;
     // LA ZONA DEL EJERCICIO, puesta con la barra. Elegir «peso muerto» y tener
     // que ir a marcar «bisagra» a mano en la otra pestaña era pedir dos veces
     // lo mismo: la barra ya dice qué se está haciendo. Así el 8/9 mueve lo que
     // toca desde el primer momento.
-    for (const z of ZONAS) this.activarZona(z.id, null);
-    this.activarZona(ej.zona, "sim");
+    this.armarZonaDelEjercicio(ej);
     // ELEGIR EJERCICIO ES COLOCARSE: la postura de arriba trae consigo la
     // estampa —la apertura y el sitio de los pies— y a partir de ahí manda
     // ella. Replantar aquí sería arrastrar la estampa del ejercicio anterior.
@@ -5805,12 +5879,69 @@ export class Editor {
     return obj;
   }
 
+  /** La `barra-olimpica` suelta más cercana a las manos del maniquí, si la hay. */
+  private barraLibreMasCerca(): SceneObject | null {
+    const manos = this.centroSegmento("mano-L");
+    let mejor: SceneObject | null = null;
+    let mejorD = Infinity;
+    for (const o of this.listObjects()) {
+      if (o.componentId !== "barra-olimpica") continue;
+      const d = manos ? o.mesh.position.distanceTo(manos) : 0;
+      if (d < mejorD) { mejorD = d; mejor = o; }
+    }
+    return mejor;
+  }
+
+  /**
+   * ¿A qué ejercicio con barra pertenece esta postura? Es el índice inverso de
+   * EJERCICIOS_BARRA: las ocho posturas de barra son EXTREMOS de un gesto, y
+   * aplicarlas desde la lista general sin la barra dejaba a la figura haciendo
+   * la mímica —bajando sola mientras la barra seguía en los ganchos—.
+   */
+  private ejercicioDeLaPostura(nombre: string): EjercicioBarra | null {
+    return EJERCICIOS_BARRA.find((e) => e.arriba === nombre || e.fondo === nombre) ?? null;
+  }
+
+  /**
+   * Enlaza la barra si `nombre` es un extremo de un ejercicio con barra. No
+   * llama a `applyPose` —lo llama ÉL—, así que no hay recursión: sólo pone el
+   * enlace, la zona y el sitio de la barra.
+   */
+  private engancharBarraDeLaPostura(nombre: string): void {
+    const ej = this.ejercicioDeLaPostura(nombre);
+    if (!ej || !this.humanFigure || this.humanMode !== "mannequin") return;
+    if (this.barraManiqui?.ejercicio !== ej.id) {
+      let obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) ?? null : null;
+      if (!obj) obj = this.barraLibreMasCerca() ?? this.addComponent("barra-olimpica");
+      this.barraManiqui = { objectId: obj.id, ejercicio: ej.id, rackeada: false };
+      this.apoyoBarraLocal = null;
+      this.armarZonaDelEjercicio(ej);
+      this.bus.emit("barraManiquiChanged", {
+        objectId: obj.id,
+        ejercicio: ej.id,
+        rackeada: false,
+      });
+    }
+    // Si la barra está en el gancho A PROPÓSITO, ahí se queda: cambiar de
+    // postura no es descolgarla, y para eso está el botón ⤒.
+    if (!this.barraManiqui?.rackeada) this.sincronizarBarraManiqui();
+  }
+
+  /** Deja armada SOLO la zona de movimiento del ejercicio, en los dos lados. */
+  private armarZonaDelEjercicio(ej: EjercicioBarra): void {
+    for (const z of ZONAS) this.activarZona(z.id, null);
+    this.activarZona(ej.zona, "sim");
+  }
+
   /** Aplica uno de los dos extremos del recorrido del ejercicio puesto. */
   aplicarPosturaBarra(cual: "arriba" | "fondo", replantar = true): boolean {
     const enlace = this.barraManiqui;
     const ej = enlace ? EJERCICIO_BARRA_POR_ID[enlace.ejercicio] : null;
     if (!ej) return false;
     this.applyPose(cual === "arriba" ? ej.arriba : ej.fondo, replantar);
+    // RACKEADA, LA SOSTIENE EL GANCHO. Dejar la barra en el soporte y moverse
+    // por debajo es un gesto deliberado —se dice con el botón ⤓— y aquí se
+    // respeta: agacharse no se la lleva del gancho.
     if (enlace?.rackeada) return true;
     this.sincronizarBarraManiqui();
     return true;
@@ -6179,14 +6310,89 @@ export class Editor {
         this.handTargets.delete(side);
         continue;
       }
-      if (this.brazoMandado(side)) continue;
+      // EL VETO ES DEL GESTO EN MARCHA, no del reposo (v0.2.91). Con la zona
+      // activa manda el gesto y la IK deshacía el movimiento en el mismo
+      // fotograma, que es lo que este `continue` evita. Pero se aplicaba
+      // TAMBIÉN parado, y la zona de fábrica es «tren superior» —que declara
+      // hombro y codo—: en una UpperMachine la IK de las dos manos no se
+      // ejecutaba NUNCA, ni al apoyar, ni tras una postura, ni al mover la
+      // máquina. Las manos se quedaban en los grados del catálogo, cerradas en
+      // el aire, y cuando coincidían con un mando era casualidad geométrica.
+      // Parado, y mientras se posa la máquina, manda el apoyo.
+      if (this.simulating && !this.modoPoseMaquina && this.brazoMandado(side)) continue;
       obj.mesh.updateMatrixWorld();
-      const target = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
+      // LA MÁQUINA CONGELADA MANDA. Parado se ve la partida (v0.2.91), pero si
+      // por lo que sea la malla estuviera en el plano y la partida en otro
+      // sitio, el agarre que hay que perseguir es el de la partida: es donde va
+      // a estar el mando cuando empiece el gesto.
+      const cong = this.simulating ? null : this.partidaVigente()?.get(t.objectId);
+      const marco = cong
+        ? new THREE.Matrix4().compose(cong.p, cong.q, obj.mesh.scale)
+        : obj.mesh.matrixWorld;
+      const target = t.local.clone().applyMatrix4(marco);
       const sh = joints[`shoulder${side}`];
       const el = joints[`elbow${side}`];
       const wr = joints[`wrist${side}`];
-      if (sh && el && wr) solveTwoBoneIK(sh, el, wr, target);
+      if (!sh || !el || !wr) continue;
+      // LA QUE AGARRA ES LA PALMA, NO LA MUÑECA. `solveTwoBoneIK` pone el
+      // PIVOTE de la muñeca sobre el punto, y la malla de la mano cuelga de él
+      // —unos 3,5 cm de descuelgue más 6 de radio en un cuerpo de 175—, así que
+      // el puño acababa pasado del mando en vez de rodearlo. La IK del pie ya
+      // hace esta compensación con `altoDelPie`; ésta no la tenía. Se corrige
+      // igual: se resuelve, se mide lo que queda entre el centro del puño y el
+      // agarre, y se vuelve a resolver contra el objetivo corregido.
+      solveTwoBoneIK(sh, el, wr, target);
+      const centro = this.centroSegmento(`mano-${side}`);
+      if (centro) {
+        const resto = target.clone().sub(centro);
+        // Sólo se corrige lo que es voladizo de la mano; un residuo grande es
+        // que el agarre está FUERA DE ALCANCE, y ahí insistir sería falsear la
+        // ergonomía: el brazo se queda estirado apuntando, que es la verdad.
+        if (resto.length() < 15) solveTwoBoneIK(sh, el, wr, target.clone().add(resto));
+      }
     }
+  }
+
+  /**
+   * HACIA DÓNDE MIRA EL MANIQUÍ, en grados sobre el plano del suelo.
+   *
+   * 0° es mirando a +Z, que es hacia donde mira el rig en reposo, y crece hacia
+   * +X (a la derecha del observador). Colocar lo ADIVINA —midiendo el asiento, o
+   * apuntando a la máquina fija más cercana—, y adivinar acierta casi siempre
+   * pero no siempre: en un pasillo entre dos torres, o para mirar de perfil a
+   * la cámara al componer una lámina, hace falta poder decirlo.
+   */
+  rumboFigura(): number {
+    const fig = this.humanFigure;
+    if (!fig) return 0;
+    const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion);
+    return +(Math.atan2(frente.x, frente.z) * 180 / Math.PI).toFixed(1);
+  }
+
+  /** Gira al maniquí hasta mirar a `grados` (absoluto, sobre el plano del suelo). */
+  setRumboFigura(grados: number): void {
+    const fig = this.humanFigure;
+    if (!fig) return;
+    const rad = degToRad(((grados % 360) + 360) % 360);
+    fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rad);
+    fig.updateMatrixWorld(true);
+    this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
+    // Girado el cuerpo, lo que colgaba de él tiene que acompañarlo: la barra va
+    // atada a las manos y los apoyos apuntan a piezas que no han girado.
+    this.updateHandIK();
+    this.updateFootIK();
+    this.sincronizarBarraManiqui();
+    this.marcarPoseDePartida();
+    if (this.physics && this.humanFigure) this.physics.añadirFigura(this.humanFigure);
+    this.bus.emit("figuraRumboChanged", { grados: this.rumboFigura() });
+    this.requestRender();
+    this.scheduleAutosave();
+  }
+
+  /** Gira al maniquí un incremento (grados) desde donde mire ahora. */
+  girarFigura(delta: number): void {
+    if (!this.humanFigure) return;
+    this.setRumboFigura(this.rumboFigura() + delta);
   }
 
   private selectFigure(): void {
@@ -9511,6 +9717,74 @@ export class Editor {
       return;
     }
 
+    // MODO APOYAR MANO / PISAR (IK): 1) clic en un miembro de la figura,
+    // 2) clic en el agarre. VA POR ENCIMA DEL GUARD DE SIMULACIÓN a propósito,
+    // igual que «Colocar maniquí»: el flujo que pidió el diseñador es llevar el
+    // mecanismo a su punto de partida con «▶ Manipular» y APOYAR AHÍ las manos,
+    // y con el motor corriendo el guard de abajo se comía el clic antes de que
+    // llegara aquí — el botón estaba, se pulsaba, y no pasaba absolutamente
+    // nada ni había aviso.
+    if (this.attachMode) {
+      if (!this.attachSide) {
+        if (!this.humanFigure) return;
+        const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
+        const jn = fHits[0]?.object.userData.jointName as string | undefined;
+        // Apoyar mano toma el miembro SUPERIOR; apoyar pie, el INFERIOR.
+        const familias =
+          this.attachTipo === "pie" ? ["hip", "knee", "ankle"] : ["shoulder", "elbow", "wrist"];
+        if (jn && familias.some((f) => jn.startsWith(f))) {
+          this.attachSide = jn.endsWith("R") ? "R" : "L";
+          this.bus.emit("attachModeChanged", { active: true, stage: "grip" });
+        }
+        return;
+      }
+      // EL RAYO ENTRA EN LAS SUBMALLAS y luego sube a la pieza. Los discos
+      // montados y las partes de la pila cuelgan del mesh de su pieza, así que
+      // con el rayo plano tocarlos no encontraba nada y el clic se perdía en
+      // silencio: parecía que la herramienta no respondía.
+      const gHits = this.raycaster.intersectObjects(this.sceneManager.content.children, true);
+      const hit = gHits[0];
+      let obj: SceneObject | undefined;
+      for (let n: THREE.Object3D | null = hit?.object ?? null; n && !obj; n = n.parent) {
+        const id = n.userData.sceneObjectId as string | undefined;
+        if (id) obj = this.objects.get(id);
+      }
+      if (!obj || !hit) {
+        this.avisoTemporal(
+          tt("Apunta a la pieza del agarre", "Aim at the grip's part"),
+        );
+        return;
+      }
+      obj.mesh.updateMatrixWorld(true);
+      // SE APOYA DONDE SE TOCA. Antes el punto se cuantizaba al punto de
+      // anclaje más cercano de la pieza, y para un cilindro ésos son sólo tres
+      // —el centro y las dos tapas—: tocar el medio de un mando de 60 cm podía
+      // llevar la mano a 30 cm de allí, a la punta. Ahora manda el punto
+      // tocado y los anclajes son un IMÁN de 3 cm, para que apoyar en el
+      // centro exacto de un eje siga siendo fácil.
+      const local = obj.mesh.worldToLocal(hit.point.clone());
+      let best = local;
+      let bestD = 3;
+      for (const lp of localSnapPoints(obj)) {
+        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
+        const dd = wp.distanceTo(hit.point);
+        if (dd < bestD) { bestD = dd; best = lp; }
+      }
+      const destino = this.attachTipo === "pie" ? this.footTargets : this.handTargets;
+      destino.set(this.attachSide, { objectId: obj.id, local: best });
+      this.cancelAttachHand();
+      this.updateHandIK();
+      this.updateFootIK();
+      this.requestRender();
+      this.avisoTemporal(
+        this.attachTipo === "pie"
+          ? tt(`Pie apoyado en "${obj.name}"`, `Foot resting on "${obj.name}"`)
+          : tt(`Mano apoyada en "${obj.name}"`, `Hand resting on "${obj.name}"`),
+      );
+      return;
+    }
+
+
     // Durante la simulación: mano interactiva (agarrar piezas dinámicas) y
     // posicionamiento del maniquí; no hay selección ni edición.
     if (this.simulating) {
@@ -9553,40 +9827,6 @@ export class Editor {
       // nadie había elegido. Y el arrastre derecho, que solo encuadra, hacía
       // lo mismo. Se recuerda dónde se pulsó y se compara al soltar.
       this.lineDown = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
-      return;
-    }
-
-    // Modo apoyar mano (IK): 1) clic en una mano/brazo de la figura, 2) clic en el agarre.
-    if (this.attachMode) {
-      if (!this.attachSide) {
-        if (!this.humanFigure) return;
-        const fHits = this.raycaster.intersectObjects([this.humanFigure], true);
-        const jn = fHits[0]?.object.userData.jointName as string | undefined;
-        // Apoyar mano toma el miembro SUPERIOR; apoyar pie, el INFERIOR.
-        const familias =
-          this.attachTipo === "pie" ? ["hip", "knee", "ankle"] : ["shoulder", "elbow", "wrist"];
-        if (jn && familias.some((f) => jn.startsWith(f))) {
-          this.attachSide = jn.endsWith("R") ? "R" : "L";
-          this.bus.emit("attachModeChanged", { active: true, stage: "grip" });
-        }
-        return;
-      }
-      const gHits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
-      const hit = gHits[0];
-      const id = hit?.object.userData.sceneObjectId as string | undefined;
-      const obj = id ? this.objects.get(id) : undefined;
-      if (!obj || !hit) return;
-      obj.mesh.updateMatrixWorld(true);
-      let best = new THREE.Vector3();
-      let bestD = Infinity;
-      for (const lp of localSnapPoints(obj)) {
-        const wp = lp.clone().applyMatrix4(obj.mesh.matrixWorld);
-        const dd = wp.distanceTo(hit.point);
-        if (dd < bestD) { bestD = dd; best = lp; }
-      }
-      const destino = this.attachTipo === "pie" ? this.footTargets : this.handTargets;
-      destino.set(this.attachSide, { objectId: obj.id, local: best });
-      this.cancelAttachHand();
       return;
     }
 

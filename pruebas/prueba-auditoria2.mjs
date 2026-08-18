@@ -316,6 +316,9 @@ const j = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const o = ed.addComponent("disco-peso");
   o.physics = { ...o.physics, fixed: false };
+  // La máquina se posa PARA alguien (v0.2.91): sin maniquí no se entra.
+  await ed.addHumanFigure();
+  await new Promise((r) => setTimeout(r, 700));
   ed.setSimHerramienta("orbitar");
   await ed.iniciarPoseMaquina();
   const posando = ed.getSimHerramienta();

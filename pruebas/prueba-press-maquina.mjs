@@ -56,7 +56,16 @@ const r = await page.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const objs = [...ed.objects.values()];
   const g = (n) => +T.MathUtils.radToDeg(ed.figureJoints()[n].rotation.x).toFixed(1);
-  const foto = () => ({ hombro: g("shoulderL"), codo: g("elbowL"), y: +ed.humanFigure.position.y.toFixed(2) });
+  // Con los apoyos vivos (v0.2.91) lo que se conserva al parar no son los
+  // GRADOS sino DÓNDE QUEDA LA MANO: los brazos vuelven a buscar el agarre.
+  const manoAlAgarre = (lado, idx) => {
+    const fig = ed.humanFigure; fig.updateMatrixWorld(true);
+    let m = null; fig.traverse((n) => { if (n.userData?.segmentId === `mano-${lado}`) m = n; });
+    const c = new T.Box3().setFromObject(m).getCenter(new T.Vector3());
+    return +c.distanceTo([...ed.objects.values()][idx].mesh.position).toFixed(1);
+  };
+  const foto = () => ({ hombro: g("shoulderL"), codo: g("elbowL"),
+    y: +ed.humanFigure.position.y.toFixed(2), agarreL: manoAlAgarre("L", 40) });
   // Postura de partida del gesto y manos en los agarres.
   ed.applyPose("Empuje horizontal");
   for (const [side, idx] of [["R", 39], ["L", 40]]) {
@@ -95,9 +104,21 @@ ok(r.empujado.codo > r.partida.codo + 40 && r.empujado.hombro < r.partida.hombro
   `el EMPUJE hace el gesto completo: codo ${r.partida.codo}°→${r.empujado.codo}° y hombro ${r.partida.hombro}°→${r.empujado.hombro}°`);
 ok(r.traccionado.codo < r.empujado.codo - 40,
   `y la TRACCIÓN lo deshace (codo ${r.empujado.codo}°→${r.traccionado.codo}°): los brazos NO se quedan en extensión`);
-ok(Math.abs(r.trasParar.y - r.partida.y) < 0.01 &&
-   r.trasParar.codo === r.partida.codo && r.trasParar.hombro === r.partida.hombro,
-  `parar devuelve la postura Y el sitio de partida (${JSON.stringify(r.trasParar)})`);
+// PARAR DEVUELVE EL SITIO Y EL AGARRE, no los grados exactos. Desde v0.2.91
+// la mano apoyada manda con el gesto parado —antes la zona «tren superior»
+// vetaba su IK y el brazo se quedaba clavado en los grados del catálogo—, así
+// que al parar los brazos vuelven a BUSCAR el mando. Que los ángulos difieran
+// es la consecuencia correcta; lo que tiene que conservarse es dónde se sienta
+// la figura y a qué distancia le queda el agarre.
+ok(Math.abs(r.trasParar.y - r.partida.y) < 0.01,
+  `parar devuelve el sitio de partida (y ${r.trasParar.y})`);
+// Y AL PARAR, EL APOYO MANDA. Mientras el gesto corre gobierna la zona y la IK
+// de la mano se aparta a propósito —si no, deshacía el movimiento en el mismo
+// fotograma—; en cuanto se para, el brazo vuelve a buscar el mando y la mano se
+// acerca. (Que no llegue a tocarlo es la lectura ergonómica de esta máquina:
+// el agarre le queda a 60,6 cm del hombro y este cuerpo alcanza 56.)
+ok(r.trasParar.agarreL < r.partida.agarreL,
+  `al parar, el brazo vuelve a buscar el mando (${r.partida.agarreL} → ${r.trasParar.agarreL} cm)`);
 console.log(`  (choque con la estructura durante el empuje: ${r.choque} — es la lectura ergonómica, no un fallo)`);
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");

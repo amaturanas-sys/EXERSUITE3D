@@ -68,6 +68,9 @@ export class ArticulacionesPanel {
   private cajaBarra: HTMLElement;
   private nombreNuevo: HTMLInputElement;
   private etiquetaPartida: HTMLElement;
+  private etiquetaApoyos: HTMLElement;
+  private rumbo!: HTMLInputElement;
+  private filaRumbo!: HTMLElement;
   private botonSoltarPartida: HTMLButtonElement;
   private botonPosarMaquina: HTMLButtonElement;
   private selectPartidas: HTMLSelectElement;
@@ -232,6 +235,34 @@ export class ArticulacionesPanel {
       bColocar.classList.toggle("active", active),
     );
 
+    // HACIA DÓNDE MIRA (v0.2.91). Colocar adivina el rumbo —midiendo el asiento,
+    // o apuntando a la máquina fija más cercana— y acierta casi siempre; pero
+    // adivinar no es decidir. Aquí se dice: dos botones para girar de cuarto en
+    // cuarto y un número para clavarlo exacto.
+    this.rumbo = el("input", {
+      type: "number", step: "15", min: "-180", max: "360", class: "mq-num",
+      title: tt("Grados hacia donde mira (0° = hacia +Z)", "Degrees the mannequin faces (0° = towards +Z)"),
+    }) as HTMLInputElement;
+    const girar = (d: number) => el("button", { class: "tool", title: d < 0
+      ? tt("Girar 45° a la izquierda", "Turn 45° left")
+      : tt("Girar 45° a la derecha", "Turn 45° right") }, [d < 0 ? "↺" : "↻"]);
+    const bIzq = girar(-45);
+    const bDer = girar(45);
+    bIzq.addEventListener("click", () => this.editor.girarFigura(-45));
+    bDer.addEventListener("click", () => this.editor.girarFigura(45));
+    this.rumbo.addEventListener("change", () => {
+      const v = parseFloat(this.rumbo.value);
+      if (Number.isFinite(v)) this.editor.setRumboFigura(v);
+    });
+    this.filaRumbo = el("div", { class: "row mq-fila-rumbo" }, [
+      el("span", { class: "mq-etiqueta" }, [tt("Mira a", "Facing")]),
+      bIzq, this.rumbo, el("span", { class: "mq-unidad" }, ["°"]), bDer,
+    ]);
+    const pintarRumbo = () => { this.rumbo.value = String(this.editor.rumboFigura()); };
+    this.editor.bus.on("figuraRumboChanged", pintarRumbo);
+    this.editor.bus.on("humanFigureChanged", pintarRumbo);
+    pintarRumbo();
+
     // CREAR / QUITAR EL MANIQUÍ (v0.2.55): venía de la barra de arriba, donde
     // era el botón «Figura». Vive aquí porque es la primera decisión de todo
     // lo que hay en esta ventana: sin figura, nada de lo demás aplica.
@@ -277,9 +308,13 @@ export class ArticulacionesPanel {
     bSoltar.addEventListener("click", () => {
       this.editor.detachHands();
       this.editor.detachFeet();
+      this.refrescarApoyos();
     });
 
     this.hint = el("div", { class: "empty-hint" }, [this.hintPorDefecto]);
+    // QUÉ HAY APOYADO. Sin esto, un puño en el aire podía ser «no llega» o
+    // «nunca lo apoyaste», y no había manera de distinguirlos.
+    this.etiquetaApoyos = el("div", { class: "art-hint" }, [""]);
 
     // POSTURA DE PARTIDA (v0.2.49): la referencia del ejercicio. Se fija sola
     // al aplicar una postura, al colocar la figura y al arrancar la
@@ -438,6 +473,7 @@ export class ArticulacionesPanel {
     this.cajaPosar = el("div", { class: "mq-seccion" }, [
       el("div", { class: "pose-actions" }, [this.botonFigura]),
       el("div", { class: "pose-actions" }, [bColocar, bAgarrar]),
+      this.filaRumbo,
 
       grupo(tt("Postura", "Pose"), [
         el("div", { class: "row mq-fila-postura" }, [this.select, bAplicar]),
@@ -452,17 +488,25 @@ export class ArticulacionesPanel {
         this.jointBox,
       ]),
 
-      grupo(tt("Apoyos", "Supports"), [
-        el("div", { class: "pose-actions" }, [bApoyar, bPisar]),
-        el("div", { class: "pose-actions" }, [bSoltar]),
-      ]),
-
+      // LA MÁQUINA, ANTES QUE LOS APOYOS (v0.2.91), y lo pidió el diseñador:
+      // «la función de posar máquina debe anteceder a la postura de apoyos
+      // (manos y pies) para que sea posible acomodar adecuadamente el modelo
+      // en el espacio». Es el orden del gesto real —primero se lleva el
+      // mecanismo al punto donde empieza el ejercicio y sólo entonces se pone
+      // la mano en el mando— y además el único que funciona: apoyar contra un
+      // mando dibujado en su sitio de plano es apoyar en el aire.
       grupo(tt("Partida del ejercicio", "Exercise start"), [
         el("div", { class: "pose-actions" }, [this.botonPosarMaquina, bVolverPartida]),
         this.filaPartidas,
         this.masPartidas,
         this.etiquetaPartida,
         el("div", { class: "pose-actions" }, [this.botonSoltarPartida]),
+      ]),
+
+      grupo(tt("Apoyos", "Supports"), [
+        el("div", { class: "pose-actions" }, [bApoyar, bPisar]),
+        el("div", { class: "pose-actions" }, [bSoltar]),
+        this.etiquetaApoyos,
       ]),
 
       this.hint,
@@ -592,9 +636,17 @@ export class ArticulacionesPanel {
       this.refrescar();
     });
     // Al arrancar la simulación interesa el candado; al pararla, la postura.
+    // POSAR LA MÁQUINA ES LA EXCEPCIÓN: enciende el motor pero sigue siendo
+    // POSAR —se está acomodando el mecanismo para el maniquí—, y saltar a
+    // SIMULAR escondía justo los mandos que hacen falta ahí, los de apoyos.
     this.editor.bus.on("simulationChanged", ({ running }) =>
-      this.setModo(running ? "simular" : "posar"),
+      this.setModo(running && !this.editor.posandoMaquina() ? "simular" : "posar"),
     );
+    this.editor.bus.on("poseMaquinaChanged", () => {
+      this.setModo(this.editor.posandoMaquina() || !this.editor.isSimulating() ? "posar" : "simular");
+      this.refrescarApoyos();
+    });
+    this.editor.bus.on("attachModeChanged", () => this.refrescarApoyos());
     this.editor.bus.on("attachModeChanged", ({ active, stage }) => {
       this.hint.textContent = !active
         ? this.hintPorDefecto
@@ -674,9 +726,25 @@ export class ArticulacionesPanel {
     this.campoArticulacion.value = base + sufijo;
   }
 
+  /** Dice en voz alta qué manos y pies están apoyados, y en qué pieza. */
+  private refrescarApoyos(): void {
+    const puestos = this.editor.apoyosPuestos?.() ?? [];
+    this.etiquetaApoyos.textContent = puestos.length === 0
+      ? tt("Nada apoyado.", "Nothing resting.")
+      : puestos
+          .map((a) => {
+            const que = a.tipo === "mano"
+              ? (a.lado === "L" ? tt("mano izq.", "left hand") : tt("mano der.", "right hand"))
+              : (a.lado === "L" ? tt("pie izq.", "left foot") : tt("pie der.", "right foot"));
+            return `✋ ${que} → ${a.pieza}`;
+          })
+          .join(" · ");
+  }
+
   /** Cambia de modo (posar / simular). */
   setModo(m: "posar" | "simular"): void {
     this.modo = m;
+    this.refrescarApoyos();
     this.cajaPosar.style.display = m === "posar" ? "block" : "none";
     this.cajaSimular.style.display = m === "simular" ? "block" : "none";
     this.botonesModo.posar.classList.toggle("active", m === "posar");

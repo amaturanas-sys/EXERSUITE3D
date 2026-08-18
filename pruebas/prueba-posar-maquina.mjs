@@ -25,9 +25,13 @@ await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(3
 await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2500);
 
 // Una máquina con conjunto móvil de verdad.
-await p.evaluate(() => {
+await p.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   ed.insertarMaquina("uppermachine", new T.Vector3(0, 0, 0));
+  // DESDE v0.2.91 LA MÁQUINA SE POSA PARA ALGUIEN: la partida es una condición
+  // de ensayo de un cuerpo concreto y sin maniquí no se aplica nunca, así que
+  // «▶ Manipular» avisa y no entra. El maniquí va delante.
+  await ed.addHumanFigure();
 });
 await p.waitForTimeout(1500);
 
