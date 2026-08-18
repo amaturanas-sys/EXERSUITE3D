@@ -80,7 +80,10 @@ para evitar—. Al salir se devuelve la que había.
 ### Verificación
 
 `prueba-auditoria2` reproduce los once, uno por bloque: **32 comprobaciones,
-todas en verde**. Como en la primera tanda, no comprueban que el arreglo esté
+todas en verde**. La batería completa queda en **64 verdes y 3 rojos de 67**
+—los mismos tres fichados de la v0.2.89—, con los flojos del paralelo
+(`atraviesa`, `cable-oculto`, `hub`, `uppermachine-lib`) repetidos en serie y
+en verde. Como en la primera tanda, no comprueban que el arreglo esté
 puesto —eso lo diría un `grep`— sino que el fallo ya no pasa. Comprobado
 además al revés: con la física anterior, los bloques de la torre apilada y del
 aparejo de un solo cuerpo **fallan**; con el reparto de nodos anterior, falla

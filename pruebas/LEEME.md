@@ -89,7 +89,10 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
-Medido en serie en v0.2.89: **63 verdes y 3 rojos** de 66.
+Medido en v0.2.90 (batería en paralelo + repetición en serie de los dudosos):
+**64 verdes y 3 rojos** de 67 — los mismos tres de la v0.2.89. En paralelo
+salieron además `atraviesa`, `cable-oculto`, `hub` y `uppermachine-lib`, y los
+cuatro pasan en serie: son los tiempos bajo carga, no la aplicación.
 
 | prueba | por qué |
 |---|---|
