@@ -107,6 +107,54 @@ ok(frontalArriba.vsHombro[2] - traseraArriba.vsHombro[2] > 12,
 ok(frontalArriba.vsMano > 4,
   `frontal: la barra NO está en el puño, la sostiene el cuerpo (${frontalArriba.vsMano} cm de la mano)`);
 
+// ---- 2b. LA BARRA APOYA EN LA PIEL, NI HUNDIDA NI FLOTANDO
+//
+// Esta es la que faltaba y por la que la primera versión estaba mal sin que se
+// notara en la captura: la barra iba colgada de un desplazamiento contra la
+// articulación del hombro, y como el hombro de un cuerpo escaneado no tiene un
+// centro evidente, quedaba METIDA en el pecho 1,3 cm y en el brazo 1,1. Se veía
+// apoyada y estaba dentro.
+//
+// La barra es un CILINDRO tumbado, así que no basta comprobar un punto: hay que
+// medir la distancia de cada vértice del segmento al EJE de la barra y quedarse
+// con la menor. Cero = apoyada. Negativo = dentro de la carne.
+const separacion = (segId) => p.evaluate((q) => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  const enlace = ed.getBarraManiqui();
+  const obj = ed.listObjects().find((o) => o.id === enlace.objectId);
+  const f = ed.humanFigure;
+  f.updateMatrixWorld(true); obj.mesh.updateMatrixWorld(true);
+  let m = null;
+  f.traverse((n) => { if (n.isMesh && n.userData.segmentId === q) m = n; });
+  if (!m) return null;
+  const eje = new T.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+  const c = obj.mesh.position.clone();
+  const R = (obj.params.radiusTop ?? 1.45) * obj.mesh.scale.x;
+  const g = m.geometry.attributes.position;
+  const v = new T.Vector3();
+  let min = Infinity;
+  for (let i = 0; i < g.count; i++) {
+    v.fromBufferAttribute(g, i).applyMatrix4(m.matrixWorld);
+    const d = v.clone().sub(c);
+    const perp = d.sub(eje.clone().multiplyScalar(d.dot(eje))).length();
+    if (perp < min) min = perp;
+  }
+  return +(min - R).toFixed(1);
+}, segId);
+
+for (const [ej, etq] of [["sentadilla-frontal", "frontal"], ["sentadilla-trasera", "trasera"]]) {
+  await poner(ej);
+  const tronco = await separacion("torso");
+  const cuello = await separacion("cuello");
+  const cabeza = await separacion("cabeza");
+  const mano = await separacion("mano-L");
+  ok(Math.abs(tronco) < 0.6,
+    `${etq}: la barra APOYA en el tronco, ni hundida ni flotando (${tronco} cm)`);
+  ok(cuello > -0.2 && cabeza > -0.2,
+    `${etq}: no atraviesa cuello ni cabeza (${cuello} / ${cabeza} cm)`);
+  ok(mano < 1, `${etq}: la mano llega a la barra (${mano} cm)`);
+}
+
 // ---- 3. En press y peso muerto la barra VA EN LA MANO
 for (const ej of ["press-vertical", "peso-muerto"]) {
   await poner(ej);

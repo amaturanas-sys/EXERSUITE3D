@@ -20,7 +20,7 @@ import { figureSegments } from "./core/figureSegments";
 import { prefabsMaquina } from "./core/prefabsMaquina";
 import { parsearPrefab, prefabDeFabrica, serializarPrefab } from "./core/prefabIO";
 import { medidasDentada, pasoMinimoDentada } from "./objects/placaDentada";
-import { ANCLAJE_RACK, EJERCICIOS_BARRA } from "./objects/barraManiqui";
+import { APOYO_RACK, EJERCICIOS_BARRA } from "./objects/barraManiqui";
 import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
@@ -278,7 +278,7 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // BARRA EN MANOS (v0.2.81): la tabla de ejercicios y los desplazamientos
     // medidos, por lo mismo — que la prueba compare contra la fuente y no
     // contra una copia de los números.
-    barra: { ejercicios: EJERCICIOS_BARRA, anclaje: ANCLAJE_RACK },
+    barra: { ejercicios: EJERCICIOS_BARRA, apoyo: APOYO_RACK },
   };
   return ed;
 }

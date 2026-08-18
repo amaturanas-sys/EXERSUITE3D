@@ -19,6 +19,7 @@ import { pathIsStraight, straightPath, tramosCalce } from "../objects/linePieces
 import { espejoDe } from "../objects/espejar";
 import {
   EJERCICIO_BARRA_POR_ID,
+  apoyoEnElTronco,
   sitioDeLaBarra,
   type AgarreBarra,
   type ApoyosBarra,
@@ -442,6 +443,12 @@ export class Editor {
   private barraManiqui:
     | { objectId: string; ejercicio: string; rackeada: boolean }
     | null = null;
+  /**
+   * Punto de apoyo de la barra sobre el TRONCO, en coordenadas locales de esa
+   * malla. Se calcula con rayos una sola vez —el contacto es propiedad de la
+   * geometría, no de la postura— y cada fotograma solo se transforma.
+   */
+  private apoyoBarraLocal: { agarre: string; local: THREE.Vector3 } | null = null;
   private attachMode = false;
   private attachSide: HandSide | null = null;
   /** Qué se está apoyando: la mano (hombro/codo) o el pie (cadera/rodilla). */
@@ -2782,6 +2789,7 @@ export class Editor {
     // La barra del maniquí se va con las piezas: dejar el enlace vivo apuntaba
     // a un id que ya no existe.
     this.barraManiqui = null;
+    this.apoyoBarraLocal = null;
     this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
     this.partidaPiezas = null;
     // Y los puntos guardados: son de ESTE proyecto. Si sobreviven, el selector
@@ -5339,6 +5347,62 @@ export class Editor {
     return new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3());
   }
 
+  /** La malla de un segmento del maniquí, o null si no está. */
+  private mallaSegmento(id: string): THREE.Mesh | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    const hallados: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === id) hallados.push(m);
+    });
+    return hallados[0] ?? null;
+  }
+
+  /** La malla del tronco (donde se apoyan los dos racks). */
+  private mallaTronco(): THREE.Mesh | null {
+    return this.mallaSegmento("torso");
+  }
+
+  /**
+   * Punto de apoyo de la barra sobre el tronco, ya en coordenadas del mundo.
+   *
+   * El cálculo con rayos se hace UNA VEZ por agarre y se guarda en local: el
+   * contacto no depende de la postura, así que girar el tronco lo lleva
+   * consigo. Solo se rehace si cambia el agarre o si se sustituye la malla del
+   * maniquí, que es cuando de verdad cambia dónde toca.
+   */
+  private apoyoBarraEnElMundo(): THREE.Vector3 | null {
+    const enlace = this.barraManiqui;
+    const ej = enlace ? EJERCICIO_BARRA_POR_ID[enlace.ejercicio] : null;
+    if (!ej || ej.agarre === "manos") return null;
+    const tronco = this.mallaTronco();
+    if (!tronco) return null;
+    if (!this.apoyoBarraLocal || this.apoyoBarraLocal.agarre !== ej.agarre) {
+      const obj = this.objects.get(enlace!.objectId);
+      const radio = obj ? (obj.params.radiusTop ?? 1.45) * Math.abs(obj.mesh.scale.x || 1) : 1.45;
+      // Las tres referencias van en el sistema del TRONCO: es donde vive el
+      // apoyo, y así el cálculo no depende de dónde esté la figura.
+      tronco.updateMatrixWorld();
+      const joints = this.figureJoints();
+      const aLocal = (v: THREE.Vector3) => tronco.worldToLocal(v.clone());
+      const cuello = joints?.neck ? aLocal(joints.neck.getWorldPosition(new THREE.Vector3())) : null;
+      const hombro = joints?.shoulderL
+        ? aLocal(joints.shoulderL.getWorldPosition(new THREE.Vector3()))
+        : null;
+      this.apoyoBarraLocal = {
+        agarre: ej.agarre,
+        local: apoyoEnElTronco(tronco, this.mallaSegmento("cuello"), ej.agarre, radio, {
+          cuelloY: cuello?.y ?? 0,
+          hombroY: hombro?.y ?? 0,
+          cuelloZ: cuello?.z ?? 0,
+        }),
+      };
+    }
+    tronco.updateMatrixWorld();
+    return this.apoyoBarraLocal.local.clone().applyMatrix4(tronco.matrixWorld);
+  }
+
   /** Los cuatro puntos del cuerpo de los que cuelga la barra. */
   private apoyosDeLaBarra(): ApoyosBarra | null {
     const fig = this.humanFigure;
@@ -5352,6 +5416,7 @@ export class Editor {
     const tronco = joints.spine;
     if (!manoL || !manoR || !hL || !hR || !tronco) return null;
     return {
+      apoyoTronco: this.apoyoBarraEnElMundo(),
       hombroL: hL.getWorldPosition(new THREE.Vector3()),
       hombroR: hR.getWorldPosition(new THREE.Vector3()),
       manoL,
@@ -5415,6 +5480,7 @@ export class Editor {
     let obj = this.barraManiqui ? this.objects.get(this.barraManiqui.objectId) ?? null : null;
     if (!obj) obj = this.addComponent("barra-olimpica");
     this.barraManiqui = { objectId: obj.id, ejercicio: ejercicioId, rackeada: false };
+    this.apoyoBarraLocal = null;
     this.aplicarPosturaBarra("arriba");
     this.bus.emit("barraManiquiChanged", {
       objectId: obj.id,

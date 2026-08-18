@@ -36,14 +36,40 @@ export type AgarreBarra = "frontal" | "trasera" | "manos";
 export const TALLA_REFERENCIA = 175;
 
 /**
- * Desplazamiento de la barra respecto del punto medio de los hombros, en el
- * marco del TRONCO y en cm de un maniquí de referencia. Solo para los racks:
- * el agarre «manos» no usa desplazamiento porque la barra va en la mano.
+ * DÓNDE TOCA LA BARRA, medido por CONTACTO sobre el modelo del diseñador y no
+ * por un desplazamiento contra el hombro.
+ *
+ * Lo intenté primero contra la articulación del hombro y salió mal: el hombro
+ * de un cuerpo escaneado no tiene un centro evidente —según se estime por el
+ * eje de la malla o por la costura con el pecho, se mueve cinco centímetros— y
+ * con ese error la barra quedaba METIDA en el pecho 1,3 cm y en el brazo 1,1.
+ * Se veía apoyada y estaba dentro.
+ *
+ * Lo que sí es inequívoco en el .obj son los vértices del cuerpo que tocan la
+ * superficie del cilindro:
+ *
+ *  · FRONTAL — el cuello queda el 100 % por DETRÁS del eje de la barra y el
+ *    pecho la toca a ±9,8 cm de la línea media: la barra se apoya en la CARA
+ *    ANTERIOR, sobre clavículas y deltoides, 2,4 cm por debajo de lo alto del
+ *    pecho. Es un apoyo HORIZONTAL, contra la pared del pecho.
+ *  · TRASERA — el 80 % del cuerpo cercano queda por DELANTE del eje: la barra
+ *    va detrás y se apoya ENCIMA, sobre la repisa del trapecio, 3,9 cm por
+ *    delante de la espalda. Es un apoyo VERTICAL, sobre el hombro.
+ *
+ * Por eso los dos no se resuelven igual: uno es tangencia contra la superficie
+ * de delante y el otro tangencia sobre la superficie de arriba. Y por eso se
+ * calculan con un rayo contra la malla del tronco en vez de con constantes: el
+ * punto de apoyo es una propiedad de ESE cuerpo, y si mañana se sustituye el
+ * modelo del maniquí, el apoyo se recalcula solo.
  */
-export const ANCLAJE_RACK: Record<"frontal" | "trasera", [number, number, number]> = {
-  frontal: [0, 4.8, 11.9],
-  trasera: [0, 6.9, -5.7],
-};
+export const APOYO_RACK = {
+  /** Frontal: cuánto por debajo de lo alto del pecho pasa el eje (cm a 175). */
+  frontalBajoElHombro: 2.4,
+  /** Trasera: cuánto por delante de la espalda pasa el eje (cm a 175). */
+  traseraDesdeLaEspalda: 3.9,
+  /** A qué distancia de la línea media se busca el apoyo (cm a 175). */
+  medioAgarre: 9.8,
+} as const;
 
 export interface EjercicioBarra {
   id: string;
@@ -115,6 +141,123 @@ export interface ApoyosBarra {
   tronco: THREE.Quaternion;
   /** Talla del maniquí en cm: los desplazamientos medidos escalan con ella. */
   alturaCm: number;
+  /**
+   * Punto de apoyo sobre el tronco YA EN EL MUNDO (solo racks). Lo calcula el
+   * editor una vez con `apoyoEnElTronco` y lo transforma cada fotograma con la
+   * matriz del tronco, que es barato; lanzar rayos por fotograma no lo sería.
+   */
+  apoyoTronco?: THREE.Vector3 | null;
+}
+
+/**
+ * PUNTO DE APOYO DE LA BARRA sobre el tronco, en coordenadas LOCALES de esa
+ * malla.
+ *
+ * Es local a propósito: el contacto es una propiedad de la GEOMETRÍA del
+ * tronco, no de la postura. Calculado una vez, vale para todo el recorrido —
+ * el tronco gira y el apoyo gira con él— y no hay que lanzar rayos en cada
+ * fotograma.
+ */
+/**
+ * TANGENCIA EXACTA de un cilindro horizontal contra una nube de puntos.
+ *
+ * Aquí estaba el error que se veía en las capturas: yo colocaba la barra a la
+ * distancia de UN punto muestreado con un rayo, pero la barra es un cilindro
+ * tumbado y toca por donde le da la gana — basta que un vértice del hombro
+ * quede más adelantado que el punto que muestreé para que la barra entre en la
+ * carne. Con esto no hay muestreo: se calcula, para cada vértice que cae
+ * dentro del ancho del cilindro, la cota a la que dejaría de tocarlo, y se
+ * toma la más exigente de todas.
+ *
+ * `eje` dice qué coordenada se desliza: "z" acerca la barra por delante
+ * (apoyo de la sentadilla frontal) y "y" la baja desde arriba (apoyo de la
+ * trasera, sobre el trapecio).
+ */
+function tangencia(
+  puntos: THREE.Vector3[],
+  eje: "y" | "z",
+  fijo: number,
+  radio: number,
+): number {
+  let cota = -Infinity;
+  for (const v of puntos) {
+    const transversal = eje === "z" ? v.y - fijo : v.z - fijo;
+    const dentro = radio * radio - transversal * transversal;
+    if (dentro <= 0) continue; // fuera del ancho del cilindro: no puede tocarlo
+    const c = (eje === "z" ? v.z : v.y) + Math.sqrt(dentro);
+    if (c > cota) cota = c;
+  }
+  return cota;
+}
+
+/** Vértices de una malla llevados al sistema local de otra. */
+function verticesEn(malla: THREE.Mesh, destino: THREE.Mesh): THREE.Vector3[] {
+  const pos = malla.geometry.attributes.position as THREE.BufferAttribute;
+  malla.updateMatrixWorld();
+  destino.updateMatrixWorld();
+  const out: THREE.Vector3[] = [];
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).applyMatrix4(malla.matrixWorld);
+    out.push(destino.worldToLocal(v.clone()));
+  }
+  return out;
+}
+
+/**
+ * PUNTO DE APOYO DE LA BARRA sobre el cuerpo, en coordenadas LOCALES del
+ * tronco.
+ *
+ * Es local a propósito: el contacto es una propiedad de la GEOMETRÍA, no de la
+ * postura. Calculado una vez, vale para todo el recorrido —el tronco gira y el
+ * apoyo gira con él— y no hay que recalcular nada por fotograma.
+ *
+ * Los dos racks NO se resuelven igual, y es lo que enseña el .obj del
+ * diseñador: en la frontal el cuello queda el 100 % por DETRÁS del eje de la
+ * barra y el pecho la toca a los lados de la línea media —apoyo horizontal
+ * contra clavículas y deltoides—; en la trasera el 80 % del cuerpo cercano
+ * queda por DELANTE —la barra va detrás del cuello y se apoya ENCIMA, sobre la
+ * repisa del trapecio—.
+ */
+export function apoyoEnElTronco(
+  tronco: THREE.Mesh,
+  cuello: THREE.Mesh | null,
+  agarre: "frontal" | "trasera",
+  radioBarra: number,
+  refs: { cuelloY: number; hombroY: number; cuelloZ: number },
+): THREE.Vector3 {
+  const geo = tronco.geometry;
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const bb = geo.boundingBox as THREE.Box3;
+
+  const puntos: THREE.Vector3[] = [];
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) puntos.push(v.fromBufferAttribute(pos, i).clone());
+  if (cuello) puntos.push(...verticesEn(cuello, tronco));
+
+  if (agarre === "frontal") {
+    // ALTURA DE LA CLAVÍCULA: por debajo de la base del cuello y por encima
+    // del hombro. Ahí es donde se apoya la barra en un rack frontal, y no en
+    // lo alto del tronco —que en este cuerpo es ya el trapecio— ni a la altura
+    // del hombro, que es el pecho.
+    const y = refs.cuelloY - (refs.cuelloY - refs.hombroY) * 0.3;
+    const z = tangencia(puntos, "z", y, radioBarra);
+    return new THREE.Vector3(0, y, Number.isFinite(z) ? z : bb.max.z + radioBarra);
+  }
+
+  // DETRÁS DEL CUELLO: la barra se mete entre la nuca y el trapecio, así que
+  // primero se busca hasta dónde llega el cuello hacia atrás y la barra se
+  // pone justo detrás; luego se deja caer hasta que se apoya.
+  let nucaZ = refs.cuelloZ;
+  if (cuello) {
+    for (const p of verticesEn(cuello, tronco)) {
+      if (p.y > refs.hombroY && p.z < nucaZ) nucaZ = p.z;
+    }
+  }
+  const z = nucaZ - radioBarra;
+  const y = tangencia(puntos, "y", z, radioBarra);
+  return new THREE.Vector3(0, Number.isFinite(y) ? y : bb.max.y + radioBarra, z);
 }
 
 /**
@@ -132,25 +275,28 @@ export function sitioDeLaBarra(
 ): { pos: THREE.Vector3; quat: THREE.Quaternion } {
   const izq = agarre === "manos" ? a.manoL : a.hombroL;
   const der = agarre === "manos" ? a.manoR : a.hombroR;
-  const pos = izq.clone().add(der).multiplyScalar(0.5);
 
-  if (agarre !== "manos") {
-    const d = ANCLAJE_RACK[agarre];
-    const k = a.alturaCm / TALLA_REFERENCIA;
-    pos.add(new THREE.Vector3(d[0] * k, d[1] * k, d[2] * k).applyQuaternion(a.tronco));
-  }
-
-  // El eje mayor de la barra: de un apoyo al otro. Si los dos coincidieran
-  // —imposible en un cuerpo, pero no en una postura corrupta— se cae al eje X
-  // del tronco en vez de devolver un cuaternión inválido.
+  // El EJE de la barra sale de la línea que une los dos apoyos, no de una
+  // horizontal fija: si el maniquí está girado en la escena, o una postura
+  // queda asimétrica, la barra acompaña.
   let eje = der.clone().sub(izq);
   if (eje.lengthSq() < 1e-6) eje = new THREE.Vector3(1, 0, 0).applyQuaternion(a.tronco);
   eje.normalize();
-
   // La malla de la barra es un cilindro tumbado sobre su eje Y local, así que
   // lo que hay que llevar sobre `eje` es +Y.
   const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
-  return { pos, quat };
+
+  // En los racks el sitio NO se deduce de los hombros: es el punto de apoyo
+  // sobre el tronco, calculado por contacto y llevado al mundo con la matriz
+  // del propio tronco. Sin apoyo —tronco todavía sin cargar— se cae al punto
+  // medio de los hombros, que al menos deja la barra a la altura correcta.
+  if (agarre !== "manos") {
+    const pos = a.apoyoTronco
+      ? a.apoyoTronco.clone()
+      : izq.clone().add(der).multiplyScalar(0.5);
+    return { pos, quat };
+  }
+  return { pos: izq.clone().add(der).multiplyScalar(0.5), quat };
 }
 
 /** Un sitio de la escena donde una barra puede quedarse apoyada. */

@@ -5,6 +5,50 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.82] — 2026-08-18
+
+### Corregido
+
+**Los puntos de apoyo de la barra en los dos racks: estaba METIDA en el
+cuerpo.** Lo señaló el diseñador sobre una captura, y al medirlo era cierto: la
+barra entraba 1,3 cm en el pecho en la sentadilla frontal y 0,9 en el tronco y
+1,1 en el brazo en la trasera. Se veía apoyada y estaba dentro.
+
+La causa era el método. La colgaba de un desplazamiento medido contra la
+ARTICULACIÓN DEL HOMBRO, y el hombro de un cuerpo escaneado no tiene un centro
+evidente: según se estime por el eje de la malla o por la costura con el pecho,
+se mueve cinco centímetros. Con ese error de partida, cualquier constante que
+saliera de ahí colocaba mal la barra.
+
+**Ahora el apoyo se calcula por CONTACTO contra la propia malla del maniquí**,
+que es lo que dice el .obj del diseñador cuando se le pregunta bien: en la
+frontal el cuello queda el 100 % por detrás del eje de la barra y el pecho la
+toca a los lados de la línea media —apoyo HORIZONTAL contra clavículas y
+deltoides—; en la trasera el 80 % del cuerpo cercano queda por delante —la
+barra va detrás del cuello y se apoya ENCIMA, sobre la repisa del trapecio—.
+Son dos apoyos de naturaleza distinta y ahora se resuelven distinto.
+
+Y se resuelve con TANGENCIA EXACTA, no muestreando puntos: la barra es un
+cilindro tumbado y toca por donde le da la gana, así que basta que un vértice
+del hombro quede más adelantado que el punto muestreado para que entre en la
+carne. Para cada vértice que cae dentro del ancho del cilindro se calcula la
+cota a la que dejaría de tocarlo y se toma la más exigente de todas.
+
+El cálculo se hace UNA VEZ y se guarda en coordenadas del tronco: el contacto
+es propiedad de la geometría, no de la postura, así que el tronco gira y el
+apoyo gira con él. Si mañana se sustituye el modelo del maniquí, el apoyo se
+recalcula solo.
+
+Resultado: tronco 0,0 cm en las dos —apoyada, ni hundida ni flotando—, cuello y
+cabeza libres, y la mano sobre la barra.
+
+### Pruebas
+
+`prueba-barra-maniqui.mjs` sube a 35 comprobaciones con la guardia que faltaba:
+mide la distancia de cada vértice del segmento al EJE de la barra y se queda
+con la menor. Cero es apoyada; negativo, dentro de la carne. Es la que habría
+cazado el fallo original, que no se veía en ninguna captura.
+
 ## [0.2.81] — 2026-08-18
 
 **La barra en manos del maniquí.** Hasta aquí la figura posaba sola: se le daba
