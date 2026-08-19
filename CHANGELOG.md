@@ -5,6 +5,94 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.96] — 2026-08-19
+
+La cinemática de los gestos, no solo sus extremos.
+
+### Corregido
+
+**El pie es un anclaje y deja de derrapar en la sentadilla.** El fallo no era el
+que parecía: el CENTRO del pie apenas se movía —0,23 cm, y por eso el plantado
+por traslación lo daba por bueno— pero el pie GIRABA 34,98° sobre sí mismo al
+bajar y volvía a 0° al subir. La punta viajaba 10,13 cm y el talón 9,82 cm en
+sentido contrario, alrededor de un punto situado a 29,43 cm del centro del pie:
+fuera del pie. No pivotaba, derrapaba — casi 20 cm de arrastre por pie y
+repetición. Y en el fondo la planta apoyaba de canto (892 → 256 vértices en
+contacto) y flotaba 0,27 cm: lo que tocaba el suelo era el collarín.
+
+Se resuelve la pierna de pie como sistema, con el fondo del modelo INTACTO
+(cadera −78,61/3/−36,5 y los 126° de rodilla), pidiendo la misma orientación del
+pie en el mundo y la misma separación entre pies — las dos únicas cosas que una
+traslación no puede arreglar. Medido por la ruta real, frontal y trasera:
+puntera y talón **0,00 cm**, rumbo **0,00°**, normal de la planta 1,000, suela
+pegada al suelo, 892 vértices de contacto. La puntera sigue abierta 35,6° (el
+modelo da 36,2) y la barra baja a plomo.
+
+De pie la apertura ahora **se declara** con rotación axial de cadera: el tobillo
+de este esqueleto no tiene eje Y, así que con la rodilla recta no puede salir de
+la abducción. En el fondo se sigue cayendo de la cadena.
+
+**El peso muerto se mueve como un peso muerto.** Las dos posturas extremas eran
+correctas; lo que pasaba entre ellas, no. La zona «bisagra» solo repartía cadera
+y espalda —la RODILLA no estaba en el patrón— así que se quedaba clavada en
+94,80° durante los 22 pasos del gesto: la extensión de rodilla no ocurría nunca.
+Nadie anclaba el pie dentro del paso, de modo que la punta barría 120,81 cm, el
+talón 78,37 y la planta se despegaba 11,54 cm; la barra acababa 121,44 cm por
+delante del medio del pie. Y el gesto moría donde topaba la primera articulación
+(cadera en +30°), con la barra 24,89 cm por debajo del bloqueo, después de haber
+subido y vuelto a BAJAR 10,15 cm.
+
+Un ejercicio deja de ser un reparto y pasa a ser un **calendario**: una lista de
+fases, cada una con su patrón, su META —una postura de la biblioteca, que es la
+única fuente de verdad— y un umbral que se lee del mundo en cada paso. El peso
+muerto son dos: **tirón**, donde manda la rodilla y el tronco sostiene, hasta que
+la barra pasa por encima de la rótula; y **bloqueo**, donde mandan la espalda y
+la cadera. Medido: barra 21,87 → 81,08 cm sin retroceder nunca, desvío de la
+vertical 0,22 cm, punta y talón 0,00, y aterrizaje exacto en el bloqueo aprobado.
+
+**Y los brazos cuelgan como cuerdas.** El hombro deja de ser un ángulo del
+reparto: se resuelve en cada paso para que la mano caiga sobre la vertical del
+medio del pie, que es la regla sagital del ejercicio. Antes el brazo arrancaba ya
+a 11,52° de la plomada y acababa a 56,94° — un puntal, no una cuerda.
+
+**El press vertical esquiva la cabeza.** La barra subía en vertical
+atravesándola, y moría con el codo bloqueado y el hombro a medio camino (−128°
+de −166°), 36,41 cm por delante y 26,21 por debajo del bloqueo. Con el peso de
+hombro del ejercicio (126,00/141,18, la razón exacta entre sus dos posturas
+aprobadas) y la META como criterio de parada, la trayectoria sale sola: la barra
+se aleja del rostro hasta 11,62 cm a la altura de la coronilla y vuelve a la
+vertical sobre la línea de equilibrio (0,10 cm), subiendo de 153,33 a 190,82 cm
+sin retroceder. Es la sigmoide pedida. La penetración en la cabeza queda en el
+roce de la barbilla al salir del rack (8 pasos de 31, máximo 1,42 cm), y arranca
+de los 0,82 cm que **la propia postura aprobada** ya trae.
+
+**Y la simetría del posado vuelve a funcionar.** «Al posar el maniquí no se está
+reconociendo la instrucción de simetría»: la casilla quedaba marcada, el lado
+elegido giraba y el otro no. La figura nace con todo bloqueado menos la zona
+activa, así que posar una cadera encontraba a su gemela con candado y el espejo
+se saltaba en silencio. Era incoherente consigo mismo: escribir grados en la
+articulación elegida ignora el candado a propósito, copiarlos al otro lado lo
+respetaba. El candado dice qué mueve el gesto al SIMULAR; posar es otra cosa.
+
+### Verificación
+
+Dos pruebas nuevas. `prueba-pie-anclado` (18 aserciones) mide punta, talón,
+rumbo, planta, suela y el ciclo de vuelta en las dos sentadillas. `prueba-gesto-
+barra` (34) FILMA los dos gestos paso a paso en vez de mirar sus extremos: barra
+a plomo, orden rodilla→cadera, pies clavados durante todo el recorrido,
+aterrizaje en las posturas aprobadas, la sigmoide del press y la penetración en
+la cabeza medida por intersección real contra la malla. Incluye un bloque de NO
+REGRESIÓN que comprueba que una zona sin plan da exactamente el paso de siempre
+(rodilla 5,00°, cadera 4,50°).
+
+Cuatro aserciones nuevas de simetría en `ergonomia-v256` que exigen que el otro
+lado se MUEVA, no solo que la bandera cambie — que es por lo que el fallo pasó.
+
+Verdes también `sentadilla`, `levantamiento`, `zonas`, `barra-maniqui`,
+`posar-apoyar`, `apoyos`, `v245`, `v251`, `maquina-entera` y `partida-plano`.
+`manip-artic` sale en rojo, y está comprobado revirtiendo `src/` a la versión
+anterior que **falla igual sin estos cambios**: es un rojo de entorno.
+
 ## [0.2.95] — 2026-08-19
 
 La pila de pesos deja de ascender entera.

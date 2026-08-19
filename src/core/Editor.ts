@@ -103,13 +103,19 @@ import {
   type PoseDef,
 } from "../objects/poseLibrary";
 import {
+  PLANES,
   ZONAS,
   ZONA_POR_ID,
+  articulacionesDePlan,
   articulacionesDeZona,
   ladosDe,
   nombresDeFamilia,
+  type AcomodacionMov,
+  type FaseMov,
   type LadoZona,
+  type PlanMov,
   type SentidoMov,
+  type UmbralFase,
   type ZonaId,
 } from "../objects/movimientos";
 import { degToRad, radToDeg, roundTo } from "../core/units";
@@ -2927,6 +2933,7 @@ export class Editor {
     // La barra del maniquí se va con las piezas: dejar el enlace vivo apuntaba
     // a un id que ya no existe.
     this.barraManiqui = null;
+    this.planActivo = null;
     this.apoyoBarraLocal = null;
     this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
     this.partidaPiezas = null;
@@ -3582,6 +3589,7 @@ export class Editor {
   /** Vuelve a la zona de fábrica (tren superior a los dos lados). */
   private reiniciarZonas(): void {
     this.zonasActivas = new Map([["superior", "sim"]]);
+    this.planActivo = null;
     this.pitchAcomodacion.clear();
     this.poseDePartida = null;
     this.transformDePartida = null;
@@ -3603,12 +3611,26 @@ export class Editor {
     this.candadosDesdeZonas();
   }
 
+  /**
+   * PLAN DEL GESTO PUESTO (v0.2.96), si el ejercicio tiene uno. Dice en qué
+   * ORDEN se abren las articulaciones y HASTA DÓNDE; la zona solo dice cuáles.
+   * Sin plan, `moverPrimitiva` recorre exactamente el camino de siempre.
+   */
+  private planActivo: PlanMov | null = null;
+
   /** Recalcula el candado articular a partir de las zonas activas. */
   private candadosDesdeZonas(): void {
     const libres = new Set<string>();
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
       if (z) for (const n of articulacionesDeZona(z, lado)) libres.add(n);
+    }
+    // EL PLAN ABRE SU PROPIO CANDADO. La `bisagra` solo libera columna y
+    // caderas, y por eso la rodilla del peso muerto no se movía NUNCA: el
+    // candado la vetaba antes de que el reparto llegara a ella.
+    if (this.planActivo) {
+      const lado = this.zonasActivas.get(this.planActivo.zona) ?? "sim";
+      for (const n of articulacionesDePlan(this.planActivo, lado)) libres.add(n);
     }
     this.jointLocks = new Set(Object.keys(JOINT_DOF).filter((n) => !libres.has(n)));
     this.pitchAcomodacion.clear();
@@ -3637,16 +3659,110 @@ export class Editor {
     return suma;
   }
 
-  /** ¿Le queda recorrido a esta articulación en el sentido pedido? */
+  /**
+   * ¿Le queda recorrido a esta articulación en el sentido pedido?
+   *
+   * CON META, EL GESTO TERMINA DONDE TERMINA EL EJERCICIO, no donde topa la
+   * anatomía. Sin ella el peso muerto moría con la cadera en su tope de +30° y
+   * la barra 24,89 cm por debajo del bloqueo, y el press moría con el codo
+   * bloqueado y el hombro a medio camino (−128° de −166°).
+   */
   private leQuedaRecorrido(
     joints: Record<string, THREE.Object3D>,
     nombre: string,
     signo: number,
+    meta?: number,
   ): boolean {
     const lim = JOINT_DOF[nombre]?.x;
     if (!lim || !joints[nombre]) return false;
     const a = radToDeg(joints[nombre].rotation.x);
-    return signo > 0 ? a < lim[1] - 1e-3 : a > lim[0] + 1e-3;
+    const techo = meta === undefined ? lim[1] : Math.min(lim[1], meta);
+    const suelo = meta === undefined ? lim[0] : Math.max(lim[0], meta);
+    return signo > 0 ? a < techo - 1e-3 : a > suelo + 1e-3;
+  }
+
+  /**
+   * LA FASE EN LA QUE ESTÁ EL GESTO, leída del MUNDO y no de un contador.
+   *
+   * Es lo que permite que la tracción recorra las mismas fases al revés sin
+   * guardar estado, y que cambiar de zona o de ejercicio a mitad de camino no
+   * deje nada desincronizado: la siguiente pulsación simplemente vuelve a
+   * mirar dónde está la barra.
+   */
+  private faseActiva(
+    joints: Record<string, THREE.Object3D>,
+    sentido: number,
+  ): { fase: FaseMov; i: number } | null {
+    const plan = this.planActivo;
+    if (!plan || plan.fases.length === 0) return null;
+    if (sentido > 0) {
+      for (let i = 0; i < plan.fases.length; i++) {
+        if (!this.umbralCruzado(plan.fases[i].hasta, joints)) return { fase: plan.fases[i], i };
+      }
+      return { fase: plan.fases[plan.fases.length - 1], i: plan.fases.length - 1 };
+    }
+    for (let i = plan.fases.length - 1; i >= 0; i--) {
+      if (this.umbralCruzado(plan.fases[i].hasta, joints)) return { fase: plan.fases[i], i };
+    }
+    return { fase: plan.fases[0], i: 0 };
+  }
+
+  private umbralCruzado(u: UmbralFase, joints: Record<string, THREE.Object3D>): boolean {
+    if (u.tipo === "meta") return false;
+    if (u.tipo === "angulo") {
+      const ns = u.familia === "spine" || u.familia === "neck"
+        ? [u.familia]
+        : [`${u.familia}L`, `${u.familia}R`];
+      const vs = ns.filter((n) => joints[n]).map((n) => radToDeg(joints[n].rotation.x));
+      if (vs.length === 0) return false;
+      const med = vs.reduce((s, v) => s + v, 0) / vs.length;
+      return u.signo > 0 ? med >= u.grados : med <= u.grados;
+    }
+    // «La barra sobre la patela». Se mide el punto medio de las dos manos, que
+    // es EXACTAMENTE donde `sitioDeLaBarra` pone la barra de agarre en manos,
+    // así que el umbral sigue definido con la barra rackeada o sin barra.
+    const mL = this.centroSegmento("mano-L");
+    const mR = this.centroSegmento("mano-R");
+    const kL = joints.kneeL, kR = joints.kneeR;
+    if (!mL || !mR || !kL || !kR) {
+      // Respaldo por ángulo: el mismo punto, medido (cadera −23,77°).
+      return this.umbralCruzado(
+        { tipo: "angulo", familia: "hip", grados: -23.77, signo: 1 },
+        joints,
+      );
+    }
+    const yMano = (mL.y + mR.y) / 2;
+    const yRodilla =
+      (kL.getWorldPosition(new THREE.Vector3()).y + kR.getWorldPosition(new THREE.Vector3()).y) / 2;
+    return yMano >= yRodilla;
+  }
+
+  /** Ángulos X objetivo de la fase, leídos de las posturas de la biblioteca. */
+  private metasDeFase(i: number, sentido: number): Record<string, number> | null {
+    const plan = this.planActivo;
+    if (!plan) return null;
+    const nombre = sentido > 0
+      ? plan.fases[i].meta
+      : i > 0 ? plan.fases[i - 1].meta : plan.origen;
+    const def = getPose(nombre);
+    if (!def) return null;
+    // LA META ES LA POSTURA ENTERA, no solo lo que nombra. `applyPose` pone a
+    // CERO todo lo que la postura no menciona, así que una articulación ausente
+    // no es «da igual»: es cero. Sin esto, «Peso muerto (bloqueo)» —que solo
+    // declara cuello y hombros— dejaba a la columna sin meta y el gesto la
+    // llevaba hasta su tope de −30°, muy pasado de vertical, con el hombro tan
+    // atrás que el brazo ya no podía colgar a plomo (50,66° de desvío medidos).
+    const out: Record<string, number> = {};
+    for (const n of Object.keys(JOINT_DOF)) out[n] = 0;
+    for (const [art, v] of Object.entries(def)) out[art] = v[0];
+    return out;
+  }
+
+  /** Fase activa en texto, para la interfaz («Bisagra · tirón»). */
+  faseDelGesto(): string | null {
+    const joints = this.figureJoints();
+    if (!joints || !this.planActivo) return null;
+    return this.faseActiva(joints, 1)?.fase.es ?? null;
   }
 
   /**
@@ -3682,6 +3798,14 @@ export class Editor {
     // paso (la máquina no se mueve entremedias).
     this.cajasEstructura = this.physics ? this.cajasCercaDeLaFigura() : null;
 
+    // LA HUELLA, ANTES DE TOCAR NADA. Es contra ella contra la que se replanta
+    // al final del paso: los pies son un ANCLAJE y no pueden barrer el suelo.
+    const huella = this.huellaDeLosPies();
+    // ¿Hay CALENDARIO para este gesto? Sin plan, todo lo de abajo se comporta
+    // exactamente como siempre y ninguna máquina se entera de este cambio.
+    const act = this.faseActiva(joints, sentido);
+    const metas = act ? this.metasDeFase(act.i, sentido) : null;
+
     // 1) Reparto del paso entre las articulaciones de todas las zonas.
     //
     // Cada zona tiene una articulación que MANDA (peso 1: el codo empuja, la
@@ -3689,54 +3813,96 @@ export class Editor {
     // llega a su tope: un press acaba al bloquear el codo, no cuando al hombro
     // se le acaba el rango 90° después. Sin este freno el hombro seguía
     // flexionando con el brazo ya estirado y se iba por encima de la cabeza.
+    //
+    // CON PLAN, «su tope» pasa a ser LA META de la fase, que sale de una
+    // postura aprobada; y los pesos dejan de ser fijos: se derivan de lo que le
+    // falta a cada articulación para llegar. Eso lo hace autocorrector — si una
+    // topa, las demás siguen apuntando a su meta y el gesto aterriza igual— e
+    // impide pasarse de largo, porque el signo lo pone la propia meta.
     const delta = new Map<string, number>();
+    const tope = new Map<string, number>();
     const acomodar: { nombre: string; cadena: string[]; objetivo: number }[] = [];
+    const plomada: string[] = [];
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
       if (!z) continue;
-      const lider = z.patron.find((a) => a.peso >= 1) ?? null;
+      const conPlan = act !== null && metas !== null && id === this.planActivo?.zona;
+      const patron = conPlan ? act!.fase.patron : z.patron;
+      const acomodaciones: AcomodacionMov[] = conPlan
+        ? act!.fase.acomodaciones ?? []
+        : z.acomodacion
+          ? [{ tipo: "pitch", familia: z.acomodacion.familia, cadena: z.acomodacion.cadena, es: z.acomodacion.es, en: z.acomodacion.en }]
+          : [];
+      const lider = patron.find((a) => a.peso >= 1) ?? null;
       const centrales = new Set<string>(); // las articulaciones sin lado, una vez
+      // Cuánto le falta al líder para su meta: es el patrón de medir del resto.
+      const faltaDe = (n: string): number =>
+        metas && metas[n] !== undefined && joints[n]
+          ? metas[n] - radToDeg(joints[n].rotation.x)
+          : 0;
       for (const l of ladosDe(lado)) {
         if (lider) {
           const mandan = nombresDeFamilia(lider.familia, lider.bilateral, l).filter(
             (n) => JOINT_DOF[n]?.x && joints[n] && !this.jointLocks.has(n),
           );
           const dir = sentido * lider.empuje;
-          if (mandan.length && !mandan.some((n) => this.leQuedaRecorrido(joints, n, dir))) {
+          if (
+            mandan.length
+            && !mandan.some((n) =>
+              this.leQuedaRecorrido(joints, n, conPlan ? Math.sign(faltaDe(n)) || dir : dir,
+                conPlan ? metas![n] : undefined))
+          ) {
             continue; // esta zona ya agotó su recorrido por este lado
           }
         }
-        for (const a of z.patron) {
+        const faltaLider = lider
+          ? Math.max(
+            ...nombresDeFamilia(lider.familia, lider.bilateral, l).map((n) => Math.abs(faltaDe(n))),
+          )
+          : 0;
+        for (const a of patron) {
           for (const n of nombresDeFamilia(a.familia, a.bilateral, l)) {
             if (!JOINT_DOF[n]?.x || !joints[n] || this.jointLocks.has(n)) continue;
             if (!a.bilateral) {
               if (centrales.has(n)) continue; // la columna no cuenta dos veces
               centrales.add(n);
             }
-            delta.set(n, (delta.get(n) ?? 0) + sentido * a.empuje * a.peso * pasoDeg);
+            if (conPlan && metas![n] !== undefined) {
+              const falta = faltaDe(n);
+              const peso = faltaLider > 1e-3
+                ? Math.min(4, Math.abs(falta) / faltaLider)
+                : a.peso;
+              delta.set(n, (delta.get(n) ?? 0) + Math.sign(falta) * peso * pasoDeg);
+              tope.set(n, metas![n]);
+            } else {
+              delta.set(n, (delta.get(n) ?? 0) + sentido * a.empuje * a.peso * pasoDeg);
+            }
           }
         }
-        if (z.acomodacion) {
-          const nombre = `${z.acomodacion.familia}${l}`;
-          if (joints[nombre] && !this.jointLocks.has(nombre)) {
-            const cadena = z.acomodacion.cadena.map((f) => `${f}${l}`);
-            acomodar.push({
-              nombre,
-              cadena,
-              objetivo: this.objetivoDeAcomodacion(nombre, cadena, joints),
-            });
-          }
+        for (const ac of acomodaciones) {
+          const nombre = `${ac.familia}${l}`;
+          if (!joints[nombre] || this.jointLocks.has(nombre)) continue;
+          if (ac.tipo === "plomada") { plomada.push(l); continue; }
+          const cadena = ac.cadena.map((f) => `${f}${l}`);
+          acomodar.push({
+            nombre,
+            cadena,
+            objetivo: this.objetivoDeAcomodacion(nombre, cadena, joints),
+          });
         }
       }
     }
 
-    // 2) Se aplica cada aporte dentro del rango humano de su articulación.
+    // 2) Se aplica cada aporte dentro del rango humano de su articulación, y
+    //    sin rebasar nunca la meta de la fase en el sentido de marcha.
     let n = 0;
     for (const [nombre, d] of delta) {
       const lim = JOINT_DOF[nombre]!.x!;
       const actual = radToDeg(joints[nombre].rotation.x);
-      const nuevo = Math.max(lim[0], Math.min(lim[1], actual + d));
-      if (Math.abs(nuevo - actual) < 1e-3) continue; // tope del rango
+      let nuevo = Math.max(lim[0], Math.min(lim[1], actual + d));
+      const m = tope.get(nombre);
+      if (m !== undefined) nuevo = d > 0 ? Math.min(nuevo, m) : Math.max(nuevo, m);
+      if (Math.abs(nuevo - actual) < 1e-3) continue; // tope del rango o meta
       joints[nombre].rotation.x = degToRad(nuevo);
       n++;
     }
@@ -3759,7 +3925,17 @@ export class Editor {
       n++;
     }
 
+    // 4) LA PLOMADA DEL BRAZO. Va ANTES del reapoyo y del plantado porque es
+    //    una magnitud RELATIVA —mano contra medio del pie, las dos en la
+    //    figura—, así que la traslación global posterior no la altera.
+    for (const l of plomada) if (this.acomodarPlomada(l, joints)) n++;
+
     this.reapoyarFigura();
+    // 5) Y LOS PIES SE QUEDAN DONDE PISAN. Sin esto el peso muerto barría el
+    //    suelo: la punta viajaba 120,81 cm y el talón 78,37, con la planta
+    //    despegada 11,54 cm. `plantarLosPies` se abstiene sola si la figura no
+    //    está en el suelo o si algún pie tiene apoyo propio.
+    this.plantarLosPies(huella);
     const antes = this.contactoConEstructura;
     this.contactoConEstructura = this.medirChoqueConEstructura();
     this.cajasEstructura = null;
@@ -3783,6 +3959,81 @@ export class Editor {
     this.requestRender();
     this.scheduleAutosave();
     return n;
+  }
+
+  /**
+   * EL BRAZO CUELGA COMO UNA CUERDA (v0.2.96).
+   *
+   * «Los brazos no cuelgan con normalidad: deben operar como cuerdas, que
+   * soportan la barra desde el punto de anclaje del hombro». Una cuerda no
+   * tiene ángulo propio: cuelga. Así que el hombro deja de ser un valor del
+   * reparto y se RESUELVE en cada paso para que la mano caiga sobre la vertical
+   * del medio del pie, que es la regla sagital del peso muerto.
+   *
+   * Se resuelve por bisección sobre el ángulo del hombro midiendo el centro de
+   * la mano en vivo, y no con una fórmula: el largo del brazo lo pone el rig y
+   * cambia con la talla. Es una sola pasada, sin iterar con nada más, porque
+   * girar el hombro no mueve el propio pivote del hombro.
+   *
+   * Y se abstiene donde no tiene sentido: sin figura en el suelo, sin huella o
+   * con un pie con apoyo propio no hay vertical que perseguir.
+   */
+  private acomodarPlomada(lado: string, joints: Record<string, THREE.Object3D>): boolean {
+    const fig = this.humanFigure;
+    const hombro = joints[`shoulder${lado}`];
+    if (!fig || !hombro || this.figuraApoyadaEn !== "suelo" || this.footTargets.size > 0) return false;
+    const huella = this.huellaDeLosPies();
+    if (!huella) return false;
+    const lim = JOINT_DOF[`shoulder${lado}`]?.x;
+    if (!lim) return false;
+    // El blanco, en el marco SAGITAL de la figura: así vale con el maniquí
+    // girado en la escena.
+    const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
+    const medio = huella.L.clone().add(huella.R).multiplyScalar(0.5);
+    const blanco = medio.dot(adelante);
+    const desvio = (deg: number): number => {
+      hombro.rotation.x = degToRad(deg);
+      fig.updateMatrixWorld(true);
+      const mano = this.centroSegmento(`mano-${lado}`);
+      return mano ? mano.dot(adelante) - blanco : 0;
+    };
+    const original = radToDeg(hombro.rotation.x);
+    // LA RAÍZ SE BUSCA CERCA, y no en todo el rango. El brazo da la vuelta
+    // entera: barriendo el hombro de −180° a +60° la mano cruza la vertical
+    // DOS veces, así que una bisección global puede elegir la rama absurda —el
+    // brazo plegado por encima de la cabeza— o, peor, ver el mismo signo en los
+    // dos extremos y rendirse. Medido con el tronco a 8°: −180° da −2,61 cm y
+    // +60° da −59,17, mismos signos, con dos raíces en medio. Se abre un
+    // corchete desde donde está el hombro AHORA hacia los dos lados: esa es la
+    // solución continua, la que un brazo puede recorrer sin teletransportarse.
+    let a = original, b = original;
+    const f0 = desvio(original);
+    let hay = false;
+    if (Math.abs(f0) < 1e-4) hay = true;
+    for (let d = 2; d <= 240 && !hay; d += 2) {
+      const arriba = Math.min(lim[1], original + d);
+      const abajo = Math.max(lim[0], original - d);
+      if (desvio(arriba) * f0 <= 0) { a = original; b = arriba; hay = true; break; }
+      if (desvio(abajo) * f0 <= 0) { a = abajo; b = original; hay = true; break; }
+      if (arriba === lim[1] && abajo === lim[0]) break;
+    }
+    if (!hay) {
+      // No hay plomada alcanzable: se deja como estaba y se avisa por el mismo
+      // canal que el tobillo cuando se queda sin recorrido.
+      hombro.rotation.x = degToRad(original);
+      fig.updateMatrixWorld(true);
+      this.acomodacionAlLimite = true;
+      return false;
+    }
+    const fa = desvio(a);
+    for (let i = 0; i < 40; i++) {
+      const m = (a + b) / 2;
+      if (desvio(m) * fa > 0) a = m; else b = m;
+    }
+    const sol = (a + b) / 2;
+    hombro.rotation.x = degToRad(sol);
+    fig.updateMatrixWorld(true);
+    return Math.abs(sol - original) > 1e-3;
   }
 
   /** Modo de gizmo que corresponde a la herramienta activa. */
@@ -4591,6 +4842,7 @@ export class Editor {
     // escena —es una pieza más y puede seguir siendo útil— pero suelta.
     if (this.barraManiqui && !rehaciendo) {
       this.barraManiqui = null;
+      this.planActivo = null;
       this.apoyoBarraLocal = null;
       this.bus.emit("barraManiquiChanged", {
         objectId: null,
@@ -6036,6 +6288,7 @@ export class Editor {
       // La pieza se borró o el ejercicio ya no existe: se suelta el enlace en
       // vez de arrastrar una referencia muerta frame tras frame.
       this.barraManiqui = null;
+      this.planActivo = null;
       this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
       return;
     }
@@ -6149,6 +6402,9 @@ export class Editor {
   /** Deja armada SOLO la zona de movimiento del ejercicio, en los dos lados. */
   private armarZonaDelEjercicio(ej: EjercicioBarra): void {
     for (const z of ZONAS) this.activarZona(z.id, null);
+    // EL PLAN VA ANTES DE ENCENDER LA ZONA: es `activarZona` quien recalcula
+    // los candados, y el plan tiene que estar puesto para que abra los suyos.
+    this.planActivo = PLANES[ej.id] ?? null;
     this.activarZona(ej.zona, "sim");
   }
 
@@ -6174,6 +6430,7 @@ export class Editor {
     const enlace = this.barraManiqui;
     if (!enlace) return;
     this.barraManiqui = null;
+    this.planActivo = null;
     if (borrar) {
       const obj = this.objects.get(enlace.objectId);
       if (obj) this.removeObject(obj);

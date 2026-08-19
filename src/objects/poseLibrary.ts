@@ -300,6 +300,35 @@ export const BUILTIN_POSES: PoseMap = {
     neck: [-51.8, 0, 0],
   },
   /**
+   * HITO DEL PESO MUERTO (v0.2.96): el punto donde la barra alcanza la rótula.
+   *
+   * No es un extremo del gesto — es la FRONTERA entre sus dos mitades, la que
+   * describió el diseñador: «extensión de rodillas hasta subir la barra sobre
+   * la patela, luego extensión de cadera para llevar la barra a nivel de la
+   * pelvis». Sin un punto intermedio no hay manera de decir «hasta aquí manda
+   * la rodilla», y el gesto salía con la rodilla clavada todo el recorrido.
+   *
+   * No se estima a ojo, como los otros: sale de DOS REGLAS MEDIBLES. La barra
+   * queda 1,10 cm por encima del pivote de la rodilla —eso es «sobre la
+   * patela»— y la TIBIA queda vertical, que es `cadera + rodilla = 0` en este
+   * rig. Con esas dos, los ángulos de pierna quedan determinados, y la barra
+   * cae a 0,00 cm del medio del pie: sigue a plomo, como manda la regla
+   * sagital del ejercicio.
+   *
+   * El tronco NO se mueve respecto del suelo (los mismos 78°): en el tirón de
+   * un peso muerto la cadera y el hombro suben a la vez y el ángulo del tronco
+   * se conserva. El hombro de aquí es solo una semilla — durante el gesto lo
+   * resuelve la plomada en cada paso, porque el brazo es una cuerda.
+   */
+  "Peso muerto (rodilla)": {
+    spine: [78, 0, 0],
+    hipL: [-23.77, 0, 0], hipR: [-23.77, 0, 0],
+    kneeL: [23.77, 0, 0], kneeR: [23.77, 0, 0],
+    ankleL: [0, 0, 0], ankleR: [0, 0, 0],
+    shoulderL: [-64.2, 0, 0], shoulderR: [-64.2, 0, 0],
+    neck: [-51.8, 0, 0],
+  },
+  /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.
    *
    * EL CUELLO, A MITAD DE CAMINO, y esto lo decidió el diseñador. Manteniendo
