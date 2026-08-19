@@ -49,13 +49,21 @@ const orden = await p.evaluate(() => {
 console.log("grupos:", JSON.stringify(orden.grupos));
 // BARRA entra entre Postura y Articulación en v0.2.81. El orden de POSAR es el
 // de la tarea real —primero dónde va la figura, luego QUÉ EJERCICIO hace, luego
-// el detalle articular, luego dónde se apoya y al final la partida—, y la barra
-// es parte del «qué ejercicio»: elegirla fija las dos posturas del recorrido y
-// la zona de movimiento. Va después de Postura porque se apoya en ella, y antes
-// de Articulación porque la articulación es el afinado de lo ya elegido.
+// el detalle articular—, y la barra es parte del «qué ejercicio»: elegirla fija
+// las dos posturas del recorrido y la zona de movimiento. Va después de Postura
+// porque se apoya en ella, y antes de Articulación porque la articulación es el
+// afinado de lo ya elegido.
+//
+// LA PARTIDA SE ADELANTA A LOS APOYOS en v0.2.91, y lo pidió el diseñador: «la
+// función de posar máquina debe anteceder a la postura de apoyos (manos y pies)
+// para que sea posible acomodar adecuadamente el modelo en el espacio». Es el
+// orden del gesto real —primero se lleva el mecanismo al punto donde empieza el
+// ejercicio y sólo entonces se pone la mano en el mando— y además el único que
+// funciona: apoyar contra un mando dibujado en su sitio de plano es apoyar en el
+// aire.
 ok(JSON.stringify(orden.grupos)
-    === JSON.stringify(["Postura", "Barra", "Articulación", "Apoyos", "Partida del ejercicio"]),
-  `el orden es Postura → Barra → Articulación → Apoyos → Partida (${orden.grupos.join(" · ")})`);
+    === JSON.stringify(["Postura", "Barra", "Articulación", "Partida del ejercicio", "Apoyos"]),
+  `el orden es Postura → Barra → Articulación → Partida → Apoyos (${orden.grupos.join(" · ")})`);
 ok(orden.antesDelPrimerGrupo.some((t) => /figura/i.test(t)), "1.a — quitar/crear figura arriba del todo");
 ok(orden.antesDelPrimerGrupo.some((t) => /Colocar/.test(t)) &&
    orden.antesDelPrimerGrupo.some((t) => /Agarrar/.test(t)), "1.a — Colocar y Agarrar se mantienen arriba");
