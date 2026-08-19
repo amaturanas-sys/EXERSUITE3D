@@ -5,6 +5,68 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.91] — 2026-08-19
+
+Las tres reglas del levantamiento que pidió el diseñador, el flujo de posar la
+máquina puesto en su orden, y los cuatro defectos que enseñaban sus capturas.
+
+### Añadido
+
+**Hacia dónde mira el maniquí.** Colocar lo adivinaba —midiendo el asiento, o
+apuntando a la máquina fija más cercana— y acierta casi siempre; pero adivinar
+no es decidir. Dos botones de cuarto y un número exacto, en la misma fila que
+«Colocar». La barra y los apoyos acompañan al giro.
+
+**La pisada se fija a la superficie.** `ground()` clavaba el punto más bajo de
+la figura en y=0 —el suelo del proyecto—, no en lo que se está pisando: de pie
+sobre la plataforma de una prensa la planta se hundía en la pieza.
+
+### Corregido
+
+**Los pies se quedan donde pisan.** El rig está enraizado en la pelvis, así que
+flexionar la cadera columpiaba las piernas y eran los PIES los que viajaban por
+el suelo. Entre el bloqueo y el suelo del peso muerto patinaban 27,7 cm hacia
+delante; en las sentadillas se abrían 14,3 cm por lado al bajar.
+
+**La barra sube y baja a plomo.** Con los pies anclados, el recorrido de la
+barra sale de una cuenta: se desplaza lo que se desplace el pie respecto de la
+cadera. De los tres ángulos de la sentadilla DOS ya eran correctos —−78,61 de
+cadera frente a los −79 estimados, 9,01 de tobillo frente a 9—; el que estaba
+mal era el tobillo en X, −43 en vez de −47,39. Cuatro grados de tobillo son
+8,6 cm de barra. La rodilla NO se toca: son los 126° medidos sobre el modelo, y
+la profundidad es consecuencia (43,2 cm).
+
+**Posar la máquina va antes que apoyar, y su partida es del maniquí.** Sin
+maniquí la máquina vuelve a su diseño para seguir dibujando, y ▶ arranca en el
+último fotograma sólo si hay alguien delante. El modo apoyo va ahora por encima
+del guard de simulación y sobrevive a entrar en «▶ Manipular»: antes el botón
+estaba, se pulsaba, y no pasaba nada.
+
+**Las manos agarran.** `brazoMandado` vetaba la IK de mano en cuanto una zona
+activa declarase hombro o codo, y la zona de fábrica es «tren superior»: en una
+UpperMachine la IK no se ejecutaba NUNCA. El veto es del gesto EN MARCHA, no del
+reposo. Además el punto de apoyo se cuantizaba al anclaje más cercano —en un
+cilindro sólo hay tres— y la IK llevaba la muñeca al punto en vez de la palma.
+
+**La postura de un ejercicio trae la barra**, adoptando la que ya esté en la
+escena en vez de sembrar otra, y **la barra no se alabea**: copiaba literalmente
+la recta entre los dos puños, así que rotar un codo 45° la inclinaba y le corría
+el centro 7 cm. Con un codo doblado 60°, ahora 0,00°.
+
+**Parado, las mallas son el DISEÑO.** Llegaron a dibujar la partida encima y fue
+un desastre: `startSimulation` saca de ellas el estado al que volver y construye
+con ellas el mundo físico —los cables miden ahí su reposo y las uniones su
+cero—, así que la máquina arrancaba mal armada y al parar se «restauraba» la
+partida sobre el plano, que se perdía. Cada ▶/⏹ lo empeoraba.
+
+### Verificación
+
+`prueba-levantamiento` (34 comprobaciones) y `prueba-posar-apoyar` (28) miden
+las reglas y los defectos, incluida la que vigila que tres ciclos ▶/⏹ no
+deriven el plano. Verde, junto con `sentadilla`, `barra-maniqui`,
+`posar-maquina`, `press-maquina`, `uppermachine-lib`, `auditoria`, `auditoria2`
+y `800-debug`.
+
 ## [0.2.90] — 2026-08-18
 
 Los once hallazgos de la segunda auditoría, arreglados de raíz y con una
