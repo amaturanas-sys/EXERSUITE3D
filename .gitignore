@@ -12,3 +12,8 @@ src-tauri/target/
 pruebas/salidas/
 pruebas/*.png
 pruebas/*.prefab.json
+# Varias sueltan sus capturas en la RAÍZ, no en pruebas/: se corren desde ahí.
+/hub-*.png
+/sitio-*.png
+/v2*.png
+/ui-*.png

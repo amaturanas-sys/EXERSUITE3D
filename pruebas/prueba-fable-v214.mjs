@@ -1,6 +1,13 @@
-// Revisión Fable de v0.2.14: rack nativo CON cadenas, barra detenida por
-// ellas sin crear nada a mano, barra de sim con etiquetas ES + candado +
-// ángulo, aviso del doblado sin selección, y Marketplace con acciones vivas.
+// Revisión Fable de v0.2.14: rack nativo CON cadenas, barra detenida por ellas
+// sin crear nada a mano, aviso del doblado sin selección, y el Marketplace.
+//
+// Puesta al día en v0.2.95. Llevaba tandas en rojo por DOS trozos que medían
+// una interfaz retirada: el Marketplace de tarjetas (`.mkc-card`, «Ver»,
+// «Solicitar cotización»), que en v0.2.62 pasó a ser EL HUB a pantalla
+// completa; y la barra de simulación con selector focal y cursores ▲▼, que en
+// v0.2.45 dejó su sitio a las teclas 8 EMPUJE / 9 TRACCIÓN sobre la zona activa
+// —eso lo mide ahora `prueba-v245`—. Un rojo que no señala nada acaba
+// enseñando a no mirar los rojos.
 import { chromium } from "playwright-core";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -15,17 +22,28 @@ page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
 await page.waitForTimeout(1000);
 
-// Marketplace: showroom abre la BIBLIOTECA real; botón demo confirma.
-await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(600);
-await page.click(".mkc-card >> nth=0 >> button:has-text('Ver')");
-await page.waitForTimeout(1000);
-const MK1 = await page.evaluate(() => ({ biblioteca: !!document.querySelector(".lib-panel") || document.body.textContent.includes("Biblioteca de modelos") }));
-await page.goto("http://localhost:4174/"); await page.waitForTimeout(800);
-await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(500);
-await page.click("text=📤 Solicitar cotización"); await page.waitForTimeout(300);
+// Marketplace. Desde v0.2.62 la tienda es EL HUB, a pantalla completa y con
+// marco propio: se monta como una capa `.hub` sobre la ventana entera y no
+// comparte navegación con la Home. Lo de antes (`.mkc-card`, «Ver», «Solicitar
+// cotización») era la maqueta anterior y ya no existe.
+await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1500);
+const MK1 = await page.evaluate(() => {
+  const hub = document.querySelector(".hub");
+  return {
+    hub: !!hub,
+    marcas: hub ? hub.querySelectorAll(".hub-carril button, .hub-marca-btn").length : 0,
+    volver: !!hub && [...hub.querySelectorAll("button")].some((b) => /Volver/.test(b.textContent)),
+  };
+});
+// Y se sale con su propio botón: la capa se quita y vuelve la Home.
+await page.evaluate(() => {
+  const b = [...document.querySelectorAll(".hub button")].find((x) => /Volver/.test(x.textContent));
+  b?.click();
+});
+await page.waitForTimeout(800);
 const MK2 = await page.evaluate(() => ({
-  confirmacion: document.body.textContent.includes("Solicitud demo registrada"),
-  apoyo: !!document.querySelector(".mk-barra-fill"),
+  cerrado: !document.querySelector(".hub"),
+  home: !!document.querySelector(".landing"),
 }));
 console.log("mk:", JSON.stringify({ ...MK1, ...MK2 }));
 
@@ -73,26 +91,11 @@ const B = await page.evaluate(() => {
 });
 console.log("rack:", JSON.stringify({ ...R, ...B }));
 
-// Barra de sim: etiquetas ES, candado y ángulo
-const UI = await page.evaluate(() => {
-  const ed = window.exersuite.editor;
-  const focal = document.querySelector(".sim-focal");
-  const textos = [...focal.options].map((o) => o.textContent);
-  focal.value = "kneeL";
-  focal.dispatchEvent(new Event("change"));
-  return { rodilla: textos.includes("Rodilla izq."), opciones: textos.length };
-});
-// flexión con el botón ▲ y candado
-for (let i = 0; i < 5; i++) { await page.click(".sim-figura button:has-text('▲')"); await page.waitForTimeout(80); }
-const UI2 = await page.evaluate(() => ({
-  angulo: document.querySelector(".sim-angulo")?.textContent ?? "",
-}));
-await page.click(".sim-figura button:has-text('🔓')"); await page.waitForTimeout(200);
-const UI3 = await page.evaluate(() => {
-  const ed = window.exersuite.editor;
-  const bloqueado = !ed.moverArticulacionFocal("kneeL", 1);
-  return { candado: document.querySelector(".sim-figura .tool.active") !== null, bloqueado };
-});
+// LA BARRA DE SIM CON SELECTOR FOCAL Y ▲▼ YA NO EXISTE. En v0.2.45 el gesto
+// pasó a las teclas 8 EMPUJE / 9 TRACCIÓN sobre la ZONA activa, y los cursores
+// dejaron de mover al maniquí a propósito. Lo que aquí se comprobaba lo cubre
+// ahora `prueba-v245`, que mide el rango de las dos direcciones; repetirlo aquí
+// contra un DOM que se retiró sólo daba un rojo que no señalaba nada.
 await page.evaluate(() => {
   const ed = window.exersuite.editor;
   ed.orbit.target.set(0, 80, 0);
@@ -101,12 +104,14 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(400);
 await page.screenshot({ path: "v214b-rack-cadenas.png" });
-console.log("ui:", JSON.stringify({ ...UI, ...UI2, ...UI3 }));
 
 const ok =
-  MK1.biblioteca && MK2.confirmacion && MK2.apoyo && bendAviso &&
-  R.cuerdas === 2 && B.y > R.yCad - 12 && B.y < R.yCad + 25 &&
-  UI.rodilla && UI.opciones >= 14 && /°/.test(UI2.angulo) && UI3.bloqueado;
+  MK1.hub && MK1.marcas > 0 && MK1.volver && MK2.cerrado && MK2.home && bendAviso &&
+  R.cuerdas === 2 && B.y > R.yCad - 12 && B.y < R.yCad + 25;
 console.log(JSON.stringify({ ok, bendAviso }));
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
+// SIN CÓDIGO DE SALIDA, un `ok:false` pasaba por verde: la batería sólo mira el
+// código y las marcas ✗/❌. Esta prueba sólo caía cuando reventaba.
+if (!ok || errores.length) console.log("❌ revisión de v0.2.14 en rojo");
 await browser.close();
+process.exit(ok && errores.length === 0 ? 0 : 1);

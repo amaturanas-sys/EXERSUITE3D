@@ -66,7 +66,9 @@ ok(ui.posarVisible && !ui.simularVisible, "arranca en POSAR (postura de partida)
 // sumó «Pisar», para apoyar el pie en una plataforma o pedal.
 // v0.2.53: «Agarrar/Colocar maniquí» quedaron en «Agarrar/Colocar»: el rótulo
 // largo desbordaba la fila y el panel ya se titula MANIQUÍ.
-const tienePosar = ["Aplicar", "Guardar como…", "✋ Agarrar", "🧍 Colocar", "Apoyar mano", "Pisar", "Soltar apoyos"]
+// v0.2.93: los apoyos se acortaron a «✋ Mano», «🦶 Pisar» y «Soltar». El
+// diseñador reportó que los rótulos largos desbordaban y salían cortados.
+const tienePosar = ["Aplicar", "Guardar como…", "✋ Agarrar", "🧍 Colocar", "✋ Mano", "Pisar", "Soltar"]
   .filter((t) => ui.herramientasPosar.some((h) => h.includes(t)));
 ok(tienePosar.length === 7, `POSAR reúne las herramientas de postura (${tienePosar.length}/7: ${tienePosar.join(", ")})`);
 

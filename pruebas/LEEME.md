@@ -89,17 +89,28 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
-Medido en v0.2.91 (batería en paralelo + repetición en serie de los dudosos):
-**65 verdes y 4 rojos** de 69. En paralelo salieron además `800-debug3`,
-`atraviesa`, `cable-oculto` y `ergonomia-v256`, y los cuatro pasan en serie: son
-los tiempos bajo carga, no la aplicación.
+**En v0.2.95 no queda ninguno.** Los cuatro que se arrastraban se revisaron uno
+a uno y **tres eran pruebas midiendo una interfaz retirada**, no fallos de la
+aplicación. Es el peor tipo de rojo: enseña a no mirar los rojos.
 
-| prueba | por qué |
-|---|---|
-| `fable-v214` | rojo de antes: se agota el tiempo antes de arrancar |
-| `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
-| `v251` | 1 aserción: las piernas siguen entrando 2,5 cm en el banco |
-| `freno` | 1 aserción MEDIDA EN SATURACIÓN, ver abajo |
+| prueba | qué medía de más | qué mide ahora |
+|---|---|---|
+| `fable-v214` | el Marketplace de tarjetas (`.mkc-card`, «Ver», «Solicitar cotización») y la barra de sim con selector focal y ▲▼ | el HUB a pantalla completa (v0.2.62) y su botón de volver; lo del maniquí lo cubre `v245` desde v0.2.45 |
+| `uppermachine` | 42 piezas, 18 uniones y una guía prismática del carro | 41 y 16 —el pivote se rehízo en v0.2.36/39 y se retiró el adaptador— y el carro FLOTA entre los senos de los dos cables, que es su mecánica |
+| `uppermachine` | que el brazo está suelto **viéndolo derivar** (0,05 cm suelto y 0,05 anclado: no distinguía nada) | si su cuerpo quedó FIJO en el motor, que es lo que de verdad los separa |
+| `v245` | «Apoyar mano» y «Soltar apoyos» | «✋ Mano» y «Soltar», acortados en v0.2.93 porque se salían de la fila |
+| `v251` | que el muslo no roza el asiento (imposible con este esqueleto) | **las dos paredes** del compromiso: entra ≤3 cm y los glúteos no flotan |
+| `freno` | — | pasa; la aserción saturada de abajo va y viene con el ruido |
+
+Dos de ellas, además, **no devolvían código de salida**: un `ok:false` pasaba
+por verde y sólo caían cuando reventaban. Corregido.
+
+Sobre `v251`, que es el único compromiso REAL de los cinco: en este esqueleto el
+muslo es un cilindro cuyo eje va a la altura de la cadera, así que su parte baja
+queda 5,2 cm por debajo del punto más bajo de la pelvis. O apoya la pelvis —y el
+muslo entra 2,5 cm— o apoya el muslo y los glúteos flotan 11,3 cm, que es
+justamente el fallo que se corrigió eligiendo los glúteos como apoyo. Las dos
+cosas a la vez no caben mientras el muslo sea ese cilindro.
 
 **`freno` no es una regresión, y conviene no perseguirla otra vez.** Seis de sus
 siete aserciones pasan, incluidas las dos que demuestran que el freno hace su
@@ -129,6 +140,14 @@ una sensación de cobertura que no existe.
 `freno` y `atraviesa`, fichadas como intermitentes, llevan dos tandas en verde
 en serie. `cable-oculto`, los tres `800-debug` y `uppermachine-lib` solo caen en
 paralelo. `sitio` pasa con el Next.js en el 3100.
+
+**Tanda de cierre de v0.2.95: 71 pruebas, TODAS en verde en serie.** En paralelo
+caen nueve —`atraviesa`, `cable-oculto`, los tres `800-debug`, `freno`, `hub`,
+`maquina-entera` y `v251`— y las nueve pasan repetidas de una en una: son los
+tiempos bajo carga. `hub` y `maquina-entera` se suman así a la lista de las que
+sólo hay que juzgar en serie; la primera mide animaciones del carrusel y la
+segunda espera fotogramas del bucle de render, y las dos cosas son lo primero
+que se estira cuando hay tres Chromium peleándose por la CPU.
 
 ### Esperar por RELOJ es la primera causa de rojo mentiroso
 

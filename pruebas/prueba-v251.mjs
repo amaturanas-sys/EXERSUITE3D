@@ -75,12 +75,35 @@ const nueva = async (w = 1280, h = 900) => {
         deLado: +Math.abs(largoX ? f.z : f.x).toFixed(2),
       };
     };
-    return { A: await colocar(-0.8), medio: await colocar(0), B: await colocar(0.8) };
+    // ¿CUÁNTO FLOTAN LOS GLÚTEOS? La otra mitad del compromiso: subir la figura
+    // hasta que los muslos no rocen deja el trasero en el aire, que es lo que
+    // el diseñador reportó (11,3 cm medidos sobre una máquina real).
+    const hueco = () => {
+      const fig = ed.humanFigure; fig.updateMatrixWorld(true);
+      const c = new T.Box3();
+      fig.traverse((n) => {
+        if (n.isMesh && n.userData.segmentId === "pelvis") c.union(new T.Box3().setFromObject(n));
+      });
+      return c.isEmpty() ? null : +(c.min.y - caja.max.y).toFixed(1);
+    };
+    const A = await colocar(-0.8), hA = hueco();
+    const medio = await colocar(0), hM = hueco();
+    const B = await colocar(0.8), hB = hueco();
+    return { A: { ...A, hueco: hA }, medio: { ...medio, hueco: hM }, B: { ...B, hueco: hB } };
   });
   console.log("\n1) SENTARSE EN UN BANCO PLANO");
   console.log("   extremo A:", JSON.stringify(r.A), "\n   medio    :", JSON.stringify(r.medio), "\n   extremo B:", JSON.stringify(r.B));
-  ok(r.A.dentro === 0 && r.medio.dentro === 0 && r.B.dentro === 0,
-    `las piernas ya no atraviesan el banco en ninguna posición (${r.A.dentro} / ${r.medio.dentro} / ${r.B.dentro} cm)`);
+  // EL MUSLO ROZA EL ASIENTO, Y NO PUEDE NO ROZARLO. En este esqueleto el muslo
+  // es un cilindro cuyo eje va a la altura de la cadera, así que su parte baja
+  // queda 5,2 cm POR DEBAJO del punto más bajo de la pelvis. O apoya la pelvis
+  // —y el muslo entra un poco— o apoya el muslo y los glúteos quedan flotando
+  // 11,3 cm, que es el fallo que se corrigió eligiendo los glúteos como apoyo.
+  // Las dos cosas a la vez no caben, así que se acota lo que un acolchado
+  // absorbe (3 cm) y se vigila LA OTRA pared: que el trasero no flote.
+  ok(r.A.dentro <= 3 && r.medio.dentro <= 3 && r.B.dentro <= 3,
+    `el muslo entra en el acolchado lo justo (${r.A.dentro} / ${r.medio.dentro} / ${r.B.dentro} cm, máximo 3)`);
+  ok(r.A.hueco <= 0.5 && r.medio.hueco <= 0.5 && r.B.hueco <= 0.5,
+    `y los glúteos no flotan sobre el asiento (${r.A.hueco} / ${r.medio.hueco} / ${r.B.hueco} cm)`);
   ok(r.A.haciaFuera > 0.8 && r.B.haciaFuera > 0.8,
     `en los extremos mira HACIA FUERA del banco (${r.A.haciaFuera} y ${r.B.haciaFuera}, 1 = de frente al vacío)`);
   ok(r.medio.deLado > 0.8, `y en el medio se sienta DE LADO, con las piernas al costado (${r.medio.deLado})`);

@@ -32,6 +32,22 @@ estado**: simulando lo dice el estado guardado, parado con la partida a la vista
 lo dice el plano de la partida, y parado sin partida la malla ya está en su
 sitio y no hay desvío que medir.
 
+**Una partida nunca viaja sin su plano.** Buscando el fallo anterior salió a la
+luz otro de la misma familia, y peor. La partida es una condición de ensayo
+puesta ENCIMA del plano fabricable, así que las dos van juntas: sin saber a qué
+se vuelve, arrancar la simulación guarda la pose como si fuera el plano y al
+parar la restaura encima del de verdad, que se pierde; quitar el maniquí no
+repone nada y la máquina se queda clavada en su pose ergonómica; y guardar el
+proyecto escribe la pose en vez del fabricable.
+
+Había tres puertas que ponían la partida sin su plano: **abrir** un proyecto que
+la trae, **aplicar** un punto de partida guardado y **fijarla** con el gesto
+parado (ahí el estado de diseño guardado está vacío, y de paso metía la máquina
+entera en la partida, pilares clavados al suelo incluidos). Y una cuarta que
+pasaba por la primera sin que nadie lo pidiera: **deshacer**, que recarga el
+proyecto completo. Ahora todas pasan por la misma puerta, que apunta el plano
+leyéndolo del sitio que corresponda a cada estado.
+
 ### Verificación
 
 `prueba-maquina-entera` sube a 20 comprobaciones, seis de ellas nuevas sobre la
@@ -40,6 +56,33 @@ completa —posando, congelada la partida, sin maniquí, en marcha y tras parar�
 se queda en 10,9 cm en todos, con el cuerpo de la pila levantado 33,3 cm. Antes
 subía a 44,2 cm posando y bajaba a −22,4 al quitar la figura. Verdes también
 `posar-maquina`, `posar-apoyar`, `ergonomia-v256` y `auditoria2`.
+
+Prueba nueva, `prueba-partida-plano` (11 comprobaciones), que pasa por las
+cuatro puertas: abrir, aplicar, fijar en marcha y deshacer. En cada una se
+comprueba lo mismo —que quitar el maniquí devuelve la máquina al plano, que
+parar la deja en su partida y que re-guardar escribe el fabricable—: 0,00 cm en
+todas.
+
+**Y se limpió la batería de rojos que no señalaban nada.** De los cuatro que
+arrastraba, tres eran pruebas midiendo interfaces retiradas: `fable-v214`
+buscaba el Marketplace de tarjetas (es EL HUB desde v0.2.62) y la barra de
+simulación con cursores ▲▼ (son las teclas 8/9 desde v0.2.45); `uppermachine`
+contaba 42 piezas y 18 uniones del prefab anterior al rediseño del pivote
+(v0.2.36/39 lo dejó en 41 y 16, y quitó la guía prismática del carro, que ahora
+flota entre los senos de los dos cables); y comprobaba que el brazo estaba
+suelto viéndolo derivar, cosa que una máquina bien armada no hace —daba 0,05 cm
+tanto suelto como anclado—, así que ahora se le pregunta al motor si su cuerpo
+quedó fijo. `v245` esperaba los rótulos largos de los apoyos, que se acortaron
+en v0.2.93 justo porque se salían de la fila. Dos de ellas, además, no devolvían
+código de salida: un `ok:false` pasaba por verde.
+
+`v251` medía una pared del único compromiso real que quedaba: en este esqueleto
+el muslo es un cilindro cuyo eje va a la altura de la cadera, así que su parte
+baja queda 5,2 cm por debajo del punto más bajo de la pelvis. O apoya la pelvis
+—y el muslo entra 2,5 cm en el acolchado— o apoya el muslo y los glúteos flotan
+11,3 cm, que es el fallo que se corrigió eligiendo los glúteos. Las dos cosas no
+caben, así que la prueba pasa a vigilar **las dos paredes**: el muslo no entra
+más de 3 cm y el trasero no flota (0,0 cm).
 
 ## [0.2.94] — 2026-08-19
 

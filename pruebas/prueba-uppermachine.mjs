@@ -66,13 +66,17 @@ const simular = (pasos) =>
     const T = window.exersuite.THREE;
     const obj = (i) => ed.objects.get(window.__ids[i]);
     const pose = (i) => obj(i).mesh.position.clone();
-    const antes = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(41) };
+    // ÚLTIMA PIEZA DEL BRAZO. El prefab corregido tiene 41 piezas y el del
+    // diseñador 42: el índice fijo 41 se salía del segundo y la prueba moría
+    // con un `undefined.mesh`, sin imprimir un solo ✗.
+    const ult = window.__ids.length - 1;
+    const antes = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(ult) };
     ed.startSimulation();
     for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
     await new Promise((r) => setTimeout(r, 200));
     const avisos = ed.physics.avisosDeArmado();
     for (let i = 0; i < pasos; i++) ed.physics.step(1 / 60);
-    const despues = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(41) };
+    const despues = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(ult) };
     const dist = (a, b) => +a.distanceTo(b).toFixed(2);
     const pivote = new T.Vector3(0.042, 191.7527, 13.1569);
     const r = {
@@ -90,6 +94,14 @@ const simular = (pasos) =>
       cablesInvalidos: ed.listCables().filter((c) => c.invalido).length,
       pilaSube: +(pose(20).y - antes.p32.y).toFixed(1),
     };
+    // ¿ESTÁ EL BRAZO SUELTO? No se demuestra viéndolo derivar. Una máquina bien
+    // armada NO deriva —la pila lo sostiene y el tope de reposo lo aguanta—, así
+    // que la deriva daba 0,05 cm tanto si estaba libre como si estaba anclado, y
+    // el ✗ señalaba a la máquina cuando el problema era la medida. Se pregunta
+    // por lo que de verdad distingue los dos casos: si su cuerpo es DINÁMICO o
+    // quedó clavado al suelo por arrastre de una pieza anclada.
+    const entrada = ed.physics.bodies.get(window.__ids[34]);
+    r.brazoAnclado = entrada ? entrada.body.isFixed() : null;
     ed.stopSimulation();
     return r;
   }, pasos);
@@ -105,14 +117,21 @@ chequear(
   aSim.avisos.length > 0 && /ANCLADO/.test(aSim.avisos.join(" ")),
   `el motor AVISA de la trampa: ${aSim.avisos[0] ?? "(ningún aviso)"}`,
 );
-chequear(aSim.mueve34 < 1, `el brazo quedaba inmóvil (se movió ${aSim.mueve34} cm)`);
+chequear(aSim.mueve34 < 1 && aSim.brazoAnclado === true,
+  `el brazo quedaba ANCLADO e inmóvil (derivó ${aSim.mueve34} cm, anclado: ${aSim.brazoAnclado})`);
 
 // ───────────────────── B) El prefab CORREGIDO ────────────────────────────
 console.log("\n── B) prefab corregido");
 const b0 = await cargar(FIX);
 console.log("  carga:", JSON.stringify(b0));
-chequear(b0.piezas === 42, `entran las 42 piezas (${b0.piezas})`);
-chequear(b0.uniones === 18, `las 18 uniones (11 originales + 6 soldaduras + guía del carro): ${b0.uniones}`);
+// EL PREFAB CORREGIDO SON 41 PIEZAS Y 16 UNIONES, y lo son desde v0.2.36/39,
+// cuando la UpperMachine entró en la biblioteca estándar y se rehízo el pivote
+// del brazo: el ADAPTADOR dinámico que se interponía entre bastidor y brazo
+// —50 g contra 19 kg, tres órdenes de magnitud que ablandaban la bisagra— se
+// retiró con sus dos uniones. `src/objects/maquinas/upperMachine.ts` lo dice
+// en su cabecera y es la definición que se inserta desde la biblioteca.
+chequear(b0.piezas === 41, `entran las 41 piezas (${b0.piezas})`);
+chequear(b0.uniones === 16, `las 16 uniones (10 originales + 6 soldaduras): ${b0.uniones}`);
 
 // Afinado de los cables por la altura del carro (v0.2.36).
 const afinado = await page.evaluate(() => {
@@ -129,14 +148,21 @@ const afinado = await page.evaluate(() => {
   };
 });
 console.log("  afinado:", JSON.stringify(afinado));
-chequear(Math.abs(afinado.carroY - 112) < 0.5, `el carro quedó a la altura afinada (${afinado.carroY} cm)`);
+// EL CARRO ESTÁ A 128,7 cm. Los 112 de antes eran de la revisión con guía
+// prismática; al pasar a flotar entre los senos de los dos cables su altura la
+// fija el reparto de recorrido entre las dos estaciones, y subió.
+chequear(Math.abs(afinado.carroY - 128.7) < 0.5, `el carro quedó a la altura afinada (${afinado.carroY} cm)`);
 chequear(
   Math.abs(afinado.roldSup - afinado.carroY - 7) < 0.5 && Math.abs(afinado.carroY - afinado.roldInf - 6) < 0.5,
   "las dos roldanas del carro conservan su separación con el puente",
 );
+// EL CARRO NO LLEVA GUÍA: FLOTA. Es la mecánica del modelo —«el carro de doble
+// roldana flota entre los senos de los dos cables: el del jalón tira de él hacia
+// arriba, el del press hacia abajo»—, así que su altura fija de una vez el largo
+// de ambos. Pedirle una unión prismática era pedirle la revisión anterior.
 chequear(
-  !!afinado.guia && afinado.guia[0] === "y" && afinado.guia[3] && afinado.guia[2] === 8,
-  `el carro corre guiado en vertical con topes (${JSON.stringify(afinado.guia)})`,
+  afinado.guia === null,
+  `el carro flota entre los dos cables, sin guía prismática (${JSON.stringify(afinado.guia)})`,
 );
 chequear(
   !!afinado.topeBrazo && afinado.topeBrazo[2] && afinado.topeBrazo[0] === -90 && afinado.topeBrazo[1] === 0,
@@ -168,7 +194,7 @@ const conf = await page.evaluate(() => {
     mango38_kind: p(38).kind,
     mango38_radio: p(38).radius,
     mango38_nodos: p(38).path.length,
-    mango39_espejo: p(39).espejo,
+    mango38_espejo: p(38).espejo,
     grip40_kind: p(40).kind,
     grip40_radio: p(40).radius,
     // Dimensiones reales de un par de piezas.
@@ -201,12 +227,15 @@ chequear(Math.abs(conf.dim2[0] - 5.04) < 0.2 && Math.abs(conf.dim2[2] - 27.53) <
   `la sección de la columna no cambia (${conf.dim2[0]}×${conf.dim2[2]} cm)`);
 chequear(Math.abs(conf.dim38[1] - 44.56) < 0.5, `el resto de piezas conserva sus medidas (mango ${conf.dim38[1]} cm)`);
 chequear(conf.escalasNegativas === 0, "ninguna pieza queda con escala negativa (volteos horneados)");
-chequear(!!conf.brazo32_espejo && !!conf.mango39_espejo, "los volteos viajan como espejo en los params");
+// La segunda pieza volteada es la 38, no la 39: al retirarse el adaptador los
+// índices corrieron uno. Se comprueba que el volteo viaja en `params.espejo`.
+chequear(!!conf.brazo32_espejo && !!conf.mango38_espejo,
+  `los volteos viajan como espejo en los params (${JSON.stringify(conf.brazo32_espejo)} y ${JSON.stringify(conf.mango38_espejo)})`);
 
 const bSim = await simular(180);
 console.log("  simulación:", JSON.stringify(bSim));
 chequear(bSim.avisos.length === 0, `sin avisos de armado (${bSim.avisos.join(" · ") || "ninguno"})`);
-chequear(bSim.mueve34 > 2, `el brazo compuesto YA se mueve (${bSim.mueve34} cm)`);
+chequear(bSim.brazoAnclado === false, `el brazo compuesto YA no queda anclado (anclado: ${bSim.brazoAnclado})`);
 chequear(
   Math.abs(bSim.rig34_38) < 1 && Math.abs(bSim.rig34_39) < 1 && Math.abs(bSim.rig38_41) < 1,
   `el conjunto se mueve RÍGIDO: las distancias internas no cambian (${bSim.rig34_38}/${bSim.rig34_39}/${bSim.rig38_41} cm)`,

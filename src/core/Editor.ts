@@ -2930,6 +2930,8 @@ export class Editor {
     this.apoyoBarraLocal = null;
     this.bus.emit("barraManiquiChanged", { objectId: null, ejercicio: null, rackeada: false });
     this.partidaPiezas = null;
+    this.disenoDePartida = null;
+    this.partidaPintada = false;
     // Y los puntos guardados: son de ESTE proyecto. Si sobreviven, el selector
     // sigue ofreciendo los del anterior y aplicarlos manda el maniquí a donde
     // estaba en otra escena.
@@ -3179,6 +3181,8 @@ export class Editor {
     // La partida de la MÁQUINA no depende de que haya maniquí: una estación
     // puede querer arrancar en su bloqueo con o sin nadie sentado.
     this.partidaPiezas = null;
+    this.disenoDePartida = null;
+    this.partidaPintada = false;
     if (data.human?.startParts?.length) {
       const lista = this.listObjects();
       const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
@@ -3190,7 +3194,9 @@ export class Editor {
           q: new THREE.Quaternion().fromArray(e.quaternion),
         });
       }
-      if (poses.size) this.partidaPiezas = poses;
+      // Las mallas acaban de nacer EN EL PLANO —el proyecto guarda el
+      // fabricable—, así que este es el momento exacto de apuntarlo.
+      if (poses.size) this.ponerPartida(poses);
     }
 
     // BARRA EN MANOS (v0.2.81). Si el índice ya no apunta a nada —la pieza se
@@ -5154,18 +5160,22 @@ export class Editor {
    * condición de ensayo: guardar el estado al que volver, construir el mundo
    * físico y comparar qué se movió de verdad.
    */
+  /** Devuelve las mallas de la partida a su sitio de plano. */
+  private reponerElDiseno(): void {
+    if (!this.disenoDePartida) return;
+    for (const [id, t] of this.disenoDePartida) {
+      const o = this.objects.get(id);
+      if (!o) continue;
+      o.mesh.position.copy(t.p);
+      o.mesh.quaternion.copy(t.q);
+      o.mesh.updateMatrixWorld(true);
+    }
+  }
+
   private conElDiseno<T>(fn: () => T): T {
     this.reconciliarEdiciones();
     const partidaVisible = !this.simulating && this.partidaPintada;
-    if (partidaVisible && this.disenoDePartida) {
-      for (const [id, t] of this.disenoDePartida) {
-        const o = this.objects.get(id);
-        if (!o) continue;
-        o.mesh.position.copy(t.p);
-        o.mesh.quaternion.copy(t.q);
-        o.mesh.updateMatrixWorld(true);
-      }
-    }
+    if (partidaVisible) this.reponerElDiseno();
     try {
       return fn();
     } finally {
@@ -5212,21 +5222,18 @@ export class Editor {
     this.marcarPoseDePartida();
     const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
     for (const o of this.listObjects()) {
-      const disenada = this.saved.get(o.id);
+      // El sitio de diseño se pregunta, no se supone: con el gesto PARADO
+      // `saved` está vacío, y comparar contra nada metía la máquina entera en
+      // la partida —incluidos los pilares clavados al suelo—.
+      const disenada = this.sitioDeDiseno(o.id);
       const p = o.mesh.position;
       const q = o.mesh.quaternion;
-      if (disenada && p.distanceTo(disenada.position) < 0.05 && q.angleTo(disenada.quaternion) < 1e-3) {
+      if (disenada && p.distanceTo(disenada.p) < 0.05 && q.angleTo(disenada.q) < 1e-3) {
         continue; // sigue en su sitio de diseño: no es parte del gesto
       }
       poses.set(o.id, { p: p.clone(), q: q.clone() });
     }
-    this.partidaPiezas = poses.size ? poses : null;
-    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
-    for (const id of poses.keys()) {
-      const sv = this.saved.get(id);
-      if (sv) diseno.set(id, { p: sv.position.clone(), q: sv.quaternion.clone() });
-    }
-    this.disenoDePartida = diseno.size ? diseno : null;
+    this.ponerPartida(poses);
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size, postura: this.poseDePartida !== null };
@@ -5455,9 +5462,11 @@ export class Editor {
   aplicarPartida(nombre: string): boolean {
     const p = this.partidasGuardadas.get(nombre);
     if (!p) return false;
-    this.partidaPiezas = p.piezas
-      ? new Map([...p.piezas].map(([id, t]) => [id, { p: t.p.clone(), q: t.q.clone() }]))
-      : null;
+    this.ponerPartida(
+      p.piezas
+        ? new Map([...p.piezas].map(([id, t]) => [id, { p: t.p.clone(), q: t.q.clone() }]))
+        : null,
+    );
     this.poseDePartida = p.pose ? JSON.parse(JSON.stringify(p.pose)) : null;
     this.nombreDePartida = p.poseNombre;
     this.transformDePartida = p.pos && p.quat ? { p: p.pos.clone(), q: p.quat.clone() } : null;
@@ -7344,6 +7353,56 @@ export class Editor {
     if (this.simulating) return this.saved.get(id)?.position ?? null;
     if (this.partidaPintada) return this.disenoDePartida?.get(id)?.p ?? null;
     return null;
+  }
+
+  /** Como `reposoDeDiseno`, pero el sitio entero y con la malla como respaldo. */
+  private sitioDeDiseno(id: string): { p: THREE.Vector3; q: THREE.Quaternion } | null {
+    const o = this.objects.get(id);
+    if (!o) return null;
+    if (this.simulating) {
+      const s = this.saved.get(id);
+      return s ? { p: s.position.clone(), q: s.quaternion.clone() } : null;
+    }
+    if (this.partidaPintada) {
+      const d = this.disenoDePartida?.get(id);
+      if (d) return { p: d.p.clone(), q: d.q.clone() };
+    }
+    return { p: o.mesh.position.clone(), q: o.mesh.quaternion.clone() };
+  }
+
+  /**
+   * LA ÚNICA PUERTA PARA PONER UNA PARTIDA, y existe porque había tres que no
+   * la ponían entera. Una partida sin su plano (`disenoDePartida`) es una bomba:
+   * `conElDiseno` no tiene adónde volver, así que arrancar la simulación guarda
+   * la CONDICIÓN DE ENSAYO como si fuera el plano y al parar lo restaura encima
+   * del de verdad, que se pierde; quitar el maniquí no repone nada y la máquina
+   * se queda clavada en su pose ergonómica; y guardar el proyecto escribe la
+   * pose en vez del fabricable.
+   *
+   * Pasaba al ABRIR un proyecto con partida, al APLICAR un punto guardado y al
+   * FIJAR la partida con el gesto parado —ahí `saved` está vacío—. Ahora el
+   * plano se saca siempre de `sitioDeDiseno`, que sabe leerlo en cualquiera de
+   * los tres estados.
+   */
+  private ponerPartida(poses: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null): void {
+    this.reconciliarEdiciones();
+    // LAS MALLAS VUELVEN AL PLANO ANTES DE CAMBIAR DE PARTIDA. Lo que hubiera
+    // pintado es de la ANTERIOR: dejarlo mezclaría dos condiciones de ensayo
+    // —las piezas de la vieja que no estén en la nueva se quedarían en su pose—
+    // y, peor, la reconciliación tomaría esa diferencia por una edición del
+    // usuario y se la sumaría al plano nuevo.
+    if (!this.simulating && this.partidaPintada) this.reponerElDiseno();
+    this.partidaPintada = false;
+    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    if (poses) {
+      for (const id of poses.keys()) {
+        const sitio = this.sitioDeDiseno(id);
+        if (sitio) diseno.set(id, sitio);
+      }
+    }
+    this.partidaPiezas = poses?.size ? poses : null;
+    this.disenoDePartida = diseno.size ? diseno : null;
+    this.sincronizarPartidaVisible();
   }
 
   /** Reconstruye las polilineas de los cables segun la posicion de sus nodos. */
