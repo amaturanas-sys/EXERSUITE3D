@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.95] — 2026-08-19
+
+La pila de pesos deja de ascender entera.
+
+### Corregido
+
+**La pila de pesos ascendía completa al posar la máquina.** Los dos fallos que
+reportó el diseñador —«al posar la máquina en su punto de partida se estropea la
+simulación por movimiento de los mecanismos asociados: la pila de pesos asciende
+completa» y «al ocultar el maniquí la máquina persiste en su configuración de
+pose ergonómica»— resultaron ser el mismo, y no era de física: era de dibujo.
+
+En una pila selectorizada el pin engancha unas placas y el tubo selector se las
+lleva; las de abajo no se mueven nunca. Eso se dibuja contra-trasladando las
+placas sueltas justo lo que sube el cuerpo de la pila, y esa cuenta se hacía
+sólo `if (simulating)` y contra el estado guardado al arrancar. Al salir de
+posar —donde el cuerpo de la pila queda LEVANTADO, que es de lo que trata la
+partida— ese estado se vacía y la simulación se apaga: la resta daba cero,
+ninguna placa se contra-movía y las quince subían pegadas al selector. La
+máquina no estaba rota; lo que estaba mal era la única pieza que se dibuja
+aparte, y quedaba a la vista tanto en construcción como al ocultar la figura.
+
+La referencia pasa a ser **el sitio de diseño de la pila, sea cual sea el
+estado**: simulando lo dice el estado guardado, parado con la partida a la vista
+lo dice el plano de la partida, y parado sin partida la malla ya está en su
+sitio y no hay desvío que medir.
+
+### Verificación
+
+`prueba-maquina-entera` sube a 20 comprobaciones, seis de ellas nuevas sobre la
+pila. La placa más baja se mide en el mundo en los cinco estados de la secuencia
+completa —posando, congelada la partida, sin maniquí, en marcha y tras parar— y
+se queda en 10,9 cm en todos, con el cuerpo de la pila levantado 33,3 cm. Antes
+subía a 44,2 cm posando y bajaba a −22,4 al quitar la figura. Verdes también
+`posar-maquina`, `posar-apoyar`, `ergonomia-v256` y `auditoria2`.
+
 ## [0.2.94] — 2026-08-19
 
 Editar la máquina en su posición ergonómica, y que el cambio permanezca.

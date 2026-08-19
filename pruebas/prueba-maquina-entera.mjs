@@ -51,12 +51,25 @@ await p.evaluate(async () => {
     }
     return { peor: +peor.toFixed(2), quien };
   };
+  // ALTURA REAL DE LA PLACA MÁS BAJA de la pila, en el mundo. Las placas NO
+  // seleccionadas no se mueven nunca: no las lleva el selector. Si esta cifra
+  // sube, la pila entera está ascendiendo — que es justo lo que el diseñador vio.
+  window.__pila = () => {
+    const T = window.exersuite.THREE;
+    const o = ed.listObjects().find((x) => x.stack);
+    if (!o) return null;
+    o.mesh.updateMatrixWorld(true);
+    const suelta = o.getStackParts().filter((p) => !p.carriage);
+    if (!suelta.length) return null;
+    return +Math.min(...suelta.map((p) => p.mesh.getWorldPosition(new T.Vector3()).y)).toFixed(2);
+  };
 });
 
 // ── 1. Sentar al maniquí y congelar la máquina en su postura de inicio ─────
 const r = await p.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const diseno = window.__retrato();
+  const pilaDiseno = window.__pila();
 
   // Sentado en el asiento de la máquina, con la herramienta real.
   const asiento = ed.listObjects().find((o) => /asiento/i.test(o.name));
@@ -77,6 +90,25 @@ const r = await p.evaluate(async () => {
   }
   ed.physics.release?.();
   for (let i = 0; i < 30; i++) ed.physics.step(1 / 60);
+  // LA PILA TIENE QUE ENTRAR EN LA PARTIDA. Si el brazo no llegó a arrastrarla
+  // por el cable, se sube a mano: levantar el conjunto móvil hasta el punto de
+  // bloqueo es un gesto de posado legítimo, y es donde apareció el fallo.
+  const pila = ed.listObjects().find((o) => o.stack);
+  if (pila && Math.abs(pila.mesh.position.y - diseno[pila.id][1]) < 1) {
+    const q0 = pila.mesh.position.clone();
+    ed.physics.grab(pila.id, q0.clone());
+    for (let i = 0; i < 40; i++) {
+      ed.physics.dragTo(q0.clone().add(new T.Vector3(0, Math.min(i * 0.5, 14), 0)));
+      ed.physics.step(1 / 60);
+    }
+    ed.physics.release?.();
+    for (let i = 0; i < 30; i++) ed.physics.step(1 / 60);
+  }
+  // La contra-traslación de las placas la hace el BUCLE DE FOTOGRAMA: pasando
+  // la física a mano no corre ninguno, así que hay que cederle el turno.
+  await new Promise((x) => setTimeout(x, 500));
+  const pilaPosando = window.__pila();
+  const subioLaPila = pila ? +(pila.mesh.position.y - diseno[pila.id][1]).toFixed(2) : 0;
   // Cuántas piezas se movieron DE VERDAD durante el posado, contadas sobre las
   // mallas: es con lo que hay que comparar lo que la partida llegó a congelar.
   const movidas = Object.entries(window.__retrato())
@@ -89,6 +121,7 @@ const r = await p.evaluate(async () => {
   const trasCongelar = window.__retrato();
   return { entra, congeladas, diseno, trasCongelar,
     reparto: { movidas, enPartida: congeladas },
+    pila: { diseno: pilaDiseno, posando: pilaPosando, congelada: window.__pila(), subioLaPila },
     derivaAlCongelar: window.__deriva(diseno, trasCongelar) };
 });
 ok(r.entra, "se entra a posar la máquina con el maniquí sentado");
@@ -103,6 +136,38 @@ ok(r.derivaAlCongelar.peor > 1,
 // cuerpos del motor dejaba las fundidas en el plano y el brazo salía partido.
 ok(r.reparto.enPartida === r.reparto.movidas,
   `y no se queda ninguna pieza atrás (${r.reparto.enPartida} congeladas de ${r.reparto.movidas} movidas)`);
+
+// LA PILA DE PESOS NO ASCIENDE ENTERA. El selector se lleva las placas que el
+// pin engancha; las de abajo se quedan donde están, siempre — posando, congelado
+// y en marcha. El diseñador lo vio subir en bloque al fijar la postura de inicio.
+ok(r.pila.subioLaPila > 1,
+  `el posado levanta el conjunto móvil de la pila (${r.pila.subioLaPila} cm)`);
+ok(Math.abs(r.pila.posando - r.pila.diseno) < 1,
+  `posando, las placas sueltas se quedan (${r.pila.posando} vs ${r.pila.diseno} cm)`);
+ok(Math.abs(r.pila.congelada - r.pila.diseno) < 1,
+  `y congelada la partida, también (${r.pila.congelada} vs ${r.pila.diseno} cm)`);
+
+// ── 1.b QUITAR EL MANIQUÍ devuelve la máquina a su reposo ─────────────────
+// Regla del diseñador: «poder ver la máquina en su forma de reposo en
+// construcción y simulación SIN maniquí». La partida es del maniquí; sin él, lo
+// que hay que ver y editar es el plano.
+const oculta = await p.evaluate(async ([diseno, partida]) => {
+  const ed = window.exersuite.editor;
+  ed.toggleHumanFigure();               // lo quita
+  await new Promise((x) => setTimeout(x, 700));
+  const sinFigura = window.__deriva(diseno, window.__retrato());
+  const pilaSinFigura = window.__pila();
+  await ed.toggleHumanFigure();         // lo devuelve
+  await new Promise((x) => setTimeout(x, 900));
+  const conFigura = window.__deriva(partida, window.__retrato());
+  return { sinFigura, conFigura, pilaSinFigura };
+}, [r.diseno, r.trasCongelar]);
+ok(oculta.sinFigura.peor < 0.5,
+  `quitar el maniquí devuelve la máquina a su REPOSO (${oculta.sinFigura.peor} cm del plano)`);
+ok(oculta.conFigura.peor < 0.5,
+  `y devolverlo recupera su partida sin refijarla (${oculta.conFigura.peor} cm)`);
+ok(Math.abs(oculta.pilaSinFigura - r.pila.diseno) < 1,
+  `sin maniquí la pila también está en reposo (${oculta.pilaSinFigura} vs ${r.pila.diseno} cm)`);
 
 // ── 2. Apoyar las manos: la IK tiene que ASENTARSE, no temblar ─────────────
 const t = await p.evaluate(async () => {
@@ -148,9 +213,11 @@ const s = await p.evaluate(async () => {
   await new Promise((x) => setTimeout(x, 2500));
   const avisos = ed.physics?.avisosDeArmado?.() ?? [];
   const enMarcha = window.__retrato();
+  const pilaEnMarcha = window.__pila();
   ed.stopSimulation();
   await new Promise((x) => setTimeout(x, 1200));
-  return { avisos, enMarcha, trasParar: window.__retrato() };
+  return { avisos, enMarcha, pilaEnMarcha, pilaTrasParar: window.__pila(),
+    trasParar: window.__retrato() };
 });
 // LA MÁQUINA NO SE DESARMA AL SIMULAR. Congelar la partida teletransporta unas
 // piezas y no otras: si el conjunto está soldado o unido, las que se quedan atrás
@@ -166,6 +233,10 @@ ok(s.avisos.length === 0, `sin avisos de armado (${s.avisos.join(" · ") || "nin
 const dParar = await p.evaluate(([a, b]) => window.__deriva(a, b), [r.trasCongelar, s.trasParar]);
 ok(dParar.peor < 1,
   `al parar, la máquina vuelve ENTERA a su partida (deriva ${dParar.peor} cm)`);
+ok(Math.abs(s.pilaEnMarcha - r.pila.diseno) < 2,
+  `en marcha las placas sueltas siguen en su sitio (${s.pilaEnMarcha} vs ${r.pila.diseno} cm)`);
+ok(Math.abs(s.pilaTrasParar - r.pila.diseno) < 1,
+  `y al parar, también (${s.pilaTrasParar} vs ${r.pila.diseno} cm)`);
 
 // ── 4. EDITAR CON LA PARTIDA A LA VISTA, y que el cambio PERMANEZCA ────────
 // Regla del diseñador: «poder modificar y editar la máquina con las herramientas

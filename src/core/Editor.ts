@@ -7310,24 +7310,40 @@ export class Editor {
   }
 
   /**
-   * Anima las pilas de pesos: durante la simulacion, el carriage (tubo + placas
-   * seleccionadas) sube con el cuerpo mientras las placas no seleccionadas y las
-   * varillas se contra-mueven para quedarse quietas. El cuerpo solo sube (>=0).
+   * Anima las pilas de pesos: el carriage (tubo + placas seleccionadas) sube con
+   * el cuerpo mientras las placas no seleccionadas y las varillas se
+   * contra-mueven para quedarse quietas. El cuerpo solo sube (>=0).
+   *
+   * LA REFERENCIA ES EL SITIO DE DISEÑO, y de ahí venía «la pila de pesos
+   * asciende completa». La contra-traslación se medía sólo `if (simulating)`
+   * contra `saved`, y al salir de posar la máquina —donde el cuerpo de la pila
+   * queda LEVANTADO, que es de lo que trata la partida— `saved` se vacía y
+   * `simulating` se apaga: delta 0, ninguna placa se contra-mueve y las quince
+   * subían pegadas al selector. La ilusión no es de la simulación, es de que la
+   * pila esté fuera de su sitio, y eso pasa también parado.
    */
   private updateStackAnimation(): void {
     for (const obj of this.objects.values()) {
       if (!obj.stack) continue;
       const parts = obj.getStackParts();
       if (parts.length === 0) continue;
-      let delta = 0;
-      if (this.simulating) {
-        const saved = this.saved.get(obj.id);
-        if (saved) delta = Math.max(0, obj.mesh.position.y - saved.position.y);
-      }
+      const reposo = this.reposoDeDiseno(obj.id);
+      const delta = reposo ? Math.max(0, obj.mesh.position.y - reposo.y) : 0;
       for (const p of parts) {
         p.mesh.position.y = p.carriage ? p.restY : p.restY - delta;
       }
     }
+  }
+
+  /**
+   * DÓNDE ESTARÍA ESTA PIEZA EN EL PLANO, sea cual sea el estado. Simulando lo
+   * dice `saved`; parado con la partida a la vista, `disenoDePartida`; y parado
+   * sin partida, la malla YA está en el plano y no hay desvío que medir.
+   */
+  private reposoDeDiseno(id: string): THREE.Vector3 | null {
+    if (this.simulating) return this.saved.get(id)?.position ?? null;
+    if (this.partidaPintada) return this.disenoDePartida?.get(id)?.p ?? null;
+    return null;
   }
 
   /** Reconstruye las polilineas de los cables segun la posicion de sus nodos. */
