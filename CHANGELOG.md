@@ -5,6 +5,44 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.92] — 2026-08-19
+
+El temblor de los brazos apoyados, que el diseñador grabó en vídeo.
+
+### Corregido
+
+**El brazo apoyado se asienta en vez de temblar.** La compensación de la palma
+corregía ITERANDO: `solveTwoBoneIK` pone el pivote de la MUÑECA sobre el punto,
+así que se resolvía, se medía lo que quedaba entre el centro del puño y el
+agarre, y se volvía a resolver contra el objetivo corregido. Pero eso corre en
+cada fotograma partiendo de donde lo dejó el anterior, y cada pasada usa un
+objetivo distinto: cerca de la degeneración —el brazo casi estirado apuntando
+arriba— dos objetivos separados por centímetros dan soluciones separadas por
+medio metro. Medido con el mando a 130 cm, el hombro alternaba entre −133,7° y
+−18,1° y la mano entre y=179,6 e y=84,4, indefinidamente: 47,5 cm de oscilación
+entre pasadas consecutivas.
+
+La mano no es una corrección a posteriori, es parte del antebrazo.
+`solveTwoBoneIK` acepta ahora un `alargue` —cuánto sobresale el efector más allá
+de la muñeca— y resuelve el hueso de abajo como si fuera más largo, de modo que
+lo que aterriza en el objetivo es la palma. Una sola pasada, sin estado. El
+voladizo es una medida del rig, así que se mide una vez por talla y se guarda.
+
+Tras el arreglo: **0,000 cm de oscilación** en ocho pasadas seguidas, y la mano
+llega a 11,7 cm del mando en vez de quedarse entre 42 y 57.
+
+El temblor es anterior a esta tanda; lo que lo destapó fue levantar el veto de la
+IK con el gesto parado en la v0.2.91 — antes no corría nunca ahí.
+
+### Verificación
+
+`prueba-maquina-entera` (nueva, 8 comprobaciones) reproduce la secuencia exacta
+del vídeo: sentar al maniquí en la UpperMachine, «▶ Manipular» y arrastrar el
+brazo del press, congelar la partida, apoyar las manos, simular y parar. Mide el
+temblor, si la máquina se desarma al simular y si vuelve entera a su plano.
+Confirma de paso que lo de «la máquina queda rota para siempre» ya lo arreglaba
+la v0.2.91: deriva 0 cm al congelar y 0 al volver a construcción.
+
 ## [0.2.91] — 2026-08-19
 
 Las tres reglas del levantamiento que pidió el diseñador, el flujo de posar la
