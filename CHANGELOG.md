@@ -5,6 +5,38 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.94] — 2026-08-19
+
+Editar la máquina en su posición ergonómica, y que el cambio permanezca.
+
+### Corregido
+
+**Lo que se edita con la partida a la vista va al plano.** Regla del diseñador:
+«poder modificar y editar la máquina con las herramientas de construcción en una
+posición ergonómica precisa, y estos cambios estructurales permanecen». No se
+cumplía, y de la peor manera: editar una pieza CONGELADA se perdía —medido, los
+7 cm que se le daban volvían a 0 al soltar la partida— mientras que editar una
+que no lo estaba sí permanecía. El mismo gesto con dos resultados distintos y
+ninguna pista de por qué.
+
+La partida es una condición de ensayo puesta ENCIMA del plano, así que mover una
+pieza con el gizmo mientras se ve es editar el plano, no reposar la máquina. Si
+la malla ya no está donde la dejó la partida, esa diferencia la puso el usuario:
+se le suma también al plano y la partida se re-ancla.
+
+Con eso hizo falta decir explícitamente cuándo la partida está PINTADA. Al parar
+la simulación o el posado las mallas vienen del plano restaurado, y sin esa marca
+la reconciliación tomaba esa vuelta al plano por una edición y le restaba el
+gesto entero al diseño: la partida se destruía al primer ⏹.
+
+### Verificación
+
+`prueba-maquina-entera` sube a 12 comprobaciones. Editar una pieza congelada
+llega al plano (6,91 de 6,91 esperados), editar una libre también (7,04), y el
+proyecto guardado con la partida a la vista sigue llevando el plano (0,01 cm).
+Verdes también `posar-apoyar`, `posar-maquina`, `press-maquina`, `auditoria2`,
+`carga-grupo`, `grupos`, `ergonomia-v256`, `uppermachine-lib` y `torre-pesos`.
+
 ## [0.2.93] — 2026-08-19
 
 La máquina se queda donde la congelas, y entera.
