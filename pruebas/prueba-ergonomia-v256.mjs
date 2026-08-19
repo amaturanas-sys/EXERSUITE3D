@@ -123,8 +123,13 @@ const apoyos = await p.evaluate(() => {
     .find((x) => x.querySelector(".mq-grupo-titulo").textContent.trim() === "Apoyos");
   return [...g.querySelectorAll("button")].map((b) => b.textContent.trim());
 });
-ok(apoyos.some((t) => /Apoyar mano/.test(t)) && apoyos.some((t) => /Pisar/.test(t)) &&
-   apoyos.some((t) => /Soltar apoyos/.test(t)), `1.d — los tres apoyos siguen (${apoyos.join(", ")})`);
+// Rótulos ACORTADOS en v0.2.91: «Apoyar mano» y «Soltar apoyos» caían a dos
+// líneas en el panel de 262 px y lo engordaban —«texto sobrante y poco
+// optimizado que se ve cortado», reportado por el diseñador—. La explicación
+// entera vive ahora en la ayuda del botón; aquí se comprueba que los TRES
+// mandos siguen estando, que es lo que esta línea vigila.
+ok(apoyos.some((t) => /Mano/.test(t)) && apoyos.some((t) => /Pisar/.test(t)) &&
+   apoyos.some((t) => /Soltar/.test(t)), `1.d — los tres apoyos siguen (${apoyos.join(", ")})`);
 
 // ── 2.a PARTIDA como reproductor ────────────────────────────────────────
 const repro = await p.evaluate(() => {

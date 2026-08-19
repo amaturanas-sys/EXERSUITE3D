@@ -254,11 +254,15 @@ export class ArticulacionesPanel {
       const v = parseFloat(this.rumbo.value);
       if (Number.isFinite(v)) this.editor.setRumboFigura(v);
     });
-    // VA EN LA MISMA FILA QUE «Colocar» y «Agarrar», sin añadir alto: el panel
-    // ya roza la barra de simulación en una tablet de 800×1280, y una fila más
-    // la solapaba. El número lleva su propia ayuda, así que no hace falta
-    // etiqueta ni unidad.
-    this.filaRumbo = el("span", { class: "mq-rumbo" }, [bIzq, this.rumbo, bDer]);
+    // EN SU PROPIA FILA, pero compacta. Compartir la de «Colocar» y «Agarrar»
+    // dejaba cinco mandos en 246 px y los rótulos se partían en dos líneas —el
+    // «texto sobrante y cortado» que reportó el diseñador—. Acortando los
+    // rótulos largos de todo el panel se recupera de sobra el alto que cuesta
+    // esta fila, y aquí caben la etiqueta, los dos cuartos y el número exacto.
+    this.filaRumbo = el("div", { class: "row mq-rumbo" }, [
+      el("span", { class: "mq-rumbo-et" }, [tt("Mira a", "Facing")]),
+      bIzq, this.rumbo, bDer,
+    ]);
     const pintarRumbo = () => { this.rumbo.value = String(this.editor.rumboFigura()); };
     this.editor.bus.on("figuraRumboChanged", pintarRumbo);
     this.editor.bus.on("humanFigureChanged", pintarRumbo);
@@ -293,7 +297,7 @@ export class ArticulacionesPanel {
     ]);
 
     const bApoyar = el("button", { class: "tool", title: tt("Apoyar una mano en un agarre: toca el brazo y luego el agarre", "Rest a hand on a grip: tap the arm, then the grip") }, [
-      tt("✋ Apoyar mano", "✋ Rest hand"),
+      tt("✋ Mano", "✋ Hand"),
     ]);
     bApoyar.addEventListener("click", () => this.editor.beginAttachHand());
     // PISAR (v0.2.52): el pie no siempre toca el suelo — en una prensa pisa la
@@ -304,7 +308,7 @@ export class ArticulacionesPanel {
     ) }, [tt("🦶 Pisar", "🦶 Step on")]);
     bPisar.addEventListener("click", () => this.editor.beginAttachFoot());
     const bSoltar = el("button", { class: "tool", title: tt("Soltar las manos y los pies apoyados", "Release the resting hands and feet") }, [
-      tt("Soltar apoyos", "Release supports"),
+      tt("Soltar", "Release"),
     ]);
     bSoltar.addEventListener("click", () => {
       this.editor.detachHands();
@@ -376,7 +380,7 @@ export class ArticulacionesPanel {
     const bGuardarPartida = el("button", { class: "tool sim", title: tt(
       "Guardar el estado actual como un punto de partida nuevo",
       "Save the current state as a new start point",
-    ) }, [tt("Guardar actual", "Save current")]);
+    ) }, [tt("Guardar", "Save")]);
     bGuardarPartida.addEventListener("click", () => {
       const n = this.editor.guardarPartida();
       this.selectPartidas.value = n;
@@ -402,7 +406,7 @@ export class ArticulacionesPanel {
     this.botonSoltarPartida = el("button", { class: "tool danger", title: tt(
       "La máquina vuelve a arrancar en su diseño (la postura del maniquí se conserva)",
       "The machine goes back to starting at its design (the mannequin's pose is kept)",
-    ) }, [tt("🗑 Soltar máquina", "🗑 Release machine")]) as HTMLButtonElement;
+    ) }, [tt("🗑 Soltar", "🗑 Release")]) as HTMLButtonElement;
     this.botonSoltarPartida.addEventListener("click", () => {
       this.editor.soltarPartidaMaquina();
       this.hint.textContent = tt(
@@ -473,7 +477,8 @@ export class ArticulacionesPanel {
     // al último porque es la consecuencia de todo lo anterior, no su premisa.
     this.cajaPosar = el("div", { class: "mq-seccion" }, [
       el("div", { class: "pose-actions" }, [this.botonFigura]),
-      el("div", { class: "pose-actions" }, [bColocar, bAgarrar, this.filaRumbo]),
+      el("div", { class: "pose-actions" }, [bColocar, bAgarrar]),
+      this.filaRumbo,
 
       grupo(tt("Postura", "Pose"), [
         el("div", { class: "row mq-fila-postura" }, [this.select, bAplicar]),

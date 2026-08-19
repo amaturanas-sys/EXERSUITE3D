@@ -92,19 +92,25 @@ const b = await p.evaluate(async () => {
 });
 ok(b.entra, "con maniquí delante sí se entra a posar la máquina");
 ok(b.piezas > 0 && b.congeladas > 0, `la partida congela lo que se movió (${b.piezas} pieza(s))`);
-// PARADO, LA MALLA ES EL DISEÑO. Llegó a dibujarse la partida encima y fue un
-// desastre: `startSimulation` saca de las mallas el estado al que volver y
-// construye con ellas el mundo —los cables miden ahí su reposo y las uniones su
-// cero—, así que la máquina arrancaba mal armada y al parar se «restauraba» la
-// partida ENCIMA del plano, que se perdía. Cada ▶/⏹ lo empeoraba.
-ok(Math.abs(b.trasPosar - b.disenoY) < 0.5,
-  `parado se sigue viendo el DISEÑO, no la partida (${b.trasPosar} vs ${b.disenoY} cm)`);
+// LA MÁQUINA SE QUEDA DONDE SE CONGELÓ, con el maniquí delante. Es contra esa
+// postura contra la que hay que acomodarle el cuerpo, y volver al plano de un
+// salto hacía imposible posarlo.
+//
+// El plano sigue mandando POR DENTRO, que es lo que costó caro aprender: se
+// dibuja la partida, pero `startSimulation` saca el estado al que volver y
+// construye el mundo físico con el DISEÑO repuesto —los cables miden ahí su
+// reposo y las uniones su cero—. Cuando se pintaba la partida a secas, la
+// máquina arrancaba mal armada y al parar se «restauraba» la partida ENCIMA del
+// plano, que se perdía; cada ▶/⏹ lo empeoraba. Eso es lo que vigilan las dos
+// últimas comprobaciones.
+ok(Math.abs(b.trasPosar - b.disenoY) > 5,
+  `parado se ve la PARTIDA, que es contra lo que se posa (${b.trasPosar} vs plano ${b.disenoY} cm)`);
 ok(Math.abs(b.alArrancar - b.disenoY) > 5,
-  `pero ▶ arranca en la partida (${b.alArrancar} cm, diseño ${b.disenoY})`);
-ok(Math.abs(b.trasParar - b.disenoY) < 0.5,
-  `y ⏹ devuelve el plano intacto (${b.trasParar} cm)`);
-ok(Math.abs(b.trasTresCiclos - b.disenoY) < 0.5,
-  `tres ciclos ▶/⏹ y el plano NO deriva (${b.trasTresCiclos} cm)`);
+  `▶ arranca en la partida (${b.alArrancar} cm, diseño ${b.disenoY})`);
+ok(Math.abs(b.trasParar - b.trasPosar) < 0.5,
+  `⏹ la deja donde estaba, sin saltos (${b.trasParar} cm)`);
+ok(Math.abs(b.trasTresCiclos - b.trasPosar) < 0.5,
+  `tres ciclos ▶/⏹ y NO deriva (${b.trasTresCiclos} cm)`);
 ok(b.congeladasSin === 0, "y sin maniquí la partida no cuenta (0 piezas congeladas)");
 
 // ── 3. Se puede APOYAR LA MANO con la máquina posada ──────────────────────

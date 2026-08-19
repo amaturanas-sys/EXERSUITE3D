@@ -5,6 +5,58 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.93] — 2026-08-19
+
+La máquina se queda donde la congelas, y entera.
+
+### Cambiado
+
+**Con el maniquí delante, parado se ve la PARTIDA.** Esto cambia lo que fijó la
+v0.2.51 —«parado se sigue viendo y editando el diseño»— y conviene decir por qué.
+Aquella regla nació cuando la partida era sólo una condición de arranque del
+motor. Pero posar la máquina existe para acomodarle el cuerpo, y ahí se vuelve
+en contra: «la postura de la máquina no permanece en su sitio pese a ejecutar
+fijar posición, motivo por el cual es imposible posar el maniquí para una
+ergonomía congruente». Si la máquina vuelve al plano de un salto, no hay contra
+qué colocar el cuerpo.
+
+Se conserva la intención de la regla vieja: la partida sólo se ve CON EL MANIQUÍ
+delante —sin él se diseña sobre el plano, igual que antes—, el plano sigue siendo
+lo que se exporta y se guarda, y soltar la partida lo repone.
+
+Por dentro manda el diseño, y esto costó caro aprenderlo. `startSimulation` saca
+de las mallas el estado al que volver y construye con ellas el mundo físico —los
+cables miden ahí su longitud de reposo y las uniones su cero—. Cuando se pintó la
+partida encima sin más, la máquina arrancaba mal armada y al parar se
+«restauraba» la partida SOBRE el plano, que se perdía; cada ▶/⏹ lo empeoraba.
+Ahora esas tres cosas pasan por una única puerta, `conElDiseno`, que repone el
+plano, hace el trabajo y devuelve lo que había.
+
+### Corregido
+
+**La máquina ya no se parte al congelar.** La partida salía de
+`physics.posesDePiezas()`, que devuelve una entrada por CUERPO RÍGIDO y se salta
+las piezas SOLDADAS —viajan dentro del cuerpo de su anfitrión—. Se congelaban los
+anfitriones y las fundidas se quedaban en el plano: el brazo del press aparecía
+partido en dos, una mitad en su sitio nuevo y la otra en el viejo. Ahora se
+recorren todas las piezas: en la UpperMachine pasa de congelar 3 a congelar 8,
+que son las que de verdad se movieron.
+
+**Botones con el texto cortado.** «Apoyar mano» y «Soltar apoyos» caían a dos
+líneas en el panel de 262 px y lo engordaban hasta solapar la barra de
+simulación. Acortados a «Mano» y «Soltar», con la explicación entera en su ayuda;
+con el alto recuperado, «Mira a» vuelve a su propia fila en vez de apretujarse
+con Colocar y Agarrar.
+
+### Verificación
+
+`prueba-maquina-entera` sube a 11 comprobaciones: la máquina se queda en su
+partida al congelar (33,3 cm del plano), no se queda ninguna pieza atrás (8 de
+8), no se desarma al simular, vuelve entera al parar, soltar la partida repone el
+plano y el proyecto guardado lleva el plano y no la partida. Verde, junto con las
+tres de solapes, `menus-v257`, `posar-apoyar`, `posar-maquina`, `press-maquina`,
+`ergonomia-v256` y `auditoria2`.
+
 ## [0.2.92] — 2026-08-19
 
 El temblor de los brazos apoyados, que el diseñador grabó en vídeo.

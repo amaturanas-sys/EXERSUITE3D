@@ -1024,15 +1024,19 @@ export class Editor {
       this.startingSim = false;
     }
 
-    // Guarda el estado de diseno para poder restaurarlo al detener.
-    this.saved.clear();
-    for (const o of this.listObjects()) {
-      this.saved.set(o.id, {
-        position: o.mesh.position.clone(),
-        quaternion: o.mesh.quaternion.clone(),
-        scale: o.mesh.scale.clone(),
-      });
-    }
+    // Guarda el estado de diseno para poder restaurarlo al detener. VA CON EL
+    // DISEÑO PUESTO: si estuviera viéndose la partida, se guardaría ella como
+    // «plano» y al parar se restauraría encima del de verdad, que se perdería.
+    this.conElDiseno(() => {
+      this.saved.clear();
+      for (const o of this.listObjects()) {
+        this.saved.set(o.id, {
+          position: o.mesh.position.clone(),
+          quaternion: o.mesh.quaternion.clone(),
+          scale: o.mesh.scale.clone(),
+        });
+      }
+    });
 
     this.select(null);
     this.cancelConnect();
@@ -1046,12 +1050,19 @@ export class Editor {
     this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
-    this.physics.build(
-      this.listObjects(),
-      this.listJoints(),
-      this.listCables(),
-      this.cuerdasFisicas(),
-    );
+    // EL MUNDO SE ARMA DESDE EL DISEÑO. Los cables miden aquí su longitud de
+    // reposo y las uniones su cero; construirlo sobre la partida los daría por
+    // buenos en una configuración que es una condición de ensayo, y la máquina
+    // arrancaría tensada contra sí misma.
+    const motor = this.physics;
+    this.conElDiseno(() => {
+      motor.build(
+        this.listObjects(),
+        this.listJoints(),
+        this.listCables(),
+        this.cuerdasFisicas(),
+      );
+    });
     // El maniquí entra al motor con cuerpo propio: la máquina ya no lo
     // atraviesa. Sus segmentos son cinemáticos —la postura la manda quien
     // simula—, así que no se desploma ni lo arrastran las piezas.
@@ -1110,6 +1121,11 @@ export class Editor {
     // Cables y cuerdas vuelven a las posiciones de diseño restauradas.
     this.cablesDirty = true;
     this.rebuildAllRopes();
+    // Y LA MÁQUINA SE QUEDA DONDE SE CONGELÓ, si hay maniquí delante: parar no
+    // es soltar la partida. El plano sigue mandando por dentro (`conElDiseno`),
+    // pero lo que se ve es la condición de ensayo, que es contra la que se
+    // acomoda el cuerpo.
+    this.sincronizarPartidaVisible();
     this.bus.emit("simulationChanged", { running: false });
   }
 
@@ -2635,8 +2651,18 @@ export class Editor {
       workspace: this.workspace ?? undefined,
       objects: this.listObjects().filter((o) => !o.imported).map((o) => {
         // Durante la simulación se serializa el estado de DISEÑO (guardado al
-        // arrancar la física), no las posiciones simuladas del momento.
-        const s = this.simulating ? this.saved.get(o.id) : undefined;
+        // arrancar la física), no las posiciones simuladas del momento. Y con
+        // el gesto parado, si se está VIENDO la partida, se guarda igualmente
+        // el plano: el proyecto es el fabricable, y la partida viaja aparte en
+        // `startParts`.
+        const s = this.simulating
+          ? this.saved.get(o.id)
+          : this.partidaVigente()
+            ? (() => {
+                const d = this.disenoDePartida?.get(o.id);
+                return d ? { position: d.p, quaternion: d.q, scale: o.mesh.scale } : undefined;
+              })()
+            : undefined;
         return {
           id: o.id,
           name: o.name,
@@ -4999,6 +5025,12 @@ export class Editor {
    * editando el diseño, sin dos estados que confundan.
    */
   private partidaPiezas: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
+  /**
+   * El DISEÑO de esas mismas piezas: a qué se vuelve. Se apunta en el mismo
+   * momento en que se congela la partida, porque es entonces cuando `saved`
+   * todavía guarda el plano del que se partió.
+   */
+  private disenoDePartida: Map<string, { p: THREE.Vector3; q: THREE.Quaternion }> | null = null;
 
   /**
    * LA PARTIDA DE LA MÁQUINA ES DEL MANIQUÍ (v0.2.91), y esto lo pidió el
@@ -5018,29 +5050,85 @@ export class Editor {
   }
 
   /**
-   * LAS MALLAS GUARDAN EL DISEÑO. SIEMPRE.
+   * EL DISEÑO ES EL DUEÑO; LA PARTIDA, LO QUE SE VE.
    *
-   * Esta función llegó a mover las piezas a la partida mientras el maniquí
-   * estaba delante, para que se viera dónde iba a arrancar el gesto. Fue un
-   * error caro y conviene dejarlo escrito: PARADO, LAS MALLAS SON EL DISEÑO, y
-   * media aplicación cuenta con ello. `startSimulation` saca de ellas el estado
-   * al que volver (`saved`) y construye con ellas el mundo físico —los cables
-   * miden ahí su longitud de reposo y las uniones su cero—, `fijarPartida`
-   * compara contra ellas para saber qué se movió de verdad, y exportar y acotar
-   * leen de ellas el plano fabricable. Dibujar la partida encima envenenaba las
-   * cuatro cosas a la vez: la máquina arrancaba con cables mal medidos, al
-   * parar se «restauraba» la partida ENCIMA del diseño —que se perdía— y cada
-   * ▶/⏹ lo empeoraba un poco más.
+   * Aquí hubo dos errores seguidos y merece la pena dejarlos escritos, porque
+   * son las dos mitades de la misma verdad.
    *
-   * Lo que hacía falta no era mover nada, sino que la MANO supiera adónde
-   * apuntar: eso lo resuelve `updateHandIK`, que compone el marco del agarre
-   * desde la partida cuando la hay. Aquí sólo se reencaminan los apoyos.
+   * El primero fue dibujar la partida encima de las mallas sin más. PARADO,
+   * MEDIA APLICACIÓN LEE LAS MALLAS COMO SI FUERAN EL DISEÑO: `startSimulation`
+   * saca de ellas el estado al que volver y construye con ellas el mundo físico
+   * —los cables miden ahí su longitud de reposo y las uniones su cero—, y
+   * exportar y acotar leen de ellas el plano fabricable. Pintar la partida
+   * encima envenenaba las tres cosas: la máquina arrancaba mal armada y al parar
+   * se «restauraba» la partida SOBRE el diseño, que se perdía para siempre.
+   *
+   * El segundo fue el arreglo: quitar el pintado y dejar las mallas siempre en
+   * el diseño. Correcto para la física y falso para el usuario, que en cuanto
+   * congelaba la máquina la veía volver al plano de un salto —«la postura no
+   * permanece en su sitio pese a fijar posición»— y ya no podía acomodarle el
+   * maniquí, que es justo para lo que se congela.
+   *
+   * Lo que hace falta son las dos: SE VE la partida y MANDA el diseño. La
+   * partida se pinta en las mallas mientras el maniquí está delante, y quien
+   * necesite el plano lo pide con `conElDiseno()`, que lo repone, hace su
+   * trabajo y vuelve a dejar lo que había. `disenoDePartida` guarda a qué se
+   * vuelve; se apunta en el mismo momento en que se congela.
    */
   private sincronizarPartidaVisible(): void {
     if (this.simulating) return; // manda el motor
+    const mostrar = this.partidaVigente();
+    const fuente = mostrar ?? this.disenoDePartida;
+    if (fuente) {
+      for (const [id, t] of fuente) {
+        const o = this.objects.get(id);
+        if (!o) continue;
+        o.mesh.position.copy(t.p);
+        o.mesh.quaternion.copy(t.q);
+        o.mesh.updateMatrixWorld(true);
+      }
+      this.cablesDirty = true;
+      this.rebuildAllRopes();
+    }
     this.updateHandIK();
     this.updateFootIK();
     this.requestRender();
+  }
+
+  /**
+   * Ejecuta `fn` con las mallas EN EL DISEÑO, y deja luego lo que hubiera.
+   *
+   * Es la puerta por la que pasan las tres cosas que necesitan el plano y no la
+   * condición de ensayo: guardar el estado al que volver, construir el mundo
+   * físico y comparar qué se movió de verdad.
+   */
+  private conElDiseno<T>(fn: () => T): T {
+    const partidaVisible = !this.simulating && this.partidaVigente() !== null;
+    if (partidaVisible && this.disenoDePartida) {
+      for (const [id, t] of this.disenoDePartida) {
+        const o = this.objects.get(id);
+        if (!o) continue;
+        o.mesh.position.copy(t.p);
+        o.mesh.quaternion.copy(t.q);
+        o.mesh.updateMatrixWorld(true);
+      }
+    }
+    try {
+      return fn();
+    } finally {
+      if (partidaVisible) {
+        const partida = this.partidaPiezas;
+        if (partida) {
+          for (const [id, t] of partida) {
+            const o = this.objects.get(id);
+            if (!o) continue;
+            o.mesh.position.copy(t.p);
+            o.mesh.quaternion.copy(t.q);
+            o.mesh.updateMatrixWorld(true);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -5080,6 +5168,12 @@ export class Editor {
       poses.set(o.id, { p: p.clone(), q: q.clone() });
     }
     this.partidaPiezas = poses.size ? poses : null;
+    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const id of poses.keys()) {
+      const sv = this.saved.get(id);
+      if (sv) diseno.set(id, { p: sv.position.clone(), q: sv.quaternion.clone() });
+    }
+    this.disenoDePartida = diseno.size ? diseno : null;
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
     return { piezas: poses.size, postura: this.poseDePartida !== null };
@@ -5148,12 +5242,19 @@ export class Editor {
     this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
-    this.physics.build(
-      this.listObjects(),
-      this.listJoints(),
-      this.listCables(),
-      this.cuerdasFisicas(),
-    );
+    // EL MUNDO SE ARMA DESDE EL DISEÑO. Los cables miden aquí su longitud de
+    // reposo y las uniones su cero; construirlo sobre la partida los daría por
+    // buenos en una configuración que es una condición de ensayo, y la máquina
+    // arrancaría tensada contra sí misma.
+    const motor = this.physics;
+    this.conElDiseno(() => {
+      motor.build(
+        this.listObjects(),
+        this.listJoints(),
+        this.listCables(),
+        this.cuerdasFisicas(),
+      );
+    });
     // Se continúa desde donde quedó la partida, no desde el diseño: retocar un
     // punto de bloqueo ya fijado no obliga a rehacerlo entero.
     const partidaPrevia = this.partidaVigente();
@@ -5200,20 +5301,29 @@ export class Editor {
     if (!this.modoPoseMaquina) return { piezas: 0 };
     this.endSimInteraction();
 
-    // Solo se congela lo que de verdad se movió respecto del diseño.
+    // SE CONGELA LO QUE SE VE, no sólo los cuerpos del motor. Antes la lista
+    // salía de `physics.posesDePiezas()`, que devuelve una entrada por CUERPO
+    // RÍGIDO y se salta las piezas FUNDIDAS —las soldadas, que viajan dentro
+    // del cuerpo de su anfitrión—. Congelar sólo los anfitriones y luego pintar
+    // la partida dejaba a las soldadas en el plano: el brazo del press aparecía
+    // partido en dos, una mitad en su sitio nuevo y la otra en el viejo. Se
+    // recorren TODAS las piezas y se guarda la que se haya movido, sea cuerpo
+    // propio o vaya soldada a otro.
     const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
-    for (const [id, t] of this.physics?.posesDePiezas() ?? []) {
-      const disenada = this.saved.get(id);
-      if (
-        disenada &&
-        t.p.distanceTo(disenada.position) < 0.05 &&
-        t.q.angleTo(disenada.quaternion) < 1e-3
-      ) {
-        continue;
+    const diseno = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const o of this.listObjects()) {
+      const disenada = this.saved.get(o.id);
+      if (!disenada) continue;
+      const p = o.mesh.position;
+      const q = o.mesh.quaternion;
+      if (p.distanceTo(disenada.position) < 0.05 && q.angleTo(disenada.quaternion) < 1e-3) {
+        continue; // sigue en su sitio de diseño: no es parte del gesto
       }
-      poses.set(id, t);
+      poses.set(o.id, { p: p.clone(), q: q.clone() });
+      diseno.set(o.id, { p: disenada.position.clone(), q: disenada.quaternion.clone() });
     }
     this.partidaPiezas = poses.size ? poses : null;
+    this.disenoDePartida = diseno.size ? diseno : null;
 
     this.simulating = false;
     this.modoPoseMaquina = false;
@@ -5313,7 +5423,8 @@ export class Editor {
   /** 🗑 Suelta la partida de la MÁQUINA: ▶ vuelve a arrancar en el diseño. */
   soltarPartidaMaquina(): void {
     this.partidaPiezas = null;
-    this.sincronizarPartidaVisible();
+    this.sincronizarPartidaVisible(); // repone el diseño en las mallas
+    this.disenoDePartida = null;
     this.bus.emit("poseDePartidaChanged", { name: this.nombreDePartida });
     this.scheduleAutosave();
   }

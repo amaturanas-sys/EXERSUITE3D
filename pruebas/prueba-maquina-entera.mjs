@@ -77,18 +77,32 @@ const r = await p.evaluate(async () => {
   }
   ed.physics.release?.();
   for (let i = 0; i < 30; i++) ed.physics.step(1 / 60);
+  // Cuántas piezas se movieron DE VERDAD durante el posado, contadas sobre las
+  // mallas: es con lo que hay que comparar lo que la partida llegó a congelar.
+  const movidas = Object.entries(window.__retrato())
+    .filter(([id, p]) => {
+      const d = diseno[id];
+      return d && Math.hypot(p[0] - d[0], p[1] - d[1], p[2] - d[2]) > 0.05;
+    }).length;
   const congeladas = ed.terminarPoseMaquina().piezas;
   await new Promise((x) => setTimeout(x, 500));
   const trasCongelar = window.__retrato();
   return { entra, congeladas, diseno, trasCongelar,
+    reparto: { movidas, enPartida: congeladas },
     derivaAlCongelar: window.__deriva(diseno, trasCongelar) };
 });
 ok(r.entra, "se entra a posar la máquina con el maniquí sentado");
 ok(r.congeladas > 0, `la partida congela lo que se movió (${r.congeladas} pieza(s))`);
-// PARADO SE VE EL DISEÑO. La partida vive aparte; si se dibujara encima, el mundo
-// físico se construiría desde ella y arrancaría mal armado.
-ok(r.derivaAlCongelar.peor < 0.5,
-  `al salir de posar, la máquina sigue en su plano (deriva ${r.derivaAlCongelar.peor} cm)`);
+// LA MÁQUINA SE QUEDA DONDE SE CONGELÓ. Es la queja literal del diseñador —«la
+// postura de la máquina no permanece en su sitio pese a ejecutar fijar
+// posición»—: si al salir de posar vuelve al plano de un salto, ya no hay contra
+// qué acomodarle el maniquí, que es justo para lo que se congela.
+ok(r.derivaAlCongelar.peor > 1,
+  `al salir de posar, la máquina SE QUEDA en su partida (${r.derivaAlCongelar.peor} cm del plano)`);
+// Y ENTERA: las piezas soldadas viajan con su anfitrión. Congelar sólo los
+// cuerpos del motor dejaba las fundidas en el plano y el brazo salía partido.
+ok(r.reparto.enPartida === r.reparto.movidas,
+  `y no se queda ninguna pieza atrás (${r.reparto.enPartida} congeladas de ${r.reparto.movidas} movidas)`);
 
 // ── 2. Apoyar las manos: la IK tiene que ASENTARSE, no temblar ─────────────
 const t = await p.evaluate(async () => {
@@ -146,11 +160,35 @@ ok(dSim.peor < 40,
   `simular no desarma la máquina (la pieza que más se va, ${dSim.peor} cm)`);
 ok(s.avisos.length === 0, `sin avisos de armado (${s.avisos.join(" · ") || "ninguno"})`);
 
-// Y AL PARAR, EL PLANO INTACTO. Es lo que el diseñador vio romperse para siempre:
-// la máquina quedaba disgregada en el modo de construcción.
-const dParar = await p.evaluate(([a, b]) => window.__deriva(a, b), [r.diseno, s.trasParar]);
-ok(dParar.peor < 0.5,
-  `al parar, la máquina vuelve ENTERA a su plano (deriva ${dParar.peor} cm)`);
+// AL PARAR VUELVE A SU PARTIDA, no al plano: parar no es soltar la condición de
+// ensayo. Y sobre todo, vuelve ENTERA — es lo que el diseñador vio romperse para
+// siempre, con las piezas disgregadas en el modo de construcción.
+const dParar = await p.evaluate(([a, b]) => window.__deriva(a, b), [r.trasCongelar, s.trasParar]);
+ok(dParar.peor < 1,
+  `al parar, la máquina vuelve ENTERA a su partida (deriva ${dParar.peor} cm)`);
+
+// EL PLANO NO SE PIERDE aunque se esté viendo la partida: es lo que se exporta y
+// lo que se guarda. Se comprueba soltando la partida, que repone el diseño.
+const dPlano = await p.evaluate(async ([diseno]) => {
+  const ed = window.exersuite.editor;
+  const guardado = ed.serialize().objects;
+  ed.soltarPartidaMaquina();
+  await new Promise((x) => setTimeout(x, 300));
+  const trasSoltar = window.__deriva(diseno, window.__retrato());
+  // Y lo serializado tenía que ser ya el plano, no lo que se veía.
+  let peorGuardado = 0;
+  for (const o of guardado) {
+    const d = diseno[o.id];
+    if (!d) continue;
+    peorGuardado = Math.max(peorGuardado, Math.hypot(
+      o.position[0] - d[0], o.position[1] - d[1], o.position[2] - d[2]));
+  }
+  return { trasSoltar, peorGuardado: +peorGuardado.toFixed(2) };
+}, [r.diseno]);
+ok(dPlano.trasSoltar.peor < 0.5,
+  `soltar la partida devuelve el plano intacto (deriva ${dPlano.trasSoltar.peor} cm)`);
+ok(dPlano.peorGuardado < 0.5,
+  `y el proyecto guardado lleva el PLANO, no la partida (${dPlano.peorGuardado} cm)`);
 
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0

@@ -175,8 +175,22 @@ const nueva = async (w = 1280, h = 900) => {
   const recorrido = Math.abs(r.bloqueo.agarre - r.diseno.agarre);
   ok(recorrido > 3, `la mano lleva el conjunto móvil hasta su bloqueo (${recorrido.toFixed(1)} cm de recorrido)`);
   ok(r.fijado.piezas > 0, `📌 congela las piezas que se movieron (${r.fijado.piezas})`);
-  ok(Math.abs(r.parado.agarre - r.diseno.agarre) < 2,
-    `al parar se sigue viendo y editando el DISEÑO (agarre en ${r.parado.agarre} cm)`);
+  // AL PARAR SE VE LA PARTIDA, no el diseño — y esto CAMBIA lo que fijó la
+  // v0.2.51, así que conviene decir por qué. Aquella regla («parado se sigue
+  // viendo y editando el diseño») nació cuando la partida era sólo una
+  // condición de arranque del motor. Pero en v0.2.91 el diseñador pidió posar
+  // la máquina PARA acomodarle el maniquí, y ahí la regla se vuelve en contra:
+  // «la postura de la máquina no permanece en su sitio pese a ejecutar fijar
+  // posición, motivo por el cual es imposible posar el maniquí para una
+  // ergonomía congruente». Si la máquina vuelve al plano de un salto, no hay
+  // contra qué colocar el cuerpo.
+  //
+  // Lo que se conserva de la regla vieja es su intención: que diseñar no se vea
+  // perturbado. Por eso la partida sólo se ve CON EL MANIQUÍ DELANTE (aquí lo
+  // hay), el plano sigue siendo lo que se exporta y se guarda, y soltarla lo
+  // repone — que es lo que comprueba la tercera simulación de más abajo.
+  ok(Math.abs(r.parado.agarre - r.bloqueo.agarre) < 2,
+    `al parar, la máquina SE QUEDA donde se congeló (agarre en ${r.parado.agarre} cm, bloqueo en ${r.bloqueo.agarre})`);
   ok(Math.abs(r.segunda.agarre - r.bloqueo.agarre) < Math.abs(r.segunda.agarre - r.diseno.agarre),
     `▶ arranca en el punto congelado y no en el diseño (${r.segunda.agarre} cm; bloqueo ${r.bloqueo.agarre}, diseño ${r.diseno.agarre})`);
   ok(r.segundaAsentada.agarre < r.segunda.agarre - 1,
