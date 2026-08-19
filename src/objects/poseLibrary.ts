@@ -115,10 +115,20 @@ export const BUILTIN_POSES: PoseMap = {
    * −150 del rango: es agarre cerrado de sentadilla trasera, y ahí el codo va
    * al máximo de verdad.
    *
-   * EL PIE NO SE ORIENTA A MANO. Sale girado 36° hacia afuera —igual que en el
-   * modelo, 36,2°— solo por la abducción de cadera, la flexión y la rodilla;
-   * el eje largo del pie del maniquí acaba en (−0,583, 0, 0,812) contra el
-   * (−0,591, 0, 0,807) medido. Y la planta queda plana (su normal sale
+   * EN EL FONDO EL PIE NO SE ORIENTA A MANO. Sale girado 35,6° hacia afuera
+   * —igual que en el modelo, 36,2°— solo por la abducción de cadera, la flexión
+   * y la rodilla; el eje largo del pie del maniquí acaba en (−0,583, 0, 0,812)
+   * contra el (−0,591, 0, 0,807) medido.
+   *
+   * DE PIE SÍ SE ORIENTA, y desde v0.2.96, porque no hay otra manera. El pie es
+   * un ANCLAJE —lo dijo el diseñador con todas las letras: «los pies son
+   * anclaje en la superficie y el resto del cuerpo opera con la cinemática ya
+   * descrita, ya que la sentadilla es un ejercicio de cadena cerrada»—, así que
+   * su orientación en el mundo tiene que ser LA MISMA arriba y abajo. Y el
+   * tobillo de este esqueleto no tiene eje Y, de modo que con la rodilla recta
+   * esa apertura solo puede venir de la ROTACIÓN AXIAL DE CADERA. Se declara.
+   *
+   * La planta queda plana en los dos extremos (su normal sale
    * (0,000, 1,000, 0,000)), que es la comprobación de que la cadena cierra.
    */
   "Sentadilla frontal (arriba)": {
@@ -130,12 +140,31 @@ export const BUILTIN_POSES: PoseMap = {
     // Sin esto el maniquí abría 14,3 cm por lado al descender —medido—, que es
     // el gesto de quien se recoloca, no el de quien levanta.
     //
-    // 10,4° de abducción es lo que iguala la anchura del fondo (60,5 cm entre
-    // los centros de los pies), resuelto contra el modelo. Con la rodilla recta
-    // el tobillo deshace exactamente la abducción —de ahí que los dos ángulos
-    // coincidan— y la planta queda plana.
-    hipL: [0, 0, -10.4], hipR: [0, 0, 10.4],
-    ankleL: [0, 0, 10.4], ankleR: [0, 0, -10.4],
+    // Y LA ESTAMPA ES EL PIE ENTERO, no solo su anchura (v0.2.96). Igualar la
+    // separación entre los pies dejaba fuera la mitad del problema: el pie
+    // seguía GIRANDO 34,98° al bajar y volviendo a 0° al subir. El centro
+    // apenas se movía (0,23 cm) —por eso el plantado por traslación lo daba por
+    // bueno— pero la PUNTA viajaba 10,13 cm y el TALÓN 9,82 cm en sentido
+    // contrario, alrededor de un punto fijo situado a 29,43 cm del centro del
+    // pie, o sea FUERA del pie: no pivotaba, derrapaba. Casi 20 cm de arrastre
+    // por pie en cada bajada, con el pie clavado en el suelo.
+    //
+    // Los cinco ángulos de abajo son la solución de un sistema, no una
+    // estimación: con el fondo del modelo intacto —cadera −78,61/3/−36,5 y los
+    // 126° de rodilla—, se resuelve la pierna de pie para que deje el pie con
+    // LA MISMA orientación en el mundo y la MISMA separación entre pies. Son
+    // las dos únicas cosas que una traslación no puede arreglar, así que
+    // igualadas, `plantarLosPies` ya hace coincidir el pie exactamente.
+    // Residuos medidos: 0,01° de rumbo, 0,00 cm de anchura, 0,01 cm de barra.
+    //
+    // EL −34,7 DE ROTACIÓN AXIAL NO ES UN CERO PERDIDO. La puntera abierta a
+    // 35,6° hay que declararla de pie porque el tobillo de este esqueleto NO
+    // TIENE EJE Y (`ankleL: { x, z }`) y con la rodilla recta la abducción sola
+    // pediría −90° contra un tope de −45. En el FONDO se sigue cayendo de la
+    // cadena, como midió el diseñador; de pie se dice. Que es, además, lo que
+    // hace cualquiera: la puntera se abre ANTES de bajar, no a mitad de camino.
+    hipL: [-9.39, -34.7, -9.37], hipR: [-9.39, 34.7, 9.37],
+    ankleL: [7.73, 0, 3.96], ankleR: [7.73, 0, -3.96],
     shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
     elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
@@ -167,9 +196,16 @@ export const BUILTIN_POSES: PoseMap = {
     // mal era el tobillo en X, −43 en vez de −47,39, y por eso la barra se
     // iba: 4° de tobillo son 8,6 cm de barra. La profundidad baja de 45,9 a
     // 43,2 cm, que es CONSECUENCIA y no objetivo — la marca la da el modelo.
+    // EL TOBILLO SE RESUELVE, LA CADERA NO (v0.2.96). Cadera y rodilla son el
+    // dato del .obj y no se tocan. El tobillo sí: los −47,39 salían de la
+    // identidad plana `tobillo = −(cadera + rodilla)`, que es una aproximación,
+    // y dejaba la planta 3,88° DE CANTO y despegada 0,27 cm del suelo — los
+    // vértices en contacto caían de 892 a 256, así que lo que tocaba el suelo
+    // era el collarín, no la suela. Resueltos contra planta horizontal quedan
+    // en −43,46 y la normal sale (0, 1, 0) exacta.
     hipL: [-78.61, 3, -36.5], hipR: [-78.61, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-47.39, 0, 9.01], ankleR: [-47.39, 0, -9.01],
+    ankleL: [-43.46, 0, 9.13], ankleR: [-43.46, 0, -9.13],
     // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
     spine: [0, 0, 0],
     shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
@@ -192,12 +228,11 @@ export const BUILTIN_POSES: PoseMap = {
     // Sin esto el maniquí abría 14,3 cm por lado al descender —medido—, que es
     // el gesto de quien se recoloca, no el de quien levanta.
     //
-    // 10,4° de abducción es lo que iguala la anchura del fondo (60,5 cm entre
-    // los centros de los pies), resuelto contra el modelo. Con la rodilla recta
-    // el tobillo deshace exactamente la abducción —de ahí que los dos ángulos
-    // coincidan— y la planta queda plana.
-    hipL: [0, 0, -10.4], hipR: [0, 0, 10.4],
-    ankleL: [0, 0, 10.4], ankleR: [0, 0, -10.4],
+    // MISMA PIERNA QUE LA FRONTAL, y por la misma razón: ver allí. El pie de
+    // arriba y el del fondo son literalmente el mismo pie —misma orientación en
+    // el mundo, misma separación— así que no se mueve al bajar ni al subir.
+    hipL: [-9.39, -34.7, -9.37], hipR: [-9.39, 34.7, 9.37],
+    ankleL: [7.73, 0, 3.96], ankleR: [7.73, 0, -3.96],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
     // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
@@ -210,7 +245,7 @@ export const BUILTIN_POSES: PoseMap = {
     // trapecios arranca más alta que sobre las clavículas.
     hipL: [-78.61, 3, -36.5], hipR: [-78.61, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-47.39, 0, 9.01], ankleR: [-47.39, 0, -9.01],
+    ankleL: [-43.46, 0, 9.13], ankleR: [-43.46, 0, -9.13],
     // 3°, no 18: es lo que de verdad se adelanta el pecho respecto de la pelvis.
     spine: [3, 0, 0],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],

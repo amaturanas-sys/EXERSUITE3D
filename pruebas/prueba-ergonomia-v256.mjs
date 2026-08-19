@@ -117,6 +117,45 @@ const bilat = await p.evaluate(() => {
 ok(bilat.despues !== bilat.antes && bilat.vuelta === bilat.antes,
   `1.c — el interruptor cambia la simetría de verdad (${bilat.antes} → ${bilat.despues} → ${bilat.vuelta})`);
 
+// Y EL ESPEJO OCURRE DE VERDAD, incluso donde el CANDADO DE ZONA está puesto.
+// Esto es lo que faltaba comprobar y por eso pasó el fallo: se medía que la
+// casilla cambiaba la bandera, no que el otro lado se moviera. La figura nace
+// con todo bloqueado menos la zona activa —de fábrica el tren superior—, así
+// que posar una CADERA encontraba a su gemela con candado y el espejo se
+// saltaba en silencio, con la casilla marcada. El candado dice qué mueve el
+// GESTO al simular; posar es otra cosa.
+const espejo = await p.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const chk = document.querySelector(".mq-interruptor input[type=checkbox]");
+  chk.checked = true; chk.dispatchEvent(new Event("change"));
+  const j = ed.figureJoints();
+  const grados = (n, ax) => +(j[n].rotation[ax] * 180 / Math.PI).toFixed(2);
+  // La cadera NO está en la zona de fábrica: sus dos lados llevan candado.
+  const conCandado = ed.jointLocks.has("hipL") && ed.jointLocks.has("hipR");
+  ed.selectFigure();
+  ed.selectJoint("hipR");
+  ed.setJointAngle("x", -30);
+  ed.setJointAngle("z", 12);
+  const r = {
+    conCandado,
+    derX: grados("hipR", "x"), izqX: grados("hipL", "x"),
+    derZ: grados("hipR", "z"), izqZ: grados("hipL", "z"),
+  };
+  // Y sin simetría NO se replica: el interruptor tiene que seguir mandando.
+  chk.checked = false; chk.dispatchEvent(new Event("change"));
+  ed.setJointAngle("x", -50);
+  r.sinSimDer = grados("hipR", "x");
+  r.sinSimIzq = grados("hipL", "x");
+  return r;
+});
+ok(espejo.conCandado, "1.c — de fábrica las dos caderas llevan candado de zona");
+ok(Math.abs(espejo.izqX - espejo.derX) < 0.5,
+  `1.c — con Bilateral, posar la cadera derecha mueve la izquierda (${espejo.derX}° → ${espejo.izqX}°)`);
+ok(Math.abs(espejo.izqZ + espejo.derZ) < 0.5,
+  `1.c — y el eje lateral va ESPEJADO, no copiado (${espejo.derZ}° → ${espejo.izqZ}°)`);
+ok(Math.abs(espejo.sinSimIzq - espejo.izqX) < 0.5 && espejo.sinSimDer !== espejo.sinSimIzq,
+  `1.c — sin Bilateral deja de replicar (${espejo.sinSimDer}° der, ${espejo.sinSimIzq}° izq)`);
+
 // ── 1.d APOYOS ──────────────────────────────────────────────────────────
 const apoyos = await p.evaluate(() => {
   const g = [...document.querySelectorAll("#articulaciones .mq-grupo")]

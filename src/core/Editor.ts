@@ -4717,13 +4717,32 @@ export class Editor {
     return null;
   }
 
-  /** Con simetría activa, replica la pose de jn espejada en su contraparte. */
+  /**
+   * Con simetría activa, replica la pose de jn espejada en su contraparte.
+   *
+   * EL CANDADO DE ZONA NO MANDA AQUÍ, y creerlo era el fallo: «al posar el
+   * maniquí no se está reconociendo la instrucción de simetría». La casilla
+   * quedaba marcada, el lado elegido giraba y el otro no se movía, sin decir
+   * por qué.
+   *
+   * La causa es que la figura NACE con todo bloqueado menos la zona activa
+   * —de fábrica el tren superior—, así que posar una cadera encontraba a su
+   * gemela con candado y el espejo se saltaba en silencio. Y era incoherente
+   * consigo mismo: escribir grados en la articulación elegida ignora el
+   * candado a propósito (ver `setJointAngle`: «el candado es cosa de la ZONA
+   * en SIMULAR»), pero copiarlos al otro lado lo respetaba. El mismo gesto,
+   * permitido en un costado y denegado en el otro.
+   *
+   * El candado dice qué articulaciones mueve el GESTO cuando la simulación
+   * corre; posar es otra cosa. Simulando sí se respeta: ahí el candado es
+   * justamente lo que define la zona que trabaja.
+   */
   private applyPoseSymmetry(jn: string): void {
     if (!this.poseSymmetry) return;
     const joints = this.figureJoints();
     const otro = this.mirrorJointName(jn);
     if (!joints || !otro || !joints[otro] || !joints[jn]) return;
-    if (this.jointLocks.has(otro)) return; // el candado manda
+    if (this.simulating && this.jointLocks.has(otro)) return;
     const r = joints[jn].rotation;
     joints[otro].rotation.set(r.x, -r.y, -r.z);
     this.clampJoint(otro);
