@@ -1121,6 +1121,11 @@ export class Editor {
     // Cables y cuerdas vuelven a las posiciones de diseño restauradas.
     this.cablesDirty = true;
     this.rebuildAllRopes();
+    // LAS MALLAS ACABAN DE VOLVER AL PLANO, así que la partida NO está pintada.
+    // Sin decirlo, `reconciliarEdiciones` tomaría esa vuelta al plano por una
+    // edición del usuario y le restaría el gesto entero al diseño: la partida
+    // se destruía al primer ⏹.
+    this.partidaPintada = false;
     // Y LA MÁQUINA SE QUEDA DONDE SE CONGELÓ, si hay maniquí delante: parar no
     // es soltar la partida. El plano sigue mandando por dentro (`conElDiseno`),
     // pero lo que se ve es la condición de ensayo, que es contra la que se
@@ -2644,6 +2649,9 @@ export class Editor {
   // ---------------------------------------------------- guardar / cargar
   /** Serializa toda la escena a un objeto JSON. */
   serialize(): ProjectData {
+    // Lo que se guarde tiene que llevar las ediciones hechas con la partida a la
+    // vista: son del plano, no del ensayo.
+    this.reconciliarEdiciones();
     const v3 = (v: THREE.Vector3): [number, number, number] => [v.x, v.y, v.z];
     const q4 = (q: THREE.Quaternion): [number, number, number, number] => [q.x, q.y, q.z, q.w];
     return {
@@ -2657,7 +2665,7 @@ export class Editor {
         // `startParts`.
         const s = this.simulating
           ? this.saved.get(o.id)
-          : this.partidaVigente()
+          : this.partidaPintada
             ? (() => {
                 const d = this.disenoDePartida?.get(o.id);
                 return d ? { position: d.p, quaternion: d.q, scale: o.mesh.scale } : undefined;
@@ -5077,6 +5085,7 @@ export class Editor {
    */
   private sincronizarPartidaVisible(): void {
     if (this.simulating) return; // manda el motor
+    this.reconciliarEdiciones();
     const mostrar = this.partidaVigente();
     const fuente = mostrar ?? this.disenoDePartida;
     if (fuente) {
@@ -5090,9 +5099,52 @@ export class Editor {
       this.cablesDirty = true;
       this.rebuildAllRopes();
     }
+    this.partidaPintada = mostrar !== null;
     this.updateHandIK();
     this.updateFootIK();
     this.requestRender();
+  }
+
+  /** ¿Están las mallas mostrando la partida ahora mismo? */
+  private partidaPintada = false;
+
+  /**
+   * LO QUE SE EDITA CON LA PARTIDA A LA VISTA VA AL PLANO.
+   *
+   * Regla del diseñador: «poder modificar y editar la máquina con las
+   * herramientas de construcción en una posición ergonómica precisa, y estos
+   * cambios estructurales permanecen». La partida es una condición de ensayo
+   * puesta ENCIMA del plano: mover una pieza con el gizmo mientras se ve es
+   * editar el plano, no reposar la máquina.
+   *
+   * Sin esto, editar una pieza CONGELADA se perdía —medido: los 7 cm que se le
+   * daban volvían a 0 al soltar la partida— mientras que editar una que no lo
+   * estaba sí permanecía. Dos comportamientos distintos para el mismo gesto, y
+   * ninguna pista de por qué.
+   *
+   * Se resuelve comparando: si la malla ya no está donde la dejó la partida, la
+   * diferencia la puso el usuario, así que se le suma también al plano y la
+   * partida se re-ancla. Va en las dos puertas por las que se pasa antes de leer
+   * o reponer el plano, que es donde importa que la cuenta esté al día.
+   */
+  private reconciliarEdiciones(): void {
+    if (this.simulating || !this.partidaPintada) return;
+    const partida = this.partidaPiezas;
+    const diseno = this.disenoDePartida;
+    if (!partida || !diseno) return;
+    for (const [id, t] of partida) {
+      const o = this.objects.get(id);
+      const d = diseno.get(id);
+      if (!o || !d) continue;
+      const dp = o.mesh.position.clone().sub(t.p);
+      const giro = o.mesh.quaternion.angleTo(t.q);
+      if (dp.lengthSq() < 1e-6 && giro < 1e-5) continue; // nadie la tocó
+      const dq = o.mesh.quaternion.clone().multiply(t.q.clone().invert());
+      d.p.add(dp);
+      d.q.premultiply(dq).normalize();
+      t.p.copy(o.mesh.position);
+      t.q.copy(o.mesh.quaternion);
+    }
   }
 
   /**
@@ -5103,7 +5155,8 @@ export class Editor {
    * físico y comparar qué se movió de verdad.
    */
   private conElDiseno<T>(fn: () => T): T {
-    const partidaVisible = !this.simulating && this.partidaVigente() !== null;
+    this.reconciliarEdiciones();
+    const partidaVisible = !this.simulating && this.partidaPintada;
     if (partidaVisible && this.disenoDePartida) {
       for (const [id, t] of this.disenoDePartida) {
         const o = this.objects.get(id);
@@ -5346,6 +5399,9 @@ export class Editor {
     this.jointHelpers.visible = true;
     this.cablesDirty = true;
     this.rebuildAllRopes();
+    // Igual que al parar la simulación: las mallas vienen del plano restaurado,
+    // así que la partida no está pintada y no hay edición que reconciliar.
+    this.partidaPintada = false;
     // Con el maniquí delante la máquina se queda A LA VISTA en su partida: es
     // el estado sobre el que hay que apoyarle las manos y los pies.
     this.sincronizarPartidaVisible();
@@ -6478,15 +6534,12 @@ export class Editor {
       // Parado, y mientras se posa la máquina, manda el apoyo.
       if (this.simulating && !this.modoPoseMaquina && this.brazoMandado(side)) continue;
       obj.mesh.updateMatrixWorld();
-      // LA MÁQUINA CONGELADA MANDA. Parado se ve la partida (v0.2.91), pero si
-      // por lo que sea la malla estuviera en el plano y la partida en otro
-      // sitio, el agarre que hay que perseguir es el de la partida: es donde va
-      // a estar el mando cuando empiece el gesto.
-      const cong = this.simulating ? null : this.partidaVigente()?.get(t.objectId);
-      const marco = cong
-        ? new THREE.Matrix4().compose(cong.p, cong.q, obj.mesh.scale)
-        : obj.mesh.matrixWorld;
-      const target = t.local.clone().applyMatrix4(marco);
+      // La malla ya está donde toca: con el maniquí delante muestra la partida
+      // y sin él el plano, así que el agarre se persigue donde se ve. (Hasta
+      // v0.2.92 había que componer el marco desde la partida a mano, porque
+      // parado las mallas siempre estaban en el plano y la mano perseguía un
+      // mando que no estaba ahí.)
+      const target = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
       const sh = joints[`shoulder${side}`];
       const el = joints[`elbow${side}`];
       const wr = joints[`wrist${side}`];

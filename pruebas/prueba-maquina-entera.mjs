@@ -167,15 +167,61 @@ const dParar = await p.evaluate(([a, b]) => window.__deriva(a, b), [r.trasCongel
 ok(dParar.peor < 1,
   `al parar, la máquina vuelve ENTERA a su partida (deriva ${dParar.peor} cm)`);
 
-// EL PLANO NO SE PIERDE aunque se esté viendo la partida: es lo que se exporta y
-// lo que se guarda. Se comprueba soltando la partida, que repone el diseño.
-const dPlano = await p.evaluate(async ([diseno]) => {
+// ── 4. EDITAR CON LA PARTIDA A LA VISTA, y que el cambio PERMANEZCA ────────
+// Regla del diseñador: «poder modificar y editar la máquina con las herramientas
+// de construcción en una posición ergonómica precisa, y estos cambios
+// estructurales permanecen». La partida es una condición de ensayo puesta encima
+// del plano; mover una pieza con el gizmo mientras se ve es editar el PLANO, y
+// el plano tiene que enterarse.
+const ed4 = await p.evaluate(async ([diseno]) => {
   const ed = window.exersuite.editor;
-  const guardado = ed.serialize().objects;
+  const T = window.exersuite.THREE;
+  window.__diseno = diseno;
+  // Con la partida a la vista, lo que se guarda tiene que ser el PLANO.
+  window.__guardadoConPartida = ed.serialize().objects;
+  // Una pieza QUE ESTÁ EN LA PARTIDA (se movió al posar) y otra que no.
+  const enPartida = ed.listObjects().find((o) => {
+    const d = window.__diseno[o.id];
+    return d && o.mesh.position.distanceTo(new T.Vector3(...d)) > 1;
+  });
+  const fuera = ed.listObjects().find((o) => {
+    const d = window.__diseno[o.id];
+    return d && o.mesh.position.distanceTo(new T.Vector3(...d)) < 0.05;
+  });
+  const antesEn = enPartida.mesh.position.clone();
+  const antesFuera = fuera.mesh.position.clone();
+  // Se editan las dos, como haría el usuario con el gizmo.
+  ed.select(enPartida);
+  enPartida.mesh.position.x += 7;
+  ed.bus.emit("objectTransformed", { object: enPartida });
+  ed.select(fuera);
+  fuera.mesh.position.x += 7;
+  ed.bus.emit("objectTransformed", { object: fuera });
+  ed.select(null);
+  await new Promise((x) => setTimeout(x, 300));
+  // Se suelta la partida: lo que queda es el PLANO, y tiene que llevar los 7 cm.
+  const disEn = window.__diseno[enPartida.id];
+  const disFuera = window.__diseno[fuera.id];
   ed.soltarPartidaMaquina();
   await new Promise((x) => setTimeout(x, 300));
-  const trasSoltar = window.__deriva(diseno, window.__retrato());
-  // Y lo serializado tenía que ser ya el plano, no lo que se veía.
+  return {
+    enPartida: { esperado: +(disEn[0] + 7).toFixed(2), real: +enPartida.mesh.position.x.toFixed(2) },
+    fuera: { esperado: +(disFuera[0] + 7).toFixed(2), real: +fuera.mesh.position.x.toFixed(2) },
+    seMovioEnPantalla: +antesEn.distanceTo(enPartida.mesh.position).toFixed(2) > 0
+      && +antesFuera.distanceTo(fuera.mesh.position).toFixed(2) > 0,
+  };
+}, [r.diseno]);
+ok(Math.abs(ed4.enPartida.real - ed4.enPartida.esperado) < 0.5,
+  `editar una pieza CONGELADA con la partida a la vista llega al plano `
+  + `(${ed4.enPartida.real}, se esperaba ${ed4.enPartida.esperado})`);
+ok(Math.abs(ed4.fuera.real - ed4.fuera.esperado) < 0.5,
+  `y editar una que no estaba congelada, también `
+  + `(${ed4.fuera.real}, se esperaba ${ed4.fuera.esperado})`);
+
+// EL PLANO NO SE PIERDE aunque se esté viendo la partida: es lo que se exporta y
+// lo que se guarda.
+const dPlano = await p.evaluate(([diseno]) => {
+  const guardado = window.__guardadoConPartida;
   let peorGuardado = 0;
   for (const o of guardado) {
     const d = diseno[o.id];
@@ -183,12 +229,10 @@ const dPlano = await p.evaluate(async ([diseno]) => {
     peorGuardado = Math.max(peorGuardado, Math.hypot(
       o.position[0] - d[0], o.position[1] - d[1], o.position[2] - d[2]));
   }
-  return { trasSoltar, peorGuardado: +peorGuardado.toFixed(2) };
+  return { peorGuardado: +peorGuardado.toFixed(2) };
 }, [r.diseno]);
-ok(dPlano.trasSoltar.peor < 0.5,
-  `soltar la partida devuelve el plano intacto (deriva ${dPlano.trasSoltar.peor} cm)`);
 ok(dPlano.peorGuardado < 0.5,
-  `y el proyecto guardado lleva el PLANO, no la partida (${dPlano.peorGuardado} cm)`);
+  `el proyecto guardado con la partida a la vista lleva el PLANO (${dPlano.peorGuardado} cm)`);
 
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0
