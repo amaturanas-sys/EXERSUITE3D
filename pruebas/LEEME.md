@@ -89,16 +89,28 @@ Dos trampas que ya costaron caras y están documentadas ahí:
 
 No todo está en verde, y conviene saber qué es qué antes de mirar un fallo:
 
-Medido en v0.2.90 (batería en paralelo + repetición en serie de los dudosos):
-**64 verdes y 3 rojos** de 67 — los mismos tres de la v0.2.89. En paralelo
-salieron además `atraviesa`, `cable-oculto`, `hub` y `uppermachine-lib`, y los
-cuatro pasan en serie: son los tiempos bajo carga, no la aplicación.
+Medido en v0.2.91 (batería en paralelo + repetición en serie de los dudosos):
+**65 verdes y 4 rojos** de 69. En paralelo salieron además `800-debug3`,
+`atraviesa`, `cable-oculto` y `ergonomia-v256`, y los cuatro pasan en serie: son
+los tiempos bajo carga, no la aplicación.
 
 | prueba | por qué |
 |---|---|
 | `fable-v214` | rojo de antes: se agota el tiempo antes de arrancar |
 | `uppermachine` | 5 aserciones: entran 41 piezas de 42 y 16 uniones de 18 |
 | `v251` | 1 aserción: las piernas siguen entrando 2,5 cm en el banco |
+| `freno` | 1 aserción MEDIDA EN SATURACIÓN, ver abajo |
+
+**`freno` no es una regresión, y conviene no perseguirla otra vez.** Seis de sus
+siete aserciones pasan, incluidas las dos que demuestran que el freno hace su
+trabajo: sin él el ramal se acorta hasta 114,5 cm de 119,8, y con él no baja de
+116,4. La que falla compara el recorrido que llega a la pila en un press CON y
+SIN freno, y ahí la medida está saturada: 12,0 contra 12,0. Comprobado
+revirtiendo `PhysicsWorld.ts` a la versión anterior a la v0.2.90 —por si el
+reparto de nodos de cable por cuerpo la hubiera cambiado—: con la física vieja
+da 12,4 contra 12,2 y falla igual. El montaje llega a su tope de recorrido por
+las dos vías, así que la aserción pide un `>` estricto dentro del ruido. Para
+que valga algo habría que medir con menos discos o con más arrastre.
 
 **Los cuatro rojos del asistente ya no lo son.** `garaje`, `garaje2`,
 `prototipo` y `prototipo2` llevaban versiones reventando con
