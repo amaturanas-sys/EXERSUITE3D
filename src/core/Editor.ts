@@ -4534,6 +4534,7 @@ export class Editor {
     disposeHumanFigure(this.humanFigure);
     this.humanFigure = null;
     this.humanToken++;
+    this.voladizoCache.clear(); // otra talla, otro cuerpo: se vuelve a medir
     // LOS APOYOS SOBREVIVEN A REHACER EL CUERPO, igual que la barra de aquí
     // abajo. Están guardados como PIEZA + PUNTO LOCAL, que no dependen del
     // cuerpo para nada: al mover el cursor de la talla —que es justo lo que se
@@ -6196,6 +6197,28 @@ export class Editor {
     return true;
   }
 
+  /** Voladizo muñeca→centro del puño, en cm. Es del cuerpo, no de la postura. */
+  private voladizoCache = new Map<HandSide, number>();
+
+  /**
+   * CUÁNTO SOBRESALE EL PUÑO del pivote de la muñeca. Es una medida del RIG —la
+   * bola de la mano cuelga del pivote a lo largo del antebrazo— y no cambia con
+   * la postura, así que se mide una vez por talla y se guarda. Volver a medirla
+   * en cada fotograma sería reintroducir el temblor que se arregló.
+   */
+  private voladizoDeLaMano(side: HandSide): number {
+    const guardado = this.voladizoCache.get(side);
+    if (guardado !== undefined) return guardado;
+    const joints = this.figureJoints();
+    const wr = joints?.[`wrist${side}`];
+    const centro = this.centroSegmento(`mano-${side}`);
+    if (!wr || !centro) return 0;
+    wr.updateWorldMatrix(true, false);
+    const v = centro.distanceTo(wr.getWorldPosition(new THREE.Vector3()));
+    this.voladizoCache.set(side, v);
+    return v;
+  }
+
   // ------------------------------------------- PISAR una superficie (v0.2.52)
   /**
    * Los pies no siempre tocan el suelo. En una prensa de piernas PISAN la
@@ -6361,18 +6384,23 @@ export class Editor {
       // PIVOTE de la muñeca sobre el punto, y la malla de la mano cuelga de él
       // —unos 3,5 cm de descuelgue más 6 de radio en un cuerpo de 175—, así que
       // el puño acababa pasado del mando en vez de rodearlo. La IK del pie ya
-      // hace esta compensación con `altoDelPie`; ésta no la tenía. Se corrige
-      // igual: se resuelve, se mide lo que queda entre el centro del puño y el
-      // agarre, y se vuelve a resolver contra el objetivo corregido.
-      solveTwoBoneIK(sh, el, wr, target);
-      const centro = this.centroSegmento(`mano-${side}`);
-      if (centro) {
-        const resto = target.clone().sub(centro);
-        // Sólo se corrige lo que es voladizo de la mano; un residuo grande es
-        // que el agarre está FUERA DE ALCANCE, y ahí insistir sería falsear la
-        // ergonomía: el brazo se queda estirado apuntando, que es la verdad.
-        if (resto.length() < 15) solveTwoBoneIK(sh, el, wr, target.clone().add(resto));
-      }
+      // hace esta compensación con `altoDelPie`; ésta no la tenía.
+      //
+      // Y SE MIDE EL VOLADIZO, NO EL RESIDUO. La primera versión resolvía, medía
+      // lo que quedaba entre el centro del puño y el agarre, y volvía a resolver
+      // contra `objetivo + resto`. Corregía, sí, pero esto se ejecuta CADA
+      // FOTOGRAMA partiendo de donde lo dejó el anterior, y así no converge:
+      // oscila. El fotograma acaba con la muñeca en `objetivo + resto` y el puño
+      // en el objetivo; el siguiente empieza resolviendo otra vez a `objetivo`,
+      // que devuelve el puño a `objetivo − resto`, vuelve a medir el mismo resto
+      // y vuelve a corregir. Un ciclo límite de un fotograma: EL BRAZO TIEMBLA y
+      // no se asienta nunca. Es lo que el diseñador vio al apoyar las manos.
+      //
+      // El desplazamiento muñeca→centro del puño no es un residuo: es un vector
+      // FIJO del cuerpo, que sólo depende de cómo esté orientado el antebrazo.
+      // Medido así y restado del objetivo, la solución es la misma la pinte
+      // quien la pinte, y el fotograma siguiente vuelve a dar exactamente eso.
+      solveTwoBoneIK(sh, el, wr, target, undefined, this.voladizoDeLaMano(side));
     }
   }
 

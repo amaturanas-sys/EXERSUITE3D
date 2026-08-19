@@ -38,12 +38,30 @@ export function solveTwoBoneIK(
    * que pasarle el frente de la figura o la pierna se dobla del revés.
    */
   pole?: THREE.Vector3,
+  /**
+   * CUÁNTO SOBRESALE EL EFECTOR más allá de la muñeca, en cm. La que agarra es
+   * la PALMA, y su centro cuelga del pivote de la muñeca a lo largo del
+   * antebrazo. Sumándolo aquí, el hueso de abajo se resuelve como si fuera más
+   * largo y lo que aterriza en `target` es la palma, no el pivote.
+   *
+   * Se hace ASÍ y no corrigiendo a posteriori. La primera versión resolvía,
+   * medía el residuo entre el centro del puño y el agarre, y volvía a resolver
+   * contra el objetivo corregido. Corregía, pero esto se ejecuta cada fotograma
+   * partiendo de donde lo dejó el anterior, y cada pasada usaba un objetivo
+   * distinto: cerca de la degeneración —el brazo casi estirado apuntando arriba—
+   * dos objetivos separados por centímetros dan soluciones separadas por medio
+   * metro, y el brazo saltaba entre ellas sin asentarse jamás. Medido: el hombro
+   * alternaba entre −134° y −18° y la mano entre y=180 y y=85. Con el alargue,
+   * la solución sale de la geometría en una sola pasada y no depende de dónde
+   * estuviera el brazo: la misma entrada da siempre la misma salida.
+   */
+  alargue = 0,
 ): void {
   const S = shoulder.getWorldPosition(new THREE.Vector3());
   const E = elbow.getWorldPosition(new THREE.Vector3());
   const W = wrist.getWorldPosition(new THREE.Vector3());
   const L1 = S.distanceTo(E);
-  const L2 = E.distanceTo(W);
+  const L2 = E.distanceTo(W) + Math.max(0, alargue);
   if (L1 < 1e-4 || L2 < 1e-4) return;
 
   const toT = target.clone().sub(S);
