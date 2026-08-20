@@ -3701,10 +3701,48 @@ export class Editor {
       }
       return { fase: plan.fases[plan.fases.length - 1], i: plan.fases.length - 1 };
     }
-    for (let i = plan.fases.length - 1; i >= 0; i--) {
-      if (this.umbralCruzado(plan.fases[i].hasta, joints)) return { fase: plan.fases[i], i };
+    // LA TRACCIÓN MIRA EL UMBRAL DE LA FASE ANTERIOR, no el suyo (v0.2.98).
+    //
+    // Buscando «la última fase cuyo umbral está cruzado» la ÚLTIMA FASE NUNCA
+    // SALÍA: su `hasta` es `meta` —termina cuando llega a su postura, no cuando
+    // cruza nada— y `umbralCruzado` devuelve false para eso siempre. Así que al
+    // bajar desde el bloqueo del peso muerto se elegía la fase de TIRÓN, con la
+    // meta del suelo, y el gesto entero se deshacía de un tramo: 32 pasos para
+    // subir y 20 para bajar, por posturas que no eran las de la subida (a
+    // rodilla 65° la columna iba a 53,5° bajando y a 78° subiendo).
+    //
+    // La condición correcta es la simétrica de la del empuje: el empuje toma la
+    // PRIMERA fase que aún no ha cruzado su umbral; la tracción toma la ÚLTIMA
+    // cuya fase anterior sí lo cruzó, o sea la última que llegó a empezar.
+    // Y CEDE EL TURNO CUANDO YA NO LE QUEDA NADA. En el hito de la rótula el
+    // umbral del tirón sigue cruzado por un pelo, así que la bajada elegía otra
+    // vez el bloqueo —que ya estaba en su meta— y el gesto se paraba en seco a
+    // media altura. Una fase agotada pasa a la anterior.
+    for (let i = plan.fases.length - 1; i > 0; i--) {
+      if (!this.umbralCruzado(plan.fases[i - 1].hasta, joints)) continue;
+      if (this.faseAgotada(i, -1, joints)) continue;
+      return { fase: plan.fases[i], i };
     }
     return { fase: plan.fases[0], i: 0 };
+  }
+
+  /** ¿La fase `i` ya está en la postura a la que iba en este sentido? */
+  private faseAgotada(
+    i: number,
+    sentido: number,
+    joints: Record<string, THREE.Object3D>,
+  ): boolean {
+    const plan = this.planActivo;
+    const metas = this.metasDeFase(i, sentido);
+    if (!plan || !metas) return false;
+    const lado = this.zonasActivas.get(plan.zona) ?? "sim";
+    for (const a of plan.fases[i].patron) {
+      for (const n of nombresDeFamilia(a.familia, a.bilateral, lado)) {
+        if (!joints[n] || metas[n] === undefined) continue;
+        if (Math.abs(radToDeg(joints[n].rotation.x) - metas[n]) > 0.05) return false;
+      }
+    }
+    return true;
   }
 
   private umbralCruzado(u: UmbralFase, joints: Record<string, THREE.Object3D>): boolean {
@@ -3824,6 +3862,7 @@ export class Editor {
     const acomodar: { nombre: string; cadena: string[]; objetivo: number }[] = [];
     const plomada: string[] = [];
     let mirada: number | null = null;
+    let roce: string[] | null = null;
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
       if (!z) continue;
@@ -3890,6 +3929,10 @@ export class Editor {
           if (!joints[nombre] || this.jointLocks.has(nombre)) continue;
           if (ac.tipo === "plomada") { plomada.push(l); continue; }
           if (ac.tipo === "mirada") { mirada = ac.distanciaCm; continue; }
+          // EL ROCE MUEVE LOS DOS HOMBROS A LA VEZ, así que no se anota por
+          // lado: se guarda una sola vez y al aplicarlo se usan los lados que
+          // haya recogido la plomada, que son los mismos brazos.
+          if (ac.tipo === "roce") { roce = ac.segmentos; continue; }
           const cadena = ac.cadena.map((f) => `${f}${l}`);
           acomodar.push({
             nombre,
@@ -3937,6 +3980,11 @@ export class Editor {
     //    contra su marca del suelo, todo dentro de la figura—, así que la
     //    traslación global posterior no las altera.
     for (const l of plomada) if (this.acomodarPlomada(l, joints)) n++;
+    // EL ROCE VA DESPUÉS DE LA PLOMADA, y no al revés: la plomada dice dónde
+    // querría estar la barra —sobre el medio del pie— y el roce solo la corrige
+    // hacia DELANTE lo justo para no meterla en la carne. Al revés la plomada
+    // desharía la corrección.
+    if (roce && plomada.length && this.acomodarRoce(plomada, roce, joints)) n++;
     if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
     this.reapoyarFigura();
@@ -4013,7 +4061,24 @@ export class Editor {
       return Math.asin(Math.max(-1, Math.min(1, vista.y)))
         - Math.asin(Math.max(-1, Math.min(1, hacia.y)));
     };
-    let a = lim[0], b = lim[1];
+    // EL CUELLO NO PASA DE NEUTRAL (v0.2.98). Lo pidió el diseñador viendo la
+    // subida: «al ascender hasta el bloqueo, eventualmente la posición del
+    // cuello se fija hasta alcanzar la postura anatómica de quien mira hacia el
+    // frente (pasa de extensión a neutral)». Y tiene sentido: el blanco del
+    // suelo se sostiene mientras el tronco está inclinado, pero de pie exigiría
+    // meter la barbilla —32° medidos—, que es una postura que nadie adopta al
+    // terminar un peso muerto. Así que el techo de la búsqueda es 0: el cuello
+    // recorre de extensión a neutral y AHÍ SE QUEDA, mirando al frente. Bajando
+    // se deshace solo, porque esto se resuelve del mundo en cada paso.
+    const techo = Math.min(lim[1], 0);
+    if (desvio(techo) > 0) {
+      // Para dar en la marca haría falta flexión: se planta en neutral. NO es
+      // una acomodación al límite —es la postura pedida—, así que no se avisa.
+      cuello.rotation.x = degToRad(techo);
+      fig.updateMatrixWorld(true);
+      return Math.abs(techo - original) > 1e-3;
+    }
+    let a = lim[0], b = techo;
     const fa = desvio(a);
     if (fa * desvio(b) > 0) {
       // El cuello no llega: se deja en el tope que más se acerca, que es una
@@ -4108,6 +4173,115 @@ export class Editor {
     hombro.rotation.x = degToRad(sol);
     fig.updateMatrixWorld(true);
     return Math.abs(sol - original) > 1e-3;
+  }
+
+  /**
+   * LA BARRA ROZA EL CUERPO, NO LO ATRAVIESA (v0.2.98).
+   *
+   * «La barra debe detectar colisión con la pierna, el muslo y cadera (de forma
+   * que la barra desliza anterior y sobre ellas, y al bloqueo no se hunde en el
+   * cuerpo).» Es lo que hace un peso muerto de verdad: la barra sube arrastrando
+   * por la espinilla y el muslo, y quien dicta su carril en ese tramo es la
+   * SUPERFICIE DEL CUERPO, no una recta ideal.
+   *
+   * Sin esto se hundía en toda la subida —1,44 cm en la espinilla, 1,36 en el
+   * muslo y 1,35 en la pelvis justo en el bloqueo, que es donde se ve—, porque
+   * la plomada persigue la vertical del medio del pie y el cuerpo no le importa.
+   *
+   * CÓMO SE RESUELVE. La barra cuelga de los hombros por los brazos, así que se
+   * mueve girando los DOS hombros a la vez, con el mismo incremento: moviendo
+   * uno solo la barra se ladearía. Se mide la penetración de verdad —distancia
+   * de cada vértice de los segmentos al EJE de la barra, contra su radio— y se
+   * avanza en la dirección que saca la barra hacia delante hasta que la
+   * penetración se anula, afinando después por bisección. Solo corrige hacia
+   * ADELANTE: si la barra ya está limpia, no se toca nada, y por eso esto
+   * convive con la plomada en vez de pelearse con ella.
+   */
+  private acomodarRoce(
+    lados: string[],
+    segmentos: string[],
+    joints: Record<string, THREE.Object3D>,
+  ): boolean {
+    const fig = this.humanFigure;
+    const enlace = this.barraManiqui;
+    if (!fig || !enlace || enlace.rackeada) return false;
+    const barra = this.objects.get(enlace.objectId);
+    if (!barra) return false;
+    const hombros = lados
+      .map((l) => ({ nombre: `shoulder${l}`, obj: joints[`shoulder${l}`], lim: JOINT_DOF[`shoulder${l}`]?.x }))
+      .filter((h) => h.obj && h.lim && !this.jointLocks.has(h.nombre));
+    if (hombros.length === 0) return false;
+    const original = hombros.map((h) => radToDeg(h.obj!.rotation.x));
+
+    const mallas: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const id = (n as THREE.Mesh).userData?.segmentId as string | undefined;
+      if (id && segmentos.includes(id) && (n as THREE.Mesh).isMesh) mallas.push(n as THREE.Mesh);
+    });
+    if (mallas.length === 0) return false;
+
+    const radio = barra.params?.radiusTop ?? barra.params?.radiusBottom ?? 1.45;
+    const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
+    const arriba = new THREE.Vector3(0, 1, 0);
+    const v = new THREE.Vector3();
+
+    /** Deja los hombros en `original + d` y devuelve [penetración, sagital]. */
+    const sondear = (d: number): [number, number] => {
+      hombros.forEach((h, i) => {
+        const lim = h.lim!;
+        h.obj!.rotation.x = degToRad(Math.max(lim[0], Math.min(lim[1], original[i] + d)));
+      });
+      fig.updateMatrixWorld(true);
+      this.sincronizarBarraManiqui();
+      const eje = barra.mesh.position;
+      let dentro = 0;
+      for (const m of mallas) {
+        m.updateMatrixWorld(true);
+        const pos = m.geometry.getAttribute("position");
+        for (let i = 0; i < pos.count; i++) {
+          const w = v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).sub(eje);
+          // Distancia al EJE de la barra: el eje es lateral, así que solo
+          // cuentan la componente vertical y la sagital.
+          const dist = Math.hypot(w.dot(arriba), w.dot(adelante));
+          if (radio - dist > dentro) dentro = radio - dist;
+        }
+      }
+      return [dentro, eje.dot(adelante)];
+    };
+
+    const [pen0, sag0] = sondear(0);
+    if (pen0 <= 1e-3) { sondear(0); return false; } // ya va limpia
+
+    // ¿HACIA QUÉ LADO GIRA EL HOMBRO PARA ADELANTAR LA BARRA? No se supone: se
+    // prueba. El signo depende de la inclinación del tronco, que cambia entero
+    // a lo largo del gesto.
+    const [, sagMas] = sondear(1);
+    const signo = sagMas > sag0 ? 1 : -1;
+
+    // Se avanza hasta sacarla, con un tope: si hicieran falta más de 30° el
+    // problema no es el roce y forzarlo destrozaría la plomada.
+    let limpio: number | null = null;
+    let sucio = 0;
+    for (let d = 1; d <= 30; d += 1) {
+      const [pen] = sondear(signo * d);
+      if (pen <= 1e-3) { limpio = signo * d; break; }
+      sucio = signo * d;
+    }
+    if (limpio === null) {
+      // No hay ángulo que la saque: se deja en el que menos la hunde y se avisa
+      // por el mismo canal que el tobillo sin recorrido.
+      sondear(sucio);
+      this.acomodacionAlLimite = true;
+      return true;
+    }
+    // Afinado: el mínimo giro que la deja rozando, no flotando.
+    let a = sucio, b = limpio;
+    for (let i = 0; i < 24; i++) {
+      const m = (a + b) / 2;
+      if (sondear(m)[0] > 1e-3) a = m; else b = m;
+    }
+    sondear(b);
+    return hombros.some((h, i) => Math.abs(radToDeg(h.obj!.rotation.x) - original[i]) > 1e-3);
   }
 
   /** Modo de gizmo que corresponde a la herramienta activa. */

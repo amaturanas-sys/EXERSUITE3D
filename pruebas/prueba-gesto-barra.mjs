@@ -137,8 +137,28 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
       const ojo = c.getWorldPosition(new T.Vector3());
       return +(Math.hypot(vista.x, vista.z) * (ojo.y / -vista.y)).toFixed(0);
     };
+    // ¿SE HUNDE LA BARRA EN EL CUERPO? Misma medida que con la cabeza: la
+    // distancia de cada vértice al EJE de la barra contra su radio.
+    const CARNE = ["pierna-L", "pierna-R", "muslo-L", "muslo-R", "pelvis"];
+    const enLaCarne = () => {
+      let dentro = 0;
+      for (const id of CARNE) {
+        const m = seg(id); if (!m) continue;
+        m.updateMatrixWorld(true);
+        const pos = m.geometry.getAttribute("position");
+        const v = new T.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+          const w = v.fromBufferAttribute(pos, i).clone().applyMatrix4(m.matrixWorld).sub(barra);
+          const d = Math.hypot(w.y, w.dot(a));
+          if (radio - d > dentro) dentro = radio - d;
+        }
+      }
+      return +dentro.toFixed(2);
+    };
     return {
       mirada: mirar(),
+      carne: enLaCarne(),
+      cuello: g("neck"),
       barraY: +barra.y.toFixed(2), barraX: +barra.x.toFixed(2),
       sagital: +barra.dot(a).toFixed(2),
       medioPie: +medioPie.dot(a).toFixed(2),
@@ -188,12 +208,25 @@ const S = pm.subida, B = pm.bajada;
 // del pie— no ha corrido todavía, así que ese primer fotograma puede estar
 // medio centímetro fuera del carril. Lo que este proyecto promete es que la
 // barra no se desvía MIENTRAS SUBE.
+//
+// Y DESDE v0.2.98 EL CARRIL LO NEGOCIA EL CUERPO. El diseñador añadió la otra
+// mitad de la regla: «la barra debe detectar colisión con la pierna, el muslo y
+// cadera (de forma que la barra desliza anterior y sobre ellas, y al bloqueo no
+// se hunde en el cuerpo)». Las dos reglas conviven porque la barra solo se
+// aparta de la vertical LO QUE EL CUERPO LA EMPUJA, nunca por su cuenta: el
+// carril es recto donde hay hueco y se abomba donde hay espinilla, muslo o
+// cadera. Por eso aquí ya no se exige media décima de recto, sino que la
+// desviación no supere el bulto del propio cuerpo.
 const carril = S.slice(1).map((s) => s.sagital);
 console.log("   carril sagital:", S.map((s) => +s.sagital.toFixed(1)).join(" "));
 const recorrido = +(Math.max(...carril) - Math.min(...carril)).toFixed(2);
-ok(recorrido < 0.5, `la barra sube EN VERTICAL: no se desvía (${recorrido} cm de lado a lado)`);
-const desvio = peor(S.map((s) => Math.abs(s.sagital - s.medioPie)));
-ok(desvio < 1, `y ese carril cae sobre el medio del pie (${desvio.toFixed(2)} cm)`);
+ok(recorrido < 6.5, `la barra sube pegada a la vertical (se abre ${recorrido} cm para pasar el cuerpo)`);
+// EL MEDIO DEL PIE SIGUE SIENDO EL BLANCO donde el cuerpo no estorba: eso es lo
+// que persigue la plomada, y el roce solo la adelanta.
+const desvio = peor(S.map((s) => s.sagital - s.medioPie));
+const atras = Math.min(...S.map((s) => s.sagital - s.medioPie));
+ok(atras > -1, `y nunca cae POR DETRÁS del medio del pie (${atras.toFixed(2)} cm)`);
+ok(desvio < 6.5, `ni se despega de él más que el bulto del cuerpo (${desvio.toFixed(2)} cm)`);
 ok(peor(S.map((s) => Math.abs(s.barraX))) < 0.1, "y sin desviarse de lado");
 
 // 2) Y SUBE, sin volver a bajar a mitad de camino (antes bajaba 10,15 cm).
@@ -238,9 +271,17 @@ ok(Math.abs(fin.rodilla) < 0.5 && Math.abs(fin.cadera) < 0.5 && Math.abs(fin.col
 // es una cuerda y su ángulo lo resuelve la plomada contra la huella, así que
 // cambia si cambia cómo se mide la huella. Lo que no puede cambiar es dónde
 // acaba la barra.
-ok(Math.abs(fin.sagital - fin.medioPie) < 1,
-  `y con la barra sobre el medio del pie, que es lo que la plomada persigue `
-  + `(${(fin.sagital - fin.medioPie).toFixed(2)} cm, hombro ${fin.hombro}°)`);
+// EN EL BLOQUEO MANDA EL MUSLO, NO EL MEDIO DEL PIE (v0.2.98). Antes se exigía
+// que la barra acabase sobre la vertical del medio del pie con un centímetro de
+// margen. De pie eso la metía 1,35 cm dentro de la pelvis y 0,93 dentro del
+// muslo: la vertical ideal pasa POR DENTRO del cuerpo. El diseñador pidió que
+// «al bloqueo no se hunde en el cuerpo», así que ahora acaba donde la deja la
+// carne —unos 5,7 cm por delante del medio del pie, que es el grosor del
+// muslo— y lo que se exige es que ahí no toque nada.
+const salido = fin.sagital - fin.medioPie;
+ok(salido > 0 && salido < 7,
+  `acaba apoyada en el muslo, por delante del medio del pie `
+  + `(${salido.toFixed(2)} cm, hombro ${fin.hombro}°)`);
 
 // 6) Y LA BAJADA DESHACE LO MISMO, sin estado guardado: las fases se leen del
 //    mundo, así que el gesto inverso las recorre al revés solo.
@@ -249,9 +290,52 @@ ok(Math.abs(vuelta.barraY - S[0].barraY) < 0.5,
   `la tracción devuelve la barra a su sitio (${vuelta.barraY} cm, partida ${S[0].barraY})`);
 ok(Math.abs(vuelta.rodilla - S[0].rodilla) < 0.5 && Math.abs(vuelta.columna - S[0].columna) < 0.5,
   `y el cuerpo a su postura de suelo (rodilla ${vuelta.rodilla}°, columna ${vuelta.columna}°)`);
+// Y LA BAJADA PASA POR LAS MISMAS POSTURAS, no solo por los mismos extremos.
+// Aquí estaba escondido un fallo de verdad: la tracción buscaba «la última fase
+// cuyo umbral está cruzado», y el umbral de la ÚLTIMA fase es `meta` —termina
+// al llegar a su postura, no al cruzar nada—, así que esa fase nunca salía
+// elegida. Bajando desde el bloqueo se cogía la fase de TIRÓN con la meta del
+// suelo y el gesto entero se deshacía de un tramo: 32 pasos para subir y 20
+// para bajar, por posturas que no eran las mismas (a rodilla 65° la columna iba
+// a 53,5° bajando y a 78° subiendo). Se compara la columna que le corresponde a
+// cada rodilla, interpolando la subida.
+const columnaEn = (rodilla) => {
+  for (let i = 1; i < S.length; i++) {
+    const a = S[i - 1], b = S[i];
+    if (rodilla <= a.rodilla && rodilla >= b.rodilla) {
+      const t = a.rodilla === b.rodilla ? 0 : (a.rodilla - rodilla) / (a.rodilla - b.rodilla);
+      return a.columna + t * (b.columna - a.columna);
+    }
+  }
+  return null;
+};
+const desajustes = B.map((s) => {
+  const c = columnaEn(s.rodilla);
+  return c === null ? 0 : Math.abs(s.columna - c);
+});
+// EL CODO ENTRE FASES CAE UN PASO DESPLAZADO, y de ahí sale el residuo. La
+// subida corta el tirón cuando la barra pasa la rótula —rodilla 24,8°, un paso
+// antes de la postura del hito, porque el paso es de 5°— mientras que la bajada
+// termina el bloqueo EN esa postura, rodilla 23,77°. Los dos tramos de bloqueo
+// son rectas de (rodilla, 78°) a (0, 0) con arranques a 1° de distancia, así
+// que sus pendientes difieren un 4%: hasta 3,2° a media bajada, cero en los dos
+// extremos. Lo que esta prueba vigila es que no vuelva a ser lo de antes, que
+// eran 25°: la bajada deshaciendo el gesto entero de un tramo.
+console.log("   desajuste columna:", desajustes.map((d) => d.toFixed(1)).join(" "));
+ok(peor(desajustes) < 5,
+  `y BAJA POR DONDE SUBIÓ: a cada rodilla le toca su misma columna, sin pasarse `
+  + `del paso de 5° ni en el codo entre fases (peor ${peor(desajustes).toFixed(2)}°)`);
+ok(desajustes[desajustes.length - 1] < 0.5 && desajustes[0] < 0.5,
+  `y en los dos extremos coinciden exactamente `
+  + `(${desajustes[0].toFixed(2)}° arriba, ${desajustes[desajustes.length - 1].toFixed(2)}° abajo)`);
+ok(Math.abs(B.length - S.length) <= 2,
+  `con los mismos pasos en los dos sentidos (${S.length} subiendo, ${B.length} bajando)`);
+
 const carrilB = B.slice(1).map((s) => s.sagital);
+console.log("   carril de bajada:", B.map((s) => +s.sagital.toFixed(1)).join(" "));
+console.log("   ...contra el medio del pie:", B.map((s) => +(s.sagital - s.medioPie).toFixed(1)).join(" "));
 const recorridoB = +(Math.max(...carrilB) - Math.min(...carrilB)).toFixed(2);
-ok(recorridoB < 0.5, `bajando, la barra también baja en vertical (${recorridoB} cm)`);
+ok(recorridoB < 6.5, `bajando, la barra recorre el mismo carril (${recorridoB} cm)`);
 
 // 7) LA MIRADA NO SE SUELTA DE SU MARCA (v0.2.97). Lo pidió el diseñador con su
 //    razón médica: «si es posible mantener la mirada en todo momento a 2 o 2.5
@@ -265,18 +349,42 @@ ok(recorridoB < 0.5, `bajando, la barra también baja en vertical (${recorridoB}
 // candado, porque los candados solo se abren para lo que el plan nombra. El
 // resultado era un cuello clavado en −51,8° durante los 70 pasos: mirando al
 // suelo a 1,6 m abajo y AL TECHO en el bloqueo (51,8° sobre la horizontal).
-const miradas = [...S, ...B].map((s) => s.mirada);
-console.log("   mirada (cm):", [...S, ...B].filter((_, i) => i % 6 === 0).map((s) => s.mirada).join(" "));
-ok(miradas.every((m) => m !== null),
-  `la vista da SIEMPRE en el suelo, nunca se va al techo (${miradas.filter((m) => m === null).length} pasos perdidos)`);
-const cerca = Math.min(...miradas.filter((m) => m !== null));
-const lejos = Math.max(...miradas.filter((m) => m !== null));
-// El paso 0 es la postura cruda, antes de que la acomodación corra; de ahí en
-// adelante el blanco es firme.
-const enGesto = [...S.slice(1), ...B].map((s) => s.mirada).filter((m) => m !== null);
-ok(Math.min(...enGesto) >= 190 && Math.max(...enGesto) <= 260,
-  `y se queda en la horquilla de 2 a 2,5 m durante todo el gesto `
-  + `(${Math.min(...enGesto)}–${Math.max(...enGesto)} cm; con el paso 0 crudo, ${cerca}–${lejos})`);
+//    Y CON UN TECHO, que es el matiz de v0.2.98: «al ascender hasta el bloqueo,
+//    eventualmente la posición del cuello se fija hasta alcanzar la postura
+//    anatómica de quien mira hacia el frente (pasa de extensión a neutral)».
+//    Sostener la marca de pie exigiría 32° de barbilla abajo, que nadie adopta
+//    al terminar un peso muerto: el cuello recorre de extensión a neutral y ahí
+//    se queda. Bajando se deshace solo, porque esto se resuelve del mundo.
+const todo = [...S, ...B];
+console.log("   cuello:", todo.filter((_, i) => i % 6 === 0).map((s) => s.cuello).join(" "));
+console.log("   mirada (cm):", todo.filter((_, i) => i % 6 === 0).map((s) => s.mirada ?? "—").join(" "));
+ok(todo.every((s) => s.cuello <= 0.01),
+  `el cuello NUNCA pasa a flexión: va de extensión a neutral y para `
+  + `(máximo ${Math.max(...todo.map((s) => s.cuello))}°)`);
+ok(Math.abs(S[S.length - 1].cuello) < 0.5,
+  `y en el bloqueo queda neutral, mirando al frente (${S[S.length - 1].cuello}°)`);
+ok(Math.abs(B[B.length - 1].cuello - S[0].cuello) < 1.5,
+  `bajando vuelve a su extensión de partida (${B[B.length - 1].cuello}° / ${S[0].cuello}°)`);
+// MIENTRAS EL CUELLO TIENE RECORRIDO, la marca manda: se comprueba solo en los
+// pasos que no están topados en neutral, que son en los que hay algo que exigir.
+const conMarca = todo.filter((s) => s.cuello < -0.5);
+ok(conMarca.every((s) => s.mirada !== null && s.mirada >= 190 && s.mirada <= 260),
+  `y mientras le queda extensión, la vista se queda en su horquilla de 2 a 2,5 m `
+  + `(${Math.min(...conMarca.map((s) => s.mirada))}–${Math.max(...conMarca.map((s) => s.mirada))} cm `
+  + `en ${conMarca.length} de ${todo.length} pasos)`);
+
+// 8) LA BARRA ROZA EL CUERPO, NO LO ATRAVIESA (v0.2.98). «La barra debe
+//    detectar colisión con la pierna, el muslo y cadera (de forma que la barra
+//    desliza anterior y sobre ellas, y al bloqueo no se hunde en el cuerpo).»
+//    Antes se hundía 1,44 cm en la espinilla, 1,36 en el muslo y 1,35 en la
+//    pelvis justo en el bloqueo.
+console.log("   dentro de la carne:", todo.filter((_, i) => i % 4 === 0).map((s) => s.carne).join(" "));
+ok(peor(S.map((s) => s.carne)) < 0.05,
+  `subiendo, la barra no se mete en la pierna ni en el muslo ni en la cadera `
+  + `(máx ${peor(S.map((s) => s.carne))} cm en ${S.length} pasos)`);
+ok(peor(B.map((s) => s.carne)) < 0.05,
+  `y bajando tampoco (máx ${peor(B.map((s) => s.carne))} cm)`);
+ok(fin.carne < 0.05, `en el bloqueo la barra apoya, no se hunde (${fin.carne} cm)`);
 
 // ══════════ PRESS VERTICAL ════════════════════════════════════════════════
 console.log("\n── Press vertical ───────────────────────────────────────────");

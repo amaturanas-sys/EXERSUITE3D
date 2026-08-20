@@ -340,17 +340,20 @@ export const BUILTIN_POSES: PoseMap = {
   /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.
    *
-   * EL CUELLO NO SUELTA LA MARCA, tampoco arriba (v0.2.97). Antes eran 19°: un
-   * punto medio de criterio, «quien relaja la vista al subir sin llegar a
-   * levantar la cabeza». El diseñador pidió lo contrario —«mantener la mirada
-   * en todo momento a 2 o 2,5 metros por delante de la figura», porque bajar un
-   * peso muerto con el cuello en flexión es lo que arriesga la espalda—, así
-   * que este ángulo pasa a estar RESUELTO como los otros, contra la misma marca
-   * del suelo a 2,25 m: 32°. Es barbilla abajo desde la cabeza erguida, que es
-   * literalmente lo que pasa si no despegas la vista del sitio.
+   * EL CUELLO TERMINA EN NEUTRAL, mirando al frente (v0.2.98). Ha ido por tres
+   * valores y conviene dejar el recorrido escrito: 19° de «punto medio» por
+   * criterio en 0.2.91; 32° en 0.2.97, que es lo que exige la marca del suelo a
+   * 2,25 m desde la cabeza ya erguida; y 0° ahora, que es lo que pidió el
+   * diseñador al ver la subida entera: «eventualmente la posición del cuello se
+   * fija hasta alcanzar la postura anatómica de quien mira hacia el frente
+   * (pasa de extensión a neutral)».
+   *
+   * La marca del suelo sigue gobernando el cuello mientras el tronco está
+   * inclinado —que es donde importa, porque bajar en flexión cervical es lo que
+   * arriesga la espalda—; lo que ya no hace es pedir barbilla abajo de pie.
    */
   "Peso muerto (bloqueo)": {
-    neck: [32, 0, 0],
+    neck: [0, 0, 0],
     // LA BARRA SOBRE EL MEDIO DEL PIE, también arriba (v0.2.91). La misma
     // regla sagital que gobierna el arranque vale en el bloqueo, y no se
     // cumplía: con los brazos colgando a plomo la barra quedaba 9,1 cm POR

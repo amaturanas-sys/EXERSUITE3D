@@ -5,6 +5,80 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.98] — 2026-08-20
+
+El peso muerto, terminado: cuello, roce y una bajada que de verdad deshace la subida.
+
+### Corregido
+
+**El cuello se fija en neutral al llegar al bloqueo.** Viendo la subida entera,
+el diseñador afinó lo de la mirada: «al ascender hasta el bloqueo, eventualmente
+la posición del cuello se fija hasta alcanzar la postura anatómica de quien mira
+hacia el frente (pasa de extensión a neutral). Luego, al descender, la
+cinemática se reproduce en reverso».
+
+Y tiene razón: sostener la marca del suelo estando ya de pie exige **32° de
+barbilla abajo**, que es lo que salía en 0.2.97 y no es una postura que nadie
+adopte al terminar un peso muerto. Así que la marca sigue gobernando el cuello
+mientras el tronco está inclinado —que es donde importa, porque bajar en flexión
+cervical es lo que arriesga la espalda— pero con **techo en neutral**: el cuello
+recorre de −57,9° a 0° y ahí se queda. Medido en los 64 pasos del gesto: nunca
+pasa a flexión (**máximo 0,0°**), acaba en **0,00°** mirando al frente, y
+bajando vuelve solo a su extensión de partida (**−57,8°** contra los −57,9° de
+origen), sin estado guardado. Mientras le queda extensión —49 de los 64 pasos—
+la vista se mantiene entre **202 y 223 cm**.
+
+**La barra roza la pierna, el muslo y la cadera, y ya no se hunde en ellos.**
+«La barra debe detectar colisión con la pierna, el muslo y cadera (de forma que
+la barra desliza anterior y sobre ellas, y al bloqueo no se hunde en el
+cuerpo).» Se hundía en toda la subida: medido por intersección real de cilindro
+contra malla, **1,44 cm** en la espinilla, **1,36** en el muslo y **1,35** en la
+pelvis justo en el bloqueo, que es donde se ve.
+
+Ahora la barra negocia su carril con el cuerpo. El hombro es quien la mueve
+—el brazo es la cuerda de la que cuelga—, así que la acomodación gira los DOS
+hombros a la vez con el mismo incremento, mide la penetración de verdad y avanza
+hasta anularla, afinando por bisección. Solo corrige **hacia delante**: donde no
+hay carne, la plomada manda y la barra sigue sobre el medio del pie. Resultado:
+penetración **0,00 cm en los 64 pasos**, ida y vuelta.
+
+Eso cambia el carril, y a propósito: el recorrido sagital pasa de una recta de
+0,5 cm a **5,4 cm de subida y 4,6 de bajada**, que es exactamente el bulto de la
+espinilla y del muslo. La barra nunca cae por detrás del medio del pie
+(**0,33 cm** de margen) y en el bloqueo acaba **5,76 cm** por delante de él,
+apoyada en el muslo en vez de metida 1,35 cm en la pelvis. Las dos reglas del
+diseñador conviven porque la barra solo se aparta de la vertical lo que el
+cuerpo la empuja, nunca por su cuenta.
+
+**La bajada deshace la subida de verdad, fase por fase.** Buscando la razón del
+carril raro de la bajada apareció un fallo de fondo que llevaba desde 0.2.96: la
+tracción elegía «la última fase cuyo umbral está cruzado», y el umbral de la
+ÚLTIMA fase es `meta` —termina al llegar a su postura, no al cruzar nada—, así
+que esa fase **nunca salía elegida**. Bajando desde el bloqueo se cogía la fase
+de TIRÓN con la meta del suelo y el gesto entero se deshacía de un solo tramo:
+**32 pasos para subir y 20 para bajar**, por posturas que no eran las mismas —a
+rodilla 65° la columna iba a 53,5° bajando y a 78° subiendo—.
+
+La condición correcta es la simétrica de la del empuje: el empuje toma la
+PRIMERA fase que aún no ha cruzado su umbral, la tracción la ÚLTIMA que llegó a
+empezar. Y una fase que ya está en su meta cede el turno a la anterior, porque
+en el hito de la rótula el umbral del tirón sigue cruzado por un pelo y la
+bajada se paraba en seco a media altura. Ahora son **32 pasos en los dos
+sentidos**, con la columna sostenida a 78° durante el tirón inverso y el mismo
+carril de barra: el residuo que queda son **3,2°** en el codo entre fases, por
+debajo del paso de 5°, porque la subida corta el tirón cuando la barra pasa la
+rótula (rodilla 24,8°) y la bajada termina el bloqueo en la postura del hito
+(23,77°).
+
+### Añadido
+
+- `prueba-gesto-barra` mide ahora tres cosas más del peso muerto: cuánto se hunde
+  la barra en la pierna, el muslo y la cadera en cada paso; el ángulo del cuello
+  a lo largo del gesto; y si la bajada pasa por las mismas posturas que la subida,
+  comparando qué columna le toca a cada rodilla. Esta última es la que habría
+  cazado lo de las fases en 0.2.96: la prueba anterior solo miraba los extremos,
+  y los extremos siempre estuvieron bien.
+
 ## [0.2.97] — 2026-08-20
 
 Los cinco ajustes que pidió el diseñador después de ver 0.2.96 en movimiento.

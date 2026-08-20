@@ -166,7 +166,8 @@ export type UmbralFase =
 export type AcomodacionMov =
   | { tipo: "pitch"; familia: string; cadena: string[]; es: string; en: string }
   | { tipo: "plomada"; familia: string; es: string; en: string }
-  | { tipo: "mirada"; familia: string; distanciaCm: number; es: string; en: string };
+  | { tipo: "mirada"; familia: string; distanciaCm: number; es: string; en: string }
+  | { tipo: "roce"; familia: string; segmentos: string[]; es: string; en: string };
 
 /** Un tramo del gesto, entre dos posturas de la biblioteca. */
 export interface FaseMov {
@@ -232,6 +233,29 @@ const MIRADA: AcomodacionMov = {
   en: "the gaze stays on its floor mark",
 };
 
+/**
+ * LA BARRA ROZA EL CUERPO, NO LO ATRAVIESA (v0.2.98).
+ *
+ * «La barra debe detectar colisión con la pierna, el muslo y cadera (de forma
+ * que la barra desliza anterior y sobre ellas, y al bloqueo no se hunde en el
+ * cuerpo).» Es lo que hace un peso muerto de verdad: la barra sube ARRASTRANDO
+ * por la espinilla y el muslo, y su carril lo dicta la superficie del cuerpo,
+ * no una recta ideal.
+ *
+ * Sin esto la barra se hundía —medido a lo largo del gesto: 1,44 cm en la
+ * espinilla, 1,36 en el muslo y 1,35 en la pelvis justo en el bloqueo, que es
+ * donde más se ve—. El hombro es quien la mueve, porque el brazo es la cuerda
+ * de la que cuelga: la plomada la lleva a la vertical del medio del pie y esta
+ * acomodación la adelanta lo justo para salir de la carne, nunca hacia atrás.
+ */
+const ROCE: AcomodacionMov = {
+  tipo: "roce",
+  familia: "shoulder",
+  segmentos: ["pierna-L", "pierna-R", "muslo-L", "muslo-R", "pelvis"],
+  es: "la barra roza la pierna sin hundirse en ella",
+  en: "the bar grazes the leg without sinking into it",
+};
+
 export const PLANES: Record<string, PlanMov> = {
   /**
    * PESO MUERTO, en las dos fases que describió el diseñador.
@@ -260,7 +284,7 @@ export const PLANES: Record<string, PlanMov> = {
         ],
         meta: "Peso muerto (rodilla)",
         hasta: { tipo: "barraSobreRotula" },
-        acomodaciones: [PLANTA, PLOMADA, MIRADA],
+        acomodaciones: [PLANTA, PLOMADA, MIRADA, ROCE],
       },
       {
         id: "bloqueo",
@@ -273,7 +297,7 @@ export const PLANES: Record<string, PlanMov> = {
         ],
         meta: "Peso muerto (bloqueo)",
         hasta: { tipo: "meta" },
-        acomodaciones: [PLANTA, PLOMADA, MIRADA],
+        acomodaciones: [PLANTA, PLOMADA, MIRADA, ROCE],
       },
     ],
   },
