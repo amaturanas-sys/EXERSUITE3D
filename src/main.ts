@@ -25,6 +25,13 @@ import { figureSegments } from "./core/figureSegments";
 import { prefabsMaquina } from "./core/prefabsMaquina";
 import { parsearPrefab, prefabDeFabrica, serializarPrefab } from "./core/prefabIO";
 import { medidasDentada, pasoMinimoDentada } from "./objects/placaDentada";
+import { hornearMaquina } from "./core/maquinasModelo";
+import {
+  COMPONENT_LIBRARY,
+  PRIMITIVE_DEFS,
+  catalogoVigente,
+} from "./objects/componentLibrary";
+import { STANDARD_MACHINES, piezasDeMaquina } from "./objects/standardMachines";
 import { APOYO_RACK, EJERCICIOS_BARRA } from "./objects/barraManiqui";
 import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
@@ -292,6 +299,21 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // medidos, por lo mismo — que la prueba compare contra la fuente y no
     // contra una copia de los números.
     barra: { ejercicios: EJERCICIOS_BARRA, apoyo: APOYO_RACK },
+    // MODELO HORNEADO DE LAS MÁQUINAS (v0.3.2): es lo que enseña la pestaña
+    // «Máquinas» de la Biblioteca y lo que se descarga como OBJ/STL. Se expone
+    // para que la verificación pueda comparar ese modelo contra la máquina que
+    // de verdad se inserta, en vez de mirarlos por separado.
+    maquinas: { hornear: hornearMaquina, spec: piezasDeMaquina, lista: STANDARD_MACHINES },
+    // EL CATÁLOGO (v0.3.2): la lista curada de piezas y la biblioteca entera.
+    // La verificación compara contra ESTO lo que pintan la paleta y la ventana
+    // de Biblioteca de modelos, en vez de contra una copia del listado escrita
+    // en la prueba —que envejecería sola.
+    catalogo: {
+      vigente: () => catalogoVigente().map((d) => ({ id: d.id, label: d.label })),
+      todas: () => [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].map((d) => ({
+        id: d.id, label: d.label, paleta: d.paleta ?? null,
+      })),
+    },
   };
   return ed;
 }

@@ -37,13 +37,67 @@ Se queda un caso de frontera: la **esfera** primitiva no la usa ninguna máquina
 ni prueba, pero es una de las tres formas básicas y quitarla dejaría el modo
 Sencillo con caja y cilindro. Sigue en el inventario.
 
+**Y de 23 bajan a 21.** Sobre el inventario actualizado, el diseñador señaló
+dos más por su número —el **pilar estructural** (1) y el **contrapeso** (14)—
+y confirmó preservar la esfera. Las dos se retiran con el mismo mecanismo y la
+misma garantía, medida otra vez: mismo tamaño, masa, anclaje, material y malla.
+El pilar sale además de la lista blanca del modo Sencillo: una pieza retirada
+no puede seguir ofreciéndose por otra puerta.
+
+**La placa dentada, cromada.** Se queda donde estaba —es una herramienta de
+tres toques, no una pieza que se arrastre, y ni ella ni sus atributos salen del
+sistema—, pero deja el acero negro por el cromo: en negro se perdía contra el
+pilar y contra el fondo, y los ganchos recortados en el canto, que son toda la
+pieza, no se leían. Solo cambia el material de fábrica: las placas ya colocadas
+en un proyecto guardado conservan el suyo.
+
+**Una sola lista de piezas, no dos.** La curaduría vive ahora en
+`catalogoVigente()`, y la leen los dos sitios donde se eligen piezas: la paleta
+del Builder y la pestaña «Componentes» de la Biblioteca de modelos. Esa ventana
+listaba las **74** definiciones —plantillas internas y despiece de las máquinas
+incluidos—; ahora enseña las mismas **21 piezas** que la paleta (22 entradas
+contando la placa dentada, que es herramienta). Las piezas internas se siguen
+sustituyendo por la vía que les corresponde: reemplazando la máquina entera.
+
+### Arreglado
+
+**El modelo de la pestaña «Máquinas» era otra máquina.** El ensamblaje que
+enseña esa ventana —y el que se descarga como OBJ/STL— se cocinaba aparte, con
+una segunda implementación del armado que se había quedado atrás respecto de la
+del editor:
+
+- ignoraba la `orientacion` de fábrica de cada componente, así que las piezas
+  que el prefab no rota explícitamente salían tumbadas: la **UpperMachine** se
+  horneaba 16,6 cm más ancha y descentrada 8,3 cm respecto de la que se inserta;
+- no construía las piezas hijas que se generan solas —las quince placas de la
+  pila de pesos, los discos del portadiscos—, y la **torre de poleas** perdía
+  casi la mitad de su malla (85 449 vértices reales contra 49 836 horneados);
+- y fundía todo en un solo material gris, con las normales recalculadas sobre
+  la malla sin índice, que facetaba todos los cilindros.
+
+Ahora la máquina se arma con `SceneObject`, la MISMA clase que el editor pone
+en el diseño, siguiendo paso por paso lo que hacen `addComponent` y
+`construirPiezas`. La vista previa muestra el ensamblaje con el material de
+cada pieza, y el modelo horneado sale idéntico a la máquina insertada: las
+**8 máquinas estándar** coinciden vértice a vértice, con un desvío máximo de
+0,000008 cm (ruido de coma flotante). Las normales de cada pieza viajan al OBJ
+como `vn`, así que el modelo descargado se sombrea fuera como se ve aquí.
+
+Lo único que no viaja son los cables, que en el editor son un trazado entre
+nodos y no una superficie: no hay malla que hornear.
+
 ### Añadido
 
 - `pruebas/prueba-piezas-retiradas.mjs`: vigila las dos mitades del trato —que
-  no se listen y que se sigan resolviendo—, con la huella de las 18 escrita
-  dentro para que un cambio de masa o de medidas salte.
-- `docs/inventario-piezas.html`: la lista actualizada, con las 23 que quedan y
-  las 18 retiradas aparte.
+  no se listen y que se sigan resolviendo—, con la huella de las 20 escrita
+  dentro para que un cambio de masa o de medidas salte. Comprueba además que la
+  paleta y la ventana de Biblioteca enseñan EXACTAMENTE el catálogo vigente
+  —leído de la aplicación, no copiado en la prueba—, que la esfera sigue ahí, y
+  que las 8 máquinas se hornean vértice a vértice como se insertan.
+  (La comprobación de «no se listan» buscaba selectores que no existen
+  —`.palette-item`, `[data-comp-id]`—: no miraba nada y pasaba sola.)
+- `docs/inventario-piezas.html`: la lista actualizada, con las 21 que quedan y
+  las 20 retiradas aparte.
 
 ### Cambiado
 

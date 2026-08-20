@@ -12,6 +12,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---------------------------------------------------------------- ESTRUCTURAL
   {
     id: "pilar",
+    // Retirada (v0.3.2): una caja de 8×200×8 que el `pilar-linea` traza mejor
+    // —con nodos y medidas reales— y que ninguna máquina usaba.
+    paleta: "retirada",
     label: "Pilar estructural",
     category: "estructural",
     materialId: "acero-negro",
@@ -101,7 +104,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     id: "placa-dentada",
     label: "Placa dentada (upright)",
     category: "estructural",
-    materialId: "acero-negro",
+    // CROMADA (v0.3.2), por indicación del diseñador: en negro se perdía
+    // contra el pilar y contra el fondo, y los ganchos recortados en el canto
+    // —que son toda la pieza— no se leían.
+    materialId: "cromo",
     defaults: {
       kind: "dentada",
       dientes: 6,
@@ -727,6 +733,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "contrapeso",
+    // Retirada (v0.3.2): masa genérica sin uso en máquinas — el papel de
+    // contrapeso lo hacen la pila de pesos y el portadiscos.
+    paleta: "retirada",
     label: "Contrapeso",
     category: "peso",
     materialId: "hierro-fundido",
@@ -880,6 +889,26 @@ export const PRIMITIVE_DEFS: ComponentDefinition[] = [
 const BY_ID = new Map<string, ComponentDefinition>(
   [...COMPONENT_LIBRARY, ...PRIMITIVE_DEFS].map((d) => [d.id, d]),
 );
+
+/**
+ * EL CATÁLOGO VIGENTE (v0.3.2): las piezas que el diseñador dejó a la vista.
+ *
+ * Es UNA sola lista, y la consultan los DOS sitios donde se eligen piezas —la
+ * paleta del Builder y la pestaña «Componentes» de la Biblioteca de modelos—
+ * para que no puedan desviarse una de la otra. Quedan fuera las etiquetadas:
+ * `oculta` (redundantes o plantillas internas), `despiece` (partes internas de
+ * las máquinas reales, que se sustituyen por la máquina entera) y `retirada`
+ * (sin uso en máquinas ni en pruebas).
+ *
+ * Solo afecta a lo que se LISTA. Ningún id se borra: prefabs, máquinas
+ * estándar y proyectos guardados siguen resolviendo TODOS los componentes, con
+ * su misma geometría, su misma masa y su misma física.
+ */
+export const esDelCatalogo = (d: ComponentDefinition): boolean => !d.paleta;
+
+/** Las piezas del catálogo vigente, primitivas primero. */
+export const catalogoVigente = (): ComponentDefinition[] =>
+  [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(esDelCatalogo);
 
 /**
  * PIEZAS RETIRADAS (v0.2.32) y su sustituta. La polea, el bloque de poleas y

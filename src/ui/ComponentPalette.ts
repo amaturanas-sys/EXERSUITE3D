@@ -5,6 +5,7 @@ import {
   CATEGORY_LABELS,
   COMPONENT_LIBRARY,
   PRIMITIVE_DEFS,
+  catalogoVigente,
 } from "../objects/componentLibrary";
 import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
@@ -149,7 +150,8 @@ const COMPS_SENCILLO = new Set([
   "prim-box",
   "prim-cylinder",
   "prim-sphere",
-  "pilar",
+  // El `pilar` salió del catálogo en v0.3.2: una pieza retirada no puede
+  // seguir ofreciéndose por otra puerta. La caja cubre la columna sencilla.
   "base-soporte",
   "barra-dominadas",
   "disco-peso",
@@ -254,15 +256,13 @@ export class ComponentPalette {
   private renderGroups(body: HTMLElement): void {
     clear(body);
     const sencillo = this.editor.getWorkspace()?.modo === "sencillo";
-    // CURADURÍA (v0.2.18) + v0.2.28: la paleta lista SOLO las piezas sin
-    // etiqueta de curaduría — las "oculta" (redundantes o plantillas
-    // internas) y las "despiece" (piezas internas de las máquinas reales,
-    // cuya subpestaña TTP/POWERRACK se eliminó) quedan fuera. Solo cambia
-    // la paleta: prefabs y máquinas siguen resolviendo TODOS los ids.
-    // El modo Sencillo conserva SU propia lista blanca tal cual.
-    const all = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter(
-      (d) => (sencillo ? COMPS_SENCILLO.has(d.id) : !d.paleta),
-    );
+    // CURADURÍA (v0.2.18 → v0.3.2): la paleta lista el CATÁLOGO VIGENTE, que
+    // ahora es una sola lista compartida con la Biblioteca de modelos
+    // (`catalogoVigente`) para que las dos no puedan desviarse. El modo
+    // Sencillo conserva su lista blanca, ya reducida al mismo catálogo.
+    const all = sencillo
+      ? [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].filter((d) => COMPS_SENCILLO.has(d.id))
+      : catalogoVigente();
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }

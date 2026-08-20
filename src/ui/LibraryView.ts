@@ -3,6 +3,7 @@ import {
   CATEGORY_LABELS,
   COMPONENT_LIBRARY,
   PRIMITIVE_DEFS,
+  catalogoVigente,
 } from "../objects/componentLibrary";
 import { SEGMENT_DEFS, defaultSegmentGeometry } from "../objects/humanFigure";
 import { buildGeometry } from "../objects/geometryFactory";
@@ -10,7 +11,14 @@ import { buildMaterial } from "../objects/materials";
 import { componentModels, type ImportEntry, type ImportStatus } from "../core/componentModels";
 import { figureSegments } from "../core/figureSegments";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
-import { claveMaquina, geometriaAOBJ, geometriaASTL, hornearMaquina } from "../core/maquinasModelo";
+import {
+  armarMaquina,
+  claveMaquina,
+  geometriaAOBJ,
+  geometriaASTL,
+  hornearMaquina,
+  origenDeMaquina,
+} from "../core/maquinasModelo";
 import { ComponentPreview } from "./ComponentPreview";
 import { clear, el } from "./dom";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
@@ -40,14 +48,26 @@ interface LibrarySource {
   supportsZip: boolean;
   /** Acciones adicionales del detalle (p. ej. exportar la máquina a OBJ/STL). */
   extraActions?(id: string): HTMLElement[];
+  /**
+   * Ensamblaje 3D completo del ítem, cuando la fuente sabe armarlo con sus
+   * materiales reales (las máquinas). Devuelve también cómo soltarlo. Si no
+   * hay, se cae a `previewGeometry` + `previewMaterial`.
+   */
+  previewObject?(id: string): { raiz: THREE.Object3D; soltar: () => void } | null;
 }
 
+// El índice tiene que conocer TODAS las definiciones —la vista previa y el
+// material se piden por id, y un proyecto viejo puede traer cualquiera—, pero
+// la LISTA solo enseña el catálogo vigente.
 const COMPONENT_DEFS = [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY];
 const compById = new Map(COMPONENT_DEFS.map((d) => [d.id, d]));
 
 const componentSource: LibrarySource = {
+  // CURADURÍA (v0.3.2): la biblioteca listaba las 74 definiciones, incluidas
+  // las plantillas internas y el despiece de las máquinas. Ahora enseña las
+  // mismas piezas que la paleta —ni una más—, leídas de la misma lista.
   items: () =>
-    COMPONENT_DEFS.map((d) => ({
+    catalogoVigente().map((d) => ({
       id: d.id,
       label: d.label,
       category: CATEGORY_LABELS[d.category] ?? d.category,
@@ -75,7 +95,10 @@ async function exportarMaquina(clave: string, formato: "obj" | "stl"): Promise<v
   const m = maquinaPorClave(clave);
   if (!m) return;
   try {
-    const geo = componentModels.geometryClone(clave) ?? hornearMaquina(m.id);
+    // Misma prioridad que la inserción: prefab del usuario > modelo > fábrica.
+    const geo =
+      (origenDeMaquina(m.id) === "modelo" ? componentModels.geometryClone(clave) : null)
+      ?? hornearMaquina(m.id);
     if (formato === "obj") {
       await descargarArchivo(`${m.id}.obj`, geometriaAOBJ(geo, m.label), "model/obj");
     } else {
@@ -101,12 +124,42 @@ const machineSource: LibrarySource = {
   isUser: (id) => componentModels.source(id) === "user",
   isFile: (id) => componentModels.source(id) === "file",
   previewGeometry: (id) => {
-    const propia = componentModels.geometryClone(id);
-    if (propia) return propia;
     const m = maquinaPorClave(id);
-    return m ? hornearMaquina(m.id) : new THREE.BoxGeometry(50, 50, 50);
+    if (!m) return componentModels.geometryClone(id) ?? new THREE.BoxGeometry(50, 50, 50);
+    // MISMA PRIORIDAD QUE LA INSERCIÓN (v0.3.2): prefab del usuario > modelo
+    // 3D suelto > fábrica. Estaba al revés —se miraba el modelo primero—, así
+    // que quien tuviera las dos cosas veía y descargaba una máquina y se le
+    // insertaba otra.
+    if (origenDeMaquina(m.id) === "modelo") {
+      const propia = componentModels.geometryClone(id);
+      if (propia) return propia;
+    }
+    return hornearMaquina(m.id);
   },
   previewMaterial: () => buildMaterial("acero-negro"),
+  // LA MÁQUINA, NO SU SILUETA (v0.3.2): se arma con las mismas piezas que
+  // el editor inserta —cada una con su material y con las hijas que se
+  // generan solas (las placas de la pila, los discos)—, así que la vista
+  // previa enseña la configuración actual y no una fundición aparte. Solo se
+  // cede el paso al modelo 3D suelto del usuario, que se enseña por la vía de
+  // geometría.
+  previewObject: (id) => {
+    const m = maquinaPorClave(id);
+    if (!m || origenDeMaquina(m.id) === "modelo") return null;
+    try {
+      const { raiz, piezas, cuerdas } = armarMaquina(m.id);
+      return {
+        raiz,
+        soltar: () => {
+          piezas.forEach((o) => o.dispose());
+          cuerdas.forEach((c) => c.dispose());
+        },
+      };
+    } catch (err) {
+      console.error("No se pudo armar la máquina para la vista previa:", err);
+      return null;
+    }
+  },
   setUserModel: (id, f) => componentModels.setUserModel(id, f),
   clearUserModel: (id) => componentModels.clearUserModel(id),
   onChanged: (fn) => {
@@ -340,7 +393,9 @@ export class LibraryView {
     [...this.listEl.querySelectorAll<HTMLButtonElement>(".lib-row")].forEach((r) => {
       if (r.querySelector(".lib-name")?.textContent === it.label) r.classList.add("selected");
     });
-    this.preview.show(this.src.previewGeometry(id), this.src.previewMaterial(id));
+    const armado = this.src.previewObject?.(id);
+    if (armado) this.preview.showObject(armado.raiz, armado.soltar);
+    else this.preview.show(this.src.previewGeometry(id), this.src.previewMaterial(id));
     this.renderDetail(it);
   }
 

@@ -12,7 +12,8 @@ export class ComponentPreview {
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
-  private mesh: THREE.Mesh | null = null;
+  private shown: THREE.Object3D | null = null;
+  private soltar: (() => void) | null = null;
   private running = false;
   private ro: ResizeObserver;
 
@@ -52,13 +53,32 @@ export class ComponentPreview {
 
   /** Muestra una geometría (en cm) con su material; encuadra la cámara. */
   show(geometry: THREE.BufferGeometry, material: THREE.Material): void {
-    this.clearMesh();
-    const mesh = new THREE.Mesh(geometry, material);
-    this.mesh = mesh;
-    this.scene.add(mesh);
+    // La geometría y el material se crean por cada selección (clon de la
+    // primitiva o del modelo): liberarlos evita fugas de memoria/GPU.
+    this.montar(new THREE.Mesh(geometry, material), () => {
+      geometry.dispose();
+      if (Array.isArray(material)) (material as THREE.Material[]).forEach((m) => m.dispose());
+      else material.dispose();
+    });
+  }
 
-    geometry.computeBoundingSphere();
-    const sph = geometry.boundingSphere!;
+  /**
+   * Muestra un ENSAMBLAJE ya armado (v0.3.2): una máquina entera con cada
+   * pieza en su material, en vez de una fundición monocroma. Quien lo arma
+   * entrega también cómo soltarlo, porque es quien sabe qué creó.
+   */
+  showObject(raiz: THREE.Object3D, soltar?: () => void): void {
+    this.montar(raiz, soltar ?? null);
+  }
+
+  private montar(raiz: THREE.Object3D, soltar: (() => void) | null): void {
+    this.soltarMontado();
+    this.shown = raiz;
+    this.soltar = soltar;
+    this.scene.add(raiz);
+
+    raiz.updateMatrixWorld(true);
+    const sph = new THREE.Box3().setFromObject(raiz).getBoundingSphere(new THREE.Sphere());
     const r = Math.max(sph.radius, 1);
     this.controls.target.copy(sph.center);
     const dist = r / Math.sin((this.camera.fov * Math.PI) / 180 / 2);
@@ -70,16 +90,13 @@ export class ComponentPreview {
     this.controls.update();
   }
 
-  private clearMesh(): void {
-    if (!this.mesh) return;
-    this.scene.remove(this.mesh);
-    // La geometría y el material se crean por cada selección (clon de la
-    // primitiva o del modelo): liberarlos evita fugas de memoria/GPU.
-    this.mesh.geometry.dispose();
-    const mat = this.mesh.material;
-    if (Array.isArray(mat)) mat.forEach((m) => m.dispose());
-    else mat.dispose();
-    this.mesh = null;
+  /** Suelta lo que hubiera montado, avisando a quien lo creó. */
+  private soltarMontado(): void {
+    if (!this.shown) return;
+    this.scene.remove(this.shown);
+    this.soltar?.();
+    this.shown = null;
+    this.soltar = null;
   }
 
   start(): void {
@@ -110,7 +127,7 @@ export class ComponentPreview {
   dispose(): void {
     this.stop();
     this.ro.disconnect();
-    this.clearMesh();
+    this.soltarMontado();
     this.controls.dispose();
     // Libera el entorno PMREM y fuerza la pérdida del contexto WebGL: abrir la
     // biblioteca repetidamente no debe acumular contextos vivos (límite ~8-16
