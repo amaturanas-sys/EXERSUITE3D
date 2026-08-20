@@ -3863,6 +3863,8 @@ export class Editor {
     const plomada: string[] = [];
     let mirada: number | null = null;
     let roce: string[] | null = null;
+    let equilibrio = false;
+    let apertura = false;
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
       if (!z) continue;
@@ -3933,6 +3935,8 @@ export class Editor {
           // lado: se guarda una sola vez y al aplicarlo se usan los lados que
           // haya recogido la plomada, que son los mismos brazos.
           if (ac.tipo === "roce") { roce = ac.segmentos; continue; }
+          if (ac.tipo === "equilibrio") { equilibrio = true; continue; }
+          if (ac.tipo === "apertura") { apertura = true; continue; }
           const cadena = ac.cadena.map((f) => `${f}${l}`);
           acomodar.push({
             nombre,
@@ -3985,6 +3989,10 @@ export class Editor {
     // hacia DELANTE lo justo para no meterla en la carne. Al revés la plomada
     // desharía la corrección.
     if (roce && plomada.length && this.acomodarRoce(plomada, roce, joints)) n++;
+    // LA APERTURA VA ANTES QUE EL EQUILIBRIO: abrir la cadera mueve las pisadas
+    // y con ellas el blanco que persigue el tronco.
+    if (apertura && huella && this.acomodarApertura(joints, huella)) n++;
+    if (equilibrio && this.acomodarEquilibrio(joints)) n++;
     if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
     this.reapoyarFigura();
@@ -4172,6 +4180,130 @@ export class Editor {
     const sol = (a + b) / 2;
     hombro.rotation.x = degToRad(sol);
     fig.updateMatrixWorld(true);
+    return Math.abs(sol - original) > 1e-3;
+  }
+
+  /**
+   * LA POSTURA NO SE CIERRA AL BAJAR (v0.2.99).
+   *
+   * El reparto solo mueve el eje X, así que la ABDUCCIÓN de la cadera se
+   * quedaba congelada en el valor de estar de pie (−10,29°) mientras la flexión
+   * llegaba a −78,6°. Con la cadera tan flexionada esos 10° ya no abren nada, y
+   * las piernas se juntaban: medido, la separación entre las dos pisadas pasaba
+   * de 60,1 cm a 39,4 bajando, y se volvía a abrir al subir. La postura de fondo
+   * del modelo tiene 60,8 cm con la cadera a −36,5°, o sea que la apertura
+   * estaba en las posturas y el gesto no la recorría.
+   *
+   * Lo que no puede cambiar es la separación entre los pies: están en el suelo.
+   * Así que se resuelve la abducción —simétrica, el mismo incremento a los dos
+   * lados— por bisección, contra la separación que había al empezar el paso. Es
+   * la misma abducción y rotación externa de cadera que describió el diseñador
+   * al hablar del pie, y como se lee del mundo, la subida la deshace sola.
+   */
+  private acomodarApertura(
+    joints: Record<string, THREE.Object3D>,
+    huella: { L: THREE.Vector3; R: THREE.Vector3 },
+  ): boolean {
+    const fig = this.humanFigure;
+    const L = joints.hipL, R = joints.hipR;
+    const limL = JOINT_DOF.hipL?.z, limR = JOINT_DOF.hipR?.z;
+    if (!fig || !L || !R || !limL || !limR) return false;
+    if (this.jointLocks.has("hipL") || this.jointLocks.has("hipR")) return false;
+    const blanco = huella.L.distanceTo(huella.R);
+    if (blanco < 1e-3) return false;
+    const baseL = radToDeg(L.rotation.z), baseR = radToDeg(R.rotation.z);
+    // `d > 0` ABRE: la cadera izquierda va hacia su −z y la derecha hacia su +z,
+    // que es como están declaradas las posturas (−10,29 y +10,29 de pie).
+    const separacion = (d: number): number => {
+      L.rotation.z = degToRad(Math.max(limL[0], Math.min(limL[1], baseL - d)));
+      R.rotation.z = degToRad(Math.max(limR[0], Math.min(limR[1], baseR + d)));
+      fig.updateMatrixWorld(true);
+      const h = this.huellaDeLosPies();
+      return h ? h.L.distanceTo(h.R) - blanco : 0;
+    };
+    const f0 = separacion(0);
+    if (Math.abs(f0) < 0.05) { separacion(0); return false; }
+    // Corchete hacia el lado que hace falta, en pasos de 2°.
+    let a = 0, b = 0, hay = false;
+    const sentido = f0 < 0 ? 1 : -1; // falta anchura → abrir
+    for (let d = 2; d <= 60; d += 2) {
+      if (separacion(sentido * d) * f0 <= 0) {
+        a = Math.min(0, sentido * d); b = Math.max(0, sentido * d); hay = true; break;
+      }
+    }
+    if (!hay) {
+      // La cadera no da para tanto: se deja como estaba. Es una conclusión
+      // ergonómica —esa apertura no se aguanta— y se avisa como las demás.
+      separacion(0);
+      this.acomodacionAlLimite = true;
+      return false;
+    }
+    const fa = separacion(a);
+    for (let i = 0; i < 30; i++) {
+      const m = (a + b) / 2;
+      if (separacion(m) * fa > 0) a = m; else b = m;
+    }
+    separacion((a + b) / 2);
+    return Math.abs((a + b) / 2) > 1e-3;
+  }
+
+  /**
+   * LA BARRA SE QUEDA SOBRE EL MEDIO DEL PIE (v0.2.99).
+   *
+   * «La limitación del rango de movimiento del tobillo (dorsiflexión limitada)
+   * hace que durante el movimiento la barra se desplace muy posterior al centro
+   * de gravedad (el medio del pie). En el mundo real este atleta caería
+   * irremediablemente hacia atrás producto del peso de la barra.»
+   *
+   * La regla es la misma que gobierna cualquier sentadilla real: la carga se
+   * mantiene sobre la base de apoyo. Quien la cumple es el TRONCO, porque la
+   * cadera retrocede al bajar y el pecho tiene que adelantarse para
+   * compensarla. Así que la columna deja de ser un ángulo del reparto y se
+   * RESUELVE en cada paso, por bisección sobre su rotación, midiendo la barra
+   * en vivo contra la huella.
+   *
+   * Y la diferencia entre frontal y trasera sale sola: la barra va rígida al
+   * tronco pero apoyada en sitios distintos —clavículas o trapecios—, así que
+   * dejarla sobre el mismo punto del suelo pide inclinaciones distintas. No hay
+   * que declarar en ninguna parte que la frontal va más vertical: lo dice la
+   * geometría del apoyo.
+   */
+  private acomodarEquilibrio(joints: Record<string, THREE.Object3D>): boolean {
+    const fig = this.humanFigure;
+    const columna = joints.spine;
+    const enlace = this.barraManiqui;
+    if (!fig || !columna || !enlace || enlace.rackeada) return false;
+    if (this.jointLocks.has("spine")) return false;
+    const barra = this.objects.get(enlace.objectId);
+    const lim = JOINT_DOF.spine?.x;
+    const huella = this.huellaDeLosPies();
+    if (!barra || !lim || !huella) return false;
+    const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
+    const blanco = huella.L.clone().add(huella.R).multiplyScalar(0.5).dot(adelante);
+    const original = radToDeg(columna.rotation.x);
+    const desvio = (deg: number): number => {
+      columna.rotation.x = degToRad(deg);
+      fig.updateMatrixWorld(true);
+      this.sincronizarBarraManiqui();
+      return barra.mesh.position.dot(adelante) - blanco;
+    };
+    let a = lim[0], b = lim[1];
+    const fa = desvio(a);
+    if (fa * desvio(b) > 0) {
+      // La columna no da para tanto: se deja en el tope que más se acerca. Es
+      // una conclusión ergonómica —esa sentadilla no se aguanta— y se avisa por
+      // el mismo canal que el tobillo sin recorrido.
+      const mejor = Math.abs(fa) < Math.abs(desvio(b)) ? a : b;
+      desvio(mejor);
+      this.acomodacionAlLimite = true;
+      return Math.abs(mejor - original) > 1e-3;
+    }
+    for (let i = 0; i < 40; i++) {
+      const m = (a + b) / 2;
+      if (desvio(m) * fa > 0) a = m; else b = m;
+    }
+    const sol = (a + b) / 2;
+    desvio(sol);
     return Math.abs(sol - original) > 1e-3;
   }
 

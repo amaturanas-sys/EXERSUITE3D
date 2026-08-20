@@ -5,6 +5,83 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.99] — 2026-08-20
+
+Las sentadillas dejan de caerse hacia atrás, y la frontal sale más vertical que
+la trasera sin que nadie se lo diga.
+
+### Corregido
+
+**La barra se queda sobre el medio del pie.** «La limitación del rango de
+movimiento del tobillo (dorsiflexión limitada) hace que durante el movimiento la
+barra se desplace muy posterior al centro de gravedad (el medio del pie) [...]
+en el mundo real este atleta caería irremediablemente hacia atrás producto del
+peso de la barra.» Medido: la barra llegaba a **50,5 cm por detrás** del medio
+del pie a media bajada. Ahora se queda en **0,00 cm** en todos los pasos, ida y
+vuelta, en las dos sentadillas.
+
+La regla física es una sola —la carga sobre la base de apoyo— y quien la cumple
+es el TRONCO, porque la cadera retrocede al bajar y el pecho tiene que
+adelantarse para compensarla. Así que la columna deja de ser un ángulo del
+reparto y se resuelve en cada paso por bisección, midiendo la barra en vivo
+contra la pisada.
+
+**Y LA DIFERENCIA ENTRE FRONTAL Y TRASERA SALE SOLA**, que es lo mejor de este
+arreglo: no está declarada en ninguna parte. La barra va rígida al tronco pero
+apoyada en sitios distintos —clavículas por delante, trapecios por detrás—, así
+que dejar el mismo punto del suelo debajo pide inclinaciones distintas. Medido
+en el fondo: la frontal **−2,9°** (torso vertical, nunca pasa de 6,9° en todo el
+gesto) contra la trasera **18,7°** (hasta 27,1°). Es exactamente lo que había
+descrito el diseñador: «backsquat permite mayor inclinación del torso porque usa
+más movilidad de cadera; en cambio, frontsquat mantiene un torso vertical para
+prevenir la caída de la barra a expensas de mayor rango de rodilla y tobillos».
+
+**El gesto para en la postura del modelo, y no donde tope una articulación.**
+Las sentadillas no tenían PLAN —lo tenían el peso muerto y el press, no ellas—,
+así que el reparto seguía repartiendo hasta el límite anatómico: **rodilla 150°
+y cadera −134,6°**, contra los 126° y −78,61° del modelo del diseñador. Ahora
+las dos tienen su plan de una fase, de la postura de fondo a la de pie, y
+aterrizan en los ángulos del modelo.
+
+**La postura ya no se cierra al bajar.** Este salió al medir lo anterior, y es
+de los que se ven: el reparto solo mueve el eje X de cada articulación, así que
+la ABDUCCIÓN de la cadera se quedaba congelada en el valor de estar de pie
+(−10,29°) mientras la flexión llegaba a −78,6°. Con la cadera tan flexionada
+esos 10° ya no abren nada, y las piernas se juntaban: la separación entre pies
+pasaba de **60,1 cm a 39,4** durante la bajada y se volvía a abrir al subir. La
+postura de fondo del modelo tiene 60,8 cm con la cadera a −36,5°, o sea que la
+apertura estaba en las posturas y el gesto no la recorría.
+
+Lo que no puede cambiar es la separación entre los pies —están en el suelo—, así
+que la abducción se resuelve contra ella, simétrica y por bisección. Medido:
+**60,24–60,28 cm** durante todo el gesto, con la cadera desarrollando sola de
+−10,3° a −43,3° de abducción. Es la misma «abducción y rotación externa de la
+cadera al descender al bottom del squat» que el diseñador había descrito al
+hablar del pie. Y las pisadas siguen clavadas: **0,01 cm**.
+
+### Pendiente de decisión
+
+La POSTURA ESTÁTICA de la sentadilla trasera trae la barra **14,1 cm por detrás**
+del medio del pie, de pie y en el fondo, y el gesto lo corrige en su primer paso
+—de ahí un salto de unos 15° de tronco entre aplicar la postura y empezar a
+moverse—. No es un fallo del gesto sino la geometría del modelo: el hombro del
+rig cae sobre el tobillo, el medio del pie está 9,1 cm por delante y la barra se
+apoya otros 5 cm por detrás de la nuca. Equilibrar la postura pediría 18,7° de
+inclinación estando de pie, que contradice la estampa aprobada. Queda anotado
+para que lo decida el diseñador.
+
+### Añadido
+
+- `prueba-gesto-barra` filma también las dos sentadillas: dónde queda la barra
+  respecto del medio del pie en cada paso, si el gesto aterriza en la postura del
+  modelo, si las pisadas viajan, cuánto se abre o se cierra la postura, y que la
+  frontal salga más vertical que la trasera.
+- La prueba mide ahora la pisada EN EL MARCO DEL PIE. Elegir la banda de contacto
+  por la Y del mundo funciona con el pie plano, pero en el fondo de la sentadilla
+  el pie se inclina 8,15° y la banda deja de coger la suela entera: se queda con
+  la puntera y la referencia miente 5,7 cm. Es la misma lección de v0.2.97 —medir
+  la huella donde el pie toca, en su propio marco— aplicada a la prueba.
+
 ## [0.2.98] — 2026-08-20
 
 El peso muerto, terminado: cuello, roce y una bajada que de verdad deshace la subida.

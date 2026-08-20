@@ -167,7 +167,9 @@ export type AcomodacionMov =
   | { tipo: "pitch"; familia: string; cadena: string[]; es: string; en: string }
   | { tipo: "plomada"; familia: string; es: string; en: string }
   | { tipo: "mirada"; familia: string; distanciaCm: number; es: string; en: string }
-  | { tipo: "roce"; familia: string; segmentos: string[]; es: string; en: string };
+  | { tipo: "roce"; familia: string; segmentos: string[]; es: string; en: string }
+  | { tipo: "equilibrio"; familia: string; es: string; en: string }
+  | { tipo: "apertura"; familia: string; es: string; en: string };
 
 /** Un tramo del gesto, entre dos posturas de la biblioteca. */
 export interface FaseMov {
@@ -256,7 +258,104 @@ const ROCE: AcomodacionMov = {
   en: "the bar grazes the leg without sinking into it",
 };
 
+/**
+ * EL EQUILIBRIO DE LA SENTADILLA (v0.2.99): la barra sobre el medio del pie.
+ *
+ * «La limitación del rango de movimiento del tobillo (dorsiflexión limitada)
+ * hace que durante el movimiento la barra se desplace muy posterior al centro
+ * de gravedad (el medio del pie). En el mundo real este atleta caería
+ * irremediablemente hacia atrás producto del peso de la barra.» Medido: la
+ * barra se iba hasta 50,5 cm por detrás del medio del pie a media bajada.
+ *
+ * La regla física es una sola —la carga se mantiene sobre la base de apoyo— y
+ * quien la satisface es el TRONCO: la cadera retrocede al bajar y el pecho se
+ * adelanta lo que haga falta para compensarla. Por eso la columna deja de estar
+ * en el reparto y pasa a resolverse en cada paso, igual que el cuello en el
+ * peso muerto.
+ *
+ * Y LA DIFERENCIA ENTRE FRONTAL Y TRASERA SALE SOLA, sin declararla en ninguna
+ * parte, que es lo bonito: la barra va rígida al tronco pero apoyada en sitios
+ * distintos —clavículas por delante, trapecios por detrás—, así que para dejar
+ * el MISMO punto del suelo bajo la barra cada apoyo pide una inclinación
+ * distinta. Es exactamente lo que describió el diseñador: «backsquat permite
+ * mayor inclinación del torso porque usa más movilidad de cadera; en cambio,
+ * frontsquat mantiene un torso vertical para prevenir la caída de la barra a
+ * expensas de mayor rango de rodilla y tobillos».
+ */
+const EQUILIBRIO: AcomodacionMov = {
+  tipo: "equilibrio",
+  familia: "spine",
+  es: "el tronco se inclina lo justo para dejar la barra sobre el medio del pie",
+  en: "the trunk leans just enough to keep the bar over mid-foot",
+};
+
+/**
+ * LA POSTURA NO SE CIERRA AL BAJAR (v0.2.99).
+ *
+ * El reparto solo mueve el eje X de cada articulación, así que la ABDUCCIÓN de
+ * la cadera se quedaba en el valor de estar de pie (−10,29°) mientras la flexión
+ * llegaba a −78,6°. Con la cadera tan flexionada, esos mismos 10° de abducción
+ * ya no abren nada, y las piernas se juntaban: medido, la separación entre pies
+ * pasaba de 60,1 cm a 39,4 durante la bajada, y volvía a abrirse al subir. La
+ * postura de fondo del modelo tiene 60,8 cm y la cadera a −36,5° — o sea que la
+ * apertura extra estaba en las posturas y el gesto no la recorría.
+ *
+ * Es exactamente lo que había descrito el diseñador al hablar del pie: la
+ * apertura «se transmite por abducción y rotación externa de la cadera al
+ * descender al bottom del squat». Así que la abducción deja de ser un valor
+ * congelado y se RESUELVE en cada paso para conservar la separación entre las
+ * dos pisadas, que es lo que no puede cambiar: los pies no se mueven del suelo.
+ */
+const APERTURA: AcomodacionMov = {
+  tipo: "apertura",
+  familia: "hip",
+  es: "la cadera abduce para no cerrar la postura al bajar",
+  en: "the hip abducts so the stance does not narrow on the way down",
+};
+
+/** Reparto de la sentadilla: manda la rodilla y la cadera la acompaña. */
+const PATRON_SENTADILLA: AporteArticular[] = [
+  { familia: "knee", bilateral: true, empuje: -1, peso: 1, es: "extensión de rodilla", en: "knee extension" },
+  { familia: "hip", bilateral: true, empuje: 1, peso: 0.9, es: "extensión de cadera", en: "hip extension" },
+];
+
+/**
+ * PLAN DE UNA SENTADILLA CON BARRA. Las dos son el mismo gesto —una sola fase,
+ * de la postura de fondo a la de pie— y se diferencian solo en QUÉ POSTURAS,
+ * porque el apoyo de la barra cambia. Sin plan, la sentadilla no tenía meta y
+ * el gesto no paraba en la postura aprobada: seguía hasta topar en los límites
+ * anatómicos, rodilla 150° y cadera −134,6° contra los 126° y −78,61° del
+ * modelo, con la barra 37,5 cm por detrás del pie al final del recorrido.
+ */
+const planSentadilla = (id: string, arriba: string, fondo: string): PlanMov => ({
+  id,
+  zona: "inferior",
+  origen: fondo,
+  fases: [
+    {
+      id: "subida",
+      es: "sentadilla",
+      en: "squat",
+      patron: PATRON_SENTADILLA,
+      meta: arriba,
+      hasta: { tipo: "meta" },
+      acomodaciones: [PLANTA, APERTURA, EQUILIBRIO],
+    },
+  ],
+});
+
 export const PLANES: Record<string, PlanMov> = {
+  "sentadilla-frontal": planSentadilla(
+    "sentadilla-frontal",
+    "Sentadilla frontal",
+    "Sentadilla frontal (fondo)",
+  ),
+  "sentadilla-trasera": planSentadilla(
+    "sentadilla-trasera",
+    "Sentadilla trasera",
+    "Sentadilla trasera (fondo)",
+  ),
+
   /**
    * PESO MUERTO, en las dos fases que describió el diseñador.
    *

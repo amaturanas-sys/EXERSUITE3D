@@ -82,10 +82,31 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
     const c = new T.Vector3();
     for (const w of toca) c.add(w);
     c.multiplyScalar(1 / Math.max(1, toca.length));
+    // LA SUELA, ELEGIDA EN EL MARCO DEL PIE (v0.2.99). La banda de arriba se
+    // elige por la Y del MUNDO, así que en cuanto el pie se inclina un poco
+    // —8,15° en el fondo de la sentadilla— deja de coger la suela entera y se
+    // queda con la puntera: el centro se va hacia delante y la referencia
+    // miente 5,7 cm. Elegida por la Y LOCAL es la misma suela esté el pie como
+    // esté, que es lo que hace la aplicación desde v0.2.97.
+    let minLocal = 1e9;
+    for (let i = 0; i < pos.count; i++) {
+      const y = v.fromBufferAttribute(pos, i).y;
+      if (y < minLocal) minLocal = y;
+    }
+    const suelaLocal = new T.Vector3();
+    let nSuela = 0;
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      if (v.y - minLocal >= 0.5) continue;
+      suelaLocal.add(v.clone().applyMatrix4(m.matrixWorld));
+      nSuela++;
+    }
+    suelaLocal.multiplyScalar(1 / Math.max(1, nSuela));
     return {
       punta: punta.applyMatrix4(m.matrixWorld).toArray(),
       talon: talon.applyMatrix4(m.matrixWorld).toArray(),
       huella: [c.x, 0, c.z],
+      pisada: [suelaLocal.x, 0, suelaLocal.z],
       suela: minY,
     };
   };
@@ -123,6 +144,7 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
     // suelo. Con el punto medio de punta y talón salía 0,33 cm desplazado y la
     // prueba se peleaba con el plantado por una diferencia de definición.
     const medioPie = new T.Vector3(...L.huella).add(new T.Vector3(...R.huella)).multiplyScalar(0.5);
+    const pisada = new T.Vector3(...L.pisada).add(new T.Vector3(...R.pisada)).multiplyScalar(0.5);
     const g = (n) => +(J[n].rotation.x * 180 / Math.PI).toFixed(2);
     const dentro = penetraCabeza(barra, radio, a);
     // ¿A QUÉ DISTANCIA MIRA? Se traza el eje frontal de la cabeza hasta el
@@ -162,6 +184,9 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
       barraY: +barra.y.toFixed(2), barraX: +barra.x.toFixed(2),
       sagital: +barra.dot(a).toFixed(2),
       medioPie: +medioPie.dot(a).toFixed(2),
+      // El mismo medio del pie, medido en el marco del pie: es el que vale
+      // cuando el pie se inclina, o sea en la sentadilla.
+      pisada: +pisada.dot(a).toFixed(2),
       // Cuántos cm de la barra quedan DENTRO de la malla de la cabeza. 0 = no
       // la toca.
       dentro,
@@ -456,6 +481,87 @@ ok(Math.abs(vueltaP.barraY - P[0].barraY) < 0.5,
   `la tracción devuelve la barra al rack (${vueltaP.barraY} cm, partida ${P[0].barraY})`);
 
 // ══════════ NO REGRESIÓN ══════════════════════════════════════════════════
+// ══════════ SENTADILLAS ═══════════════════════════════════════════════════
+//
+// EL EQUILIBRIO (v0.2.99). «La limitación del rango de movimiento del tobillo
+// (dorsiflexión limitada) hace que durante el movimiento la barra se desplace
+// muy posterior al centro de gravedad (el medio del pie) [...] en el mundo real
+// este atleta caería irremediablemente hacia atrás producto del peso de la
+// barra.» Medido antes de arreglarlo: hasta 50,5 cm por detrás.
+//
+// Y LA DIFERENCIA ENTRE LAS DOS SALE SOLA, que es lo que se comprueba abajo:
+// «backsquat permite mayor inclinación del torso porque usa más movilidad de
+// cadera; en cambio, frontsquat mantiene un torso vertical para prevenir la
+// caída de la barra a expensas de mayor rango de rodilla y tobillos». No está
+// declarado en ninguna parte: es geometría del apoyo. La barra va rígida al
+// tronco, apoyada en las clavículas o en los trapecios, y dejar el mismo punto
+// del suelo debajo pide inclinaciones distintas.
+const inclinacion = {};
+for (const [ej, nombre] of [["sentadilla-frontal", "frontal"], ["sentadilla-trasera", "trasera"]]) {
+  console.log(`\n── Sentadilla ${nombre} ─────────────────────────────────────`);
+  const sq = await filmar(ej);
+  const U = sq.subida, D = sq.bajada; // subida = ponerse de pie; bajada = bajar
+  const todos = [...U, ...D];
+
+  // 1) LA BARRA SE QUEDA SOBRE EL MEDIO DEL PIE. Es la regla física entera: la
+  //    carga sobre la base de apoyo. Se mide contra la pisada en el marco del
+  //    pie, que es la referencia que no miente cuando el pie se inclina.
+//
+//    SE MIDE DESDE EL PASO 1, como el carril del peso muerto: el paso 0 es la
+//    POSTURA tal cual la aplica el diseñador, antes de que corra ninguna
+//    acomodación. Y ahí hay algo que conviene tener anotado: la postura de la
+//    sentadilla TRASERA trae la barra 14,1 cm por detrás del medio del pie, de
+//    pie y en el fondo. No es un fallo del gesto —es la geometría del modelo:
+//    el hombro del rig cae sobre el tobillo, el medio del pie está 9,1 cm por
+//    delante y la barra se apoya otros 5 cm por detrás de la nuca—. El gesto lo
+//    corrige en el primer paso; la postura estática, no.
+  const fuera = todos.map((s) => +(s.sagital - s.pisada).toFixed(2));
+  const enGesto = [...U.slice(1), ...D].map((s) => +(s.sagital - s.pisada).toFixed(2));
+  console.log(`   barra − medio del pie (paso 0 crudo: ${fuera[0]}):`,
+    U.filter((_, i) => i % 4 === 0).map((s) => +(s.sagital - s.pisada).toFixed(1)).join(" "));
+  ok(peor(enGesto.map(Math.abs)) < 3,
+    `la barra se queda sobre el medio del pie en todo el gesto `
+    + `(peor ${peor(enGesto.map(Math.abs))} cm, antes 50,5)`);
+  ok(Math.min(...enGesto) > -3,
+    `y en concreto NO se va por detrás, que es lo que le haría caerse `
+    + `(${Math.min(...enGesto)} cm)`);
+  // Y LA ANCHURA DE LA POSTURA NO SE CIERRA (v0.2.99): iba de 60,1 cm a 39,4.
+  const anchos = todos.map((s) =>
+    +Math.hypot(s.pieL.pisada[0] - s.pieR.pisada[0], s.pieL.pisada[2] - s.pieR.pisada[2]).toFixed(2));
+  ok(Math.max(...anchos) - Math.min(...anchos) < 1.5,
+    `y la postura no se cierra al bajar (${Math.min(...anchos)}–${Math.max(...anchos)} cm de separación, antes 39,4–60,1)`);
+
+  // 2) EL GESTO PARA EN LA POSTURA APROBADA, no donde tope una articulación.
+  //    Sin plan la sentadilla no tenía meta: seguía hasta rodilla 150° y cadera
+  //    −134,6°, contra los 126° y −78,61° del modelo.
+  const fondo = D[D.length - 1];
+  ok(Math.abs(fondo.rodilla - 126) < 1 && Math.abs(fondo.cadera + 78.61) < 1,
+    `el fondo es el del modelo (rodilla ${fondo.rodilla}°, cadera ${fondo.cadera}°)`);
+  const arriba = U[U.length - 1];
+  ok(Math.abs(arriba.rodilla) < 1 && Math.abs(arriba.cadera) < 1,
+    `y arriba se termina de pie (rodilla ${arriba.rodilla}°, cadera ${arriba.cadera}°)`);
+
+  // 3) LOS PIES SIGUEN SIENDO UN ANCLAJE.
+  for (const lado of ["pieL", "pieR"]) {
+    const d = peor(todos.map((s) => d3(U[0][lado].pisada, s[lado].pisada)));
+    ok(d < 1.5, `${lado}: la pisada no viaja por el suelo (${d} cm)`);
+  }
+
+  inclinacion[nombre] = { fondo: fondo.columna, peor: Math.max(...todos.map((s) => s.columna)) };
+  console.log(`   inclinación del tronco: ${todos.map((s) => s.columna).filter((_, i) => i % 6 === 0).join(" ")}`);
+}
+
+// 4) Y LA FRONTAL VA MÁS VERTICAL QUE LA TRASERA. Nadie lo declara: sale del
+//    sitio donde se apoya la barra.
+console.log(`\n   tronco en el fondo — frontal ${inclinacion.frontal.fondo}° · trasera ${inclinacion.trasera.fondo}°`);
+ok(inclinacion.frontal.fondo < inclinacion.trasera.fondo - 10,
+  `la FRONTAL mantiene el torso más vertical que la TRASERA `
+  + `(${inclinacion.frontal.fondo}° contra ${inclinacion.trasera.fondo}° en el fondo)`);
+ok(inclinacion.frontal.peor < 15,
+  `y la frontal no llega a inclinarse en ningún momento (máximo ${inclinacion.frontal.peor}°)`);
+ok(inclinacion.trasera.peor > 20,
+  `mientras la trasera sí usa la cadera (máximo ${inclinacion.trasera.peor}°)`);
+
 console.log("\n── Sin plan, todo sigue igual ───────────────────────────────");
 // Una zona SIN plan tiene que comportarse exactamente como siempre: es lo que
 // protege a las máquinas y a las sentadillas de este cambio.
