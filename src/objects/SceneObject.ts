@@ -2,11 +2,14 @@ import * as THREE from "three";
 import type {
   CargaDiscosDef,
   ComponentCategory,
+  ComponentDefinition,
   PhysicalAttributes,
   PrimitiveParams,
   StackInfo,
 } from "./types";
 import { buildGeometry } from "./geometryFactory";
+import { getDefinition } from "./componentLibrary";
+import { estirarPorElCentro } from "./estirar";
 import { perforarGeometria } from "./perforar";
 import { deltaEspejo, espejarGeometria, espejoDe } from "./espejar";
 import { applyMaterial, buildMaterial } from "./materials";
@@ -60,7 +63,9 @@ export class SceneObject {
 
     this.imported = !!opts.importedGeometry;
     const geometry = this.hornearEspejo(
-      perforarGeometria(opts.importedGeometry ?? buildGeometry(this.params), this.params.ventanas),
+      this.aLaMedida(
+        perforarGeometria(opts.importedGeometry ?? buildGeometry(this.params), this.params.ventanas),
+      ),
       true,
     );
     const material = buildMaterial(this.materialId);
@@ -126,7 +131,7 @@ export class SceneObject {
       if (this.geoOriginal) {
         const old = this.mesh.geometry;
         this.mesh.geometry = this.hornearEspejo(
-          perforarGeometria(this.geoOriginal.clone(), this.params.ventanas),
+          this.aLaMedida(perforarGeometria(this.geoOriginal.clone(), this.params.ventanas)),
           true,
         );
         old.dispose();
@@ -141,12 +146,30 @@ export class SceneObject {
     }
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      perforarGeometria(buildGeometry(this.params), this.params.ventanas),
+      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas)),
       true,
     );
     old.dispose();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
+  }
+
+  /**
+   * LARGO A MEDIDA (v0.3.2). Las piezas que se tienden entre dos pilares
+   * —brazo de seguridad, barra de dominadas, multi-agarre— llevan
+   * `largoAjustable` en su definición: su malla se alarga o se acorta POR EL
+   * CENTRO, con los remates de los extremos intactos. Aquí se aplica, sobre
+   * la malla recién construida y antes de espejarla.
+   */
+  private aLaMedida(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+    const ajuste = this.largoAjustable();
+    if (!ajuste || !(this.params.largoCm && this.params.largoCm > 0)) return geo;
+    return estirarPorElCentro(geo, ajuste.eje, this.params.largoCm, ajuste.extremosCm);
+  }
+
+  /** Ficha de largo ajustable de esta pieza, si su componente la declara. */
+  largoAjustable(): NonNullable<ComponentDefinition["largoAjustable"]> | null {
+    return getDefinition(this.componentId)?.largoAjustable ?? null;
   }
 
   /**
@@ -156,10 +179,14 @@ export class SceneObject {
   applyCustomGeometry(geometry: THREE.BufferGeometry): void {
     const old = this.mesh.geometry;
     this.geoOriginal?.dispose();
-    this.geoOriginal = this.params.ventanas?.length ? geometry.clone() : null;
+    // La malla ORIGINAL se guarda si hay algo que rehacer sobre ella: ventanas
+    // caladas o un largo a medida. Sin ella, cada cambio de largo se aplicaría
+    // sobre la malla YA estirada y los cambios se irían acumulando.
+    this.geoOriginal =
+      this.params.ventanas?.length || this.largoAjustable() ? geometry.clone() : null;
     this.espejoHorneado = [false, false, false];
     this.mesh.geometry = this.hornearEspejo(
-      perforarGeometria(geometry, this.params.ventanas),
+      this.aLaMedida(perforarGeometria(geometry, this.params.ventanas)),
       true,
     );
     old.dispose();
@@ -179,7 +206,7 @@ export class SceneObject {
     this.geoOriginal = null;
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      perforarGeometria(buildGeometry(this.params), this.params.ventanas),
+      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas)),
       true,
     );
     old.dispose();

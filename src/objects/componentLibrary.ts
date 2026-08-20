@@ -163,11 +163,23 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // El brazo se TIENDE entre los dos pilares de su lado (delantero y
     // trasero): cuelga de ambos y sube/baja agujero a agujero en los dos.
     postesCalce: 2,
-    description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada.",
+    // A MEDIDA (v0.3.2): se tiende entre los dos pilares de su lado, y esa
+    // separación la decide quien arma la estructura. Los 106 cm son la medida
+    // de fábrica; el largo se cambia en Propiedades y la malla se alarga por
+    // el centro. Sondeada la malla real: todo el material está en los primeros
+    // y los últimos ~11 cm (manguito y gancho); del centro para dentro es
+    // prisma liso, así que 29 cm de remate a cada lado dejan los dos extremos
+    // intactos y estiran solo el tramo hueco.
+    largoAjustable: { eje: "z", extremosCm: 29, minCm: 60, maxCm: 240 },
+    description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada. Su largo se ajusta a la separación entre pilares.",
   },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
   {
     id: "montante-ttp",
+    // Retirado (v0.3.2) por indicación del diseñador: la columna se traza con
+    // `pilar-linea`, que da la medida real y se dobla por nodos. Sigue
+    // resolviéndose para las ocho máquinas que ya la llevan.
+    paleta: "retirada",
     label: "Pilar vertical TTP (5×7×204)",
     category: "estructural",
     materialId: "acero-negro",
@@ -184,8 +196,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "multiagarre-ttp",
-    paleta: "despiece",
-    label: "Multi-agarre dominadas TTP",
+    label: "Barra multi-agarre (dominadas)",
     category: "estructural",
     materialId: "acero-negro",
     // Abanico ARQUEADO real de pullups (106×32): placas de montaje en ambos
@@ -193,7 +204,12 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // (malla corregida en la auditoría v0.2.4).
     defaults: { kind: "box", width: 32, height: 9.6, depth: 106.5 },
     physics: { massKg: 0, fixed: true },
-    description: "Estación de dominadas multi-agarre real del TTP001L: abanico arqueado de 106 cm con placas en ambos extremos.",
+    // A MEDIDA (v0.3.2). Aquí el remate es mucho más largo a propósito: la
+    // malla lleva agarres y travesaños repartidos hasta ±16 cm del centro, y
+    // son LA PIEZA. Con 45 cm de remate a cada lado, los agarres viajan
+    // enteros hacia fuera y solo se estira el riel central, que está vacío.
+    largoAjustable: { eje: "z", extremosCm: 45, minCm: 92, maxCm: 240 },
+    description: "Barra multi-agarre de dominadas: abanico arqueado con placas de montaje en ambos extremos y agarres neutros, prono y ancho. Su largo se ajusta a la separación entre pilares.",
   },
   {
     id: "pie-ttp",
@@ -401,7 +417,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // real es la pieza de 106 con placas de montaje en los extremos.
     defaults: { kind: "box", width: 7, height: 12, depth: 106 },
     physics: { massKg: 0, fixed: true },
-    description: "Barra de pullups real del POWERRACK (106 cm) con placas de montaje en ambos extremos.",
+    // A MEDIDA (v0.3.2): la malla real solo tiene material en los 2,6 cm de
+    // cada placa de montaje; entre ellas es tubo liso. Diez centímetros de
+    // remate dejan las dos placas enteras con margo de sobra.
+    largoAjustable: { eje: "z", extremosCm: 10, minCm: 40, maxCm: 240 },
+    description: "Barra de pullups real del POWERRACK (106 cm) con placas de montaje en ambos extremos. Su largo se ajusta a la separación entre pilares.",
   },
   {
     id: "jota-pr",

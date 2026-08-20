@@ -36,11 +36,14 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(400);
 
-// ── 1) PILAR VERTICAL desde la paleta (8×200×8, apoyado en el suelo) ──────
+// ── 1) PILAR VERTICAL (8×200×8, apoyado en el suelo) ─────────────────────
+//
+// El «pilar estructural» salió del catálogo en v0.3.2 —lo retiró el diseñador
+// por su número—, así que ya no tiene botón en la paleta. La pieza sigue
+// existiendo y construyéndose igual, que es lo que esta prueba necesita: un
+// montante VERTICAL en el que calar una roldana. Se coloca por su id.
 await page.evaluate(() => {
-  [...document.querySelectorAll("#palette .comp-btn")]
-    .find((b) => (b.textContent ?? "").trim() === "Pilar estructural")
-    .click();
+  window.exersuite.editor.addComponent("pilar");
 });
 await page.waitForTimeout(500);
 const P = await page.evaluate(() => {

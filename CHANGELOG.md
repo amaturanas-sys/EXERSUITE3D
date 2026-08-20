@@ -44,6 +44,46 @@ misma garantía, medida otra vez: mismo tamaño, masa, anclaje, material y malla
 El pilar sale además de la lista blanca del modo Sencillo: una pieza retirada
 no puede seguir ofreciéndose por otra puerta.
 
+**Y el pilar vertical TTP, fuera de la paleta.** Tercera indicación del
+diseñador, y el caso más exigente de «retirar no es borrar»: lo usan **ocho**
+máquinas estándar. Sale del listado —la columna se traza con `pilar-linea`, que
+da la medida real y se dobla por nodos— y las ocho se siguen armando con él,
+con su malla perforada intacta, comprobado pieza a pieza.
+
+**Tres piezas se cortan a medida.** El **brazo de seguridad**, la **barra
+pullups** y la **barra multi-agarre** no se acoplan a una máquina: se tienden
+ENTRE DOS PILARES, y esa separación la decide quien arma la estructura. Ahora
+su largo se cambia en Propiedades — pero no escalándolas, que es lo que les
+estropearía las placas de montaje, el manguito y los ganchos.
+
+Se hace lo que se hace en el taller: cortar por la mitad y meter (o quitar) un
+trozo recto. Los dos remates viajan RÍGIDOS, enteros, cada uno hacia su lado, y
+solo se estira el tramo central, que es prismático. La malla real de cada pieza
+se sondeó para decidir dónde acaba el remate: 29 cm en el brazo (manguito y
+gancho), 10 en la barra pullups (dos placas de 2,6 cm), y 45 en el multi-agarre
+—ahí los agarres y travesaños llegan hasta ±16 cm del centro y son *la pieza*,
+así que solo se estira el riel del medio.
+
+Medido: el largo pedido es el largo que sale, el perfil no se mueve ni una
+milésima, los remates se desplazan exactamente la mitad de lo que creció la
+pieza **sin deformarse** (desvío 0 cm sobre los 2 532, 3 234 y 4 416 vértices),
+volver al largo de fábrica devuelve la malla original vértice a vértice, la
+medida sobrevive al ciclo de prefab, y la física mide la pieza alargada: un
+disco soltado a 70 cm del centro de una barra de 180 se queda encima, donde la
+de 106 lo habría dejado caer. El punto de calce calibrado del brazo viaja con
+su remate, así que el brazo alargado sigue calzando donde tiene manguito.
+
+**La barra multi-agarre entra al catálogo.** Estaba marcada como despiece
+interno del TTP y solo se podía obtener armando la máquina entera. Es una pieza
+de pleno derecho —abanico arqueado con agarres neutros, prono y ancho— y ahora
+se coloca desde la paleta como cualquier otra.
+
+**La placa dentada, también desde la paleta.** Sigue teniendo su herramienta de
+tres toques, que es la que le saca el ancho a la cara del pilar y el largo a los
+dos puntos: eso es lo que hace un clic en su botón. Pero además se puede
+arrastrar al visor como un elemento más, y cae con su medida de fábrica, para
+colocarla a mano donde no haya un pilar del que copiar.
+
 **La placa dentada, cromada.** Se queda donde estaba —es una herramienta de
 tres toques, no una pieza que se arrastre, y ni ella ni sus atributos salen del
 sistema—, pero deja el acero negro por el cromo: en negro se perdía contra el
@@ -96,8 +136,12 @@ nodos y no una superficie: no hay malla que hornear.
   que las 8 máquinas se hornean vértice a vértice como se insertan.
   (La comprobación de «no se listan» buscaba selectores que no existen
   —`.palette-item`, `[data-comp-id]`—: no miraba nada y pasaba sola.)
-- `docs/inventario-piezas.html`: la lista actualizada, con las 21 que quedan y
-  las 20 retiradas aparte.
+- `pruebas/prueba-largo-a-medida.mjs`: vigila que alargar NO sea escalar —el
+  largo pedido, el perfil intacto, los remates rígidos, la vuelta a fábrica
+  vértice a vértice, la medida sobreviviendo al prefab y la física midiendo el
+  tramo nuevo.
+- `docs/inventario-piezas.html`: la lista actualizada, con las 22 que quedan
+  —entran la placa dentada y la barra multi-agarre— y las 21 retiradas aparte.
 
 ### Cambiado
 

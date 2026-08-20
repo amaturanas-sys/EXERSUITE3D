@@ -22,6 +22,7 @@ import {
   tramosCalce,
 } from "../objects/linePieces";
 import { espejoDe } from "../objects/espejar";
+import { largoDeFabrica, puntoTrasEstirar } from "../objects/estirar";
 import {
   EJERCICIOS_BARRA,
   EJERCICIO_BARRA_POR_ID,
@@ -1330,7 +1331,17 @@ export class Editor {
     // detección geométrica no ve); la detección queda para mallas sustituidas.
     const def = getDefinition(obj.componentId);
     if (def?.calceLocal && componentModels.source(obj.componentId) !== "user") {
-      return new THREE.Vector3(def.calceLocal[0], 0, def.calceLocal[1]);
+      const p = new THREE.Vector3(def.calceLocal[0], 0, def.calceLocal[1]);
+      // LARGO A MEDIDA (v0.3.2): el manguito está en el remate de la pieza, y
+      // al alargarla el remate viaja entero hacia fuera. El punto CALIBRADO
+      // aquí tiene que viajar con él, o el brazo alargado calzaría en el
+      // pilar por donde ya no hay manguito.
+      const aj = def.largoAjustable;
+      if (aj && obj.params.largoCm) {
+        const fabrica = largoDeFabrica(def, aj.eje);
+        p[aj.eje] = puntoTrasEstirar(p[aj.eje], fabrica, obj.params.largoCm, aj.extremosCm);
+      }
+      return p;
     }
     const key = `${obj.componentId}:${obj.mesh.geometry.uuid}`;
     const cacheado = this.cacheCalce.get(key);

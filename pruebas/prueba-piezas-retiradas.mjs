@@ -43,6 +43,10 @@ const HUELLA = {
   // mandó retirar dos más —el pilar y el contrapeso—, y preservar la esfera.
   "pilar":            { tam: [8, 200, 8],      masa: 0,    fijo: true,  material: "acero-negro",    verts: 24 },
   "contrapeso":       { tam: [20, 20, 20],     masa: 15,   fijo: false, material: "hierro-fundido", verts: 24 },
+  // Tercera tanda (v0.3.2): el pilar vertical TTP. Lo usan OCHO máquinas, así
+  // que es el caso más exigente de «retirar no es borrar»: sale del listado y
+  // las ocho se siguen armando con él, con su malla perforada intacta.
+  "montante-ttp":     { tam: [5.02, 204, 7.05], masa: 0,   fijo: true,  material: "acero-negro",    verts: 18096 },
 };
 const IDS = Object.keys(HUELLA);
 

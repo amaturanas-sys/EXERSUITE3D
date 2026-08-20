@@ -105,6 +105,12 @@ export interface PrimitiveParams {
    * siguen concordando con el mundo.
    */
   espejo?: [boolean, boolean, boolean];
+  /**
+   * LARGO A MEDIDA (v0.3.2), en cm, de las piezas con `largoAjustable`: se
+   * aplica estirando la malla POR EL CENTRO, sin tocar los remates. Ausente
+   * = el largo de fábrica de la pieza.
+   */
+  largoCm?: number;
 }
 
 /**
@@ -279,6 +285,24 @@ export interface ComponentDefinition {
    * insertando igual y se comporta igual.
    */
   paleta?: "oculta" | "despiece" | "retirada";
+  /**
+   * LARGO AJUSTABLE (v0.3.2): la pieza se tiende ENTRE DOS PILARES —brazo de
+   * seguridad, barra de dominadas, multi-agarre—, y la separación entre esos
+   * pilares la decide quien arma la estructura. Así que su largo se puede
+   * cambiar en Propiedades, y se cambia POR EL CENTRO: los dos remates
+   * (placas de montaje, ganchos) viajan rígidos hacia fuera y solo se estira
+   * el tramo central, que es prismático. La forma general no se deforma.
+   *
+   * `eje` es el eje LOCAL del largo; `extremosCm`, cuánto de cada punta es
+   * remate y no se toca. Ver `estirarPorElCentro` en `estirar.ts`.
+   */
+  largoAjustable?: {
+    eje: "x" | "y" | "z";
+    extremosCm: number;
+    /** Topes del control de Propiedades (cm). */
+    minCm?: number;
+    maxCm?: number;
+  };
   /** Descripcion corta para tooltips. */
   description: string;
 }

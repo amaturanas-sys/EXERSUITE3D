@@ -421,12 +421,14 @@ export class ComponentPalette {
       } else this.editor.addComponent(def.id);
     });
     // Las piezas de colocación directa también se pueden ARRASTRAR al visor.
-    if (
-      !def.placement &&
-      def.id !== "roldana" &&
-      def.id !== "terminal-cable" &&
-      def.id !== "placa-dentada"
-    ) {
+    //
+    // LA PLACA DENTADA TAMBIÉN (v0.3.2). Sigue teniendo su herramienta de tres
+    // toques —que es la que le saca el ancho a la cara del pilar y el largo a
+    // los dos puntos—, y eso es lo que hace un CLIC en su botón. Pero el
+    // diseñador la quiere disponible como un elemento más: arrastrándola al
+    // visor cae con su medida de fábrica, para colocarla a mano donde no haya
+    // un pilar del que copiar.
+    if (!def.placement && def.id !== "roldana" && def.id !== "terminal-cable") {
       if (def.id === "puente-carro-ttp") {
         this.habilitarArrastre(btn, (suelo) => this.editor.insertarCarroDoble(suelo));
       } else {

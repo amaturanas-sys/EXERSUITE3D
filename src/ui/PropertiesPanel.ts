@@ -11,6 +11,8 @@ import {
   medidasDentada,
   pasoMinimoDentada,
 } from "../objects/placaDentada";
+import { getDefinition } from "../objects/componentLibrary";
+import { largoDeFabrica } from "../objects/estirar";
 import { clear, el } from "./dom";
 
 /** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
@@ -339,6 +341,9 @@ export class PropertiesPanel {
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
     if (obj.customModel) this.body.append(this.customModelHint());
+    // LARGO A MEDIDA: va lo primero de las medidas, porque en estas piezas es
+    // LA medida que se toca — el resto del perfil es el de fábrica.
+    if (obj.largoAjustable()) this.body.append(this.largoSection(obj));
     if (parametric) {
       this.body.append(this.dimSection(obj));
     }
@@ -671,6 +676,62 @@ export class PropertiesPanel {
       el("div", { class: "row" }, [bendBtn, addNodeBtn]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
         "Doblar: arrastra los nodos (curva suave); al acercar un nodo al de OTRA pieza se suelda (imán). + Nodo añade un punto a la trayectoria.",
+      ]),
+    ]);
+  }
+
+  /**
+   * LARGO A MEDIDA (v0.3.2). El brazo de seguridad, la barra de dominadas y
+   * el multi-agarre se tienden ENTRE DOS PILARES, y esa separación la decide
+   * quien arma la estructura. Aquí se les da la medida: la malla se alarga
+   * por el centro y los remates —placas de montaje, manguito, ganchos— viajan
+   * enteros hacia fuera sin deformarse.
+   */
+  private largoSection(obj: SceneObject): HTMLElement {
+    const aj = obj.largoAjustable()!;
+    const fabrica = largoDeFabrica(getDefinition(obj.componentId)!, aj.eje);
+    const min = aj.minCm ?? Math.max(2 * aj.extremosCm, 10);
+    const max = aj.maxCm ?? fabrica * 3;
+    const input = el("input", {
+      type: "number",
+      value: String(roundTo(obj.params.largoCm ?? fabrica, 1)),
+      step: "0.5",
+      min: String(min),
+      max: String(max),
+    }) as HTMLInputElement;
+    const aplicar = (): void => {
+      const v = parseFloat(input.value);
+      if (!Number.isFinite(v)) return;
+      const largo = Math.max(min, Math.min(max, v));
+      obj.params.largoCm = largo;
+      obj.rebuildGeometry();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      this.editor.requestRender();
+      input.value = String(roundTo(largo, 1));
+    };
+    input.addEventListener("change", aplicar);
+
+    const fab = el("button", { class: "tool", title: `Vuelve a los ${fabrica} cm de fábrica` }, [
+      tt("De fábrica", "Factory"),
+    ]);
+    fab.addEventListener("click", () => {
+      input.value = String(fabrica);
+      aplicar();
+    });
+
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Largo a medida", "Length to fit")]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [el("label", {}, [tt("Largo (cm)", "Length (cm)")]), input]),
+        fab,
+      ]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          `Se estira por el CENTRO: los ${aj.extremosCm} cm de cada remate viajan enteros, `
+            + `sin deformarse. Entre ${min} y ${max} cm.`,
+          `Stretched from the MIDDLE: the ${aj.extremosCm} cm at each end travel whole, `
+            + `undeformed. Between ${min} and ${max} cm.`,
+        ),
       ]),
     ]);
   }
