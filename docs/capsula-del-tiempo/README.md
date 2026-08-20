@@ -625,3 +625,37 @@ a plomo girando cada segmento sobre su propia junta.
   «Sentado» conserva ya los 95° de rodilla.
 - [`maniqui-sentadilla.png`](2026-08-16/maniqui-sentadilla.png) — sentadilla
   profunda con los brazos flexionados: ninguna junta se abre.
+
+## 2026-08-21 — 9 capturas
+
+v0.2.95–v0.3.1: los cuatro gestos con barra dejan de ser una interpolación
+entre dos posturas y pasan a tener PLAN — fases, umbrales leídos del mundo y
+acomodaciones que se resuelven en cada paso—. El peso muerto reparte rodilla y
+cadera en dos tiempos y la barra le roza la espinilla sin hundirse; el press
+esquiva la cabeza por una sigmoide; las dos sentadillas mantienen la carga sobre
+el medio del pie, y la diferencia entre frontal y trasera sale sola de dónde
+apoya la barra. Cierra la tanda el rack frontal de halterofilia, resuelto por
+cinemática inversa.
+
+- [`frontsquat-perfil-de-pie.png`](2026-08-21/frontsquat-perfil-de-pie.png) —
+  la salida: tronco a plomo y la barra sobre las clavículas.
+- [`frontsquat-perfil-media.png`](2026-08-21/frontsquat-perfil-media.png) — a
+  media bajada, con la rodilla ya adelantada y el tronco todavía vertical.
+- [`frontsquat-perfil-fondo.png`](2026-08-21/frontsquat-perfil-fondo.png) — el
+  fondo: 0,00° de inclinación de tronco y 39,3° de dorsiflexión de tobillo.
+- [`frontsquat-frente-de-pie.png`](2026-08-21/frontsquat-frente-de-pie.png) —
+  de frente, con los discos puestos.
+- [`frontsquat-frente-fondo.png`](2026-08-21/frontsquat-frente-fondo.png) — en
+  el fondo la postura no se cierra: la cadera abduce para conservar la anchura.
+- [`backsquat-perfil-fondo.png`](2026-08-21/backsquat-perfil-fondo.png) — la
+  misma profundidad con el tronco a 18,7°: nadie lo declaró, lo pide el apoyo
+  sobre los trapecios.
+- [`peso-muerto-tiron.png`](2026-08-21/peso-muerto-tiron.png) — la fase de
+  tirón, con la barra rozando la espinilla y la mirada puesta en su marca del
+  suelo.
+- [`rack-frontal-halterofilia.png`](2026-08-21/rack-frontal-halterofilia.png) —
+  el rack nuevo: codos altos y adelantados, antebrazo apuntando arriba y la
+  tomada abierta a 42 cm por lado.
+- [`discos-relieve-afuera.png`](2026-08-21/discos-relieve-afuera.png) — la cara
+  con relieve mira a los dos extremos, así que se lee desde cualquiera de los
+  dos perfiles.

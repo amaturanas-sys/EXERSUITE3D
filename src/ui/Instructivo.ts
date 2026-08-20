@@ -109,6 +109,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "El bloque de peso y la pila llevan DOS ORIFICIOS verticales que calzan con los tubos guía: colócalos entre dos tubos verticales y en la simulación se deslizan circunscritos a ellos, deteniéndose en los topes.",
       "El portadiscos (carrier), las barras olímpicas, los cuernos de carga y los atriles aceptan DISCOS MONTADOS (Propiedades): se ensamblan introduciendo el cilindro por el orificio central del disco, quedan suspendidos por la estructura y suman su masa.",
       "El motor reconoce solo el sistema de polea tubular guiada — carrier, 2 tubos guía y 2 espaciadores/stoppers — y circunscribe el carro a sus tubos sin uniones manuales.",
+      "LA CARA CON RELIEVE MIRA HACIA FUERA, a los dos lados: en una barra cargada las letras y los números se leen desde cualquiera de los dos perfiles, como en un disco de verdad. Antes todos los discos se montaban con la misma orientación y en un extremo se veía el dorso liso.",
     ],
   },
   {
@@ -140,11 +141,16 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Posa sus articulaciones arrastrando los ejes, guarda posturas y usa Apoyar mano para fijar las manos a un agarre (IK).",
       "✋ Agarrar maniquí (en Posturas): arrastra directamente un segmento del cuerpo; con 1/2/3 el movimiento se restringe a un eje.",
       "🏋 BARRA EN MANOS (grupo BARRA de la ventana del maniquí): elige el ejercicio y la barra aparece PUESTA en el cuerpo, con sus discos y su peso. Cuatro configuraciones —sentadilla frontal, sentadilla trasera, press vertical y peso muerto— cada una con sus DOS extremos del recorrido (△ Arriba y ▽ Fondo), porque un rack se dimensiona por dónde queda la barra arriba, para colgarla, y dónde queda abajo, para que los brazos de seguridad la cojan si falla.",
+      "UN EJERCICIO NO ES UN REPARTO, ES UN CALENDARIO. Los cuatro gestos con barra traen su PLAN: qué articulaciones trabajan, en qué ORDEN y hasta dónde. El peso muerto se parte en dos fases —primero extensión de RODILLA hasta que la barra pasa la rótula, con el tronco sosteniendo su ángulo, y después extensión de CADERA y espalda hasta el bloqueo—, y el cambio de fase se lee del mundo en cada paso («¿ya está la barra por encima de la rodilla?»), no de un contador: por eso la bajada recorre las mismas posturas al revés sin guardar nada.",
+      "Y CADA GESTO SE ACOMODA SOLO A LO QUE MANDA LA FÍSICA REAL, en cada paso y sin que haya que declararlo: el BRAZO cuelga como una cuerda desde el hombro y no como un puntal; la BARRA se queda sobre el medio del pie, que es lo que impide que la figura se caiga hacia atrás; la barra ROZA la espinilla, el muslo y la cadera pero no se hunde en ellos, así que en el peso muerto sube arrastrando como en el mundo real; la MIRADA no se suelta de una marca del suelo a 2,25 m mientras el tronco está inclinado —bajar en flexión cervical es lo que arriesga la espalda— y se queda en neutral, mirando al frente, en cuanto la figura se pone de pie.",
+      "LA FRONTAL Y LA TRASERA SE DIFERENCIAN SOLAS, sin declararlo en ninguna parte: la barra va rígida al tronco pero apoyada en sitios distintos —clavículas por delante, trapecios por detrás—, así que dejar el mismo punto del suelo debajo pide inclinaciones distintas. La frontal mantiene el torso VERTICAL a costa de más rodilla y más tobillo; la trasera se inclina hasta 27° y usa más cadera. En las dos, la cadera ABDUCE al descender para que la postura no se cierre, y el pie PIVOTA sobre su propia huella —la puntera se abre 36°— sin deslizarse por el suelo.",
+      "EL PRESS ESQUIVA LA CABEZA: la barra sale por delante del rostro con flexión de hombro y un grado de extensión cervical, describe una sigmoide que evita la cara y se recoloca en la vertical sobre la línea de equilibrio antes de que el codo termine de extender. No es una interpolación entre las dos puntas — es la trayectoria, y por eso no atraviesa la cabeza en ningún paso.",
       "DÓNDE APOYA NO ES LO MISMO EN LAS CUATRO: en los dos racks la barra la sostiene el CUERPO —deltoides y clavículas en la frontal, trapecios en la trasera— y su sitio se calcula por CONTACTO contra la malla del maniquí, así que apoya en la piel y no se hunde en ella; en press y peso muerto va en el puño. Doblar el codo lo enseña: en un rack la barra no se inmuta, en un press se va con la mano.",
       "⤓ RACKEAR: deja la barra en el gancho más cercano y libera al maniquí; ⤒ Desrackear se la devuelve. Los ganchos se leen solos de las piezas que saben recibir una barra (jotas, brazos de seguridad y cada diente de una placa dentada). Como un rack tiene DOS, se busca la pareja del gancho elegido y la barra se centra entre ambos.",
       "Poner la barra deja armada además la ZONA de movimiento del ejercicio, así que el 8/9 mueve lo que toca sin ir a marcarlo a mano.",
       "🔒 Candado: bloquea articulaciones para que no se muevan al posar (representa técnica y ejercicio con precisión); Simetría L↔R replica cada cambio espejado en el otro lado.",
       "Cada articulación dobla hacia SU lado anatómico: el CODO flexiona hacia delante (X negativa) y la RODILLA hacia atrás (X positiva), como en el cuerpo. Si guardaste posturas con una versión anterior, se migran solas al criterio correcto.",
+      "TUS POSTURAS SE GUARDAN Y LAS DE FÁBRICA SE ACTUALIZAN. La biblioteca vive en el dispositivo: las que crees tú se conservan tal cual, y las de fábrica se refrescan con cada versión de la app SALVO las que hayas editado a mano, que se respetan. Así llegan las correcciones de los gestos sin pisar tu trabajo.",
     ],
   },
   {
@@ -158,7 +164,8 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "El pivote es RÍGIDO en todo lo que no sea su giro: aunque empujes un brazo por uno solo de sus dos agarres, el conjunto describe su semicircunferencia sobre el eje del pasador sin torcerse ni salirse de plano, y por eso tira del cable como en la máquina real. Los TOPES de la unión (Conexiones) definen dónde descansa y hasta dónde llega el recorrido.",
       "Si delante de la pieza que buscas hay algo ANCLADO (un montante, el respaldo), el agarre lo atraviesa y toma la primera pieza móvil que encuentre detrás: ya no hace falta orbitar para \"despejar\" el objetivo.",
       "El botón 🌐 cambia a la herramienta de ÓRBITA: el arrastre solo mueve la cámara para visualizar, sin tocar piezas; ✋ vuelve a la mano.",
-      "DEMOSTRACIÓN DE MOVIMIENTO del maniquí: en el modo SIMULAR de la ventana 🦴 marca la ZONA que trabaja y su lado, y las teclas 8 y 9 la EMPUJAN y la TRACCIONAN dentro del rango humano. El gesto termina donde manda su articulación principal — el press acaba al bloquear el codo—, y con la zona activa la mano apoyada deja de mandar sobre el brazo: manda el gesto, y es el cuerpo el que empuja la pieza por contacto.",
+      "DEMOSTRACIÓN DE MOVIMIENTO del maniquí: en el modo SIMULAR de la ventana 🦴 marca la ZONA que trabaja y su lado, y las teclas 8 y 9 la EMPUJAN y la TRACCIONAN dentro del rango humano. Con la zona activa la mano apoyada deja de mandar sobre el brazo: manda el gesto, y es el cuerpo el que empuja la pieza por contacto.",
+      "CON UNA BARRA PUESTA, el 8/9 recorre el EJERCICIO y no un reparto: el gesto aterriza en la postura del modelo —no donde tope la primera articulación—, se parte en las fases que le tocan y la tracción las deshace en orden inverso, paso por paso y por las mismas posturas. Si a la figura se le acaba el recorrido, se avisa; ese aviso es la conclusión ergonómica, no un fallo.",
       "Las JOTAS y brazos de seguridad sostienen la barra en su CONCAVIDAD real: apoyada en el gancho queda retenida por el asiento y el tope, sin rodar ni deslizar fuera.",
       "Las CADENAS y correas son CUERDAS FLEXIBLES: cuelgan, ondulan y se hunden bajo la barra que cae (y la mecen); la caída definida al tenderlas fija su tensión inicial.",
       "Al detener, todo vuelve exactamente a su posición de diseño.",
@@ -232,7 +239,11 @@ export function renderInstructivo(contenedor: HTMLElement): void {
     // visibles por defecto; si el archivo no existe, la imagen se retira
     // sola (ocultarlas con display:none impediría que el lazy-load las
     // descargue jamás).
-    for (let n = 1; n <= 4; n++) {
+    // HASTA SEIS: el tope estaba en cuatro y dejaba fuera capturas que SÍ
+    // existían —`marketplace-5.png` no se ha visto nunca—. Las que no existen
+    // se retiran solas al fallar la descarga, así que subir el tope no cuesta
+    // nada más que un 404 silencioso por hueco.
+    for (let n = 1; n <= 6; n++) {
       const img = el("img", {
         class: "faq-img",
         src: `${import.meta.env.BASE_URL}instructivo/${item.id}-${n}.png`,

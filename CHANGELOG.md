@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [No publicado]
+
+### Cambiado
+
+**El instructivo y sus capturas, al día.** Las imágenes del maniquí y de la
+simulación eran de v0.2.49 y enseñaban el maniquí de BLOQUES —cabeza esférica,
+tronco de caja—, que no existe desde v0.2.78. Se rehacen contra el build actual y
+se añaden las que faltaban, todas generadas por Playwright sobre la aplicación de
+verdad: el rack frontal de halterofilia, el fondo de las dos sentadillas —para
+ver de un vistazo por qué la frontal va vertical y la trasera inclinada—, la fase
+de tirón del peso muerto con la barra rozando la espinilla, la sigmoide del press
+y una barra cargada donde el relieve de los discos mira a los dos extremos.
+
+El TEXTO recoge lo que no estaba contado: que un ejercicio con barra es un
+CALENDARIO y no un reparto —fases, umbrales leídos del mundo, tracción que
+deshace en orden inverso—; que el brazo cuelga como una cuerda, la barra se queda
+sobre el medio del pie, roza la carne sin hundirse y la mirada no se suelta de su
+marca; que la frontal y la trasera se diferencian solas por dónde apoya la barra;
+que la cadera abduce y el pie pivota sin deslizarse; que la cara con relieve de
+los discos se lee desde los dos perfiles; y que la biblioteca de posturas guarda
+lo tuyo y actualiza lo de fábrica salvo lo que hayas editado.
+
+Y una capa de más: el instructivo probaba **cuatro** capturas por sección, así
+que `marketplace-5.png` —que existe desde hace versiones— no se había visto
+nunca. El tope sube a seis; las que no existen se retiran solas al fallar la
+descarga, como siempre.
+
+Nueva entrada en la cápsula del tiempo (`docs/capsula-del-tiempo/2026-08-21`)
+con las nueve capturas del ciclo v0.2.95–v0.3.1.
+
 ## [0.3.1] — 2026-08-21
 
 El rack frontal de halterofilia, y una revisión a fondo que sacó un fallo que
