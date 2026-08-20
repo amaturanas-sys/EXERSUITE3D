@@ -5,10 +5,16 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.2.100] — 2026-08-20
+## [0.3.0] — 2026-08-20
 
 La sentadilla frontal deja de equilibrarse con el tronco y pasa a hacerlo con la
 cadera, que es lo que le permite quedarse vertical.
+
+Y con esto **los cuatro gestos con barra quedan aprobados por el diseñador** —press
+vertical, peso muerto, sentadilla trasera y sentadilla frontal—, que es lo que
+cierra la serie 0.2 y abre la 0.3. El trabajo de esta versión es el que se
+publicó como 0.2.100 durante el desarrollo; el número cambia por la etiqueta, no
+por el contenido.
 
 ### Corregido
 
