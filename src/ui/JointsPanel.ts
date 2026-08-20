@@ -296,7 +296,7 @@ export class JointsPanel {
     });
     this.editor.bus.on("lineModeChanged", ({ active, kind, count }) => {
       if (active) {
-        const t = kind === "beam" ? "pilar/travesaño" : "tubo";
+        const t = kind === "beam" ? "pilar/travesaño" : kind === "guia" ? "guía tubular" : "tubo";
         this.status.textContent =
           count < 1
             ? `Trazar ${t}: clic en el punto de INICIO (imán a extremos/puntos medios de otras piezas). ESC para salir.`

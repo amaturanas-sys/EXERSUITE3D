@@ -1,18 +1,21 @@
 import * as THREE from "three";
-import type { VentanaRect } from "./types";
+import type { CanalTubo, VentanaRect } from "./types";
 
 /**
- * PERFORADO DE VENTANAS RECTANGULARES (v0.2.30).
+ * PERFORADO PASANTE (v0.2.30 · generalizado a CANALES REDONDOS en v0.3.3).
  *
- * Abre agujeros rectangulares PASANTES en la geometría de una pieza, de
- * verdad: los triángulos que caen dentro del rectángulo se recortan y se
- * levantan las cuatro paredes interiores del hueco. Funciona sobre cualquier
- * malla — la primitiva paramétrica de una viga o el modelo de biblioteca de
- * una pieza real —, así que la roldana INTERNA modifica el objeto anfitrión
- * elegido en lugar de dibujarle una marca encima.
+ * Abre agujeros PASANTES en la geometría de una pieza, de verdad: los
+ * triángulos que caen dentro del hueco se recortan y se levantan las paredes
+ * interiores. Funciona sobre cualquier malla — la primitiva paramétrica de una
+ * viga o el modelo de biblioteca de una pieza real —, así que la roldana
+ * INTERNA modifica el objeto anfitrión elegido en lugar de dibujarle una marca
+ * encima, y un carro de prensa queda con los DOS canales por los que pasan sus
+ * barras guía, como en la máquina real.
  *
- * La ventana se define en coordenadas LOCALES de la pieza: un eje pasante y
- * el rectángulo (centro y tamaños) en el plano perpendicular a ese eje.
+ * El hueco se define en coordenadas LOCALES de la pieza: un eje pasante y una
+ * figura CONVEXA en el plano perpendicular a ese eje. La ventana es un
+ * rectángulo; el canal tubular, un polígono regular que aproxima la sección
+ * del tubo. Todo lo demás —el recorte y el levantado de paredes— es común.
  */
 
 /** Índices (pasante, U, V) de cada eje local y su terna de coordenadas. */
@@ -23,16 +26,30 @@ function ejesDe(eje: VentanaRect["eje"]): [number, number, number] {
 }
 
 type P3 = [number, number, number];
+/** Vértice del contorno del hueco en el plano (U, V). */
+type PUV = [number, number];
 
 /**
- * Recorta un polígono convexo contra un semiplano de una coordenada
- * (Sutherland–Hodgman). `mantener` decide qué lado se conserva; el corte
- * interpola el punto COMPLETO, así la coordenada del eje pasante sigue la
- * superficie original (una cara inclinada se recorta sin deformarse).
+ * Recorta un polígono contra un SEMIPLANO del plano (U,V)
+ * (Sutherland–Hodgman). El semiplano se da por su función lineal
+ * `f(p) = nu·(u − ou) + nv·(v − ov)`; se conserva el lado `f ≥ 0` o el
+ * `f < 0` según `mantenerDentro`. El corte interpola el punto COMPLETO, así
+ * la coordenada del eje pasante sigue la superficie original (una cara
+ * inclinada se recorta sin deformarse).
  */
-function recortar(poly: P3[], c: number, lim: number, mantenerMenor: boolean): P3[] {
+function recortarPlano(
+  poly: P3[],
+  iu: number,
+  iv: number,
+  nu: number,
+  nv: number,
+  ou: number,
+  ov: number,
+  mantenerDentro: boolean,
+): P3[] {
   if (poly.length === 0) return poly;
-  const dentro = (p: P3): boolean => (mantenerMenor ? p[c] <= lim : p[c] >= lim);
+  const f = (p: P3): number => nu * (p[iu] - ou) + nv * (p[iv] - ov);
+  const dentro = (p: P3): boolean => (mantenerDentro ? f(p) >= 0 : f(p) < 0);
   const salida: P3[] = [];
   for (let i = 0; i < poly.length; i++) {
     const a = poly[i];
@@ -41,7 +58,9 @@ function recortar(poly: P3[], c: number, lim: number, mantenerMenor: boolean): P
     const db = dentro(b);
     if (da) salida.push(a);
     if (da !== db) {
-      const t = (lim - a[c]) / (b[c] - a[c]);
+      const fa = f(a);
+      const fb = f(b);
+      const t = fa / (fa - fb);
       salida.push([
         a[0] + (b[0] - a[0]) * t,
         a[1] + (b[1] - a[1]) * t,
@@ -59,7 +78,7 @@ function abanico(poly: P3[], out: number[]): void {
   }
 }
 
-/** Área (en el plano U,V) para descartar restos degenerados del recorte. */
+/** Area (con signo) del poligono proyectado en el plano U,V. */
 function areaUV(poly: P3[], iu: number, iv: number): number {
   let a = 0;
   for (let i = 0; i < poly.length; i++) {
@@ -70,12 +89,43 @@ function areaUV(poly: P3[], iu: number, iv: number): number {
   return Math.abs(a) / 2;
 }
 
-function perforarUna(geo: THREE.BufferGeometry, v: VentanaRect): THREE.BufferGeometry {
-  const [ia, iu, iv] = ejesDe(v.eje);
-  const u0 = v.u - v.du / 2;
-  const u1 = v.u + v.du / 2;
-  const v0 = v.v - v.dv / 2;
-  const v1 = v.v + v.dv / 2;
+/**
+ * Abre UN hueco cuyo contorno es el polígono CONVEXO `contorno`, dado en
+ * sentido antihorario en el plano (U,V) del eje pasante.
+ *
+ * El exterior de un convexo se parte en tantas regiones DISJUNTAS como
+ * lados tiene: la región i es «fuera del lado i, pero dentro de los lados
+ * 0..i−1». Así ningún trozo de triángulo se emite dos veces ni se pierde
+ * ninguno. (Para el rectángulo son las cuatro regiones de siempre: dos
+ * bandas laterales y dos tapas entre ellas.)
+ */
+function perforarContorno(
+  geo: THREE.BufferGeometry,
+  eje: VentanaRect["eje"],
+  contorno: PUV[],
+): THREE.BufferGeometry {
+  const n = contorno.length;
+  if (n < 3) return geo;
+  const [ia, iu, iv] = ejesDe(eje);
+
+  // Semiplano interior de cada lado: normal hacia DENTRO (a la izquierda del
+  // lado, con el contorno en sentido antihorario).
+  const lados = contorno.map((p, i) => {
+    const q = contorno[(i + 1) % n];
+    return { nu: -(q[1] - p[1]), nv: q[0] - p[0], ou: p[0], ov: p[1] };
+  });
+
+  // Caja del hueco en (U,V): rechazo rápido de los triángulos que ni se acercan.
+  let u0 = Infinity;
+  let u1 = -Infinity;
+  let v0 = Infinity;
+  let v1 = -Infinity;
+  for (const [u, v] of contorno) {
+    if (u < u0) u0 = u;
+    if (u > u1) u1 = u;
+    if (v < v0) v0 = v;
+    if (v > v1) v1 = v;
+  }
 
   const fuente = geo.index ? geo.toNonIndexed() : geo;
   const pos = fuente.attributes.position as THREE.BufferAttribute;
@@ -97,7 +147,7 @@ function perforarUna(geo: THREE.BufferGeometry, v: VentanaRect): THREE.BufferGeo
       tri[k][1] = pos.getY(t + k);
       tri[k][2] = pos.getZ(t + k);
     }
-    // ¿El triángulo llega siquiera al rectángulo? (prueba de cajas en U,V)
+    // ¿El triángulo llega siquiera al hueco? (prueba de cajas en U,V)
     const minU = Math.min(tri[0][iu], tri[1][iu], tri[2][iu]);
     const maxU = Math.max(tri[0][iu], tri[1][iu], tri[2][iu]);
     const minV = Math.min(tri[0][iv], tri[1][iv], tri[2][iv]);
@@ -107,33 +157,25 @@ function perforarUna(geo: THREE.BufferGeometry, v: VentanaRect): THREE.BufferGeo
       continue;
     }
     const base: P3[] = [[...tri[0]], [...tri[1]], [...tri[2]]];
-    // El exterior del rectángulo se parte en CUATRO regiones disjuntas (dos
-    // bandas laterales completas y dos tapas entre ellas): así ningún trozo
-    // se emite dos veces.
-    const regiones: P3[][] = [
-      recortar(base, iu, u0, true),
-      recortar(base, iu, u1, false),
-      recortar(recortar(recortar(base, iu, u0, false), iu, u1, true), iv, v0, true),
-      recortar(recortar(recortar(base, iu, u0, false), iu, u1, true), iv, v1, false),
-    ];
-    for (const r of regiones) {
-      if (r.length >= 3 && areaUV(r, iu, iv) > 1e-6) abanico(r, salida);
+    // Exterior = unión de las n regiones disjuntas descritas arriba.
+    let acumulado: P3[] = base;
+    for (let i = 0; i < n && acumulado.length >= 3; i++) {
+      const l = lados[i];
+      const fuera = recortarPlano(acumulado, iu, iv, l.nu, l.nv, l.ou, l.ov, false);
+      if (fuera.length >= 3 && areaUV(fuera, iu, iv) > 1e-6) abanico(fuera, salida);
+      acumulado = recortarPlano(acumulado, iu, iv, l.nu, l.nv, l.ou, l.ov, true);
     }
-    // Trozo que cae DENTRO: no se emite (es el hueco), pero marca hasta
-    // dónde llega el material para levantar las paredes.
-    const dentro = recortar(
-      recortar(recortar(recortar(base, iu, u0, false), iu, u1, true), iv, v0, false),
-      iv,
-      v1,
-      true,
-    );
-    for (const p of dentro) {
+    // Lo que queda DENTRO no se emite (es el hueco), pero marca hasta dónde
+    // llega el material para levantar las paredes.
+    for (const p of acumulado) {
       if (p[ia] < aMin) aMin = p[ia];
       if (p[ia] > aMax) aMax = p[ia];
     }
   }
 
-  // Paredes interiores del hueco (cuatro rectángulos), de cara a cara.
+  // Paredes interiores del hueco: un rectángulo por lado, de cara a cara. El
+  // lado se recorre AL REVÉS que el contorno para que la pared mire hacia
+  // dentro del agujero.
   if (aMax - aMin > 1e-3) {
     const punto = (a: number, u: number, w: number): P3 => {
       const p: P3 = [0, 0, 0];
@@ -142,17 +184,19 @@ function perforarUna(geo: THREE.BufferGeometry, v: VentanaRect): THREE.BufferGeo
       p[iv] = w;
       return p;
     };
-    const pared = (ua: number, va: number, ub: number, vb: number): void => {
-      const p1 = punto(aMin, ua, va);
-      const p2 = punto(aMin, ub, vb);
-      const p3 = punto(aMax, ub, vb);
-      const p4 = punto(aMax, ua, va);
-      abanico([p1, p2, p3, p4], salida);
-    };
-    pared(u0, v0, u0, v1);
-    pared(u1, v1, u1, v0);
-    pared(u0, v1, u1, v1);
-    pared(u1, v0, u0, v0);
+    for (let i = 0; i < n; i++) {
+      const p = contorno[(i + 1) % n];
+      const q = contorno[i];
+      abanico(
+        [
+          punto(aMin, p[0], p[1]),
+          punto(aMin, q[0], q[1]),
+          punto(aMax, q[0], q[1]),
+          punto(aMax, p[0], p[1]),
+        ],
+        salida,
+      );
+    }
   }
 
   const nueva = new THREE.BufferGeometry();
@@ -162,22 +206,63 @@ function perforarUna(geo: THREE.BufferGeometry, v: VentanaRect): THREE.BufferGeo
   return nueva;
 }
 
+/** Contorno rectangular de una ventana, en sentido antihorario. */
+function contornoVentana(v: VentanaRect): PUV[] {
+  const u0 = v.u - v.du / 2;
+  const u1 = v.u + v.du / 2;
+  const v0 = v.v - v.dv / 2;
+  const v1 = v.v + v.dv / 2;
+  return [
+    [u0, v0],
+    [u1, v0],
+    [u1, v1],
+    [u0, v1],
+  ];
+}
+
 /**
- * Devuelve la geometría con todas sus ventanas abiertas (o la misma si no
- * hay ninguna). No modifica la original: el llamador decide qué hacer con
- * ella (SceneObject libera la anterior al sustituirla).
+ * Contorno del CANAL TUBULAR: polígono regular inscrito... no, CIRCUNSCRITO.
+ * El tubo tiene que PASAR por el agujero, así que el polígono se dibuja con
+ * el radio corregido (`r / cos(π/n)`) para que el círculo real quepa dentro y
+ * no roce por las esquinas.
+ */
+function contornoCanal(c: CanalTubo): PUV[] {
+  const lados = Math.max(8, Math.min(48, c.lados ?? 20));
+  const r = c.radio / Math.cos(Math.PI / lados);
+  const puntos: PUV[] = [];
+  for (let i = 0; i < lados; i++) {
+    const a = (2 * Math.PI * i) / lados;
+    puntos.push([c.u + r * Math.cos(a), c.v + r * Math.sin(a)]);
+  }
+  return puntos;
+}
+
+/**
+ * Devuelve la geometría con todos sus huecos abiertos —ventanas rectangulares
+ * y canales tubulares— o la misma si no hay ninguno. No modifica la original:
+ * el llamador decide qué hacer con ella (SceneObject libera la anterior al
+ * sustituirla).
  */
 export function perforarGeometria(
   geo: THREE.BufferGeometry,
   ventanas: VentanaRect[] | undefined,
+  canales?: CanalTubo[] | undefined,
 ): THREE.BufferGeometry {
-  if (!ventanas || ventanas.length === 0) return geo;
+  const hayVentanas = !!ventanas && ventanas.length > 0;
+  const hayCanales = !!canales && canales.length > 0;
+  if (!hayVentanas && !hayCanales) return geo;
   let actual = geo;
-  for (const v of ventanas) {
-    if (!(v.du > 0.05) || !(v.dv > 0.05)) continue;
-    const siguiente = perforarUna(actual, v);
-    if (actual !== geo) actual.dispose();
+  const encadenar = (siguiente: THREE.BufferGeometry): void => {
+    if (actual !== geo && siguiente !== actual) actual.dispose();
     actual = siguiente;
+  };
+  for (const v of ventanas ?? []) {
+    if (!(v.du > 0.05) || !(v.dv > 0.05)) continue;
+    encadenar(perforarContorno(actual, v.eje, contornoVentana(v)));
+  }
+  for (const c of canales ?? []) {
+    if (!(c.radio > 0.05)) continue;
+    encadenar(perforarContorno(actual, c.eje, contornoCanal(c)));
   }
   return actual;
 }

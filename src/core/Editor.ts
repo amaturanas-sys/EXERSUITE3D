@@ -122,7 +122,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
-import type { ComponentCategory, PrimitiveParams, VentanaRect } from "../objects/types";
+import type { CanalTubo, ComponentCategory, PrimitiveParams, VentanaRect } from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
@@ -158,7 +158,7 @@ export type EditorEvents = {
   /** Modo "colocar placa dentada": cara del pilar + dos puntos de trayectoria. */
   dentadaModeChanged: { active: boolean };
   /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
-  lineModeChanged: { active: boolean; kind: "beam" | "tube" | null; count: number };
+  lineModeChanged: { active: boolean; kind: "beam" | "tube" | "guia" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
   bendModeChanged: { active: boolean };
   /** Cuerda seleccionada (para editar tensión) o null. */
@@ -397,11 +397,16 @@ export class Editor {
   private terminalMode = false;
 
   // Piezas de línea (pilar/travesaño/tubo): trazado por dos puntos + bending.
-  private lineMode: "beam" | "tube" | null = null;
+  private lineMode: "beam" | "tube" | "guia" | null = null;
   /** Dónde se pulsó con la herramienta de línea, para distinguir clic de arrastre. */
   private lineDown: { x: number; y: number } | null = null;
   private lineParams: PrimitiveParams | null = null;
   private linePendingA: THREE.Vector3 | null = null;
+  /**
+   * Pieza sobre la que se fijó el punto de INICIO de la guía tubular, con el
+   * punto en sus coordenadas locales: es el primero de los dos anclajes.
+   */
+  private lineAnclaA: { obj: string; local: [number, number, number] } | null = null;
   private bendTarget: SceneObject | null = null;
   private bendHandles: THREE.Group | null = null;
   private bendDrag: { index: number; plane: THREE.Plane; origin: THREE.Vector3 } | null = null;
@@ -545,6 +550,12 @@ export class Editor {
         this.gizmoDragStart = null;
         this.bus.emit("dragMeasure", { text: null });
         this.enforceWorkspaceBounds();
+        // AL SOLTAR, LA PIEZA SE ENHEBRA (v0.3.3): si quedó atravesada por
+        // guías tubulares, se le abren ahí sus canales. Es lo que pidió el
+        // diseñador —«mediante un posicionamiento manual (Gizmo); cuando se
+        // define su posición, se produce un canal tubular en el sitio donde
+        // discurre cada guía»—, y también lo que los quita al retirarla.
+        this.enhebrarSeleccion();
       }
       if (!e.value) this.snap.hideIndicator();
     });
@@ -611,7 +622,7 @@ export class Editor {
       if (this.humanFigure && this.humanMode === "mannequin") void this.addHumanFigure(this.humanHeight);
     });
     // Al mover una pieza, actualiza las cuerdas ancladas a ella.
-    this.bus.on("objectTransformed", ({ object }) => this.updateRopesForObject(object.id));
+    this.bus.on("objectTransformed", ({ object }) => this.actualizarAtadosDeObjeto(object.id));
     // Los visuales de cable solo se reconstruyen cuando algo cambió (no por frame).
     const markCables = () => {
       this.cablesDirty = true;
@@ -3081,6 +3092,23 @@ export class Editor {
       }
     }
 
+    // ANCLAJES DE LAS GUÍAS (v0.3.3): viajan en los params con el id de la
+    // pieza que las sostiene, y al abrir el proyecto cada pieza nace con un id
+    // NUEVO. Sin traducirlos, la guía se abría en su sitio pero se quedaba
+    // sorda: mover el bastidor ya no la arrastraba.
+    for (const o of this.objects.values()) {
+      const an = o.params.anclajes;
+      if (!an) continue;
+      const trad = (e?: { obj: string; local: [number, number, number] }) => {
+        if (!e) return undefined;
+        const nuevo = idMap.get(e.obj);
+        return nuevo ? { obj: nuevo, local: e.local } : undefined;
+      };
+      const a = trad(an.a);
+      const b = trad(an.b);
+      o.params.anclajes = a || b ? { a, b } : undefined;
+    }
+
     const contactosExplicitos = new Set<string>();
     for (const jd of data.joints) {
       const a = idMap.get(jd.bodyAId);
@@ -4913,7 +4941,7 @@ export class Editor {
       const m = new THREE.Matrix4().compose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
       m.premultiply(delta);
       m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
-      this.updateRopesForObject(o.id);
+      this.actualizarAtadosDeObjeto(o.id);
     }
     this.transformarUniones(delta, this.multiSel);
     this.cablesDirty = true;
@@ -5128,7 +5156,7 @@ export class Editor {
       m.premultiply(delta);
       m.decompose(o.mesh.position, o.mesh.quaternion, o.mesh.scale);
       // Las cuerdas ancladas a miembros del grupo siguen a sus anclas.
-      this.updateRopesForObject(o.id);
+      this.actualizarAtadosDeObjeto(o.id);
     }
     this.transformarUniones(delta, g.ids);
     this.cablesDirty = true;
@@ -9195,7 +9223,7 @@ export class Editor {
    * al fijar los dos puntos. El modo queda activo para encadenar piezas (ESC
    * para salir).
    */
-  beginLine(kind: "beam" | "tube", params: PrimitiveParams): void {
+  beginLine(kind: "beam" | "tube" | "guia", params: PrimitiveParams): void {
     if (this.simulating) return;
     this.cancelConnect();
     this.cancelCable();
@@ -9206,6 +9234,7 @@ export class Editor {
     this.lineMode = kind;
     this.lineParams = params;
     this.linePendingA = null;
+    this.lineAnclaA = null;
     this.bus.emit("lineModeChanged", { active: true, kind, count: 0 });
   }
 
@@ -9215,6 +9244,7 @@ export class Editor {
     this.lineMode = null;
     this.lineParams = null;
     this.linePendingA = null;
+    this.lineAnclaA = null;
     this.clearPlacementPreview();
     this.bus.emit("lineModeChanged", { active: false, kind: null, count: 0 });
   }
@@ -9225,9 +9255,28 @@ export class Editor {
    * cuando el cursor pasa a menos de ~16 px en pantalla. Si no hay imán, usa la
    * superficie señalada; si no, el suelo (y=0) redondeado al cm.
    */
-  private pickLinePlacePoint(): { point: THREE.Vector3; snapped: boolean } | null {
+  /**
+   * Pieza dueña de una malla del visor. Sube por los padres porque las piezas
+   * hijas —las placas de una pila, los discos montados— no llevan la marca:
+   * la lleva el mesh raíz del objeto.
+   */
+  private piezaDeMalla(nodo: THREE.Object3D | null): SceneObject | null {
+    for (let n: THREE.Object3D | null = nodo; n; n = n.parent) {
+      const id = n.userData?.sceneObjectId as string | undefined;
+      if (id) return this.objects.get(id) ?? null;
+    }
+    return null;
+  }
+
+  private pickLinePlacePoint(): {
+    point: THREE.Vector3;
+    snapped: boolean;
+    /** Pieza sobre la que cayó el punto (la guía tubular ancla en ella). */
+    obj?: SceneObject;
+  } | null {
     const rect = this.canvas.getBoundingClientRect();
     let best: THREE.Vector3 | null = null;
+    let bestObj: SceneObject | null = null;
     let bestPx = 16;
     const ndc = new THREE.Vector3();
     for (const obj of this.objects.values()) {
@@ -9242,13 +9291,20 @@ export class Editor {
         if (px < bestPx) {
           bestPx = px;
           best = wp;
+          bestObj = obj;
         }
       }
     }
-    if (best) return { point: best, snapped: true };
+    if (best) return { point: best, snapped: true, obj: bestObj ?? undefined };
 
     const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
-    if (hits[0]) return { point: hits[0].point.clone(), snapped: false };
+    if (hits[0]) {
+      return {
+        point: hits[0].point.clone(),
+        snapped: false,
+        obj: this.piezaDeMalla(hits[0].object) ?? undefined,
+      };
+    }
 
     const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const p = new THREE.Vector3();
@@ -9269,14 +9325,22 @@ export class Editor {
     if (L < 2) return null; // trazo demasiado corto
     dir.divideScalar(L);
 
-    const def = getDefinition(kind === "beam" ? "pilar-linea" : "tubo-linea");
+    const id = kind === "beam" ? "pilar-linea" : kind === "guia" ? "guia-tubular" : "tubo-linea";
+    const def = getDefinition(id);
     if (!def) return null;
     const count = [...this.objects.values()].filter((o) => o.componentId === def.id).length;
+    // La GUÍA TUBULAR es un cilindro macizo del largo del trazo, no una pieza
+    // de línea con recorrido por nodos: lo que importa de ella es su RECTA, y
+    // una recta no se dobla. El diámetro viene del diálogo.
+    const params: PrimitiveParams =
+      kind === "guia"
+        ? { ...def.defaults, ...tpl, kind: "cylinder", height: L, path: undefined }
+        : { ...tpl, path: straightPath(L) };
     const obj = new SceneObject({
       name: count > 0 ? `${def.label} ${count + 1}` : def.label,
       componentId: def.id,
       category: def.category,
-      params: { ...tpl, path: straightPath(L) },
+      params,
       physics: def.physics,
       materialId: def.materialId,
     });
@@ -9695,7 +9759,7 @@ export class Editor {
         const start = this.dragMove.starts.get(id);
         if (!o || !start) continue;
         o.mesh.position.copy(start).add(delta);
-        this.updateRopesForObject(o.id);
+        this.actualizarAtadosDeObjeto(o.id);
         this.bus.emit("objectTransformed", { object: o });
       }
       this.cablesDirty = true;
@@ -9911,10 +9975,220 @@ export class Editor {
     for (const r of this.ropes.values()) this.rebuildRope(r);
   }
 
-  private updateRopesForObject(objectId: string): void {
+  /**
+   * VINCULA UNA PIEZA A LAS GUÍAS QUE LA ATRAVIESAN (v0.3.3).
+   *
+   * Es el gesto que arma un mecanismo de guía tubular —una Smith, una prensa
+   * de piernas, un hack squat—: se tienden las barras cromadas, se coloca el
+   * carro encima con el gizmo y, al soltarlo, la pieza queda ENHEBRADA. Por
+   * cada guía que la cruza se abre un canal redondo de verdad en su malla, del
+   * diámetro del tubo más la holgura de deslizamiento, igual que el orificio
+   * pasante de un carro real.
+   *
+   * A partir de ahí el motor hace el resto: una pieza con canales es
+   * «pasante», y su recorrido queda circunscrito a la recta de sus guías, con
+   * los topes acotándolo — las mismas reglas que ya gobernaban la pila de
+   * pesos sobre sus tubos.
+   *
+   * El canal se cala por un eje LOCAL de la pieza, así que la guía tiene que
+   * venir alineada con uno (hasta 12° de desvío, que la holgura absorbe). Si
+   * no lo está, esa guía no se toma: el carro va montado a escuadra con sus
+   * barras, también en la máquina real.
+   */
+  vincularAGuias(obj: SceneObject): number {
+    if (obj.componentId === "guia-tubular") return 0;
+    // Un TOPE no se enhebra: se MONTA sobre la guía más cercana, coaxial, a la
+    // altura a la que se soltó. Desde ahí el motor lo toma por espaciador y
+    // acota el recorrido del carro.
+    if (obj.componentId === "tope-guia") {
+      this.montarTopeEnGuia(obj);
+      return 0;
+    }
+    obj.mesh.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(obj.mesh.matrixWorld).invert();
+    // Caja LOCAL de la pieza SIN sus canales: los agujeros ya abiertos no
+    // pueden decidir si cabe otro.
+    // Caja LOCAL de la pieza. Vale la de la malla actual aunque ya tenga
+    // canales abiertos: perforar no añade material por fuera, solo lo quita
+    // por dentro, así que la caja es la misma.
+    obj.mesh.geometry.computeBoundingBox();
+    const caja = obj.mesh.geometry.boundingBox!.clone();
+    const ejes: ("x" | "y" | "z")[] = ["x", "y", "z"];
+    const canales: CanalTubo[] = [];
+    for (const g of this.objects.values()) {
+      if (g === obj || g.componentId !== "guia-tubular") continue;
+      const largo = g.params.height ?? 0;
+      const radio = Math.max(g.params.radiusTop ?? 0, g.params.radiusBottom ?? 0);
+      if (!(largo > 1) || !(radio > 0.05)) continue;
+      g.mesh.updateMatrixWorld();
+      // Los dos extremos del tubo, llevados al frame local de la pieza.
+      const p0 = new THREE.Vector3(0, -largo / 2, 0)
+        .applyMatrix4(g.mesh.matrixWorld)
+        .applyMatrix4(inv);
+      const p1 = new THREE.Vector3(0, largo / 2, 0)
+        .applyMatrix4(g.mesh.matrixWorld)
+        .applyMatrix4(inv);
+      const dir = p1.clone().sub(p0);
+      const L = dir.length();
+      if (L < 1) continue;
+      dir.divideScalar(L);
+      // Eje local dominante; se pide alineación (cos 12° ≈ 0,978).
+      let eje: "x" | "y" | "z" = "y";
+      let mejor = 0;
+      for (const e of ejes) {
+        const c = Math.abs(dir[e]);
+        if (c > mejor) {
+          mejor = c;
+          eje = e;
+        }
+      }
+      if (mejor < 0.978) continue;
+      // Punto donde el tubo cruza el plano medio de la pieza (el que contiene
+      // su origen local y es perpendicular al eje): ahí va el centro del canal.
+      const t = (0 - p0[eje]) / dir[eje];
+      const cruce = p0.clone().addScaledVector(dir, t);
+      const [iu, iv]: ("x" | "y" | "z")[] =
+        eje === "x" ? ["y", "z"] : eje === "y" ? ["z", "x"] : ["x", "y"];
+      // ¿Pasa DE VERDAD por dentro? El centro del canal tiene que caer en la
+      // sección de la pieza, y el tubo tiene que solapar con su grosor.
+      if (cruce[iu] < caja.min[iu] || cruce[iu] > caja.max[iu]) continue;
+      if (cruce[iv] < caja.min[iv] || cruce[iv] > caja.max[iv]) continue;
+      const sTubo = [p0[eje], p1[eje]].sort((a, b) => a - b);
+      if (sTubo[1] < caja.min[eje] || sTubo[0] > caja.max[eje]) continue;
+      canales.push({
+        eje,
+        u: +cruce[iu].toFixed(3),
+        v: +cruce[iv].toFixed(3),
+        // HOLGURA de deslizamiento: sin ella el tubo roza la pared del canal
+        // y el carro se agarrota en cuanto la malla tiene un vértice de más.
+        radio: +(radio + 0.35).toFixed(3),
+        guia: g.id,
+      });
+    }
+    const antes = JSON.stringify(obj.params.canales ?? []);
+    const ahora = JSON.stringify(canales);
+    if (antes === ahora) return canales.length;
+    obj.setCanales(canales, componentModels.geometryClone(obj.componentId));
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+    this.requestRender();
+    return canales.length;
+  }
+
+  /**
+   * MONTA UN TOPE SOBRE SU GUÍA (v0.3.3): busca la guía tubular más cercana,
+   * lo centra en su recta a la altura a la que se soltó y lo alinea con ella.
+   * El tope queda ensartado, como el espaciador de goma de una prensa real, y
+   * el motor lo reconoce ahí mismo como freno del recorrido.
+   */
+  private montarTopeEnGuia(tope: SceneObject): boolean {
+    tope.mesh.updateMatrixWorld();
+    const c = tope.mesh.position;
+    let mejor: { g: SceneObject; s: number; d: number } | null = null;
+    for (const g of this.objects.values()) {
+      if (g === tope || g.componentId !== "guia-tubular") continue;
+      const largo = g.params.height ?? 0;
+      if (!(largo > 1)) continue;
+      g.mesh.updateMatrixWorld();
+      const eje = new THREE.Vector3(0, 1, 0).applyQuaternion(g.mesh.quaternion).normalize();
+      const s = THREE.MathUtils.clamp(
+        c.clone().sub(g.mesh.position).dot(eje),
+        -largo / 2,
+        largo / 2,
+      );
+      const punto = g.mesh.position.clone().addScaledVector(eje, s);
+      const d = punto.distanceTo(c);
+      // Solo si se soltó CERCA de la guía: si no, el tope se queda donde está.
+      if (d > 25) continue;
+      if (!mejor || d < mejor.d) mejor = { g, s, d };
+    }
+    if (!mejor) return false;
+    const eje = new THREE.Vector3(0, 1, 0).applyQuaternion(mejor.g.mesh.quaternion).normalize();
+    tope.mesh.position.copy(mejor.g.mesh.position).addScaledVector(eje, mejor.s);
+    tope.mesh.quaternion.copy(mejor.g.mesh.quaternion);
+    tope.mesh.updateMatrixWorld(true);
+    this.bus.emit("objectTransformed", { object: tope });
+    this.scheduleAutosave();
+    this.requestRender();
+    return true;
+  }
+
+  /** Rehace los canales de lo que acabe de soltar el gizmo (pieza o grupo). */
+  private enhebrarSeleccion(): void {
+    const tocadas: SceneObject[] = [];
+    if (this.multiSel.size > 0) {
+      for (const id of this.multiSel) {
+        const o = this.objects.get(id);
+        if (o) tocadas.push(o);
+      }
+    } else if (this.selectedGroupId) {
+      const ids = this.groups.get(this.selectedGroupId)?.ids ?? [];
+      for (const id of ids) {
+        const o = this.objects.get(id);
+        if (o) tocadas.push(o);
+      }
+    } else if (this.selected) tocadas.push(this.selected);
+    for (const o of tocadas) this.vincularAGuias(o);
+  }
+
+  /**
+   * TODO LO QUE CUELGA DE UNA PIEZA la sigue cuando esa pieza se mueve: las
+   * cuerdas tendidas desde ella y las guías tubulares amarradas a ella por
+   * alguno de sus dos extremos.
+   */
+  private actualizarAtadosDeObjeto(objectId: string): void {
     for (const r of this.ropes.values()) {
       if (r.a.objectId === objectId || r.b.objectId === objectId) this.rebuildRope(r);
     }
+    for (const g of this.objects.values()) {
+      const an = g.params.anclajes;
+      if (!an) continue;
+      if (an.a?.obj === objectId || an.b?.obj === objectId) this.retenderGuia(g);
+    }
+  }
+
+  /**
+   * Punto de amarre de una guía: el punto de mundo señalado, expresado en
+   * coordenadas LOCALES de la pieza sobre la que cayó. Sin pieza no hay
+   * anclaje —el extremo queda suelto en el aire, que también vale.
+   */
+  private anclajeEn(
+    obj: SceneObject | undefined,
+    punto: THREE.Vector3,
+  ): { obj: string; local: [number, number, number] } | null {
+    if (!obj) return null;
+    obj.mesh.updateMatrixWorld();
+    const inv = new THREE.Matrix4().copy(obj.mesh.matrixWorld).invert();
+    const l = punto.clone().applyMatrix4(inv);
+    return { obj: obj.id, local: [l.x, l.y, l.z] };
+  }
+
+  /**
+   * VUELVE A TENDER una guía tubular entre sus dos anclajes: recalcula su
+   * largo, su sitio y su dirección. Con un solo anclaje resuelto se queda
+   * donde está —no hay recta que trazar con un punto.
+   */
+  private retenderGuia(g: SceneObject): void {
+    const an = g.params.anclajes;
+    if (!an?.a || !an?.b) return;
+    const A = this.objects.get(an.a.obj);
+    const B = this.objects.get(an.b.obj);
+    if (!A || !B) return;
+    A.mesh.updateMatrixWorld();
+    B.mesh.updateMatrixWorld();
+    const a = new THREE.Vector3(...an.a.local).applyMatrix4(A.mesh.matrixWorld);
+    const b = new THREE.Vector3(...an.b.local).applyMatrix4(B.mesh.matrixWorld);
+    const dir = b.clone().sub(a);
+    const L = dir.length();
+    if (L < 2) return;
+    dir.divideScalar(L);
+    if (Math.abs((g.params.height ?? 0) - L) > 0.01) {
+      g.params.height = L;
+      g.rebuildGeometry();
+    }
+    g.mesh.position.copy(a).add(b).multiplyScalar(0.5);
+    g.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    g.mesh.updateMatrixWorld(true);
   }
 
   createRope(kind: RopeKind, a: RopeEnd, b: RopeEnd, slack?: number, name?: string): Rope {
@@ -11196,14 +11470,28 @@ export class Editor {
     if (!this.linePendingA) {
       if (!pick) return;
       this.linePendingA = pick.point.clone();
+      this.lineAnclaA = this.anclajeEn(pick.obj, pick.point);
       this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 1 });
     } else {
       const b = this.axisLock
         ? this.lockedLinePoint(this.linePendingA)
         : (pick?.point ?? null);
       if (!b) return;
-      this.createLinePiece(this.linePendingA, b);
+      const guia = this.createLinePiece(this.linePendingA, b);
+      // ANCLAJES DE LA GUÍA (v0.3.3): la barra queda amarrada a las dos piezas
+      // sobre las que se señalaron sus extremos, así que mover el bastidor la
+      // arrastra con él en vez de dejarla flotando.
+      if (guia && this.lineMode === "guia") {
+        const anclaB = this.axisLock ? null : this.anclajeEn(pick?.obj, b);
+        if (this.lineAnclaA || anclaB) {
+          guia.params.anclajes = {
+            a: this.lineAnclaA ?? undefined,
+            b: anclaB ?? undefined,
+          };
+        }
+      }
       this.linePendingA = null;
+      this.lineAnclaA = null;
       if (this.placementLine) this.placementLine.visible = false;
       this.bus.emit("dragMeasure", { text: null });
       this.bus.emit("lineModeChanged", { active: true, kind: this.lineMode, count: 0 });

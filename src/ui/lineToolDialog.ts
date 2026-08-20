@@ -168,3 +168,23 @@ export function configureTube(): Promise<PrimitiveParams | null> {
     radius: parseFloat(nominal.select.value) / 20, // mm de diámetro -> cm de radio
   }));
 }
+
+/**
+ * GUÍA TUBULAR (v0.3.3): solo se pregunta el DIÁMETRO — el largo lo dan los
+ * dos puntos que se señalan al tenderla, y después se retoca en Propiedades
+ * como cualquier cilindro. Las medidas ofrecidas son las de las barras guía
+ * reales de una prensa o una Smith.
+ */
+const GUIA_NOMINALS_MM = [20, 25, 30, 35, 40, 50];
+
+export function configureGuiaTubular(): Promise<PrimitiveParams | null> {
+  const nominal = selectField(
+    "Diámetro de la guía (mm)",
+    GUIA_NOMINALS_MM.map((n) => ({ value: String(n), label: `⌀ ${n} mm` })),
+    "30",
+  );
+  return dialog("Nueva guía tubular", [nominal.row], () => {
+    const r = parseFloat(nominal.select.value) / 20; // mm de diámetro -> cm de radio
+    return { kind: "cylinder", radiusTop: r, radiusBottom: r, radialSegments: 24 };
+  });
+}

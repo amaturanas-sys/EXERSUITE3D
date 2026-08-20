@@ -106,6 +106,25 @@ export interface PrimitiveParams {
    */
   espejo?: [boolean, boolean, boolean];
   /**
+   * CANALES TUBULARES (v0.3.3): agujeros REDONDOS pasantes por donde discurre
+   * una guía tubular. Los abre el vínculo con la guía, no el usuario a mano:
+   * se colocan solos donde pasa cada guía cuando la pieza se suelta encima.
+   * Es lo que convierte una plancha en el carro de una prensa de piernas o en
+   * la pila de una torre de poleas: la pieza queda ENHEBRADA de verdad.
+   */
+  canales?: CanalTubo[];
+  /**
+   * ANCLAJES DE UNA GUÍA TUBULAR (v0.3.3): las piezas a las que está sujeta
+   * por cada extremo, con el punto de amarre en coordenadas locales de esa
+   * pieza. La guía se vuelve a tender cuando cualquiera de las dos se mueve.
+   * Un prefab que no resuelva los ids deja la guía donde está, que es lo
+   * correcto: el archivo ya trae su sitio.
+   */
+  anclajes?: {
+    a?: { obj: string; local: [number, number, number] };
+    b?: { obj: string; local: [number, number, number] };
+  };
+  /**
    * LARGO A MEDIDA (v0.3.2), en cm, de las piezas con `largoAjustable`: se
    * aplica estirando la malla POR EL CENTRO, sin tocar los remates. Ausente
    * = el largo de fábrica de la pieza.
@@ -130,6 +149,27 @@ export interface VentanaRect {
   du: number;
   /** Tamaño del hueco en la segunda coordenada del plano. */
   dv: number;
+}
+
+/**
+ * CANAL TUBULAR (v0.3.3): agujero REDONDO pasante por el que discurre una
+ * guía. Mismas coordenadas que la ventana —eje local pasante y centro (u,v)
+ * en el plano perpendicular—, pero la sección es un círculo, que es lo que
+ * deja una barra guía al atravesar el carro de una prensa o la pila de una
+ * torre de poleas.
+ */
+export interface CanalTubo {
+  /** Eje local que atraviesa la pieza de lado a lado. */
+  eje: "x" | "y" | "z";
+  /** Centro del canal en el plano perpendicular. */
+  u: number;
+  v: number;
+  /** Radio del canal (cm): el de la guía más la holgura de deslizamiento. */
+  radio: number;
+  /** Lados del polígono que aproxima el círculo (def. 20). */
+  lados?: number;
+  /** Id de la guía que lo abrió, para poder rehacer el vínculo. */
+  guia?: string;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */
@@ -303,6 +343,15 @@ export interface ComponentDefinition {
     minCm?: number;
     maxCm?: number;
   };
+  /**
+   * TOPE DE UNA GUÍA TUBULAR (v0.3.3). El motor descubre las guías y sus
+   * espaciadores por la FORMA —piezas fijas y esbeltas, coaxiales, la corta
+   * montada sobre la larga—, y un tope de goma no pasa esa prueba: es corto y
+   * GORDO, justo al revés. Así que se declara, y el motor lo toma por freno
+   * del recorrido sin tener que adivinarlo. Su eje es su Y local, que es como
+   * se monta sobre la guía.
+   */
+  topeGuia?: boolean;
   /** Descripcion corta para tooltips. */
   description: string;
 }

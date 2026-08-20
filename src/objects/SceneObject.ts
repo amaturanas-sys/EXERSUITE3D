@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type {
+  CanalTubo,
   CargaDiscosDef,
   ComponentCategory,
   ComponentDefinition,
@@ -64,7 +65,11 @@ export class SceneObject {
     this.imported = !!opts.importedGeometry;
     const geometry = this.hornearEspejo(
       this.aLaMedida(
-        perforarGeometria(opts.importedGeometry ?? buildGeometry(this.params), this.params.ventanas),
+        perforarGeometria(
+          opts.importedGeometry ?? buildGeometry(this.params),
+          this.params.ventanas,
+          this.params.canales,
+        ),
       ),
       true,
     );
@@ -131,7 +136,7 @@ export class SceneObject {
       if (this.geoOriginal) {
         const old = this.mesh.geometry;
         this.mesh.geometry = this.hornearEspejo(
-          this.aLaMedida(perforarGeometria(this.geoOriginal.clone(), this.params.ventanas)),
+          this.aLaMedida(perforarGeometria(this.geoOriginal.clone(), this.params.ventanas, this.params.canales)),
           true,
         );
         old.dispose();
@@ -146,7 +151,7 @@ export class SceneObject {
     }
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas)),
+      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas, this.params.canales)),
       true,
     );
     old.dispose();
@@ -173,6 +178,25 @@ export class SceneObject {
   }
 
   /**
+   * FIJA LOS CANALES TUBULARES y rehace la malla (v0.3.3).
+   *
+   * Con una malla de biblioteca hace falta el original SIN perforar para
+   * volver a calar los canales cada vez que la pieza cambia de sitio, y ese
+   * original solo se guarda si al aplicar el modelo ya había algo que calar
+   * —cosa que no pasa: los canales llegan después, cuando el usuario suelta
+   * la pieza sobre las guías—. Por eso, si no lo hay, se vuelve a aplicar el
+   * modelo, que es lo que lo captura. `fuente` es esa malla de biblioteca.
+   */
+  setCanales(canales: CanalTubo[] | undefined, fuente?: THREE.BufferGeometry | null): void {
+    this.params.canales = canales && canales.length > 0 ? canales : undefined;
+    if ((this.imported || this.customModel) && !this.geoOriginal && fuente) {
+      this.applyCustomGeometry(fuente);
+      return;
+    }
+    this.rebuildGeometry();
+  }
+
+  /**
    * Sustituye la geometria por la de un modelo 3D personalizado (ya horneada:
    * escalada a cm y centrada en el origen como una primitiva).
    */
@@ -183,10 +207,12 @@ export class SceneObject {
     // caladas o un largo a medida. Sin ella, cada cambio de largo se aplicaría
     // sobre la malla YA estirada y los cambios se irían acumulando.
     this.geoOriginal =
-      this.params.ventanas?.length || this.largoAjustable() ? geometry.clone() : null;
+      this.params.ventanas?.length || this.params.canales?.length || this.largoAjustable()
+        ? geometry.clone()
+        : null;
     this.espejoHorneado = [false, false, false];
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(geometry, this.params.ventanas)),
+      this.aLaMedida(perforarGeometria(geometry, this.params.ventanas, this.params.canales)),
       true,
     );
     old.dispose();
@@ -206,7 +232,7 @@ export class SceneObject {
     this.geoOriginal = null;
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas)),
+      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas, this.params.canales)),
       true,
     );
     old.dispose();

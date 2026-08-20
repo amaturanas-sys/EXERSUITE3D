@@ -517,6 +517,53 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
 
   // ---------------------------------------------------------------- MOVIMIENTO
+  //
+  // MECANISMOS DE GUÍA TUBULAR (v0.3.3). Es lo que hace falta para armar una
+  // Smith, una prensa de piernas o un hack squat: dos barras cromadas tendidas
+  // entre los travesaños del bastidor, un carro ENHEBRADO en ellas que solo
+  // puede correr por su recta, topes de goma que acotan el recorrido y pines
+  // de seguridad metidos en los agujeros del pilar.
+  {
+    id: "guia-tubular",
+    label: "Guía tubular",
+    category: "movimiento",
+    materialId: "cromo",
+    // Barra cromada de 3 cm de diámetro, la medida de una guía de prensa.
+    // El largo y el diámetro se cambian en Propiedades (altura y radios), y
+    // la herramienta la tiende entre los dos puntos que se le señalen.
+    defaults: { kind: "cylinder", radiusTop: 1.5, radiusBottom: 1.5, height: 160, radialSegments: 24 },
+    physics: { massKg: 0, fixed: true },
+    description:
+      "Barra guía cromada: se tiende entre dos anclajes y por ella corre el carro. Lo que va enhebrado en ella queda circunscrito a su recta.",
+  },
+  {
+    id: "tope-guia",
+    label: "Tope de guía",
+    category: "movimiento",
+    materialId: "goma",
+    // Espaciador GRUESO montado sobre la guía: el motor lo reconoce como
+    // tope porque es coaxial, más corto y solapa con el tramo del tubo.
+    defaults: { kind: "cylinder", radiusTop: 3.2, radiusBottom: 3.2, height: 6, radialSegments: 20 },
+    physics: { massKg: 0, fixed: true },
+    topeGuia: true,
+    description:
+      "Espaciador de goma que se monta sobre una guía tubular y detiene ahí el carro. Su largo y su diámetro se ajustan en Propiedades.",
+  },
+  {
+    id: "safety-pin",
+    label: "Safety pin",
+    category: "movimiento",
+    materialId: "cromo",
+    // El pin ENTRA en el agujero del pilar por su eje X (frenteCalce), así
+    // que la barra se acuesta en horizontal al insertarse.
+    defaults: { kind: "cylinder", radiusTop: 1.25, radiusBottom: 1.25, height: 24, radialSegments: 20 },
+    physics: { massKg: 0, fixed: true },
+    orientacion: [0, 0, Math.PI / 2],
+    calceLocal: [0, 0],
+    frenteCalce: "x",
+    description:
+      "Pasador cromado que se mete en un pinhole del pilar y hace de tope de seguridad o de gancho. Largo y diámetro ajustables.",
+  },
   {
     id: "guia",
     paleta: "oculta",

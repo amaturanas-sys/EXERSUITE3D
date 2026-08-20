@@ -5,6 +5,68 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.3] — 2026-08-22
+
+### Añadido
+
+**MECANISMOS DE GUÍA TUBULAR.** Es lo que faltaba para armar una Smith, una
+prensa de piernas o un hack squat: máquinas que por dentro son todas lo mismo
+—dos barras cromadas tendidas entre los travesaños de un bastidor y un carro
+que solo puede correr por su recta—. Tres piezas nuevas y un vínculo:
+
+- **Guía tubular.** Se TIENDE entre dos puntos, como una pieza de línea: el
+  diálogo pregunta el diámetro y los dos toques dan el largo y la dirección.
+  Queda amarrada a las dos piezas sobre las que se señalaron sus extremos, así
+  que mover el bastidor la arrastra con él y la vuelve a tender a su medida.
+  Largo y diámetro se retocan después en Propiedades.
+- **Vínculo por el gizmo.** Se coloca el carro encima con el gizmo y, al
+  soltarlo, la pieza queda ENHEBRADA: por cada guía que la cruza se le abre un
+  canal REDONDO de verdad en la malla, del diámetro del tubo más la holgura de
+  deslizamiento. Se puede vincular a una guía o a varias. Moverla otra vez
+  rehace los canales; sacarla de las guías se los quita.
+- **Tope de guía.** Espaciador de goma que se monta sobre la barra: soltarlo
+  cerca lo centra en su recta y lo alinea con ella. Desde ahí acota el
+  recorrido del carro, que se detiene en él.
+- **Safety pin.** Pasador cromado de largo y diámetro ajustables que calza en
+  los pinholes de un pilar, como safety arm o como gancho.
+
+Y la trayectoria la gobiernan las mismas reglas que ya tenía la pila de pesos
+sobre sus tubos: el carro queda circunscrito a la recta de sus guías, sin
+deriva lateral ni vuelco, con los topes acotándolo por los dos lados.
+
+Comprobado con una prensa armada de verdad, con las guías INCLINADAS: los dos
+canales se abren separados los 60 cm que separan las barras, la malla del carro
+pasa de 24 a 726 vértices —están calados—, y al simular el carro baja 34,8 cm
+en vertical avanzando a la vez 29,8 cm en profundidad, con 0,0 cm de deriva
+lateral. Con los topes puestos se detiene a los 17 cm, que es exactamente donde
+tocan.
+
+### Arreglado
+
+**Una guía inclinada descartaba su propio mecanismo.** El motor medía cuánto
+ocupa una pieza móvil a lo largo del eje de su guía proyectando su caja de
+MUNDO, y eso solo vale si la pieza está a escuadra con los ejes del mundo. El
+carro de una prensa va girado 40°: su caja de mundo es enorme, la cuenta le
+daba medio metro de grosor donde tiene doce centímetros, el recorrido que
+dejaban los topes salía NEGATIVO y el motor descartaba la guía entera — el
+carro se caía por fuera de sus barras. Ahora se proyecta la caja ORIENTADA,
+eje local por eje local, que para una caja es exacto. Las máquinas con guías
+verticales no cambian: ahí las dos cuentas daban lo mismo.
+
+**Un tope de goma no podía ser un tope.** Las guías y sus espaciadores se
+descubrían por la FORMA —piezas fijas y esbeltas, coaxiales, la corta montada
+sobre la larga—, y un tope de goma es corto y GORDO, justo al revés: no pasaba
+el examen y el carro lo atravesaba. Ahora la pieza lo DECLARA y el motor no
+tiene que adivinarlo.
+
+### Cambiado
+
+**El perforado sirve para cualquier hueco convexo, no solo rectángulos.** La
+misma máquina que abre las ventanas de una roldana interna abre ahora canales
+redondos: el exterior de un convexo se parte en tantas regiones disjuntas como
+lados tiene, y el rectángulo es el caso de cuatro. Los huecos existentes salen
+idénticos.
+
 ## [0.3.2] — 2026-08-22
 
 ### Cambiado

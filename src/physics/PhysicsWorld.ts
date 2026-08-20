@@ -622,6 +622,19 @@ export class PhysicsWorld {
     }
     const esbeltas: Esbelta[] = [];
     for (const f of fijas) {
+      // TOPE DECLARADO (v0.3.3): el espaciador de goma es corto y gordo, así
+      // que no pasa la prueba de esbeltez de abajo —ni debe—. Entra aquí
+      // marcado como freno, con su eje local Y, que es por donde se ensarta.
+      if (getDefinition(f.obj.componentId)?.topeGuia) {
+        esbeltas.push({
+          centro: f.obj.mesh.position.clone(),
+          eje: axisVector("y").applyQuaternion(f.obj.mesh.quaternion).normalize(),
+          largo: f.obj.localSizeAbs().y,
+          esStopper: true,
+          cuerpo: f.body,
+        });
+        continue;
+      }
       // Dimensiones LOCALES: se emparejan con letras de eje local (la AABB
       // de mundo mezclaba ejes con la pieza girada y perdía la esbeltez).
       const s = f.obj.localSizeAbs();
@@ -704,6 +717,22 @@ export class PhysicsWorld {
       const tam = bbox.getSize(new THREE.Vector3());
       bbox.expandByScalar(1); // cm de tolerancia del abrazo
       const centroD = d.obj.mesh.position;
+      // CUÁNTO OCUPA LA MÓVIL A LO LARGO DE UN EJE (v0.3.3). Antes se sumaba
+      // la caja de MUNDO proyectada sobre el eje, y eso solo vale si la pieza
+      // está a escuadra con los ejes del mundo: una plancha girada 40° —el
+      // carro de una prensa inclinada— tiene una caja de mundo enorme, y la
+      // cuenta le daba medio metro de grosor donde tiene diez centímetros.
+      // Con eso, el recorrido que dejaban los topes salía NEGATIVO y el motor
+      // descartaba la guía entera: el carro se caía por fuera de sus barras.
+      //
+      // El soporte de una caja ORIENTADA es exacto: se proyecta cada eje local
+      // de la pieza, no la caja del mundo.
+      const tamLocal = d.obj.localSizeAbs();
+      const qD = d.obj.mesh.quaternion;
+      const soporte = (e: THREE.Vector3): number =>
+        tamLocal.x * Math.abs(axisVector("x").applyQuaternion(qD).dot(e)) +
+        tamLocal.y * Math.abs(axisVector("y").applyQuaternion(qD).dot(e)) +
+        tamLocal.z * Math.abs(axisVector("z").applyQuaternion(qD).dot(e));
       let eje: THREE.Vector3 | null = null;
       let halfD = 0;
       // Tramos de tubo (extremos ABSOLUTOS sobre el eje) y sus cuerpos: se
@@ -721,8 +750,7 @@ export class PhysicsWorld {
         // barra de agarre colgando JUNTO a un travesaño del piso quedaba
         // falsamente circunscrita a su recta (el jalón bajo solo podía
         // moverse en horizontal, clavado y sin transmisión).
-        const abrazo =
-          tam.x * Math.abs(g.eje.x) + tam.y * Math.abs(g.eje.y) + tam.z * Math.abs(g.eje.z);
+        const abrazo = soporte(g.eje);
         // UNA PIEZA CON ORIFICIOS PASANTES ESTÁ HECHA PARA ENHEBRARSE, y su
         // grosor no dice nada: el «Bloque de peso» son 30 × 4 × 18 con dos
         // agujeros que abrazan los tubos, y sus 4 cm no llegaban al listón de
@@ -732,7 +760,12 @@ export class PhysicsWorld {
         // pieza. A esas se les pide menos recorrido interior; el listón alto
         // sigue para las demás, y de los falsos positivos por proximidad ya se
         // encarga el solape axial de abajo.
-        const pasante = (d.obj.params.holeDiameter ?? 0) > 0;
+        // Y UNA PIEZA CON CANALES TUBULARES TAMBIÉN (v0.3.3): el carro de una
+        // prensa lleva calados de verdad los agujeros por donde pasan sus
+        // barras guía, y esos agujeros son la prueba de que está hecha para
+        // enhebrarse — igual que los orificios pasantes del bloque de peso.
+        const pasante =
+          (d.obj.params.holeDiameter ?? 0) > 0 || (d.obj.params.canales?.length ?? 0) > 0;
         if (abrazo < (pasante ? 2 : 5)) continue;
         // Y EL TUBO TIENE QUE ESTAR AHÍ (v0.2.76). La comprobación de arriba
         // proyecta el centro de la móvil sobre la recta de la guía, pero esa
@@ -759,7 +792,7 @@ export class PhysicsWorld {
       if (ensartadas.length === 0) continue;
       eje = ensartadas[0].g.eje.clone();
       // Semiextensión de la móvil a lo largo del eje (soporte del AABB).
-      halfD = (tam.x * Math.abs(eje.x) + tam.y * Math.abs(eje.y) + tam.z * Math.abs(eje.z)) / 2;
+      halfD = soporte(eje) / 2;
       const prolongaciones: { tramo: [number, number]; cuerpo: R.RigidBody }[] = [];
       for (const c of candidatas) {
         if (Math.abs(eje.dot(c.g.eje)) < 0.99) continue;

@@ -10,7 +10,12 @@ import {
 import type { ComponentDefinition } from "../objects/types";
 import { componentModels } from "../core/componentModels";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
-import { configurarDentada, configureBeam, configureTube } from "./lineToolDialog";
+import {
+  configurarDentada,
+  configureBeam,
+  configureGuiaTubular,
+  configureTube,
+} from "./lineToolDialog";
 import { pasoMinimoDentada } from "../objects/placaDentada";
 import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
@@ -400,6 +405,10 @@ export class ComponentPalette {
         void configureBeam().then((p) => p && this.editor.beginLine("beam", p));
       } else if (def.placement === "tube") {
         void configureTube().then((p) => p && this.editor.beginLine("tube", p));
+      } else if (def.id === "guia-tubular") {
+        // Se TIENDE entre dos puntos, como una pieza de línea: el diálogo
+        // pregunta el diámetro y los dos toques dan el largo y la dirección.
+        void configureGuiaTubular().then((p) => p && this.editor.beginLine("guia", p));
       } else if (def.id === "roldana") {
         // Herramienta en dos pasos (v0.2.26): estructura → punto del eje
         // azul → tipo + dirección (el diálogo aparece al elegir el punto).
@@ -428,7 +437,14 @@ export class ComponentPalette {
     // diseñador la quiere disponible como un elemento más: arrastrándola al
     // visor cae con su medida de fábrica, para colocarla a mano donde no haya
     // un pilar del que copiar.
-    if (!def.placement && def.id !== "roldana" && def.id !== "terminal-cable") {
+    // La GUÍA TUBULAR tampoco: se TIENDE entre dos puntos, y arrastrarla al
+    // suelo dejaría una barra suelta sin los anclajes que la sostienen.
+    if (
+      !def.placement &&
+      def.id !== "roldana" &&
+      def.id !== "terminal-cable" &&
+      def.id !== "guia-tubular"
+    ) {
       if (def.id === "puente-carro-ttp") {
         this.habilitarArrastre(btn, (suelo) => this.editor.insertarCarroDoble(suelo));
       } else {
