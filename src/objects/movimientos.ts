@@ -168,7 +168,7 @@ export type AcomodacionMov =
   | { tipo: "plomada"; familia: string; es: string; en: string }
   | { tipo: "mirada"; familia: string; distanciaCm: number; es: string; en: string }
   | { tipo: "roce"; familia: string; segmentos: string[]; es: string; en: string }
-  | { tipo: "equilibrio"; familia: string; es: string; en: string }
+  | { tipo: "equilibrio"; familia: string; sobre: "spine" | "hip"; es: string; en: string }
   | { tipo: "apertura"; familia: string; es: string; en: string };
 
 /** Un tramo del gesto, entre dos posturas de la biblioteca. */
@@ -282,11 +282,39 @@ const ROCE: AcomodacionMov = {
  * frontsquat mantiene un torso vertical para prevenir la caída de la barra a
  * expensas de mayor rango de rodilla y tobillos».
  */
-const EQUILIBRIO: AcomodacionMov = {
+const EQUILIBRIO_TRONCO: AcomodacionMov = {
   tipo: "equilibrio",
   familia: "spine",
+  sobre: "spine",
   es: "el tronco se inclina lo justo para dejar la barra sobre el medio del pie",
   en: "the trunk leans just enough to keep the bar over mid-foot",
+};
+
+/**
+ * LA FRONTAL EQUILIBRA CON LA RODILLA, NO CON EL TRONCO (v0.2.100).
+ *
+ * La trasera quedó bien resolviendo la inclinación del tronco, y el diseñador la
+ * dio por buena. La frontal no, y la razón es que en 0.2.99 las DOS posturas de
+ * fondo tenían la MISMA PIERNA —cadera −78,61°, rodilla 126°, tobillo −43,46°—
+ * y solo se diferenciaban en el tronco. Con la barra delante y esa pierna, la
+ * única forma de equilibrar era echar el tronco un poco hacia atrás (−2,9°): un
+ * apaño, no el gesto.
+ *
+ * El gesto lo dijo el diseñador: «frontsquat mantiene un torso vertical para
+ * prevenir la caída de la barra a expensas de mayor rango de rodilla y
+ * tobillos», o sea «dorsiflexión del tobillo y anteriorización de la rodilla
+ * para mantener el torso vertical». Así que en la frontal la incógnita cambia de
+ * sitio: el tronco se queda quieto y vertical, la RODILLA manda el descenso, y
+ * lo que se resuelve contra el medio del pie es LA CADERA — que es cuánto se
+ * echan atrás las caderas—. La rodilla se adelanta y el tobillo dorsiflexiona
+ * detrás de ella, porque el tobillo ya acompaña para no despegar la planta.
+ */
+const EQUILIBRIO_CADERA: AcomodacionMov = {
+  tipo: "equilibrio",
+  familia: "hip",
+  sobre: "hip",
+  es: "la cadera busca su sitio para dejar la barra sobre el medio del pie, con el tronco vertical",
+  en: "the hip finds its place to keep the bar over mid-foot, with the trunk upright",
 };
 
 /**
@@ -313,10 +341,19 @@ const APERTURA: AcomodacionMov = {
   en: "the hip abducts so the stance does not narrow on the way down",
 };
 
-/** Reparto de la sentadilla: manda la rodilla y la cadera la acompaña. */
-const PATRON_SENTADILLA: AporteArticular[] = [
+/** Reparto de la TRASERA: manda la rodilla y la cadera la acompaña. */
+const PATRON_TRASERA: AporteArticular[] = [
   { familia: "knee", bilateral: true, empuje: -1, peso: 1, es: "extensión de rodilla", en: "knee extension" },
   { familia: "hip", bilateral: true, empuje: 1, peso: 0.9, es: "extensión de cadera", en: "hip extension" },
+];
+
+/**
+ * Reparto de la FRONTAL: manda la rodilla SOLA. La cadera no está aquí a
+ * propósito — la resuelve el equilibrio, y si además estuviera en el reparto las
+ * dos se pelearían por ella en cada paso.
+ */
+const PATRON_FRONTAL: AporteArticular[] = [
+  { familia: "knee", bilateral: true, empuje: -1, peso: 1, es: "extensión de rodilla", en: "knee extension" },
 ];
 
 /**
@@ -327,7 +364,13 @@ const PATRON_SENTADILLA: AporteArticular[] = [
  * anatómicos, rodilla 150° y cadera −134,6° contra los 126° y −78,61° del
  * modelo, con la barra 37,5 cm por detrás del pie al final del recorrido.
  */
-const planSentadilla = (id: string, arriba: string, fondo: string): PlanMov => ({
+const planSentadilla = (
+  id: string,
+  arriba: string,
+  fondo: string,
+  patron: AporteArticular[],
+  equilibrio: AcomodacionMov,
+): PlanMov => ({
   id,
   zona: "inferior",
   origen: fondo,
@@ -336,24 +379,30 @@ const planSentadilla = (id: string, arriba: string, fondo: string): PlanMov => (
       id: "subida",
       es: "sentadilla",
       en: "squat",
-      patron: PATRON_SENTADILLA,
+      patron,
       meta: arriba,
       hasta: { tipo: "meta" },
-      acomodaciones: [PLANTA, APERTURA, EQUILIBRIO],
+      acomodaciones: [PLANTA, APERTURA, equilibrio],
     },
   ],
 });
 
 export const PLANES: Record<string, PlanMov> = {
+  // LA FRONTAL: tronco vertical, manda la rodilla y la cadera busca el equilibrio.
   "sentadilla-frontal": planSentadilla(
     "sentadilla-frontal",
     "Sentadilla frontal",
     "Sentadilla frontal (fondo)",
+    PATRON_FRONTAL,
+    EQUILIBRIO_CADERA,
   ),
+  // LA TRASERA: rodilla y cadera reparten, y el tronco busca el equilibrio.
   "sentadilla-trasera": planSentadilla(
     "sentadilla-trasera",
     "Sentadilla trasera",
     "Sentadilla trasera (fondo)",
+    PATRON_TRASERA,
+    EQUILIBRIO_TRONCO,
   ),
 
   /**

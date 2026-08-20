@@ -3863,7 +3863,7 @@ export class Editor {
     const plomada: string[] = [];
     let mirada: number | null = null;
     let roce: string[] | null = null;
-    let equilibrio = false;
+    let equilibrio: "spine" | "hip" | null = null;
     let apertura = false;
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
@@ -3935,7 +3935,7 @@ export class Editor {
           // lado: se guarda una sola vez y al aplicarlo se usan los lados que
           // haya recogido la plomada, que son los mismos brazos.
           if (ac.tipo === "roce") { roce = ac.segmentos; continue; }
-          if (ac.tipo === "equilibrio") { equilibrio = true; continue; }
+          if (ac.tipo === "equilibrio") { equilibrio = ac.sobre; continue; }
           if (ac.tipo === "apertura") { apertura = true; continue; }
           const cadena = ac.cadena.map((f) => `${f}${l}`);
           acomodar.push({
@@ -3989,10 +3989,16 @@ export class Editor {
     // hacia DELANTE lo justo para no meterla en la carne. Al revés la plomada
     // desharía la corrección.
     if (roce && plomada.length && this.acomodarRoce(plomada, roce, joints)) n++;
-    // LA APERTURA VA ANTES QUE EL EQUILIBRIO: abrir la cadera mueve las pisadas
-    // y con ellas el blanco que persigue el tronco.
+    // EL EQUILIBRIO PRIMERO Y LA APERTURA DESPUÉS, y luego el equilibrio otra
+    // vez. Las dos tocan la cadera —una su flexión, la otra su abducción— y se
+    // mueven la referencia mutuamente: la abducción cambia dónde caen las
+    // pisadas, y la flexión cambia la separación entre ellas. Con la apertura
+    // sola por delante, la postura de la frontal oscilaba entre 59,2 y 62,7 cm.
+    // Dos pasadas del sagital con la lateral en medio las dejan a las dos
+    // clavadas, y no hace falta más porque cada paso solo corrige un paso.
+    if (equilibrio && this.acomodarEquilibrio(joints, equilibrio)) n++;
     if (apertura && huella && this.acomodarApertura(joints, huella)) n++;
-    if (equilibrio && this.acomodarEquilibrio(joints)) n++;
+    if (equilibrio) this.acomodarEquilibrio(joints, equilibrio);
     if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
     this.reapoyarFigura();
@@ -4268,36 +4274,91 @@ export class Editor {
    * que declarar en ninguna parte que la frontal va más vertical: lo dice la
    * geometría del apoyo.
    */
-  private acomodarEquilibrio(joints: Record<string, THREE.Object3D>): boolean {
+  private acomodarEquilibrio(
+    joints: Record<string, THREE.Object3D>,
+    sobre: "spine" | "hip",
+  ): boolean {
     const fig = this.humanFigure;
-    const columna = joints.spine;
     const enlace = this.barraManiqui;
-    if (!fig || !columna || !enlace || enlace.rackeada) return false;
-    if (this.jointLocks.has("spine")) return false;
+    if (!fig || !enlace || enlace.rackeada) return false;
+    // QUIÉN CEDE PARA EQUILIBRAR. En la trasera, el tronco. En la frontal, la
+    // cadera —el tronco se queda vertical y la rodilla se adelanta—, y entonces
+    // son dos articulaciones que se mueven juntas, una por pierna.
+    const piezas = sobre === "spine"
+      ? [joints.spine]
+      : [joints.hipL, joints.hipR];
+    const nombres = sobre === "spine" ? ["spine"] : ["hipL", "hipR"];
+    if (piezas.some((j) => !j) || nombres.some((n) => this.jointLocks.has(n))) return false;
     const barra = this.objects.get(enlace.objectId);
-    const lim = JOINT_DOF.spine?.x;
+    const limites = nombres.map((n) => JOINT_DOF[n]?.x);
     const huella = this.huellaDeLosPies();
-    if (!barra || !lim || !huella) return false;
+    if (!barra || limites.some((l) => !l) || !huella) return false;
+    // El corchete es el rango común: fuera de él una de las dos caderas ya no
+    // podría acompañar y dejarían de moverse juntas.
+    const lim: [number, number] = [
+      Math.max(...limites.map((l) => l![0])),
+      Math.min(...limites.map((l) => l![1])),
+    ];
     const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
-    const blanco = huella.L.clone().add(huella.R).multiplyScalar(0.5).dot(adelante);
-    const original = radToDeg(columna.rotation.x);
+    const original = radToDeg(piezas[0]!.rotation.x);
+    // EL TOBILLO VA DETRÁS DE LA CADERA, dentro de cada sondeo. Mover la cadera
+    // sin mover el tobillo levanta el pie del suelo, y entonces «el medio del
+    // pie» deja de significar nada: el primer intento saturó la cadera en su
+    // tope de +30° y el tobillo en el suyo de −50°. La cadena cerrada del apoyo
+    // es la de siempre —`tobillo = objetivo − (cadera + rodilla)`, la misma que
+    // usa la acomodación de la planta—, así que cada sondeo se hace con el pie
+    // ya plantado y lo que se mide es una postura de verdad.
+    const tobillos = sobre === "hip"
+      ? (["L", "R"] as const).map((l) => ({
+        pieza: joints[`ankle${l}`],
+        rodilla: joints[`knee${l}`],
+        lim: JOINT_DOF[`ankle${l}`]?.x,
+        objetivo: this.objetivoDeAcomodacion(`ankle${l}`, [`hip${l}`, `knee${l}`], joints),
+      })).filter((t) => t.pieza && t.rodilla && t.lim)
+      : [];
     const desvio = (deg: number): number => {
-      columna.rotation.x = degToRad(deg);
+      for (const j of piezas) j!.rotation.x = degToRad(deg);
+      for (const t of tobillos) {
+        const quiere = t.objetivo - deg - radToDeg(t.rodilla!.rotation.x);
+        t.pieza!.rotation.x = degToRad(Math.max(t.lim![0], Math.min(t.lim![1], quiere)));
+      }
       fig.updateMatrixWorld(true);
       this.sincronizarBarraManiqui();
-      return barra.mesh.position.dot(adelante) - blanco;
+      // LA HUELLA SE VUELVE A MEDIR EN CADA SONDEO, y no vale congelarla. La
+      // pelvis es la RAÍZ del rig: girar la cadera mueve las PIERNAS, no el
+      // tronco, así que la barra se queda donde está y lo que viaja es el pie.
+      // Con la huella congelada la función salía casi plana —no había raíz que
+      // encontrar y la cadera no se movía ni un grado—. Medida contra la huella
+      // de cada sondeo, lo que se anula es la distancia RELATIVA entre barra y
+      // pisada, que es justo lo que sobrevive al replantado del final del paso.
+      const h = this.huellaDeLosPies() ?? huella;
+      return barra.mesh.position.dot(adelante)
+        - h.L.clone().add(h.R).multiplyScalar(0.5).dot(adelante);
     };
-    let a = lim[0], b = lim[1];
-    const fa = desvio(a);
-    if (fa * desvio(b) > 0) {
-      // La columna no da para tanto: se deja en el tope que más se acerca. Es
-      // una conclusión ergonómica —esa sentadilla no se aguanta— y se avisa por
-      // el mismo canal que el tobillo sin recorrido.
-      const mejor = Math.abs(fa) < Math.abs(desvio(b)) ? a : b;
-      desvio(mejor);
-      this.acomodacionAlLimite = true;
-      return Math.abs(mejor - original) > 1e-3;
+    // LA RAÍZ SE BUSCA CERCA, como en la plomada del brazo. Barrer el rango
+    // entero de la cadera (−135° a +30°) pasa por posturas imposibles —la pierna
+    // plegada sobre sí misma, el pie sin apoyo— donde la medida no significa
+    // nada, y la bisección se va a la rama absurda. Se abre el corchete desde
+    // donde está AHORA hacia los dos lados: esa es la solución continua.
+    let a = original, b = original;
+    const f0 = desvio(original);
+    let hay = Math.abs(f0) < 1e-4;
+    for (let d = 2; d <= 240 && !hay; d += 2) {
+      const arriba = Math.min(lim[1], original + d);
+      const abajo = Math.max(lim[0], original - d);
+      if (desvio(arriba) * f0 <= 0) { a = original; b = arriba; hay = true; break; }
+      if (desvio(abajo) * f0 <= 0) { a = abajo; b = original; hay = true; break; }
+      if (arriba === lim[1] && abajo === lim[0]) break;
     }
+    if (!hay) {
+      // No hay equilibrio alcanzable: se deja como estaba y se avisa por el
+      // mismo canal que el tobillo sin recorrido. Es una conclusión ergonómica
+      // —esa sentadilla no se aguanta—, no un fallo.
+      desvio(original);
+      this.acomodacionAlLimite = true;
+      return false;
+    }
+    const fa = desvio(a);
     for (let i = 0; i < 40; i++) {
       const m = (a + b) / 2;
       if (desvio(m) * fa > 0) a = m; else b = m;

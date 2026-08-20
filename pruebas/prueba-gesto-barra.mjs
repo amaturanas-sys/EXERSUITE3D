@@ -187,6 +187,12 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
       // El mismo medio del pie, medido en el marco del pie: es el que vale
       // cuando el pie se inclina, o sea en la sentadilla.
       pisada: +pisada.dot(a).toFixed(2),
+      tobillo: g("ankleL"),
+      abduccion: +(J.hipL.rotation.z * 180 / Math.PI).toFixed(2),
+      // LA RODILLA CONTRA LA PUNTERA: la «anteriorización» del diseñador,
+      // medida donde se ve. Positivo = la rodilla asoma por delante del pie.
+      rodillaSobrePunta: +(J.kneeL.getWorldPosition(new T.Vector3()).dot(a)
+        - Math.max(...[L, R].map((f) => new T.Vector3(...f.punta).dot(a)))).toFixed(2),
       // Cuántos cm de la barra quedan DENTRO de la malla de la cabeza. 0 = no
       // la toca.
       dentro,
@@ -533,14 +539,23 @@ for (const [ej, nombre] of [["sentadilla-frontal", "frontal"], ["sentadilla-tras
   ok(Math.max(...anchos) - Math.min(...anchos) < 1.5,
     `y la postura no se cierra al bajar (${Math.min(...anchos)}–${Math.max(...anchos)} cm de separación, antes 39,4–60,1)`);
 
-  // 2) EL GESTO PARA EN LA POSTURA APROBADA, no donde tope una articulación.
+  // 2) EL GESTO PARA EN LA RODILLA DEL MODELO, no donde tope una articulación.
   //    Sin plan la sentadilla no tenía meta: seguía hasta rodilla 150° y cadera
   //    −134,6°, contra los 126° y −78,61° del modelo.
+  //
+  //    LA RODILLA ES LA META EN LAS DOS; LA CADERA, SOLO EN LA TRASERA. Desde
+  //    v0.2.100 la frontal resuelve la cadera contra el equilibrio en vez de
+  //    llevarla a un ángulo guardado, que es lo que le permite tener el tronco
+  //    vertical: su cadera es un RESULTADO, no un dato. Por eso aquí se le exige
+  //    la rodilla exacta y a la cadera solo que caiga cerca del modelo.
   const fondo = D[D.length - 1];
-  ok(Math.abs(fondo.rodilla - 126) < 1 && Math.abs(fondo.cadera + 78.61) < 1,
-    `el fondo es el del modelo (rodilla ${fondo.rodilla}°, cadera ${fondo.cadera}°)`);
+  ok(Math.abs(fondo.rodilla - 126) < 1,
+    `el fondo llega a la rodilla del modelo (${fondo.rodilla}°)`);
+  ok(Math.abs(fondo.cadera + 78.61) < 6,
+    `y la cadera cae donde la deja el equilibrio, cerca del modelo `
+    + `(${fondo.cadera}° contra −78,61°)`);
   const arriba = U[U.length - 1];
-  ok(Math.abs(arriba.rodilla) < 1 && Math.abs(arriba.cadera) < 1,
+  ok(Math.abs(arriba.rodilla) < 1 && Math.abs(arriba.cadera) < 2,
     `y arriba se termina de pie (rodilla ${arriba.rodilla}°, cadera ${arriba.cadera}°)`);
 
   // 3) LOS PIES SIGUEN SIENDO UN ANCLAJE.
@@ -549,7 +564,28 @@ for (const [ej, nombre] of [["sentadilla-frontal", "frontal"], ["sentadilla-tras
     ok(d < 1.5, `${lado}: la pisada no viaja por el suelo (${d} cm)`);
   }
 
-  inclinacion[nombre] = { fondo: fondo.columna, peor: Math.max(...todos.map((s) => s.columna)) };
+  // 4) LA MECÁNICA QUE PIDIÓ EL DISEÑADOR PARA LA FRONTAL: «dorsiflexión del
+  //    tobillo y anteriorización de la rodilla para mantener el torso vertical
+  //    asociada a abducción y rotación externa de cadera al descender».
+  console.log(`   tobillo ${U[U.length - 1].tobillo}° → ${fondo.tobillo}° · `
+    + `rodilla sobre la puntera ${U[U.length - 1].rodillaSobrePunta} → ${fondo.rodillaSobrePunta} cm · `
+    + `abducción ${U[U.length - 1].abduccion}° → ${fondo.abduccion}°`);
+  ok(fondo.tobillo < U[U.length - 1].tobillo - 30,
+    `${nombre}: el tobillo DORSIFLEXIONA al bajar `
+    + `(${U[U.length - 1].tobillo}° → ${fondo.tobillo}°)`);
+  ok(fondo.rodillaSobrePunta > 0 && U[U.length - 1].rodillaSobrePunta < -15,
+    `${nombre}: la rodilla se ANTERIORIZA, de detrás del pie a por delante de la `
+    + `puntera (${U[U.length - 1].rodillaSobrePunta} → ${fondo.rodillaSobrePunta} cm)`);
+  ok(fondo.abduccion < U[U.length - 1].abduccion - 20,
+    `${nombre}: y la cadera ABDUCE al descender `
+    + `(${U[U.length - 1].abduccion}° → ${fondo.abduccion}°)`);
+
+  inclinacion[nombre] = {
+    fondo: fondo.columna,
+    peor: Math.max(...todos.map((s) => s.columna)),
+    tobillo: fondo.tobillo,
+    rodilla: fondo.rodillaSobrePunta,
+  };
   console.log(`   inclinación del tronco: ${todos.map((s) => s.columna).filter((_, i) => i % 6 === 0).join(" ")}`);
 }
 

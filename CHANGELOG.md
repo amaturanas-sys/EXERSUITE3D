@@ -5,6 +5,84 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.100] — 2026-08-20
+
+La sentadilla frontal deja de equilibrarse con el tronco y pasa a hacerlo con la
+cadera, que es lo que le permite quedarse vertical.
+
+### Corregido
+
+**La frontal mantiene el torso vertical, y ahora sí.** El diseñador dio la
+trasera por buena y señaló la frontal: le faltaban «las correcciones necesarias
+(mediante dorsiflexión del tobillo y anteriorización de la rodilla para mantener
+el torso vertical asociada a abducción y rotación externa de cadera al
+descender)».
+
+El diagnóstico era claro en cuanto se miraba: **las dos posturas de fondo tenían
+la MISMA PIERNA** —cadera −78,61°, rodilla 126°, tobillo −43,46°— y solo se
+diferenciaban en el tronco y en los brazos. Con la barra delante y esa pierna, la
+única forma que tenía la frontal de equilibrarse era echar el tronco un poco
+hacia ATRÁS (−2,9° en el fondo, y oscilando hasta +6,9° por el camino). Un apaño,
+no un gesto.
+
+Así que en la frontal la incógnita cambia de sitio. La trasera equilibra con el
+TRONCO —y se queda como está, aprobada—; la frontal equilibra con la CADERA: el
+tronco no se toca, la rodilla manda el descenso y lo que se resuelve contra el
+medio del pie es cuánto se echan atrás las caderas. Medido en el gesto entero:
+
+| | frontal | trasera |
+|---|---|---|
+| tronco en el fondo | **0,00°** (0,00° en todo el gesto) | 18,72° (hasta 27,07°) |
+| tobillo | 4,93° → **−39,28°** | 3,48° → −43,49° |
+| rodilla sobre la puntera | −25,95 → **+4,89 cm** | −24,94 → +6,96 cm |
+| abducción de cadera | −10,64° → **−37,44°** | −10,33° → −36,53° |
+| barra sobre el medio del pie | **0,00 cm** | 0,00 cm |
+
+Y para que las dos incógnitas de la cadera —su flexión, que equilibra, y su
+abducción, que sostiene la anchura— no se estropeen la una a la otra, el paso
+resuelve sagital, lateral y sagital otra vez. Con la apertura sola por delante,
+la postura de la frontal oscilaba entre 59,2 y 62,7 cm de separación; ahora se
+queda en 59,9–61,3 y la pisada viaja 0,52 cm.
+
+Por el camino, dos cosas que costaron encontrar y conviene dejar escritas. La
+primera: la pelvis es la RAÍZ del rig, así que girar la cadera mueve las PIERNAS
+y no el tronco — con la huella congelada como blanco, la función que busca el
+equilibrio salía casi plana y la cadera no se movía ni un grado. Se mide contra
+la huella de cada sondeo, y lo que se anula es la distancia RELATIVA entre barra
+y pisada, que es justo lo que sobrevive al replantado del final del paso. La
+segunda: el tobillo tiene que acompañar DENTRO de cada sondeo —`tobillo =
+objetivo − (cadera + rodilla)`, la cadena cerrada del apoyo—, porque mover la
+cadera sin mover el tobillo levanta el pie y entonces «el medio del pie» no
+significa nada: el primer intento saturó la cadera en su tope de +30° y el
+tobillo en el suyo de −50°.
+
+### Medido, y para que lo decida el diseñador
+
+La frontal sale con **menos** dorsiflexión y **menos** rodilla por delante que la
+trasera (−39,3° contra −43,5°, y 4,89 cm contra 6,96), cuando el diseñador
+esperaba lo contrario: «a expensas de mayor rango de rodilla y tobillos». No es
+un fallo del solucionador —es geometría del modelo—: en esta figura la barra del
+rack frontal queda unos 11 cm por delante de la línea de la cadera, así que un
+tronco vertical ya deja las caderas MÁS atrás de lo que las deja el tronco
+inclinado 18,7° de la trasera, y con la misma rodilla de 126° la espinilla viaja
+menos.
+
+Hay dos palancas para invertirlo, y las dos tocan un número aprobado:
+
+1. **La rodilla del fondo de la frontal**, hoy los mismos 126° medidos sobre el
+   modelo. Subirla es literalmente «mayor rango de rodilla», y arrastra la
+   dorsiflexión detrás.
+2. **La altura del rack frontal**, hoy un 30% del cuello hacia el hombro. Subirlo
+   hacia la base del cuello acerca la barra al eje del tronco —el tronco se
+   estrecha ahí— y adelanta las caderas.
+
+### Añadido
+
+- `prueba-gesto-barra` mide ahora, en las dos sentadillas, la dorsiflexión del
+  tobillo, la abducción de la cadera y cuánto asoma la rodilla por delante de la
+  puntera a lo largo del gesto. Son los tres criterios que dio el diseñador, y
+  hasta ahora ninguno estaba comprobado.
+
 ## [0.2.99] — 2026-08-20
 
 Las sentadillas dejan de caerse hacia atrás, y la frontal sale más vertical que
