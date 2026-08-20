@@ -1,0 +1,697 @@
+<title>Inventario EXERSUITE3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+<style>
+:root {
+  --papel:#ECEEF0; --panel:#FDFDFE; --linea:#D2D7DC; --tinta:#14171A; --acero:#5F676F;
+  --laton:#A0701C; --laton-suave:#F0E3C9;
+  --verde:#2C6A4C; --verde-f:#DCEAE1; --ambar:#83601A; --ambar-f:#F3E8CE; --rojo:#8B3A2B; --rojo-f:#F3DFDA;
+  --sombra:0 1px 2px rgba(20,23,26,.06), 0 8px 24px -16px rgba(20,23,26,.28);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel:#141719; --panel:#1C2024; --linea:#2E343A; --tinta:#E4E8EB; --acero:#98A2AB;
+    --laton:#D5A24C; --laton-suave:#3A3220;
+    --verde:#7FC7A2; --verde-f:#1E3529; --ambar:#DCB65E; --ambar-f:#3A3220; --rojo:#E0917F; --rojo-f:#3A2320;
+    --sombra:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --papel:#141719; --panel:#1C2024; --linea:#2E343A; --tinta:#E4E8EB; --acero:#98A2AB;
+  --laton:#D5A24C; --laton-suave:#3A3220;
+  --verde:#7FC7A2; --verde-f:#1E3529; --ambar:#DCB65E; --ambar-f:#3A3220; --rojo:#E0917F; --rojo-f:#3A2320;
+  --sombra:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+.envoltura{max-width:1240px;margin:0 auto;padding:40px 22px 80px}
+header.cab{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end;
+  padding-bottom:22px;border-bottom:2px solid var(--tinta)}
+.marca{font-family:"Archivo Narrow",system-ui,sans-serif;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase;font-size:12px;color:var(--laton)}
+h1{font-family:"Archivo Narrow",system-ui,sans-serif;font-weight:700;font-size:clamp(30px,5vw,44px);
+  line-height:1.02;margin:4px 0 0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--acero);max-width:62ch;margin:10px 0 0}
+.resumen{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 8px}
+.chip{appearance:none;cursor:pointer;font:inherit;display:flex;align-items:baseline;gap:8px;
+  padding:9px 14px;border:1px solid var(--linea);border-radius:2px;background:var(--panel);
+  color:var(--tinta);box-shadow:var(--sombra)}
+.chip b{font-family:"Archivo Narrow",system-ui,sans-serif;font-size:20px;font-variant-numeric:tabular-nums}
+.chip span{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--acero)}
+.chip[aria-pressed="true"]{border-color:var(--tinta);outline:2px solid var(--tinta);outline-offset:-2px}
+.chip:focus-visible{outline:2px solid var(--laton);outline-offset:2px}
+.nota{color:var(--acero);font-size:13.5px;margin:14px 0 26px;max-width:78ch}
+.nota code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;background:var(--laton-suave);
+  padding:1px 5px;border-radius:2px;color:var(--tinta)}
+.marco{overflow-x:auto;border:1px solid var(--linea);border-radius:3px;background:var(--panel);
+  box-shadow:var(--sombra)}
+table{border-collapse:collapse;width:100%;min-width:940px}
+thead th{position:sticky;top:0;z-index:2;background:var(--tinta);color:var(--papel);
+  font-family:"Archivo Narrow",system-ui,sans-serif;font-weight:600;font-size:11.5px;
+  letter-spacing:.11em;text-transform:uppercase;text-align:left;padding:11px 12px;white-space:nowrap}
+tr.cat th{background:var(--laton-suave);color:var(--tinta);
+  font-family:"Archivo Narrow",system-ui,sans-serif;font-weight:700;font-size:13px;
+  letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:9px 12px;
+  border-top:1px solid var(--linea);border-bottom:1px solid var(--linea)}
+tr.cat .cat-n{float:right;font-weight:500;color:var(--acero);letter-spacing:.04em;text-transform:none}
+tbody td{border-top:1px solid var(--linea);padding:12px;vertical-align:top}
+tbody tr[data-v]:hover{background:color-mix(in srgb, var(--laton-suave) 45%, transparent)}
+.num{width:52px}
+.num span{display:grid;place-items:center;width:34px;height:34px;border:1.5px solid var(--tinta);
+  border-radius:50%;font-family:"Archivo Narrow",system-ui,sans-serif;font-weight:700;font-size:17px;
+  font-variant-numeric:tabular-nums}
+.mini{width:104px}
+.mini img{width:88px;height:88px;object-fit:cover;border:1px solid var(--linea);border-radius:2px;
+  background:#F7F8F9;display:block}
+.nom{width:190px}
+.nom strong{display:block;font-weight:600;line-height:1.3}
+.nom code{display:block;margin-top:4px;font-family:"IBM Plex Mono",monospace;font-size:12px;
+  color:var(--acero)}
+.fun p{margin:0;font-size:13.5px;line-height:1.5}
+.solapa{margin-top:8px !important;padding-left:10px;border-left:2px solid var(--laton);
+  font-size:12.5px;color:var(--acero)}
+.solapa span{font-family:"Archivo Narrow",system-ui,sans-serif;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--laton);font-weight:600;font-size:11px}
+.uso{width:132px;white-space:nowrap}
+.u{display:block;font-size:12.5px;color:var(--acero);font-variant-numeric:tabular-nums}
+.u b{display:inline-block;min-width:22px;font-family:"Archivo Narrow",system-ui,sans-serif;
+  font-size:15px;color:var(--tinta);font-weight:700}
+.u-maq b{color:var(--laton)}
+.u.cero b{color:var(--acero);font-weight:500}
+.ver{width:96px;white-space:nowrap}
+.ver b{display:block;font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500}
+.ver span{font-size:12px;color:var(--acero);font-variant-numeric:tabular-nums}
+.vd{width:118px}
+.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;
+  white-space:nowrap}
+.v-si{background:var(--verde-f);color:var(--verde)}
+.v-med{background:var(--ambar-f);color:var(--ambar)}
+.v-no{background:var(--rojo-f);color:var(--rojo)}
+tbody tr.oculta{display:none}
+footer{margin-top:30px;color:var(--acero);font-size:13px;max-width:78ch}
+@media (prefers-reduced-motion:no-preference){tbody tr[data-v]{transition:background .12s ease}}
+</style>
+
+<div class="envoltura">
+<header class="cab">
+  <div>
+    <p class="marca">EXERSUITE3D · paleta del modo profesional</p>
+    <h1>Inventario de piezas</h1>
+    <p class="sub">Las 41 piezas que se listan sueltas en la paleta, con lo que hace cada una,
+    cuántas veces la usa el proyecto de verdad y desde qué versión existe. Dime los números que
+    quieres quitar.</p>
+  </div>
+</header>
+
+<div class="resumen" role="group" aria-label="Filtrar por uso">
+  <button class="chip" data-f="todas" aria-pressed="true"><b>41</b><span>Todas</span></button>
+  <button class="chip" data-f="v-si" aria-pressed="false"><b>15</b><span>En uso</span></button>
+  <button class="chip" data-f="v-med" aria-pressed="false"><b>8</b><span>Solo pruebas</span></button>
+  <button class="chip" data-f="v-no" aria-pressed="false"><b>18</b><span>Sin uso</span></button>
+</div>
+
+<p class="nota"><strong>Cómo leer el uso.</strong> <code>máquinas</code> cuenta las veces que la pieza
+aparece en el armado de las máquinas estándar, los prefabs y los modelos — es el número que dice si
+la pieza sostiene algo. <code>pruebas</code> son las suites automáticas y <code>código</code> el resto
+de la aplicación (menús, calce, física). Una pieza con <strong>0 en máquinas</strong> no la usa
+ninguna máquina del catálogo. La <strong>versión</strong> es la primera etiqueta que contiene el
+commit donde apareció su identificador. Las notas <span style="color:var(--laton);font-weight:600">Solapa con</span>
+son mi lectura de qué otra pieza o herramienta hace ya ese trabajo, no un dato medido.</p>
+
+<div class="marco">
+<table>
+<thead><tr>
+  <th scope="col">N.º</th><th scope="col">Pieza</th><th scope="col">Nombre</th>
+  <th scope="col">Función</th><th scope="col">Uso</th><th scope="col">Desde</th><th scope="col">Estado</th>
+</tr></thead>
+<tbody>
+<tr class="cat"><th colspan="7" scope="colgroup">Estructura<span class="cat-n">14 piezas</span></th></tr>
+<tr data-v="v-med">
+<td class="num"><span>1</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Pilar estructural" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pilar estructural</strong><code>pilar</code></td>
+<td class="fun"><p>Columna vertical de soporte de carga.</p><p class="solapa"><span>Solapa con</span> pilar-linea (28 usos) y montante-ttp/pr trazan lo mismo con medidas reales</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>8</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>2</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Pilar / travesaño (línea)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pilar / travesaño (línea)</strong><code>pilar-linea</code></td>
+<td class="fun"><p>Perfil de acero trazado entre dos puntos (perfiles 1:1/1:2/1:3, extremos plano/diagonal, pinholes). Se dobla por nodos.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>28</b> máquinas</span>
+  <span class="u"><b>6</b> pruebas</span>
+  <span class="u"><b>29</b> código</span>
+</td>
+<td class="ver"><b>v0.1.5</b><span>2026-07-03</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>3</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Tubo de acero (línea)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Tubo de acero (línea)</strong><code>tubo-linea</code></td>
+<td class="fun"><p>Tubo de acero trazado entre dos puntos, con medidas nominales. Se dobla por nodos.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>4</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>5</b> código</span>
+</td>
+<td class="ver"><b>v0.1.5</b><span>2026-07-03</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>4</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Base de soporte" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Base de soporte</strong><code>base-soporte</code></td>
+<td class="fun"><p>Base inferior que ancla la maquina al suelo.</p><p class="solapa"><span>Solapa con</span> una caja (prim-box) con otra medida</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>5</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Soporte de peso" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Soporte de peso</strong><code>soporte-peso</code></td>
+<td class="fun"><p>Atril/repisa de discos: los discos se ensamblan por su orificio central y quedan suspendidos.</p><p class="solapa"><span>Solapa con</span> una caja (prim-box) con otra medida</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>6</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Brazo de seguridad" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Brazo de seguridad</strong><code>brazo-seguridad</code></td>
+<td class="fun"><p>Brazo/spotter de seguridad real: detiene la barra a una altura dada.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>4</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>5</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>7</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRqoFAABXRUJQVlA4IJ4FAABQHwCdASq+AL4APmEwkkgkIqGhIrFaWIAMCWltFchQL7G/exzd4/Xbk1yrvJL/tKA0dLtajbB3Zun52W9/P7rdMXPTJyMrwVY2/AAIpj5d34BCDDy1VyOgC8W20HXcV8Y8JVM2+/7vyg8cujLu/AIQLgCgc9/1/FQuWPjzA//29HdAeoROh3SfTfHO0G8ofBuTGzdrzcr2N2wMNDl1RTYpIJP86EzEp40i26GnHzzduh3Le1HQE8l/D2s//9g1X/WQxWEaOJAX7YZ1EArh1EjM45qeuSzl8Va98600DRgkpvujOY63eTXFeJTah9maogKmogD83itgARNDDEau84C6zKOAAP76KXEECixAABKT30j+JO6mC2s9/m/8IdUe2P8tUyp1paiID6iMmoUbR8UYGbgIdpTJxwA5VAAsqxeITCHOFoADiwALDwBzng4eO8/SiYUADyYgAyUUyG0XeVl5ygD9AccyxXdp93lMxn2h/aU3tc18067mdMZ6Hz3hGBsQt1YYG6YiWIVJRGwCfqscrZTl1KzYUDbewwJU6TidwXBcphkAHJ6EDRf7Bq/g/9Rzsce+v4lSx3JhWHL/XqloZ04WxFxQEA4gogvhOlBuekPNFay2dByYfRiiy3JWmpbjKIf5eXItQ6uMED1NWtdzXkgTovLFF5dxEZXduJRSjF+AyCPdw5Airq0N3FfbnlIR3aQ/xQeMEU3PJsJdHxsAlxgtBuJabIur3anYP8UvfI7f7njYaWEyon0GHwR+JNA7a1oWb1hRKZ4g3Y+dJBoxkrxsBtCk1f9kQZAvvCgsXSLLU+swJRUSDYwbVPqVr69//VXQN52BZZOWcxKkSAIkZH1z38mnbPHrDRPCL2qIJd5qpLChUZTd3dXnOQmbMKVmw4FIZs4QhyTo5qA+14MXONC3MYpSOcS795VfjF/n/JcQ/O9x3PcZMt4r07Mx95WZAP1FM4cCt4mMFMyQdR2+33NbIYyo1IGBpBgH6XBn0dock0Je8jL5hBtbdmlfqoFFmmPXPGI7juuJ3iwOeWnbV1qReDA4PowIhLhj1eXqk9nuxvQKDvxa/QvGPmv0EMEe3NB/XJKmAl1DkEUdwMay6+5OF+6buigflJj+2hjwottwCJnnhYWQ8Zu6Ys7VypdWV6fo3LPWdNvjoT0PUDNxd0FXJ6DZ8KUVabV+e76i4zW/U50XsNB1fRUoOCku8kgGTqB9ifks/xe+nGppbN2QK2dim86tKRV6niVd72EtjitwWjLALtuB31M1VQRXQFuYwWfM5J4S79rH0LTeEljAWhmCFe5w9YqSQ5Co6cLTIYxJt5kia60ohbpFUjEjTeyc5jdM8h7mXN6pikclM1C8Pk3Uv1GDaG4doA3Hud3CtMUUQeC/eGX52QJHKHNy9WcJEao9jdS3MIHEL4Lao0KKW4O56ygyZ1VPQGQEocK0jfqPa0zKpwnHMWq01rfEUIFF0me0D2qIoXJlAt4qeeeEU6kj0Up9ycH8Qv08daFYcEvNQKRZftjVnq7E3IUJff+W8Uz71HaOLaYfmYKs17XAVucWUfMjiv8SNRycpXDweeTFt4+xvIdPggmWWCv32dD+CIcVwVRFhyX9+uu+He0YeFkltByeH+AbJc78hxkHkrGc5kEEdFhreUh5EpTLSQtI1ctAMlVFWCfcOnEQ5D0ne0m/BcfDQ/gBI//up9X1iBGhLuUPooMUmbaHUE9EvxmVOLUn9hyE+O25UBMIPCmSzzMN8lv7OugelM4pU6K4NfkwPG7ektt9r6eN6CTyrgrC03YoHYHWOUguRpD3klV/nDtRBWkRVXPckHpHfTSuscQNjYIYP/Oc/E7+jnYtLORBd6sE2IcwUyWeSFr0bArcPGAn2LO560mluUkriNwoXhiwk4/PDyx8VZQ3gAAA" alt="Pilar vertical TTP (5×7×204)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pilar vertical TTP (5×7×204)</strong><code>montante-ttp</code></td>
+<td class="fun"><p>Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro).</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>8</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>8</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>8</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Media columna POWERRACK (110)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Media columna POWERRACK (110)</strong><code>montante-pr</code></td>
+<td class="fun"><p>Tramo real de columna perforada del POWERRACK (7×7×110): dos apilados forman cada poste de 220.</p><p class="solapa"><span>Solapa con</span> montante-ttp cubre el mismo papel y sí se usa (8)</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>9</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Barra pullups POWERRACK (106)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Barra pullups POWERRACK (106)</strong><code>barra-pr</code></td>
+<td class="fun"><p>Barra de pullups real del POWERRACK (106 cm) con placas de montaje en ambos extremos.</p><p class="solapa"><span>Solapa con</span> brazo-seguridad hace de travesaño de seguridad y se usa 4 veces</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>1</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>10</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRpQFAABXRUJQVlA4IIgFAADQJACdASq+AL4APmEwlUekIyIhJPI5CIAMCWlulv+9TVoBPwTE/C71dOh0y1P6zxN6YaaB49Pp/2Df5f1NxqO8H0F13Kmo5hccHgF++6ALbvU7eJkLqf3h/k+c7kafsF84bVLnwyYkaulJeETBNS64IKdcroTVUH7oOzKrsRa0gjO9X+MLnDNxAihYQARGnf7Q01hHRKZeSDeNZt4OjIkeWuurhf7rBl8lXzH8dBj5E3gg7uZxI8rUhEKzZwRdJgIPUvcCkjXKxorEWOJQashikoGYO0wEGqXyheTgKEqDXnkHeGaxwRoctoQ5CNfS6M3k+NyVCYl0c1D3ueVj5VV+Wm/VmTuXkx77/0lTsta4s02/3LnSxhZ91naWHyJ2T+tYQqcTJKMKrzYWVV1rYYAA/vvb3EcYzifOV1Prmre2kIi+2+6EXV+te38+57kFJtuc3s7rlIhQqYg0DuCryU2NKJwaKjjNTtULLnZlHowZgigVfcLTgyPKjw7joOV+m4zUlE4kVKg7fhu308R7fED/4JHgvPTg+IV4CAoHKQIOW2uIZWKvHWkuTY0eYO6GbtCn8mLwZcFxTMSHlZGpUMQhBwSEJlAUAfY1xh+Jvk/bm8pHeyelS2em3tEhxS+r0Ef8XEauaMFpqOUalr4pUAMSyCJ6qqhOmWRUq6zxe8mCJAcbtSJmoJsB9WAC6jrlQLTk9o4giXgA4KEktQmNVNYZcQOx8zNfWnQ9k8L6zh0EtZkHuwc8EwxpqDVr6jFqvZ+Tglwf53v+8WduFRwgB3eY1oq1nY7iDdTtuhkehfdBkSjqCAQ96OqMEOYO+qHjdr2yUVd173fW/ASw/D9qCys9FkiV0hwFEi//XZR//9DAVbFGhj8N3Dna28azIeZKpPRwb9Wy8/VwtKckhxITR30ujecST9tkA9zGFibjGDda4toBd/VuI/1optKUtzmDgYhXkkcxM72r/463Ed4uYvbX0vNoWaSGuXeHuY9oTK+erSxn5kp8QTnTVotVMPJDSaLloYrcAwwBPWa2vmqp9yU+ugjwAN24x2t2rgsBNqzszrRMhxeT0KgymtHInp4NobGVJ4T+2NyZljl9oeDdGBETX/YaWBKzU9APrT5zI1YAMRp3vP7Xo9v6q1pymN4qnBgZwyMjEgChiCrA2Si4CXQ0+cXxecFoaRMZiRtFvc9YTTfb3FPYik5R97Z1E0wYnFSP1gSZphscs61baIOJaPQCNDs4mgzkeOXaQiW2NiLahTjIV6QEiGwB2MP5wZqn+03QhViSbf79/+cXJE+fwDXh8EejqptV60GMUxMo1Uzmr1J73SzZGBnpxMTbB5bBqw/Uo+mSRRkj+y40IXv9l+Lvd+kDFR4dpwU/kO88NN+yZxEeZBpIvVPv7HkbtebqiE7c56rw//9cKuI9+c2sxwnGc5T7hzXVCLrUvMDpE+sUFdnX9XOS1jUbb/wGXplQbBSAls1qhoEtmtUSfA0jwT9lhEx2e6XyYnWc7fp3HjfvK9w/KGSMjFFNzGwuDg7FLZxqGzL8iBqS4+XV/uIFbry68zVmQNk5fZEh/g/iPDgvPDv2lY3Z/PaBVmTpz4e3iWKcrDIqO2dvcjlUCXNPzDO5jbRlxmQHXpo1+9lnoTf/rJidVfn+TQiYfxn989AkMWv+psy6nGLMfjkRwoVdhgvURWCagBeadIr3Zwd7Oy4ftxK4wmL0up5ISzBwJccAGg98NX5/mXq1wD3ejIhnQIkJ9M1y3Q7BNwKHZU9nJOT9or+1H9lODvcIH8fTBhFfQkDOcWfAgAUPDrO5phd4dWAUAhvkd6uM2k1Ls7ypToBEpubQG1l3WTg7Hn5cL8QzdZ6aXJNAVvM7bkPCopWsDJAMPVlocwAAAAA=" alt="Anclaje de cadena POWERRACK" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Anclaje de cadena POWERRACK</strong><code>jota-pr</code></td>
+<td class="fun"><p>Anclaje real del POWERRACK: su pin posterior entra en los pinholes de la columna y el cilindro perpendicular es el pivote de cadenas y brazos móviles.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>5</b> máquinas</span>
+  <span class="u"><b>3</b> pruebas</span>
+  <span class="u"><b>7</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>11</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRkAGAABXRUJQVlA4IDQGAADQKACdASq+AL4APmEwlEckIyIjKBY4OIAMCWk7ZfQC0BfzJqtOirL17v5V4udqH/AZLj89/3/9e5KO2I5Doy7n6elvYI/WQVBb93QlXvKNxgZQRtrCFWdOGAI4X7AHm0uJ/wWe9NM7vcNbKxiL7PdHTB+IJ07hHbQT2rDp5DP00zSfWNjZodKqfo1ZoKcWHL/kguizyNc2fYq3IxJIi7ltQcglFLzxOTN3BlxLBuoz34VsvpWvh4PdN6FFUVmc+VAQOlVISTSLJvGsOJqYHjFMLXkROeN/uGbEcl8voasrpFus2K7/xlL3lUXeOfnqoX//2P5hJdX13e/6myAN4OSQ18qayJ/GdfcsjAgl/1hx5ozKFNAGUv79rAESES9vh5v7AYf++qWfbBLstQAOPCWlFzRLcvaf0kM5E9ZKz/l8Q/0NoEME6hABdzf41k8uEAD++uPmNLLDKVe9ANj1/yMBsev+VnpdbO75bYLcvavPWI40wdckwB9/pOzSi5jduWVujm2N2TC1CoN3r/5tELw0X9gbSHaFf+ySaYEFZW5kAg+thK50VLIu1dqA5HrDHV0vf8maCwsqJzIAsIFQFkQMnGJC50fWOpQBj7nfsXUebp/1OsrvogPs/OFHU9L0hq+N0KC36XEOLO4jwASlPRztNWLOhAsR0cbIE3EAzgF83GgfI2msFyLoNHKrB++nyj/xpsOB2GJ5frIBshPf6eDv1dvNpuMEk8BbH+P8s9spCsD6aZfIo+o580/ERT2UWzAiezBXJxuf66W+L+nDzg1y4+5eV/C7cIhkSAg14LY692qvBNlZZiptvG7hgxr5yo4rivwuKSKm6AmJYYrCkiNLagezsNxIluVbZUxlfkFv1n3MWsOVglula76CGJ/mSgE34qmAXLBxxZr7G0j/50JevjIYs0OY9kksKadJ98ceoslw4oq8K5sTtp87yp82d66yBeehRg/EsC+rP7YRngn2wyxrEZoesV/fWqqRVQ17DHeZYAHKJ0hYKdO2a6ALRXPilBOqlK2Ri+oQEriLH8Yy5kAPjhqtyBcLjvx3RFzcsgfNDm6yVbnyE3d8u28JmnQ1JcYoSAYjc48mLA5upa19XSKfLh9dH/mrDrbjqcEXWbpTqi96bonc8BqMvhuIiZLz1z6ze7+doffOeIZpeHaW6GLu93QkwdUm2forHdUWZE4LQ+c+Ww/AFQhLdzZvYtgJ8U4scPl+CyT8Y155K1iA+J56fX6tNnTSBFtP29KHovP2DjXaT6Sxk6W9TTPdhG6IQAKPtpubqRYqp/J7iwcSgxga6+euiL/DMXp1WxfHVl1AwaTIPLi3SO5rzd2a3EiN2Rcgoqja/d10Il/VXsLwIor/ejyNwCFAbJIDgecZ+RTRJfezTwDNrr4UMoMUTU/Al6JjpegL5Of94EaBA+SLGINr0cpr91VxqBtYfWx8PuAK/0v5HpghgZqobbZwAuUHnfZgMbVQV+9702Z3tGkhsMZrQBCpZ61y+XF2c52RkkgXCcoRBEr0H6oEA8qCZovi25s1x2jXCDeV5SxHf7HqyHQ5QqnScqxdtDhPXIe/Eaw+/j8BIxcadvlLwb6J/bbqu/IO6zPqswEH/asD2LbA+36F7Pgnu/N7Y8qg/J8tjHV4E+yGP1JegCONgpS6BIYCTrIRXOzQ4wu/hh3nx3B4MF5LN32+ndYCTjfqLTyHSjS8r81v8VVBZEDzQaG8X9TBIQBTFpKPKSyUYfPvzZrPy/sMwFSUBfaR4B/ryH4zs/U9X/a+E0LQDAho4XqvfloU6pu13BW+7pFmo2Jrb8G/5THk9816h742BOT2gO0yiDUEo68rSpcYPnU0xAEaxJLPxvVipoluWiHhCwiW1LSxh0UpblxBD+YFCzPthY5wharsOryKS5Qj7H+mut/LgE9yuYq7PVkBnztfPUb1cv5wwt5nRgxrq+KlQVJbXQceYIld+vmYpIXqJaO/FMUdct34FwL+HKMI2G0bN+xPEGVr1vM2MWz3UdSwnFemCcNp+QNQcsqEzuUpvH3NyV2H50aUmFed4CJ654lwKjb8otJ4Wwyrcj+Fq38UBDyZQNuGGcmNbUkDW6TohUbAOiHZNAAAAAAA" alt="Jota con rodillo POWERRACK" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Jota con rodillo POWERRACK</strong><code>jota-rodillo-pr</code></td>
+<td class="fun"><p>Jota con rodillo real del POWERRACK: el cilindro es el pin de acople a los orificios del pilar, las placas laterales lo abrazan y la superficie posterior con tope recibe la barra.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u"><b>3</b> pruebas</span>
+  <span class="u"><b>3</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>12</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Correa de seguridad" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Correa de seguridad</strong><code>correa-seguridad</code></td>
+<td class="fun"><p>Strap de nylon de 3\&quot; entre montantes: cuélgalo con la herramienta de línea (dos extremos).</p><p class="solapa"><span>Solapa con</span> cadena-seguridad y las cuerdas flexibles (+ Cuerda) hacen lo mismo</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>13</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Barra de fondos" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Barra de fondos</strong><code>barra-fondos</code></td>
+<td class="fun"><p>Agarre paralelo para fondos (dips).</p><p class="solapa"><span>Solapa con</span> un tubo-linea entre dos puntos</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>14</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRpoDAABXRUJQVlA4II4DAABwHgCdASq+AL4APmEwlUekIyIhJLGIQIAMCWluSV8+FKNbmRQoqQHPgWUB/x8lBPQsZbtDudCRqhZjdDrtMadQBldutWgp3SbwW5LOThohkFZkHxZvzjF9fGmILbOWqzJUQ2PSz8eF0WDUtMamukLUCDcJtPHQTyRrsICkRJr124ZdowQJChyr6nMvSbCLUHYbTotaMc4RdypIKPo88nn+b+NuvZvuVeSmYroD+LjNo5r6Lc5tOXTH8E7TYeTuw6shTdzWsZ+STuvLCKbhPI0bSKFy9Tuw3udTsq85uBw5aBwZaiAiWpxIEUch1ynwgSKnUvxeBaYFRfruLiAA/tdbbhGOKS5PIn4KAXUav1zVv0Yh6l9W+WUsy6v6xe87htNdoey1gJm30hhwMY9hwigAOSIqvX1+sYF8FHitJx//Iyum/nACQkk+QXVSVyEfAYyP0lm1hnxp8Pb5k7ujTa2k4rMTKbnW3yftA1SwVT/9onmThPOyYVTLn+qX0zpaLc+jXJMKleEvMz42TuBac/cPkQsERpzXFBAXVUJ9AfXW2ql/jaqqJK4MdjEeFYNDLAg9r0CQHcXkjIC4KIgQDpNCzk7Tj9Xuq3k3TojxCllZm40jEYbUCDmUfoWTnr6K2VBb+PKFBSKev2qK7pfGdQP2Jr51UQwJWJmbD0qoRnbmJXNyYuvwQRr9vRzCHqtGg1Bn8RMjQ0uUd2iFkE1cv9FKecmLzUh6+ewaqF4KodV5BRbqSU2MGP612YFQWFBees0Jpk1N7h8YIAm0PhBd+0QmT/bew4QBfjU18Uk1RNGJI4ytO08VfSlQRlYgUEjhCw892jvQpWZ3vRmtqWAZsUB0iDBGDokqB6QRPs9EpASyk5F0aUMLKkoVsjM8IZYI7YU4mEDeBBo8Ab3pnOX0dHjdA4fM6DKVFbrR8uBBSjDsxXQEqyt3BE/b7dbPbj8+0IU0v/H7StkDH320sYlfT6KfktKnQLZA+gVoLPuzZyoayGvMoAyXUYNKp14nJkw5u1Wkr8/nY5TdxXePNU5cgkUQfuLMr4IjLHoUNb0ZpF26afC21y2Fzwj/yzIpPfD63EEm7ebVG28Bb8OqiqCe1rYM4MS58xrr/vMcfETUUWLUhGzM0u0fwoAAAUmlgRKqox55T8n5gY7Q82Ndf906XPXh94KEkk7o0LIt74ZkGrQ5jXeq3nBLnkvrVcGaAAAA" alt="Landmine" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Landmine</strong><code>landmine</code></td>
+<td class="fun"><p>Manguito pivotante para un extremo de barra.</p><p class="solapa"><span>Solapa con</span> un cuerno-carga anclado al suelo hace lo mismo</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Transmisión<span class="cat-n">6 piezas</span></th></tr>
+<tr data-v="v-si">
+<td class="num"><span>15</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRhQFAABXRUJQVlA4IAgFAACwJgCdASq+AL4APmEwlkekIyIhJXaoWIAMCWluJic7QIorAkO9egDbNc8z59u+Z7y9kLcTJogWEjOPKL9S+wP0jg/xBHhuKvtD5UeP/AzC0BC9xH4o90X/t0FPSA44zHXacalePAqQ/F9RRVMLAmKlRE9xYGlyhzYlf2B4ReciC31G/jDq97vamh7v5BrvmFH6iTT+fWGV7EIEMJ8KJgRZd9MWZ14VO/4dOLGAx94Wb7t/rDhIzRqWiRcRB4gSLRHHcoMDHteFzTnodbCFnZzsrTKpo5euDr70oyGyz+l+C/z3mndsWO8WRkYhmSRCC/iPJ9piaBxF2wMK6cYL1e5gkpTNSruwQyEY3yvxyjrJiTCU2YIF/1FoBzZYqCQlbGbkgviVoG6ESG8jv63v8iUYNyMo/gsqQYBh1mfQAAAA/vqmc1MKREOaIZDSf6P40z88ZCnDNIIr2MKUjzX9E7uauLp0Q31zVvoSCUz9CdFoemZpPAxff5B9ZCgQALHQBoViIAQvACfsAXlW8BjAv9BH/hIltMTXf7neuFDgWOADw0aaeY4rgBnyvMAyqL41nU3A8mFroC/N8ki4OhGfRYz1ciMwUDQugNlFh8zBgXf5roIbucYEz7GaBDPijRLM3IjQ8Sh4o36XjImY9w59orAbgw2vYSyb+txQWuD6NlzKi20fUn/ur83QEPdNcdLTg8/j6wiFh2Kas5Qx7PYFueG5jCBdlaKMtl3+mqt5bZ5E+LQyaBEr7UB34BlZPoONKc6TGRse0oQlTi/Jx6+Y1UICSja31t9inY7kb2egH+uYBYnJLQRLTRHtq2hR/PY3pwrx7dd0ZiuEgxLZ0Tp+VxQhATefhLkFz67NkF3trgOX8NRk4OZfopb/91X7qzvnobs1HtYMBkA6EPt8OBfJzRaSV/m1FFO4knGh2oCTIMInHqGGqRmZiXN5Z8m0s30MIsWZML6BFtS+wqqz3w27p7EhcuGNL4VFzqG2ajp7OYYiyPcjlPIpQtDr/B4FrN/FFOxEB3y0wR1rKHnyFKgjOOvjCfXAGb5mOTwgxXYvVSYUXiVjF+y04N4Sus647fWSlAT2ioi4PLUtyR3xYDg+T2oDNku5dxDFHZBwXSNTxx+nx52t9jY69mAYuDhgWN2C3RH6KSECqYoBVJeQcWbrSntpYsXQ2HWlaYU/1jLcym/UBXwNzBu4MEmdYmIu6c/JKJWDiIYSb72u8efSH+DvgbgqUfpqvJ0TVSsl+9oAfpfka28wikzDRSCwsvA+m78znwIaKjIiNoMXRq7G0HuAwb+b4DApvBlv5XZ41rtOykU0A4NXZJfu4gRFzeBxYXrBRlhDpEgSWX2F2BrpBvlOXOr2IeG/3OG/iC4CobbjSUEEPO+a6MZOcEZX2/HTO4AItyq5YfZEnXJ7K/625QxlYqmkycKTybo4jEvGiYa4QwiIDAjyjyNKcXliQAfysY1jt3qMa9CiEUWskv/6FAbkYX5tbgdDXOdc57wwB3dWV7qDm+N+r9+Cg2168MDP3qo1BaY/Vd54+7Ive/xTPVYYQOk8wo3wKA51X7NtmrvCAc4w7oK+WFD7qqUPwXwuig8s2ecSyGXNh5+iGXCKkjvCe3wPuOzwI9izlRnQvqxFoivaQ8KGrQeKduU8QY2OtSkscnxplWQO850fjJyLE4FFeia70fX5aAA4wN+FpoQ4U1U0sSW3Fxu7vJAA" alt="Carro de doble roldana TTP" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Carro de doble roldana TTP</strong><code>puente-carro-ttp</code></td>
+<td class="fun"><p>Carro de poleas real del TTP001L: puente movil que SIEMPRE conserva sus dos roldanas (sup./inf.) — transmite la fuerza entre dos tramos de cable, como en el TTP con torre.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>4</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>8</b> código</span>
+</td>
+<td class="ver"><b>v0.2.2</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>16</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRggDAABXRUJQVlA4IPwCAACQGwCdASq+AL4APmEwlkekIyIhJBR4AIAMCWluvcEAZxHciVMdfkadLV8epNy4PJw7ubcyxCuFCyfhM7u8AJTt9Iw6riGh3uzrpMViJ2QLXluMV9PCGZ51ZARAogOkFo1fm5SghViYNI9kftjvGA0zZXJGhZl6NPCtXyzrIhxwQpapJ4B5UAOqDhOtAXK6mlRGGbgCMte0o99oGtXh3ldNGwOq9BWbZw8C5tGAslhTA2UkgysNH98vP2JE6LGadlGGUVpitqogrQEuIKH7A8ubS0cxwFb6r8tPnaxi6GkjF0NJGLmQAP7Fy6RbdK+ucKupe8sE5zBXZ4y4BBrzg7HcAO2yce8ftWdR825+MFqjdkxuUY6t/x/rlGyuFvDC0P3/wU6OEqcxLw4RBhMZnEPojkmdhdG/q/Q6Nt5HxK635a6S/E53eZ6INX05H3UTPhDe1tMvAc6Jsn+Q8KDjXzpVv/Z4joJcgfe2bjXFEfC4ftE070ttTj/XsKI+vDdCotBQV55JUMBQ3eRBfAsSsR2cfVdhF8tYDeGbDBFeny1k5aVF1C2Aw1zZf7dW6IA+7JDTMzoW118a1FVVO2dpZraP/JZIP37wsJj6BSkpMA4E5TAHvI+cgnL1Q1Vja1jxDuESRoGpSjtIuy1ByjhgJ77FpB9SpkfJTEUK+rpJTD9pjLnXQ0vHzDibeELcwe7wlZ+36ktL16mSMdeGnZt+YvSrllpqKFSYAUUsCpI4nKeR9tV7XDTuqAKNnSEkECyBM+3mYOF7xldEzq1NWovgAp6K5ouir7ltOeCCkRj/P3ekVj6E9Af5kZaEoEkWU0NY85wmaKuSelEwqfoIB6cdDOXCTD/STvqATDOy751vEJYUFmB2roQC+/kNyKZ5EZi8HZMevvoG63MGUVKXZugBI5lSHXZmvCN1sfvoQFBPPMAoI4DFjHjxyCrHw7WPbZy7vD4xcM83d5s+OMa57je+q/6OpuZW6IC1Z/h139XTft1xmSC2AIkXYTwAAAAAAA==" alt="Roldana" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Roldana</strong><code>roldana</code></td>
+<td class="fun"><p>Polea pequena de reenvio que se coloca SOBRE una estructura: toca la pieza anfitriona, elige el punto de su eje azul y precisa tipo (interna/externa) y direccion.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>26</b> máquinas</span>
+  <span class="u"><b>4</b> pruebas</span>
+  <span class="u"><b>32</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>17</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRj4DAABXRUJQVlA4IDIDAADwGQCdASq+AL4APmEwlUgkIqIjoZJIWIAMCWlL/3vuoPXxZAIqKdk3CNLi0BvFgjKsHGlbMC+mlv3+ZoBf3Q8qffVA9EDY8RxsgRxV7kEL0VHZerqTREkUvThWaHTIhgxFO4Th3ehENHTwTtbt6c0DssQCBjsa+KItNu8X95amq43fhfnBj+XoenCz3nxk5BPcPj82bXmtJ7ycdSlRUxKGbqaytwdU/rbP0ajcfTyJD/l/QNZcRogbxqxqVEDqKbB4TNT2EH4YCPX32WeIsTjOMKh2vWuiPSAA/vtz57x5180sSn+lGLwWmF4qDS/EE0zxuvG7DGfTIjkDyTe+otL6lr0wd/wG/4UHPyGCIeiAIJoc6j1AZPTSFY9zpReBEMOwqYew1tZ5+gxwWX6dCCAnJvyGfzwDqOiJzuXflDxWDr/ntK6rCYXt9bziaUnk4NdmZ4gujbfqm+O3thCr/0E6OzZIBP3IXaMySggRHhSaDA9UKyHU+Yl7TE1YRBMjmHBnzk64ijHh30Xy2LT4qF2r5YovgNYFKAFaBqndjsFkriGunBl2sA2SX71Ioe+VpUqYzdgK9WX7qngGg4wI8qBikMMFWwLuaPxMfXlre6FvyG/ELCkqgj0AcZz1wRz/3o4U/8AbToRmk/awFOLCU8rBN2hFeC1RwNmawOBUVbXiMtAU0jxR8H6wqQzRNDjijsjMaRBiI4WgKz9wCf+8bvdCkClnkbAFMwBc/uLWjwzv93HDChqeQDFXD8qqjZSzEsSr9vCJ9eOkwFy5kXfnBzWguqCGU8GEkg/kp9YDoMvOx6T/M6rCnZIg2YYjfqIxZWXkAClTazEcuuojR/hsNcIU6nfCJk58e01znD2Y/wRZSms1I7vDInXmJGFCu+Y+lf6fWzVrqt1l+AB+zjAQc6LRw0mHeWf0/adusvrt4VTtRf/inrX+7vN3HyuM9FICGXE0Kzlxj4PFqd0zfNsHkPsd7rAAlKLo6z6qOU3KUoMz7OvBy7E+KLBJRSwxdGTaHGg0VBVYzuzKPwDNlBVTNIaBvYBdzSWHMQhR9rxAB5eHn0yYfCJR4oKai0WCD1f/AAAAAA==" alt="Terminal de cable" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Terminal de cable</strong><code>terminal-cable</code></td>
+<td class="fun"><p>Ojal terminal: punto de anclaje de cable colocable sobre cualquier cara de una pieza.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u"><b>6</b> pruebas</span>
+  <span class="u"><b>6</b> código</span>
+</td>
+<td class="ver"><b>v0.2.1</b><span>2026-07-21</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>18</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRloDAABXRUJQVlA4IE4DAADQGgCdASq+AL4APmEwlUekMCIhJHZoAgAMCWlujzg+8xARZDQBkgFkj2GapFMqkoTk7QQ/LdyxjAHhLz48w7maznfwCTZ7TH84NtS4ljEnheD1K1D656ZwPRMpbVPumJigvlpRbpnze9w1v/6MzcgYyQfrb/bLjCMJ9Dz9YbVx7Cakr2M0gv56mQFYB4jxBvL14Jdwi1L1IpNcwI5DBTE9rIfSc12TDZ8sbQkAvlIdyeYfNYKksPfflSMnByzrCUwS66TsFEWnXkthS1bKtznFitSAAqou2SOawLXCAUQAAP76lAcRihKFAIHHpQBAGaWyTI7fTCR78hPwVGj8joa8BqnrtLH9ajKGkKD/q0fTcMbU3UHtsokztPrSfhOyK6ceW/fBN5xUvizTc8NSTyLjSvPgqVllxbLM4NOmJr95GrRiT7GL+XhmeOl2cuUMCbI9qSIHjqprj1QrK+LFGM8ln4mgZsB8o4ymo8/FZM+d7M8ElUS1UDRR2hB9er5S5jTtpIfYl6NgG4Cro5pdUQhVU47nThDtKi1t6hKZgOV3JKFZUXSQBA5VRpNvDiRD6NspuKlGPKlvvRn7H95Vz31JkXHPUdVkhStZnBJkuQlGKt9C1MSSx/VdUSWKJ/BrkZxnSv+orv6rqiYaFXAYSat/P+ZhSP6WToQYcLTBIv8laNENoyFiReFKn9W1vJJh3ay2z93HzlqGeANvEJTGbPyzoNC2YaDbN+YPoSjZ0/MXU2JBWYLiUIUDJ4f0hfLfoPk9UaisIbdZhAYezrH2KPAzbEalOi7lE5fIVh5PiL7zhEBvprAXfA2pJnDlcz+qx/PV+FtapZrkyQ5NrZkD6jatPhxRqqKLzfFBFTgEN8FTtKmLWfbr3Sgh2c9mE28Bx7l/jaB7nBJnwF5sF9SGbA/3R/5Uh/cB9vrUtCoLNSZv2NBmdMVCqKnY9gt3iuxxXhaAfZdSuDE8Uw6UUkOJ/AIgo1wib9rvGRzUrKqZVHYfb9Y4+qvGTfR79fx2WcBkgV3NVhs/osdOzG+v+cLMl5eNnenLG2usY/SJ/7TWDItA25eooDfDBUjSv85DKiEW1QfhU+kvi4adSspcZ6g75At+KvPxdg4S0AAAAAAAAAA=" alt="Engranaje" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Engranaje</strong><code>engranaje</code></td>
+<td class="fun"><p>Rueda dentada para conversion de fuerzas.</p><p class="solapa"><span>Solapa con</span> no hay transmisión por engranajes en el motor: solo cable y poleas</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>19</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Cadena de seguridad" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Cadena de seguridad</strong><code>cadena-seguridad</code></td>
+<td class="fun"><p>Cadena de tope/seguridad del power rack: cuélgala con la herramienta de línea (dos extremos).</p><p class="solapa"><span>Solapa con</span> las cuerdas flexibles (+ Cuerda) las sustituyen desde v0.2.x</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>20</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRhIFAABXRUJQVlA4IAYFAADQIwCdASq+AL4APmEwlkekIyIhpPRoMIAMCWlsz8+8lf/7lfOXk9n/XfeS/US/eqhqKc8lZKGQI/RN0IWkFjut21aT/DCojbl+4RUhQCqwB/dJQd/HTCskOdhemt71E/eOZK/VmmcWmD24zcsLX2R12uVvKV12tz6sVA0Ylkq31DceOHkR1luNmVm21ltJplpe+mukfeM/MrGQ+Sli63Zu1zxNclSDwVyZCvhzGpd21jkhrPfHGzePQJDP0A98vxqGIlwX+8CtKyvVV05qzKbTkzTHRENW6TcNuuf5tDkgLPC1D1ie/OAs39Xe5iJQpebRLrDyhIXDZ/R3uvCBxqyh2DcJUW+aMx/eySkV6pAaLvADRLH0cAfM8PsTZuEqqXhI/qyPMhbAAP76Yt+rbvKxCRpUjmCkTMm1a3+FTbsrCF57WO6blGs3EH/3kbID6UhmmI+2QCv6kV+IlHUSvzVZP8jov3KIRF+eaYw1GVZay6MGsUKF41MkVvuZCxXGUUEKZTh1D8FbLJEtAZhh10JERcTVuKx17PB5avOwfTyjziNKlFvap8+QKpnbW+8YgRizOjolAm1kGvCP7n9srtNxUZCnQ2b+Kt6GXhKQlfkesTXxQX/nmnMFygTOyeGcqQjD9h5uPCOgzGlFF602v0cXruBAWqgQKYwQfFEvVjkce86Vt0M8xRv5oKDmQNHqxguWwFEm0CdDFVYTwAAADmy4p1Rhc4Gs2rZlGOQJP3fUTjzpEiQi3uE4tQLaMyanMEw/hC/ku640uFpM88X3wkv65BDO6mOkh7ioRVa8e7XhG94TAA18bdws4N1Q7c4ObBfl1LJA76F4W53VQ/Ub7TrJ/fi0f0qOf6MEQfAi5f8QmQCTF3VZ/t3Ym/DHEM2/ppae4CbnVyFRv8YGhCkpCEv/keGtVEf/klBcXNUwGHXiWx6wMCX2HzzKG4478+kukk+AFvuTUKvMZU7V2pX+ssyFixW+WfPnWWAgd7so17hF/79g/mXnMZm+jIZJ1A/4Bktu9/H5APBnhDpQ44JySGVjjutw7IETdtl8/KDpx7MDJefzg2pYQhm4xrKSjnV9iILIKH44HXHmkZdNpbA8JDI6KxQaf233o3HHCHazCT3O6L5Ja/ft+/JXC0VcG7zQFLh5zYQewL/pFz3IybJ9lIkAy4xdlplxM8c60W/PklYGNsQCJnw+sL+ORvkb7GZp0rOl7YtqUX+RQbOE49dwv45I7hHeHnlnmpHO3HU83nuj5ZOkrJmcTfhACTBFrzO0y4Zx7FyeWuj+o44PKzbHaUBeDXGE2AomvMcpvHpJE02IRt7XwazZGhe71dhTjIEeNNaXjTv9PmvIgvB/mMgx3sxSzDDTbcyyO2AsZI9Vi1cMVX0pDb3iIw9/+ocPJFhfcw+vkrXVZ+nS1SynVdflDzgiztTpTuUWUo6W2IJx2tdnHn3SpDukVvsOQfsHulHnV6MoqmfxsPTNQUgoTIwt0dELg3zQyXeKjux03GfmMO0Q5/1Du+0pkYpNwzsrvQnrQzT6r8D9AOArzmPMBgv0oAA0Gd8VPDwUdI6V7nYDS7DBE5uF++1g0Skrko/+WXbdfJHrssQ4tmeQU4AWf6tgVEC7L+YLFeUElmJiqo0sHxXqa7FBMuaa8+dZcCI3uIzuhqzkNuNUloUDL7U6MOyDkAXhwYrdZ/N6PFf1D09q0IoqSjM0hwAAAA==" alt="Resorte" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Resorte</strong><code>resorte</code></td>
+<td class="fun"><p>Muelle elastico que almacena energia.</p><p class="solapa"><span>Solapa con</span> no hay elemento elástico en el motor de física</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Movimiento<span class="cat-n">4 piezas</span></th></tr>
+<tr data-v="v-no">
+<td class="num"><span>21</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRpICAABXRUJQVlA4IIYCAACwGQCdASq+AL4APmEwl0gkIyIhIvnYQIAMCWcAVn52vdc6wQSHfLq+mCKzmIWXr5ux/OKG9iL2ibqAZrFaTftygMRYHeUP9igu/AKnLjEcvSbMK9ZO3/aDoRlNYaJ+tTFbZzfm2b8fDgT/4O9cqttPMCqnSSkEUGdX8vYlEDPCzTh94feHteeZw4HkLmh+cQggFcNfSex/b5ypQcXcguI2rYShVfOqXOrfB2nED7ZGwBcuRzvtvh63V8q1IZJYc6j8G0LAuT3OFuE+u8Z/p9J2qnxgNXoAAP77O8uJU8pPQYCwHUukgU7lPD9CbTQXMd3GNH3JGCC4pkwxSLPqvvh6rVfmUGmX/2Hgr0hihLMoT3yJEW7yMKMPipoluCfwoJ9MjETwddGyuD74AS2gg9U79H5loX0jllcaH7XJ52c5Co6rpgz3GupllDvKNORyHlBGzQ17gyXJ8MT6WBsS4Cx4dyLU0eqj+GE9OXMPxT+5OmlcC1+3RXH3Dre/YSGiSzSnFGUon2yKHRibdjGJZdrp4mc1aZPx1UUqQMIvtRM+cDccPP+Z7f+FUz32KXDeBDZn/PVPu4FE/shyJncl7pIMbGDQGzCvGgXPe2V4ej0Dc2eorKDCKgxkd0/7aS69f+WX5AUmnzJSdpa/ZKMDuAAg6Jr8hvIng/lblWwvpinMBDyxQjwfyZUraFv8UZ+1TBGzIIWuEEjRbO9RulzELW1Kx8B8t6V3r17kyiReKBWMdsZs3OEAr6aaaYKqZeKABK9NksdK9nCaB4eNMzm41mJSAboJ+ywNvmgIAKE1Ypf+5vyf9f+JRSC/BLCZ/P//PgJouJAgiaqkYPZ/fUKgPuoVktT1AAAA" alt="Pivote" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pivote</strong><code>pivote</code></td>
+<td class="fun"><p>Eje de rotacion de un brazo o palanca movil.</p><p class="solapa"><span>Solapa con</span> la herramienta + Bisagra monta un pasador real con sus dos placas</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>22</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRiQCAABXRUJQVlA4IBgCAABwFgCdASq+AL4APmEwlUikIyIhIZJIAIAMCWlubCc7ghipQIJysvQ3XyFMC6YngnvW/fQrayjQhkhMyTFIzc3NZpiyQoRu1AtbI4/5ZSFfmI5Igpfin2K3BYWmr5i8nc3yjNuv7YwCmIWTJCmhP5OdEaRk9AOpYQNXggCd6uZRfOGxAkK+zOGB2r5KbZdHQsNzpOcdvTPo1QUdOnbEtFAJEVMn/nCQkbiflxIAvwpC0uvZQGF/KPHtOQeXAAD++uPts4JVpvxms8lyz/2py433+Zfg+mZN62quZuZLz0wwTL1NWbzuNDoJlZGxBJDt1tE3lyl3NvzCqGgAsoGwnA0W74iGKMYBqD3K/SOIqB2SHFLo2F0LP+6jsuBsbdi47IkfrBwZn6OkIHifKxGgGdqaDBA9N8YN3Pzhd86zA9MAnNQZA/y9hUEKC/ck2UeqxSs8fKCNoL05uwe5CKO7kgY9GWdSKWOVr+7U/lkeQ+z3xRxxoQa8Z+e4lf8xOL2K5XzWITBVekxb5dHKICHqKeYqFGCmIoi1/o9DwO3jVQ3nmJsJpCHm7zMAJTxy3KCvuVNOu83a3zGsWIcLNKRxvSbFFSP4JEcuCEVdTNikcgL63Cl8ATN2rSMgntp3hS1YTpmkod2cAWiIVs6DO5KaqEBwMw27SrJ0TeHkSKJ4/vW/22rK9HLlKksqSmbT2pEwKp58GqAAAAAAAA==" alt="Pasador (pop-pin)" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pasador (pop-pin)</strong><code>pop-pin</code></td>
+<td class="fun"><p>Pasador de ajuste rapido con resorte.</p><p class="solapa"><span>Solapa con</span> el calce en pinholes ya inserta el pin de la pieza calzada</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>23</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRjAFAABXRUJQVlA4ICQFAACwIQCdASq+AL4APmEwlEckIyIjKFPoAIAMCWkDwFLR48Yw2y6+4//QOInwlcUr9C8qvg+ekj6m9gjpb+jSLknDPYzE33RZoJ0CqVw8A8MBZBTVFWgQDn0FSNKoJ9tp9UrZcY4Z42hE/KggPYdwU4IkS+qzion71Zz+4gyAKL6Iz8NBbQXTo3ON0oUxjI0NHmpHJZjW5tcRsphR6vW3/5mRece+g+L+Q07ZazEF+sdADpa+eHzt+Z7SI2XazRDA5GCWPJ63iE2QJRgXzvNcwTheqJPAweAhWJq0nUYSyFevO+c1pERVcUr0H2n/2NeaAHnqujo+08OW4fkoCbZw4HBwzi6olRWDP7VPJaCLCDho/oEh+qJdAAD++s04QyuWSGBGD65q3z/l1CM9f83npd9/7vusQlIN5p0vfUEopIPpiiaWeX6GuLlIjRuo8kpZcCUwW4AUE3lomlL+M2F+FklxdcMRQAjUIY07TSDPY5Lb/XvOaYGdt3gNADl4EsAHRCoCSVj0TybKCvkVHXTOB2X/hK1qfKZs5EqviDzITYA34YSZWJ8CC6/tW4rBs7XgH6Lu/V/80qkcJE3Q5iGo0mjHROaFb9TcXe0/xY+gdrI9KRzH2hLXc+wK4Kj6fnEp1tQN8pjxWPSVfI9awq6PwjmeId8OEdp83P/60cLn1eNTlpRC58T8mOiRNfws/GfbeYrAqALSq24JF2IVrNtg7LL1faIiXDWR0IpoeSWO9EZXzBHZZFC53UwqcK4FC8gJobykEG9TLI+onb/VVP/eeLMUfjb5Ckd1xJIQN8jNMZRteqh9lGi8dO4U9zCQGV8nRZVl5Dl1l+ENVuYhCwkeazM8e6Hc7mtBnG0vZTBMW62GPG+HIQGQV1eONjqlRRmk0XgiSvWoOBicysHTXm49jzzLwtX/5WQpg4O2arlN0K25udsHLPjTqboBdkWP4kj/V84a+x7ShPsSBtpOstn75ezJUXORU0U5khdUhLxue5sx5EpBHCsoAfkAeJBR3o6UZRhTScNRcPnzvRMKRWIpCHnYcM+jumDjM9G9DhReI25F9bryPPpwGQFIC2jqEwFbriTTLXkviAqTS5KHmJ/57xkYfvrXTqvohideZ+BtkS2s7p6B3xcsOo9GciPD0SgLZW2Xjw3KQyieZPCZO3Eocw947G13XIzrzzH7yGvvVcLuLEI0FgAFopG5c3DsnrPk/LU82gkJt5rt/fBHtnwurahgedfInncZYcvraNR9GF0TTejvtZPRHAUjNVirMZ83rC5B7fgRqjQkNFtwdD8PlbyAE168QEIvOf0viHEVqoxEldNYIoQrPQyqd5XWHDZ55/KsF2PQ55bo6tKDjQDBuLwN78kJREWMdlotrUQEg97y8YKfL+o1Q/EYcFwmFSesgEvBIhGlWTHmQFefZZtXMew+G3K3nepyxPKM3wPqonIeyKmhdrvbtYPGCPOn8ftBNCgrQ5RxKBept2JouEBc0YBm4MVyLnXD/fqQUIlaI3QbmTFz7ZZIxm8KKzbxvG5bGJu0ufZ0rcQNfu+3gflJwmOeH/h7r/8WNKG0jfQ/qy36db8f3j/Eb+19xeldR7gTA/YjPP6ddK/FIs08T0yhQiPDzZjwKHEBPbjJoUK993yJ2yEIWGNzGVBla729P+pVsJqtG0FeMxopZdtKxOL0PYI19IpokdSQ6Bu+G2M/lm7ErRg6NJWZWtliwos01gBEQv2rejotJIDbXeXxHeRVwWVgfUAAAA==" alt="Carro de cable" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Carro de cable</strong><code>carro-cable</code></td>
+<td class="fun"><p>Trolley ajustable en altura del functional trainer.</p><p class="solapa"><span>Solapa con</span> puente-carro-ttp es el carro real y se usa 4 veces</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>24</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Brazo ajustable" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Brazo ajustable</strong><code>brazo-ajustable</code></td>
+<td class="fun"><p>Brazo-palanca pivotante con posiciones de detencion (jalon/remo).</p><p class="solapa"><span>Solapa con</span> Articular como brazo convierte cualquier tubo en brazo móvil</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Peso<span class="cat-n">7 piezas</span></th></tr>
+<tr data-v="v-no">
+<td class="num"><span>25</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Bloque de peso" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Bloque de peso</strong><code>bloque-peso</code></td>
+<td class="fun"><p>Placa de la pila de pesos seleccionable, con dos orificios verticales que abrazan los tubos guía (se desliza por ellos como el carrier del TTP).</p><p class="solapa"><span>Solapa con</span> pila-pesos cubre el guiado por tubos y además es selectorizada</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>26</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRjwHAABXRUJQVlA4IDAHAADQKgCdASq+AL4APmEwlUckIyIhJzUIWIAMCWls8tvSP+G//xxpqHs3P+u+8mbQTpA+Lczmhb/jVw7bV7Ay0Xz3dpu075lN7LMXuiOM+MT6JPp/gVejMPXcBmpe2f0dr1fp70jFzywn5OYuVKyercih2TGWgBtOHNb/h+H19L7spyaJb5JHgAODqE0Y17te9dUSlXLGpsEkTzB/gf2uBEUAbj9nKKwMuLCjUdiCE7U+4ZujyB3petbf1syfCTLA+4ga5TOgHJHdX/gxPsW9Huz1sWY7fr8mU+N+tat6OBILe5yDvdJrIE5HhVtgcDBqGZBXTF2YFyYJaw7LoqsGr2XG/dQz6iPMmTcklTvsB/445Dz6pDCDu7oZ4dCvo6wmd0/Ft1JcYv/KPR3W6HcLRTepjmj3EuXrhzWsrrXxGmayNLV6ZvS000yyFHB9Sd1bP2TeuqgkDyzJIqkOFKNrOAAA/vsRskwuRXokvRs5+qcK/37+H0ksPZxob9Tyz1w/n/8kuhEX5//Jlq/qkykUUheHo8fXDRqxC4wouofsJj1hg+lo4szCvyEMZ1oSRaUYfBCkna4sqTIWj6ZV8Ws8UvaMSBlUIXygLiFBLsCGRjPTjsaMUHfFBGB/4X08RSYTWdgmBZK0hfJSJ1K4DhQqpZ4VXe3GCuQPtp/LmnmgH5cIOSIAqz9tZxNKPjWCrUfGhOchs2FRB3JX4q5WwzMeVkRKd9ow88qPIf381Awk1aLs4KkCgReIbN/5JxScQRb5IIAB4jj1apSotMm5TBt0JJ665EqsqpvKn1hI5Z+oG64/iAuSCsLQ+yurOojsF0K1BBgYbaKuu2hZVmK2pXBpD2siNQe3hRthwhPFE5ytFnkDEYVON+QMxQSkek6ncIU72VpYby4vFbfvIBS3SkmQMDcYWNsVCahWi+yc7JWCAAH2gmPb+aMil2IClGR4ZpB1syvhL/fniwwsnfjcAxWgcEfUNJ2hzf05F0tSbky5CtlORYUH78YWjBExkDCtZo0fvNPj7dcT3YGjsOP8A+RyKdOql+psNUx4PQ45mnBcwJ8EyneRpUGsp9nykURXK8ZfPUifftGtQqnodZLQ5CUr2wq71vYsCNZMh4N3jESwRyaoQs0nLFjmEDmXlq9KXZxFe9mWp8De5ywQYTrecTJP/rudnPz6gXx5ynzzh3t/qWkqexmazV4lxx6BbOw1qgYAsWVUhkNo0qRHHdFwwMyWWpKHH2piuCjT7DpBvUhFk1wIWPk5ZyuuumLxrl/GbNBZbJS35U71hfQuf0pio8QW6eYWWHRnz467hiJNQaDi671qI+t4hVJ6OjnSc1tNAlSFoe3XjyXwbUV21To9/5sC0qNxiYKgku1Izx378UbimiwLlGmYMAZpyVfmnquQrukxVzEOPB2IwiYmjgEzri0Jmj22ALgpHgkgGhRIJ5hVItIEAeaMWwNU+zVM4D8Pr60C2FZF3KNZW6tMlEXuDASJ21g7JtyKsBrfOUQeNijLXEO6ZOReNgyK+O/7YUnjt3U4xE+aOEPmY4p+vBEYlukmvkqhX4/zGSFumktfHbyZ4+hPPCQMcranFzaR4EreQJ13HZoOSR4ZLcv9VpeFUdyAF8zdb79DHBgz5ffZQEF+On9HQzaTEPZQLF91+igdsQkL2LG7Cb//C3MS6hm7UWf8xtkPpgYrcfn1mf9E5iFuw6nnxJ53Dk/A6dTtC7tTjkqfPMJrUBxCq5uSCtPCwyvwnV80TL3cOGxKftT8orB8BVUC4uIVlzJBQ+O8woZlVNzdDHFgrwY8+zfeX76iFmrBMeTUcuDBo/USqGi2j6wxUBWIw2QkePvmykuTNubmZ73krn00nXhQWgckqq5sEYg9/p/YC/2EKj6MWhsIHt4CKKw39E7IZbpghmnjcYOkDrrebN31wYmzibZTRnhtowuFnxRT3E/AACFyA8LhZBRerkImWiPj95k+Vg2eOpLrMRD0j8gJjjqfiDArsJh7dxDEACalyiDEb9f91bDW2iY+9PUc615IuA2Q0ZAQZ9S5uIIdfOuP6tdFbMf2QBDf/wBkEUcfgyvkdeJIeTUkNjUSPR96+myJ4RrlOmsa2docsFEP737lv9p6Cn/MY6ulPIMFU3dpoxLU3qIBNfROw1/hM75/4i3Cu840NRnc+Lf/OV3YRL9HYyioArrWH6BkiGgQobyApkkkpdn0AACLNFz+oO1xTZYDJbuyVSPtlJGi5ggsMQpHMv+WxEC8lzciteTNKZc22UyG3NpJ9dIw8s1i249c1n29PVyHMtqD2xolFXqdTSjwNoGm6fQwiBxD1Ioe4MNFypXvWX296Xnl9a+sj7BirtG1uYrZHWtsmg7lzSL55WstbfqvKFBZt7QSUm4LLjHh/h/5rzv86iK5JSU1XsYAbtBRtwnqsQnJKHBGzsN78wfMNIJTbCUleYELZLYDAAAA" alt="Disco de peso" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Disco de peso</strong><code>disco-peso</code></td>
+<td class="fun"><p>Disco olimpico para barras o ejes.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>4</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>27</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Contrapeso" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Contrapeso</strong><code>contrapeso</code></td>
+<td class="fun"><p>Masa de equilibrado del mecanismo.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>28</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRkAFAABXRUJQVlA4IDQFAABQIQCdASq+AL4APmEwk0ekIqGhIlZqcIAMCWltoeZSP8DE6/98PeOnmPD/6f9db5Af+sBrvHdt6fX9fzusA/6W6lmclf2ZrO2VAesk7Y6Ah0r49LXzLNPTrHxoU9+3oi3+ARMSnbGaf+eDvw9/AG5J2xnuwoG3PiHJ2tYMDbqXaNeB5B9f9PA75T+lUG79stP+hV7dCV7+PmC12meNdjj0N5F+aEKL2oz7dkl/o+mG066o5TAo8jxbJpMZ8FWvSG8j4UrsD9tQG4wzh87mfSh6IuUAtrqnCu/DFcNOP5+CDR0OynpaLoQQKvbAbLJ6rP17rLUt+4mbnA+bW1/InXgV90Jub0uRobIOU+l9YiO+Axs0AAD++inN0Oin6AC8RXkukG2PeDhnp81apGptL7ihDaQJjwgENDou0pe72/e3724BETBdADRE8HQMKYhvY66tc0MgKStgeSuMa15H9Y9GBGn/2e2KIEBPMlSUcQ78aFECmRHbWvl86Y5KNDXJBTtecySXb53xd9TAmhRSK/Vt/DTWZNa/2HXciMI9KBcgVD3pU5jgRWq7WcI3I6NRsHxwyq+1VUtzVuich7KFv2M/Z4pHdtoaQQx3qlzFw12zopinNsDpQSrQJfWjmcUpVZ+wHBvL1BS6Rf2DUqw+MISUszcNCPz3znvXpcZaKL2/PRoF4Vx0LbDiOYiGNVFbuiVMdA3EVCHZs3OkHValbcexKBMwTlxFQTAhTiCQc5XuO3ZtfkILxCaTrh6LpDLPz7NT95AKjmWoVoB5GAl0SIWixfWgfZ81ehQzSmc3I09Qqld23T41FZd8qmaI0L+IzDQIfda+D0+ftRyJ0AD2yczyQM9UL1x3KAL8VRcJYjCfYUByzBrr4EOSfN3aYLZAdLMTvFXOdgD0NvC2eAj9JLoo7q6Q0rvQT0bBgL6sCp0fUwb0dXANPEMkBUy1WxLC6z3DYcWB0rVYnO+jj70J271NfCVsrAFsWy5F0j2aO1ZrjwiaxQHtzY+2KhB04WSom3RbwExFYJsDC3n5GR8+UePB42H8b/TBhfBokE5bvVPqVSfwXYBXrnRq4U4xIDYM5aLamAaA48uAP8kr+bORlYqGHJxdYQ5aITI6UKmx+B2EF2MB5hKA7swuGBzVJG6GXt5NnGhyzdw4xso+tyNNLw7SdAuuJbkXVYDnY3TN/wm39tAQrOW5PTehIZMzg2vT4qHmNS/GEVOfmjLUl+YWd6GFp0KzRFVIeXRyHnUorTQOpsQYVtIpTqjtgQdvkN1uQ9zXM6d0QLzEkpKdzAcMr/9q0kK/bdKPaeVJj+8vVtSQw7GYajDs5AMIeDG/fEroRIv9CgxHxIgXMIUeSID+ganejKMcfND/LTR9vCYa7JmZvRKmzCuYuUH/ndqzGt0I1H/rK5N4KfMyvYJ4YY1TaB1yZbxu/N3lfiT86cfFBeHxcOIwq1A7Pskr6+TRFko5g2BB1AVY9gJgC19hZ4M8tkDzF1qyrxZULscpMQCHzadPmRWMU/700DjZVKogy6lKJjh6gode6JF4OSlmJNJw+rIV6NrdoZbLtdVvB5x6GsLVbrw7Kx1HML5jIQpnP09oDuTpIgfsPOBu4v0hQInmViB2ABOWdVE5yHbAN6a95oLKlWwgEJ94MSAodzl9UvvbIHyUr+nom7QZv4cb/4RgMtcg1CTTNQyJs0km8UDLS0DPXnwKleSNQn0ASqcdxeE9CAUWipfx+pSCXUv5EEWEJNw8q7sc+PwKunm0fF9c1dPIPSCoAAA=" alt="Barra olimpica" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Barra olimpica</strong><code>barra-olimpica</code></td>
+<td class="fun"><p>Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>15</b> pruebas</span>
+  <span class="u"><b>4</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>29</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Pila de pesos" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Pila de pesos</strong><code>pila-pesos</code></td>
+<td class="fun"><p>Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u"><b>3</b> pruebas</span>
+  <span class="u"><b>2</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>30</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRg4EAABXRUJQVlA4IAIEAAAQIACdASq+AL4APmEwlUekIyIhovYo2IAMCWltW8477EqQOo/8k11ZrZmddK+eA8/++T/9pkoOHFnrkIsOlrwj9wX/k6W88C+ya2GzICh3dPgCNdvhTDC+MFtlGAx0ohZ/dNWD1oYupGp/uMtr8CbFo7BjhuI7M/zW1Lvwzf1eVPtnNa+wtJkr6VnIfmUCRjzqoRAz2QLrvQ14yOImfDdcT5GCioCl5dP7axld6RctLtxvUkKQ5FGHm9RXg4UkqH+bkXce0kBFFg2gY/Ann0OMAL1a9m3Cytoje6Rr8wwQCzDf4fgXt+icRZ154SP/RN9rvYTdF1SV6H21YQc2oKsFj8TDl4JRjS6AAP5vKYfmwBAAYSgfKCgGqdtGte6dyEGTW6zEeoUa5xNxwAsgYgy3ZuY5DZllLzkWBatQ+3dv0bzwHzF0BcZpJd3EJ8SoSDg+JPHFR1aIhHTuOVS7XdCAJbU0dZukI0sW9Evm0OtSJfX4c5wFDvBeOg1IXMO77sahtQCvrAp8VaZw4SNkuTolf0HO14jSrncZPfV6o5k5T/zfBWa0007wFmWwa7xkRj1LN6moQkwHK6Qjx3A0hfOI8soisZqJEyOeKnehl2+3boDAF50MG836aO4GlsmoL6hdt3arh3WJ64nbEuq9/zItwNtvLZhchQi6nUeRdiCbW3X4JA1v8ypnbR+5+v7irurXroSRSS/e4ejACnyIDiSd0JXQLyfVTbw61+MegQDaELscq/vclpwzMgrWj7DO6SO+7ndx3/lQc8diPt5CBwoltQZexXJdBDv0zn4x3pHCr7PzAw6H6rYqtxidhp+jWSRvzQmxiCaIfGq+7tzZnv1v2szP53wsn6JnAJt1GEeEUlmtU1l75Sj1jS9NdmvgmB0IyDa3whtusoROf+BgMvk3rxf3sbyVgX4ZPhMhVC42ymU96Sfbo9NMIjUT+ADkFvfnPqPFKiQbBJFT/T4+HqWGAYsNGDWmlEK3iBOHbnwFzuAfrzNycgCQSF4ggRtwliIAabzc4uzFYZR3o3guFwy9WhaqjhQLETujHLef0hCa+SBrPzRJJ2MX2twC++MAjQoFRYk0vABNzExwVXSZ0FEKCJbBu8owuNm2KK1NrH3p62HkXwA/lgRX3QGREbzCtvebGV5+nLF182qLCm5v4k0RT3L2rRlie3pqkEFgYWp9gqeFvzHcJmFlx7PfPdS+cywtweq4hQWneGWMTSl66zvpwVN+JzsvP6QV6G8hnRZFJPfQ4o8V/x0kG7e/tR2i6Y7G3PEABlPDUy838ZCgCM00bY7yZMBS9oPIQgLb1VzPCWtZsIg79AB0UdBeiSd8tptEeMRF1WAYH+KcWxFyM6RAAAA=" alt="Cuerno de carga" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Cuerno de carga</strong><code>cuerno-carga</code></td>
+<td class="fun"><p>Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>2</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>31</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRqoDAABXRUJQVlA4IJ4DAADQGgCdASq+AL4APmEwlkekIyIhJFeYIIAMCWktt4nnsG3PS+97MShtqvo2mMxSb9wl+1a5ICbIh/gVsX/TrXAMHvq2pNvyF2touhr4VM/JRlEvTSWPoA4Er28kPTqlQyfir9rMAMCJHNYzEXek0fju03/1zeb5B5dKGwsKm4ck7Rz3gJkdJIvEEMDvm2q0zCEAlzMFfIRMjgxMKW2nXIXsv3PSJoyxzEmFcuA48fKQD/P7E3BmLNBEtmzoSYbUDlqS3DJXiITAW/6ycQTsnZSv2TsnZOydkli80yMtoekAAP76pcwpsE+opcO0EHcfeCad348MT6awCN1qR/XVLzPnupfe10Ii+2Ndpn2WctCz36wSuF4HHy359HI/EpB7dof1NLgqo/Wzox7GLGJTVu8+ryFMNAPDKJyjCLx9tdcxbir/V9E9pMoKvBJXTMMfUfSu2edk7Tbc651YSDyNMAAn4Q63p4JveeEeqg3G6tCb1BAmjAj7fSHccZruUG8nZf0LeMDJsktEvZ1H635jfDm7TLPMi6whAK1LpnAAdLh0oyCibIEMzjzTEoa4CXOSiAsYrAvwv1ytaSdM8wAGzGM2vPBIC+cCBIRmclXQcOizUt5YzJWMmLK/bcRXul75vk90xKmX+Q2PzmqenBjM1h70SzmT5PPvxAfx4wa/0ejDy1OL3GLsYxCvtvbkWbeuJUzdH59iWnybX91y46hvflyyL5wN11+fUoCbR9Lscz4Wus/ckejycrTdl66fUdGQizt6vX2KGhD1QNnsDomKMeF3GkcxGyRcFOyYRKC5whTzfy+F5HecIWPEI9Hl9OpzaoRm47amBcM8oFVmr2DmC/QPvEzKDIgrd1glScUOxGJvUp/fD3OF3nTFFifGXVCdW8JCxFAdsv9yVGfoi4u5hvHXg3agTEOjtxjh49GgMpG1BKKch5b3U7hY+KlEP0yhG3IMFzkuXnd5p1gyOeGIa6JbIrNdNAySZnUsqoUKP0IsWoCNq55czpPGD2W1swImBuYCqgy5+5g6bdynwopy+ibqJE/KqHPIeoaM4R08fB+FdO5fLZtc3U1wD2pqKk5HWg7VwiGuGnct9QtSb/+wjCJwqv+5v+p+0/xoZvOGfPih1eZM8o1V5rAjaZ/52bI/KKH0+0raZQtIUpkoiC4tijmniJ/L9z7sbjv/BK28rV7lmTOotb+pphIFhDEGSjFgS48CH1iAAAAAG4M4AAAAAA==" alt="Micro-disco" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Micro-disco</strong><code>micro-disco</code></td>
+<td class="fun"><p>Disco fraccional para saltos de peso pequenos.</p><p class="solapa"><span>Solapa con</span> disco-peso con otro diámetro</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Ergonomía<span class="cat-n">7 piezas</span></th></tr>
+<tr data-v="v-no">
+<td class="num"><span>32</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Agarradera" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Agarradera</strong><code>agarradera</code></td>
+<td class="fun"><p>Mango o asa que toma el usuario.</p><p class="solapa"><span>Solapa con</span> agarre-d es el mismo accesorio de cable</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>33</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Asiento" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Asiento</strong><code>asiento</code></td>
+<td class="fun"><p>Superficie de apoyo del usuario.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>5</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-si">
+<td class="num"><span>34</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Respaldo" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Respaldo</strong><code>respaldo</code></td>
+<td class="fun"><p>Soporte para la espalda.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>2</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>8</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>35</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRjwFAABXRUJQVlA4IDAFAABwJQCdASq+AL4APmEwlkekIyIhJXaoSIAMCWkDsAkVcs5U7qsHI7PRArhGZfsh6GPp/2C+jj+yns1i8JranYfX23kAySER3lKHZ+ajdfYPS8Amvj365dr1dzCkMadjIFts0QnBX6buVcp3o3m8lg8sAAHFRhwkIOpQ74GlzqiZtOOHEmpZf5M3X34Rt/ilCPAVjCeXY2fHYHLqGEjwT3yaOPT4dDIdTLxpQ5PMA45oc0crznqJFS8ml7EQfg+Q60ESHfJDVGcrg4ry5KMl44S3qeREFfeRrQvL6PqUxIdNuJwDH4ju+mgX7+dLJesCCNcMqPtCGOQBRrkV9G/6QXOtiOFDzlkvA14ETB1I2U1c588PNiGR4Dg/GJ4z1rO3ET0bwHQZ36iAKwzVbU3fjbXkneHqAAD++15j7kC4JDuf6KN/rRBv9/yOi+34sq+4Ou16qhHM3n3IRIPf4jepAdLg6mZFNTnWfxPkUvIgUqCuaYDk0DYpENyPExp4tdCUoU0wOaXB0xZszMGzUPaxQ54JcwwPUCeDPBmAVnlsLIc/HcS3BwSoSuVe1lHKGIy7vMmDpM/tcHU+U9tEFVtg2gUAMqSnhOKkvyP4gWzyRUUq8365bxgm/pMlGfzAGfHs95y9EUu7fLo3e2cu4ALHHyT9w6d6cjd5V5v5OLbJp1Cu1aRxTtkoaIogFfbu8rMFDYEngzCRj1o9d3l92u2RSgaO7hMoIEmz1cLQjwvCtMQ3Xe+NzMuyQvV6Ga4bhd2hUpq9ukJKXnSRoUskP2ol5RSUqMrN9mlBoGeITsxw7Wqmpxq60fPoY5QILks52ai1yxxAoMemyIr10EbmpBAW4JeB9ID5xrCHMSC+1+O9VnPjEjz+M+/2hPD4fvdLPdFr9WoH7Md10xrXFp7LJA1HBFMHsM0UsCONcijBTwZSU3H0/iGsgLCWypPDgRpo767RKK8/XJM3oPkxSXgLdob7f+25S4Gi+ooAp/IJGHaEjpWLxa3hyuEno6zF+mw35q8i4Dxo+fmAHAYw2B4Hk9dJ6RDXYrR+ta+HFXneLdKnf9rqvfUHhJHq0UhsZYsIixlfcyczOIu96MDD+jyyD+voGhQYis9BohIcV7oDlc5XoBWkiPaGEOEAzc67lHXxp3gQqPjP1oUETfoCEO0AeWNzHTVh7IH05JF2exK7fw4DfwEitPrgOAVoeqIQ4fbzl/tYGzx7MLUf3mKwCjeM6vQoIcfiXkF2akzxVypKRJ+hMa+y1Wdl9ns0y/d54n8r9USpaTaDfpzsXqX8xxw2VuHNFrEwIBQ16ZU6AeDHii1FvXsrt6XR/etnTcK4N9hWli6Ef/z5cEIkQeMJxtyMW1fBBZ9z7uOWwMy31YjiMWjHJz99NArbfwYSP7l0XFBTd3h5AeLVA9D/QrrFiy4bKm4FKmytpSMxMz8OMr3Z/y/QjeNqqFj6KRcP+0UA+owc/WMFOj7hcf7M9NEBRb3Kv2GhA3xSyXijS6ZFtCF+QlI3Tpn3TWGxsnLNng7FpRBdG3nXcwq258IjmdV0p0QvhVqfAAIGPme9G29fhwI6zM/8khT9/Fpqj/I9PEP5HmvS8ZvR9cAjdR/uhdh2rT/mLDElfvmBucBrOdmqyj3a6+6kVzPfRVIEuaJlVk9G9z/6frh7HLRxnuqZdOKhTrlNbbK3e3+kctBT9unO+Y04SthPzj8yIv+cVAQmTsnnUwdlCpHX5vdVC0jGXKfqRDcB40wizKB/wKiJGtqlBgexUqUXAAAAAA==" alt="Agarradera en D" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Agarradera en D</strong><code>agarre-d</code></td>
+<td class="fun"><p>Mango en D para cable (single handle).</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>2</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>36</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRooFAABXRUJQVlA4IH4FAAAQIgCdASq+AL4APmEwlkgkIyIhIvToIIAMCWlr2uZSP8+/qwr5w3ofPUu98lH/EnMggBaWaYrC9ft9NU6BA+UeOkLx0MJKWhyoNu5UhLcJOW+ZVy66DA81GkUhAELunyondd/rs2Es7uajtfplLoQjWJdcwF5h9sl8JWCnKgKvgnqRy2GUg55BKaEnHm6bH0mirayF0T/LNpyeWNLmaYA5LFHOPtDDCxvkMwpA3OYtWIs3XSgXJj4l+7hEwoEzY9dmJ8ylUSjBc95xIlUqwkSg3Uw9NEFxridY8mlVD6Wn2FVB4GChkZ/78rqe7upTO1MDiF6h0S6oAklph9CKyNTJN2mctMgANHbjbqEfJBWSwobyDwht9qQsAAD++ikFv/G+8BbRdqvlcg1vdS+9DGpffP6stFmgKl5y7FJC0TbtsNFbBdFCTko3V5T5FBAs1+orxKGBepTl/QKt7bS7+w2AM/nh2+Kl+fH0Pakn9agddTe/g84ebl+4/m0Jzl3NACPZyZzBtRcGV8F5tSHHmKqUJ7PNnjEzKY1Lrqk4Gy4eu3HxQyqaeZNQAHaBXxHS964J96XGBe/z/YFTkX+D/vJ7ebGUG+0ToC+huQlkN8UZUT3s5ninQkgwNy+Rgv1b+ze4Rb9+eb8YmQt6XauzBjPhbdVGD9bG5s673/NQWQCitrTyh0xv/3Xj1tevVOuBQbx/3ncRkev4H7ivWesxZ8V7eYV2QredSq6p+Dd4OoGVkbiPopmPJh9qEd35jqcjf05Dd0rWSH5+SfOPmpnx1CXNwtF4bcqAnz64qnlsnhWPtZVJYGceSvJ9gwKUgAyED6mauTyx7Zql4toH6G3MpWgUjo9+C8B8BlHTmBzQL849H7Uv2Z2Ouv9FoIrnza/sYguq0+ZAZiHrfQev4kFH6VslE9qU6+kU3xfkPqCKBxBSRjEOCDSpB4hsPnaNhAqpRDAoBuZdAWaMPoGueTXhTACAmWBf/qzOWMrlirFYsYaSA/WmjnrVULkzO74YYNR7l5lY5czzF8dVJ0VWz5yD4P10QX/moXZcgHYHazbqqtN3ar6wZvtXYPjkwdqX3UjkfvpLBkmraWcHBWiQhI3++zNuaxEPeds5HyTf+GYeNNdXQALUfP+5yTzR7ZveXlSIiiMI6INeJ6l9qDQYG97XxX5quexVmRtNUa61m12yj/NWCHljjxnFwKyOOieSuEjGqDbDPJzmdG8RBfKsRu5Kb2tqtCvHsAB5nDYOgSubMo53ng+zw7Bf/kIez8mDrm02zKQjS6N1ZBirlvrO3iUvlRROi39ST5Qox99Px60lQCs41RYM1SJEl7WASxJJtLyRVbZ6YDOxpHgljU/fvLGZ6MkAzWMZDAZAneXlHl8qaGI1vQHHRvINxuRfYxugUd6ej9GiYW3+snv/9JiPccLVfqAG7NHfkNBgdGOVH1hAi1RHers9SjUgDyVNajbqFSZ5MXF+UVAQa+T91+D5BKtziGbtkO9liPolWvNHr+V8i6IcCWUPI/OsoebCAoUQ1wknOMAWUbWe/MPGA8Bs7c9qgBNdR6M+jrD6wJx2eKVdVIAzhpqpBKG5il22LdcckWQG/vvTH01IG1Ct3pCzl9jeX8e4nn9YdOFQ1OC8CQq15lRAQ+fgm5hJVS+q9U6+4TegAgMKV/QxHBtp40VtH+OhgZNq3vCgkHQxScBOwUBrhKcpQrgDFw9UNWPSSt6tpk1OasC3ZZbT5/2pCcqmpk6gYX7sDsOU9EAAAi11t27bxHWloWqt+u6wLZHekt6T77q/s9lNtr+cJFXWXSoCScYwADHssQSfPjLrT5Z0SPcXxfWCDPGPPjmFefgrNodQ48klMF3hunPeNNJzn8tfE6wAAA==" alt="Cuerda de triceps" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Cuerda de triceps</strong><code>cuerda-triceps</code></td>
+<td class="fun"><p>Cuerda doble para pushdowns y face pulls.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>37</span></td>
+<td class="mini"><img src="data:image/webp;base64,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" alt="Barra de jalon" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Barra de jalon</strong><code>barra-jalon</code></td>
+<td class="fun"><p>Barra de lat pulldown moleteada.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr data-v="v-no">
+<td class="num"><span>38</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAACQIACdASq+AL4APmEwlUekIyIhJHgIQIAMCWkA1zUANv/vm3IW4jVPfgxVE5oOxh+avU0ZX59hkdwIPBfH3ASGjhuIn8oMNEx8vWFSGJmo+Yze4Cw5FmPT+AHtxiMzF+gLascwuC0hwjogtCFPXvhFC5bGEuvuMvOhc2zwf7MUnln54/YWn4WJcxMnUJeJk/29jNoygHIHD3bzEdbpD4vixeuUOSnH2M2Zco0IYmqdMCsTuDzWwpY3lmvdcsq9onQyEZwt7MeU8w+mbRZPUmtvSrziTXAbg02JESPmVA8bVfNkT4IvARfhmvgSN8G3xre8EvIwQs8QEnZKnjL5CPTB8+drrxFBpRaq0WyAAAD++uOfLF7fWDMn+ijf60Qb/T5HRfT+LKvqBuhFiu+khke2BtPoxqgbf0JDuMYEGQ3N4Bni8xHlv+OeK1LRUimfjeGFbulV8qgwSMY6Ai8DhRMddeZ8ZsJgFLH061icaPAmLbXgh/GFEZnJivb7NrLxdHrrCJUGmCVbT8q9EHARueW9ZUJqfrxCTBow3ooTuBLZIz2TtX5yRlhNuvl//RQMJgnCuRligX7jgpKfPX3ULPM5ZCMpB5YEeKXILhZLdKgH6yreP7jN7hJ7pXIi992V+V2/EzmwZeh8lwykgrFLSUVxIgbv1x+6PiXN61nuAJstqTo9bJqJlEcax0UXVSz6RAOTMRl8QtJUz2SrK2JG6je+8xmJt1z7pO1yJqmVHxr0g0NeO8LRt3nt9f8v3tmMm9wMUbFKp6N8+12OemFoUI6H9030RrCmBp7rewtebz73RGS+3o2Mz0ND1nUuplkwq2sCc07FVkNDT3d8t0++9VJ96Qr8YHGcTc4zbO9F7PVqv7Zbs0Xl1iSLssrNN1vm6XemcZZe6JzEd9Mdl7iE57cCP4iXZawRJ1Ro7j8aAJq6HFUfL+YoHuq7K5dMi/oMRVq+k8HtU7BU5A4gObQVF+zDfPDqnsEWD14rhNzuyiCRiZ7cHhs2QGB1Oldkebjrh2tdVjhq63welMnOduFMiVIR6O0VkgXprQInWs6/ZlP1EI3oq1HStzMDuzJiIGdgty3RHwQqQIUxMiUATyYKccpzg54IaHIZHBciS0Rkwnt7n3cMcvLyY5W5mRA1XUDTIdvDfa5bkdc1pfF9Hcbz1SQvvL8qGvCmZAALkuvCiHVY95tOBBDvdmETXOlYeXK7ZN8hn0v1f2BVXb6q8Yki+PSP6G4xwAtqTMraJQHeoGSH1r+GAtqBp/inrMScGH5Cq8j/qyIY/8m6pgVCJXHcpENnu20eAP212ngP6TNNMXip2zTCwyI3akcr1Xs7QMq72Gtvlamcqg1L2CjclMIUf4TYsVPxip8oUj1u2UQLComJqH/6D9OyQfU3gAAAAA==" alt="Correa de tobillo" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Correa de tobillo</strong><code>correa-tobillo</code></td>
+<td class="fun"><p>Correa acolchada para trabajo de cable en pierna.</p><p class="solapa"><span>Solapa con</span> accesorio de cable sin uso, como cuerda-triceps y barra-jalon</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-no">Sin uso</span></td>
+</tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Primitivas<span class="cat-n">3 piezas</span></th></tr>
+<tr data-v="v-si">
+<td class="num"><span>39</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAADQIACdASq+AL4APmEwlEckIyIhJdsZsIAMCWluCuw9/f/8TJ39n5XfeUctlRTaD8Cxv5U63EkyL3SB04cty612nifMRlOhh8FOpZB+WRyQBF+54WGSU6ORBrfG7yH2MtfqCEo3pRIaDQsMs/lP/yVEU9W+GSmLiBsbb9XnzLQKEweDn8rovRZlrOaL0dOgnK6JuGB4YJ3/+JhungGPuc0gd1Zdge+rcae/7yDH+471sdLNmNO8XX3bhQaI9ybML977pHhmvKpVDhIXfLo9zmePnoIqojKOi+GSa3jhcJKc9wk9MFlTL+T536gG6sz6WPRYcRYRvUiOyDrgaPIIGWZKBBItJ/R9+y9jTg4HzbwAAP76Yt+7SfpyyQqbcU7ylX6sg0LYKl2ZN76eYVQ5L9N5yPxpw3yC4poDDc1hBEGsZF9c1b5//JmVCM9f/yZzAY3InvTRTnf7aA9eREUhk4KSY118y5vI2H50H+91G73hOI4BMvIPmZmTj3T41UwHEp7DtwpPyjVhhNzhhQohl5TV6oSVssVy2lyQEUvZKkeznmwjc1y7ZHvu7OlXqBz+QglZbkJAtnxeZeE4p5jQZbb5xJPnHq8HplsUCwfO7MQZZNj3AvgnmW4CMW9p9okztH6WQoFhLkPVt7tZxDkIkICi44JnUFbo40+vUyztLFwZ/ONzOzWGRdfE+3mWOB5Izy9zLkwO/wkTu7lMMw/IiTCPr+f5BlnxsF0VVj7/tjVTkERLiNvnyNVmiuTqzdB29bN9/IA1RktwaWIPQAq1A0rsiPKBQmjcZlqWCuZGwmb0kWp16NwryL0uqzJgluFy+cLzzK2N5mNkz+SNTuBP/aN5AniK+XwLTlUKvBJTOJ6uIqjFPVHppWM6HAhNhwkAeeJMKCYik98iQJHpY4KwZRD+/Yl78QPxVgWFPOz0C/AVsGAmfrKGcT5lP52aV9b1RNe6xM6kVnG/5mo0BT//qUcFJFbgQpKMN6ZnM01rh+epyR6DSkB017jzjsPKvIpKqVvqQT7m1qU4LaNE2qCAWbj8A33VMO52jRqDdGeyZFAKuExpgmNEbk80RRLoKggVrU2azMOVlPQNeGsJUu9cSVNbVjbpHVVpPNl/uHgB+ukFuEU3iZbwMRArJhQBoiGWGrJnrENEu4bYjVC3H6u+DKRdnenEBinLKGEDbIKzRswcPyQAkwKPuPkh2KABhCwuFMjmabHPOJAfczwTZrXu3FRNeiEBeU9QLpukyaMRtwHKsZIGPijAU9uTThGrnlBA2P6S4gl3Vr0S+kmpnsZ9Bb5zUfrsxkhcuhzzj9t05BSdz3R2lz9ukUauXoyK9b/cqWm9MydaLV/GndX0slXOKab5oeBJ9zH50AeLGPxXYaB5+w3CV7UVYxu9/OQAAA==" alt="Caja" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Caja</strong><code>prim-box</code></td>
+<td class="fun"><p>Primitiva cubo/caja.</p></td>
+<td class="uso">
+  <span class="u u-maq"><b>6</b> máquinas</span>
+  <span class="u"><b>23</b> pruebas</span>
+  <span class="u"><b>9</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-si">En uso</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>40</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRkIEAABXRUJQVlA4IDYEAADwIQCdASq+AL4APmEwlEckIyIhJdp4wIAMCWltftK9Xf/8H539n/XfeUrSmelIKobt2ixXtXDDljty/uDsOM/tNyIn2RV7DLRqIHwBM1vwMXyFjffPqxXzvURMMrmwDpBdm/wylaEl0BUp8eqxojSlJGZTcasxaRWBpjFH44LH0mJXixF2RmRLy0WLkDDjyM2EmaV3o5JYGlp7O3y/f3X6G0cTBRZ77TONWdJEgTywJuvu7/xhFDTtY9D5v6JdpH/dozj8xu3NAOuzSqYNB2crV6lT071hZmjPN/w29z4LUt058cahRyDQCfRgtJmhkf2jJ+FiSuTFx7iLOVXPcZ6a9fiPrcLY55UJFHIEMT40XG2VX6swSq2wAP76Yt+vPMMWKSotCvEasdLh6kSbwaWIIN829afakxJmomqImfDv+oLRTDsli8Q1V7qX3z/+TPqEZ6//k0YWQ6pMv1cMe5lUFv+EatxHsmiSZSRXZ36VIlLlyQG7hez1pl2WxHgFIh4UsViHq+q/fnbg/n9EFNJ/3bAWCIfMzILI+7dKx2D3G8wWjheq24EXWvrB98nkm3qWygia66g6lccGbINtQw+d/xfq5yhXboWqL8eJw5puECtzuoHeE5pW3A6WL9rHR+1VWWXr2NIUGSM1b4AYm93XddqdhqixATK30cUQ96ihUIHy5qSwE1J+AMSij7bDmSIFqFJZ4QsatFIdqL+D0hrLYcf/aDXBuEi+bYFwsBGGc44Dyk1I7orEcN7MYxWqPVZzIEJN+wXCDa263j2mZZh6pmYguiowEkomvzXDT60vLn+ONvaSiECNOnMmVJ2qvdLn1UY3xoBF1cij/TXvMmZTCt4LbvRiNdRGlYzFcZQw88C5D6PsL2MP0RY1aaITVVoROFYs98dTpP+CkSTOl2ccKxvADe8eVvnBDVWVsYbJFS64RuHOeEfgNO8/WXGHhnwyYVHREqqA2vA5zH5g31UCrTupP+vHEaNW51P6b5g8n0pn81x9+NNEkIxw1kplJOwFwSywww0jOaMYHAezXnrmSe+vy5kKyLyNImGKAexKfyv6sm0MacAxsp1QCnENG1ycBjmOmFEXnH+8KDNxXVpdMQs5leDtv40cJxUR1L2Aai2d0/yF+rG8OMicQYpsg+plbuirFfiSEswMS+hVRQDNRGhCAtQvK3JDl42/uQVUaosPb+eqBl/A+4mgYjRXLPg5DzKmTXMF3R5I0YLAtUuoBtjC/5LOV5EZTsmeDGq0wIbSffpw0m6hlOkVhiRtaWLWhIig9yFM3uxfRoOBqemeSy0r5RhWwPFbWEk1RaaV1W5JsPMb8Y40+RHkf+IAvSO5veKXlziyHk6HFz2Y5roXZT2pRWbE1MTMFJzcEkixxYKuYbmMf3kmwQuLhsvIJR7CU+Z1wpMWkd7liwEpWDLQI3Zw0QAA" alt="Cilindro" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Cilindro</strong><code>prim-cylinder</code></td>
+<td class="fun"><p>Primitiva cilindro.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>3</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>41</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRpIFAABXRUJQVlA4IIYFAAAwJgCdASq+AL4APmEwlEekIyIhJTWY8IAMCWltW9i8vf/7s51Vn/Xe+SGCitop/hgov0OH0VpLFjOydT/h055/wKEKFTUZ5nttwCPg4HukoPMzstAJSHYQPwbFCZod+yiXjNkhwobqOw2J0KMzHVcun6tXmV98VpGeGisZgfCq3pZ7SibuQwV/6+XD56LfW0+oD5AocjKgmPwqFRqGZMcwXP8DqilY9JygHOP43ydLQeOW3NWiqkDTXKBn8ZDsR0759zd/VYclQlBvxVmPEuRUXgYAl5NRbQcoLn7fOpFtsMQQjtVa0/pczcXyqTAdpMs9macGLOmj2c+bMnZfSz8MTZZcynjWlsgzq8HQ0gt080JhK+ltSl9d548cGvGMWI0LiZOL55aeWP4oKa5xdgDtb+BIViSKXB88oAD++mLflQSy3EKpBveToMND3A3vaNAm8pt9+Re376NtjNuGnNH+ao+AuD/QeJSP9R8fJ07vog7W3xdANjunGcl6Aw9wycoREvtxC+9XdlR4h9d1aSkuwo1exWQ5oyga7gGMx9OM49OD3R5sSv2aTGdNKWNTM3XcqeL2Y/7ZUziXH8ePBA3fYjVb4AmjK/uMQC1lzVJARJHr4I4qZG5ZOwhAAVo5zY7VNW1qp7l3CrhKE0/28pAKxLK9vQX7B91Pvyr4ZU1LJms7Au5RWGDeVICKVrWIcjwSBk8wjVUWH4259TaQTp2vDTXmbjuxZ6D83ZQAAaHAAA+EKwf7eiRNJoj59Dh8JaqsDliBlZr50OU6NDZazRbEPoT6Qg0W4k9BRGLYPslWvLxoOCkJLqFfSHh466nDVfK3cdWzIg4mnv51FHs5WVIN/XeNdVJnH98j2cY1ye5dFtHrO3lJsWedZ1vu1bB3T3EBXLvyKgfcRHzGzjozWHxVfjj/1KiJv79owr9J9HoMJxY1zrzEiGq2sro6/heXJirtYj8iww2J9pY202a9Aq4iGT8ltDjghR8D08f+r3oIx1gNqdZvl8syjAaiNYpDOp1OVuRVnCaSowvN3A1GkbAUJ6CfFsBO4YSweRcWb/zOoRIZWkIsjGBUWp/U8Rdv2XComrG1j1TkwCyvLHY8fmd1YX1cbx7xFLUsWWE4WNOzIovQ4Uct95/DgGD3WVUH77NWmgb3A9Mh1fwwH274BAqU8wrEtl9dw0d5Wsses8ePUmfclOctnxlAcD2BE5RBZRkUjTIYpxf0vPiph/sUj+Y5AS6sgB62SluA/9AT+jMgXno+a3zDe3DVHhtbse5PxRvVHuUhjDBn9o3q+rwLHNcOWDLcgYHYgnKsA17EKfhhjUb4HOOWAfOqiWgYgid6R+PYnBEPs7Ial8vU66tv83xxEvTEN44LCM4nqowN+IA9sl3bUd8Hjz/5oPiapcWm82sP6qq7GYEJT6k35h3pYdZUpeo6NI3IJir3GYtZjXkm7XH9y2OaFUstUi0HobHwfpbrtoEIK3dkgNstne33ycsmbPY4a+VUbjN77lDCHwu/xw8e7kMhuCetSqE7bN2UPrnSppF/1iejeiW4P9Utusd3jyFPf38gHwC9ZPAQfKMvh+bdbUGdcjmtSV79x6tqNx1VtGkzgnKz0jjvOd1ZinekjkURcixk3Do6PNRdZxoLTWEYg3bMMYQDJN2Q3nlIHYjSmwkBiaG4l/Nq4+Jbo2kbahPYm/UA/qwBHG6UDiDeqdJyLhvOUtJIzYFSdRBS0YSuBVAnlNfr+QrMEtvTWaC1n3KfycAQkh5sXHKjkd9WmqlkhyhZE8BdGNsxt42wOiWg7R19isE1MXPyS1c8EFSvrJJkmP7XAVxvfwGca4uhFOWuKhV6zfeQCbRmzUsXTogMkyteIhu7pECAFWvO8FRXD67iLgAA" alt="Esfera" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Esfera</strong><code>prim-sphere</code></td>
+<td class="fun"><p>Primitiva esfera.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u cero"><b>0</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<footer><p>18 piezas no las usa ninguna máquina, ninguna prueba ni ningún otro sitio del código;
+8 solo aparecen en las pruebas. En 19 de ellas hay además otra pieza o herramienta que ya
+hace ese trabajo. Datos leídos del repositorio en la rama de trabajo; las miniaturas están
+renderizadas por la propia aplicación, una pieza por escena.</p></footer>
+</div>
+
+<script>
+const chips = [...document.querySelectorAll(".chip")];
+const filas = [...document.querySelectorAll("tbody tr[data-v]")];
+const cats  = [...document.querySelectorAll("tr.cat")];
+chips.forEach((ch) => ch.addEventListener("click", () => {
+  const f = ch.dataset.f;
+  chips.forEach((o) => o.setAttribute("aria-pressed", String(o === ch)));
+  filas.forEach((tr) => tr.classList.toggle("oculta", f !== "todas" && tr.dataset.v !== f));
+  // Una cabecera de categoría se esconde si no le queda ninguna fila visible.
+  cats.forEach((c) => {
+    let vis = false;
+    for (let s = c.nextElementSibling; s && !s.classList.contains("cat"); s = s.nextElementSibling) {
+      if (!s.classList.contains("oculta")) { vis = true; break; }
+    }
+    c.classList.toggle("oculta", !vis);
+  });
+}));
+</script>
