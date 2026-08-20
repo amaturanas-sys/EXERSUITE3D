@@ -626,6 +626,40 @@ a plomo girando cada segmento sobre su propia junta.
 - [`maniqui-sentadilla.png`](2026-08-16/maniqui-sentadilla.png) — sentadilla
   profunda con los brazos flexionados: ninguna junta se abre.
 
+## 2026-08-22 — 10 capturas
+
+v0.3.2: el inventario se cierra y las piezas empiezan a cortarse a medida. La
+curaduría pasa a ser UNA lista compartida por la paleta y la Biblioteca de
+modelos —que listaba las 74 definiciones, despiece interno incluido—; salen el
+pilar, el contrapeso y el pilar vertical TTP; entra la barra multi-agarre; y la
+placa dentada se vuelve cromada y arrastrable. El modelo de cada máquina deja
+de cocinarse aparte y se arma con las mismas piezas que el editor inserta, así
+que la vista previa por fin ES la máquina. Y tres barras que se tienden entre
+dos pilares se alargan por el CENTRO, con los remates intactos.
+
+- [`paleta-catalogo.png`](2026-08-22/paleta-catalogo.png) — la paleta ya
+  curada: 22 piezas, con la barra multi-agarre recién promovida.
+- [`biblioteca-componentes.png`](2026-08-22/biblioteca-componentes.png) — la
+  pestaña «Componentes», que ahora enseña exactamente lo mismo que la paleta.
+- [`biblioteca-maquinas-uppermachine.png`](2026-08-22/biblioteca-maquinas-uppermachine.png)
+  — la UpperMachine armada con sus piezas reales: antes se horneaba 16,6 cm más
+  ancha y descentrada 8,3 cm.
+- [`biblioteca-maquinas-torre-pesos.png`](2026-08-22/biblioteca-maquinas-torre-pesos.png)
+  — la torre con sus quince placas, que el modelo anterior no construía.
+- [`biblioteca-maquinas-rack-correas.png`](2026-08-22/biblioteca-maquinas-rack-correas.png)
+  — el rack con sus dos correas de seguridad tendidas, que tampoco viajaban.
+- [`placa-dentada-cromada.png`](2026-08-22/placa-dentada-cromada.png) — la
+  placa dentada en cromo: en negro sus ganchos no se leían.
+- [`brazo-tres-largos.png`](2026-08-22/brazo-tres-largos.png) — el brazo de
+  seguridad a 106 (fábrica), 160 y 70 cm: el manguito y el gancho, idénticos.
+- [`brazo-rack-170.png`](2026-08-22/brazo-rack-170.png) — el mismo brazo
+  tendido entre dos pilares separados 170 cm.
+- [`multiagarre-planta.png`](2026-08-22/multiagarre-planta.png) — la barra
+  multi-agarre en planta, 106,5 contra 160: los agarres miden lo mismo y solo
+  se alargaron los rieles del centro.
+- [`multiagarre-rack-170.png`](2026-08-22/multiagarre-rack-170.png) — la misma
+  barra calzando en un rack de 170.
+
 ## 2026-08-21 — 9 capturas
 
 v0.2.95–v0.3.1: los cuatro gestos con barra dejan de ser una interpolación

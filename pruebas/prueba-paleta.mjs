@@ -23,12 +23,19 @@ await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1200);
 await page.evaluate(() => [...document.querySelectorAll(".hub-btn-card")]
   .find((b) => /Ver en 3D|View in 3D/.test(b.textContent)).click());
 await page.waitForTimeout(1000);
+// LA BIBLIOTECA ENSEÑA EL CATÁLOGO (v0.3.2). Hasta aquí listaba las 74
+// definiciones —plantillas internas y despiece de las máquinas incluidos—, y
+// esta prueba lo daba por bueno. Ahora enseña las mismas piezas que la paleta,
+// así que lo que se comprueba es lo contrario: que las ocultas NO están y que
+// las del catálogo sí.
 const LIB = await page.evaluate(() => {
   const t = document.body.textContent;
   return {
-    jhook: t.includes("Gancho J / soporte barra"),
-    montanteRack: t.includes("Montante de rack"),
-    eslabones: t.includes("Cadena de eslabones"),
+    ocultasFuera: !t.includes("Gancho J / soporte barra")
+      && !t.includes("Montante de rack")
+      && !t.includes("Cadena de eslabones"),
+    despieceFuera: !t.includes("Travesaño TTP") && !t.includes("Pletina TTP"),
+    catalogoDentro: t.includes("Roldana") && t.includes("Barra multi-agarre"),
   };
 });
 console.log("biblioteca de modelos:", JSON.stringify(LIB));
@@ -50,8 +57,11 @@ const P = await page.evaluate(() => {
       /Gancho J \/ soporte barra|Montante de rack|Barra de dominadas|Cadena de eslabones|Listón de Kevlar|Base de apoyo|Fulcro/.test(t)
     ) && !textos.includes("Guía") && !textos.includes("Riel") && !textos.includes("Cable") &&
       textos.includes("Roldana"),
+    // El pilar vertical TTP salió del catálogo en v0.3.2 (lo retiró el
+    // diseñador); la barra multi-agarre entró, de despiece a pieza.
     realesDentro: textos.some((t) => t.includes("Jota con rodillo")) &&
-      textos.some((t) => t.includes("Pilar vertical TTP")),
+      textos.some((t) => t.includes("Barra multi-agarre")) &&
+      !textos.some((t) => t.includes("Pilar vertical TTP")),
     cabDespiece: !!document.querySelector(".cat-plegable"),
     // v0.2.28: la subpestaña de despiece TTP/POWERRACK se ELIMINÓ.
     sinSeccionDespiece: ![...document.querySelectorAll(".cat-plegable")].some((h) =>
@@ -91,11 +101,17 @@ const S = await page.evaluate(() => ({
 }));
 console.log("sencillo:", JSON.stringify(S));
 
-const ok = LIB.jhook && LIB.montanteRack && LIB.eslabones &&
+// El modo Sencillo baja a NUEVE piezas en v0.3.2: el `pilar` salió del
+// catálogo, y una pieza retirada no puede seguir ofreciéndose por otra puerta.
+const ok = LIB.ocultasFuera && LIB.despieceFuera && LIB.catalogoDentro &&
   P.ocultasFuera && P.realesDentro && P.cabDespiece &&
   P.sinSeccionDespiece && !P.despiecePieza &&
   M.rack === 14 && M.torre > 20 && M.conDespiece > 8 && M.cuerdas === 2 &&
-  S.botones === 10 && S.sinDespiece;
+  S.botones === 9 && S.sinDespiece;
 console.log(JSON.stringify({ ok }));
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 await browser.close();
+// LA PRUEBA TIENE QUE PODER FALLAR. Hasta aquí imprimía `ok` y salía con 0
+// pasara lo que pasara: llevaba tiempo diciendo `false` sin que nadie se
+// enterara, porque la batería solo mira el código de salida.
+process.exit(ok && errores.length === 0 ? 0 : 1);

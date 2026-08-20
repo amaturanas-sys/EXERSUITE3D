@@ -5,7 +5,7 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [No publicado]
+## [0.3.2] — 2026-08-22
 
 ### Cambiado
 
@@ -140,6 +140,12 @@ nodos y no una superficie: no hay malla que hornear.
   largo pedido, el perfil intacto, los remates rígidos, la vuelta a fábrica
   vértice a vértice, la medida sobreviviendo al prefab y la física midiendo el
   tramo nuevo.
+- `pruebas/prueba-paleta.mjs` **podía no fallar**: imprimía su veredicto y
+  salía con 0 pasara lo que pasara, y la batería solo mira el código de salida.
+  Llevaba tiempo diciendo `ok: false` sin que nadie se enterara. Ahora sale con
+  1 cuando falla — y sus expectativas se ponen al día: la Biblioteca ya no
+  lista las piezas ocultas ni el despiece, el pilar vertical TTP ya no está en
+  la paleta y la barra multi-agarre sí, y el modo Sencillo baja a nueve piezas.
 - `docs/inventario-piezas.html`: la lista actualizada, con las 22 que quedan
   —entran la placa dentada y la barra multi-agarre— y las 21 retiradas aparte.
 
