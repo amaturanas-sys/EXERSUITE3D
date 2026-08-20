@@ -56,7 +56,14 @@ cadera sin mover el tobillo levanta el pie y entonces «el medio del pie» no
 significa nada: el primer intento saturó la cadera en su tope de +30° y el
 tobillo en el suyo de −50°.
 
-### Medido, y para que lo decida el diseñador
+### Medido, y ya decidido: se queda así
+
+**El diseñador lo revisó en diez capturas —cinco de perfil y cinco de frente, con
+la rodilla a 0°, 35°, 65°, 95° y 126°— y lo dio por bueno: «la sentadilla frontal
+se ve excelente tal y como lo has logrado en las capturas. La cinemática es
+correcta».** O sea que las dos palancas de abajo NO son deuda pendiente: quedan
+descritas por si algún día hace falta, pero el gesto actual es el aprobado, y los
+−39,3° de tobillo y los 4,89 cm de rodilla de la frontal son la referencia buena.
 
 La frontal sale con **menos** dorsiflexión y **menos** rodilla por delante que la
 trasera (−39,3° contra −43,5°, y 4,89 cm contra 6,96), cuando el diseñador
