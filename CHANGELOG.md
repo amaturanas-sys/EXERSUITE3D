@@ -59,7 +59,7 @@ que la abducción se resuelve contra ella, simétrica y por bisección. Medido:
 cadera al descender al bottom del squat» que el diseñador había descrito al
 hablar del pie. Y las pisadas siguen clavadas: **0,01 cm**.
 
-### Pendiente de decisión
+### Decidido, y va aquí para que no se reabra
 
 La POSTURA ESTÁTICA de la sentadilla trasera trae la barra **14,1 cm por detrás**
 del medio del pie, de pie y en el fondo, y el gesto lo corrige en su primer paso
@@ -67,8 +67,12 @@ del medio del pie, de pie y en el fondo, y el gesto lo corrige en su primer paso
 moverse—. No es un fallo del gesto sino la geometría del modelo: el hombro del
 rig cae sobre el tobillo, el medio del pie está 9,1 cm por delante y la barra se
 apoya otros 5 cm por detrás de la nuca. Equilibrar la postura pediría 18,7° de
-inclinación estando de pie, que contradice la estampa aprobada. Queda anotado
-para que lo decida el diseñador.
+inclinación estando de pie.
+
+**Se queda como está**, por decisión del diseñador: «la postura estaría bien tal
+cual, el gesto hace el trabajo adecuado». Así que los 14,1 cm de la postura de
+la trasera NO son un fallo pendiente: son la estampa aprobada, y el equilibrio
+es cosa del gesto.
 
 ### Añadido
 

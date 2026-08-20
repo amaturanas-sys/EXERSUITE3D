@@ -514,7 +514,9 @@ for (const [ej, nombre] of [["sentadilla-frontal", "frontal"], ["sentadilla-tras
 //    pie y en el fondo. No es un fallo del gesto —es la geometría del modelo:
 //    el hombro del rig cae sobre el tobillo, el medio del pie está 9,1 cm por
 //    delante y la barra se apoya otros 5 cm por detrás de la nuca—. El gesto lo
-//    corrige en el primer paso; la postura estática, no.
+//    corrige en el primer paso; la postura estática, no, y ASÍ SE QUEDA por
+//    decisión del diseñador: «la postura estaría bien tal cual, el gesto hace el
+//    trabajo adecuado». O sea que el paso 0 no se mide, y no por indulgencia.
   const fuera = todos.map((s) => +(s.sagital - s.pisada).toFixed(2));
   const enGesto = [...U.slice(1), ...D].map((s) => +(s.sagital - s.pisada).toFixed(2));
   console.log(`   barra − medio del pie (paso 0 crudo: ${fuera[0]}):`,
