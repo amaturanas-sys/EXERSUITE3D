@@ -55,6 +55,12 @@ await p.evaluate(async () => {
   // seleccionadas no se mueven nunca: no las lleva el selector. Si esta cifra
   // sube, la pila entera está ascendiendo — que es justo lo que el diseñador vio.
   window.__pila = () => {
+    // LA PILA LA COLOCA EL BUCLE DE RENDER, no el reloj (v0.3.1). Leerla tras
+    // un `setTimeout` es apostar a que entre medias haya corrido un fotograma:
+    // cuando no corría, esta prueba daba rojos de 33 cm de forma intermitente
+    // —y ya lo hacía antes de tocar nada—. Se le pide la animación a la
+    // aplicación y se lee después, que es determinista.
+    ed.updateStackAnimation?.();
     const T = window.exersuite.THREE;
     const o = ed.listObjects().find((x) => x.stack);
     if (!o) return null;

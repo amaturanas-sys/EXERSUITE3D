@@ -5,6 +5,122 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.1] — 2026-08-21
+
+El rack frontal de halterofilia, y una revisión a fondo que sacó un fallo que
+llevaba escondido desde siempre: la biblioteca de posturas guardada NUNCA se
+leía.
+
+### Corregido
+
+**La biblioteca de posturas del usuario no se cargaba. Nunca.** Este es el
+importante. En `poseLibrary.ts`, `let poses = load()` estaba escrito ANTES de las
+declaraciones de `RENOMBRADAS` y `POSTURAS_INTERNAS`, que son `const`. `load()`
+llama a `conPosturasDeFabrica`, que las usa, y tocar un `const` antes de su
+declaración lanza `ReferenceError` por la zona muerta temporal. El `try/catch` de
+`load` se lo tragaba y devolvía las posturas de fábrica como si no hubiera nada
+guardado.
+
+O sea: **cada vez que alguien recargaba la aplicación, sus posturas propias
+desaparecían y sus ediciones de las de fábrica también.** Desde fuera se ve como
+«esto no me guarda las posturas». Y no lo cazaba ninguna prueba porque todas
+arrancan con el navegador limpio, que es justo el caso en el que el fallo no se
+manifiesta. La carga se mueve al final del módulo, con todo ya declarado.
+
+**Y una vez que la biblioteca SÍ se lee, aparece el fallo contrario.** Con el
+guardado funcionando, la copia guardada ganaría siempre a la de fábrica: la
+primera vez que alguien abriera la aplicación se le grabaría una copia de las
+posturas de entonces y no volvería a recibir ninguna corrección — todo el trabajo
+de 0.2.95 a 0.3.1 sobre la sentadilla, el peso muerto y el press no llegaría
+nunca a quien ya tuviera biblioteca. Se guarda junto a ella una HUELLA de las
+posturas de fábrica con las que se grabó: al cargar, la que siga idéntica a su
+huella es una copia sin tocar y se refresca; la que difiera la editó el usuario y
+se respeta. Sin huella —viniendo de una versión anterior— se refrescan todas las
+de fábrica una sola vez.
+
+**Los sondeos de las acomodaciones ya no zarandean la física.** Las acomodaciones
+que resuelven contra la barra —el roce, el equilibrio— la mueven decenas de veces
+por paso mientras buscan, y cada una de esas posiciones es un TANTEO, no un sitio
+donde la barra vaya a quedarse. Usaban `sincronizarBarraManiqui`, que en
+simulación teletransporta el cuerpo rígido: más de cien recolocaciones por paso,
+de las que solo la última significaba algo. Ahora los sondeos mueven solo la
+malla y la física se entera una vez, al final del paso —y esa llamada va DESPUÉS
+del replantado, que traslada la figura entera, cosa que antes no ocurría—.
+
+**El equilibrio de la cadera aplica un incremento, no un ángulo.** Igualando las
+dos caderas al mismo valor se borraba cualquier asimetría que el usuario hubiera
+puesto a mano. Y el tobillo de cada lado cierra su cadena con la cadera y la
+rodilla de SU lado, no con una común.
+
+**El roce anota sus propios lados.** Reutilizaba los de la plomada: funcionaba
+porque las dos van juntas en el peso muerto, pero habría dejado el roce mudo —y
+en silencio— en cuanto una fase llevara roce sin plomada.
+
+### Añadido
+
+**El rack frontal de la sentadilla frontal, resuelto por cinemática inversa.**
+Pedido del diseñador: «empuñar la barra, mediante extensión de la muñeca, flexión
+de codos, flexión y rotación externa de los hombros en una posición estable que
+coloca los codos más separados del cuerpo y más arriba respecto de la postura
+actual. Si la geometría no lo permite, se compensa con apertura o mayor
+separación de la tomada».
+
+No sale de un barrido de ángulos sino de resolver el brazo: con la mano clavada
+en el eje de la barra queda UNA sola libertad —el brazo entero gira alrededor de
+la recta hombro-mano— y es justo la que sube o baja el codo. Se recorre esa
+rotación entera, se descartan las posiciones fuera del rango articular o que
+meten la mano en la cabeza, y se elige la que deja el codo más alto. Medido
+contra la postura anterior: el codo **sube 9,5 cm** (de 20,0 bajo el hombro a
+10,5) y se **adelanta 8,4** (de 13,0 a 21,4), con el antebrazo apuntando arriba
+—la mano 17,3 cm por encima del codo— y la tomada abierta de 34,4 a **42,0 cm**
+por lado, que es la compensación autorizada.
+
+Hizo falta pedir explícitamente que el antebrazo apunte ARRIBA: sin esa
+condición, el solucionador encontraba soluciones que ponían la mano en la barra
+con los dos antebrazos cruzados en horizontal sobre el pecho. Cumplían la
+geometría y no eran un rack.
+
+Y está medido el precio: recorriendo TODAS las posiciones del brazo que dejan la
+mano en la barra, las que consiguen un puño alineado con ella por debajo de 15°
+dejan el codo a 19,6 cm bajo el hombro —la postura vieja— y las que suben el codo
+a 10,5 no bajan de 30,5°. Son las dos puntas de la misma cuerda; el diseñador
+pidió el codo arriba, así que se paga el agarre.
+
+- `pruebas/prueba-biblioteca-posturas.mjs`: siembra una biblioteca guardada y
+  comprueba las dos mitades —que una postura de fábrica sin tocar se refresque y
+  que una editada por el usuario NO se pise—, además de que las posturas propias
+  del usuario sobrevivan. Es la prueba que le faltaba a todo esto: las demás
+  arrancan con el navegador limpio y por eso el fallo vivió tanto tiempo.
+
+### Sobre las pruebas
+
+La batería completa se corrió entera dos veces (75 pruebas). En paralelo —que es
+como la corre `correr-todo.sh`— fallan una docena, y **ninguna es una regresión
+de esta versión**: once de las doce pasan en cuanto se corren EN SERIE. Es la
+flakiness por paralelismo que el propio guion avisa en su cabecera, y afecta a
+`800-debug` ×3, `atraviesa`, `cable-oculto`, `fable-v214`, `hub`, `maniqui-usa`,
+`v251`, `freno` y `maquina-entera`.
+
+Las dos que merecían mirarse de cerca se comprobaron contra el código de v0.3.0,
+donde fallan igual:
+
+- `prueba-maquina-entera` leía la pila de pesos tras un `setTimeout`, apostando a
+  que entre medias hubiera corrido un fotograma; cuando no corría daba rojos de
+  33 cm de forma intermitente. **Arreglado**: ahora le pide la animación a la
+  aplicación y lee después, que es determinista. Es la lección del LEEME otra
+  vez —esperar por reloj es la primera causa de rojo mentiroso—, esta vez dentro
+  de una prueba.
+- `prueba-freno` compara el recorrido de la pila con y sin freno (13,7 contra
+  13,1 cm): medio centímetro medido sobre una simulación física, así que el ruido
+  la tumba de vez en cuando. Queda anotado y sin tocar: cambiar el margen de un
+  ensayo ajeno sin entender su intención es peor que la flakiness.
+
+Y `prueba-sitio` no es una prueba de la aplicación: mide el sitio web de
+`sitio-web/` en el puerto 3100, así que sin ese servidor levantado muere con
+`ERR_CONNECTION_REFUSED` antes de imprimir nada. No es un fallo, es un requisito
+de entorno — pero conviene saberlo, porque un rojo así se confunde con uno de
+verdad.
+
 ## [0.3.0] — 2026-08-20
 
 La sentadilla frontal deja de equilibrarse con el tronco y pasa a hacerlo con la

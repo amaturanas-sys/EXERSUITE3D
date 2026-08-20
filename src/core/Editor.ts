@@ -3863,6 +3863,7 @@ export class Editor {
     const plomada: string[] = [];
     let mirada: number | null = null;
     let roce: string[] | null = null;
+    const ladosRoce = new Set<string>();
     let equilibrio: "spine" | "hip" | null = null;
     let apertura = false;
     for (const [id, lado] of this.zonasActivas) {
@@ -3931,10 +3932,12 @@ export class Editor {
           if (!joints[nombre] || this.jointLocks.has(nombre)) continue;
           if (ac.tipo === "plomada") { plomada.push(l); continue; }
           if (ac.tipo === "mirada") { mirada = ac.distanciaCm; continue; }
-          // EL ROCE MUEVE LOS DOS HOMBROS A LA VEZ, así que no se anota por
-          // lado: se guarda una sola vez y al aplicarlo se usan los lados que
-          // haya recogido la plomada, que son los mismos brazos.
-          if (ac.tipo === "roce") { roce = ac.segmentos; continue; }
+          // EL ROCE MUEVE LOS DOS HOMBROS A LA VEZ, así que guarda los segmentos
+          // una vez y ANOTA SUS PROPIOS LADOS. Antes reutilizaba los de la
+          // plomada: funcionaba porque las dos van juntas en el peso muerto,
+          // pero dejaba el roce mudo en cuanto una fase llevara roce sin
+          // plomada, y en silencio.
+          if (ac.tipo === "roce") { roce = ac.segmentos; ladosRoce.add(l); continue; }
           if (ac.tipo === "equilibrio") { equilibrio = ac.sobre; continue; }
           if (ac.tipo === "apertura") { apertura = true; continue; }
           const cadena = ac.cadena.map((f) => `${f}${l}`);
@@ -3988,7 +3991,7 @@ export class Editor {
     // querría estar la barra —sobre el medio del pie— y el roce solo la corrige
     // hacia DELANTE lo justo para no meterla en la carne. Al revés la plomada
     // desharía la corrección.
-    if (roce && plomada.length && this.acomodarRoce(plomada, roce, joints)) n++;
+    if (roce && ladosRoce.size && this.acomodarRoce([...ladosRoce], roce, joints)) n++;
     // EL EQUILIBRIO PRIMERO Y LA APERTURA DESPUÉS, y luego el equilibrio otra
     // vez. Las dos tocan la cadera —una su flexión, la otra su abducción— y se
     // mueven la referencia mutuamente: la abducción cambia dónde caen las
@@ -3998,7 +4001,7 @@ export class Editor {
     // clavadas, y no hace falta más porque cada paso solo corrige un paso.
     if (equilibrio && this.acomodarEquilibrio(joints, equilibrio)) n++;
     if (apertura && huella && this.acomodarApertura(joints, huella)) n++;
-    if (equilibrio) this.acomodarEquilibrio(joints, equilibrio);
+    if (equilibrio && this.acomodarEquilibrio(joints, equilibrio)) n++;
     if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
     this.reapoyarFigura();
@@ -4007,6 +4010,12 @@ export class Editor {
     //    despegada 11,54 cm. `plantarLosPies` se abstiene sola si la figura no
     //    está en el suelo o si algún pie tiene apoyo propio.
     this.plantarLosPies(huella);
+    // Y LA BARRA SE CUELGA DEL CUERPO YA RESUELTO, una sola vez y de verdad.
+    // Los sondeos de las acomodaciones solo TANTEAN la malla; esta es la
+    // llamada que entera a la física. Además va después del replantado, que
+    // traslada la figura entera: sin ella la barra se quedaría en el sitio de
+    // antes de plantar hasta el siguiente fotograma.
+    this.sincronizarBarraManiqui();
     const antes = this.contactoConEstructura;
     this.contactoConEstructura = this.medirChoqueConEstructura();
     this.cajasEstructura = null;
@@ -4300,7 +4309,12 @@ export class Editor {
       Math.min(...limites.map((l) => l![1])),
     ];
     const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
-    const original = radToDeg(piezas[0]!.rotation.x);
+    // SE MUEVE UN INCREMENTO, NO UN ÁNGULO ABSOLUTO. Igualando las dos caderas
+    // al mismo valor se borraría cualquier asimetría que el usuario haya puesto
+    // a mano; con un incremento común, la asimetría se conserva y las dos
+    // caderas siguen haciendo lo mismo, que es lo que pide la sentadilla.
+    const base = piezas.map((j) => radToDeg(j!.rotation.x));
+    const original = base[0];
     // EL TOBILLO VA DETRÁS DE LA CADERA, dentro de cada sondeo. Mover la cadera
     // sin mover el tobillo levanta el pie del suelo, y entonces «el medio del
     // pie» deja de significar nada: el primer intento saturó la cadera en su
@@ -4308,22 +4322,30 @@ export class Editor {
     // es la de siempre —`tobillo = objetivo − (cadera + rodilla)`, la misma que
     // usa la acomodación de la planta—, así que cada sondeo se hace con el pie
     // ya plantado y lo que se mide es una postura de verdad.
-    const tobillos = sobre === "hip"
-      ? (["L", "R"] as const).map((l) => ({
+    const tobillos = sobre !== "hip" ? [] : (["L", "R"] as const)
+      .map((l) => ({
         pieza: joints[`ankle${l}`],
+        cadera: joints[`hip${l}`],
         rodilla: joints[`knee${l}`],
         lim: JOINT_DOF[`ankle${l}`]?.x,
         objetivo: this.objetivoDeAcomodacion(`ankle${l}`, [`hip${l}`, `knee${l}`], joints),
-      })).filter((t) => t.pieza && t.rodilla && t.lim)
-      : [];
+      }))
+      .filter((t) => t.pieza && t.cadera && t.rodilla && t.lim);
     const desvio = (deg: number): number => {
-      for (const j of piezas) j!.rotation.x = degToRad(deg);
+      const d = deg - original;
+      piezas.forEach((j, i) => {
+        const l = limites[i]!;
+        j!.rotation.x = degToRad(Math.max(l[0], Math.min(l[1], base[i] + d)));
+      });
+      // El tobillo cierra la cadena con la cadera y la rodilla de SU lado.
       for (const t of tobillos) {
-        const quiere = t.objetivo - deg - radToDeg(t.rodilla!.rotation.x);
-        t.pieza!.rotation.x = degToRad(Math.max(t.lim![0], Math.min(t.lim![1], quiere)));
+        const q = t.objetivo
+          - radToDeg(t.cadera!.rotation.x)
+          - radToDeg(t.rodilla!.rotation.x);
+        t.pieza!.rotation.x = degToRad(Math.max(t.lim![0], Math.min(t.lim![1], q)));
       }
       fig.updateMatrixWorld(true);
-      this.sincronizarBarraManiqui();
+      this.tantearBarraEnElCuerpo();
       // LA HUELLA SE VUELVE A MEDIR EN CADA SONDEO, y no vale congelarla. La
       // pelvis es la RAÍZ del rig: girar la cadera mueve las PIERNAS, no el
       // tronco, así que la barra se queda donde está y lo que viaja es el pie.
@@ -4425,7 +4447,7 @@ export class Editor {
         h.obj!.rotation.x = degToRad(Math.max(lim[0], Math.min(lim[1], original[i] + d)));
       });
       fig.updateMatrixWorld(true);
-      this.sincronizarBarraManiqui();
+      this.tantearBarraEnElCuerpo();
       const eje = barra.mesh.position;
       let dentro = 0;
       for (const m of mallas) {
@@ -6810,6 +6832,31 @@ export class Editor {
       this.physics.recolocarPiezas(new Map([[obj.id, { p: pos, q: quat }]]));
     }
     this.requestRender();
+  }
+
+  /**
+   * LA BARRA SOBRE EL CUERPO, SIN TOCAR LA FÍSICA (v0.3.1).
+   *
+   * Las acomodaciones que resuelven contra la barra —el roce, el equilibrio—
+   * la mueven decenas de veces por paso mientras buscan: cada una de esas
+   * posiciones es un TANTEO, no un sitio donde la barra vaya a quedarse. Usando
+   * `sincronizarBarraManiqui` para tantear, en simulación cada tanteo
+   * teletransportaba el cuerpo rígido de la barra —más de cien recolocaciones
+   * por paso— y solo la última significaba algo. Aquí se mueve solo la malla; la
+   * física se entera una vez, al final del paso.
+   */
+  private tantearBarraEnElCuerpo(): void {
+    const enlace = this.barraManiqui;
+    if (!enlace || enlace.rackeada) return;
+    const obj = this.objects.get(enlace.objectId);
+    const ej = EJERCICIO_BARRA_POR_ID[enlace.ejercicio];
+    if (!obj || !ej) return;
+    const apoyos = this.apoyosDeLaBarra();
+    if (!apoyos) return;
+    const { pos, quat } = sitioDeLaBarra(ej.agarre as AgarreBarra, apoyos);
+    obj.mesh.position.copy(pos);
+    obj.mesh.quaternion.copy(quat);
+    obj.mesh.updateMatrixWorld(true);
   }
 
   /** Qué barra lleva puesta el maniquí, si lleva alguna. */

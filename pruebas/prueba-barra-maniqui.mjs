@@ -212,14 +212,29 @@ ok(Math.abs(fr.alto) < 2 && Math.abs(fr.fondo) < 2,
   `frontal: la mano está EN la barra, no encima (${fr.alto} cm sobre el eje, ${fr.fondo} de fondo)`);
 ok(fr.ancho > 28 && fr.ancho < 45,
   `frontal: agarre ancho, que es lo que compensa el rango de hombro y muñeca (${fr.ancho} cm del centro; el modelo da 34,1)`);
-ok(fr.codoAlto < -15 && fr.codoFondo > 0,
-  `frontal: el codo cae por debajo de la barra y por delante (${fr.codoAlto} / ${fr.codoFondo} cm; el modelo da −25,1 / +8,5)`);
+// EL CODO, ALTO Y ADELANTADO (v0.3.1). Esta prueba pedía antes un codo por
+// DEBAJO de −15 cm, que era la estampa del .obj del diseñador. Él pidió después
+// el rack de halterofilia: «una posición estable que coloca los codos más
+// separados del cuerpo y más arriba respecto de la postura actual». Así que el
+// límite cambia de sentido: ya no se comprueba que el codo caiga bajo, sino que
+// NO caiga tanto como antes y que vaya bien por delante.
+ok(fr.codoAlto > -22 && fr.codoAlto < -10 && fr.codoFondo > 6,
+  `frontal: el codo va alto y por delante (${fr.codoAlto} / ${fr.codoFondo} cm; antes −25,1 / +8,5)`);
 
 // EL PUÑO ENVUELVE LA BARRA. Con la mano puesta en el sitio todavía puede
 // verse mal: si el eje de empuñadura del puño —el que en reposo apunta como
 // apuntaría una barra atravesada en la mano— queda cruzado con el de la barra,
 // la mano se ve pegada al lado en vez de agarrando. Sin extensión de muñeca
 // ese cruce era de 54°.
+//
+// EL UMBRAL SUBE A 35° CON EL RACK NUEVO, y no por indulgencia: está medido que
+// las dos cosas se pelean. Recorriendo TODAS las posiciones del brazo que dejan
+// la mano en la barra —resolviendo el giro del brazo alrededor de la recta
+// hombro-mano y, para cada una, la mejor muñeca y pronación—, las que consiguen
+// un puño por debajo de 15° dejan el codo a 19,6 cm bajo el hombro, que es la
+// postura vieja; las que suben el codo a 10,5 no bajan de 30,5°. El diseñador
+// pidió el codo arriba, así que se paga el agarre. Lo que este umbral sigue
+// cazando es lo que había antes de tocar la muñeca: 62,5° de cruce.
 const puno = () => p.evaluate(() => {
   const T = window.exersuite.THREE, ed = window.exersuite.editor;
   const obj = ed.listObjects().find((o) => o.id === ed.getBarraManiqui().objectId);
@@ -232,8 +247,9 @@ const puno = () => p.evaluate(() => {
   return +T.MathUtils.radToDeg(Math.acos(Math.min(1, Math.abs(g.dot(eje))))).toFixed(1);
 });
 const punoFrontal = await puno();
-ok(punoFrontal < 15,
-  `frontal: el puño ENVUELVE la barra, no se apoya de lado (${punoFrontal}° de cruce)`);
+ok(punoFrontal < 35,
+  `frontal: el puño ENVUELVE la barra, no se apoya de lado (${punoFrontal}° de cruce; `
+  + `el mínimo alcanzable con este codo es 30,5)`);
 const munecaFrontal = await p.evaluate(() => {
   const T = window.exersuite.THREE;
   return +T.MathUtils.radToDeg(window.exersuite.editor.figureJoints().wristL.rotation.x).toFixed(1);

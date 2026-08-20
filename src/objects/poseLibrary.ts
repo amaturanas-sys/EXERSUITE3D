@@ -9,6 +9,13 @@ export type PoseMap = Record<string, PoseDef>;
 
 const STORAGE_KEY = "exersuite.poses.v2";
 const STORAGE_KEY_V1 = "exersuite.poses.v1";
+/**
+ * HUELLA DE LA BIBLIOTECA DE FÁBRICA con la que se guardó la del usuario. Sirve
+ * para distinguir «esta postura es la de fábrica tal cual» de «esta la editó el
+ * usuario», que es lo único que hace falta para poder mejorar las de fábrica sin
+ * pisar el trabajo de nadie.
+ */
+const STORAGE_KEY_FABRICA = "exersuite.poses.fabrica.v2";
 
 export const BUILTIN_POSES: PoseMap = {
   "De pie": {},
@@ -107,7 +114,10 @@ export const BUILTIN_POSES: PoseMap = {
    * línea media, y codo 25,1 cm bajo la barra y 8,5 por delante. Salen mano
    * 0,1 cm del eje, agarre 37,6 y codo −24,5 / +3,9. Y ojo con el codo: en el
    * modelo del diseñador NO va alto, va veinticinco centímetros por debajo de
-   * la barra. El agarre ancho es lo que compensa la falta de rango de hombro,
+   * la barra. (ESO CAMBIÓ EN v0.3.1: el diseñador pidió después el rack de
+   * halterofilia —codos altos y adelantados—, así que los ángulos del brazo
+   * frontal de aquí abajo ya no son los del .obj sino los que resuelve la
+   * cinemática inversa. Lo de arriba queda como historia de dónde salieron.) El agarre ancho es lo que compensa la falta de rango de hombro,
    * codo y muñeca, tal y como lo describió él. En la trasera el
    * hombro apenas flexiona 19°, abre 26° hacia afuera y el codo cae 21 cm por
    * debajo del hombro mientras el antebrazo sube a la barra por detrás. Ese
@@ -172,14 +182,53 @@ export const BUILTIN_POSES: PoseMap = {
     // le mueve el centro (ver `centroDeLaPisada` en Editor.ts).
     hipL: [0.42, 0.15, -10.29], hipR: [0.42, -0.15, 10.29],
     ankleL: [-0.43, 0, 10.3], ankleR: [-0.43, 0, -10.3],
-    shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
-    elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
+    // EL RACK FRONTAL, RESUELTO POR CINEMÁTICA INVERSA (v0.3.1).
+    //
+    // Pedido del diseñador: «la técnica correcta implica empuñar la barra,
+    // mediante extensión de la muñeca, flexión de codos, flexión y rotación
+    // externa de los hombros en una posición estable que coloca los codos más
+    // separados del cuerpo y más arriba respecto de la postura actual. Si la
+    // geometría no lo permite, se compensa con apertura o mayor separación de
+    // la tomada».
+    //
+    // No sale de un barrido de ángulos: sale de RESOLVER EL BRAZO. Con la mano
+    // clavada en el eje de la barra queda UNA sola libertad —el brazo entero
+    // gira alrededor de la recta hombro-mano— y es justo la que sube o baja el
+    // codo. Se recorre esa rotación entera, se descartan las posiciones que se
+    // salen del rango articular o que meten la mano en la cabeza, y se elige la
+    // que deja el codo más alto. La tomada se abre de 34,4 a 42,0 cm por lado,
+    // que es la compensación que autorizó el diseñador.
+    //
+    // Medido contra la postura anterior: el codo SUBE 9,5 cm —de 20,0 cm por
+    // debajo del hombro a 10,5— y se ADELANTA 8,4, de 13,0 a 21,4. Cuánto puede
+    // subir lo limita el rango de `shoulderL.z`, que topa en +30: la solución
+    // elegida se queda en 29,8.
+    //
+    // Y EL ANTEBRAZO APUNTA ARRIBA, con la mano 17,8 cm por encima del codo. Es
+    // lo que distingue un rack de unos brazos cruzados sobre el pecho, y hubo
+    // que pedirlo: sin esa condición el solucionador encontraba soluciones que
+    // ponían la mano en la barra con los dos antebrazos en horizontal.
+    shoulderL: [-59.2, -50.2, 29.8], shoulderR: [-59.2, 50.2, -29.8],
+    elbowL: [-123.5, -8, 0], elbowR: [-123.5, 8, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
     // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
-    // el de la barra y la mano se ve pegada al lado, no agarrando; con ella
-    // baja a 10,6°. Comprobado que la X positiva es extensión —con el brazo
-    // colgando lleva la mano hacia atrás— y no flexión.
-    wristL: [25, 0, 25], wristR: [25, 0, -25],
+    // el de la barra y la mano se ve pegada al lado, no agarrando. Comprobado
+    // que la X positiva es extensión —con el brazo colgando lleva la mano hacia
+    // atrás— y no flexión.
+    //
+    // Y EL AGARRE SE PAGA CON ALTURA DE CODO (v0.3.1). Con el brazo recolocado,
+    // los +25 de muñeca de antes dejaban el puño 62,5° cruzado con la barra.
+    // Barriendo muñeca y pronación del antebrazo dentro de sus rangos, el mejor
+    // agarre a esta altura de codo baja a 30,5°: no llega a los 10,6° de la
+    // postura anterior, y no es por falta de búsqueda.
+    //
+    // ESTÁ MEDIDO EL COMPROMISO, que es lo que hay que saber si algún día se
+    // quiere cambiar: recorriendo TODAS las posiciones del brazo que dejan la
+    // mano en la barra, las que consiguen un puño por debajo de 15° dejan el
+    // codo a 19,6 cm bajo el hombro —o sea, la postura vieja— y las que suben el
+    // codo a 10,5 no bajan de 30°. Son las dos puntas de la misma cuerda. El
+    // diseñador pidió el codo arriba, así que se paga el agarre.
+    wristL: [14, 0, 25], wristR: [14, 0, -25],
   },
   "Sentadilla frontal (fondo)": {
     // LA PIERNA DEL FONDO, RESUELTA POR GEOMETRÍA (v0.2.91) y no a ojo.
@@ -215,14 +264,27 @@ export const BUILTIN_POSES: PoseMap = {
     ankleL: [-43.46, 0, 9.13], ankleR: [-43.46, 0, -9.13],
     // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
     spine: [0, 0, 0],
-    shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
-    elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
+    shoulderL: [-59.2, -50.2, 29.8], shoulderR: [-59.2, 50.2, -29.8],
+    elbowL: [-123.5, -8, 0], elbowR: [-123.5, 8, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
     // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
-    // el de la barra y la mano se ve pegada al lado, no agarrando; con ella
-    // baja a 10,6°. Comprobado que la X positiva es extensión —con el brazo
-    // colgando lleva la mano hacia atrás— y no flexión.
-    wristL: [25, 0, 25], wristR: [25, 0, -25],
+    // el de la barra y la mano se ve pegada al lado, no agarrando. Comprobado
+    // que la X positiva es extensión —con el brazo colgando lleva la mano hacia
+    // atrás— y no flexión.
+    //
+    // Y EL AGARRE SE PAGA CON ALTURA DE CODO (v0.3.1). Con el brazo recolocado,
+    // los +25 de muñeca de antes dejaban el puño 62,5° cruzado con la barra.
+    // Barriendo muñeca y pronación del antebrazo dentro de sus rangos, el mejor
+    // agarre a esta altura de codo baja a 30,5°: no llega a los 10,6° de la
+    // postura anterior, y no es por falta de búsqueda.
+    //
+    // ESTÁ MEDIDO EL COMPROMISO, que es lo que hay que saber si algún día se
+    // quiere cambiar: recorriendo TODAS las posiciones del brazo que dejan la
+    // mano en la barra, las que consiguen un puño por debajo de 15° dejan el
+    // codo a 19,6 cm bajo el hombro —o sea, la postura vieja— y las que suben el
+    // codo a 10,5 no bajan de 30°. Son las dos puntas de la misma cuerda. El
+    // diseñador pidió el codo arriba, así que se paga el agarre.
+    wristL: [14, 0, 25], wristR: [14, 0, -25],
   },
   "Sentadilla trasera": {
     // EL MISMO TRONCO QUE EN EL FONDO. Con la barra sobre los trapecios uno no
@@ -479,7 +541,25 @@ export const BUILTIN_POSES: PoseMap = {
   },
 };
 
-let poses: PoseMap = load();
+/**
+ * LA BIBLIOTECA SE CARGA AL FINAL DEL MÓDULO, y no aquí (v0.3.1).
+ *
+ * Aquí estaba `let poses = load()`, y era un fallo de los gordos y silenciosos:
+ * `load()` llama a `conPosturasDeFabrica`, que usa `RENOMBRADAS` y
+ * `POSTURAS_INTERNAS` — dos `const` declarados MÁS ABAJO en este mismo archivo—.
+ * Tocar un `const` antes de su declaración lanza `ReferenceError` por la zona
+ * muerta temporal, el `try/catch` de `load` lo tragaba, y la función devolvía
+ * las posturas de fábrica como si no hubiera nada guardado.
+ *
+ * O sea que la biblioteca del usuario NUNCA se leía: sus posturas propias
+ * desaparecían al recargar y sus ediciones de las de fábrica también. Se veía
+ * como «la aplicación no guarda mis posturas», y no se veía en ninguna prueba
+ * porque todas arrancan con el navegador limpio.
+ *
+ * La declaración se queda aquí para que las funciones de abajo la vean; la
+ * carga de verdad ocurre al final del archivo, con todo ya declarado.
+ */
+let poses: PoseMap = {}
 
 /**
  * Añade a la biblioteca guardada las posturas de FÁBRICA que no estén.
@@ -524,7 +604,38 @@ const RENOMBRADAS: Record<string, string> = {
   "Press vertical (rack)": "Press vertical",
 };
 
-function conPosturasDeFabrica(previas: PoseMap): PoseMap {
+/** ¿Son la misma postura, articulación a articulación? */
+function mismaPostura(a: PoseDef | undefined, b: PoseDef | undefined): boolean {
+  if (!a || !b) return false;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) {
+    const va = a[k], vb = b[k];
+    if (!vb) return false;
+    for (let i = 0; i < 3; i++) if (Math.abs(va[i] - vb[i]) > 1e-6) return false;
+  }
+  return true;
+}
+
+/**
+ * LAS POSTURAS DE FÁBRICA NO SE CONGELAN EN localStorage (v0.3.1).
+ *
+ * Este era un fallo de fondo y silencioso: la biblioteca guardada ganaba SIEMPRE
+ * a la de fábrica, así que la primera vez que alguien abría la aplicación se le
+ * grababa una copia de las posturas de entonces y ya no volvía a recibir ninguna
+ * corrección. Todo el trabajo de 0.2.95 a 0.3.1 sobre la sentadilla, el peso
+ * muerto y el press —ángulos resueltos, racks rehechos— no habría llegado nunca
+ * a quien ya tuviera biblioteca.
+ *
+ * Se arregla guardando junto a la biblioteca una HUELLA de las posturas de
+ * fábrica con las que se guardó. Al cargar, una postura de fábrica que siga
+ * IDÉNTICA a su huella es una copia sin tocar y se refresca; una que difiera la
+ * editó el usuario y se respeta. Sin huella —la primera vez, viniendo de una
+ * versión anterior— se refrescan todas las de fábrica: es un cambio de una sola
+ * vez, y quedarse congelado seis versiones es peor que perder un retoque que
+ * además se puede volver a guardar con otro nombre.
+ */
+function conPosturasDeFabrica(previas: PoseMap, huella: PoseMap | null): PoseMap {
   const out: PoseMap = {};
   for (const [nombre, def] of Object.entries(previas)) {
     const nuevo = RENOMBRADAS[nombre];
@@ -534,7 +645,9 @@ function conPosturasDeFabrica(previas: PoseMap): PoseMap {
     // sobra: se descarta en vez de dejar las dos en la lista.
   }
   for (const [nombre, def] of Object.entries(BUILTIN_POSES)) {
-    if (!(nombre in out)) out[nombre] = structuredClone(def);
+    if (!(nombre in out)) { out[nombre] = structuredClone(def); continue; }
+    const sinTocar = huella === null || mismaPostura(out[nombre], huella[nombre]);
+    if (sinTocar) out[nombre] = structuredClone(def);
   }
   // LAS INTERNAS SE REFRESCAN SIEMPRE. Son METAS del gesto, no posturas de
   // usuario: una copia guardada —de una versión anterior, o retocada cuando
@@ -549,7 +662,11 @@ function conPosturasDeFabrica(previas: PoseMap): PoseMap {
 function load(): PoseMap {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return conPosturasDeFabrica(JSON.parse(raw) as PoseMap);
+    if (raw) {
+      const bruto = localStorage.getItem(STORAGE_KEY_FABRICA);
+      const huella = bruto ? (JSON.parse(bruto) as PoseMap) : null;
+      return conPosturasDeFabrica(JSON.parse(raw) as PoseMap, huella);
+    }
     // MIGRACIÓN v1 → v2 (v0.2.38): el codo doblaba al revés, así que las
     // posturas guardadas con el criterio viejo se pasan al nuevo cambiando
     // el signo de su flexión. Las que el usuario creó se conservan.
@@ -564,7 +681,7 @@ function load(): PoseMap {
       // Las de fábrica se rehacen: pueden haber cambiado por otros motivos.
       // Y se pasa por `conPosturasDeFabrica` para que también aquí valgan el
       // renombrado y el refresco de las internas.
-      return conPosturasDeFabrica({ ...previas, ...structuredClone(BUILTIN_POSES) });
+      return conPosturasDeFabrica({ ...previas, ...structuredClone(BUILTIN_POSES) }, null);
     }
   } catch {
     /* sin persistencia disponible */
@@ -575,6 +692,9 @@ function load(): PoseMap {
 function persist(): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(poses));
+    // La huella se reescribe con la de fábrica ACTUAL: lo que se guarda es «con
+    // qué versión de fábrica está sincronizada esta biblioteca».
+    localStorage.setItem(STORAGE_KEY_FABRICA, JSON.stringify(BUILTIN_POSES));
   } catch {
     /* ignora si no hay localStorage */
   }
@@ -616,3 +736,7 @@ export function resetDefaultPoses(): void {
   poses = structuredClone(BUILTIN_POSES);
   persist();
 }
+
+// AQUÍ, con `RENOMBRADAS`, `POSTURAS_INTERNAS`, `conPosturasDeFabrica` y `load`
+// ya declarados, es donde la biblioteca guardada se puede leer de verdad.
+poses = load();
