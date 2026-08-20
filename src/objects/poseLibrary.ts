@@ -120,18 +120,35 @@ export const BUILTIN_POSES: PoseMap = {
    * y la rodilla; el eje largo del pie del maniquí acaba en (−0,583, 0, 0,812)
    * contra el (−0,591, 0, 0,807) medido.
    *
-   * DE PIE SÍ SE ORIENTA, y desde v0.2.96, porque no hay otra manera. El pie es
-   * un ANCLAJE —lo dijo el diseñador con todas las letras: «los pies son
-   * anclaje en la superficie y el resto del cuerpo opera con la cinemática ya
-   * descrita, ya que la sentadilla es un ejercicio de cadena cerrada»—, así que
-   * su orientación en el mundo tiene que ser LA MISMA arriba y abajo. Y el
-   * tobillo de este esqueleto no tiene eje Y, de modo que con la rodilla recta
-   * esa apertura solo puede venir de la ROTACIÓN AXIAL DE CADERA. Se declara.
+   * Y DE PIE TAMPOCO SE ORIENTA: EL PIE PIVOTA AL BAJAR (v0.2.97). Esto dio una
+   * vuelta entera y merece quedar escrito, porque la conclusión intermedia era
+   * falsa por culpa de CÓMO se medía.
+   *
+   * El diseñador pidió que los pies no se deslizaran, y midiéndolo con el centro
+   * de la CAJA del pie salía que la puntera viajaba 10,13 cm y el talón 9,82 en
+   * sentido contrario, girando sobre un punto a 29,43 cm del pie: derrape puro.
+   * Se «arregló» declarando la apertura también de pie, con lo que el pie ya no
+   * giraba nada. Pero el diseñador vio la versión anterior y dijo que aquella
+   * era la buena: «los apoyos del pie no deben deslizarse sobre la superficie,
+   * pero sí pueden experimentar un grado menor de rotación externa, que se
+   * transmite por abducción y rotación externa de la cadera al descender».
+   *
+   * Tenía razón, y el error era de la medida: la caja de three está alineada con
+   * el MUNDO, así que girar el pie sobre sí mismo ya le mueve el centro aunque
+   * el pie no viaje. Midiendo la huella donde de verdad toca —el centroide de
+   * los vértices apoyados— resulta que estos ángulos YA hacen pivotar el pie en
+   * el sitio: la huella se mueve 0,01 cm mientras la puntera gira 35,8°. Es
+   * atornillar el pie al bajar, que es exactamente el gesto real.
+   *
+   * Los cinco ángulos salen de resolver la pierna de pie pidiendo planta plana,
+   * el MISMO CENTRO DE HUELLA que el fondo y la barra a plomo, con el pie recto
+   * como única preferencia. Caen a menos de 0,4° de los que el diseñador ya
+   * tenía en v0.2.95, que es la mejor señal de que aquello estaba bien.
    *
    * La planta queda plana en los dos extremos (su normal sale
    * (0,000, 1,000, 0,000)), que es la comprobación de que la cadena cierra.
    */
-  "Sentadilla frontal (arriba)": {
+  "Sentadilla frontal": {
     // De pie bajo la barra: piernas rectas, tronco a plomo y el rack ya hecho.
     // En el modelo los brazos de la figura de pie y los del fondo son idénticos.
     // LA ESTAMPA DE SENTADILLA YA ESTÁ PUESTA DE PIE (v0.2.91). Nadie se coloca
@@ -140,31 +157,21 @@ export const BUILTIN_POSES: PoseMap = {
     // Sin esto el maniquí abría 14,3 cm por lado al descender —medido—, que es
     // el gesto de quien se recoloca, no el de quien levanta.
     //
-    // Y LA ESTAMPA ES EL PIE ENTERO, no solo su anchura (v0.2.96). Igualar la
-    // separación entre los pies dejaba fuera la mitad del problema: el pie
-    // seguía GIRANDO 34,98° al bajar y volviendo a 0° al subir. El centro
-    // apenas se movía (0,23 cm) —por eso el plantado por traslación lo daba por
-    // bueno— pero la PUNTA viajaba 10,13 cm y el TALÓN 9,82 cm en sentido
-    // contrario, alrededor de un punto fijo situado a 29,43 cm del centro del
-    // pie, o sea FUERA del pie: no pivotaba, derrapaba. Casi 20 cm de arrastre
-    // por pie en cada bajada, con el pie clavado en el suelo.
+    // EL PIE PIVOTA, NO DERRAPA (v0.2.97). Estos cinco ángulos salen de resolver
+    // la pierna de pie —con el fondo del modelo intacto— pidiendo tres cosas:
+    // planta plana, el MISMO CENTRO DE HUELLA que en el fondo, y la barra a
+    // plomo; con el pie recto como única preferencia. Residuos medidos: huella
+    // 0,01 cm, planta 0,01°, barra 0,01 cm, y 892 vértices en contacto en los
+    // dos extremos.
     //
-    // Los cinco ángulos de abajo son la solución de un sistema, no una
-    // estimación: con el fondo del modelo intacto —cadera −78,61/3/−36,5 y los
-    // 126° de rodilla—, se resuelve la pierna de pie para que deje el pie con
-    // LA MISMA orientación en el mundo y la MISMA separación entre pies. Son
-    // las dos únicas cosas que una traslación no puede arreglar, así que
-    // igualadas, `plantarLosPies` ya hace coincidir el pie exactamente.
-    // Residuos medidos: 0,01° de rumbo, 0,00 cm de anchura, 0,01 cm de barra.
-    //
-    // EL −34,7 DE ROTACIÓN AXIAL NO ES UN CERO PERDIDO. La puntera abierta a
-    // 35,6° hay que declararla de pie porque el tobillo de este esqueleto NO
-    // TIENE EJE Y (`ankleL: { x, z }`) y con la rodilla recta la abducción sola
-    // pediría −90° contra un tope de −45. En el FONDO se sigue cayendo de la
-    // cadena, como midió el diseñador; de pie se dice. Que es, además, lo que
-    // hace cualquiera: la puntera se abre ANTES de bajar, no a mitad de camino.
-    hipL: [-9.39, -34.7, -9.37], hipR: [-9.39, 34.7, 9.37],
-    ankleL: [7.73, 0, 3.96], ankleR: [7.73, 0, -3.96],
+    // La puntera sí gira: 35,8° de rotación externa al bajar, que es lo que
+    // transmiten la abducción y la rotación externa de la cadera. Pero gira
+    // SOBRE LA PROPIA HUELLA, que no se mueve: es atornillar el pie, no
+    // arrastrarlo. Ojo con medirlo: con el centro de la CAJA del pie parece que
+    // derrapa 10 cm, porque la caja está alineada con el mundo y girar el pie ya
+    // le mueve el centro (ver `centroDeLaPisada` en Editor.ts).
+    hipL: [0.42, 0.15, -10.29], hipR: [0.42, -0.15, 10.29],
+    ankleL: [-0.43, 0, 10.3], ankleR: [-0.43, 0, -10.3],
     shoulderL: [-33, -24, 24], shoulderR: [-33, 24, -24],
     elbowL: [-140, 6, 0], elbowR: [-140, -6, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
@@ -217,7 +224,7 @@ export const BUILTIN_POSES: PoseMap = {
     // colgando lleva la mano hacia atrás— y no flexión.
     wristL: [25, 0, 25], wristR: [25, 0, -25],
   },
-  "Sentadilla trasera (arriba)": {
+  "Sentadilla trasera": {
     // EL MISMO TRONCO QUE EN EL FONDO. Con la barra sobre los trapecios uno no
     // está perfectamente vertical arriba y se inclina 3° al bajar: se está ya
     // con esos 3°, y así el punto de apoyo de la barra no viaja con el pecho.
@@ -231,8 +238,8 @@ export const BUILTIN_POSES: PoseMap = {
     // MISMA PIERNA QUE LA FRONTAL, y por la misma razón: ver allí. El pie de
     // arriba y el del fondo son literalmente el mismo pie —misma orientación en
     // el mundo, misma separación— así que no se mueve al bajar ni al subir.
-    hipL: [-9.39, -34.7, -9.37], hipR: [-9.39, 34.7, 9.37],
-    ankleL: [7.73, 0, 3.96], ankleR: [7.73, 0, -3.96],
+    hipL: [0.42, 0.15, -10.29], hipR: [0.42, -0.15, 10.29],
+    ankleL: [-0.43, 0, 10.3], ankleR: [-0.43, 0, -10.3],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
     // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
@@ -283,7 +290,7 @@ export const BUILTIN_POSES: PoseMap = {
    * —del hombro al centro de la mano— es de 56 cm, y cada centímetro que le
    * falta al brazo lo paga la columna.
    */
-  "Peso muerto (suelo)": {
+  "Peso muerto": {
     hipL: [-79.8, 0, 0], hipR: [-79.8, 0, 0],
     kneeL: [94.8, 0, 0], kneeR: [94.8, 0, 0],
     ankleL: [-15, 0, 0], ankleR: [-15, 0, 0],
@@ -295,9 +302,10 @@ export const BUILTIN_POSES: PoseMap = {
     // LA MIRADA FIJA UN PUNTO A DOS METROS por delante de donde pisa, en el
     // suelo: es lo que mantiene la técnica y protege el cuello. Con el tronco
     // casi horizontal hace falta bastante extensión para llegar a ese blanco;
-    // resuelto contra él, la desviación queda en 0,1° y la vista sale 26° bajo
-    // la horizontal.
-    neck: [-51.8, 0, 0],
+    // resuelto contra él, la desviación queda en 0,1° y la vista sale 21° bajo
+    // la horizontal. A 2,25 m —el centro de la horquilla de 2 a 2,5 que pidió
+    // el diseñador— salen 57,9° (v0.2.97: antes eran 51,8, contra 2,0 m).
+    neck: [-57.9, 0, 0],
   },
   /**
    * HITO DEL PESO MUERTO (v0.2.96): el punto donde la barra alcanza la rótula.
@@ -326,24 +334,23 @@ export const BUILTIN_POSES: PoseMap = {
     kneeL: [23.77, 0, 0], kneeR: [23.77, 0, 0],
     ankleL: [0, 0, 0], ankleR: [0, 0, 0],
     shoulderL: [-64.2, 0, 0], shoulderR: [-64.2, 0, 0],
-    neck: [-51.8, 0, 0],
+    // Resuelto contra la misma marca del suelo a 2,25 m (v0.2.97).
+    neck: [-49.9, 0, 0],
   },
   /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.
    *
-   * EL CUELLO, A MITAD DE CAMINO, y esto lo decidió el diseñador. Manteniendo
-   * la misma marca del suelo a dos metros, desde la cabeza ya erguida harían
-   * falta 38° de barbilla abajo —es literalmente lo que pasa si no despegas la
-   * vista del sitio—; con el cuello neutro, la mirada se va al frente. Los 19°
-   * son el punto medio: quien relaja la vista al subir sin llegar a levantar la
-   * cabeza.
-   *
-   * Que quede claro de dónde sale, porque no es como los demás ángulos de este
-   * archivo: la salida del peso muerto está RESUELTA contra un blanco medible
-   * —el punto del suelo— y esto es un criterio, no una medida.
+   * EL CUELLO NO SUELTA LA MARCA, tampoco arriba (v0.2.97). Antes eran 19°: un
+   * punto medio de criterio, «quien relaja la vista al subir sin llegar a
+   * levantar la cabeza». El diseñador pidió lo contrario —«mantener la mirada
+   * en todo momento a 2 o 2,5 metros por delante de la figura», porque bajar un
+   * peso muerto con el cuello en flexión es lo que arriesga la espalda—, así
+   * que este ángulo pasa a estar RESUELTO como los otros, contra la misma marca
+   * del suelo a 2,25 m: 32°. Es barbilla abajo desde la cabeza erguida, que es
+   * literalmente lo que pasa si no despegas la vista del sitio.
    */
   "Peso muerto (bloqueo)": {
-    neck: [19, 0, 0],
+    neck: [32, 0, 0],
     // LA BARRA SOBRE EL MEDIO DEL PIE, también arriba (v0.2.91). La misma
     // regla sagital que gobierna el arranque vale en el bloqueo, y no se
     // cumplía: con los brazos colgando a plomo la barra quedaba 9,1 cm POR
@@ -356,17 +363,54 @@ export const BUILTIN_POSES: PoseMap = {
     // contra un medio del pie en 9,11.
     shoulderL: [-9.41, 0, 0], shoulderR: [-9.41, 0, 0],
   },
-  "Press vertical (rack)": {
-    // LA BARRA SALE DEL RACK POR LA MISMA VERTICAL por la que sube al bloqueo.
-    // Con el hombro en −30 y el codo en −150 el punto de partida quedaba 2,4 cm
-    // por detrás y el press describía una coma en vez de una recta.
-    //
-    // El desvío cero no lo da un punto sino una CURVA de pares hombro/codo, y
-    // sobre ella hay que elegir: cuanto más flexionado el hombro, más recorrido
-    // le queda al empuje pero menos rango tiene el press. Se toma −40/−141,18
-    // porque deja 7,9 cm de empuje —margen de sobra— con 37,6 cm de recorrido.
-    shoulderL: [-40, 0, 0], shoulderR: [-40, 0, 0],
-    elbowL: [-141.18, 80, 0], elbowR: [-141.18, -80, 0],
+  /**
+   * PRESS VERTICAL — LA SALIDA (v0.2.97).
+   *
+   * LA REGLA VIEJA ERA LA CULPABLE. Aquí ponía «la barra sale del rack por la
+   * misma vertical por la que sube al bloqueo», y sonaba razonable: si arriba y
+   * abajo comparten vertical, el empuje es una recta. El problema es que la
+   * vertical del bloqueo pasa por el medio del pie… y por la CARA. Con −40 de
+   * hombro y −141,18 de codo la barra arrancaba a 0,17 cm POR DETRÁS del medio
+   * del pie, a la altura del mentón, y su eje no rozaba la cabeza: la
+   * ATRAVESABA de lado a lado —14,12 cm de cráneo medidos por rayo, entrando en
+   * x=−7,17 y saliendo en x=+6,95— durante los primeros ocho pasos.
+   *
+   * El diseñador lo vio y dio la salida: «deberá iniciar con la barra
+   * posicionada más hacia ANTERIOR e INFERIOR, al extender hombros y bajar la
+   * altura de los codos». Es exactamente el reparto que tiene este rig:
+   *
+   *   · EL HOMBRO ES LA ÚNICA MANIVELA DE LA ALTURA DEL CODO. El codo describe
+   *     un círculo de 21,86 cm de radio alrededor del hombro, así que su suelo
+   *     absoluto son 114,10 cm y sólo hay 5,12 cm de bajada en todo el rig. El
+   *     codo X no le mueve la altura ni un milímetro.
+   *   · EL CODO X ES EL AVANCE DE LA BARRA: +0,59 cm por grado, casi lineal, sin
+   *     tocar la altura del codo.
+   *
+   * De ahí −30 y −130. El hombro no baja más porque el codo retrocede 0,35 cm
+   * por grado y pasado −20 deja de estar debajo de la barra (a −20 ya está 3,98
+   * cm por detrás del medio del pie): el rack dejaría de parecer un rack. Y el
+   * codo no se flexiona más porque −131,42 es donde la barra deja de despejar
+   * la cabeza; −130 conserva 0,82 cm de holgura y 20° hasta el tope.
+   *
+   * Medido: barra a y=149,84 (3,49 cm más baja) y avance +9,22 (9,39 cm más
+   * anterior), codo a 117,03 (2,19 más bajo), agarre intacto (47,74 cm) y
+   * CERO pasos con penetración en la cabeza, contra los ocho de antes.
+   *
+   * Y LOS 12° DE CUELLO son la extensión cervical que pidió el diseñador:
+   * «cuando el press parte hay un grado de extensión cervical que ayuda al
+   * clearance del rostro». Compran 1,19 cm de holgura (0,82 → 2,01) por el 20 %
+   * del rango. Ojo: son el COMPLEMENTO de la corrección del brazo, no su
+   * sustituto — con la salida vieja habrían hecho falta 44° para llegar a cero,
+   * porque allí la barra no rozaba el mentón, estaba metida en el cráneo.
+   *
+   * El cuello vuelve solo a neutro durante el empuje y se re-extiende al bajar:
+   * lo hace el reparto del plan, sin declarar nada (ver `PLANES` en
+   * movimientos.ts).
+   */
+  "Press vertical": {
+    shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
+    elbowL: [-130, 80, 0], elbowR: [-130, -80, 0],
+    neck: [-12, 0, 0],
   },
   /** Bloqueo del press: codos extendidos y barra sobre el medio del pie. */
   "Press vertical (bloqueo)": {
@@ -442,10 +486,59 @@ let poses: PoseMap = load();
  * guardaba una copia el primer día y no se volvía a mirar el catálogo. Las que
  * el usuario haya modificado se respetan tal cual.
  */
+/**
+ * POSTURAS INTERNAS (v0.2.97): las que el gesto ATRAVIESA, no las que se posan.
+ *
+ * El diseñador lo pidió para los tres ejercicios con barra: «conserva el press
+ * con barra desde la base y elimina el que está en fase de bloqueo», «conserva
+ * una única postura de partida para peso muerto, desde abajo, y elimina el resto
+ * de ellas», y las sentadillas «frontsquat y backsquat a secas».
+ *
+ * Y tiene razón de fondo: desde que el gesto tiene CALENDARIO (ver `PLANES` en
+ * movimientos.ts), los extremos y los hitos dejaron de ser algo que uno elige y
+ * pasaron a ser adonde el movimiento LLEGA. Ofrecerlos en la lista invitaba a
+ * saltar al final del ejercicio sin haberlo hecho.
+ *
+ * Siguen existiendo —son las METAS del plan, y la única fuente de verdad de sus
+ * ángulos—, pero no se listan. `getPose` las encuentra igual.
+ */
+export const POSTURAS_INTERNAS = new Set<string>([
+  "Sentadilla frontal (fondo)",
+  "Sentadilla trasera (fondo)",
+  "Peso muerto (rodilla)",
+  "Peso muerto (bloqueo)",
+  "Press vertical (bloqueo)",
+]);
+
+/**
+ * Nombres que cambiaron al quedarse una sola postura por ejercicio. Se renombra
+ * en la biblioteca guardada CONSERVANDO lo que el usuario hubiera editado.
+ */
+const RENOMBRADAS: Record<string, string> = {
+  "Sentadilla frontal (arriba)": "Sentadilla frontal",
+  "Sentadilla trasera (arriba)": "Sentadilla trasera",
+  "Peso muerto (suelo)": "Peso muerto",
+  "Press vertical (rack)": "Press vertical",
+};
+
 function conPosturasDeFabrica(previas: PoseMap): PoseMap {
-  const out = { ...previas };
+  const out: PoseMap = {};
+  for (const [nombre, def] of Object.entries(previas)) {
+    const nuevo = RENOMBRADAS[nombre];
+    if (nuevo && !(nuevo in previas)) out[nuevo] = def;
+    else if (!nuevo) out[nombre] = def;
+    // Si el nombre nuevo YA está en la biblioteca guardada, la entrada vieja
+    // sobra: se descarta en vez de dejar las dos en la lista.
+  }
   for (const [nombre, def] of Object.entries(BUILTIN_POSES)) {
     if (!(nombre in out)) out[nombre] = structuredClone(def);
+  }
+  // LAS INTERNAS SE REFRESCAN SIEMPRE. Son METAS del gesto, no posturas de
+  // usuario: una copia guardada —de una versión anterior, o retocada cuando
+  // todavía se listaban— se llevaría el aterrizaje del ejercicio a otros
+  // ángulos sin que nadie se entere.
+  for (const nombre of POSTURAS_INTERNAS) {
+    if (BUILTIN_POSES[nombre]) out[nombre] = structuredClone(BUILTIN_POSES[nombre]);
   }
   return out;
 }
@@ -466,7 +559,9 @@ function load(): PoseMap {
         }
       }
       // Las de fábrica se rehacen: pueden haber cambiado por otros motivos.
-      return { ...previas, ...structuredClone(BUILTIN_POSES) };
+      // Y se pasa por `conPosturasDeFabrica` para que también aquí valgan el
+      // renombrado y el refresco de las internas.
+      return conPosturasDeFabrica({ ...previas, ...structuredClone(BUILTIN_POSES) });
     }
   } catch {
     /* sin persistencia disponible */
@@ -482,7 +577,16 @@ function persist(): void {
   }
 }
 
+/**
+ * Las posturas que se ofrecen para POSAR. Las internas —los extremos y los
+ * hitos que el gesto atraviesa— no salen: ver `POSTURAS_INTERNAS`.
+ */
 export function poseNames(): string[] {
+  return Object.keys(poses).filter((n) => !POSTURAS_INTERNAS.has(n));
+}
+
+/** Todas, incluidas las internas. Lo que necesita el motor del gesto. */
+export function poseNamesTodas(): string[] {
   return Object.keys(poses);
 }
 

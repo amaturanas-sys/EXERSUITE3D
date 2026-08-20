@@ -369,7 +369,28 @@ export class SceneObject {
         this.geometriaDisco(this.carga.diamCm, this.carga.grosorCm),
         buildMaterial("hierro-fundido"),
       );
+      // LA CARA CON RELIEVE MIRA HACIA FUERA, a los dos lados (v0.2.97).
+      //
+      // En un disco de verdad las letras y los números van en UNA cara, y en
+      // una barra cargada esa cara mira a los dos extremos: se lee desde
+      // cualquiera de los dos perfiles. Aquí todos los discos se montaban con
+      // la misma orientación, así que en un extremo se leía y en el otro se veía
+      // el dorso liso.
+      //
+      // El relieve del modelo está en su cara −Y: de sus 11 871 vértices, 11 583
+      // caen en y < 0 y solo 288 en y > 0. Alineado con `quat`, esa cara apunta
+      // hacia −eje, que es HACIA FUERA en el lado negativo y hacia dentro en el
+      // positivo. Así que se voltea el lado positivo.
       disco.quaternion.copy(quat);
+      if ((this.carga.lados === 2 ? lado : 1) === 1) {
+        // Media vuelta sobre el eje X propio del disco: cambia a qué lado mira
+        // la cara sin sacarlo de su plano. (Si algún día el relieve lleva texto
+        // legible y sale invertido, el eje de este giro es lo que hay que
+        // cambiar: cualquier perpendicular al eje de carga sirve para voltear.)
+        disco.quaternion.multiply(
+          new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI),
+        );
+      }
       disco.position.copy(centro).addScaledVector(eje, lado * s);
       disco.castShadow = true;
       disco.receiveShadow = true;

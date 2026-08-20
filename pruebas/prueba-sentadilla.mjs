@@ -231,7 +231,7 @@ ok(F.muneca[1] > 0 && T2.muneca[1] > 0,
 
 // 3. Las posturas DE ARRIBA son el mismo rack con las piernas estiradas: en el
 //    modelo los brazos de la figura de pie y los del fondo son idénticos.
-for (const [arriba, fondo] of [["Sentadilla frontal (arriba)", F], ["Sentadilla trasera (arriba)", T2]]) {
+for (const [arriba, fondo] of [["Sentadilla frontal", F], ["Sentadilla trasera", T2]]) {
   await p.evaluate((q) => window.exersuite.editor.applyPose(q), arriba);
   await p.waitForTimeout(400);
   const alto = await altura();

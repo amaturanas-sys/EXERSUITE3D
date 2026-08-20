@@ -3823,6 +3823,7 @@ export class Editor {
     const tope = new Map<string, number>();
     const acomodar: { nombre: string; cadena: string[]; objetivo: number }[] = [];
     const plomada: string[] = [];
+    let mirada: number | null = null;
     for (const [id, lado] of this.zonasActivas) {
       const z = ZONA_POR_ID[id];
       if (!z) continue;
@@ -3880,9 +3881,15 @@ export class Editor {
           }
         }
         for (const ac of acomodaciones) {
-          const nombre = `${ac.familia}${l}`;
+          // LAS ARTICULACIONES CENTRALES NO LLEVAN LADO. El cuello se llama
+          // «neck», no «neckL»: buscándolo con sufijo no existía, y la
+          // acomodación de la mirada se descartaba en silencio en los dos
+          // lados —el cuello se quedaba clavado en −51,8° todo el peso muerto,
+          // mirando al suelo abajo y al techo en el bloqueo—.
+          const nombre = joints[`${ac.familia}${l}`] ? `${ac.familia}${l}` : ac.familia;
           if (!joints[nombre] || this.jointLocks.has(nombre)) continue;
           if (ac.tipo === "plomada") { plomada.push(l); continue; }
+          if (ac.tipo === "mirada") { mirada = ac.distanciaCm; continue; }
           const cadena = ac.cadena.map((f) => `${f}${l}`);
           acomodar.push({
             nombre,
@@ -3925,10 +3932,12 @@ export class Editor {
       n++;
     }
 
-    // 4) LA PLOMADA DEL BRAZO. Va ANTES del reapoyo y del plantado porque es
-    //    una magnitud RELATIVA —mano contra medio del pie, las dos en la
-    //    figura—, así que la traslación global posterior no la altera.
+    // 4) LA PLOMADA DEL BRAZO y LA MIRADA. Van ANTES del reapoyo y del plantado
+    //    porque son magnitudes RELATIVAS —mano contra medio del pie, cabeza
+    //    contra su marca del suelo, todo dentro de la figura—, así que la
+    //    traslación global posterior no las altera.
     for (const l of plomada) if (this.acomodarPlomada(l, joints)) n++;
+    if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
     this.reapoyarFigura();
     // 5) Y LOS PIES SE QUEDAN DONDE PISAN. Sin esto el peso muerto barría el
@@ -3959,6 +3968,71 @@ export class Editor {
     this.requestRender();
     this.scheduleAutosave();
     return n;
+  }
+
+  /**
+   * LA MIRADA NO SE SUELTA DE SU MARCA (v0.2.97).
+   *
+   * Lo pidió el diseñador para el peso muerto, y con su razón: «en el mundo
+   * real, un peso muerto que se baja con el cuello en flexión tiene mayor riesgo
+   * de producir alguna lesión espinal». El cuello deja de ser un ángulo del
+   * reparto —iba de −51,8° a 19° interpolando, sin mirar a ninguna parte— y se
+   * resuelve en cada paso contra una marca FIJA del suelo, por delante de donde
+   * se pisa. Bajando, eso obliga al cuello a extenderse en vez de doblarse, que
+   * es justamente lo que se quería.
+   *
+   * Se resuelve por bisección sobre el ángulo del cuello, comparando la
+   * INCLINACIÓN de la mirada con la que haría falta para dar en la marca: las
+   * dos son magnitudes con signo, así que el corchete es limpio. Y como el
+   * pivote del cuello no lo mueve el propio cuello, basta una pasada.
+   */
+  private acomodarMirada(distanciaCm: number, joints: Record<string, THREE.Object3D>): boolean {
+    const fig = this.humanFigure;
+    const cuello = joints.neck;
+    if (!fig || !cuello) return false;
+    const lim = JOINT_DOF.neck?.x;
+    if (!lim) return false;
+    const huella = this.huellaDeLosPies();
+    if (!huella) return false;
+    const adelante = new THREE.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
+    // La marca: en el suelo, por delante del punto medio de las dos pisadas.
+    const marca = huella.L.clone().add(huella.R).multiplyScalar(0.5)
+      .addScaledVector(adelante, distanciaCm);
+    marca.y = 0;
+    const original = radToDeg(cuello.rotation.x);
+    // Diferencia de INCLINACIÓN entre adónde mira y adónde debería mirar.
+    const desvio = (deg: number): number => {
+      cuello.rotation.x = degToRad(deg);
+      fig.updateMatrixWorld(true);
+      const ojo = cuello.getWorldPosition(new THREE.Vector3());
+      const q = cuello.getWorldQuaternion(new THREE.Quaternion());
+      const vista = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
+      const hacia = marca.clone().sub(ojo);
+      if (hacia.lengthSq() < 1e-6) return 0;
+      hacia.normalize();
+      return Math.asin(Math.max(-1, Math.min(1, vista.y)))
+        - Math.asin(Math.max(-1, Math.min(1, hacia.y)));
+    };
+    let a = lim[0], b = lim[1];
+    const fa = desvio(a);
+    if (fa * desvio(b) > 0) {
+      // El cuello no llega: se deja en el tope que más se acerca, que es una
+      // conclusión ergonómica y no un fallo (mirar ahí pide más rango del que
+      // hay). Se avisa por el mismo canal que el tobillo sin recorrido.
+      const mejor = Math.abs(fa) < Math.abs(desvio(b)) ? a : b;
+      cuello.rotation.x = degToRad(mejor);
+      fig.updateMatrixWorld(true);
+      this.acomodacionAlLimite = true;
+      return Math.abs(mejor - original) > 1e-3;
+    }
+    for (let i = 0; i < 40; i++) {
+      const m = (a + b) / 2;
+      if (desvio(m) * fa > 0) a = m; else b = m;
+    }
+    const sol = (a + b) / 2;
+    cuello.rotation.x = degToRad(sol);
+    fig.updateMatrixWorld(true);
+    return Math.abs(sol - original) > 1e-3;
   }
 
   /**
@@ -4826,6 +4900,7 @@ export class Editor {
     this.humanFigure = null;
     this.humanToken++;
     this.voladizoCache.clear(); // otra talla, otro cuerpo: se vuelve a medir
+    this.suelaLocal.clear();    // y otras mallas de pie: otra suela
     // LOS APOYOS SOBREVIVEN A REHACER EL CUERPO, igual que la barra de aquí
     // abajo. Están guardados como PIEZA + PUNTO LOCAL, que no dependen del
     // cuerpo para nada: al mover el cursor de la talla —que es justo lo que se
@@ -5100,14 +5175,77 @@ export class Editor {
     const fig = this.humanFigure;
     if (!fig) return null;
     fig.updateMatrixWorld(true);
-    const pie = (lado: HandSide): THREE.Vector3 | null => {
-      const c = this.centroSegmento(`pie-${lado}`);
-      return c ? new THREE.Vector3(c.x, 0, c.z) : null;
-    };
-    const L = pie("L");
-    const R = pie("R");
+    const L = this.centroDeLaPisada("L");
+    const R = this.centroDeLaPisada("R");
     return L && R ? { L, R } : null;
   }
+
+  /**
+   * LA HUELLA SE MIDE DONDE EL PIE TOCA (v0.2.97), no con el centro de su caja.
+   *
+   * La caja de three está alineada con el MUNDO, así que girar el pie sobre sí
+   * mismo ya le mueve el centro aunque el pie no viaje ni un milímetro. Mientras
+   * el pie no cambiaba de rumbo dentro del gesto ese sesgo se cancelaba y daba
+   * igual; en cuanto la sentadilla PIVOTA el pie al bajar —que es lo que pidió
+   * el diseñador: «no deben deslizarse sobre la superficie, pero sí pueden
+   * experimentar un grado menor de rotación externa»— deja de cancelarse y el
+   * plantado corrige de más. Medido: entre las dos posturas la caja se movía
+   * 0,23 cm y la huella de verdad 10,71.
+   *
+   * Se toma el centroide de los vértices que están a menos de medio centímetro
+   * del punto más bajo del pie: eso ES la pisada. Si la malla no se deja leer,
+   * se cae al centro de la caja, que es lo que había.
+   */
+  private centroDeLaPisada(lado: HandSide): THREE.Vector3 | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    let malla: THREE.Mesh | null = null;
+    fig.traverse((n) => {
+      if ((n as THREE.Mesh).isMesh && n.userData?.segmentId === `pie-${lado}`) malla = n as THREE.Mesh;
+    });
+    const m = malla as THREE.Mesh | null;
+    const pos = m?.geometry?.getAttribute("position");
+    if (!m || !pos) {
+      const c = this.centroSegmento(`pie-${lado}`);
+      return c ? new THREE.Vector3(c.x, 0, c.z) : null;
+    }
+    m.updateMatrixWorld(true);
+    // LA SUELA SE ELIGE EN EL MARCO DEL PIE, no en el del mundo. Escogiendo los
+    // vértices que TOCAN el suelo, el conjunto cambia en cuanto la planta se
+    // inclina un pelo, y con él el centroide: medido, eso hacía derivar la barra
+    // del peso muerto 0,77 cm a lo largo del gesto. Eligiéndolos por su altura
+    // LOCAL, la suela es siempre la misma nube de puntos —un punto material del
+    // pie— y su centro solo se mueve si el pie se mueve.
+    const banda = this.suelaLocal.get(m.uuid) ?? (() => {
+      const attr = pos as THREE.BufferAttribute;
+      const v = new THREE.Vector3();
+      let minLocal = Infinity;
+      for (let i = 0; i < attr.count; i++) {
+        const y = v.fromBufferAttribute(attr, i).y;
+        if (y < minLocal) minLocal = y;
+      }
+      const idx: number[] = [];
+      for (let i = 0; i < attr.count; i++) {
+        if (v.fromBufferAttribute(attr, i).y - minLocal < 0.5) idx.push(i);
+      }
+      this.suelaLocal.set(m.uuid, idx);
+      return idx;
+    })();
+    if (banda.length === 0) {
+      const cc = this.centroSegmento(`pie-${lado}`);
+      return cc ? new THREE.Vector3(cc.x, 0, cc.z) : null;
+    }
+    const v = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    for (const i of banda) {
+      c.add(v.fromBufferAttribute(pos as THREE.BufferAttribute, i).applyMatrix4(m.matrixWorld));
+    }
+    c.multiplyScalar(1 / banda.length);
+    return new THREE.Vector3(c.x, 0, c.z);
+  }
+
+  /** Índices de los vértices de la suela de cada pie (se calculan una vez). */
+  private suelaLocal = new Map<string, number[]>();
 
   /**
    * LOS PIES SE QUEDAN DONDE PISAN (v0.2.91).

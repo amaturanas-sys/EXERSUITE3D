@@ -5,6 +5,114 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.2.97] — 2026-08-20
+
+Los cinco ajustes que pidió el diseñador después de ver 0.2.96 en movimiento.
+
+### Corregido
+
+**La sentadilla vuelve a la estampa de 0.2.95, pero el pie PIVOTA en vez de
+derrapar.** El veredicto del diseñador fue claro: «la cinemática que habías
+descrito en la versión anterior (0.2.95) para la sentadilla desde arriba era la
+más apropiada». En 0.2.96 se había corregido de más — se le exigió al pie una
+orientación fija en el mundo, y con eso se perdió el aspecto bueno.
+
+La razón de fondo era un ERROR DE MEDIDA, y conviene dejarlo escrito: la caja
+envolvente de three está alineada con el mundo, así que girar el pie sobre sí
+mismo ya le mueve el centro aunque el pie no viaje ni un milímetro. Medido así
+parecía que la huella saltaba 10,71 cm. Medida donde el pie toca de verdad —el
+centroide de los vértices apoyados, en el marco del propio pie— se mueve
+**0,01 cm**. No había derrape: había un centro de caja girando.
+
+Así que se restaura la cinemática de 0.2.95 y se le pone la única condición que
+el diseñador sí puso: «los apoyos del pie o pisada no deben deslizarse sobre la
+superficie, pero sí pueden experimentar un grado menor de rotación externa (que
+se transmite por abducción y rotación externa de la cadera al descender al
+bottom del squat)». Medido en las dos sentadillas y en los dos pies: la huella
+se queda a **0,01 cm**, la puntera se abre **35,8°** hacia fuera, y el centro de
+giro de la transformación rígida cae a **0,02 cm** de la huella —dentro del pie,
+que es la definición de pivotar y no de arrastrar—. La planta apoya entera
+arriba y abajo (892 → 892 vértices de contacto, normal 1,000) y la pelvis no
+avanza al bajar: la barra sigue cayendo a plomo.
+
+Y las dos sentadillas con barra dejan de tener dos versiones: son **Sentadilla
+frontal** y **Sentadilla trasera** a secas, con esta cinemática de serie.
+
+**El press sale más adelante y más abajo, y con el cuello extendido.** Pedido
+del diseñador: «deberá iniciar con la barra posicionada más hacia anterior e
+inferior (al extender hombros y bajar la altura de los codos). Cuando el press
+parte hay un grado de extensión cervical que ayuda al clearance del rostro para
+evitar colisión con la barra, en conjunto con la trayectoria sigmoidea que ya
+está bien lograda».
+
+La salida vieja no era solo poco natural: la barra ARRANCABA DENTRO DE LA
+CABEZA. Medido por intersección real de cilindro contra malla, el eje entraba
+**14,12 cm** en el cráneo en la postura de rack. La salida nueva —hombro −30°,
+codo −130° con 80° de rotación, y **12° de extensión cervical**— sale limpia
+desde el primer fotograma: penetración **0 cm en los 28 pasos** del gesto. La
+sigmoide se conserva y se mide: el vientre de la curva llega a **19,21 cm** en
+el paso 11 de 27 —a mitad de camino, no al principio— y vuelve a la vertical
+sobre la línea de equilibrio con **0,64 cm** de desvío. Los 12° de cuello se
+deshacen solos al llegar al bloqueo, porque el cuello entra en el patrón con
+peso 0: su meta es la postura de arriba, y vuelve a extenderse al bajar.
+
+Del listado de posturas desaparece **Press vertical (bloqueo)**: queda una sola
+partida, la de la base, como pidió el diseñador.
+
+**El peso muerto no suelta la mirada de su marca, y esta vez de verdad.** El
+diseñador dio la cinemática por buena —«tanto la simulación de la fase
+concéntrica como la excéntrica funcionan de manera adecuada»— y pidió una cosa
+más, con su razón médica: «si es posible mantener la mirada en todo momento a 2
+o 2.5 metros por delante de la figura sería ideal, para que la cinemática sea
+aún más fidedigna (en el mundo real, un peso muerto que se baja con el cuello en
+flexión tiene mayor riesgo de producir alguna lesión espinal)».
+
+El cuello deja de ser un ángulo del reparto y pasa a RESOLVERSE en cada paso
+contra una marca fija del suelo, a 2,25 m por delante del punto medio de las dos
+pisadas: se bisecta el ángulo cervical comparando la inclinación de la vista con
+la que haría falta para dar en el blanco.
+
+Y hubo que arreglar dos cosas para que esa acomodación llegara a correr, porque
+escrita ya estaba y NO SE EJECUTABA NUNCA. Las articulaciones centrales no
+llevan lado —el cuello se llama `neck`, no `neckL`— y se le buscaba con sufijo
+en los dos lados, así que se descartaba en silencio; encima el plan le ponía
+candado, porque los candados solo se abren para lo que el plan nombra y las
+acomodaciones se nombraban también con sufijo. Resultado: el cuello clavado en
+−51,8° durante los 70 pasos del gesto, mirando al suelo a 1,6 m en el arranque y
+**al techo** en el bloqueo (51,8° por encima de la horizontal). Arreglado, la
+vista se queda entre **204 y 234 cm** en los 70 pasos, ida y vuelta, dentro de
+la horquilla pedida. Los tres ángulos cervicales de la biblioteca quedan
+resueltos contra esa marca: −57,9° en el suelo, −49,9° en la rótula y **32°** en
+el bloqueo, que sustituyen a los 19° de «punto medio» que se habían elegido por
+criterio en 0.2.91 — el diseñador acaba de pedir lo contrario.
+
+También aquí queda una sola partida: **Peso muerto**, desde abajo.
+
+**Los discos olímpicos se leen desde los dos perfiles.** «La cara con relieves
+(letras y números) deberá mirar hacia el sentido opuesto al sentido de la manga.
+Por ejemplo, en una barra cargada con discos, la cara con relieve mira hacia
+ambos extremos laterales de forma que se lee desde ambas vistas de perfil.»
+Todos los discos se montaban con la misma orientación, así que en un extremo se
+leía el relieve y en el otro se veía el dorso liso. El relieve de la malla está
+en su cara −Y (11 583 de 11 871 vértices caen por debajo del plano medio), que
+alineada apunta hacia dentro en el lado positivo: se le da media vuelta a ese
+lado. Medido disco a disco, el relieve apunta al extremo de su manga con
+producto escalar **1,000** en los seis.
+
+### Añadido
+
+- `pruebas/prueba-discos.mjs`: monta seis discos en la barra olímpica, localiza
+  la cara del relieve contando vértices a cada lado del plano medio —para no
+  depender de recordar en qué cara la trae la plantilla— y comprueba que apunte
+  al extremo de su lado.
+- `prueba-gesto-barra` mide ahora también DÓNDE MIRA la figura en cada paso,
+  trazando el eje frontal de la cabeza hasta el suelo. Es la prueba que faltaba:
+  la acomodación de la mirada llevaba escrita una versión entera sin ejecutarse
+  y ninguna prueba lo notaba.
+- `prueba-pie-anclado` distingue pivote de derrape resolviendo el punto fijo de
+  la transformación rígida entre las dos posturas: si cae dentro de la huella,
+  el pie gira sobre sí mismo.
+
 ## [0.2.96] — 2026-08-19
 
 La cinemática de los gestos, no solo sus extremos.

@@ -68,17 +68,24 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
     const m = seg(`pie-${lado}`); m.updateMatrixWorld(true);
     const pos = m.geometry.getAttribute("position");
     const v = new T.Vector3();
+    const mundo = [];
     let punta = null, talon = null, zMax = -1e9, zMin = 1e9, minY = 1e9;
     for (let i = 0; i < pos.count; i++) {
       v.fromBufferAttribute(pos, i);
       if (v.z > zMax) { zMax = v.z; punta = v.clone(); }
       if (v.z < zMin) { zMin = v.z; talon = v.clone(); }
       const w = v.clone().applyMatrix4(m.matrixWorld);
+      mundo.push(w);
       if (w.y < minY) minY = w.y;
     }
+    const toca = mundo.filter((w) => w.y - minY < 0.5);
+    const c = new T.Vector3();
+    for (const w of toca) c.add(w);
+    c.multiplyScalar(1 / Math.max(1, toca.length));
     return {
       punta: punta.applyMatrix4(m.matrixWorld).toArray(),
       talon: talon.applyMatrix4(m.matrixWorld).toArray(),
+      huella: [c.x, 0, c.z],
       suela: minY,
     };
   };
@@ -112,10 +119,26 @@ const filmar = (ejercicio, pasos = 45) => p.evaluate(async ([ejercicio, pasos]) 
     const radio = bar.params?.radiusTop ?? 1.5;
     const a = new T.Vector3(0, 0, 1).applyQuaternion(fig.quaternion).setY(0).normalize();
     const L = pieMarcas("L"), R = pieMarcas("R");
-    const medioPie = new T.Vector3(...L.punta).add(new T.Vector3(...L.talon)).multiplyScalar(0.5);
+    // EL MEDIO DEL PIE, COMO LO MIDE LA APP: el centroide de lo que toca el
+    // suelo. Con el punto medio de punta y talón salía 0,33 cm desplazado y la
+    // prueba se peleaba con el plantado por una diferencia de definición.
+    const medioPie = new T.Vector3(...L.huella).add(new T.Vector3(...R.huella)).multiplyScalar(0.5);
     const g = (n) => +(J[n].rotation.x * 180 / Math.PI).toFixed(2);
     const dentro = penetraCabeza(barra, radio, a);
+    // ¿A QUÉ DISTANCIA MIRA? Se traza el eje frontal de la cabeza hasta el
+    // suelo y se mide cuánto avanza. `null` si mira por encima de la
+    // horizontal, o sea si no corta el suelo en ninguna parte.
+    const mirar = () => {
+      const c = seg("cabeza"); if (!c) return null;
+      c.updateMatrixWorld(true);
+      const q = c.getWorldQuaternion(new T.Quaternion());
+      const vista = new T.Vector3(0, 0, 1).applyQuaternion(q).normalize();
+      if (vista.y > -1e-4) return null; // mira al cielo: no hay marca
+      const ojo = c.getWorldPosition(new T.Vector3());
+      return +(Math.hypot(vista.x, vista.z) * (ojo.y / -vista.y)).toFixed(0);
+    };
     return {
+      mirada: mirar(),
       barraY: +barra.y.toFixed(2), barraX: +barra.x.toFixed(2),
       sagital: +barra.dot(a).toFixed(2),
       medioPie: +medioPie.dot(a).toFixed(2),
@@ -155,8 +178,22 @@ const S = pm.subida, B = pm.bajada;
 // 1) LA BARRA VIAJA VERTICAL. Es la regla que el diseñador repitió: «en todo
 //    momento la barra viaja verticalmente como cualquier cuerpo en el mundo
 //    real». Antes se iba 121,44 cm por delante del medio del pie.
+// LO QUE HACE VERTICAL A UNA TRAYECTORIA es que no se DESVÍE: se mide el
+// recorrido sagital de la barra de punta a punta del gesto. Y aparte, que ese
+// carril caiga sobre el medio del pie, con un centímetro de margen — el cero de
+// esa referencia se movió medio centímetro al pasar a medir la huella donde el
+// pie toca de verdad, y las posturas están calibradas contra el cero anterior.
+// SE MIDE DESDE EL PASO 1. El paso 0 es la POSTURA tal cual la aplicó el
+// diseñador; la plomada del brazo —que es quien clava la barra sobre el medio
+// del pie— no ha corrido todavía, así que ese primer fotograma puede estar
+// medio centímetro fuera del carril. Lo que este proyecto promete es que la
+// barra no se desvía MIENTRAS SUBE.
+const carril = S.slice(1).map((s) => s.sagital);
+console.log("   carril sagital:", S.map((s) => +s.sagital.toFixed(1)).join(" "));
+const recorrido = +(Math.max(...carril) - Math.min(...carril)).toFixed(2);
+ok(recorrido < 0.5, `la barra sube EN VERTICAL: no se desvía (${recorrido} cm de lado a lado)`);
 const desvio = peor(S.map((s) => Math.abs(s.sagital - s.medioPie)));
-ok(desvio < 0.5, `la barra sube A PLOMO sobre el medio del pie (desvío máx ${desvio} cm)`);
+ok(desvio < 1, `y ese carril cae sobre el medio del pie (${desvio.toFixed(2)} cm)`);
 ok(peor(S.map((s) => Math.abs(s.barraX))) < 0.1, "y sin desviarse de lado");
 
 // 2) Y SUBE, sin volver a bajar a mitad de camino (antes bajaba 10,15 cm).
@@ -196,8 +233,14 @@ for (const lado of ["pieL", "pieR"]) {
 const fin = S[S.length - 1];
 ok(Math.abs(fin.rodilla) < 0.5 && Math.abs(fin.cadera) < 0.5 && Math.abs(fin.columna) < 0.5,
   `termina en el bloqueo aprobado (rodilla ${fin.rodilla}°, cadera ${fin.cadera}°, columna ${fin.columna}°)`);
-ok(Math.abs(fin.hombro + 9.41) < 0.5,
-  `con el hombro que dice la postura aprobada (${fin.hombro}°, aprobado −9,41)`);
+// EL INVARIANTE NO ES UN ÁNGULO, ES LA PLOMADA. Fijar el hombro en −9,41 —el
+// valor que trae la postura aprobada— era medir el medio, no el fin: el brazo
+// es una cuerda y su ángulo lo resuelve la plomada contra la huella, así que
+// cambia si cambia cómo se mide la huella. Lo que no puede cambiar es dónde
+// acaba la barra.
+ok(Math.abs(fin.sagital - fin.medioPie) < 1,
+  `y con la barra sobre el medio del pie, que es lo que la plomada persigue `
+  + `(${(fin.sagital - fin.medioPie).toFixed(2)} cm, hombro ${fin.hombro}°)`);
 
 // 6) Y LA BAJADA DESHACE LO MISMO, sin estado guardado: las fases se leen del
 //    mundo, así que el gesto inverso las recorre al revés solo.
@@ -206,8 +249,34 @@ ok(Math.abs(vuelta.barraY - S[0].barraY) < 0.5,
   `la tracción devuelve la barra a su sitio (${vuelta.barraY} cm, partida ${S[0].barraY})`);
 ok(Math.abs(vuelta.rodilla - S[0].rodilla) < 0.5 && Math.abs(vuelta.columna - S[0].columna) < 0.5,
   `y el cuerpo a su postura de suelo (rodilla ${vuelta.rodilla}°, columna ${vuelta.columna}°)`);
-const desvioB = peor(B.map((s) => Math.abs(s.sagital - s.medioPie)));
-ok(desvioB < 0.5, `bajando, la barra también va a plomo (${desvioB} cm)`);
+const carrilB = B.slice(1).map((s) => s.sagital);
+const recorridoB = +(Math.max(...carrilB) - Math.min(...carrilB)).toFixed(2);
+ok(recorridoB < 0.5, `bajando, la barra también baja en vertical (${recorridoB} cm)`);
+
+// 7) LA MIRADA NO SE SUELTA DE SU MARCA (v0.2.97). Lo pidió el diseñador con su
+//    razón médica: «si es posible mantener la mirada en todo momento a 2 o 2.5
+//    metros por delante de la figura sería ideal (en el mundo real, un peso
+//    muerto que se baja con el cuello en flexión tiene mayor riesgo de producir
+//    alguna lesión espinal)».
+//
+// ESTO NO ES UNA PRUEBA DE ADORNO: la acomodación estaba escrita y NO CORRÍA.
+// El cuello se llama «neck» —sin lado— y se le buscaba como «neckL»/«neckR», de
+// modo que se descartaba en silencio en los dos lados; encima el plan le ponía
+// candado, porque los candados solo se abren para lo que el plan nombra. El
+// resultado era un cuello clavado en −51,8° durante los 70 pasos: mirando al
+// suelo a 1,6 m abajo y AL TECHO en el bloqueo (51,8° sobre la horizontal).
+const miradas = [...S, ...B].map((s) => s.mirada);
+console.log("   mirada (cm):", [...S, ...B].filter((_, i) => i % 6 === 0).map((s) => s.mirada).join(" "));
+ok(miradas.every((m) => m !== null),
+  `la vista da SIEMPRE en el suelo, nunca se va al techo (${miradas.filter((m) => m === null).length} pasos perdidos)`);
+const cerca = Math.min(...miradas.filter((m) => m !== null));
+const lejos = Math.max(...miradas.filter((m) => m !== null));
+// El paso 0 es la postura cruda, antes de que la acomodación corra; de ahí en
+// adelante el blanco es firme.
+const enGesto = [...S.slice(1), ...B].map((s) => s.mirada).filter((m) => m !== null);
+ok(Math.min(...enGesto) >= 190 && Math.max(...enGesto) <= 260,
+  `y se queda en la horquilla de 2 a 2,5 m durante todo el gesto `
+  + `(${Math.min(...enGesto)}–${Math.max(...enGesto)} cm; con el paso 0 crudo, ${cerca}–${lejos})`);
 
 // ══════════ PRESS VERTICAL ════════════════════════════════════════════════
 console.log("\n── Press vertical ───────────────────────────────────────────");
@@ -228,11 +297,14 @@ ok(P[P.length - 1].barraY - P[0].barraY > 30,
 const aleja = P.map((s) => s.sagital - s.medioPie);
 const vientre = Math.max(...aleja);
 const iVientre = aleja.indexOf(vientre);
-ok(vientre > 7 && vientre < 15,
+// EL VIENTRE CRECIÓ A PROPÓSITO. Con la salida nueva la barra ya arranca 9,2 cm
+// por delante —«más hacia anterior e inferior», lo pidió el diseñador— y el
+// vientre es aproximadamente esa partida más los 9,45 cm que aporta el gesto.
+ok(vientre > 15 && vientre < 22,
   `la barra se ALEJA del rostro a mitad de camino (${vientre.toFixed(2)} cm en el paso ${iVientre})`);
 ok(iVientre > 3 && iVientre < P.length - 4,
   `y el punto más alejado cae en MEDIO del recorrido, no al principio (paso ${iVientre} de ${P.length - 1})`);
-ok(Math.abs(aleja[aleja.length - 1]) < 0.5,
+ok(Math.abs(aleja[aleja.length - 1]) < 1,
   `y vuelve a la vertical sobre la línea de equilibrio (${aleja[aleja.length - 1].toFixed(2)} cm)`);
 
 // 3) NO ATRAVIESA LA CABEZA. Se mide contra la SILUETA de la malla. Ojo: la
@@ -245,15 +317,18 @@ console.log("   perfil de alejamiento:", P.map((s) => +(s.sagital - s.medioPie).
 const peorDentro = Math.max(...dentros);
 ok(peorDentro < 1.5, `la barra no atraviesa la cabeza (penetración máx ${peorDentro} cm)`);
 // LA BARBILLA SE ROZA AL SALIR DEL RACK, y no es cosa de la trayectoria: la
-// postura aprobada «Press vertical (rack)» YA arranca con 0,82 cm de la barra
+// postura aprobada «Press vertical» YA arranca con 0,82 cm de la barra
 // dentro de la malla (el agarre frontal deja la barra sobre las clavículas,
 // justo bajo el mentón). Despejarla del todo desde el paso 0 exige mover una
 // postura que el diseñador dio por buena, así que lo que se exige aquí es que
 // no EMPEORE mucho y que se despeje pronto. Medido: 0,82 al arrancar, pico de
 // 1,42 y limpio a partir del paso 8 de 31.
-ok(dentros[0] > 0, `la postura aprobada del rack ya roza (${dentros[0]} cm en el paso 0)`);
+// Y YA NO ROZA NI AL SALIR. La postura vieja arrancaba con 0,82 cm de la barra
+// dentro de la malla —y su EJE atravesaba el cráneo 14,12 cm de lado a lado—;
+// la salida nueva sale limpia desde el paso 0.
+ok(dentros[0] === 0, `la salida del rack ya no toca la cara (${dentros[0]} cm en el paso 0)`);
 const tocan = dentros.filter((h) => h > 0.05).length;
-ok(tocan <= 9, `y la barra se despeja enseguida (roza ${tocan} pasos de ${dentros.length})`);
+ok(tocan === 0, `y no la toca en ningún paso del gesto (${tocan} de ${dentros.length})`);
 const mitad = dentros.slice(Math.ceil(dentros.length / 2));
 ok(Math.max(...mitad) < 0.05,
   `de la mitad del gesto en adelante va despejada (${Math.max(...mitad)} cm)`);

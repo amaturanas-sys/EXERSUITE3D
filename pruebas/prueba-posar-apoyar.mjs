@@ -176,7 +176,7 @@ const e = await p.evaluate(async () => {
   ed.soltarBarraDelManiqui?.();
   await new Promise((r) => setTimeout(r, 200));
   const sinBarra = ed.getBarraManiqui()?.objectId ?? null;
-  ed.applyPose("Peso muerto (suelo)");
+  ed.applyPose("Peso muerto");
   await new Promise((r) => setTimeout(r, 300));
   const tras = ed.getBarraManiqui();
   return { sinBarra, objeto: tras?.objectId ?? null, ejercicio: tras?.ejercicio ?? null,
@@ -184,7 +184,7 @@ const e = await p.evaluate(async () => {
 });
 ok(e.sinBarra === null, "de partida el maniquí no lleva barra");
 ok(e.objeto !== null && e.ejercicio === "peso-muerto",
-  `aplicar «Peso muerto (suelo)» ENLAZA la barra del ejercicio (${e.ejercicio})`);
+  `aplicar «Peso muerto» ENLAZA la barra del ejercicio (${e.ejercicio})`);
 ok(e.zona.includes("bisagra"), `y arma su zona de movimiento (${e.zona.join(", ") || "ninguna"})`);
 
 // ── 6. Se ADOPTA la barra que ya está en la escena, no se siembra otra ─────

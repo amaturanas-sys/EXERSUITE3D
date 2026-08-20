@@ -95,8 +95,20 @@ for (const ej of EJ) {
   ok(quieto(r.pieRD), `${ej.es} · el pie DERECHO no se mueve del sitio (Δ ${JSON.stringify(r.pieRD)})`);
 
   // 2) LA BARRA VA A PLOMO: sube y baja en línea recta vertical.
-  const aPlomo = r.barraD && Math.abs(r.barraD[0]) <= 2 && Math.abs(r.barraD[2]) <= 2;
-  ok(aPlomo, `${ej.es} · la barra viaja en vertical (desvío ${r.barraD ? Math.hypot(r.barraD[0], r.barraD[2]).toFixed(1) : "?"} cm)`);
+  //
+  // EL PRESS ES LA EXCEPCIÓN, Y A PROPÓSITO (v0.2.97). Aquí se comparan los DOS
+  // EXTREMOS, y en el press ya no comparten vertical: el diseñador pidió que la
+  // salida arrancase «más hacia anterior e inferior» —para que la barra deje de
+  // atravesar la cara, que es lo que hacía: 14,12 cm de cráneo medidos por rayo—
+  // y que el recorrido describiera una sigmoide que esquiva la cabeza y termina
+  // sobre la línea de equilibrio. O sea que la salida ESTÁ adelantada y el
+  // bloqueo NO: 9,4 cm de diferencia entre los dos extremos es el gesto pedido,
+  // no un fallo. Lo que sí se le exige al press es que el BLOQUEO caiga sobre la
+  // línea de equilibrio, y la verticalidad del recorrido la vigila
+  // `prueba-gesto-barra`, que lo filma paso a paso en vez de mirar sus puntas.
+  const margen = ej.id === "press-vertical" ? 10.5 : 2;
+  const aPlomo = r.barraD && Math.abs(r.barraD[0]) <= 2 && Math.abs(r.barraD[2]) <= margen;
+  ok(aPlomo, `${ej.es} · la barra viaja en vertical (desvío ${r.barraD ? Math.hypot(r.barraD[0], r.barraD[2]).toFixed(1) : "?"} cm, margen ${margen})`);
   ok(r.barraD && Math.abs(r.barraD[1]) > 15, `${ej.es} · y de verdad recorre camino (${r.barraD?.[1]} cm)`);
 
   // 3) LA BARRA NO SE ALABEA en ninguno de los dos extremos del recorrido.

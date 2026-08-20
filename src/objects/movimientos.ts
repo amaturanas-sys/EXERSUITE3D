@@ -165,7 +165,8 @@ export type UmbralFase =
 /** Reajustes que se resuelven DESPUÉS del reparto, en cada paso. */
 export type AcomodacionMov =
   | { tipo: "pitch"; familia: string; cadena: string[]; es: string; en: string }
-  | { tipo: "plomada"; familia: string; es: string; en: string };
+  | { tipo: "plomada"; familia: string; es: string; en: string }
+  | { tipo: "mirada"; familia: string; distanciaCm: number; es: string; en: string };
 
 /** Un tramo del gesto, entre dos posturas de la biblioteca. */
 export interface FaseMov {
@@ -215,6 +216,22 @@ const PLANTA: AcomodacionMov = {
   en: "the ankle keeps the sole on the floor",
 };
 
+/**
+ * LA MIRADA NO SE SUELTA DEL PUNTO. Lo pidió el diseñador para el peso muerto y
+ * dio la razón: «en el mundo real, un peso muerto que se baja con el cuello en
+ * flexión tiene mayor riesgo de producir alguna lesión espinal». Así que el
+ * cuello deja de ser un ángulo del reparto —que iba de −51,8° a 19° por
+ * interpolación, sin mirar a ninguna parte— y pasa a resolverse en cada paso
+ * contra una marca fija del suelo, 2,25 m por delante de donde se pisa.
+ */
+const MIRADA: AcomodacionMov = {
+  tipo: "mirada",
+  familia: "neck",
+  distanciaCm: 225,
+  es: "la mirada se queda en su marca del suelo",
+  en: "the gaze stays on its floor mark",
+};
+
 export const PLANES: Record<string, PlanMov> = {
   /**
    * PESO MUERTO, en las dos fases que describió el diseñador.
@@ -230,7 +247,7 @@ export const PLANES: Record<string, PlanMov> = {
   "peso-muerto": {
     id: "peso-muerto",
     zona: "bisagra",
-    origen: "Peso muerto (suelo)",
+    origen: "Peso muerto",
     fases: [
       {
         id: "tiron",
@@ -243,7 +260,7 @@ export const PLANES: Record<string, PlanMov> = {
         ],
         meta: "Peso muerto (rodilla)",
         hasta: { tipo: "barraSobreRotula" },
-        acomodaciones: [PLANTA, PLOMADA],
+        acomodaciones: [PLANTA, PLOMADA, MIRADA],
       },
       {
         id: "bloqueo",
@@ -253,11 +270,10 @@ export const PLANES: Record<string, PlanMov> = {
           { familia: "spine", bilateral: false, empuje: -1, peso: 1, es: "extensión de espalda", en: "back extension" },
           { familia: "hip", bilateral: true, empuje: 1, peso: 0.3, es: "extensión de cadera", en: "hip extension" },
           { familia: "knee", bilateral: true, empuje: -1, peso: 0.3, es: "extensión de rodilla", en: "knee extension" },
-          { familia: "neck", bilateral: false, empuje: 1, peso: 0.91, es: "la mirada se levanta", en: "the gaze rises" },
         ],
         meta: "Peso muerto (bloqueo)",
         hasta: { tipo: "meta" },
-        acomodaciones: [PLANTA, PLOMADA],
+        acomodaciones: [PLANTA, PLOMADA, MIRADA],
       },
     ],
   },
@@ -285,7 +301,7 @@ export const PLANES: Record<string, PlanMov> = {
   "press-vertical": {
     id: "press-vertical",
     zona: "superior",
-    origen: "Press vertical (rack)",
+    origen: "Press vertical",
     fases: [
       {
         id: "empuje",
@@ -294,6 +310,14 @@ export const PLANES: Record<string, PlanMov> = {
         patron: [
           { familia: "elbow", bilateral: true, empuje: 1, peso: 1, es: "extensión de codo", en: "elbow extension" },
           { familia: "shoulder", bilateral: true, empuje: -1, peso: 0.8925, es: "flexión de hombro", en: "shoulder flexion" },
+          // EL CUELLO VUELVE SOLO A NEUTRO. La salida lleva 12° de extensión
+          // cervical —el clearance del rostro que pidió el diseñador— y el
+          // bloqueo no nombra el cuello, así que su meta es CERO y el reparto
+          // derivado lo devuelve a razón de 0,46°/paso. Al bajar hace lo
+          // contrario y llega al rack con los 12° puestos, porque en tracción
+          // la meta es `plan.origen`. El peso 0 es respaldo para cuando no hay
+          // plan; con plan lo pone la falta.
+          { familia: "neck", bilateral: false, empuje: 1, peso: 0, es: "la mirada vuelve al frente", en: "the gaze returns to level" },
         ],
         meta: "Press vertical (bloqueo)",
         hasta: { tipo: "meta" },
@@ -307,7 +331,13 @@ export function articulacionesDePlan(p: PlanMov, lado: LadoZona): string[] {
   const out: string[] = [];
   for (const f of p.fases) {
     for (const a of f.patron) out.push(...nombresDeFamilia(a.familia, a.bilateral, lado));
-    for (const ac of f.acomodaciones ?? []) out.push(...nombresDeFamilia(ac.familia, true, lado));
+    // Las acomodaciones no declaran lado, así que se abren los DOS nombres: el
+    // con sufijo (tobillo, hombro) y el pelado, porque las articulaciones
+    // centrales no lo llevan. Sin el pelado, «neck» se quedaba con candado y la
+    // acomodación de la mirada no podía tocarlo.
+    for (const ac of f.acomodaciones ?? []) {
+      out.push(ac.familia, ...nombresDeFamilia(ac.familia, true, lado));
+    }
   }
   return [...new Set(out)];
 }
@@ -330,6 +360,8 @@ export function nombresDeFamilia(
 export function articulacionesDeZona(z: ZonaMov, lado: LadoZona): string[] {
   const out: string[] = [];
   for (const a of z.patron) out.push(...nombresDeFamilia(a.familia, a.bilateral, lado));
-  if (z.acomodacion) out.push(...nombresDeFamilia(z.acomodacion.familia, true, lado));
+  if (z.acomodacion) {
+    out.push(z.acomodacion.familia, ...nombresDeFamilia(z.acomodacion.familia, true, lado));
+  }
   return out;
 }
