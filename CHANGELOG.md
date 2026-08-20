@@ -9,6 +9,44 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ### Cambiado
 
+**El inventario baja de 41 piezas a 23.** Las 18 que no usaba NADIE —ni una
+máquina estándar, ni un prefab, ni un modelo, ni una prueba— salen de «Piezas
+disponibles»: soporte de peso, media columna POWERRACK, correa y cadena de
+seguridad, barra de fondos, landmine, pivote, pop-pin, carro de cable, brazo
+ajustable, engranaje, resorte, bloque de peso, micro-disco, agarradera, cuerda
+de tríceps, barra de jalón y correa de tobillo.
+
+**Retirar del listado no es borrar, y esa era la condición.** El diseñador la
+puso explícita: «no deberá afectar los prefabs que ya los tienen incorporados,
+ni tampoco afectar el comportamiento y físicas de dichos prefabs». Se usa el
+mecanismo de curaduría que ya existía desde v0.2.18 —la etiqueta `paleta`—, con
+un valor nuevo, `"retirada"`, que dice por qué: no es que la pieza sea
+redundante ni interna de una máquina, es que no la usa nadie. La definición
+sigue entera en la biblioteca, así que su id se resuelve igual y un prefab o un
+proyecto que ya la lleve se abre, se inserta y se comporta como siempre.
+
+Comprobado, no supuesto: las 18 se siguen construyendo con su MISMO tamaño,
+masa, anclaje, material y malla —medido contra la huella tomada antes del
+retiro—; un prefab con tres de ellas hace el viaje completo por el ciclo de
+verdad (`serializarPrefab` → `parsearPrefab` → `insertarPrefab`) y vuelve con
+las tres, ninguna excluida como «desconocida», cada una con su masa y su
+anclaje; y con la física corriendo, la anclada no se mueve y la de 5 kg cae de
+120 a 65 cm y vuelve a su sitio al parar.
+
+Se queda un caso de frontera: la **esfera** primitiva no la usa ninguna máquina
+ni prueba, pero es una de las tres formas básicas y quitarla dejaría el modo
+Sencillo con caja y cilindro. Sigue en el inventario.
+
+### Añadido
+
+- `pruebas/prueba-piezas-retiradas.mjs`: vigila las dos mitades del trato —que
+  no se listen y que se sigan resolviendo—, con la huella de las 18 escrita
+  dentro para que un cambio de masa o de medidas salte.
+- `docs/inventario-piezas.html`: la lista actualizada, con las 23 que quedan y
+  las 18 retiradas aparte.
+
+### Cambiado
+
 **El instructivo y sus capturas, al día.** Las imágenes del maniquí y de la
 simulación eran de v0.2.49 y enseñaban el maniquí de BLOQUES —cabeza esférica,
 tronco de caja—, que no existe desde v0.2.78. Se rehacen contra el build actual y

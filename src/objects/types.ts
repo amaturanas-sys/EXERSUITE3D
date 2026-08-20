@@ -266,13 +266,19 @@ export interface ComponentDefinition {
    * CURADURÍA DE LA PALETA (v0.2.18): qué hace la pieza en "Piezas
    * disponibles" del Builder. "oculta" = redundante con una pieza real o
    * plantilla interna; "despiece" = pieza INTERNA de una máquina real
-   * (TTP/POWERRACK). Desde v0.2.28 ninguna de las dos se lista en el
-   * Builder — la sección plegable del despiece se eliminó —, pero la
-   * etiqueta se conserva porque describe el papel de la pieza. SOLO afecta
-   * a la paleta: prefabs, máquinas estándar, proyectos guardados y la
-   * Biblioteca de modelos siguen resolviendo la pieza por su id.
+   * (TTP/POWERRACK); "retirada" = pieza que no usa NADIE —ni una máquina,
+   * ni un prefab, ni una prueba— y que se saca del listado para que el
+   * inventario diga la verdad sobre lo que se puede construir.
+   *
+   * Desde v0.2.28 ninguna de las tres se lista en el Builder, pero la
+   * etiqueta se conserva porque describe el papel de la pieza. Y SOLO
+   * afecta a la paleta: prefabs, máquinas estándar, proyectos guardados y
+   * la Biblioteca de modelos siguen resolviendo la pieza por su id, con su
+   * misma geometría, su mismo material y su misma física. Retirar del
+   * listado no es borrar: un prefab que ya lleve la pieza se sigue
+   * insertando igual y se comporta igual.
    */
-  paleta?: "oculta" | "despiece";
+  paleta?: "oculta" | "despiece" | "retirada";
   /** Descripcion corta para tooltips. */
   description: string;
 }

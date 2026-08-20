@@ -73,6 +73,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "soporte-peso",
+    paleta: "retirada",
     label: "Soporte de peso",
     category: "estructural",
     materialId: "acero-negro",
@@ -336,6 +337,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---- Piezas reales del despiece POWERRACK (archivo por pieza)
   {
     id: "montante-pr",
+    paleta: "retirada",
     label: "Media columna POWERRACK (110)",
     category: "estructural",
     materialId: "acero-negro",
@@ -446,6 +448,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "correa-seguridad",
+    paleta: "retirada",
     label: "Correa de seguridad",
     category: "estructural",
     materialId: "nylon",
@@ -467,6 +470,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-fondos",
+    paleta: "retirada",
     label: "Barra de fondos",
     category: "estructural",
     materialId: "acero-negro",
@@ -477,6 +481,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "landmine",
+    paleta: "retirada",
     label: "Landmine",
     category: "estructural",
     materialId: "acero-negro",
@@ -518,6 +523,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "pivote",
+    paleta: "retirada",
     label: "Pivote",
     category: "movimiento",
     materialId: "turquesa",
@@ -527,6 +533,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "pop-pin",
+    paleta: "retirada",
     label: "Pasador (pop-pin)",
     category: "movimiento",
     materialId: "acero-pulido",
@@ -536,6 +543,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "carro-cable",
+    paleta: "retirada",
     label: "Carro de cable",
     category: "movimiento",
     materialId: "acero-negro",
@@ -545,6 +553,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "brazo-ajustable",
+    paleta: "retirada",
     label: "Brazo ajustable",
     category: "movimiento",
     materialId: "acero-negro",
@@ -631,6 +640,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "engranaje",
+    paleta: "retirada",
     label: "Engranaje",
     category: "transmision",
     materialId: "acero",
@@ -660,6 +670,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cadena-seguridad",
+    paleta: "retirada",
     label: "Cadena de seguridad",
     category: "transmision",
     materialId: "acero-negro",
@@ -680,6 +691,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "resorte",
+    paleta: "retirada",
     label: "Resorte",
     category: "transmision",
     materialId: "acero",
@@ -691,6 +703,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---------------------------------------------------------------- PESO
   {
     id: "bloque-peso",
+    paleta: "retirada",
     label: "Bloque de peso",
     category: "peso",
     materialId: "hierro-fundido",
@@ -754,6 +767,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "micro-disco",
+    paleta: "retirada",
     label: "Micro-disco",
     category: "peso",
     materialId: "hierro-fundido",
@@ -765,6 +779,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   // ---------------------------------------------------------------- ERGONOMICO
   {
     id: "agarradera",
+    paleta: "retirada",
     label: "Agarradera",
     category: "ergonomico",
     materialId: "goma",
@@ -801,6 +816,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cuerda-triceps",
+    paleta: "retirada",
     label: "Cuerda de triceps",
     category: "ergonomico",
     materialId: "nylon",
@@ -810,6 +826,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-jalon",
+    paleta: "retirada",
     label: "Barra de jalon",
     category: "ergonomico",
     materialId: "cromo",
@@ -819,6 +836,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "correa-tobillo",
+    paleta: "retirada",
     label: "Correa de tobillo",
     category: "ergonomico",
     materialId: "nylon",
