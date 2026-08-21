@@ -2172,6 +2172,12 @@ export class Editor {
       obj.params = {
         ...src.params,
         path: src.params.path?.map((n) => [...n] as [number, number, number]),
+        // LOS ANCLAJES NO SE COPIAN (v0.3.4). Apuntan por id a las dos piezas
+        // que sostienen la guía ORIGINAL: la copia quedaba amarrada a las
+        // mismas, y al tocar el bastidor saltaba encima de ella. Duplicar un
+        // rail es justo como se hace el segundo, así que la copia nace suelta
+        // y se vuelve a amarrar tendiéndola.
+        anclajes: undefined,
       };
       if (src.stack) obj.stack = { ...src.stack };
       obj.rebuildGeometry();
@@ -4699,6 +4705,9 @@ export class Editor {
         obj.params = {
           ...d.params,
           path: d.params.path?.map((n) => [...n] as [number, number, number]),
+          // Los anclajes del portapapeles apuntan a las piezas del original
+          // (ver `duplicateObject`): la pegada nace suelta.
+          anclajes: undefined,
         };
         if (d.stack) obj.stack = { ...d.stack };
         obj.rebuildGeometry();
@@ -10051,8 +10060,13 @@ export class Editor {
         eje === "x" ? ["y", "z"] : eje === "y" ? ["z", "x"] : ["x", "y"];
       // ¿Pasa DE VERDAD por dentro? El centro del canal tiene que caer en la
       // sección de la pieza, y el tubo tiene que solapar con su grosor.
-      if (cruce[iu] < caja.min[iu] || cruce[iu] > caja.max[iu]) continue;
-      if (cruce[iv] < caja.min[iv] || cruce[iv] > caja.max[iv]) continue;
+      // EL CANAL TIENE QUE CABER ENTERO (v0.3.4). Antes se miraba solo el
+      // CENTRO del cruce contra la caja: una guía rozando el canto abría un
+      // canal que se salía por el borde y se comía la cara lateral de la
+      // pieza. Se pide el radio de holgura por dentro.
+      const holgura = radio + 0.35;
+      if (cruce[iu] - holgura < caja.min[iu] || cruce[iu] + holgura > caja.max[iu]) continue;
+      if (cruce[iv] - holgura < caja.min[iv] || cruce[iv] + holgura > caja.max[iv]) continue;
       const sTubo = [p0[eje], p1[eje]].sort((a, b) => a - b);
       if (sTubo[1] < caja.min[eje] || sTubo[0] > caja.max[eje]) continue;
       canales.push({
@@ -10189,7 +10203,20 @@ export class Editor {
     g.mesh.position.copy(a).add(b).multiplyScalar(0.5);
     g.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
     g.mesh.updateMatrixWorld(true);
+    // Y LO QUE CUELGUE DE ESTA GUÍA la sigue a su vez (v0.3.4): otra guía
+    // tendida entre dos rails, un cable anclado en ella. El centinela corta la
+    // recursión si dos guías acabaran amarradas la una a la otra.
+    if (this.retendiendo.has(g.id)) return;
+    this.retendiendo.add(g.id);
+    try {
+      this.bus.emit("objectTransformed", { object: g });
+    } finally {
+      this.retendiendo.delete(g.id);
+    }
   }
+
+  /** Guías que se están retendiendo ahora mismo (corta la recursión). */
+  private retendiendo = new Set<string>();
 
   createRope(kind: RopeKind, a: RopeEnd, b: RopeEnd, slack?: number, name?: string): Rope {
     const rope = new Rope({ kind, a, b, slack, name });

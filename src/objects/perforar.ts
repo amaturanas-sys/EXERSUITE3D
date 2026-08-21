@@ -157,6 +157,17 @@ function perforarContorno(
       continue;
     }
     const base: P3[] = [[...tri[0]], [...tri[1]], [...tri[2]]];
+    // UNA CARA PARALELA AL TALADRO NO SE PUEDE CORTAR (v0.3.4). Su proyección
+    // sobre el plano (U,V) es un SEGMENTO —área cero—, así que el recorte la
+    // deja en polígonos degenerados que el filtro de área descarta uno por uno:
+    // la cara entera desaparecía. Pasaba con los costados de una caja cuando el
+    // canal llega hasta el borde, que es justo lo que ocurre al enhebrar un
+    // carro con la guía cerca de su canto. Un agujero pasante como mucho la
+    // roza; se emite intacta.
+    if (areaUV(base, iu, iv) <= 1e-6) {
+      salida.push(...tri[0], ...tri[1], ...tri[2]);
+      continue;
+    }
     // Exterior = unión de las n regiones disjuntas descritas arriba.
     let acumulado: P3[] = base;
     for (let i = 0; i < n && acumulado.length >= 3; i++) {

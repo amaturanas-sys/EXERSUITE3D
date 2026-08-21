@@ -5,6 +5,71 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.4] — 2026-08-22
+
+### Arreglado
+
+Una revisión adversarial del mecanismo de guías tubulares —cuatro lentes
+independientes sobre perforado, ciclo de vida de la malla, editor y motor—
+destapó siete defectos que el camino feliz no tocaba. Ninguno se veía armando
+una prensa como la de las capturas; todos se ven en cuanto uno se sale de ahí.
+
+**Una guía rozando el canto se comía el costado de la pieza.** Una cara
+PARALELA al eje del taladro se proyecta sobre el plano del hueco como un
+segmento —área cero—, y el recorte la dejaba en polígonos degenerados que el
+filtro de área descartaba uno a uno: la cara entera desaparecía. Ahora se emite
+intacta, que es lo que le corresponde: un agujero pasante como mucho la roza. Y
+además el canal se descarta si no CABE entero: antes se medía solo el centro
+del cruce contra la caja de la pieza, sin contar el radio.
+
+**Los agujeros desaparecían al recargar el proyecto.** En una pieza con malla
+de biblioteca, la malla original solo se guardaba si en ese momento ya había
+algo que rehacer sobre ella. Al abrir un proyecto el orden es el contrario
+—primero el modelo, después los params—, así que la pieza nacía sin original y
+su reconstrucción posterior no podía volver a calar nada: los canales de un
+carro enhebrado se perdían al recargar, al deshacer, al pegar y al insertar un
+prefab. Ahora la original se guarda siempre.
+
+**Enhebrar borraba la escala de la pieza.** Recuperar la malla original pasa
+por volver a aplicar el modelo, y eso ponía la escala a 1 — pensado para una
+pieza recién creada, no para una ya colocada. Un carro agrandado a 1,5× pegaba
+un salto al soltarlo sobre las guías.
+
+**Un tope suelto congelaba media escena.** Las guías y sus espaciadores se
+descubren por la forma, y ese examen comprueba que el freno esté MONTADO sobre
+una guía concreta. El tope declarado en v0.3.3 se saltaba ese paso: una pieza
+«Tope de guía» dejada en cualquier rincón frenaba —y volvía fantasma— a toda
+pieza guiada de la escena, incluida la pila de una torre de poleas. Ahora se le
+pide lo mismo que a los demás: coaxial, en la recta de la barra y solapando con
+su tramo.
+
+**Un tope a horcajadas del centro del carro no frenaba nada y encima dejaba de
+chocar.** Si el tramo del tope contiene la proyección del centro de la móvil,
+ninguna de las dos ramas del acotado se ejecuta; pero se le quitaba la colisión
+igualmente y quedaba de fantasma. Ahora solo pierde el contacto el tope que de
+verdad acota.
+
+**Dos topes más juntos que el carro lo soltaban.** Cuando el hueco libre entre
+ambos es menor que el grosor de la móvil, el recorrido salía negativo y el
+motor descartaba la guía entera: el carro se quedaba sin clamp y salía
+despedido por fuera de sus barras. Encerrado entre dos topes, lo que hace una
+pieza real es no moverse.
+
+**Duplicar una guía teleportaba la copia sobre la original.** Los anclajes
+viajan por id, y duplicar es justo como se hace el segundo rail: la copia
+quedaba amarrada a las mismas dos piezas y saltaba encima en cuanto se tocaba
+el bastidor. Ahora la copia nace suelta —igual que la pegada del portapapeles y
+la que llega en un prefab, donde esos ids no significan nada—, y se vuelve a
+amarrar tendiéndola.
+
+**Y lo que cuelga de una guía la sigue.** Retenderla no avisaba a nadie, así
+que una guía tendida ENTRE dos rails —el caso del hack squat— se quedaba atrás
+cuando el bastidor se movía. Ahora propaga, con un centinela que corta la
+recursión si dos guías acabaran amarradas la una a la otra.
+
+Los cinco arreglos comprobables desde fuera están vigilados en
+`pruebas/prueba-guia-tubular.mjs`, que pasa de 15 a 20 comprobaciones.
+
 ## [0.3.3] — 2026-08-22
 
 ### Añadido

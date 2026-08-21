@@ -203,20 +203,26 @@ export class SceneObject {
   applyCustomGeometry(geometry: THREE.BufferGeometry): void {
     const old = this.mesh.geometry;
     this.geoOriginal?.dispose();
-    // La malla ORIGINAL se guarda si hay algo que rehacer sobre ella: ventanas
-    // caladas o un largo a medida. Sin ella, cada cambio de largo se aplicaría
-    // sobre la malla YA estirada y los cambios se irían acumulando.
-    this.geoOriginal =
-      this.params.ventanas?.length || this.params.canales?.length || this.largoAjustable()
-        ? geometry.clone()
-        : null;
+    // LA MALLA ORIGINAL SE GUARDA SIEMPRE (v0.3.4). Antes solo se guardaba si
+    // en ese momento YA había algo que rehacer —ventanas, canales, largo a
+    // medida—, y eso llega tarde: al abrir un proyecto, `addComponent` aplica
+    // el modelo de biblioteca ANTES de asignar los params, así que la pieza
+    // nacía sin original y su `rebuildGeometry` posterior no podía volver a
+    // calar nada. Los agujeros de un carro enhebrado desaparecían al recargar,
+    // al deshacer, al pegar y al insertar un prefab. Cuesta una geometría por
+    // pieza con modelo; es el precio de que la malla se pueda rehacer siempre.
+    this.geoOriginal = geometry.clone();
     this.espejoHorneado = [false, false, false];
     this.mesh.geometry = this.hornearEspejo(
       this.aLaMedida(perforarGeometria(geometry, this.params.ventanas, this.params.canales)),
       true,
     );
     old.dispose();
-    this.mesh.scale.set(1, 1, 1);
+    // LA ESCALA DEL USUARIO SE RESPETA (v0.3.4). Poner a 1 tenía sentido cuando
+    // esto solo lo llamaba una pieza recién creada; desde que `setCanales` lo
+    // usa para recuperar la malla original, una pieza ya escalada a 1,5×
+    // pegaba un salto y volvía a su tamaño de biblioteca al enhebrarla.
+    if (!this.customModel) this.mesh.scale.set(1, 1, 1);
     this.customModel = true;
     // Las placas/varillas/pin de la pila se dimensionan con el bbox de la
     // geometria: hay que reconstruirlas con la nueva.

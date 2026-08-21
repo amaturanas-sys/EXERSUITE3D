@@ -615,6 +615,12 @@ export function construirPiezas(
       // el `path` del propio spec y las siguientes inserciones de la
       // máquina nacían con la pieza ya deformada.
       obj.params = structuredClone({ ...obj.params, ...p.params });
+      // Los ANCLAJES de una guía tubular apuntan por id a las piezas que la
+      // sostenían cuando se exportó el prefab (v0.3.4). Esos ids no significan
+      // nada en la escena de destino —y en la misma sesión significarían algo
+      // PEOR: las piezas del original—, así que la guía llega tendida en el
+      // sitio que trae el archivo, que es el correcto, y suelta.
+      obj.params.anclajes = undefined;
       obj.rebuildGeometry();
     }
     if (p.material) obj.setMaterial(p.material);

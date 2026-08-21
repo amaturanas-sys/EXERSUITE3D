@@ -1,4 +1,4 @@
-// v0.3.3 · MECANISMOS DE GUÍA TUBULAR.
+// v0.3.3 · MECANISMOS DE GUÍA TUBULAR (+ los arreglos de v0.3.4).
 //
 // El diseñador pidió poder armar una Smith, una prensa de piernas o un hack
 // squat. Todas son la misma máquina por dentro: dos barras cromadas tendidas
@@ -269,6 +269,124 @@ const pin = await p.evaluate(() => {
 ok(pin.aviso === null, `el pin calza en la grilla del montante (${pin.aviso ?? "sin aviso"})`);
 ok(pin.lateral < 6,
   `y queda metido en el poste, no flotando al lado (${pin.lateral} cm del eje)`);
+
+// ── 6. LO QUE ARREGLÓ v0.3.4 ───────────────────────────────────────────────
+//
+// Una revisión del mecanismo destapó seis defectos que no salían en el camino
+// feliz. Cada uno tiene aquí su comprobación.
+console.log("\n── Los arreglos de v0.3.4 ──────────────────────────────────");
+const arreglos = await p.evaluate(async () => {
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const out = {};
+  const limpia = () => { for (const o of [...ed.listObjects()]) ed.removeObject(o); ed.select(null); };
+  const tenderGuia = (x, r = 1.5) => {
+    const g = ed.addComponent("guia-tubular");
+    g.params = { ...g.params, height: 160, radiusTop: r, radiusBottom: r };
+    g.rebuildGeometry();
+    g.mesh.position.set(x, 90, 0);
+    g.mesh.updateMatrixWorld(true);
+    return g;
+  };
+
+  // (a) UNA GUÍA ROZANDO EL CANTO no se come el costado de la pieza.
+  limpia();
+  const gBorde = tenderGuia(0);
+  const plancha = ed.addComponent("prim-box");
+  plancha.params = { kind: "box", width: 30, height: 12, depth: 30 };
+  plancha.rebuildGeometry();
+  // El carro se coloca de modo que la guía pase justo por su borde -x.
+  plancha.mesh.position.set(14.4, 90, 0);
+  plancha.mesh.updateMatrixWorld(true);
+  const vAntes = plancha.mesh.geometry.getAttribute("position").count;
+  const nBorde = ed.vincularAGuias(plancha);
+  const vDespues = plancha.mesh.geometry.getAttribute("position").count;
+  // Volumen de la caja envolvente: si se comió una cara, la malla se abre.
+  plancha.mesh.geometry.computeBoundingBox();
+  const bb = plancha.mesh.geometry.boundingBox.getSize(new T.Vector3());
+  out.borde = {
+    canales: nBorde,
+    // La caja tiene que seguir midiendo lo mismo aunque el canal se descarte.
+    tam: [+bb.x.toFixed(1), +bb.y.toFixed(1), +bb.z.toFixed(1)],
+    vAntes, vDespues,
+  };
+
+  // (b) UNA GUÍA DUPLICADA nace SIN los anclajes de la original.
+  limpia();
+  const soporteA = ed.addComponent("prim-box");
+  soporteA.mesh.position.set(0, 170, 0);
+  const soporteB = ed.addComponent("prim-box");
+  soporteB.mesh.position.set(0, 10, 0);
+  const orig = tenderGuia(0);
+  orig.params.anclajes = {
+    a: { obj: soporteA.id, local: [0, 0, 0] },
+    b: { obj: soporteB.id, local: [0, 0, 0] },
+  };
+  ed.select(orig);
+  ed.duplicateSelected();
+  const copias = ed.listObjects().filter((o) => o.componentId === "guia-tubular" && o !== orig);
+  out.duplicado = {
+    n: copias.length,
+    conAnclajes: copias.filter((c) => !!c.params.anclajes).length,
+  };
+
+  // (c) UN TOPE SUELTO no congela a una pieza guiada que está en otra parte.
+  limpia();
+  const gSuelta = tenderGuia(0);
+  const movil = ed.addComponent("prim-box");
+  movil.params = { kind: "box", width: 20, height: 10, depth: 20 };
+  movil.rebuildGeometry();
+  movil.physics = { ...movil.physics, fixed: false, massKg: 20 };
+  movil.mesh.position.set(0, 140, 0);
+  movil.mesh.updateMatrixWorld(true);
+  ed.vincularAGuias(movil);
+  // Un tope tirado LEJOS de la guía, sin montar en ella.
+  const suelto = ed.addComponent("tope-guia");
+  suelto.mesh.position.set(120, 60, 120);
+  suelto.mesh.updateMatrixWorld(true);
+  const y0 = movil.mesh.position.y;
+  await ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 2500));
+  out.topeSuelto = { caida: +(y0 - movil.mesh.position.y).toFixed(1) };
+  ed.stopSimulation();
+  await new Promise((r) => setTimeout(r, 400));
+
+  // (d) DOS TOPES MÁS JUNTOS QUE EL CARRO lo dejan encajado, no lo sueltan.
+  limpia();
+  const gEncierro = tenderGuia(0);
+  const carro2 = ed.addComponent("prim-box");
+  carro2.params = { kind: "box", width: 20, height: 12, depth: 20 };
+  carro2.rebuildGeometry();
+  carro2.physics = { ...carro2.physics, fixed: false, massKg: 25 };
+  carro2.mesh.position.set(0, 100, 0);
+  carro2.mesh.updateMatrixWorld(true);
+  ed.vincularAGuias(carro2);
+  for (const dy of [-8, 8]) {
+    const t = ed.addComponent("tope-guia");
+    t.mesh.position.set(0, 100 + dy, 0);
+    t.mesh.updateMatrixWorld(true);
+    ed.vincularAGuias(t);
+  }
+  const p0 = carro2.mesh.position.clone();
+  await ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 2500));
+  out.encerrado = { movido: +carro2.mesh.position.distanceTo(p0).toFixed(1) };
+  ed.stopSimulation();
+  await new Promise((r) => setTimeout(r, 400));
+  return out;
+});
+ok(arreglos.borde.canales === 0,
+  `una guía que roza el canto NO abre canal: no cabe entero `
+  + `(${arreglos.borde.canales} canales)`);
+ok(arreglos.borde.tam[0] === 30 && arreglos.borde.tam[2] === 30,
+  `y la pieza conserva sus cuatro costados (${arreglos.borde.tam.join("×")} cm)`);
+ok(arreglos.duplicado.n >= 1 && arreglos.duplicado.conAnclajes === 0,
+  `la guía duplicada nace SIN los anclajes de la original `
+  + `(${arreglos.duplicado.conAnclajes} de ${arreglos.duplicado.n} con anclajes)`);
+ok(arreglos.topeSuelto.caida > 8,
+  `un tope tirado lejos NO congela a la pieza guiada (${arreglos.topeSuelto.caida} cm de caída)`);
+ok(arreglos.encerrado.movido < 5,
+  `dos topes más juntos que el carro lo dejan ENCAJADO, no lo sueltan `
+  + `(${arreglos.encerrado.movido} cm de desplazamiento)`);
 
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0

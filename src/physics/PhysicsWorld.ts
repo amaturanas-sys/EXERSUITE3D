@@ -618,6 +618,8 @@ export class PhysicsWorld {
       eje: THREE.Vector3;
       largo: number;
       esStopper: boolean;
+      /** Freno DECLARADO por la pieza (tope de goma), no deducido de la forma. */
+      declarado?: boolean;
       cuerpo: R.RigidBody;
     }
     const esbeltas: Esbelta[] = [];
@@ -631,6 +633,7 @@ export class PhysicsWorld {
           eje: axisVector("y").applyQuaternion(f.obj.mesh.quaternion).normalize(),
           largo: f.obj.localSizeAbs().y,
           esStopper: true,
+          declarado: true,
           cuerpo: f.body,
         });
         continue;
@@ -696,7 +699,28 @@ export class PhysicsWorld {
     }
     // Guía de verdad = tubo LARGO (≥60); las cortas solo pueden ser stoppers.
     const guiasTubo = esbeltas.filter((e) => !e.esStopper && e.largo >= 60);
-    const stoppers = esbeltas.filter((e) => e.esStopper);
+    // UN TOPE SUELTO NO ES UN TOPE (v0.3.4). Los espaciadores descubiertos por
+    // la forma pasan por el paso 2, que exige que estén MONTADOS sobre una guía
+    // concreta; el tope declarado se saltaba ese examen, así que una pieza
+    // «Tope de guía» dejada en cualquier rincón frenaba —y volvía fantasma— a
+    // toda pieza guiada de la escena, incluida la pila de una torre de poleas.
+    // Aquí se le pide lo mismo que a los otros: coaxial con una guía, metido en
+    // su recta y solapando con su tramo.
+    const montadoEnUnaGuia = (st: Esbelta): boolean =>
+      guiasTubo.some((g) => {
+        if (Math.abs(st.eje.dot(g.eje)) < 0.99) return false;
+        const d = st.centro.clone().sub(g.centro);
+        const lateral = d.clone().addScaledVector(g.eje, -d.dot(g.eje)).length();
+        if (lateral > 6) return false; // fuera de la barra
+        const sSt = st.centro.dot(g.eje);
+        const sG = g.centro.dot(g.eje);
+        return Math.abs(sSt - sG) <= g.largo / 2 + st.largo / 2;
+      });
+    // Solo se le exige a los DECLARADOS: los descubiertos por la forma ya
+    // pasaron el paso 2, que los valida contra la pieza esbelta sobre la que
+    // están montados —y esa puede ser un tubo corto que no llega a `guiasTubo`,
+    // como los espaciadores del portadiscos del TTP.
+    const stoppers = esbeltas.filter((e) => e.esStopper && (!e.declarado || montadoEnUnaGuia(e)));
 
     // 3) Móviles guiadas: la recta de una guía ATRAVIESA su volumen (los
     //    cilindros huecos del carrier abrazan el tubo).
@@ -874,9 +898,24 @@ export class PhysicsWorld {
         const stBot = sSt - st.largo / 2;
         if (stTop <= s0) sMin = Math.max(sMin, stTop + halfD - s0);
         else if (stBot >= s0) sMax = Math.min(sMax, stBot - halfD - s0);
+        // UN TOPE A HORCAJADAS DEL CENTRO NO ACOTA NADA (v0.3.4): si el tramo
+        // del tope contiene la proyección del centro de la móvil, ninguna de
+        // las dos ramas se ejecuta. Antes se le quitaba igualmente la colisión
+        // —entraba en `cuerposGuia`— y quedaba de fantasma: ni frenaba ni
+        // chocaba. Ahora solo pierde el contacto el tope que de verdad acota.
+        else continue;
         cuerposGuia.push(st.cuerpo);
       }
-      if (sMin > sMax) continue;
+      // DOS TOPES MÁS JUNTOS QUE EL CARRO lo dejan encajado, no lo sueltan
+      // (v0.3.4). Cuando el hueco libre entre ambos es menor que el grosor de
+      // la móvil, `sMin > sMax` y la guía entera se descartaba: el carro se
+      // quedaba sin clamp y salía despedido por fuera de sus barras. Encajado
+      // entre dos topes lo que hace una pieza real es no moverse.
+      if (sMin > sMax) {
+        const medio = (sMin + sMax) / 2;
+        sMin = medio;
+        sMax = medio;
+      }
       // Las guías se marcan AQUÍ, ya sabiendo que esta móvil quedó guiada: si
       // se descarta a mitad de camino, sus tubos no deben perder el contacto
       // con las demás piezas guiadas de la escena.
