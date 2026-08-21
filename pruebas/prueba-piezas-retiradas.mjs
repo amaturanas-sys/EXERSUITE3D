@@ -17,13 +17,17 @@
 //
 // Las medidas de `HUELLA` se tomaron con la versión ANTERIOR al retiro: son el
 // antes contra el que se compara el después.
+//
+// La CADENA y la CORREA salieron de esta lista en v0.3.5: nunca debieron estar.
+// No son piezas, son los BOTONES de la herramienta de cuerdas, y retirarlas
+// apagó la herramienta entera. La comprobación de abajo impide que vuelva a
+// pasar con cualquier otra.
 import { chromium } from "playwright-core";
 
 // tamaño [x,y,z] en cm · masa en kg · si está anclada · material · vértices
 const HUELLA = {
   "soporte-peso":     { tam: [30, 8, 12],      masa: 0,    fijo: true,  material: "acero-negro",    verts: 24 },
   "montante-pr":      { tam: [7, 110, 7],      masa: 0,    fijo: true,  material: "acero-negro",    verts: 13476 },
-  "correa-seguridad": { tam: [120, 0.6, 4],    masa: 0.3,  fijo: false, material: "nylon",          verts: 24 },
   "barra-fondos":     { tam: [40, 4, 4],       masa: 0,    fijo: true,  material: "acero-negro",    verts: 196 },
   "landmine":         { tam: [5.2, 18, 5.2],   masa: 1,    fijo: false, material: "acero-negro",    verts: 196 },
   "pivote":           { tam: [2.4, 8, 2.4],    masa: 0.2,  fijo: false, material: "turquesa",       verts: 196 },
@@ -31,7 +35,6 @@ const HUELLA = {
   "carro-cable":      { tam: [14, 16, 10],     masa: 1.5,  fijo: false, material: "acero-negro",    verts: 24 },
   "brazo-ajustable":  { tam: [8, 80, 8],       masa: 3,    fijo: false, material: "acero-negro",    verts: 24 },
   "engranaje":        { tam: [10, 2, 10],      masa: 0.6,  fijo: false, material: "acero",          verts: 196 },
-  "cadena-seguridad": { tam: [1.4, 90, 1.4],   masa: 0.5,  fijo: false, material: "acero-negro",    verts: 196 },
   "resorte":          { tam: [6, 30, 6],       masa: 0.3,  fijo: false, material: "acero",          verts: 196 },
   "bloque-peso":      { tam: [30, 4, 18],      masa: 5,    fijo: false, material: "hierro-fundido", verts: 1236 },
   "micro-disco":      { tam: [12, 1.2, 12],    masa: 1.25, fijo: false, material: "hierro-fundido", verts: 196 },
@@ -102,6 +105,22 @@ ok(paleta.sobran.length === 0 && paleta.faltan.length === 0,
   + `(sobran: ${paleta.sobran.join(", ") || "0"} - faltan: ${paleta.faltan.join(", ") || "0"})`);
 // La esfera se queda: el diseñador la preservó a mano pese a no tener uso.
 ok(paleta.esfera, "la ESFERA sigue en la paleta (preservada a petición del diseñador)");
+// ── UNA HERRAMIENTA NO SE PUEDE RETIRAR ────────────────────────────────────
+//
+// Una definición con `placement` no es una pieza: es el BOTÓN de una
+// herramienta —vigas, tubos, cadenas, correas—. Retirarla no quita una pieza
+// del listado, apaga la herramienta. Y el recuento de usos no lo ve venir,
+// porque lo que la herramienta crea no lleva el id del botón: así se perdieron
+// la cadena y la correa en v0.3.2, sin que nada avisara.
+const herramientas = await p.evaluate(() =>
+  window.exersuite.catalogo.todas().filter((d) => d.placement).map((d) => ({
+    id: d.id, placement: d.placement, paleta: d.paleta,
+  })));
+ok(herramientas.length > 0, `hay piezas-herramienta que vigilar (${herramientas.length})`);
+ok(herramientas.every((h) => !h.paleta),
+  `NINGUNA pieza con herramienta lleva etiqueta de curaduría `
+  + `(${herramientas.filter((h) => h.paleta).map((h) => h.id).join(", ") || "0 retiradas"})`);
+
 ok(JSON.stringify(paleta.marcadas) === JSON.stringify([...IDS].sort()),
   `las marcadas como retiradas en la biblioteca son las ${IDS.length} de esta prueba `
   + `(${paleta.marcadas.length})`);

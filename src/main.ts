@@ -312,6 +312,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
       vigente: () => catalogoVigente().map((d) => ({ id: d.id, label: d.label })),
       todas: () => [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY].map((d) => ({
         id: d.id, label: d.label, paleta: d.paleta ?? null,
+        // `placement` marca las piezas que son HERRAMIENTA: la verificación
+        // comprueba que ninguna de ellas lleve etiqueta de curaduría.
+        placement: d.placement ?? null,
       })),
     },
   };

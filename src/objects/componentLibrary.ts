@@ -474,7 +474,12 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "correa-seguridad",
-    paleta: "retirada",
+    // NO SE PUEDE RETIRAR: no es una pieza, es el BOTÓN de la herramienta de
+    // correas (`placement: "rope-strap"` → `Editor.beginRope("strap")`).
+    // Se retiró en v0.3.2 porque el recuento de usos la buscaba por su id, y
+    // una correa tendida no lleva ese id: la arma la clase `Rope` con el
+    // listón de kevlar. Al quitarla del listado desapareció la herramienta
+    // entera, con su panel de holgura. Restaurada en v0.3.5.
     label: "Correa de seguridad",
     category: "estructural",
     materialId: "nylon",
@@ -743,7 +748,9 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cadena-seguridad",
-    paleta: "retirada",
+    // NO SE PUEDE RETIRAR: es el BOTÓN de la herramienta de CADENAS
+    // (`placement: "rope-chain"` → `Editor.beginRope("chain")`). Ver la nota
+    // de `correa-seguridad`: misma causa, mismo día, misma restauración.
     label: "Cadena de seguridad",
     category: "transmision",
     materialId: "acero-negro",
@@ -970,6 +977,13 @@ const BY_ID = new Map<string, ComponentDefinition>(
  * Solo afecta a lo que se LISTA. Ningún id se borra: prefabs, máquinas
  * estándar y proyectos guardados siguen resolviendo TODOS los componentes, con
  * su misma geometría, su misma masa y su misma física.
+ *
+ * UNA REGLA QUE COSTÓ CARA (v0.3.5): una definición con `placement` NO es una
+ * pieza, es el BOTÓN de una herramienta —la de vigas, la de tubos, la de
+ * cadenas, la de correas—. Retirarla no quita una pieza del listado: apaga la
+ * herramienta entera. Y el recuento de usos no lo ve venir, porque lo que la
+ * herramienta crea no lleva el id del botón. Ninguna pieza con `placement`
+ * puede llevar etiqueta de curaduría; `prueba-piezas-retiradas` lo vigila.
  */
 export const esDelCatalogo = (d: ComponentDefinition): boolean => !d.paleta;
 

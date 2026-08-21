@@ -5,6 +5,37 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.5] — 2026-08-22
+
+### Arreglado
+
+**La herramienta de CADENAS y la de CORREAS, restauradas.** Desaparecieron en
+v0.3.2 y nadie lo notó hasta que el diseñador las echó de menos. La causa es
+una confusión de criterio, y conviene dejarla escrita:
+
+`cadena-seguridad` y `correa-seguridad` no son piezas. Son los BOTONES de una
+herramienta: llevan `placement: "rope-chain"` / `"rope-strap"`, y pulsarlas
+arranca `Editor.beginRope`, que es lo que tiende una cadena o una correa entre
+dos puntos. La curaduría de v0.3.2 retiró del listado las piezas que no usaba
+nadie, y el recuento de usos las buscaba POR SU ID — pero una cadena tendida no
+lleva ese id: la arma la clase `Rope` con el listón de kevlar y los eslabones.
+Contaron cero, salieron del listado, y con ellas se fue la herramienta entera y
+su panel de holgura, que seguían intactos por dentro pero sin puerta de entrada.
+
+Las dos vuelven **exactamente como estaban antes de v0.3.2** —misma categoría,
+mismo material, mismas medidas, misma física, mismo `placement`—. Comprobado de
+punta a punta: los dos botones están en la paleta, pulsar el de cadena activa la
+herramienta, la cadena se tiende con sus 19 eslabones entre dos piezas, y el
+panel «Tensión ← → Holgura» aparece y la mueve (0,25 → 0,70).
+
+Y para que no vuelva a pasar, la regla queda escrita donde vive la curaduría y
+vigilada en `pruebas/prueba-piezas-retiradas.mjs`: **ninguna pieza con
+`placement` puede llevar etiqueta de curaduría**, porque retirarla no quita una
+pieza del listado — apaga una herramienta. Las otras dos que hay (vigas y tubos)
+están sanas.
+
+El inventario vuelve a **27 piezas** en la paleta y 19 retiradas.
+
 ## [0.3.4] — 2026-08-22
 
 ### Arreglado
