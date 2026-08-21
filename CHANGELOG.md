@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.6] — 2026-08-22
+
+### Arreglado
+
+**El maniquí, también en el Viewer.** Abrir un archivo desde el SIMULADOR de la
+Home tenía tres agujeros, y los tres salían de la misma decisión: el viewer se
+montaba sin la ventana del maniquí, con el argumento de que «mostrar un
+proyecto no necesita herramientas de edición». Pero el maniquí no es una
+herramienta de edición — es la mitad del proyecto.
+
+- **La postura del Builder no se veía.** El viewer arrancaba la física en
+  cuanto terminaba de cargar, así que lo primero que aparecía no era el
+  proyecto sino su simulación. Ahora el archivo se abre COMO SE GUARDÓ, con su
+  maniquí posado, y simular es un gesto: el ▶ de la barra, igual que en el
+  Builder.
+- **El panel del maniquí no respondía.** El botón que lo abre ya existía en la
+  barra de simulación y llamaba a `editor.panelArticulaciones`, que en el
+  viewer era `null`: el botón estaba ahí y no hacía nada. Ahora la ventana se
+  construye también en el viewer, con sus dos modos —posar y simular—, sus
+  zonas de movimiento y su 8/9.
+- **No se podía esconder el maniquí.** El control de quitar y volver a poner la
+  figura vive en esa misma ventana, así que llegó con ella.
+
+Comprobado abriendo un archivo DE VERDAD por el selector del simulador
+(`pruebas/prueba-viewer-maniqui.mjs`, 14 comprobaciones): la postura llega
+intacta —hombro −71,6°, rodilla 45,8°, los mismos grados que se guardaron—, el
+proyecto no arranca solo, la ventana se abre y se cierra desde su botón y desde
+la barra, el maniquí se quita y se vuelve a poner sin llevarse la máquina por
+delante, y simular sigue disponible.
+
 ## [0.3.5] — 2026-08-22
 
 ### Arreglado

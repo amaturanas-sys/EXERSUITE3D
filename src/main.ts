@@ -99,6 +99,17 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     ed.setHerramienta("seleccion");
     // El PROTOTIPO CON FOTO es herramienta del viewer.
     const prototipo = new PrototipoFoto(ed);
+    // LA VENTANA DEL MANIQUÍ TAMBIÉN ES DEL VIEWER (v0.3.6).
+    //
+    // El viewer se montaba sin ella —«mostrar un proyecto no necesita
+    // herramientas de edición»—, y el maniquí no es una herramienta de
+    // edición: es la mitad del proyecto. Sin la ventana no había forma de
+    // posarlo, ni de correr su gesto, ni de quitarlo de en medio para ver la
+    // máquina. Y el botón que la abre ya existía en la barra de simulación
+    // (`SimulatorBar`), llamando a `editor.panelArticulaciones` — que en el
+    // viewer era null: el botón estaba ahí y no hacía nada.
+    const articPanel = new ArticulacionesPanel(ed);
+    ed.panelArticulaciones = articPanel;
     const simBar = new SimulatorBar(ed, {
       standalone: true,
       onHome: () => void goHome(),
@@ -107,9 +118,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     ed.bus.on("simulationChanged", ({ running }) => {
       document.body.classList.toggle("simulating", running);
     });
-    editorNodes = [canvas, prototipo.overlay, prototipo.root, simBar.root];
+    editorNodes = [canvas, prototipo.overlay, prototipo.root, articPanel.root, simBar.root];
     editorDisposables = [() => prototipo.dispose()];
-    app.append(prototipo.overlay, prototipo.root, simBar.root);
+    app.append(prototipo.overlay, prototipo.root, articPanel.root, simBar.root);
     ed.start();
     (window as unknown as { exersuite: { editor: Editor; THREE: typeof THREE } }).exersuite = {
       editor: ed,
@@ -415,7 +426,11 @@ async function startSimulator(data: ProjectData, name: string): Promise<void> {
   } catch {
     /* sin recientes */
   }
-  await ed.toggleSimulation();
+  // EL ARCHIVO SE ABRE COMO SE GUARDÓ (v0.3.6). Antes el viewer arrancaba la
+  // física en cuanto terminaba de cargar, así que lo primero que se veía no
+  // era el proyecto sino su simulación: la postura que el diseñador había
+  // dejado puesta en el Builder no llegaba a verse nunca. Simular es ahora un
+  // gesto —el ▶ de la barra—, como en el Builder.
   ed.setViewPreset("isometrica");
 }
 
@@ -476,7 +491,8 @@ function showLanding(): void {
           const ed = bootEditor({ simulator: true });
           await ensureModels();
           await ed.restoreAutosave();
-          await ed.toggleSimulation();
+          // Igual que al abrir un archivo: se muestra el proyecto tal cual,
+          // con su maniquí posado, y la física la arranca el ▶ de la barra.
           ed.setViewPreset("isometrica");
         })();
       } else {
