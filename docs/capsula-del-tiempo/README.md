@@ -626,7 +626,7 @@ a plomo girando cada segmento sobre su propia junta.
 - [`maniqui-sentadilla.png`](2026-08-16/maniqui-sentadilla.png) — sentadilla
   profunda con los brazos flexionados: ninguna junta se abre.
 
-## 2026-08-22 — 10 capturas
+## 2026-08-22 — 15 capturas
 
 v0.3.2: el inventario se cierra y las piezas empiezan a cortarse a medida. La
 curaduría pasa a ser UNA lista compartida por la paleta y la Biblioteca de
@@ -659,6 +659,26 @@ dos pilares se alargan por el CENTRO, con los remates intactos.
   se alargaron los rieles del centro.
 - [`multiagarre-rack-170.png`](2026-08-22/multiagarre-rack-170.png) — la misma
   barra calzando en un rack de 170.
+
+Y en la misma jornada, v0.3.3 abre los MECANISMOS DE GUÍA TUBULAR: barras
+cromadas tendidas entre dos anclajes, un carro que se enhebra en ellas con
+canales redondos calados de verdad, topes de goma que acotan su recorrido y
+safety pins en los pinholes. Con eso ya se arma una Smith, una prensa de
+piernas o un hack squat.
+
+- [`prensa-conjunto.png`](2026-08-22/prensa-conjunto.png) — una prensa de
+  piernas armada con las piezas nuevas: bastidor, dos guías inclinadas, carro
+  enhebrado, cuernos de carga, topes y safety pin.
+- [`prensa-perfil.png`](2026-08-22/prensa-perfil.png) — de perfil se lee la
+  inclinación de las guías, que es la que decide la trayectoria del carro.
+- [`prensa-frente.png`](2026-08-22/prensa-frente.png) — de frente, con las dos
+  barras paralelas y el carro entre ellas.
+- [`prensa-canal-de-cerca.png`](2026-08-22/prensa-canal-de-cerca.png) — el
+  canal: la guía entra y sale del carro por un agujero redondo abierto en su
+  malla, con el tope de goma montado coaxial sobre la barra.
+- [`prensa-carro-en-el-tope.png`](2026-08-22/prensa-carro-en-el-tope.png) — tras
+  simular, el carro ha bajado por la recta de las guías y se ha parado sobre el
+  tope, a 17 cm: exactamente donde tocan.
 
 ## 2026-08-21 — 9 capturas
 

@@ -105,17 +105,19 @@ footer{margin-top:30px;color:var(--acero);font-size:13px;max-width:78ch}
   <div>
     <p class="marca">EXERSUITE3D · paleta del modo profesional</p>
     <h1>Inventario de piezas</h1>
-    <p class="sub">Quedan <strong>22</strong> piezas en la paleta. Las 21 que no
-    usaba ninguna máquina ni ninguna prueba —más el pilar, el contrapeso y el pilar vertical TTP, que
-    el diseñador retiró a mano— salieron del listado — pero siguen resolviéndose por su
-    id, así que los prefabs que ya las llevan se insertan y se comportan igual.</p>
+    <p class="sub">Quedan <strong>25</strong> piezas en la paleta: las 22 de la curaduría más las
+    <strong>tres de guía tubular</strong> que estrena v0.3.3 —guía, tope y safety pin—, con las que
+    se arman una Smith, una prensa de piernas o un hack squat. Las 21 retiradas son las que no
+    usaba ninguna máquina ni ninguna prueba, más el pilar, el contrapeso y el pilar vertical TTP,
+    que el diseñador quitó a mano; siguen resolviéndose por su id, así que los prefabs que ya las
+    llevan se insertan y se comportan igual.</p>
   </div>
 </header>
 
 <div class="resumen" role="group" aria-label="Filtrar por uso">
-  <button class="chip" data-f="todas" aria-pressed="true"><b>22</b><span>En el inventario</span></button>
+  <button class="chip" data-f="todas" aria-pressed="true"><b>25</b><span>En el inventario</span></button>
   <button class="chip" data-f="v-si" aria-pressed="false"><b>16</b><span>En uso</span></button>
-  <button class="chip" data-f="v-med" aria-pressed="false"><b>6</b><span>Solo pruebas</span></button>
+  <button class="chip" data-f="v-med" aria-pressed="false"><b>9</b><span>Solo pruebas</span></button>
   <button class="chip" data-f="v-ret" aria-pressed="false"><b>21</b><span>Retiradas</span></button>
 </div>
 
@@ -391,9 +393,49 @@ fuera. No se escala: el perfil no cambia ni un milímetro y los remates no se de
 <td class="ver"><b>v0.1.0</b><span>2026-06-29</span></td>
 <td class="vd"><span class="pill v-med">Solo pruebas</span></td>
 </tr>
+<tr class="cat"><th colspan="7" scope="colgroup">Movimiento<span class="cat-n">3 piezas</span></th></tr>
+<tr data-v="v-med">
+<td class="num"><span>20</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRlIFAABXRUJQVlA4IEYFAADQIACdASq+AL4APm02lkkkIyIhILqp4IANiWlr2tjVP8+/2xfN/3X+uz8lmzzJYd4/etIIWr/dr6e3Zb2WkBCZwt1OA4Hu5o/MdSPlpqkNpOAYlkdfmJ6E+XzuFAiFxAvq/EB8gNpvjcPgLQbEZL/9wg2NokBBiKhJifP5k1MPKOE62bC/9n+s3kSfby4BitT5/aO+Gg4S2qOZY9X0/x86oeX85e0pM4pOGT2KlNoKzidRaIqwKcF3W52SsjDn1HdyTqc5z/uXojPbai1qq1SoGEg+chxWvMrqNzI/pI5s5uGiG2Lm5MfOIFUHNXM6zrGgKzGNaJvK4vtOSPAZzepbAH91/Wppw3tTY3zkYvQAAP75XaIKTAJasRWjEAAACUmSSRpKQB88ouxhUvfhc3s6uYADn3QAAJb8UKfFXeAAQfgAG+hozGj5AAJpUAGFf3IIKD4Odsj5qho/WZPvo1m5au11njx8oi78A1KCY0CSDoCGyB6Nm14WO3gH/inxgX603thiRJivXxqTDpDCAEFYNp0iAF450SVOxNa1IIPIYH23Ew0jB9jCWJMg6BzTZq5/91XaVvsP5QdnBmTfKGeoBOJLi2m5BrFhn+S1OWXHtjXCNHmyCjtCNBUO1XHo1j56DSyX297+t1yooMVPLgWcdLRR/Aaa1f1azKRCiKEjiy3aXq8zbIUDWY/eHa+KgUqTr3CuohnaTKpd2oV9IzqKaa2QzBwPm3LM/smkBevY4f4vZBkkD99tLEcwaOlUw2z4LO8T/kh1dKhzlFEwZsk+hUZLI7wRhwJQ71HFDyzPhkYoLL8VuGplYvZJLbVT4wd3I5TR8ukjXCoiReeqy8KfoYokaj4Yzc1NJiLPdrbQsTAx5hiOszq1xouHXPW0uB/eW4ZiDfqMDqijxJjnQLGCf8OzFL2hN1AFRqwMHb6jHwOlcK5mDVvSSTqAWkYtaKBK2W3w9ObmCb2HwWXwzJ52ckEr6+Z3bPTTAlbEXOdp9G+k0g6Hat9TFDav9cxV3iO8+AX4VygCOWgXWIaGpLGzEgj7cE2WSxhivEpzRCJ2cFMVkJK+GT9vjo97/AIj1kWCRdFCHMjEffsA9IcPKS7SADLRTCvo9U6pCIsAXXLo6xjO3ymH2ZhWzcBYgbiGPo2wSMNiZN6MCZF6237p1zg3r8wILlcV4VquhXPBkApHhtgDdLYCddN0hLZ12lzzIpbLZKiy28IQWxtzY+XycwkdrUIbO5P0HdxXhuY9F51Ap89OfwzaTMpbADqpdyjMuecN31DCPDwLlwLXzrHUBVUJsWZiSbcmS/XJxsBXxlbLCXyjUwv9x3PZF7zuwxnwHIyZi/NMZ4ydt5tTsPQc0icJlWZbFoWbwv7Y2cizf6w7ehZo7Z802VmLbzdNzqvPG017+N/Kn/hFjwGhdnkmsedZDVXd+igKrLIIbP/LxILPLKpVnRQdAwsuB6PvTY3CgOylBhbpWLI+APu1MoIyRlP7i3CTvUPPjSnVQQNvGQdgZNfahIOc28QyL2Xsc0xpEEVMNqiOiyY34Af4CgnzTLoj/S1hPGh+YTt4/HRxsFHo7V+CkTtg1g1rKZ4DkJvAgsEb+3DTCmASw2uJ8PUhCZfr9Cbhl6hOknFBNkb0mKu59HV+9yP7QYfsi5nT1gtseS8aOTLFhRm7esmf+S7ZP0wSZCXfThioDkkRZkUDOMnubhmvQkyEp0Yotiz9pcdLcnoM/a4Iu5uTRswdjQAmMt4K4ExvE29V9ImirXMzTS5mXYYbuFG2G05vpeFqGJqiT02mQAAAAAA=" alt="Guía tubular" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Guía tubular</strong><code>guia-tubular</code></td>
+<td class="fun"><p>Barra guía cromada: se tiende entre dos anclajes y por ella corre el carro.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>2</b> código</span>
+</td>
+<td class="ver"><b>v0.3.3</b><span>2026-08-22</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>21</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRvACAABXRUJQVlA4IOQCAACwGgCdASq+AL4APm02mUikI6KhJFroQIANiWk7Y1jbKRq5pMToG4npSxqucw98tz1CcoixcaXh1iXeG9Ka4bK8e1Ts9UrqRvBPrtbSvlbdGoeDEqFat+GIE7u6jSoH9uCem3zeg4aMMq5fbUHVGoWs2mqIh5s8L4EPozFrPuiG4vQOW/HYhXhZgBfbhsRXiUI7K7sEEfFwgXnkQYQDVvAd8p21ShNXSNji9KOqHzAWEn681bK58Meq8j1i60jCgyfShSBD/ZSIWQ/sIs1zXU5wgEjI9h1FUtza7gPQtoAA/vnLJv0jVvqfcdPLTFJQWXBGlXuQmlYcsPj2ufWligF9fM+uc+acr7vC19WhIrJ/R12woIvUZcixSCFIdtNRNvlg7pFAr4VahUCdvhUr/Hsf7A0s10+9+g4bq5xGroNMhZig6DAsfVJXh1mgIH+0slhtBOzwsEdEhp8xmBIpy2fRjk4FoHNAdvJqGqjK67fqHvqfTBocCYp1wtADYQc+LzzSjiH2uaK9cgFIF+UQc3GAAmA8B1Mk63uRPq80TICjJnPBfhJm4ZH/izIJJGu6c6IujjqO2wum1RTXlS1i0t5QVYuwYTJ/GBRLLiafQE3JLyWA6VBE8QvNs/CnO+9NW6j5xd6mkRfrihfiBJeH8EUt4C6GFbOrF6eX5wElBnqjM9yKPkNyXG8ZoiSnNcwIkIohF8Cp1VMcSApcSaP4RtiVP2vSXQV9va8LjSnl9Y8qNbLS+CHkFh3rLI1HGCWlfbJOELGudTwcrpTbw+sALFFlA1XeNKvf7GadZS4MlassYqrkYXLPfpnNSBvBNU6L+IIlQuqjC8Ed1zM670rOM/gH3v5/4pJT4qskOwaPzRUIln+SvUi7a0f05e6YaIgg8xAsybrZ6Tkqm/Qk18Mw0FidC5jVqxcRLmph9kSvAb2Myhi88E6zyfOMnlqh7gOIXfp6jlW28CA5g9RD5WOC7Sv4AAAAAA==" alt="Tope de guía" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Tope de guía</strong><code>tope-guia</code></td>
+<td class="fun"><p>Espaciador de goma montado sobre una guía: detiene ahí el carro.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u"><b>1</b> código</span>
+</td>
+<td class="ver"><b>v0.3.3</b><span>2026-08-22</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
+<tr data-v="v-med">
+<td class="num"><span>22</span></td>
+<td class="mini"><img src="data:image/webp;base64,UklGRpwEAABXRUJQVlA4IJAEAACwHwCdASq+AL4APm02l0kkIyIkI3VYoIANiWlubF9JCV92f4BKXx/v+7WnefMslT/TZKseTZAkAXhN8zyxk1b/h04+n+q5Z+CPF/h9n5JMLBqKdT09lLksoaQiqB5PNtaEzdceoOhekqnlnRQZ/eCi/+TPi6wUnNviarIS2SadLjbEmg6dczu3NWhzC+r0LG8nNyn08d9h6ej+Ri90qy9NY/ZoW9eVaeC3XaiAfupdxw3uwjM62qYJsi+e43ykA6hJIsJcwKeZljmLKGG6xvoRL3uqkXTQAa7+nAQjX/+t1B72VdLEHgy3iQH0xsRmAlRhVr5R1PFR4TBDFy7a8paCM0c8YB8AAP77XdiaVHKk49u7f3OGmv9JGBGGx1NrwZV8pliOyXxGBcZwNmK8DIpPOKMHjdsMT6jUVwEeNlL2axNwnDiMUDJ9cyY5hmb8RfRfWmdhrXoIVJTKvdb9OLc6hXFrQNFai6+xhiNa8eVnRrknZhdbKXYktsqVq6fhfvIgI1LOs153v1IY8zJUST8rOJkjseYJEnWmh1aWUGCsVfawRTg3bs/ceeuZwpuscTlnNB++K2qc/KPOQ/teRq78dYPT7H1BSm/5KUlCcQ0pzcN2jrGIxJihWtJma6W/pwiAPGJTKcvZMZs7sfAvHFCzIcHc+eEc3q0G1XJg8JOhO/Rrx52E0xQMz0eAwQUabVIoqibz9bIFT7R9Y5QaDgu281nbza1RAUakheXx2HNXYg+7DHxBCfYA44Hzy7XW5chwk72PT+UC8r2J8x9WtG8aREtnQURHJ6lTOCFnOzDUM93mJxAT54B5JcM5DMJYdw7RB2qIoItQ8P71h0nMZl53gSk4JBlye+gWxhrRt+puZlB555E/j2JC3HR35mpSUZw2Enr65covvppaaFA/o92A5J54OGz/97C75OjaiCWJI7CWfRq2sXOmdpgpsE6xNgeRulM0m/sRBCqgR3hh7t6P9Z5VlNEPjJ0KbPMMQLmOCtj+YOC8PeN0/7vyLLXmCZpT0z5Ndcg0d3O6tWA7hjhOOPLPbIKOnWbK1iIM411jyVpzT9QyFsGmOhorkzfCBZ5jNyk2Z8WTaBrr1+5Pj1HeRmpu7cMOI0KeXgVW46xnO6TW3bZb2uZdAOP10zBUd5baSKzlFVfU14j4EyoTj6PtTVe/GmNRdskIG5N1iwOO2gHuANbRtleZOA9cHB+mY6bk9A4bampx+5q2zR6n63EiAoBnf/rGXZYGgiFk2luQjNuZw8YXcvITYgUFzduxtkjDMM8MxQX5q5jTr5/A7J9st8AMXuvxpwCZaus8I2CtwaYthB2RhZYGKNGQbT/PAxXbqOxDSn1RpDA2/0vYR/XAQh7WoTBaaFVwB/IFR6BRs+I9InJMSxnIWWN/nTAAMDbjnzingFLF1KvcZR/vXpDm+Cz7p2nBXVK4NOcriRxqKYFiRo9J+m4OWJtWVLLTkVu24ZMSltY3NerCPmq8H6Rxzu16W01zv2vPBBBrpZJ/zFNKZAvRHRSyl6WPFbXhVzNFN7UCAAlT9wfUQQcAAAAA" alt="Safety pin" loading="lazy" width="190" height="190" /></td>
+<td class="nom"><strong>Safety pin</strong><code>safety-pin</code></td>
+<td class="fun"><p>Pasador cromado que entra en un pinhole del pilar: tope de seguridad o gancho.</p></td>
+<td class="uso">
+  <span class="u u-maq cero"><b>0</b> máquinas</span>
+  <span class="u"><b>1</b> pruebas</span>
+  <span class="u cero"><b>0</b> código</span>
+</td>
+<td class="ver"><b>v0.3.3</b><span>2026-08-22</span></td>
+<td class="vd"><span class="pill v-med">Solo pruebas</span></td>
+</tr>
 <tr class="cat"><th colspan="7" scope="colgroup">Primitivas<span class="cat-n">3 piezas</span></th></tr>
 <tr data-v="v-si">
-<td class="num"><span>20</span></td>
+<td class="num"><span>23</span></td>
 <td class="mini"><img src="data:image/webp;base64,UklGRigEAABXRUJQVlA4IBwEAADQIACdASq+AL4APmEwlEckIyIhJdsZsIAMCWluCuw9/f/8TJ39n5XfeUctlRTaD8Cxv5U63EkyL3SB04cty612nifMRlOhh8FOpZB+WRyQBF+54WGSU6ORBrfG7yH2MtfqCEo3pRIaDQsMs/lP/yVEU9W+GSmLiBsbb9XnzLQKEweDn8rovRZlrOaL0dOgnK6JuGB4YJ3/+JhungGPuc0gd1Zdge+rcae/7yDH+471sdLNmNO8XX3bhQaI9ybML977pHhmvKpVDhIXfLo9zmePnoIqojKOi+GSa3jhcJKc9wk9MFlTL+T536gG6sz6WPRYcRYRvUiOyDrgaPIIGWZKBBItJ/R9+y9jTg4HzbwAAP76Yt+7SfpyyQqbcU7ylX6sg0LYKl2ZN76eYVQ5L9N5yPxpw3yC4poDDc1hBEGsZF9c1b5//JmVCM9f/yZzAY3InvTRTnf7aA9eREUhk4KSY118y5vI2H50H+91G73hOI4BMvIPmZmTj3T41UwHEp7DtwpPyjVhhNzhhQohl5TV6oSVssVy2lyQEUvZKkeznmwjc1y7ZHvu7OlXqBz+QglZbkJAtnxeZeE4p5jQZbb5xJPnHq8HplsUCwfO7MQZZNj3AvgnmW4CMW9p9okztH6WQoFhLkPVt7tZxDkIkICi44JnUFbo40+vUyztLFwZ/ONzOzWGRdfE+3mWOB5Izy9zLkwO/wkTu7lMMw/IiTCPr+f5BlnxsF0VVj7/tjVTkERLiNvnyNVmiuTqzdB29bN9/IA1RktwaWIPQAq1A0rsiPKBQmjcZlqWCuZGwmb0kWp16NwryL0uqzJgluFy+cLzzK2N5mNkz+SNTuBP/aN5AniK+XwLTlUKvBJTOJ6uIqjFPVHppWM6HAhNhwkAeeJMKCYik98iQJHpY4KwZRD+/Yl78QPxVgWFPOz0C/AVsGAmfrKGcT5lP52aV9b1RNe6xM6kVnG/5mo0BT//qUcFJFbgQpKMN6ZnM01rh+epyR6DSkB017jzjsPKvIpKqVvqQT7m1qU4LaNE2qCAWbj8A33VMO52jRqDdGeyZFAKuExpgmNEbk80RRLoKggVrU2azMOVlPQNeGsJUu9cSVNbVjbpHVVpPNl/uHgB+ukFuEU3iZbwMRArJhQBoiGWGrJnrENEu4bYjVC3H6u+DKRdnenEBinLKGEDbIKzRswcPyQAkwKPuPkh2KABhCwuFMjmabHPOJAfczwTZrXu3FRNeiEBeU9QLpukyaMRtwHKsZIGPijAU9uTThGrnlBA2P6S4gl3Vr0S+kmpnsZ9Bb5zUfrsxkhcuhzzj9t05BSdz3R2lz9ukUauXoyK9b/cqWm9MydaLV/GndX0slXOKab5oeBJ9zH50AeLGPxXYaB5+w3CV7UVYxu9/OQAAA==" alt="Caja" loading="lazy" width="190" height="190" /></td>
 <td class="nom"><strong>Caja</strong><code>prim-box</code></td>
 <td class="fun"><p>Primitiva cubo/caja.</p></td>
@@ -406,7 +448,7 @@ fuera. No se escala: el perfil no cambia ni un milímetro y los remates no se de
 <td class="vd"><span class="pill v-si">En uso</span></td>
 </tr>
 <tr data-v="v-med">
-<td class="num"><span>21</span></td>
+<td class="num"><span>24</span></td>
 <td class="mini"><img src="data:image/webp;base64,UklGRkIEAABXRUJQVlA4IDYEAADwIQCdASq+AL4APmEwlEckIyIhJdp4wIAMCWltftK9Xf/8H539n/XfeUrSmelIKobt2ixXtXDDljty/uDsOM/tNyIn2RV7DLRqIHwBM1vwMXyFjffPqxXzvURMMrmwDpBdm/wylaEl0BUp8eqxojSlJGZTcasxaRWBpjFH44LH0mJXixF2RmRLy0WLkDDjyM2EmaV3o5JYGlp7O3y/f3X6G0cTBRZ77TONWdJEgTywJuvu7/xhFDTtY9D5v6JdpH/dozj8xu3NAOuzSqYNB2crV6lT071hZmjPN/w29z4LUt058cahRyDQCfRgtJmhkf2jJ+FiSuTFx7iLOVXPcZ6a9fiPrcLY55UJFHIEMT40XG2VX6swSq2wAP76Yt+vPMMWKSotCvEasdLh6kSbwaWIIN829afakxJmomqImfDv+oLRTDsli8Q1V7qX3z/+TPqEZ6//k0YWQ6pMv1cMe5lUFv+EatxHsmiSZSRXZ36VIlLlyQG7hez1pl2WxHgFIh4UsViHq+q/fnbg/n9EFNJ/3bAWCIfMzILI+7dKx2D3G8wWjheq24EXWvrB98nkm3qWygia66g6lccGbINtQw+d/xfq5yhXboWqL8eJw5puECtzuoHeE5pW3A6WL9rHR+1VWWXr2NIUGSM1b4AYm93XddqdhqixATK30cUQ96ihUIHy5qSwE1J+AMSij7bDmSIFqFJZ4QsatFIdqL+D0hrLYcf/aDXBuEi+bYFwsBGGc44Dyk1I7orEcN7MYxWqPVZzIEJN+wXCDa263j2mZZh6pmYguiowEkomvzXDT60vLn+ONvaSiECNOnMmVJ2qvdLn1UY3xoBF1cij/TXvMmZTCt4LbvRiNdRGlYzFcZQw88C5D6PsL2MP0RY1aaITVVoROFYs98dTpP+CkSTOl2ccKxvADe8eVvnBDVWVsYbJFS64RuHOeEfgNO8/WXGHhnwyYVHREqqA2vA5zH5g31UCrTupP+vHEaNW51P6b5g8n0pn81x9+NNEkIxw1kplJOwFwSywww0jOaMYHAezXnrmSe+vy5kKyLyNImGKAexKfyv6sm0MacAxsp1QCnENG1ycBjmOmFEXnH+8KDNxXVpdMQs5leDtv40cJxUR1L2Aai2d0/yF+rG8OMicQYpsg+plbuirFfiSEswMS+hVRQDNRGhCAtQvK3JDl42/uQVUaosPb+eqBl/A+4mgYjRXLPg5DzKmTXMF3R5I0YLAtUuoBtjC/5LOV5EZTsmeDGq0wIbSffpw0m6hlOkVhiRtaWLWhIig9yFM3uxfRoOBqemeSy0r5RhWwPFbWEk1RaaV1W5JsPMb8Y40+RHkf+IAvSO5veKXlziyHk6HFz2Y5roXZT2pRWbE1MTMFJzcEkixxYKuYbmMf3kmwQuLhsvIJR7CU+Z1wpMWkd7liwEpWDLQI3Zw0QAA" alt="Cilindro" loading="lazy" width="190" height="190" /></td>
 <td class="nom"><strong>Cilindro</strong><code>prim-cylinder</code></td>
 <td class="fun"><p>Primitiva cilindro.</p></td>
@@ -419,7 +461,7 @@ fuera. No se escala: el perfil no cambia ni un milímetro y los remates no se de
 <td class="vd"><span class="pill v-med">Solo pruebas</span></td>
 </tr>
 <tr data-v="v-med">
-<td class="num"><span>22</span></td>
+<td class="num"><span>25</span></td>
 <td class="mini"><img src="data:image/webp;base64,UklGRpIFAABXRUJQVlA4IIYFAAAwJgCdASq+AL4APmEwlEekIyIhJTWY8IAMCWltW9i8vf/7s51Vn/Xe+SGCitop/hgov0OH0VpLFjOydT/h055/wKEKFTUZ5nttwCPg4HukoPMzstAJSHYQPwbFCZod+yiXjNkhwobqOw2J0KMzHVcun6tXmV98VpGeGisZgfCq3pZ7SibuQwV/6+XD56LfW0+oD5AocjKgmPwqFRqGZMcwXP8DqilY9JygHOP43ydLQeOW3NWiqkDTXKBn8ZDsR0759zd/VYclQlBvxVmPEuRUXgYAl5NRbQcoLn7fOpFtsMQQjtVa0/pczcXyqTAdpMs9macGLOmj2c+bMnZfSz8MTZZcynjWlsgzq8HQ0gt080JhK+ltSl9d548cGvGMWI0LiZOL55aeWP4oKa5xdgDtb+BIViSKXB88oAD++mLflQSy3EKpBveToMND3A3vaNAm8pt9+Re376NtjNuGnNH+ao+AuD/QeJSP9R8fJ07vog7W3xdANjunGcl6Aw9wycoREvtxC+9XdlR4h9d1aSkuwo1exWQ5oyga7gGMx9OM49OD3R5sSv2aTGdNKWNTM3XcqeL2Y/7ZUziXH8ePBA3fYjVb4AmjK/uMQC1lzVJARJHr4I4qZG5ZOwhAAVo5zY7VNW1qp7l3CrhKE0/28pAKxLK9vQX7B91Pvyr4ZU1LJms7Au5RWGDeVICKVrWIcjwSBk8wjVUWH4259TaQTp2vDTXmbjuxZ6D83ZQAAaHAAA+EKwf7eiRNJoj59Dh8JaqsDliBlZr50OU6NDZazRbEPoT6Qg0W4k9BRGLYPslWvLxoOCkJLqFfSHh466nDVfK3cdWzIg4mnv51FHs5WVIN/XeNdVJnH98j2cY1ye5dFtHrO3lJsWedZ1vu1bB3T3EBXLvyKgfcRHzGzjozWHxVfjj/1KiJv79owr9J9HoMJxY1zrzEiGq2sro6/heXJirtYj8iww2J9pY202a9Aq4iGT8ltDjghR8D08f+r3oIx1gNqdZvl8syjAaiNYpDOp1OVuRVnCaSowvN3A1GkbAUJ6CfFsBO4YSweRcWb/zOoRIZWkIsjGBUWp/U8Rdv2XComrG1j1TkwCyvLHY8fmd1YX1cbx7xFLUsWWE4WNOzIovQ4Uct95/DgGD3WVUH77NWmgb3A9Mh1fwwH274BAqU8wrEtl9dw0d5Wsses8ePUmfclOctnxlAcD2BE5RBZRkUjTIYpxf0vPiph/sUj+Y5AS6sgB62SluA/9AT+jMgXno+a3zDe3DVHhtbse5PxRvVHuUhjDBn9o3q+rwLHNcOWDLcgYHYgnKsA17EKfhhjUb4HOOWAfOqiWgYgid6R+PYnBEPs7Ial8vU66tv83xxEvTEN44LCM4nqowN+IA9sl3bUd8Hjz/5oPiapcWm82sP6qq7GYEJT6k35h3pYdZUpeo6NI3IJir3GYtZjXkm7XH9y2OaFUstUi0HobHwfpbrtoEIK3dkgNstne33ycsmbPY4a+VUbjN77lDCHwu/xw8e7kMhuCetSqE7bN2UPrnSppF/1iejeiW4P9Utusd3jyFPf38gHwC9ZPAQfKMvh+bdbUGdcjmtSV79x6tqNx1VtGkzgnKz0jjvOd1ZinekjkURcixk3Do6PNRdZxoLTWEYg3bMMYQDJN2Q3nlIHYjSmwkBiaG4l/Nq4+Jbo2kbahPYm/UA/qwBHG6UDiDeqdJyLhvOUtJIzYFSdRBS0YSuBVAnlNfr+QrMEtvTWaC1n3KfycAQkh5sXHKjkd9WmqlkhyhZE8BdGNsxt42wOiWg7R19isE1MXPyS1c8EFSvrJJkmP7XAVxvfwGca4uhFOWuKhV6zfeQCbRmzUsXTogMkyteIhu7pECAFWvO8FRXD67iLgAA" alt="Esfera" loading="lazy" width="190" height="190" /></td>
 <td class="nom"><strong>Esfera</strong><code>prim-sphere</code></td>
 <td class="fun"><p>Primitiva esfera.</p></td>
