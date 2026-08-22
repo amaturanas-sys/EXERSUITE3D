@@ -13,7 +13,7 @@ import { clear, el } from "./dom";
  * modelo se sigue viendo y se puede orbitar mientras se decide dónde y cómo
  * queda montado el herraje.
  */
-function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
+function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
   return new Promise((resolve) => {
     let eje: ConfigBisagra["eje"] = "auto";
     let tamano = 8;
@@ -82,6 +82,11 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
       return b;
     };
 
+    // JUNTAR: con las dos caras marcadas, el eje del pivote es conocido y la
+    // segunda pieza puede arrimarse sola hasta formar la articulación de
+    // verdad — el pasador pegado a las dos placas, como el lomo de un libro.
+    const juntarOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    juntarOn.checked = true;
     const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
     const minIn = el("input", { type: "number", value: "0", step: "5" }) as HTMLInputElement;
     const maxIn = el("input", { type: "number", value: "90", step: "5" }) as HTMLInputElement;
@@ -94,6 +99,7 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
         eje,
         tamano,
         cara,
+        juntar: porCaras ? juntarOn.checked : false,
         limite:
           limOn.checked && Number.isFinite(min) && Number.isFinite(max) ? [min, max] : undefined,
       });
@@ -102,11 +108,32 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
     const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
     cerrar.addEventListener("click", () => cerrarYResolver(null));
 
-    const panel = el("aside", { id: "bisagra-panel" }, [
-      el("div", { class: "rold-head" }, [
-        el("span", { class: "rold-titulo" }, [tt("Bisagra", "Hinge")]),
-        cerrar,
+    // Con las dos caras marcadas no hay eje ni cara que elegir: los dijo el
+    // puntero. El panel se queda con lo que sigue siendo decisión —el tamaño
+    // de las placas, el recorrido y si se juntan las piezas— en vez de enseñar
+    // dos rejillas de botones que ya no mandan nada.
+    const porCarasBloque: HTMLElement[] = [
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "Eje y caras: los marcaste en el modelo. El pasador queda en la arista "
+            + "donde se encuentran las dos placas.",
+          "Axis and faces: you marked them on the model. The pin sits on the edge "
+            + "where both leaves meet.",
+        ),
       ]),
+      el("div", { class: "rold-seccion" }, [tt("Montaje", "Assembly")]),
+      el("label", { class: "rold-check" }, [
+        juntarOn,
+        tt("Juntar las piezas", "Bring the parts together"),
+      ]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "La segunda pieza se arrima hasta el pasador, como las tapas de un libro.",
+          "The second part is brought up to the pin, like the covers of a book.",
+        ),
+      ]),
+    ];
+    const clasicoBloque: HTMLElement[] = [
       el("div", { class: "rold-seccion" }, [tt("Eje de giro (global)", "Hinge axis (global)")]),
       el("div", { class: "rold-ejes" }, [
         opcEje(
@@ -143,6 +170,13 @@ function elegirConfigBisagra(): Promise<ConfigBisagra | null> {
           "The face decides which way it folds: on the other side the parts butt against each other.",
         ),
       ]),
+    ];
+    const panel = el("aside", { id: "bisagra-panel" }, [
+      el("div", { class: "rold-head" }, [
+        el("span", { class: "rold-titulo" }, [tt("Bisagra", "Hinge")]),
+        cerrar,
+      ]),
+      ...(porCaras ? porCarasBloque : clasicoBloque),
       el("div", { class: "rold-seccion" }, [tt("Placas", "Leaves")]),
       el("div", { class: "rold-ejes" }, [
         opcTam(5, tt("Chica", "Small")),
@@ -353,14 +387,20 @@ export class JointsPanel {
       this.status.textContent = "Conecta dos piezas para articularlas.";
     } else {
       const tipo = kind === "revolute" ? "bisagra" : "corredera";
-      this.status.textContent = pending
-        ? `Ahora clic en la 2ª pieza (móvil) para la ${tipo}.`
-        : kind === "revolute"
-          ? tt(
-              "Clic en la 1ª pieza: se montará una bisagra real (dos placas + pasador).",
-              "Click the 1st part: a real hinge (two leaves + pin) will be mounted.",
-            )
-          : `Clic en la 1ª pieza (anclaje) para la ${tipo}.`;
+      this.status.textContent =
+        kind === "revolute"
+          ? pending
+            ? tt(
+                "Ahora clic en la CARA de la 2ª pieza, donde va la otra placa.",
+                "Now click the FACE of the 2nd part, where the other leaf goes.",
+              )
+            : tt(
+                "Clic en un PUNTO de la cara de la 1ª pieza: ahí se atornilla su placa.",
+                "Click a POINT on the 1st part's face: that is where its leaf is screwed.",
+              )
+          : pending
+            ? `Ahora clic en la 2ª pieza (móvil) para la ${tipo}.`
+            : `Clic en la 1ª pieza (anclaje) para la ${tipo}.`;
     }
   }
 

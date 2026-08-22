@@ -68,6 +68,13 @@ export type DireccionRoldana =
  */
 export interface ConfigBisagra {
   eje: "auto" | "x" | "y" | "z";
+  /**
+   * JUNTAR LAS PIEZAS (v0.3.8), solo con montaje por caras: la segunda pieza
+   * se arrima hasta dejar su canto a la holgura del pasador, de modo que el
+   * pivote queda adyacente a las dos placas —como el lomo de un libro— en vez
+   * de con las palas estiradas sobre un hueco. Ausente = sí.
+   */
+  juntar?: boolean;
   /** Largo de cada placa desde el pasador (cm). */
   tamano: number;
   /** Recorrido limitado de la bisagra (grados); ausente = giro libre. */
@@ -79,6 +86,18 @@ export interface ConfigBisagra {
    * montada abajo, la bisagra flexiona. "auto" = la cara superior/visible.
    */
   cara?: "auto" | DireccionRoldana;
+}
+
+/**
+ * MONTAJE POR CARAS de la bisagra (v0.3.8): el punto y la cara elegidos con el
+ * puntero sobre cada una de las dos piezas. Es lo que la herramienta pedía a
+ * gritos — la placa de una bisagra real se atornilla SOBRE una cara concreta,
+ * en un sitio concreto—, y de paso deja determinado el eje del pivote: es la
+ * arista donde se encuentran los planos de las dos palas.
+ */
+export interface MontajeBisagra {
+  a: { punto: THREE.Vector3; normal: THREE.Vector3 };
+  b: { punto: THREE.Vector3; normal: THREE.Vector3 };
 }
 
 const DIRECCIONES_ROLDANA: Record<DireccionRoldana, THREE.Vector3> = {
@@ -407,7 +426,7 @@ export class Editor {
    * ejes globales (o automático) y tamaño de las placas. Si no hay diálogo, se
    * instala con el eje automático y placas medianas.
    */
-  elegirBisagra: (() => Promise<ConfigBisagra | null>) | null = null;
+  elegirBisagra: ((porCaras: boolean) => Promise<ConfigBisagra | null>) | null = null;
   /**
    * Ventana de ARTICULACIONES del maniquí (v0.2.41): la monta la UI y el
    * editor solo la conoce para poder abrirla desde la barra de simulación.
@@ -415,6 +434,18 @@ export class Editor {
   panelArticulaciones: { alternar(): boolean; visible(): boolean } | null = null;
   /** Panel de la bisagra abierto (los clics del visor no arman otra). */
   private bisagraPidiendo = false;
+  /**
+   * PRIMERA CARA de la bisagra (v0.3.8): la pieza, el punto y la cara que se
+   * marcaron con el primer clic. La herramienta ya no se conforma con señalar
+   * dos piezas — pide dónde va cada placa, como la de roldanas.
+   */
+  private bisagraA: {
+    obj: SceneObject;
+    punto: THREE.Vector3;
+    normal: THREE.Vector3;
+  } | null = null;
+  /** Marca visible del punto y la cara elegidos con el primer clic. */
+  private bisagraMarca: THREE.Object3D | null = null;
   /** Modo "colocar terminal de cable" (ojal de anclaje sobre una cara). */
   private terminalMode = false;
 
@@ -7761,7 +7792,93 @@ export class Editor {
     if (!this.connectMode) return;
     this.connectMode = null;
     this.pendingA = null;
+    this.olvidarCaraBisagra();
     this.bus.emit("connectModeChanged", { kind: null, pending: false });
+  }
+
+  /** ¿Hay una primera cara marcada, esperando la segunda? (herramienta y pruebas) */
+  hayMarcaBisagra(): boolean {
+    return !!this.bisagraA && !!this.bisagraMarca;
+  }
+
+  /** Olvida la primera cara elegida y borra su marca. */
+  private olvidarCaraBisagra(): void {
+    this.bisagraA = null;
+    this.limpiarMarcaBisagra();
+  }
+
+  /**
+   * Borra SOLO el dibujo de la marca. Separado de olvidar la cara porque
+   * marcarla vuelve a llamar aquí para no apilar dos discos, y si de paso
+   * borrara el dato, la herramienta perdía la primera cara justo al dibujarla.
+   */
+  private limpiarMarcaBisagra(): void {
+    if (!this.bisagraMarca) return;
+    this.sceneManager.scene.remove(this.bisagraMarca);
+    this.bisagraMarca.traverse((n) => {
+      const m = n as THREE.Mesh;
+      m.geometry?.dispose();
+      if (m.material) (m.material as THREE.Material).dispose();
+    });
+    this.bisagraMarca = null;
+    this.requestRender();
+  }
+
+  /**
+   * Marca el punto y la cara del primer clic: un disco pegado a la cara con
+   * su normal saliendo, para que se vea SOBRE QUÉ SUPERFICIE se va a atornillar
+   * la placa antes de elegir la segunda.
+   */
+  private marcarCaraBisagra(punto: THREE.Vector3, normal: THREE.Vector3): void {
+    this.limpiarMarcaBisagra();
+    const g = new THREE.Group();
+    const disco = new THREE.Mesh(
+      new THREE.CircleGeometry(2.2, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0x2563eb,
+        depthTest: false,
+        transparent: true,
+        opacity: 0.75,
+        side: THREE.DoubleSide,
+      }),
+    );
+    disco.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    const aguja = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.25, 6, 8),
+      new THREE.MeshBasicMaterial({ color: 0x2563eb, depthTest: false }),
+    );
+    aguja.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+    aguja.position.copy(normal).multiplyScalar(3);
+    g.add(disco, aguja);
+    g.position.copy(punto).addScaledVector(normal, 0.05);
+    g.renderOrder = 999;
+    this.sceneManager.scene.add(g);
+    this.bisagraMarca = g;
+    this.requestRender();
+  }
+
+  /**
+   * CARA DE LA CAJA de una pieza más parecida a la que tocó el puntero: la
+   * placa de una bisagra se apoya en una superficie PLANA, así que la normal
+   * cruda del triángulo se redondea a la cara del volumen real de la pieza.
+   * Con una malla de biblioteca (una jota, un pilar con agujeros) esa normal
+   * cruda puede ser la de un chaflán, y la placa saldría torcida.
+   */
+  private caraDeCaja(o: SceneObject, cruda: THREE.Vector3): THREE.Vector3 {
+    const { u } = this.cajaOrientada(o);
+    let mejor = cruda.clone().normalize();
+    let mejorDot = 0.7; // por debajo, la cara cruda manda (superficie curva)
+    for (const eje of u) {
+      for (const signo of [1, -1]) {
+        const cand = eje.clone().multiplyScalar(signo);
+        const d = cand.dot(cruda);
+        if (d > mejorDot) {
+          mejorDot = d;
+          mejor = cand;
+        }
+      }
+    }
+    return mejor.normalize();
   }
 
   removeJoint(joint: Joint): void {
@@ -7794,7 +7911,7 @@ export class Editor {
     return joint;
   }
 
-  private createJoint(a: SceneObject, b: SceneObject): void {
+  private createJoint(a: SceneObject, b: SceneObject, montaje?: MontajeBisagra): void {
     if (!this.connectMode) return;
     // BISAGRA REAL (v0.2.32): la herramienta ya no deja una articulación
     // abstracta entre las dos piezas — instala el herraje completo (dos placas
@@ -7804,14 +7921,14 @@ export class Editor {
       this.cancelConnect();
       const pedir = this.elegirBisagra;
       if (!pedir) {
-        this.instalarBisagra(a, b, { eje: "auto", tamano: 8 });
+        this.instalarBisagra(a, b, { eje: "auto", tamano: 8 }, montaje);
         return;
       }
       this.bisagraPidiendo = true;
-      void pedir().then((cfg) => {
+      void pedir(!!montaje).then((cfg) => {
         this.bisagraPidiendo = false;
         if (cfg && this.objects.has(a.id) && this.objects.has(b.id)) {
-          this.instalarBisagra(a, b, cfg);
+          this.instalarBisagra(a, b, cfg, montaje);
         }
       });
       return;
@@ -7926,7 +8043,12 @@ export class Editor {
    * libre es la del pasador, de modo que lo que se ve montado es exactamente
    * lo que gira: la bisagra deja de ser una abstracción invisible.
    */
-  instalarBisagra(a: SceneObject, b: SceneObject, cfg: ConfigBisagra): Joint | null {
+  instalarBisagra(
+    a: SceneObject,
+    b: SceneObject,
+    cfg: ConfigBisagra,
+    montaje?: MontajeBisagra,
+  ): Joint | null {
     // NO SE MONTA HERRAJE CON LA MÁQUINA EN MARCHA (v0.2.76). Esto se llama
     // desde una promesa —el panel de la bisagra— que puede resolverse mucho
     // después de abrirse, y entre medias cabe pulsar ▶. Si llega aquí con la
@@ -7938,70 +8060,9 @@ export class Editor {
     if (a === b) return null;
     const ca = a.mesh.getWorldPosition(new THREE.Vector3());
     const cb = b.mesh.getWorldPosition(new THREE.Vector3());
-    // Punto de la charnela: entre las dos piezas, en su zona de contacto
-    // (punto de cada caja más cercano al centro de la otra).
-    const pa = a.worldBoxBody(new THREE.Box3()).clampPoint(cb, new THREE.Vector3());
-    const pb = b.worldBoxBody(new THREE.Box3()).clampPoint(ca, new THREE.Vector3());
-    const pivote = pa.clone().add(pb).multiplyScalar(0.5);
-
-    // Eje de giro: el elegido o, en automático, el eje global MÁS
-    // PERPENDICULAR a la línea que une las piezas (la charnela natural).
-    const ejes: Record<"x" | "y" | "z", THREE.Vector3> = {
-      x: new THREE.Vector3(1, 0, 0),
-      y: new THREE.Vector3(0, 1, 0),
-      z: new THREE.Vector3(0, 0, 1),
-    };
-    const entrePiezas = cb.clone().sub(ca);
-    if (entrePiezas.lengthSq() < 1e-6) entrePiezas.set(0, 1, 0);
-    entrePiezas.normalize();
-    const letraMasCercana = (v: THREE.Vector3): "x" | "y" | "z" =>
-      (["x", "y", "z"] as const).reduce((mejor, k) =>
-        Math.abs(v.dot(ejes[k])) > Math.abs(v.dot(ejes[mejor])) ? k : mejor,
-      );
-    const caraPedida =
-      cfg.cara && cfg.cara !== "auto" ? DIRECCIONES_ROLDANA[cfg.cara].clone() : null;
-    let letra: "x" | "y" | "z";
-    if (cfg.eje !== "auto") {
-      letra = cfg.eje;
-    } else if (caraPedida) {
-      // Con una cara elegida el eje queda determinado: la charnela corre
-      // perpendicular tanto a la cara como a la línea entre las piezas.
-      const ideal = new THREE.Vector3().crossVectors(caraPedida, entrePiezas);
-      letra =
-        ideal.length() > 0.3
-          ? letraMasCercana(ideal.normalize())
-          : (["x", "y", "z"] as const).reduce((mejor, k) =>
-              Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor]))
-                ? k
-                : mejor,
-            );
-    } else {
-      // Sin pistas: el eje global MÁS PERPENDICULAR a la línea que une las
-      // piezas (la charnela natural entre ellas).
-      letra = (["x", "y", "z"] as const).reduce((mejor, k) =>
-        Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor])) ? k : mejor,
-      );
-    }
-    const ejeMundo = ejes[letra].clone();
-
-    // Direcciones de cada pala: del pasador hacia su pieza, ⊥ al eje.
-    const perp = (v: THREE.Vector3): THREE.Vector3 => {
-      const p = v.clone().addScaledVector(ejeMundo, -v.dot(ejeMundo));
-      return p.lengthSq() < 1e-6 ? new THREE.Vector3() : p.normalize();
-    };
-    let dirA = perp(ca.clone().sub(pivote));
-    let dirB = perp(cb.clone().sub(pivote));
-    if (dirA.lengthSq() < 0.5 && dirB.lengthSq() >= 0.5) dirA = dirB.clone().negate();
-    if (dirB.lengthSq() < 0.5 && dirA.lengthSq() >= 0.5) dirB = dirA.clone().negate();
-    if (dirA.lengthSq() < 0.5) {
-      // Piezas concéntricas: se toma cualquier perpendicular al eje.
-      dirA = perp(new THREE.Vector3(0, 1, 0));
-      if (dirA.lengthSq() < 0.5) dirA = perp(new THREE.Vector3(1, 0, 0));
-      dirB = dirA.clone().negate();
-    }
-    // Palas enfrentadas: si ambas miran al mismo lado, la segunda se opone.
-    if (dirA.dot(dirB) > 0.9) dirB = dirA.clone().negate();
-
+    // MEDIDAS DEL HERRAJE. Van primero porque el ESPESOR de la pala decide
+    // dónde cae su plano —y con él la charnela— cuando el montaje viene de dos
+    // caras elegidas a mano.
     const largo = Math.max(2, cfg.tamano);
     const ancho = Math.max(2, largo * 0.75);
     const grosor = Math.max(0.5, largo * 0.1);
@@ -8010,57 +8071,244 @@ export class Editor {
     // (soldado a la pala A) chocaría con la pala B y la bisagra se agarrotaría
     // en cuanto las piezas empiezan a chocar de verdad.
     const separacion = radioPasador + 0.35;
+    /** Del plano medio de la pala a la cara sobre la que se apoya. */
+    const medio = grosor / 2;
 
-    // CARA DE MONTAJE: una bisagra real se atornilla SOBRE la superficie de
-    // las dos piezas, no dentro de ellas. Solo hay DOS caras posibles —las
-    // perpendiculares al eje y a las palas— y elegir una u otra es lo que
-    // decide hacia dónde pliega. Por omisión, la que mira hacia arriba.
-    const normal = new THREE.Vector3().crossVectors(ejeMundo, dirA).normalize();
-    if (caraPedida) {
-      const proy = caraPedida.clone().addScaledVector(ejeMundo, -caraPedida.dot(ejeMundo));
-      const comp = proy.dot(normal);
-      if (proy.length() < 0.3 || Math.abs(comp) < 0.35 * proy.length()) {
-        this.avisoTemporal(
-          tt(
-            "⚠ Esa cara no es perpendicular al eje de la bisagra: se monta en la cara más cercana.",
-            "⚠ That face is not perpendicular to the hinge axis: it mounts on the nearest one.",
-          ),
+    const ejes: Record<"x" | "y" | "z", THREE.Vector3> = {
+      x: new THREE.Vector3(1, 0, 0),
+      y: new THREE.Vector3(0, 1, 0),
+      z: new THREE.Vector3(0, 0, 1),
+    };
+    const letraMasCercana = (v: THREE.Vector3): "x" | "y" | "z" =>
+      (["x", "y", "z"] as const).reduce((mejor, k) =>
+        Math.abs(v.dot(ejes[k])) > Math.abs(v.dot(ejes[mejor])) ? k : mejor,
+      );
+    /** Cualquier vector unitario perpendicular a `n`. */
+    const perpDe = (n: THREE.Vector3): THREE.Vector3 => {
+      const t = Math.abs(n.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      return new THREE.Vector3().crossVectors(n, t).normalize();
+    };
+
+    /** Cuánto hubo que arrimar la segunda pieza para formar la articulación. */
+    let arrimo = 0;
+    // (Se inicializan en vacío porque las dos ramas de abajo las rellenan, y
+    // en la de las caras lo hace un cierre que el compilador no sigue.)
+    let ejeMundo = new THREE.Vector3(0, 1, 0);
+    let charnela = new THREE.Vector3();
+    let dirA = new THREE.Vector3(1, 0, 0);
+    let dirB = new THREE.Vector3(-1, 0, 0);
+    // Cada pala tiene SU cara de montaje: en una esquina no son la misma.
+    let normalA = new THREE.Vector3(0, 1, 0);
+    let normalB = new THREE.Vector3(0, 1, 0);
+
+    if (montaje) {
+      // ── MONTAJE POR CARAS (v0.3.8) ────────────────────────────────────────
+      //
+      // La herramienta ya no se conforma con dos piezas: pide un PUNTO sobre
+      // una cara de cada una, como la instalación de roldanas externas. Con
+      // eso queda dicho todo lo que antes había que adivinar o teclear en el
+      // panel — sobre qué cara se pega cada placa y en qué sitio—, y el eje
+      // del pivote se deduce solo: es la arista donde se encuentran los dos
+      // planos de las palas. El pasador queda pegado a las dos placas, como el
+      // lomo de un libro.
+      normalA = montaje.a.normal.clone().normalize();
+      normalB = montaje.b.normal.clone().normalize();
+      // Plano medio de cada pala: paralelo a su cara, medio espesor por fuera.
+      const qA = montaje.a.punto.clone().addScaledVector(normalA, medio);
+      const qB = montaje.b.punto.clone().addScaledVector(normalB, medio);
+      const enEsquina = new THREE.Vector3().crossVectors(normalA, normalB).length() > 0.15;
+      /** Canto de la pieza B más próximo a la charnela, medido sobre `d`. */
+      const cantoDeB = (d: THREE.Vector3): number =>
+        -this.soporteEnDireccion(b, d.clone().negate());
+
+      if (enEsquina) {
+        // ESQUINA (una tapa sobre el canto de una caja): las dos caras se
+        // cortan y la charnela ES esa arista. Se toma el punto de la arista
+        // más cercano al medio de los dos clics, que es donde el usuario dijo
+        // que va la bisagra a lo largo de ella. Arrimar la pieza B no la
+        // mueve: el deslizamiento va DENTRO del plano de su propia pala.
+        ejeMundo = new THREE.Vector3().crossVectors(normalA, normalB).normalize();
+        const m = qA.clone().add(qB).multiplyScalar(0.5);
+        const c = normalA.dot(normalB);
+        const u = qA.clone().sub(m).dot(normalA);
+        const v = qB.clone().sub(m).dot(normalB);
+        const den = 1 - c * c;
+        charnela = m
+          .addScaledVector(normalA, (u - c * v) / den)
+          .addScaledVector(normalB, (v - c * u) / den);
+        // Cada pala sale de la charnela HACIA su punto: así la placa tapa el
+        // sitio que se marcó, que es lo que se ve al instalarla.
+        const hacia = (q: THREE.Vector3, n: THREE.Vector3, centro: THREE.Vector3) => {
+          const d = q.clone().sub(charnela);
+          d.addScaledVector(ejeMundo, -d.dot(ejeMundo));
+          d.addScaledVector(n, -d.dot(n));
+          if (d.lengthSq() > 1e-4) return d.normalize();
+          // Clic justo sobre la arista: la pala sale hacia el lado de su pieza.
+          const alt = new THREE.Vector3().crossVectors(ejeMundo, n).normalize();
+          return alt.dot(centro.clone().sub(charnela)) >= 0 ? alt : alt.negate();
+        };
+        dirA = hacia(qA, normalA, ca);
+        dirB = hacia(qB, normalB, cb);
+        if (cfg.juntar !== false) {
+          const paso = charnela.dot(dirB) + separacion - cantoDeB(dirB);
+          if (Math.abs(paso) > 1e-4) {
+            arrimo = Math.abs(paso);
+            b.mesh.position.addScaledVector(dirB, paso);
+            b.mesh.updateMatrixWorld(true);
+            cb.addScaledVector(dirB, paso);
+            this.bus.emit("objectTransformed", { object: b });
+          }
+        }
+      } else {
+        // CARAS PARALELAS (dos tablas sobre la misma mesa): no hay arista que
+        // cortar. La charnela corre perpendicular a la línea que une los dos
+        // puntos, y con las piezas juntas se planta donde de verdad se tocan:
+        // pegada al canto de la primera, que es el lomo del libro. Ponerla en
+        // el medio de los dos clics sin más metía la segunda pieza DENTRO de
+        // la primera cuando el clic caía lejos del canto.
+        const haciaB = qB.clone().sub(qA);
+        haciaB.addScaledVector(normalA, -haciaB.dot(normalA));
+        if (haciaB.lengthSq() < 1e-8) haciaB.copy(perpDe(normalA));
+        haciaB.normalize();
+        ejeMundo = new THREE.Vector3().crossVectors(normalA, haciaB).normalize();
+        const m = qA.clone().add(qB).multiplyScalar(0.5);
+        const sLomo =
+          cfg.juntar !== false
+            ? this.soporteEnDireccion(a, haciaB) + separacion
+            : m.dot(haciaB);
+        charnela = new THREE.Vector3()
+          .addScaledVector(ejeMundo, m.dot(ejeMundo))
+          .addScaledVector(normalA, qA.dot(normalA))
+          .addScaledVector(haciaB, sLomo);
+        dirA = haciaB.clone().negate();
+        dirB = haciaB.clone();
+        if (cfg.juntar !== false) {
+          // Enrasar las dos caras y arrimar el canto hasta la holgura.
+          const t = new THREE.Vector3()
+            .addScaledVector(normalA, qA.dot(normalA) - qB.dot(normalA))
+            .addScaledVector(haciaB, sLomo + separacion - cantoDeB(haciaB));
+          if (t.lengthSq() > 1e-8) {
+            arrimo = t.length();
+            b.mesh.position.add(t);
+            b.mesh.updateMatrixWorld(true);
+            cb.add(t);
+            this.bus.emit("objectTransformed", { object: b });
+          }
+        }
+      }
+    } else {
+      // ── SIN PUNTOS: la deducción de siempre ───────────────────────────────
+      // Sigue viva para las llamadas por programa (prefabs, pruebas) y para
+      // cualquier bisagra hecha antes de que la herramienta pidiera caras.
+      //
+      // Punto de la charnela: entre las dos piezas, en su zona de contacto
+      // (punto de cada caja más cercano al centro de la otra).
+      const pa = a.worldBoxBody(new THREE.Box3()).clampPoint(cb, new THREE.Vector3());
+      const pb = b.worldBoxBody(new THREE.Box3()).clampPoint(ca, new THREE.Vector3());
+      const pivote = pa.clone().add(pb).multiplyScalar(0.5);
+
+      const entrePiezas = cb.clone().sub(ca);
+      if (entrePiezas.lengthSq() < 1e-6) entrePiezas.set(0, 1, 0);
+      entrePiezas.normalize();
+      const caraPedida =
+        cfg.cara && cfg.cara !== "auto" ? DIRECCIONES_ROLDANA[cfg.cara].clone() : null;
+      let letraAuto: "x" | "y" | "z";
+      if (cfg.eje !== "auto") {
+        letraAuto = cfg.eje;
+      } else if (caraPedida) {
+        // Con una cara elegida el eje queda determinado: la charnela corre
+        // perpendicular tanto a la cara como a la línea entre las piezas.
+        const ideal = new THREE.Vector3().crossVectors(caraPedida, entrePiezas);
+        letraAuto =
+          ideal.length() > 0.3
+            ? letraMasCercana(ideal.normalize())
+            : (["x", "y", "z"] as const).reduce((mejor, k) =>
+                Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor]))
+                  ? k
+                  : mejor,
+              );
+      } else {
+        // Sin pistas: el eje global MÁS PERPENDICULAR a la línea que une las
+        // piezas (la charnela natural entre ellas).
+        letraAuto = (["x", "y", "z"] as const).reduce((mejor, k) =>
+          Math.abs(entrePiezas.dot(ejes[k])) < Math.abs(entrePiezas.dot(ejes[mejor])) ? k : mejor,
         );
-        if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) normal.negate();
-      } else if (comp < 0) {
+      }
+      ejeMundo = ejes[letraAuto].clone();
+
+      // Direcciones de cada pala: del pasador hacia su pieza, ⊥ al eje.
+      const perp = (v: THREE.Vector3): THREE.Vector3 => {
+        const p = v.clone().addScaledVector(ejeMundo, -v.dot(ejeMundo));
+        return p.lengthSq() < 1e-6 ? new THREE.Vector3() : p.normalize();
+      };
+      dirA = perp(ca.clone().sub(pivote));
+      dirB = perp(cb.clone().sub(pivote));
+      if (dirA.lengthSq() < 0.5 && dirB.lengthSq() >= 0.5) dirA = dirB.clone().negate();
+      if (dirB.lengthSq() < 0.5 && dirA.lengthSq() >= 0.5) dirB = dirA.clone().negate();
+      if (dirA.lengthSq() < 0.5) {
+        // Piezas concéntricas: se toma cualquier perpendicular al eje.
+        dirA = perp(new THREE.Vector3(0, 1, 0));
+        if (dirA.lengthSq() < 0.5) dirA = perp(new THREE.Vector3(1, 0, 0));
+        dirB = dirA.clone().negate();
+      }
+      // Palas enfrentadas: si ambas miran al mismo lado, la segunda se opone.
+      if (dirA.dot(dirB) > 0.9) dirB = dirA.clone().negate();
+
+      // CARA DE MONTAJE: una bisagra real se atornilla SOBRE la superficie de
+      // las dos piezas, no dentro de ellas. Solo hay DOS caras posibles —las
+      // perpendiculares al eje y a las palas— y elegir una u otra es lo que
+      // decide hacia dónde pliega. Por omisión, la que mira hacia arriba.
+      const normal = new THREE.Vector3().crossVectors(ejeMundo, dirA).normalize();
+      if (caraPedida) {
+        const proy = caraPedida.clone().addScaledVector(ejeMundo, -caraPedida.dot(ejeMundo));
+        const comp = proy.dot(normal);
+        if (proy.length() < 0.3 || Math.abs(comp) < 0.35 * proy.length()) {
+          this.avisoTemporal(
+            tt(
+              "⚠ Esa cara no es perpendicular al eje de la bisagra: se monta en la cara más cercana.",
+              "⚠ That face is not perpendicular to the hinge axis: it mounts on the nearest one.",
+            ),
+          );
+          if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) normal.negate();
+        } else if (comp < 0) {
+          normal.negate();
+        }
+      } else if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) {
         normal.negate();
       }
-    } else if (normal.dot(new THREE.Vector3(0.2, 1, 0.35)) < 0) {
-      normal.negate();
+      normalA = normal;
+      normalB = normal.clone();
+      // El herraje se sube justo hasta despejar el volumen REAL de ambas piezas
+      // (caja orientada, no AABB: una viga girada no infla su envolvente).
+      const sobresale = (o: SceneObject): number =>
+        this.soporteEnDireccion(o, normal) - pivote.dot(normal);
+      charnela = pivote
+        .clone()
+        .addScaledVector(normal, Math.max(sobresale(a), sobresale(b)) + medio + 0.1);
     }
-    // El herraje se sube justo hasta despejar el volumen REAL de ambas piezas
-    // (caja orientada, no AABB: una viga girada no infla su envolvente).
-    const sobresale = (o: SceneObject): number =>
-      this.soporteEnDireccion(o, normal) - pivote.dot(normal);
-    const charnela = pivote
-      .clone()
-      .addScaledVector(normal, Math.max(sobresale(a), sobresale(b)) + grosor / 2 + 0.1);
+    const letra = letraMasCercana(ejeMundo);
 
     const piezas: string[] = [];
-    const placa = (dir: THREE.Vector3, nombre: string): SceneObject => {
+    const placa = (dir: THREE.Vector3, cara: THREE.Vector3, nombre: string): SceneObject => {
       const p = this.addComponent("placa-bisagra");
       p.name = nombre;
       p.mesh.name = nombre;
       p.params = { kind: "box", width: largo, height: grosor, depth: ancho };
       p.rebuildGeometry();
       // Base: X a lo largo de la pala, Y = espesor (⊥ a la cara de montaje),
-      // Z sobre el eje del pasador.
-      const z = new THREE.Vector3().crossVectors(dir, normal).normalize();
+      // Z sobre el eje del pasador. Cada pala lleva SU cara: en una esquina no
+      // son la misma, y forzarlas a una sola dejaba una placa en el aire.
+      const z = new THREE.Vector3().crossVectors(dir, cara).normalize();
       p.mesh.quaternion.setFromRotationMatrix(
-        new THREE.Matrix4().makeBasis(dir, normal, z),
+        new THREE.Matrix4().makeBasis(dir, cara, z),
       );
       p.mesh.position.copy(charnela).addScaledVector(dir, largo / 2 + separacion);
       this.bus.emit("objectTransformed", { object: p });
       piezas.push(p.id);
       return p;
     };
-    const placaA = placa(dirA, tt("Placa de bisagra A", "Hinge leaf A"));
-    const placaB = placa(dirB, tt("Placa de bisagra B", "Hinge leaf B"));
+    const placaA = placa(dirA, normalA, tt("Placa de bisagra A", "Hinge leaf A"));
+    const placaB = placa(dirB, normalB, tt("Placa de bisagra B", "Hinge leaf B"));
 
     // PASADOR: cilindro sobre el eje, entre las dos palas.
     const pasador = this.addComponent("pasador-bisagra");
@@ -8095,7 +8343,10 @@ export class Editor {
     const bisagra = this.connect(placaA.id, placaB.id, "revolute", charnela.clone());
     if (bisagra) {
       bisagra.axis = letra;
-      bisagra.axisVec = null;
+      // Con las caras elegidas a mano, la charnela puede quedar en cualquier
+      // dirección —una tapa sobre un canto en diagonal—, así que el eje va
+      // EXACTO y no redondeado al eje global más parecido.
+      bisagra.axisVec = montaje ? ejeMundo.clone() : null;
       bisagra.name = tt("Bisagra", "Hinge");
       if (cfg.limite) {
         bisagra.limitsEnabled = true;
@@ -8128,7 +8379,7 @@ export class Editor {
     this.requestRender();
     const nombreCara = (
       Object.entries(DIRECCIONES_ROLDANA) as [DireccionRoldana, THREE.Vector3][]
-    ).reduce((mejor, [k, v]) => (normal.dot(v) > normal.dot(DIRECCIONES_ROLDANA[mejor]) ? k : mejor),
+    ).reduce((mejor, [k, v]) => (normalA.dot(v) > normalA.dot(DIRECCIONES_ROLDANA[mejor]) ? k : mejor),
       "arriba" as DireccionRoldana);
     const caraES: Record<DireccionRoldana, string> = {
       arriba: "arriba",
@@ -8146,10 +8397,12 @@ export class Editor {
       anterior: "front",
       posterior: "back",
     };
+    const arrimoES = arrimo > 0.05 ? `; ${b.name} se arrimó ${arrimo.toFixed(1)} cm` : "";
+    const arrimoEN = arrimo > 0.05 ? `; ${b.name} moved in ${arrimo.toFixed(1)} cm` : "";
     this.avisoTemporal(
       tt(
-        `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()}, cara ${caraES[nombreCara]})`,
-        `✓ Hinge installed between ${a.name} and ${b.name} (axis ${letra.toUpperCase()}, ${caraEN[nombreCara]} face)`,
+        `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()}, cara ${caraES[nombreCara]}${arrimoES})`,
+        `✓ Hinge installed between ${a.name} and ${b.name} (axis ${letra.toUpperCase()}, ${caraEN[nombreCara]} face${arrimoEN})`,
       ),
     );
     return bisagra;
@@ -11750,9 +12003,54 @@ export class Editor {
         this.sceneManager.content.children,
         false,
       );
-      const cid = objHits[0]?.object.userData.sceneObjectId as string | undefined;
+      const golpe = objHits[0];
+      const cid = golpe?.object.userData.sceneObjectId as string | undefined;
       const cobj = cid ? this.objects.get(cid) : undefined;
       if (!cobj) return;
+
+      // BISAGRA POR CARAS (v0.3.8): no basta con señalar las dos piezas —hace
+      // falta el PUNTO y la CARA donde se atornilla cada placa, igual que en la
+      // instalación de una roldana externa. Con las dos caras marcadas, el eje
+      // del pivote sale solo y no hay nada que elegir en el panel.
+      if (this.connectMode === "revolute") {
+        if (!golpe.face) return; // sin cara no hay dónde apoyar la placa
+        const cruda = golpe.face.normal
+          .clone()
+          .transformDirection(golpe.object.matrixWorld)
+          .normalize();
+        const normal = this.caraDeCaja(cobj, cruda);
+        if (!this.bisagraA) {
+          this.bisagraA = { obj: cobj, punto: golpe.point.clone(), normal };
+          this.pendingA = cobj;
+          this.select(cobj);
+          this.marcarCaraBisagra(golpe.point, normal);
+          this.bus.emit("connectModeChanged", { kind: "revolute", pending: true });
+          this.bus.emit("dragMeasure", {
+            text: tt(
+              `Cara marcada en ${cobj.name}. Toca ahora la CARA de la otra pieza donde va la segunda placa`,
+              `Face marked on ${cobj.name}. Now tap the FACE of the other part where the second leaf goes`,
+            ),
+          });
+          return;
+        }
+        // Un segundo toque en la MISMA pieza corrige la cara elegida en vez de
+        // no hacer nada: es el error fácil, y rehacerlo costaba salir y entrar.
+        if (cobj === this.bisagraA.obj) {
+          this.bisagraA = { obj: cobj, punto: golpe.point.clone(), normal };
+          this.marcarCaraBisagra(golpe.point, normal);
+          return;
+        }
+        const primera = this.bisagraA;
+        const montaje: MontajeBisagra = {
+          a: { punto: primera.punto.clone(), normal: primera.normal.clone() },
+          b: { punto: golpe.point.clone(), normal },
+        };
+        this.olvidarCaraBisagra();
+        this.bus.emit("dragMeasure", { text: null });
+        this.createJoint(primera.obj, cobj, montaje);
+        return;
+      }
+
       if (!this.pendingA) {
         this.pendingA = cobj;
         this.select(cobj);

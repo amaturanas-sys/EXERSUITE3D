@@ -1,6 +1,9 @@
-// Flujo de USUARIO de la bisagra real: botón "+ Bisagra" → clic en la 1ª pieza
-// → clic en la 2ª → panel compacto al costado derecho (se puede orbitar) →
-// elegir eje/tamaño/recorrido → "Instalar bisagra".
+// Flujo de USUARIO de la bisagra real: botón "+ Bisagra" → clic en un PUNTO de
+// la cara de la 1ª pieza → otro en la cara de la 2ª → panel compacto al costado
+// derecho (se puede orbitar) → tamaño/recorrido → "Instalar bisagra".
+//
+// Desde v0.3.8 el gesto marca CARAS, no piezas: con las dos caras señaladas el
+// eje del pivote sale solo, así que el panel ya no pide eje ni cara.
 import { chromium } from "playwright-core";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -58,11 +61,15 @@ await page.waitForTimeout(250);
 await page.click("#joints button:has-text('+ Bisagra')");
 await page.waitForTimeout(250);
 const hint1 = await page.textContent("#joints .empty-hint");
-chequear(/bisagra real/i.test(hint1 ?? ""), `la ayuda anuncia la bisagra real: "${hint1}"`);
+chequear(/PUNTO de la cara/i.test(hint1 ?? ""),
+  `la ayuda pide un punto sobre una cara, no una pieza suelta: "${hint1}"`);
 
+// Se pincha la CARA SUPERIOR de cada caja (y = 94 es su techo).
 const pA = await page.evaluate(() => window.__aPx(-26, 94, 0));
 await page.mouse.click(pA.x, pA.y);
 await page.waitForTimeout(250);
+const marcada = await page.evaluate(() => window.exersuite.editor.hayMarcaBisagra());
+chequear(marcada, "el primer clic deja marcada la cara elegida");
 const pB = await page.evaluate(() => window.__aPx(26, 94, 0));
 await page.mouse.click(pB.x, pB.y);
 await page.waitForTimeout(400);
@@ -87,9 +94,20 @@ await page.waitForTimeout(200);
 const durante = await page.evaluate(() => window.exersuite.editor.objects.size);
 chequear(antes === durante, "con el panel abierto se puede orbitar sin efectos secundarios");
 
-await page.click("#bisagra-panel .rold-ejes button:has-text('Z')");
+const sinEjes = await page.evaluate(() => {
+  const p = document.getElementById("bisagra-panel");
+  return {
+    ejes: !!p?.textContent.includes("Eje de giro"),
+    caras: !!p?.textContent.includes("Cara de montaje"),
+    juntar: !!p?.textContent.includes("Juntar las piezas"),
+  };
+});
+chequear(!sinEjes.ejes && !sinEjes.caras && sinEjes.juntar,
+  `el panel ya no pide eje ni cara —los marcó el puntero— y sí ofrece juntar las `
+  + `piezas (${JSON.stringify(sinEjes)})`);
+
 await page.click("#bisagra-panel .rold-ejes button:has-text('Media')");
-await page.check("#bisagra-panel input[type=checkbox]");
+await page.check("#bisagra-panel .rold-check:has-text('Limitar') input");
 // Recorrido de −90° a 0°: la tapa puede abatirse hacia abajo y ahí topa.
 await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "-90");
 await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "0");
@@ -109,6 +127,10 @@ const res = await page.evaluate(() => {
     eje: libre?.axis,
     limites: libre?.limitsEnabled ? [libre.min, libre.max] : null,
     grupo: [...ed.groups.values()].map((g) => g.name),
+    ejeVec: libre?.axisVec ? libre.axisVec.toArray().map((v) => +v.toFixed(2)) : null,
+    // La Tapa arrancó en x = 26; juntar la arrima hasta el pasador.
+    tapaX: +ed.objects.get(window.__B).mesh.position.x.toFixed(2),
+    baseX: +ed.objects.get(window.__A).mesh.position.x.toFixed(2),
     aviso: document.querySelector(".drag-measure, #drag-measure")?.textContent ?? "",
   };
 });
@@ -116,7 +138,16 @@ console.log("  resultado:", JSON.stringify(res));
 chequear(res.sinPanel, "el panel se cierra al instalar");
 chequear(res.placas === 2 && res.pasador === 1, "quedan montadas dos placas y un pasador");
 chequear(res.soldaduras === 3, "tres soldaduras al herraje");
-chequear(res.eje === "z", "el eje elegido (Z) manda");
+chequear(res.eje === "z" && !!res.ejeVec && Math.abs(res.ejeVec[2]) > 0.99,
+  `el eje del pivote sale SOLO de las dos caras marcadas: el canto entre las `
+  + `piezas (${JSON.stringify(res.ejeVec)})`);
+// Las dos cajas ya nacían casi tocándose (2 cm de hueco), así que «juntar» aquí
+// no las acerca: las deja exactamente a la holgura del pasador. La Base, que es
+// la referencia, no se mueve ni un milímetro.
+const hueco = +(res.tapaX - 25 - (res.baseX + 25)).toFixed(2);
+chequear(res.baseX === -26 && Math.abs(hueco - 2.14) < 0.3,
+  `la Tapa queda a la holgura del pasador y la Base no se mueve `
+  + `(${res.baseX} | ${res.tapaX}; hueco ${hueco} cm = dos veces la holgura)`);
 chequear(!!res.limites && res.limites[0] === -90 && res.limites[1] === 0, `recorrido limitado −90–0° (${JSON.stringify(res.limites)})`);
 chequear(res.grupo.some((n) => /bisagra/i.test(n)), "el herraje quedó agrupado como 'Bisagra'");
 

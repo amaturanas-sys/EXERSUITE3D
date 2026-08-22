@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.8] — 2026-08-22
+
+### Cambiado
+
+**La bisagra se monta sobre CARAS, no sobre piezas.** La herramienta pedía dos
+piezas y adivinaba el resto: el eje de giro salía de la línea que unía sus
+centros y la cara de montaje, de una rejilla con las seis direcciones globales.
+Es lo que se puede hacer cuando no se sabe dónde va el herraje — pero una
+bisagra real se atornilla SOBRE una cara concreta, en un sitio concreto.
+
+Ahora se marca un **punto en una cara de cada pieza**, como en la instalación
+de una roldana externa. El primer clic deja un disco azul sobre la superficie
+elegida; el segundo, en la otra pieza, abre el panel.
+
+- **El eje del pivote sale solo.** Es la arista donde se encuentran los planos
+  de las dos palas, así que ya no hay eje ni cara que teclear: el panel se
+  queda con lo que sigue siendo decisión — el tamaño de las placas, el
+  recorrido y si juntar las piezas.
+- **Cada placa se pega a SU cara.** Con dos caras perpendiculares —la cara de
+  arriba de una caja y el costado de su tapa— una pala queda boca arriba y la
+  otra de canto, y la charnela cae justo en la esquina. Antes las dos palas se
+  montaban forzosamente en un mismo plano.
+- **Juntar las piezas** (encendido de fábrica): la segunda se arrima hasta
+  dejar su canto a la holgura del pasador, de modo que el pivote queda
+  adyacente a las dos placas, como el lomo de un libro, en vez de con las palas
+  estiradas sobre un hueco. Con dos caras paralelas además se enrasan. La
+  primera pieza no se mueve nunca: es la referencia.
+- La charnela se planta en el **canto** de la primera pieza, no en el medio de
+  los dos clics. Ponerla en el medio metía la segunda pieza dentro de la
+  primera cuando el clic caía lejos del canto.
+- Un segundo toque en la MISMA pieza **corrige** la cara elegida en vez de no
+  hacer nada: era el error fácil, y rehacerlo obligaba a salir y volver a
+  entrar en la herramienta.
+- La deducción de siempre sigue viva para las llamadas por programa (prefabs,
+  pruebas) y para cualquier bisagra hecha antes de este cambio.
+
+Comprobado con `pruebas/prueba-bisagra-caras.mjs` (21 comprobaciones): con dos
+tablas coplanares el eje sale a 0,0° del canto que las separa, las dos palas
+quedan planas sobre la cara marcada (0,0° con la vertical), el pasador se apoya
+en y = 52,4 —sobre la madera, no dentro— y el hueco se cierra de 12 a 2,14 cm
+con 1,07 de holgura a cada lado; con una tapa sobre el canto de una caja, cada
+placa se pega a su cara y la charnela cae en (37,6 · 40,4), medio espesor por
+fuera de cada una. Y el gesto entero se hace desde el visor: dos clics reales
+sobre el modelo montan las 2 placas, el pasador y la articulación.
+
 ## [0.3.7] — 2026-08-22
 
 ### Cambiado
