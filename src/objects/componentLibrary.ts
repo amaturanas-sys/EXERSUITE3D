@@ -21,6 +21,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 8, height: 200, depth: 8 },
     physics: { massKg: 0, fixed: true },
     holeStepCm: 10,
+    holeDiameterCm: 2.6,
     description: "Columna vertical de soporte de carga.",
   },
   {
@@ -146,6 +147,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     defaults: { kind: "box", width: 7.6, height: 230, depth: 7.6 },
     physics: { massKg: 0, fixed: true },
     holeStepCm: 5,
+    holeDiameterCm: 2.6,
     ejeCalce: "x",
     description: "Columna perforada de power rack (3x3\", grilla de pin).",
   },
@@ -188,6 +190,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // Sonda de la malla real: 30 filas de pinholes pasantes por el eje X,
     // paso 5,0 cm, fila mas cercana al centro en y=-1,13.
     holeStepCm: 5,
+    holeDiameterCm: 2.6,
     calceFilas: 30,
     ejeCalce: "x",
     calceFase: -1.13,
@@ -369,6 +372,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // paso 5,5 cm, fila mas cercana al centro en y=+1,13. Los dos agujeros
     // del eje Z (paso 7,5, solo abajo) son ACCESORIOS de union: no calzan.
     holeStepCm: 5.5,
+    holeDiameterCm: 2.6,
     calceFilas: 10,
     ejeCalce: "x",
     calceFase: 1.13,
@@ -559,15 +563,20 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Safety pin",
     category: "movimiento",
     materialId: "cromo",
-    // El pin ENTRA en el agujero del pilar por su eje X (frenteCalce), así
-    // que la barra se acuesta en horizontal al insertarse.
+    // El pasador nace acostado (la barra corre por el eje X del mundo) para
+    // que se vea lo que es: una barra horizontal, no una columnita.
+    // Ø 2,5 cm = el agujero de 2,6 con 0,05 de holgura por lado.
     defaults: { kind: "cylinder", radiusTop: 1.25, radiusBottom: 1.25, height: 24, radialSegments: 20 },
     physics: { massKg: 0, fixed: true },
     orientacion: [0, 0, Math.PI / 2],
     calceLocal: [0, 0],
-    frenteCalce: "x",
+    // PASANTE (v0.3.7): el pasador no cuelga del poste, lo ATRAVIESA. Su eje
+    // local Y —la barra— se acuesta sobre el eje de los pinholes al calzar,
+    // así que entra por una cara y sale por la opuesta, perpendicular a la
+    // viga, con el sobrante repartido a los dos lados.
+    ejePasante: "y",
     description:
-      "Pasador cromado que se mete en un pinhole del pilar y hace de tope de seguridad o de gancho. Largo y diámetro ajustables.",
+      "Pasador cromado que ATRAVIESA un pinhole del pilar y hace de tope de seguridad o de gancho. Calza agujero a agujero; su largo, su diámetro y el sobrante a cada lado se ajustan en Propiedades.",
   },
   {
     id: "guia",

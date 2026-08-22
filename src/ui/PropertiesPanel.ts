@@ -16,7 +16,15 @@ import { largoDeFabrica } from "../objects/estirar";
 import { clear, el } from "./dom";
 
 /** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
-const PIEZAS_CALCE = new Set(["j-hook", "jota-pr", "jota-rodillo-pr", "brazo-seguridad"]);
+const PIEZAS_CALCE = new Set([
+  "j-hook",
+  "jota-pr",
+  "jota-rodillo-pr",
+  "brazo-seguridad",
+  // El safety pin también sube y baja agujero a agujero (v0.3.7): reconoce la
+  // misma grilla que las jotas, aunque en vez de colgar del poste lo cruce.
+  "safety-pin",
+]);
 
 /**
  * ¿Estructura tubular o tipo pilar? (candidata a BRAZO MÓVIL articulado):
@@ -86,6 +94,11 @@ export class PropertiesPanel {
     ]);
 
     this.editor.bus.on("selectionChanged", ({ selected }) => this.show(selected));
+    // El interruptor de vinculación puede apagarse desde otra guía o al
+    // cancelar herramientas: si el panel muestra una guía, que lo refleje.
+    this.editor.bus.on("vinculacionChanged", () => {
+      if (this.current?.componentId === "guia-tubular") this.show(this.current);
+    });
     this.editor.bus.on("groupSelectionChanged", ({ id, name }) => {
       if (id) this.showGroup(id, name);
       else if (this.groupShownId) {
@@ -357,6 +370,10 @@ export class PropertiesPanel {
     if (obj.stack) this.body.append(this.stackSection(obj));
     if (obj.carga) this.body.append(this.cargaSection(obj));
     if (PIEZAS_CALCE.has(obj.componentId)) this.body.append(this.calceSection(obj));
+    // El pasador atraviesa la viga: además del agujero, se le regula cuánto
+    // sobra por cada lado y cuánto mide.
+    if (getDefinition(obj.componentId)?.ejePasante) this.body.append(this.pinSection(obj));
+    if (obj.componentId === "guia-tubular") this.body.append(this.vinculacionSection(obj));
     if (esTubularOPilar(obj)) this.body.append(this.brazoSection(obj));
     this.body.append(this.physicsSection(obj));
   }
@@ -432,6 +449,186 @@ export class PropertiesPanel {
       estado,
       el("div", { class: "row" }, [subir, bajar]),
       aviso,
+    ]);
+  }
+
+  /**
+   * SAFETY PIN: el pasador atraviesa el pinhole de lado a lado, y lo que se
+   * regula aquí es lo que se regula en el rack real — cuánto mide la barra y
+   * cuánto sobresale por cada lado, que es lo que decide dónde apoya la carga.
+   * El diámetro lo manda el agujero: más gordo, no entra.
+   */
+  private pinSection(obj: SceneObject): HTMLElement {
+    const lectura = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const aviso = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const largo = el("input", { type: "number", step: "0.5", min: "2" }) as HTMLInputElement;
+    const corr = el("input", { type: "number", step: "0.5" }) as HTMLInputElement;
+    const dia = el("input", { type: "number", step: "0.1", min: "0.3" }) as HTMLInputElement;
+
+    const refrescar = (): void => {
+      const e = this.editor.estadoPin(obj.id);
+      largo.value = String(roundTo(obj.params.height ?? 0, 1));
+      dia.value = String(roundTo((obj.params.radiusTop ?? 0) * 2, 2));
+      corr.value = String(roundTo(obj.params.pinOffsetCm ?? 0, 1));
+      if (!e) {
+        lectura.textContent = tt(
+          "Sin poste con agujeros cerca: acerca el pasador a un montante y calza con ▲/▼.",
+          "No drilled post nearby: bring the pin next to an upright and seat it with ▲/▼.",
+        );
+        corr.removeAttribute("max");
+        dia.removeAttribute("max");
+        return;
+      }
+      corr.max = String(e.corrimientoMax);
+      corr.min = String(-e.corrimientoMax);
+      if (e.diaAgujero) dia.max = String(roundTo(e.diaAgujero - 0.1, 2));
+      lectura.textContent = e.calzado
+        ? tt(
+            `Atraviesa ${e.grosor} cm de viga · sobresale ${e.sobranteA} cm por un lado `
+              + `y ${e.sobranteB} cm por el otro. Agujero de Ø ${e.diaAgujero ?? "?"} cm; `
+              + `pasador de Ø ${e.diaPin} cm.`,
+            `Goes through ${e.grosor} cm of beam · sticks out ${e.sobranteA} cm on one side `
+              + `and ${e.sobranteB} cm on the other. Hole Ø ${e.diaAgujero ?? "?"} cm; `
+              + `pin Ø ${e.diaPin} cm.`,
+          )
+        : tt(
+            `Sin calzar (el agujero más cercano es el ${e.agujero} de ${e.total}). `
+              + "Usa ▲/▼ para meterlo.",
+            `Not seated (nearest hole is ${e.agujero} of ${e.total}). Use ▲/▼ to drive it in.`,
+          );
+    };
+
+    // Al reasentar, el pasador vuelve a su agujero con la medida nueva: el
+    // sobrante se reparte otra vez y el corrimiento se respeta.
+    const reasentar = (): void => {
+      const err = this.editor.calcePorAgujero(obj.id, 0);
+      aviso.textContent = err ?? "";
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      refrescar();
+    };
+
+    largo.addEventListener("change", () => {
+      const v = parseFloat(largo.value);
+      if (!Number.isFinite(v)) return;
+      obj.params.height = Math.max(2, v);
+      obj.rebuildGeometry();
+      reasentar();
+    });
+    dia.addEventListener("change", () => {
+      const v = parseFloat(dia.value);
+      if (!Number.isFinite(v)) return;
+      const e = this.editor.estadoPin(obj.id);
+      // Tope duro por el agujero: se avisa en vez de dejarlo pasar callando.
+      const max = e?.diaAgujero ? e.diaAgujero - 0.1 : v;
+      const d = Math.max(0.3, Math.min(max, v));
+      if (d < v - 1e-6) {
+        aviso.textContent = tt(
+          `El agujero mide Ø ${e?.diaAgujero} cm: el pasador se queda en Ø ${roundTo(d, 2)}.`,
+          `The hole is Ø ${e?.diaAgujero} cm: the pin stays at Ø ${roundTo(d, 2)}.`,
+        );
+      } else aviso.textContent = "";
+      obj.params.radiusTop = d / 2;
+      obj.params.radiusBottom = d / 2;
+      obj.rebuildGeometry();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      refrescar();
+    });
+    corr.addEventListener("change", () => {
+      const v = parseFloat(corr.value);
+      if (!Number.isFinite(v)) return;
+      const e = this.editor.estadoPin(obj.id);
+      const lim = e?.corrimientoMax ?? Math.abs(v);
+      const c = Math.max(-lim, Math.min(lim, v));
+      if (Math.abs(c - v) > 1e-6) {
+        aviso.textContent = tt(
+          `Más allá de ${lim} cm el pasador dejaría de atravesar la viga.`,
+          `Past ${lim} cm the pin would stop crossing the beam.`,
+        );
+      } else aviso.textContent = "";
+      const err = this.editor.correrPasante(obj.id, c);
+      if (err) aviso.textContent = err;
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      refrescar();
+    });
+    const centrar = el("button", { class: "tool", title: tt("Igual sobrante a los dos lados", "Equal overhang on both sides") }, [
+      tt("Centrar", "Center"),
+    ]);
+    centrar.addEventListener("click", () => {
+      corr.value = "0";
+      corr.dispatchEvent(new Event("change"));
+    });
+
+    refrescar();
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Pasador (safety pin)", "Safety pin")]),
+      lectura,
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [el("label", {}, [tt("Largo (cm)", "Length (cm)")]), largo]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Ø (cm)", "Ø (cm)")]), dia]),
+      ]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [
+          el("label", {}, [tt("Corrimiento (cm)", "Shift (cm)")]),
+          corr,
+        ]),
+        centrar,
+      ]),
+      aviso,
+    ]);
+  }
+
+  /**
+   * ADMINISTRAR VINCULACIÓN (v0.3.7): el interruptor de la guía tubular.
+   *
+   * Antes, cualquier pieza soltada encima de una guía quedaba enhebrada por el
+   * hecho de pasar por ahí. Ahora manda la guía: se enciende esto, se hace
+   * clic en las piezas que deben correr por ella y se las coloca con el gizmo
+   * — al soltarlas se les canaliza el recorrido. Con el interruptor apagado,
+   * mover una pieza junto a la guía no le hace nada.
+   */
+  private vinculacionSection(obj: SceneObject): HTMLElement {
+    const check = el("input", { type: "checkbox" }) as HTMLInputElement;
+    const estado = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const terminar = el("button", { class: "tool" }, [tt("Terminar", "Done")]);
+
+    const refrescar = (): void => {
+      check.checked = this.editor.administraGuia(obj.id);
+      const n = this.editor.guiasAdministradas().length;
+      terminar.style.display = n > 0 ? "" : "none";
+      estado.textContent =
+        n === 0
+          ? tt(
+              "Apagado: mover piezas junto a esta guía no las enhebra.",
+              "Off: moving pieces next to this guide does not thread them.",
+            )
+          : tt(
+              `Administrando ${n} guía${n > 1 ? "s" : ""}. Haz clic en las piezas y colócalas `
+                + "con el gizmo: al soltarlas se canaliza su recorrido. Apartarlas de la guía "
+                + "les quita el canal.",
+              `Managing ${n} guide${n > 1 ? "s" : ""}. Click the pieces and place them with the `
+                + "gizmo: dropping them channels their travel. Moving them off the guide "
+                + "removes the channel.",
+            );
+    };
+    check.addEventListener("change", () => {
+      this.editor.administrarVinculacion(obj.id, check.checked);
+      refrescar();
+    });
+    terminar.addEventListener("click", () => {
+      this.editor.terminarAdministracion();
+      refrescar();
+    });
+    refrescar();
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Administrar vinculación", "Manage linking")]),
+      el("div", { class: "row" }, [
+        el("label", { class: "sub", style: "flex-direction:row;align-items:center;gap:6px;" }, [
+          check,
+          tt("Vincular piezas a esta guía", "Link pieces to this guide"),
+        ]),
+        terminar,
+      ]),
+      estado,
     ]);
   }
 

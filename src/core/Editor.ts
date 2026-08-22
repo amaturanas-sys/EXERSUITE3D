@@ -134,6 +134,26 @@ export type HumanMode = "mannequin" | "skeleton";
 
 export type TransformMode = "translate" | "rotate" | "scale";
 
+/**
+ * Un POSTE (o el TRAMO de una viga doblada) con grilla de agujeros que puede
+ * hospedar un calce, ya medido respecto de la pieza que se quiere calzar.
+ * Vive fuera de la clase desde v0.3.7 porque lo usan dos caminos: el que
+ * mueve la pieza de agujero en agujero y el que solo INFORMA de dónde está.
+ */
+  interface CandidatoPoste {
+    poste: SceneObject;
+    /** Origen de la grilla en MUNDO: centro del poste o del TRAMO. */
+    origen: THREE.Vector3;
+    eje: THREE.Vector3;
+    paso: number;
+    fase: number;
+    lim: number;
+    /** Eje de los pinholes en MUNDO (null si el poste no lo define). */
+    ejePin: THREE.Vector3 | null;
+    lateral: number;
+    cerca: boolean;
+  }
+
 export type EditorEvents = {
   objectsChanged: { objects: SceneObject[] };
   selectionChanged: { selected: SceneObject | null };
@@ -161,6 +181,8 @@ export type EditorEvents = {
   lineModeChanged: { active: boolean; kind: "beam" | "tube" | "guia" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
   bendModeChanged: { active: boolean };
+  /** Guías tubulares en modo "administrar vinculación" (ids). */
+  vinculacionChanged: { guias: string[] };
   /** Cuerda seleccionada (para editar tensión) o null. */
   ropeSelectionChanged: { id: string; name: string; slack: number } | null;
   /** Snapping de ensamblaje activado/desactivado. */
@@ -1407,32 +1429,20 @@ export class Editor {
   }
 
   /**
-   * CALCE POR AGUJEROS: sube o baja una pieza de calce (gancho J, brazo de
-   * seguridad) por su poste AGUJERO POR AGUJERO. Busca el poste con grilla
-   * de agujeros (holeStepCm) más cercano, ENSAMBLA la pieza a la estructura
-   * (su manguito abraza el pilar: el eje del poste pasa por la cavidad de
-   * ensamble — no queda flotando en el aire), ajusta a la grilla y da un
-   * paso a lo largo del eje sin salirse de sus extremos. Devuelve un aviso
-   * si no puede; null si el calce se hizo.
+   * TODOS LOS POSTES CON AGUJEROS que hay alrededor de una pieza, medidos
+   * respecto de ella, y el MEJOR de ellos (el más cercano de los que la
+   * tienen a tiro). Reconoce las tres formas en que una estructura puede
+   * traer su grilla: la de biblioteca con la malla sondeada, la viga trazada
+   * con la herramienta de línea —donde los agujeros los eligió el usuario— y
+   * cada TRAMO recto de una viga doblada por nodos, que conserva la suya
+   * aunque quede diagonal.
    */
-  calcePorAgujero(objId: string, dir: 1 | -1): string | null {
-    const obj = this.objects.get(objId);
-    if (!obj) return "Pieza no encontrada";
+  private candidatosCalce(obj: SceneObject): {
+    candidatos: CandidatoPoste[];
+    mejor: CandidatoPoste | null;
+  } {
     const centro = obj.mesh.position;
     const tam = obj.effectiveSize();
-    interface CandidatoPoste {
-      poste: SceneObject;
-      /** Origen de la grilla en MUNDO: centro del poste o del TRAMO. */
-      origen: THREE.Vector3;
-      eje: THREE.Vector3;
-      paso: number;
-      fase: number;
-      lim: number;
-      /** Eje de los pinholes en MUNDO (null si el poste no lo define). */
-      ejePin: THREE.Vector3 | null;
-      lateral: number;
-      cerca: boolean;
-    }
     const candidatos: CandidatoPoste[] = [];
     let mejor: CandidatoPoste | null = null;
     let mejorLateral = Infinity;
@@ -1554,6 +1564,34 @@ export class Editor {
         cerca,
       });
     }
+    return { candidatos, mejor };
+  }
+
+  /**
+   * CALCE POR AGUJEROS: sube o baja una pieza de calce (gancho J, brazo de
+   * seguridad) por su poste AGUJERO POR AGUJERO. Busca el poste con grilla
+   * de agujeros (holeStepCm) más cercano, ENSAMBLA la pieza a la estructura
+   * (su manguito abraza el pilar: el eje del poste pasa por la cavidad de
+   * ensamble — no queda flotando en el aire), ajusta a la grilla y da un
+   * paso a lo largo del eje sin salirse de sus extremos. Devuelve un aviso
+   * si no puede; null si el calce se hizo.
+   *
+   * `dir` 0 (v0.3.7) NO da el paso: solo asienta la pieza en el agujero que le
+   * queda más cerca. Es lo que necesita el safety pin cuando le cambian el
+   * largo o el corrimiento y hay que volver a colocarlo sin moverlo de fila.
+   *
+   * PIEZAS PASANTES (v0.3.7): una pieza con `ejePasante` —el safety pin— no
+   * cuelga del poste sino que lo ATRAVIESA. Reconoce la misma grilla que las
+   * jotas, pero se acuesta sobre el eje de los agujeros en vez de abrazar el
+   * perfil, se ciñe al diámetro del pinhole y reparte su sobrante a los dos
+   * lados según el corrimiento que se le haya dado.
+   */
+  calcePorAgujero(objId: string, dir: 1 | -1 | 0): string | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return "Pieza no encontrada";
+    const centro = obj.mesh.position;
+    const tam = obj.effectiveSize();
+    const { candidatos, mejor } = this.candidatosCalce(obj);
     if (!mejor) {
       return tt(
         "No hay un poste con agujeros junto a la pieza: acércala a un montante.",
@@ -1561,6 +1599,14 @@ export class Editor {
       );
     }
     const { poste, origen, eje, paso, fase, lim, ejePin } = mejor as CandidatoPoste;
+    // ¿ATRAVIESA el agujero (safety pin) o CUELGA del poste (jotas)?
+    const pasante = getDefinition(obj.componentId)?.ejePasante ?? null;
+    if (pasante && !ejePin) {
+      return tt(
+        "Ese poste no declara por qué cara van sus agujeros: el pasador no sabe por dónde entrar.",
+        "That post does not declare which face its holes go through: the pin has no way in.",
+      );
+    }
     // TENDIDO ENTRE DOS POSTES (postesCalce 2): mientras las jotas cuelgan
     // de UN pilar, el brazo de seguridad se sostiene de DOS a la vez. Se
     // busca la PAREJA del poste más cercano sobre la línea del tendido
@@ -1569,7 +1615,7 @@ export class Editor {
     // pilares comparten la grilla, subir o bajar la mueve UN agujero en
     // los dos simultáneamente.
     let pareja: CandidatoPoste | null = null;
-    if (getDefinition(obj.componentId)?.postesCalce === 2 && ejePin) {
+    if (!pasante && getDefinition(obj.componentId)?.postesCalce === 2 && ejePin) {
       // El tendido corre A LO LARGO del eje de los pinholes: los pines del
       // brazo entran axialmente por las caras enfrentadas de ambos pilares.
       const tendido = ejePin;
@@ -1624,7 +1670,46 @@ export class Editor {
     // los agujeros accesorios de otras caras. Se gira la pieza alrededor
     // del poste hasta encarar ese eje (respetando el lado en que la dejó
     // el usuario).
-    if (!pareja && ejePin) {
+    if (pasante && ejePin) {
+      // PASANTE: la BARRA del pasador se acuesta sobre el eje de los
+      // agujeros. Entra por una cara del poste y sale por la de enfrente,
+      // perpendicular a la viga — el calce real de un safety pin. Se respeta
+      // el sentido en que el usuario lo dejó (no se voltea de punta).
+      const ejeLocal =
+        pasante === "x"
+          ? new THREE.Vector3(1, 0, 0)
+          : pasante === "y"
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(0, 0, 1);
+      const barra = ejeLocal.applyQuaternion(obj.mesh.quaternion).normalize();
+      const objetivo = ejePin.clone().multiplyScalar(barra.dot(ejePin) >= 0 ? 1 : -1);
+      if (barra.angleTo(objetivo) > 1e-4) {
+        obj.mesh.quaternion.premultiply(
+          new THREE.Quaternion().setFromUnitVectors(barra, objetivo),
+        );
+        obj.mesh.updateMatrixWorld(true);
+      }
+      // SIN GIRO SOBRANTE alrededor de su propia barra: da igual para un
+      // cilindro, pero deja la pieza a escuadra con el poste y con ello sus
+      // medidas —las que enseña el panel— en las del pasador y no en las de
+      // una caja girada 30°.
+      const refLocal =
+        pasante === "y" ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const ref = refLocal.applyQuaternion(obj.mesh.quaternion);
+      ref.addScaledVector(objetivo, -ref.dot(objetivo));
+      const meta = eje.clone().addScaledVector(objetivo, -eje.dot(objetivo));
+      if (ref.lengthSq() > 1e-6 && meta.lengthSq() > 1e-6) {
+        ref.normalize();
+        meta.normalize().multiplyScalar(ref.dot(meta) >= 0 ? 1 : -1);
+        if (ref.angleTo(meta) > 1e-4) {
+          obj.mesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(ref, meta));
+          obj.mesh.updateMatrixWorld(true);
+        }
+      }
+      // Y TIENE QUE CABER: un pasador más gordo que el agujero no entraría en
+      // el rack real, así que se ciñe al diámetro del pinhole.
+      this.ceñirAlPinhole(obj, poste);
+    } else if (!pareja && ejePin) {
       // INCLINACIÓN DE LA CARA (v0.2.12): el accesorio RECONOCE la
       // inclinación del poste o tramo donde calza — su vertical local se
       // alinea con el eje de la cara (diagonal o inclinada incluida), de
@@ -1658,7 +1743,9 @@ export class Editor {
     // desvío lateral para que el eje del poste pase por la cavidad de
     // ensamble de la malla. Sin cavidad (primitiva maciza) no se fuerza.
     // En un tendido de DOS postes la pieza ya quedó centrada entre ambos.
-    const pc = pareja ? null : this.puntoCalceLocal(obj);
+    // El pasador no tiene manguito que corregir: su sitio lateral es el EJE
+    // del poste (más el corrimiento), y se fija abajo de una vez.
+    const pc = pareja || pasante ? null : this.puntoCalceLocal(obj);
     if (pc) {
       obj.mesh.updateMatrixWorld(true);
       const manguito = obj.mesh.localToWorld(pc.clone());
@@ -1672,7 +1759,7 @@ export class Editor {
     // UN paso en la dirección pedida, sin salirse de las filas existentes.
     let sNuevo = fase + Math.round((s - fase) / paso) * paso + dir * paso;
     sNuevo = Math.max(-lim, Math.min(lim, sNuevo));
-    if (Math.abs(sNuevo - s) < 1e-3) {
+    if (dir !== 0 && Math.abs(sNuevo - s) < 1e-3) {
       return tt("La pieza ya está en el último agujero del poste.", "The piece is already at the post's last hole.");
     }
     // LÍMITES DE COLISIÓN en el MISMO pilar: dos accesorios calzados no
@@ -1680,8 +1767,11 @@ export class Editor {
     // destino queda dentro del volumen de otra pieza montada en este
     // poste, se salta al siguiente agujero LIBRE en la misma dirección;
     // si no queda ninguno, se avisa.
+    // El pasador acaba de girarse para entrar en el agujero: su medida a lo
+    // largo del poste es otra que la que traía al empezar.
+    const tamOcup = pasante ? obj.effectiveSize() : tam;
     const miExt =
-      Math.abs(tam.x * eje.x) + Math.abs(tam.y * eje.y) + Math.abs(tam.z * eje.z);
+      Math.abs(tamOcup.x * eje.x) + Math.abs(tamOcup.y * eje.y) + Math.abs(tamOcup.z * eje.z);
     const ocupantes: { s: number; ext: number }[] = [];
     for (const o of this.objects.values()) {
       if (o === obj || o === poste || (pareja && o === pareja.poste)) continue;
@@ -1699,6 +1789,14 @@ export class Editor {
     }
     const libre = (sv: number) =>
       ocupantes.every((q) => Math.abs(sv - q.s) >= (miExt + q.ext) / 2 - 0.5);
+    if (!libre(sNuevo) && dir === 0) {
+      // Reasentar en el sitio: si el agujero está ocupado no hay a dónde
+      // saltar — se avisa y se deja la pieza donde estaba.
+      return tt(
+        "Ese agujero lo ocupa otra pieza.",
+        "That hole is occupied by another piece.",
+      );
+    }
     if (!libre(sNuevo)) {
       let sBusca = sNuevo;
       let hallado = false;
@@ -1718,11 +1816,141 @@ export class Editor {
         );
       }
     }
-    centro.addScaledVector(eje, sNuevo - s);
+    if (pasante && ejePin) {
+      // SITIO EXACTO del pasador: sobre el eje del poste, a la altura del
+      // agujero, corrido a lo largo del agujero lo que se le haya pedido.
+      // Con corrimiento 0 sobresale lo mismo por los dos lados.
+      centro
+        .copy(origen)
+        .addScaledVector(eje, sNuevo)
+        .addScaledVector(ejePin, obj.params.pinOffsetCm ?? 0);
+    } else {
+      centro.addScaledVector(eje, sNuevo - s);
+    }
     this.bus.emit("objectTransformed", { object: obj });
     this.scheduleAutosave();
     this.requestRender();
     return null;
+  }
+
+  /**
+   * DIÁMETRO DEL PINHOLE de un poste (cm), o null si no lo declara: de la
+   * biblioteca (`holeDiameterCm`) o de los parámetros de una viga trazada con
+   * la herramienta de línea, donde el agujero lo eligió el usuario.
+   */
+  private diametroPinhole(poste: SceneObject): number | null {
+    const def = getDefinition(poste.componentId);
+    if (def?.holeDiameterCm) return def.holeDiameterCm;
+    const d = poste.params.holeDiameter ?? 0;
+    return d > 0.1 ? d : null;
+  }
+
+  /**
+   * CIÑE EL PASADOR AL AGUJERO: si viene más gordo que el pinhole, se adelgaza
+   * hasta caber con holgura de montaje. Un pasador de 4 cm no entra por un
+   * agujero de 2,6 en el rack real, y dejarlo pasar aquí sería dibujar acero
+   * atravesando acero. Devuelve true si hubo que adelgazarlo.
+   */
+  private ceñirAlPinhole(obj: SceneObject, poste: SceneObject): boolean {
+    const dia = this.diametroPinhole(poste);
+    if (!dia) return false;
+    const rMax = Math.max(0.15, dia / 2 - 0.05);
+    const r = Math.max(obj.params.radiusTop ?? 0, obj.params.radiusBottom ?? 0);
+    if (r <= rMax + 1e-6) return false;
+    obj.params.radiusTop = +rMax.toFixed(3);
+    obj.params.radiusBottom = +rMax.toFixed(3);
+    obj.rebuildGeometry();
+    return true;
+  }
+
+  /**
+   * ESTADO DEL PASADOR para el panel de Propiedades (v0.3.7): en qué agujero
+   * está, cuánta viga atraviesa y CUÁNTO SOBRESALE POR CADA LADO.
+   *
+   * El sobrante es la medida que el diseñador pidió poder tocar: un safety pin
+   * puede quedar centrado, o correrse para sacar más barra por el lado donde
+   * apoya la carga. `corrimientoMax` es hasta dónde puede correrse sin que un
+   * extremo se meta dentro del poste — pasado ese punto ya no atravesaría.
+   * Devuelve null si la pieza no es pasante o no hay poste con agujeros cerca.
+   */
+  estadoPin(objId: string): {
+    agujero: number;
+    total: number;
+    calzado: boolean;
+    /** Diámetro del pinhole (cm), o null si el poste no lo declara. */
+    diaAgujero: number | null;
+    /** Diámetro actual del pasador (cm). */
+    diaPin: number;
+    /** Grosor de viga que atraviesa (cm). */
+    grosor: number;
+    largo: number;
+    corrimiento: number;
+    corrimientoMax: number;
+    sobranteA: number;
+    sobranteB: number;
+  } | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return null;
+    if (!getDefinition(obj.componentId)?.ejePasante) return null;
+    const { mejor } = this.candidatosCalce(obj);
+    if (!mejor) return null;
+    const { poste, origen, eje, paso, fase, lim, ejePin } = mejor;
+    if (!ejePin) return null;
+    // Medida de una pieza a lo largo de una dirección del mundo: se proyectan
+    // sus tres ejes locales. La caja de mundo no vale — una pieza girada da
+    // una caja inflada, y aquí se mide acero, no envolventes.
+    const anchoSegun = (o: SceneObject, e: THREE.Vector3): number => {
+      const t = o.localSizeAbs();
+      o.mesh.updateMatrixWorld();
+      const q = o.mesh.quaternion;
+      return (
+        t.x * Math.abs(new THREE.Vector3(1, 0, 0).applyQuaternion(q).dot(e)) +
+        t.y * Math.abs(new THREE.Vector3(0, 1, 0).applyQuaternion(q).dot(e)) +
+        t.z * Math.abs(new THREE.Vector3(0, 0, 1).applyQuaternion(q).dot(e))
+      );
+    };
+    const grosor = anchoSegun(poste, ejePin);
+    const largo = anchoSegun(obj, ejePin);
+    const corrimiento = obj.params.pinOffsetCm ?? 0;
+    // Numeración de agujeros: la misma de `estadoCalce` — el 1 es el de abajo.
+    const s = obj.mesh.position.clone().sub(origen).dot(eje);
+    const kMin = Math.ceil((-lim - fase) / paso - 1e-6);
+    const kMax = Math.floor((lim - fase) / paso + 1e-6);
+    const k = Math.max(kMin, Math.min(kMax, Math.round((s - fase) / paso)));
+    const r = Math.max(obj.params.radiusTop ?? 0, obj.params.radiusBottom ?? 0);
+    const red = (v: number) => +v.toFixed(2);
+    return {
+      agujero: k - kMin + 1,
+      total: Math.max(0, kMax - kMin + 1),
+      calzado: Math.abs(fase + k * paso - s) <= 1,
+      diaAgujero: this.diametroPinhole(poste),
+      diaPin: red(r * 2),
+      grosor: red(grosor),
+      largo: red(largo),
+      corrimiento: red(corrimiento),
+      corrimientoMax: red(Math.max(0, (largo - grosor) / 2)),
+      // El pasador ocupa [c − L/2, c + L/2] sobre el eje del agujero y la viga
+      // [−t/2, +t/2]: lo que asoma por cada punta es la diferencia.
+      sobranteA: red(corrimiento + largo / 2 - grosor / 2),
+      sobranteB: red(largo / 2 - corrimiento - grosor / 2),
+    };
+  }
+
+  /**
+   * CORRIMIENTO DEL PASADOR (v0.3.7): cuánto se corre a lo largo del agujero.
+   * Se guarda en la pieza y se vuelve a asentar en el mismo agujero, de modo
+   * que la barra se desliza por el pinhole sin cambiar de altura — que es
+   * exactamente lo que se hace con un pin real cuando se quiere más apoyo por
+   * un lado. Devuelve un aviso si no pudo; null si quedó puesto.
+   */
+  correrPasante(objId: string, cm: number): string | null {
+    const obj = this.objects.get(objId);
+    if (!obj) return "Pieza no encontrada";
+    if (!getDefinition(obj.componentId)?.ejePasante) {
+      return tt("Esta pieza no atraviesa agujeros.", "This piece does not go through holes.");
+    }
+    obj.params.pinOffsetCm = +cm.toFixed(3);
+    return this.calcePorAgujero(objId, 0);
   }
 
   /**
@@ -2114,6 +2342,10 @@ export class Editor {
   removeObject(obj: SceneObject): void {
     if (this.bendTarget === obj) this.endBendNodes();
     if (this.selected === obj) this.select(null);
+    // Una guía borrada deja de administrar nada.
+    if (this.guiasAdmin.delete(obj.id)) {
+      this.bus.emit("vinculacionChanged", { guias: this.guiasAdministradas() });
+    }
     // Elimina las articulaciones y cables que referencian a este objeto.
     for (const j of this.listJoints()) {
       if (j.bodyAId === obj.id || j.bodyBId === obj.id) this.joints.delete(j.id);
@@ -2930,6 +3162,7 @@ export class Editor {
     // seleccionar, ni deseleccionar, ni ninguna otra herramienta— y no había
     // manera de apagarla salvo volver a Ergonomía y pulsar el mismo botón.
     this.setGrabFigure(false);
+    this.terminarAdministracion();
     this.bus.emit("dialogosCerrar", {});
   }
 
@@ -3326,6 +3559,10 @@ export class Editor {
     if (obj) this.gizmo.attach(obj.mesh);
     else this.gizmo.detach();
     this.aplicarHerramientaGizmo();
+    // Con guías administrándose, elegir una pieza YA la canaliza si le pasan
+    // por dentro: el clic es el gesto que el diseñador describió para
+    // enrolarla, y no tiene por qué exigir además un arrastre.
+    this.enhebrarAlSeleccionar(obj);
     this.bus.emit("selectionChanged", { selected: obj });
     this.bus.emit("groupingChanged", { multi: 0, groupSelected: false });
     this.bus.emit("groupSelectionChanged", { id: null, name: "" });
@@ -10004,7 +10241,7 @@ export class Editor {
    * no lo está, esa guía no se toma: el carro va montado a escuadra con sus
    * barras, también en la máquina real.
    */
-  vincularAGuias(obj: SceneObject): number {
+  vincularAGuias(obj: SceneObject, soloGuias?: ReadonlySet<string>): number {
     if (obj.componentId === "guia-tubular") return 0;
     // Un TOPE no se enhebra: se MONTA sobre la guía más cercana, coaxial, a la
     // altura a la que se soltó. Desde ahí el motor lo toma por espaciador y
@@ -10024,8 +10261,18 @@ export class Editor {
     const caja = obj.mesh.geometry.boundingBox!.clone();
     const ejes: ("x" | "y" | "z")[] = ["x", "y", "z"];
     const canales: CanalTubo[] = [];
+    // ADMINISTRACIÓN ACOTADA (v0.3.7): cuando el gesto viene de un grupo
+    // concreto de guías —las que tienen el interruptor puesto—, solo esas se
+    // recalculan. Los canales que la pieza ya tenga de OTRAS guías se
+    // conservan: administrar una guía no es rehacer la pieza entera.
+    if (soloGuias) {
+      for (const c of obj.params.canales ?? []) {
+        if (!c.guia || !soloGuias.has(c.guia)) canales.push(c);
+      }
+    }
     for (const g of this.objects.values()) {
       if (g === obj || g.componentId !== "guia-tubular") continue;
+      if (soloGuias && !soloGuias.has(g.id)) continue;
       const largo = g.params.height ?? 0;
       const radio = Math.max(g.params.radiusTop ?? 0, g.params.radiusBottom ?? 0);
       if (!(largo > 1) || !(radio > 0.05)) continue;
@@ -10127,8 +10374,12 @@ export class Editor {
     return true;
   }
 
-  /** Rehace los canales de lo que acabe de soltar el gizmo (pieza o grupo). */
-  private enhebrarSeleccion(): void {
+  /**
+   * Rehace los canales de lo que acabe de soltar el gizmo (pieza o grupo).
+   * Público desde v0.3.7 para que las pruebas ejerciten EL MISMO camino que
+   * corre al soltar, en vez de una imitación suya.
+   */
+  enhebrarSeleccion(): void {
     const tocadas: SceneObject[] = [];
     if (this.multiSel.size > 0) {
       for (const id of this.multiSel) {
@@ -10142,7 +10393,79 @@ export class Editor {
         if (o) tocadas.push(o);
       }
     } else if (this.selected) tocadas.push(this.selected);
-    for (const o of tocadas) this.vincularAGuias(o);
+    for (const o of tocadas) {
+      // El TOPE se monta sobre su guía siempre que se suelte cerca: es un
+      // gesto de colocación, no de vinculación, y no pasa por el interruptor.
+      if (o.componentId === "tope-guia") {
+        this.montarTopeEnGuia(o);
+        continue;
+      }
+      if (this.guiasAdmin.size === 0) continue;
+      this.vincularAGuias(o, this.guiasAdmin);
+    }
+  }
+
+  // ------------------------------------------- administrar vinculación
+  /**
+   * ADMINISTRAR VINCULACIÓN (v0.3.7).
+   *
+   * Hasta v0.3.6 cualquier pieza que se soltara encima de una guía quedaba
+   * enhebrada por el mero hecho de pasar por ahí: el canal se abría solo. Era
+   * cómodo mientras la escena tenía dos barras, y un incordio en cuanto tenía
+   * ocho — una pieza que solo cruzaba el aire delante de una guía volvía
+   * agujereada, y quitar un vínculo obligaba a apartar la pieza del todo.
+   *
+   * Ahora la guía manda. Se enciende su interruptor —«administrar
+   * vinculación»—, se hace clic en las piezas que deben correr por ella y se
+   * las coloca con el gizmo: al soltarlas se canaliza su recorrido. Mientras
+   * el interruptor está apagado, mover una pieza junto a la guía no le hace
+   * nada. Se pueden administrar VARIAS guías a la vez, encendiendo el
+   * interruptor de cada una: la pieza que se coloque abrirá canal para todas
+   * las que la crucen de verdad.
+   *
+   * Es un estado de trabajo, no del proyecto: no se guarda en el archivo.
+   */
+  private readonly guiasAdmin = new Set<string>();
+
+  /** ¿Está esta guía administrando su vinculación? */
+  administraGuia(id: string): boolean {
+    return this.guiasAdmin.has(id);
+  }
+
+  /** Guías con el interruptor puesto. */
+  guiasAdministradas(): string[] {
+    return [...this.guiasAdmin];
+  }
+
+  /**
+   * Enciende o apaga el interruptor de una guía. Solo lo aceptan las guías
+   * tubulares: es su propiedad, no la de la pieza que se enhebra.
+   */
+  administrarVinculacion(id: string, on: boolean): boolean {
+    const g = this.objects.get(id);
+    if (!g || g.componentId !== "guia-tubular") return false;
+    if (on) this.guiasAdmin.add(id);
+    else this.guiasAdmin.delete(id);
+    this.bus.emit("vinculacionChanged", { guias: this.guiasAdministradas() });
+    return true;
+  }
+
+  /** Apaga todos los interruptores de una vez. */
+  terminarAdministracion(): void {
+    if (this.guiasAdmin.size === 0) return;
+    this.guiasAdmin.clear();
+    this.bus.emit("vinculacionChanged", { guias: [] });
+  }
+
+  /**
+   * Una pieza a la que se acaba de hacer clic mientras hay guías
+   * administrándose: si ya está en su sitio, se canaliza ahí mismo, sin
+   * pedirle al usuario que la mueva un milímetro para nada.
+   */
+  private enhebrarAlSeleccionar(obj: SceneObject | null): void {
+    if (!obj || this.guiasAdmin.size === 0) return;
+    if (obj.componentId === "guia-tubular" || obj.componentId === "tope-guia") return;
+    this.vincularAGuias(obj, this.guiasAdmin);
   }
 
   /**

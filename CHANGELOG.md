@@ -5,6 +5,64 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.7] — 2026-08-22
+
+### Cambiado
+
+**La guía manda: «administrar vinculación».** Hasta ahora, enhebrar una pieza en
+una guía tubular era un efecto secundario de moverla: se soltaba encima y el
+canal se abría solo. Era cómodo con dos barras en la escena y un incordio con
+ocho — una pieza que solo pasaba por delante de una guía volvía agujereada, y
+quitarle un vínculo obligaba a apartarla del todo.
+
+Ahora el gesto lo manda la guía, como pidió el diseñador. En sus Propiedades
+hay un interruptor, **Administrar vinculación**: se enciende en la guía (o en
+varias a la vez), se hace clic en las piezas que deben correr por ella y se las
+coloca con el gizmo; al soltarlas se les canaliza el recorrido. Con el
+interruptor apagado, mover una pieza junto a la guía no le hace nada.
+
+- Administrar es también **desvincular**: con el interruptor puesto, apartar la
+  pieza de esa guía le quita ese canal.
+- Solo se recalculan las guías administradas. Los canales que la pieza ya
+  tenga de otras se conservan intactos: administrar una guía no es rehacer la
+  pieza entera.
+- El **clic** basta cuando la pieza ya está en su sitio: no hay que moverla un
+  milímetro para nada.
+- «Terminar» apaga todos los interruptores de una vez, y cancelar herramientas
+  también.
+- Los **topes de guía** siguen montándose solos al soltarlos cerca de una
+  barra: eso es colocación, no vinculación, y no pasa por el interruptor.
+
+### Añadido
+
+**El safety pin ATRAVIESA el pinhole.** Era un cilindro cromado que se dejaba
+al lado del poste; ahora es un pasador de verdad. Reconoce la misma grilla de
+agujeros que las jotas —sube y baja con ▲/▼, agujero por agujero, y el panel
+dice en cuál está— pero en vez de colgar del perfil lo cruza: entra por una
+cara, sale por la opuesta y queda perpendicular a la viga.
+
+- **Cabe por el agujero.** Los montantes declaran ahora el diámetro de sus
+  pinholes (Ø 2,6 cm en el TTP y el POWERRACK), y el pasador se ciñe a él: uno
+  de Ø 8 cm se adelgaza hasta caber en vez de dibujarse atravesando el acero.
+- **Corrimiento y largo.** En Propiedades se regula cuánto mide la barra y
+  cuánto sobresale por cada lado —que es lo que decide dónde apoya la carga—,
+  con la lectura en vivo («atraviesa 5 cm de viga · sobresale 15,5 y 3,5») y un
+  botón «Centrar». El tope del corrimiento es el punto en que el pasador
+  dejaría de atravesar la viga.
+- Cambiarle el largo o el corrimiento **no lo saca de su agujero**: se reasienta
+  en el mismo.
+
+Comprobado con `pruebas/prueba-vinculacion-pines.mjs` (21 comprobaciones): el
+interruptor apagado deja la malla en sus 24 vértices de fábrica; encendido en
+una guía abre un canal (24 → 342 vértices) y en dos, dos, separados los 60 cm
+que separan las barras y con la holgura de deslizamiento del tubo; apartada de
+una, le queda el canal de la otra. Y el pasador entra en el montante TTP
+acostado sobre el eje de los agujeros (desvío 0°), perpendicular a la viga
+(90,0°), centrado en el poste (0 cm fuera del eje), atravesando sus 5 cm de
+perfil con 9,49 cm de sobrante a cada lado; corrido 6 cm reparte 15,49 y 3,49
+sin cambiar de altura; alargado a 40 cm, 17,49 por lado; y ▲/▼ lo mueven
+exactamente los 5 cm del paso real de la grilla.
+
 ## [0.3.6] — 2026-08-22
 
 ### Arreglado

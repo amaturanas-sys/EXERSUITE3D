@@ -130,6 +130,13 @@ export interface PrimitiveParams {
    * = el largo de fábrica de la pieza.
    */
   largoCm?: number;
+  /**
+   * CORRIMIENTO DEL PASADOR (v0.3.7), en cm, de las piezas con `ejePasante`
+   * (safety pin): cuánto se corre a lo largo del eje del agujero desde el
+   * centro del poste. Con 0 el pasador queda simétrico —igual sobrante a los
+   * dos lados—; positivo lo saca hacia el lado + del eje de los pinholes.
+   */
+  pinOffsetCm?: number;
 }
 
 /**
@@ -241,6 +248,16 @@ export interface ComponentDefinition {
    */
   ejeCalce?: "x" | "z";
   /**
+   * DIÁMETRO NOMINAL (cm) de esos pinholes.
+   *
+   * Hasta v0.3.6 la grilla decía dónde están los agujeros pero no cuánto
+   * miden, y eso bastaba mientras solo colgaran jotas: el pin de una jota
+   * entra por un agujero que su propia malla ya trae medido. Un SAFETY PIN,
+   * en cambio, es el agujero: hay que saber cuánto mide para que el pasador
+   * quepa de verdad en vez de atravesar el acero.
+   */
+  holeDiameterCm?: number;
+  /**
    * Fase de la grilla de pinholes (cm): desplazamiento de la fila más
    * cercana al centro del poste a lo largo de su eje largo (medido en la
    * malla real). La grilla es fase + k·holeStepCm.
@@ -274,6 +291,18 @@ export interface ComponentDefinition {
    * el anclaje de cadena monta por "x".
    */
   frenteCalce?: "x" | "z";
+  /**
+   * EJE LOCAL DE LA PIEZA QUE ATRAVIESA EL AGUJERO (v0.3.7).
+   *
+   * Las jotas CUELGAN del poste: su manguito lo abraza por fuera y un pin
+   * corto articula con los pinholes. Un SAFETY PIN no cuelga de nada — es una
+   * barra que entra por un agujero, cruza la viga y sale por la cara opuesta,
+   * con el sobrante repartido a los dos lados. Esta propiedad dice cuál de sus
+   * ejes locales es esa barra: al calzar se acuesta sobre el eje de los
+   * pinholes (`ejeCalce` del poste), perpendicular a la viga, y el pasador
+   * queda cruzado como en el rack real.
+   */
+  ejePasante?: "x" | "y" | "z";
   /**
    * Cantidad de POSTES de los que se sostiene la pieza al calzar (def. 1).
    * Las jotas/ganchos cuelgan de UN pilar; el brazo de seguridad se TIENDE
