@@ -5,6 +5,69 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.10] — 2026-08-23
+
+### Arreglado
+
+Cuatro defectos que el diseñador destapó armando una prensa de piernas. Los tres
+primeros tienen la misma raíz: **el motor medía volúmenes donde no había
+material**.
+
+**La caja de colisión se centraba en el ORIGEN de la pieza, no en su acero.** Una
+viga trazada por nodos no tiene la malla centrada en su origen — su recorrido
+puede arrancar 90 cm por debajo. Tomar `mesh.position` por centro de la caja la
+colocaba donde no hay nada. Medido sobre el modelo del diseñador: **14 de sus 32
+piezas descolocadas, las peores 55,87 cm** — más de medio metro de error en una
+caja de 5 cm de lado. De ahí que soldar pareciera «pedir un posicionamiento
+demasiado estricto»: no encontraba contactos que se ven a simple vista. El
+defecto envenenaba todo lo que mide volúmenes, incluida la decisión de la
+bisagra sobre si puede pedir colisión real entre las piezas.
+
+**Una viga DOBLADA se medía por su envolvente**, que es un ladrillo lleno de
+aire: un pilar en L de un metro por lado encierra casi un metro cúbico de nada.
+Dos piezas que no se rozan salían «en contacto» y una escondida en el hueco del
+codo salía separada. Ahora se trocea por las mismas cuerdas con las que la
+física construye sus colliders — la forma que se ve.
+
+**Al soldar, la pieza perdía su guía tubular.** `fundirSoldadas` reescribe la
+entrada de la pieza absorbida con el cuerpo **y el objeto** del anfitrión, así
+que la pieza real desaparecía del mapa de cuerpos. La detección de guías
+enumeraba ese mapa, y si el carro de una prensa entraba en un conjunto soldado
+dejaba de existir para ella: conservaba sus agujeros y se caía por fuera de sus
+barras. Ahora las piezas fundidas se recuperan de `empotradas`, que sí guarda el
+objeto original junto al cuerpo que lo hospeda.
+
+Y una vez recuperada, **el clamp se expresa en el frame del CUERPO**, no en el
+de la pieza: como `aplicarGuias` compara la traslación del cuerpo contra el
+origen registrado, con un conjunto soldado teletransportaba la máquina entera a
+la recta de la pieza — 46 cm de lado en el primer fotograma.
+
+**Y la física dejaba de estar a mano al agrupar.** Con el grupo seleccionado, el
+panel no traía masa ni «Fija»: desde fuera se ve como si la pieza hubiera perdido
+sus propiedades físicas, y en la práctica es peor, porque son justo las que hay
+que tocar — el motor solo circunscribe a sus guías los cuerpos **móviles**, así
+que un carro marcado como fijo deja de respetar la guía y no había forma de
+desmarcarlo sin desagrupar la máquina entera. Ahora hay **Física del conjunto**
+en el panel del grupo, con la masa y las fijas de todas sus piezas de una vez, y
+un aviso que **nombra** la pieza enhebrada en guías que quedó marcada como fija.
+
+También: los `canales` de una pieza recuerdan de qué guía son, y ese id **no se
+traducía al abrir el proyecto**. El agujero seguía calado —es geometría— pero el
+id quedaba huérfano y «administrar vinculación» no podía volver a tocar ese
+canal. En el modelo del diseñador los dos canales del carro apuntaban a guías
+que ya no existen.
+
+La holgura con la que soldar da dos piezas por «en contacto» sube de 1 a **2 cm**:
+es la que corresponde a colocar a ojo.
+
+Comprobado con `pruebas/prueba-soldar-forma.mjs` (13 comprobaciones): una viga
+cuyo acero cuelga 90 cm por debajo de su origen se mide **en contacto** con la
+placa pegada a su codo (antes salían a 37 cm) y la soldadura cae en y = 8,75 —
+junto al acero, no junto al origen en y = 100; dos vigas en L cuyas envolventes
+se solapan de lleno se miden con **7,5 cm de aire** entre sus formas y no se
+sueldan; y un carro enhebrado en dos guías **y soldado a una ménsula** baja 125
+cm por sus barras con **0 cm** de desvío lateral.
+
 ## [0.3.9] — 2026-08-23
 
 ### Añadido

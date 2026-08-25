@@ -16,6 +16,7 @@ import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode, type TopeCable } from "../physics/cables";
 import { Rope, type RopeEnd, type RopeKind } from "../objects/Rope";
 import {
+  cuerdasColision,
   pathIsCollinear,
   pathIsStraight,
   straightPath,
@@ -109,6 +110,40 @@ export interface ReporteSoldadura {
   /** Hay al menos una pieza FIJA: la física anclará el conjunto entero. */
   anclado: boolean;
   aviso: string | null;
+}
+
+/**
+ * CAJA ORIENTADA (cm): centro en mundo, ejes en mundo y semilados. Es la
+ * representación honesta del volumen de una pieza —o de UN TRAMO suyo—, a
+ * diferencia de la AABB del mundo, que se hincha cuando la pieza está girada.
+ */
+interface CajaOr {
+  c: THREE.Vector3;
+  u: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
+  e: [number, number, number];
+}
+
+/**
+ * HUECO MÍNIMO entre dos cajas orientadas por el teorema de los ejes
+ * separadores: el MAYOR de los huecos sobre los 15 ejes de prueba. Positivo =
+ * están separadas al menos eso; negativo o cero = se solapan.
+ */
+function huecoEntreCajas(A: CajaOr, B: CajaOr): number {
+  const d = B.c.clone().sub(A.c);
+  const radio = (caj: CajaOr, L: THREE.Vector3): number =>
+    caj.e[0] * Math.abs(caj.u[0].dot(L)) +
+    caj.e[1] * Math.abs(caj.u[1].dot(L)) +
+    caj.e[2] * Math.abs(caj.u[2].dot(L));
+  const ejes: THREE.Vector3[] = [...A.u, ...B.u];
+  for (const ua of A.u) {
+    for (const ub of B.u) {
+      const cruz = new THREE.Vector3().crossVectors(ua, ub);
+      if (cruz.lengthSq() > 1e-6) ejes.push(cruz.normalize());
+    }
+  }
+  let peor = -Infinity;
+  for (const L of ejes) peor = Math.max(peor, Math.abs(d.dot(L)) - radio(A, L) - radio(B, L));
+  return peor;
 }
 
 export interface MontajeBisagra {
@@ -3395,6 +3430,25 @@ export class Editor {
       o.params.anclajes = a || b ? { a, b } : undefined;
     }
 
+    // Y LOS CANALES (v0.3.10): cada canal tubular recuerda de QUÉ guía es, y
+    // ese id se rehacía igual al abrir. El agujero seguía calado —es
+    // geometría— así que no se notaba a simple vista, pero el id quedaba
+    // huérfano y «administrar vinculación» no podía volver a tocar ese canal:
+    // la guía administrada solo rehace los suyos y CONSERVA los ajenos, así
+    // que un canal apuntando a una guía fantasma no había forma de quitarlo.
+    // Se traducen los que se puedan y se descartan los que ya no apunten a
+    // ninguna guía de la escena.
+    for (const o of this.objects.values()) {
+      const cs = o.params.canales;
+      if (!cs?.length) continue;
+      const vivos = cs.map((c) => {
+        if (!c.guia) return c;
+        const nuevo = idMap.get(c.guia);
+        return nuevo ? { ...c, guia: nuevo } : { ...c, guia: undefined };
+      });
+      o.params.canales = vivos;
+    }
+
     const contactosExplicitos = new Set<string>();
     for (const jd of data.joints) {
       const a = idMap.get(jd.bodyAId);
@@ -5373,7 +5427,7 @@ export class Editor {
    * Suelda y agrupa una lista de piezas. Devuelve un parte de lo ocurrido: la
    * interfaz lo usa para avisar, y las pruebas para medirlo.
    */
-  soldarPiezas(ids: string[], holguraCm = 1): ReporteSoldadura {
+  soldarPiezas(ids: string[], holguraCm = 2): ReporteSoldadura {
     const vacio: ReporteSoldadura = {
       soldaduras: 0,
       piezas: 0,
@@ -5426,17 +5480,23 @@ export class Editor {
     // une por componentes conexas y las repetidas no añaden restricción.
     let soldaduras = 0;
     const tocadas = new Set<string>();
+    // Las cajas de cada pieza se calculan UNA vez: una viga doblada aporta
+    // hasta 32 tramos y el barrido es de todas contra todas.
+    const cajas = new Map<string, CajaOr[]>();
+    for (const o of piezas) cajas.set(o.id, this.cajasDePieza(o));
     for (let i = 0; i < piezas.length; i++) {
       for (let j = i + 1; j < piezas.length; j++) {
         const a = piezas[i];
         const b = piezas[j];
-        // `piezasSeparadas` con tolerancia NEGATIVA exige un hueco real mayor
-        // que la holgura: así se sueldan las que se tocan y las que se
-        // interpenetran, y no las que solo pasan cerca.
-        if (this.piezasSeparadas(a, b, -Math.abs(holguraCm))) continue;
+        // Se mide contra la FORMA real de cada pieza (tramo a tramo en las
+        // vigas dobladas), no contra su envolvente, y se admite la holgura
+        // con la que un usuario coloca a ojo: se sueldan las que se tocan,
+        // las que se interpenetran y las que quedan a un pelo.
+        const par = this.parMasCercano(cajas.get(a.id)!, cajas.get(b.id)!);
+        if (par.hueco > Math.abs(holguraCm)) continue;
         tocadas.add(a.id);
         tocadas.add(b.id);
-        if (this.soldarPar(a, b, this.puntoDeContacto(a, b))) soldaduras++;
+        if (this.soldarPar(a, b, this.puntoDeContacto(par.a, par.b))) soldaduras++;
       }
     }
 
@@ -5500,15 +5560,27 @@ export class Editor {
    * tocan. Cuando las piezas no llegan a tocarse, ese mismo punto medio cae en
    * mitad del hueco, que es lo razonable.
    */
-  private puntoDeContacto(a: SceneObject, b: SceneObject): THREE.Vector3 {
-    const A = this.cajaOrientada(a);
-    const B = this.cajaOrientada(b);
-    const radio = (caj: typeof A, L: THREE.Vector3): number =>
+  private parMasCercano(
+    cajasA: CajaOr[],
+    cajasB: CajaOr[],
+  ): { a: CajaOr; b: CajaOr; hueco: number } {
+    let mejor = { a: cajasA[0], b: cajasB[0], hueco: Infinity };
+    for (const A of cajasA) {
+      for (const B of cajasB) {
+        const h = huecoEntreCajas(A, B);
+        if (h < mejor.hueco) mejor = { a: A, b: B, hueco: h };
+      }
+    }
+    return mejor;
+  }
+
+  private puntoDeContacto(A: CajaOr, B: CajaOr): THREE.Vector3 {
+    const radio = (caj: CajaOr, L: THREE.Vector3): number =>
       caj.e[0] * Math.abs(caj.u[0].dot(L)) +
       caj.e[1] * Math.abs(caj.u[1].dot(L)) +
       caj.e[2] * Math.abs(caj.u[2].dot(L));
     // Centro del solape visto desde los ejes de UNA de las cajas.
-    const medioSegun = (P: typeof A, Q: typeof A): THREE.Vector3 => {
+    const medioSegun = (P: CajaOr, Q: CajaOr): THREE.Vector3 => {
       const p = P.c.clone();
       for (let i = 0; i < 3; i++) {
         const eje = P.u[i];
@@ -8160,15 +8232,24 @@ export class Editor {
    * cm): la representación honesta de su volumen, a diferencia de la AABB del
    * mundo, que se hincha cuando la pieza está girada.
    */
-  private cajaOrientada(o: SceneObject): {
-    c: THREE.Vector3;
-    u: [THREE.Vector3, THREE.Vector3, THREE.Vector3];
-    e: [number, number, number];
-  } {
+  private cajaOrientada(o: SceneObject): CajaOr {
     const q = o.mesh.getWorldQuaternion(new THREE.Quaternion());
     const e = o.localSizeAbs().multiplyScalar(0.5);
+    // EL CENTRO ES EL DEL MATERIAL, NO EL ORIGEN DE LA PIEZA (v0.3.10).
+    //
+    // Una viga TRAZADA no tiene su malla centrada en su origen: su recorrido
+    // puede arrancar 90 cm por debajo y terminar 10 por encima. Tomar
+    // `mesh.position` por centro de la caja la colocaba donde no hay acero, y
+    // eso envenenaba TODO lo que mide volúmenes: soldar no encontraba
+    // contactos que se ven a simple vista, y la bisagra decidía mal si podía
+    // pedir colisión real entre las piezas. Medido en el modelo de una prensa
+    // de piernas del diseñador: 14 de 32 piezas descolocadas, las peores
+    // 55,87 cm — más de medio metro de error en una caja de 5 cm de lado.
+    const geo = o.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    o.mesh.updateMatrixWorld();
     return {
-      c: o.mesh.getWorldPosition(new THREE.Vector3()),
+      c: o.mesh.localToWorld(geo.boundingBox!.getCenter(new THREE.Vector3())),
       u: [
         new THREE.Vector3(1, 0, 0).applyQuaternion(q),
         new THREE.Vector3(0, 1, 0).applyQuaternion(q),
@@ -8176,6 +8257,67 @@ export class Editor {
       ],
       e: [e.x, e.y, e.z],
     };
+  }
+
+  /**
+   * EL VOLUMEN REAL DE UNA PIEZA, como una o varias cajas orientadas.
+   *
+   * Una caja sola vale para una primitiva y para una viga recta. Para una viga
+   * DOBLADA no: su envolvente es un ladrillo lleno de aire —un pilar en L de
+   * un metro por lado encierra casi un metro cúbico de nada—, así que dos
+   * piezas que no se rozan salían «en contacto» y una que sí, escondida en el
+   * hueco del codo, salía separada. Aquí se trocea por las mismas cuerdas con
+   * las que la física construye sus colliders: la forma que el usuario ve.
+   */
+  private cajasDePieza(o: SceneObject): CajaOr[] {
+    const p = o.params;
+    const doblada =
+      (p.kind === "beam" || p.kind === "tube") && !!p.path && !pathIsStraight(p.path);
+    if (!doblada) return [this.cajaOrientada(o)];
+    o.mesh.updateMatrixWorld();
+    const esc = o.mesh.scale;
+    // Semilado de la sección, con la escala de la pieza. Se toma el mayor de
+    // los dos lados: pecar de grueso detecta el contacto un pelo antes, que
+    // es el lado por el que conviene equivocarse.
+    const grosor =
+      (Math.max(p.width ?? 5, p.depth ?? 5) / 2) *
+      Math.max(Math.abs(esc.x), Math.abs(esc.y), Math.abs(esc.z));
+    const out: CajaOr[] = [];
+    for (const cu of cuerdasColision(p.path!)) {
+      const a = o.mesh.localToWorld(cu.a.clone());
+      const b = o.mesh.localToWorld(cu.b.clone());
+      const dir = b.clone().sub(a);
+      const largo = dir.length();
+      if (largo < 1e-4) continue;
+      dir.normalize();
+      const aux = Math.abs(dir.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      const n1 = new THREE.Vector3().crossVectors(dir, aux).normalize();
+      const n2 = new THREE.Vector3().crossVectors(dir, n1).normalize();
+      out.push({
+        c: a.add(b).multiplyScalar(0.5),
+        u: [dir, n1, n2],
+        e: [largo / 2, grosor, grosor],
+      });
+    }
+    return out.length > 0 ? out : [this.cajaOrientada(o)];
+  }
+
+  /**
+   * HUECO MÍNIMO (cm) entre el material de dos piezas: negativo si se
+   * interpenetran, 0 si se rozan. Mide contra la FORMA real, tramo a tramo.
+   */
+  separacionEntre(a: SceneObject, b: SceneObject): number {
+    let mejor = Infinity;
+    const cajasA = this.cajasDePieza(a);
+    const cajasB = this.cajasDePieza(b);
+    for (const A of cajasA) {
+      for (const B of cajasB) {
+        const h = huecoEntreCajas(A, B);
+        if (h < mejor) mejor = h;
+        if (mejor <= -1e6) return mejor;
+      }
+    }
+    return mejor;
   }
 
   /** Hasta dónde llega la pieza en la dirección `n` (cm, proyección sobre n). */
@@ -8232,25 +8374,9 @@ export class Editor {
   }
 
   piezasSeparadas(a: SceneObject, b: SceneObject, tol = 0.8): boolean {
-    const A = this.cajaOrientada(a);
-    const B = this.cajaOrientada(b);
-    const d = B.c.clone().sub(A.c);
-    const radio = (caj: typeof A, L: THREE.Vector3): number =>
-      caj.e[0] * Math.abs(caj.u[0].dot(L)) +
-      caj.e[1] * Math.abs(caj.u[1].dot(L)) +
-      caj.e[2] * Math.abs(caj.u[2].dot(L));
-    const ejesPrueba: THREE.Vector3[] = [...A.u, ...B.u];
-    for (const ua of A.u) {
-      for (const ub of B.u) {
-        const cruz = new THREE.Vector3().crossVectors(ua, ub);
-        if (cruz.lengthSq() > 1e-6) ejesPrueba.push(cruz.normalize());
-      }
-    }
-    for (const L of ejesPrueba) {
-      if (Math.abs(d.dot(L)) >= radio(A, L) + radio(B, L) - tol) return true;
-    }
-    return false;
+    return this.separacionEntre(a, b) >= -tol;
   }
+
 
   /**
    * Instala una BISAGRA REAL entre dos piezas (v0.2.32).

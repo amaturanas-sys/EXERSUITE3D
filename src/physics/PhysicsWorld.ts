@@ -601,16 +601,44 @@ export class PhysicsWorld {
   }[] = [];
 
   private detectarGuias(): void {
-    // Dedupe: una roldana empotrada duplica la entrada de su anfitrión en el
-    // mapa de cuerpos (para juntas) — aquí cada cuerpo cuenta una sola vez.
-    const vistos = new Set<number>();
-    const unicos = [...this.bodies.values()].filter(({ body }) => {
-      if (vistos.has(body.handle)) return false;
-      vistos.add(body.handle);
-      return true;
-    });
-    const dinamicas = unicos.filter(({ body }) => !body.isFixed());
-    const fijas = unicos.filter(({ body }) => body.isFixed());
+    // TODAS LAS PIEZAS DE CADA CUERPO, no una por cuerpo (v0.3.10).
+    //
+    // `this.bodies` no es una biyección: al fundir un conjunto soldado, sus
+    // piezas comparten el cuerpo del anfitrión. Antes se deduplicaba por
+    // `handle` quedándose con la PRIMERA entrada, y eso rompía las guías en
+    // cuanto algo se soldaba: si el carro de una prensa entraba en un conjunto
+    // soldado, la pieza que representaba a ese cuerpo podía ser el bastidor,
+    // y como el bastidor no tiene canales ni lo atraviesa ningún tubo, la
+    // guía dejaba de existir — el carro conservaba sus agujeros y se caía por
+    // fuera de sus barras. Lo mismo por el otro lado: una guía tubular soldada
+    // al bastidor dejaba de reconocerse como guía.
+    //
+    // Ahora cada PIEZA se examina con el cuerpo al que pertenezca, compartido
+    // o no; el clamp se aplica al cuerpo, que es lo que se mueve.
+    // OJO: `this.bodies` NO sirve para enumerar piezas. Al fundir, la entrada
+    // de la pieza absorbida se reescribe con el cuerpo Y EL OBJETO del
+    // anfitrión (`fundirSoldadas`), así que la pieza real desaparece del mapa.
+    // Las que conservan su pieza son las que cumplen `obj.id === id`; las
+    // demás se recuperan de `empotradas`, que sí guarda el objeto original
+    // junto al cuerpo que lo hospeda.
+    const todas: { body: R.RigidBody; obj: SceneObject }[] = [];
+    const vistas = new Set<SceneObject>();
+    for (const [id, e] of this.bodies) {
+      if (e.obj.id !== id || vistas.has(e.obj)) continue;
+      vistas.add(e.obj);
+      todas.push({ body: e.body, obj: e.obj });
+    }
+    for (const emp of this.empotradas) {
+      if (vistas.has(emp.obj)) continue;
+      vistas.add(emp.obj);
+      todas.push({ body: emp.host, obj: emp.obj });
+    }
+    const dinamicas = todas.filter(({ body }) => !body.isFixed());
+    const fijas = todas.filter(({ body }) => body.isFixed());
+    // Un cuerpo compuesto aparece una vez por pieza: en cuanto UNA de ellas
+    // queda enhebrada, el cuerpo entero ya tiene su recta y no se vuelve a
+    // examinar (dos clamps sobre el mismo cuerpo pelearían entre sí).
+    const yaGuiados = new Set<number>();
 
     // 1) Candidatas: piezas fijas ESBELTAS (tubulares) con su recta axial.
     interface Esbelta {
@@ -733,6 +761,7 @@ export class PhysicsWorld {
     const guiados = new Set<R.RigidBody>();
     const bbox = new THREE.Box3();
     for (const d of dinamicas) {
+      if (yaGuiados.has(d.body.handle)) continue;
       // Caja del CUERPO sin los discos montados: el freno de la guía topa
       // con el carrier — los discos quedan lejos de los tubos y no
       // participan del stop (con ellos, la caja inflada frenaba el carro
@@ -921,12 +950,22 @@ export class PhysicsWorld {
       // con las demás piezas guiadas de la escena.
       for (const c of cuerposGuia) usadas.add(c);
       guiados.add(d.body);
-      const q = d.obj.mesh.quaternion;
+      yaGuiados.add(d.body.handle);
+      // EL CLAMP SE EXPRESA EN EL FRAME DEL CUERPO, no en el de la pieza
+      // (v0.3.10). `aplicarGuias` compara la traslación del CUERPO contra
+      // este origen; si la pieza está fundida en un conjunto soldado, el
+      // cuerpo es el del anfitrión y su origen está en otro sitio — el clamp
+      // teletransportaba el conjunto entero a la recta de la pieza, y el carro
+      // salía 46 cm de lado en el primer fotograma. `sMin`/`sMax` no cambian:
+      // son desplazamientos RELATIVOS a donde está ahora, y la pieza y su
+      // anfitrión están rígidamente unidos, así que valen igual para los dos.
+      const tr = d.body.translation();
+      const rt = d.body.rotation();
       this.guias.push({
         body: d.body,
-        origen: { x: centroD.x * S, y: centroD.y * S, z: centroD.z * S },
+        origen: { x: tr.x, y: tr.y, z: tr.z },
         eje: { x: eje.x, y: eje.y, z: eje.z },
-        rot: { x: q.x, y: q.y, z: q.z, w: q.w },
+        rot: { x: rt.x, y: rt.y, z: rt.z, w: rt.w },
         sMin: sMin * S,
         sMax: sMax * S,
       });

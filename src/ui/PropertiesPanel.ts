@@ -253,6 +253,92 @@ export class PropertiesPanel {
     );
     const carga = this.cargaDelGrupoSection(id);
     if (carga) this.body.append(carga);
+    this.body.append(this.fisicaDelGrupoSection(id));
+  }
+
+  /**
+   * FÍSICA DEL CONJUNTO (v0.3.10).
+   *
+   * Al agrupar —o al soldar, que agrupa— tocar cualquier pieza selecciona el
+   * GRUPO, y este panel no traía la sección de física: masa y «Fija»
+   * desaparecían de la vista. Desde fuera se ve como si la pieza hubiera
+   * PERDIDO sus propiedades físicas, y en la práctica es peor que eso, porque
+   * son justo las que hay que tocar: el motor solo circunscribe a sus guías
+   * los cuerpos MÓVILES, así que un carro que quedó marcado como fijo deja de
+   * respetar la guía y no había forma de desmarcarlo sin desagrupar la
+   * máquina entera.
+   *
+   * Aquí se editan de una vez para todo el conjunto, y se avisa del caso que
+   * de verdad rompe cosas: piezas ENHEBRADAS en guías dentro de un conjunto
+   * fijo.
+   */
+  private fisicaDelGrupoSection(groupId: string): HTMLElement {
+    const piezas = this.editor.objetosDelGrupo(groupId);
+    const aviso = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const resumen = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const masa = el("input", { type: "number", step: "0.5", min: "0" }) as HTMLInputElement;
+    const fija = el("input", { type: "checkbox" }) as HTMLInputElement;
+
+    const enhebradas = piezas.filter((o) => (o.params.canales?.length ?? 0) > 0);
+    const refrescar = (): void => {
+      const kg = piezas.reduce((s, o) => s + o.physics.massKg, 0);
+      const fijas = piezas.filter((o) => o.physics.fixed).length;
+      if (document.activeElement !== masa) {
+        masa.value = String(roundTo(piezas.length ? kg / piezas.length : 0, 2));
+      }
+      fija.checked = fijas === piezas.length;
+      fija.indeterminate = fijas > 0 && fijas < piezas.length;
+      resumen.textContent = tt(
+        `${piezas.length} piezas · ${roundTo(kg, 1)} kg en total · `
+          + `${fijas} fija(s), ${piezas.length - fijas} móvil(es)`,
+        `${piezas.length} parts · ${roundTo(kg, 1)} kg total · `
+          + `${fijas} fixed, ${piezas.length - fijas} mobile`,
+      );
+      // El caso que rompe las guías, dicho con su nombre.
+      const atrapadas = enhebradas.filter((o) => o.physics.fixed);
+      aviso.textContent =
+        atrapadas.length > 0
+          ? tt(
+              `⚠ ${atrapadas.map((o) => o.name).join(", ")} está enhebrada en guías `
+                + "tubulares pero marcada como FIJA: así no puede correr por ellas. "
+                + "Desmarca «Fija» para que la guía la gobierne.",
+              `⚠ ${atrapadas.map((o) => o.name).join(", ")} is threaded on tubular `
+                + "guides but marked FIXED: it cannot run along them. Untick «Fixed» "
+                + "so the guide governs it.",
+            )
+          : "";
+    };
+
+    const aplicar = (fn: (o: SceneObject) => void): void => {
+      for (const o of piezas) {
+        fn(o);
+        this.editor.bus.emit("objectTransformed", { object: o });
+      }
+      refrescar();
+    };
+    masa.addEventListener("change", () => {
+      const v = parseFloat(masa.value);
+      if (!Number.isFinite(v) || v < 0) return;
+      aplicar((o) => (o.physics.massKg = v));
+    });
+    fija.addEventListener("change", () => {
+      const v = fija.checked;
+      aplicar((o) => (o.physics.fixed = v));
+    });
+
+    refrescar();
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Física del conjunto", "Assembly physics")]),
+      resumen,
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [
+          el("label", {}, [tt("Masa por pieza (kg)", "Mass per part (kg)")]),
+          masa,
+        ]),
+        el("label", { class: "rold-check" }, [fija, tt("Fijas", "Fixed")]),
+      ]),
+      aviso,
+    ]);
   }
 
   /**
