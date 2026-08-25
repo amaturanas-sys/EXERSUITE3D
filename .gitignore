@@ -13,7 +13,9 @@ pruebas/salidas/
 pruebas/*.png
 pruebas/*.prefab.json
 # Varias sueltan sus capturas en la RAÍZ, no en pruebas/: se corren desde ahí.
-/hub-*.png
-/sitio-*.png
-/v2*.png
-/ui-*.png
+# Capturas que las pruebas dejan en la RAIZ cuando se lanzan a mano desde
+# aqui en vez de por correr-todo.sh (que hace cd a pruebas/). La lista era
+# de prefijos sueltos anadidos a posteriori y cada prueba nueva con otro
+# prefijo se colaba en el commit: ahora se tapan TODOS los .png de la raiz,
+# que es donde no debe vivir ninguno.
+/*.png
