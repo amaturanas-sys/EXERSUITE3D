@@ -215,11 +215,21 @@ export class Toolbar {
   private item(
     label: string,
     onClick: () => void,
-    opts: { check?: boolean; disabled?: boolean; danger?: boolean; keep?: boolean } = {},
+    opts: {
+      check?: boolean;
+      disabled?: boolean;
+      danger?: boolean;
+      keep?: boolean;
+      /** Ayuda al pasar el ratón (ya traducida por `el`). */
+      title?: string;
+    } = {},
   ): HTMLElement {
     const b = el(
       "button",
-      { class: `menu-item${opts.danger ? " danger" : ""}${opts.check ? " checked" : ""}` },
+      {
+        class: `menu-item${opts.danger ? " danger" : ""}${opts.check ? " checked" : ""}`,
+        ...(opts.title ? { title: opts.title } : {}),
+      },
       [`${opts.check ? "✓ " : ""}${t(label)}`],
     );
     (b as HTMLButtonElement).disabled = !!opts.disabled;
@@ -325,6 +335,20 @@ export class Toolbar {
       this.item("Desagrupar", () => this.editor.ungroupSelected(), {
         disabled: !this.groupSelected,
       }),
+      // SOLDAR va junto a Agrupar porque es su hermana: el mismo gesto, pero
+      // el conjunto aguanta también en la simulación. Agrupar mueve las piezas
+      // juntas en el editor; soldar hace además que sean UN cuerpo.
+      this.item(
+        this.multi >= 2 ? `${t("🔩 Soldar")} (${this.multi})` : "🔩 Soldar",
+        () => this.editor.soldarSeleccion(),
+        {
+          disabled: this.multi < 2,
+          title: t(
+            "Agrupa las piezas Y las suelda por donde se tocan: al simular se "
+              + "mueven y chocan como un solo cuerpo",
+          ),
+        },
+      ),
     );
   }
 

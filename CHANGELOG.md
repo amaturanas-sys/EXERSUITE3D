@@ -5,6 +5,59 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.9] — 2026-08-23
+
+### Añadido
+
+**🔩 Soldar: la hermana de Agrupar, para estructuras que aguantan.** Agrupar deja
+un subensamblaje que se mueve junto **en el editor**, pero al simular sus piezas
+siguen siendo cuerpos sueltos. Un brazo compuesto de cuatro tubos agrupados,
+colgado de un extremo, se cae a cachos en el primer segundo: **97 cm** de caída de
+la punta, medidos. Para que aguantara había que ir a Conexiones y crear a mano una
+unión bloqueada por cada pareja que se toca — que es exactamente lo que el imán de
+la herramienta de nodos hace de una en una cuando se sueltan dos nodos encima.
+
+La herramienta nueva hace las dos cosas de un gesto: **agrupa igual que Agrupar y
+además suelda cada pareja del conjunto que se toca**, poniendo la unión en el
+punto donde se tocan. La física reconoce esas uniones bloqueadas y funde el
+conjunto en **un solo cuerpo rígido**: se mueve entero, choca entero y transmite
+esfuerzo entero. Está en el menú Edición, junto a Agrupar.
+
+- **El punto de la soldadura es el CENTRO de la zona de contacto**, no la esquina
+  más cercana. La primera versión buscaba el par de puntos más próximo, y en una
+  T —un codo que muere contra el canto del tramo anterior— eso daba una arista:
+  la soldadura se plantaba 1,5 cm por debajo de donde las piezas se tocan de
+  verdad.
+- **Se suelda cada pareja que se toca, no un árbol mínimo.** Una cadena de cuatro
+  tubos da tres soldaduras, no seis: las dos puntas no se tocan y no se sueldan.
+  Así, borrar una soldadura no parte el conjunto en dos.
+- **Absorbe grupos**, como Agrupar: una pieza que ya pertenecía a un conjunto —el
+  de una roldana, una máquina insertada— se trae el suyo entero, y son esas
+  piezas las que se sueldan, no solo las que se tocaron con el ratón.
+- **Avisa de lo que no pudo hacer.** Si una pieza no toca a ninguna otra, se
+  nombra: no se inventa una soldadura en el aire. Si nada se toca, se dice por
+  qué. Y si una de las piezas está marcada como **Fija**, se advierte de que el
+  conjunto quedará **anclado** al simular — que para un brazo móvil suele ser
+  justo lo contrario de lo que se busca.
+- Soldar dos veces el mismo par **no duplica** la unión.
+- Las soldaduras son uniones normales: aparecen en Conexiones como «Soldadura»,
+  se pueden **desbloquear** (y pasan a ser bisagras que giran) o borrar una a una.
+
+Comprobado con `pruebas/prueba-soldar.mjs` (19 comprobaciones): un brazo en L de
+cuatro tubos da tres soldaduras en x = 20, x = 60 y, en el codo, en (100 · 118,5)
+—el medio exacto de la franja compartida—; soldado y en caída libre llega abajo
+con **0 cm** de deformación entre sus puntas; y en voladizo, con el primer tramo
+empotrado, **la punta no baja ni un centímetro**, frente a los 97,14 cm que cae el
+mismo brazo solo agrupado.
+
+### Documentación
+
+**`AI_CONTEXT.md`** en la raíz: el mapa del repositorio para un agente de IA que
+no lo ha visto nunca — arquitectura, atributos por clase de objeto, física,
+invariantes que no se pueden romper, deuda técnica ordenada por riesgo, reglas de
+estilo y el flujo completo de un cambio hasta la release. Sale de un barrido de
+lectura del código real, con citas de archivo y línea.
+
 ## [0.3.8] — 2026-08-22
 
 ### Cambiado

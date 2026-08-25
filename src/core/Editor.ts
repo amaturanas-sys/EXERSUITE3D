@@ -95,6 +95,22 @@ export interface ConfigBisagra {
  * en un sitio concreto—, y de paso deja determinado el eje del pivote: es la
  * arista donde se encuentran los planos de las dos palas.
  */
+/**
+ * Parte de lo ocurrido al SOLDAR una selección (v0.3.9): cuántas uniones
+ * rígidas se crearon, sobre cuántas piezas, cuáles quedaron sueltas por no
+ * tocar a ninguna otra, y si el conjunto quedará anclado al simular.
+ */
+export interface ReporteSoldadura {
+  soldaduras: number;
+  piezas: number;
+  /** Nombres de las piezas que no tocan a ninguna otra del conjunto. */
+  sueltas: string[];
+  grupo: string | null;
+  /** Hay al menos una pieza FIJA: la física anclará el conjunto entero. */
+  anclado: boolean;
+  aviso: string | null;
+}
+
 export interface MontajeBisagra {
   a: { punto: THREE.Vector3; normal: THREE.Vector3 };
   b: { punto: THREE.Vector3; normal: THREE.Vector3 };
@@ -5326,6 +5342,208 @@ export class Editor {
   /** Crea un grupo (subensamblaje) a partir de la multiseleccion (>=2). */
   createGroup(): void {
     this.createGroupFromIds([...this.multiSel]);
+  }
+
+  // ------------------------------------------------------------- soldar
+  /**
+   * SOLDAR LA SELECCIÓN (v0.3.9).
+   *
+   * Agrupar deja un subensamblaje que se mueve junto EN EL EDITOR, pero al
+   * simular sus piezas siguen siendo cuerpos sueltos: un brazo compuesto de
+   * cinco tubos agrupados se desarma en el primer fotograma. Para que aguante
+   * había que ir a Conexiones y crear a mano una unión bloqueada por cada
+   * pareja que se toca — que es exactamente lo que el imán de nodos hace de
+   * una en una cuando se sueltan dos nodos encima.
+   *
+   * Esta herramienta hace las dos cosas de un gesto: agrupa como «Agrupar» y
+   * además SUELDA cada pareja de piezas del conjunto que se tocan, poniendo la
+   * unión en su punto de contacto. La física reconoce esas uniones bloqueadas,
+   * las une por componentes conexas y funde el conjunto en UN SOLO CUERPO
+   * RÍGIDO (`agruparSoldadas` / `fundirSoldadas`, src/physics/PhysicsWorld.ts),
+   * así que la estructura se mueve entera y choca entera.
+   *
+   * Las soldaduras son uniones normales: se ven en Conexiones, se pueden
+   * desbloquear (y pasan a ser bisagras) o borrar una a una.
+   */
+  soldarSeleccion(): ReporteSoldadura {
+    return this.soldarPiezas([...this.multiSel]);
+  }
+
+  /**
+   * Suelda y agrupa una lista de piezas. Devuelve un parte de lo ocurrido: la
+   * interfaz lo usa para avisar, y las pruebas para medirlo.
+   */
+  soldarPiezas(ids: string[], holguraCm = 1): ReporteSoldadura {
+    const vacio: ReporteSoldadura = {
+      soldaduras: 0,
+      piezas: 0,
+      sueltas: [],
+      grupo: null,
+      anclado: false,
+      aviso: null,
+    };
+    if (this.simulating) {
+      return {
+        ...vacio,
+        aviso: tt(
+          "No se puede soldar con la máquina en marcha: para la simulación.",
+          "Cannot weld while the machine is running: stop the simulation.",
+        ),
+      };
+    }
+    // El espacio de trabajo (suelo, paredes) no se suelda a nada.
+    const limpios = ids.filter((id) => {
+      const o = this.objects.get(id);
+      return !!o && !o.componentId.startsWith("ws-");
+    });
+    if (limpios.length < 2) {
+      return {
+        ...vacio,
+        aviso: tt(
+          "Selecciona dos o más piezas para soldarlas.",
+          "Select two or more parts to weld them.",
+        ),
+      };
+    }
+
+    // AGRUPAR PRIMERO, SOLDAR DESPUÉS. `createGroupFromIds` ABSORBE los grupos
+    // a los que ya perteneciera alguna pieza (una roldana trae su eje, una
+    // máquina insertada se trae entera), así que el conjunto final puede ser
+    // mayor que la selección — y son ESAS piezas las que hay que soldar, no
+    // las que se tocaron con el ratón.
+    const gid = this.createGroupFromIds(limpios);
+    const miembros = gid ? (this.groups.get(gid)?.ids ?? limpios) : limpios;
+    if (gid) this.renameGroup(gid, tt("Conjunto soldado", "Welded assembly"));
+
+    const piezas = miembros
+      .map((id) => this.objects.get(id))
+      .filter((o): o is SceneObject => !!o);
+    for (const o of piezas) o.mesh.updateMatrixWorld(true);
+
+    // Se suelda CADA pareja que se toca, no un árbol mínimo: así borrar una
+    // soldadura no parte el conjunto en dos, y el parte de Conexiones se
+    // parece a la estructura de verdad. La física no sufre por las de más:
+    // une por componentes conexas y las repetidas no añaden restricción.
+    let soldaduras = 0;
+    const tocadas = new Set<string>();
+    for (let i = 0; i < piezas.length; i++) {
+      for (let j = i + 1; j < piezas.length; j++) {
+        const a = piezas[i];
+        const b = piezas[j];
+        // `piezasSeparadas` con tolerancia NEGATIVA exige un hueco real mayor
+        // que la holgura: así se sueldan las que se tocan y las que se
+        // interpenetran, y no las que solo pasan cerca.
+        if (this.piezasSeparadas(a, b, -Math.abs(holguraCm))) continue;
+        tocadas.add(a.id);
+        tocadas.add(b.id);
+        if (this.soldarPar(a, b, this.puntoDeContacto(a, b))) soldaduras++;
+      }
+    }
+
+    const sueltas = piezas.filter((o) => !tocadas.has(o.id)).map((o) => o.name);
+    // CONJUNTO ANCLADO: la física ancla el grupo soldado entero si UNA sola de
+    // sus piezas está fijada (src/physics/PhysicsWorld.ts, `agruparSoldadas`).
+    // Para un brazo móvil eso es justo lo contrario de lo que se busca, así que
+    // se avisa — pero no se le toca la física a nadie a sus espaldas.
+    const anclado = piezas.some((o) => o.physics.fixed);
+
+    this.refreshJointHelpers();
+    this.bus.emit("jointsChanged", { joints: this.listJoints() });
+    this.scheduleAutosave();
+    this.requestRender();
+
+    let aviso: string | null = null;
+    if (soldaduras === 0) {
+      aviso = tt(
+        "Ninguna de las piezas se toca: acércalas hasta que se rocen y vuelve a soldar.",
+        "None of the parts touch: bring them together until they meet and weld again.",
+      );
+    } else if (sueltas.length > 0) {
+      aviso = tt(
+        `⚠ ${soldaduras} soldadura(s). ${sueltas.length} pieza(s) quedaron SUELTAS `
+          + `(no tocan a ninguna otra): ${sueltas.join(", ")}`,
+        `⚠ ${soldaduras} weld(s). ${sueltas.length} part(s) were left LOOSE `
+          + `(they touch no other): ${sueltas.join(", ")}`,
+      );
+    } else if (anclado) {
+      aviso = tt(
+        `🔩 ${soldaduras} soldadura(s). Ojo: hay una pieza FIJA en el conjunto, `
+          + "así que al simular quedará anclado entero. Quítale «Fija» en "
+          + "Propiedades si lo quieres móvil.",
+        `🔩 ${soldaduras} weld(s). Note: one part is FIXED, so the whole assembly `
+          + "will be anchored when simulating. Untick «Fixed» in Properties to "
+          + "make it mobile.",
+      );
+    } else {
+      aviso = tt(
+        `🔩 ${soldaduras} soldadura(s): las ${piezas.length} piezas se mueven y `
+          + "chocan como un solo cuerpo.",
+        `🔩 ${soldaduras} weld(s): the ${piezas.length} parts now move and collide `
+          + "as a single body.",
+      );
+    }
+    this.avisoTemporal(aviso);
+    return { soldaduras, piezas: piezas.length, sueltas, grupo: gid, anclado, aviso };
+  }
+
+  /**
+   * PUNTO DE CONTACTO entre dos piezas: el CENTRO de la zona donde se solapan
+   * sus cajas ORIENTADAS.
+   *
+   * La primera versión buscaba el par de puntos más cercano de las dos cajas,
+   * y para dos tubos enfrentados de punta daba el punto justo. Pero en una T
+   * —el codo de un brazo que muere contra el canto del tramo anterior— el
+   * punto más cercano es una ARISTA de la zona de contacto, no su medio: el
+   * codo caía 20 cm por debajo del otro tubo y la soldadura se plantaba en la
+   * esquina de abajo. Ahora se mide el intervalo de solape a lo largo de cada
+   * eje de cada caja y se toma su punto medio, que es donde de verdad se
+   * tocan. Cuando las piezas no llegan a tocarse, ese mismo punto medio cae en
+   * mitad del hueco, que es lo razonable.
+   */
+  private puntoDeContacto(a: SceneObject, b: SceneObject): THREE.Vector3 {
+    const A = this.cajaOrientada(a);
+    const B = this.cajaOrientada(b);
+    const radio = (caj: typeof A, L: THREE.Vector3): number =>
+      caj.e[0] * Math.abs(caj.u[0].dot(L)) +
+      caj.e[1] * Math.abs(caj.u[1].dot(L)) +
+      caj.e[2] * Math.abs(caj.u[2].dot(L));
+    // Centro del solape visto desde los ejes de UNA de las cajas.
+    const medioSegun = (P: typeof A, Q: typeof A): THREE.Vector3 => {
+      const p = P.c.clone();
+      for (let i = 0; i < 3; i++) {
+        const eje = P.u[i];
+        const rQ = radio(Q, eje);
+        const cP = P.c.dot(eje);
+        const cQ = Q.c.dot(eje);
+        const lo = Math.max(cP - P.e[i], cQ - rQ);
+        const hi = Math.min(cP + P.e[i], cQ + rQ);
+        p.addScaledVector(eje, (lo + hi) / 2 - cP);
+      }
+      return p;
+    };
+    // Las dos cajas pueden estar giradas entre sí, así que se mira desde las
+    // dos y se promedia: con piezas a escuadra las dos dan lo mismo.
+    return medioSegun(A, B).add(medioSegun(B, A)).multiplyScalar(0.5);
+  }
+
+  /**
+   * Crea UNA soldadura entre dos piezas si no la había ya. Devuelve true si la
+   * creó. Es el mismo herraje invisible que planta el imán de nodos: una unión
+   * de revolución BLOQUEADA, que para la física es un cuerpo rígido común.
+   */
+  private soldarPar(a: SceneObject, b: SceneObject, punto: THREE.Vector3): boolean {
+    if (a === b) return false;
+    for (const j of this.joints.values()) {
+      const mismoPar =
+        (j.bodyAId === a.id && j.bodyBId === b.id) ||
+        (j.bodyAId === b.id && j.bodyBId === a.id);
+      if (mismoPar && j.anchor.distanceTo(punto) < 4) return false;
+    }
+    const joint = this.connect(b.id, a.id, "revolute", punto.clone());
+    if (!joint) return false;
+    joint.locked = true;
+    joint.name = `Soldadura ${joint.id.split("_")[1]}`;
+    return true;
   }
 
   /** Crea un grupo a partir de una lista de ids (>=2). Devuelve el id del grupo. */

@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-23. **Versión del código:** 0.3.8.
+> **Fecha del barrido:** 2026-08-23. **Versión del código:** 0.3.9.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -607,6 +607,9 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
 - **Guías tubulares** completas: canal perforado, topes, trayectoria circunscrita.
 - **Bisagra real** con herraje visible (dos placas + pasador) y colisión real
   entre las piezas.
+- **Soldar** (v0.3.9): agrupa y suelda por los puntos de contacto, de modo que el
+  conjunto se funde en un solo cuerpo rígido al simular. Es la puerta de entrada
+  a las estructuras compuestas móviles (brazos de press, jammer arms).
 - **Cables multipolea** con desmultiplicación emergente de la geometría.
 - **El maniquí**: rig escaneado, posturas, gesto por zonas, IK de manos y pies.
 - **La serialización**: proyectos, prefabs y máquinas van y vienen sin pérdida.
