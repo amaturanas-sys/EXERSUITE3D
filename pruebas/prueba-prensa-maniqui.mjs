@@ -236,7 +236,13 @@ const pisada = await page.evaluate(({ AYUDA, ids }) => {
   const placa = ed.objects.get(ids.placa);
   const geo = placa.mesh.geometry;
   const P = Object.getPrototypeOf(ed);
-  // El pie derecho se apoya con la API, sobre la MISMA cara inferior.
+  // LOS DOS PIES SE FIJAN POR API, en un punto conocido de la cara inferior.
+  // El clic de la sección 3 ya cumplió su papel —comprobar que la cara se
+  // captura y se orienta hacia el cuerpo—, pero DÓNDE cae exactamente depende
+  // del encuadre de la cámara, y con el pie en un extremo de la placa la
+  // pierna arranca casi estirada y las medidas de la sección 5 miden otra
+  // cosa. Aquí se busca cinemática, no punteria.
+  ed.attachFoot("L", placa.id, new T.Vector3(-12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
   ed.attachFoot("R", placa.id, new T.Vector3(12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
   for (let i = 0; i < 3; i++) { P.updateFootIK.call(ed); ed.humanFigure.updateMatrixWorld(true); }
   const cara = () => {

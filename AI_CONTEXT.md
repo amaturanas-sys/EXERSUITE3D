@@ -644,6 +644,12 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
 - Si el `vite preview` se muere a media tanda, se lleva por delante todas las que
   corrían (`ERR_CONNECTION_REFUSED`). No es un fallo de la aplicación.
 - `prueba-sitio` necesita el Next.js levantado en el 3100; las otras no.
+- **Una prueba que CLICA en el visor mide dos cosas a la vez** y sólo quiere
+  medir una. En `prueba-prensa-maniqui` el clic sobre la placa validaba la
+  captura de la cara Y decidía dónde acababa el pie: con el encuadre de la
+  cámara movido, el pie caía en un extremo, la pierna arrancaba casi estirada y
+  la sección de cinemática medía otra cosa. La captura se comprueba con el
+  clic; los apoyos se fijan por API en un punto conocido.
 - **`prueba-maquina-entera` falla a veces AUNQUE se corra sola**, y ya lo hacía
   en v0.3.10: su comprobación «simular no desarma la máquina» salta en unas 2 de
   cada 5 pasadas, con la misma pieza yéndose 41–51 cm. Verificado a mano contra
