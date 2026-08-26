@@ -133,9 +133,29 @@ const puntoPlaca = await page.evaluate(({ ids }) => {
     const q = v.clone().project(ed.sceneManager.camera);
     return { x: Math.round((q.x * 0.5 + 0.5) * rect.width), y: Math.round((-q.y * 0.5 + 0.5) * rect.height) };
   };
-  const cara = new T.Vector3(-12, geo.boundingBox.max.y, 10).applyMatrix4(placa.mesh.matrixWorld);
+  // EL PUNTO DE CLIC SE BUSCA, no se supone. Proyectar una coordenada local
+  // fija depende de dónde haya quedado la cámara: rozando el canto, el rayo
+  // devuelve la cara lateral y la prueba mide otra cosa. Se recorre la cara
+  // superior y se elige el primer sitio donde el rayo cae de verdad sobre ella.
+  let elegido = null;
+  for (let lz = 14; lz >= -14 && !elegido; lz -= 4) {
+    for (const lx of [-12, -14, -10, -16, -8]) {
+      const w = new T.Vector3(lx, geo.boundingBox.max.y, lz).applyMatrix4(placa.mesh.matrixWorld);
+      const q = w.clone().project(ed.sceneManager.camera);
+      ed.raycaster.setFromCamera(new T.Vector2(q.x, q.y), ed.sceneManager.camera);
+      const h = ed.raycaster.intersectObjects(ed.sceneManager.content.children, true)[0];
+      if (!h || !h.face) continue;
+      const n = h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize();
+      if (Math.abs(n.y) < 0.3) continue;
+      let oid = null;
+      for (let x = h.object; x && !oid; x = x.parent) if (x.userData.sceneObjectId) oid = x.userData.sceneObjectId;
+      if (oid !== placa.id) continue;
+      elegido = aPantalla(w);
+      break;
+    }
+  }
   const rodilla = ed.figureJoints().kneeL.getWorldPosition(new T.Vector3());
-  return { placa: aPantalla(cara), rodilla: aPantalla(rodilla) };
+  return { placa: elegido, rodilla: aPantalla(rodilla) };
 }, { ids: montaje.ids });
 await page.evaluate(() => window.exersuite.editor.beginAttachFoot());
 await page.mouse.click(puntoPlaca.rodilla.x, puntoPlaca.rodilla.y); await page.waitForTimeout(250);
