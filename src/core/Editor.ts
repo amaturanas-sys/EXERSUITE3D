@@ -51,6 +51,13 @@ import { SnapManager, localSnapPoints } from "./snapping";
 const PULLEY_IDS = new Set(["roldana", "polea", "bloque-poleas"]);
 
 /**
+ * Cuánto puede recostarse el maniquí para copiar la inclinación de un
+ * respaldo (grados). Una prensa de piernas ronda los 50°; el tope existe para
+ * que una pieza mal medida no acabe tumbando a la figura del todo.
+ */
+const RECLINACION_MAX = 60;
+
+/**
  * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
  * proyecto: la elección no depende de desde dónde se esté mirando.
  */
@@ -3080,6 +3087,9 @@ export class Editor {
           side,
           objectId: t.objectId,
           local: [t.local.x, t.local.y, t.local.z] as [number, number, number],
+          normal: t.normal
+            ? ([t.normal.x, t.normal.y, t.normal.z] as [number, number, number])
+            : null,
         })),
         locks: [...this.jointLocks],
         symmetry: this.poseSymmetry,
@@ -3087,6 +3097,7 @@ export class Editor {
         // ellos, reabrir el proyecto perdía el punto de partida del ejercicio.
         support: this.figuraApoyadaEn,
         supportY: this.alturaDelApoyo,
+        backSupport: this.apoyoEspalda,
         zones: [...this.zonasActivas].map(([id, side]) => ({ id, side })),
         startPose: this.poseDePartida,
         startPoseName: this.nombreDePartida,
@@ -3517,6 +3528,9 @@ export class Editor {
         // debe re-aterrizar, o el maniquí sentado acabaría en el suelo.
         this.figuraApoyadaEn = data.human.support === "pieza" ? "pieza" : "suelo";
         this.alturaDelApoyo = data.human.supportY ?? null;
+        this.apoyoEspalda = data.human.backSupport
+          ? idMap.get(data.human.backSupport) ?? null
+          : null;
         fig.position.fromArray(data.human.position);
         fig.quaternion.fromArray(data.human.quaternion);
         const joints = this.figureJoints();
@@ -3533,7 +3547,13 @@ export class Editor {
         }
         for (const f of data.human.feet ?? []) {
           const oid = idMap.get(f.objectId);
-          if (oid) this.attachFoot(f.side, oid, new THREE.Vector3().fromArray(f.local));
+          if (!oid) continue;
+          this.attachFoot(
+            f.side,
+            oid,
+            new THREE.Vector3().fromArray(f.local),
+            f.normal ? new THREE.Vector3().fromArray(f.normal) : null,
+          );
         }
         // Zonas de movimiento y POSTURA DE PARTIDA guardadas con el proyecto.
         // Un proyecto anterior a v0.2.49 no las trae: se vuelve a la de fábrica
@@ -7022,6 +7042,11 @@ export class Editor {
       fig.position.y += this.alturaDelApoyo - this.baseDeApoyoSentado(fig);
       fig.updateMatrixWorld(true);
     }
+    // LA ESPALDA VUELVE A SU RESPALDO. Es lo que fija a la persona en la
+    // máquina: sin replantarla, el primer gesto de tren inferior la empujaba
+    // hacia delante y acababa de pie (v0.3.11).
+    const respaldo = this.apoyoEspalda ? this.objects.get(this.apoyoEspalda) : undefined;
+    if (respaldo) this.deslizarHastaElRespaldo(fig, respaldo);
     this.noHundirse();
   }
 
@@ -7074,30 +7099,6 @@ export class Editor {
       fig.position.y += resto;
       fig.updateMatrixWorld(true);
     }
-  }
-
-  /** Cota mundial de la planta del pie (cm), o null si no hay pie. */
-  private plantaDelPie(side: HandSide): number | null {
-    const fig = this.humanFigure;
-    if (!fig) return null;
-    let malla: THREE.Mesh | null = null;
-    fig.traverse((n) => {
-      const m = n as THREE.Mesh;
-      if (m.isMesh && m.userData.segmentId === `pie-${side}`) malla = m;
-    });
-    if (!malla) return null;
-    // La PLANTA es un punto concreto del pie, no el fondo de su caja en el
-    // mundo. La diferencia importa desde que el maniquí es un cuerpo troceado:
-    // la pieza del pie lleva un collarín que sube 8,5 cm por la pierna para que
-    // el tobillo no se abra al doblarlo, y al girar el pie ese collarín puede
-    // quedar MÁS BAJO que la suela. Midiendo la caja, la IK creía que la planta
-    // estaba donde estaba el filo del collarín y corregía contra un punto que
-    // no pisa nada: la planta se quedaba 9,8 cm por debajo de la plataforma.
-    //
-    // Se busca el vértice más bajo en el espacio del PROPIO pie —que es una
-    // constante de la pieza— y se lleva al mundo. Así la planta sigue al pie
-    // cuando gira, y el collarín no cuenta.
-    return this.masBajoPropio(malla as THREE.Mesh);
   }
 
   /**
@@ -7209,6 +7210,13 @@ export class Editor {
   private figuraApoyadaEn: "suelo" | "pieza" = "suelo";
   /** Cota de la cara sobre la que se sentó, para volver a posarla en ella. */
   private alturaDelApoyo: number | null = null;
+  /**
+   * Respaldo contra el que descansa la espalda, si lo hay. Se guarda para
+   * REPLANTARLA en cada re-apoyo: sin esto la espalda se despegaba en cuanto
+   * una postura o un gesto tocaba al maniquí, y sin apoyo detrás el tren
+   * inferior lo empujaba fuera del asiento (v0.3.11).
+   */
+  private apoyoEspalda: string | null = null;
 
   /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */
   captureCurrentPose(): PoseDef {
@@ -7836,7 +7844,16 @@ export class Editor {
    * sentado en un banco alto cuelgan. Apoyar un pie es lo mismo que apoyar una
    * mano, pero resolviendo cadera→rodilla→tobillo.
    */
-  private footTargets = new Map<HandSide, { objectId: string; local: THREE.Vector3 }>();
+  /**
+   * Pies apoyados. `normal` es la NORMAL DE LA CARA que se pisa, en el espacio
+   * de la pieza: sin ella la IK daba por hecho que toda superficie es
+   * horizontal y en una plataforma inclinada —la de una prensa de piernas— el
+   * pie la atravesaba (5,6 cm medidos con la placa de 3 cm de grosor).
+   */
+  private footTargets = new Map<
+    HandSide,
+    { objectId: string; local: THREE.Vector3; normal?: THREE.Vector3 }
+  >();
 
   /** Entra en modo: clic en un pie/pierna de la figura y luego en la superficie. */
   beginAttachFoot(): void {
@@ -7850,9 +7867,18 @@ export class Editor {
   }
 
   /** Apoya un pie (lado) en el punto local de una pieza (plataforma, pedal). */
-  attachFoot(side: HandSide, objectId: string, local: THREE.Vector3): void {
+  attachFoot(
+    side: HandSide,
+    objectId: string,
+    local: THREE.Vector3,
+    normal?: THREE.Vector3 | null,
+  ): void {
     if (!this.objects.has(objectId)) return;
-    this.footTargets.set(side, { objectId, local: local.clone() });
+    this.footTargets.set(side, {
+      objectId,
+      local: local.clone(),
+      normal: normal && normal.lengthSq() > 1e-8 ? normal.clone().normalize() : undefined,
+    });
   }
 
   detachFeet(): void {
@@ -7873,6 +7899,7 @@ export class Editor {
     const joints = this.figureJoints();
     if (!joints) return;
     const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(this.humanFigure.quaternion);
+    const derecha = new THREE.Vector3(1, 0, 0).applyQuaternion(this.humanFigure.quaternion);
     for (const [side, t] of [...this.footTargets]) {
       const obj = this.objects.get(t.objectId);
       if (!obj) {
@@ -7885,32 +7912,142 @@ export class Editor {
       const rodilla = joints[`knee${side}`];
       const tobillo = joints[`ankle${side}`];
       if (!cadera || !rodilla || !tobillo) continue;
+      // LA SUPERFICIE MANDA SU NORMAL, y todo lo que sigue se mide contra ella
+      // en vez de contra el eje Y del mundo (v0.3.11). Con una plataforma
+      // horizontal la normal ES +Y y esto se comporta exactamente como antes;
+      // con la placa inclinada de una prensa, medir en Y significaba dejar la
+      // suela a la altura del punto tocado mientras la placa seguía subiendo
+      // hacia la puntera: el pie la atravesaba.
+      const normal = this.normalDePisada(t, obj);
       // Lo que pisa es la PLANTA, no el tobillo. La IK resuelve la posición
-      // del tobillo, así que el objetivo sube lo que el pie cuelga por debajo
-      // de él; sin esta corrección la planta quedaba 9 cm dentro de la
-      // plataforma en vez de encima.
-      const suelo = target.y;
-      target.y += this.altoDelPie(side);
-      solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
-      this.nivelarTobillo(tobillo);
+      // del tobillo, así que el objetivo se separa de la cara lo que el pie
+      // cuelga por debajo de él; sin esta corrección la planta quedaba 9 cm
+      // dentro de la plataforma en vez de encima.
+      // HACIA DÓNDE SALE LA RODILLA. La IK proyecta el polo sobre el plano
+      // perpendicular a la pierna, así que pasarle el frente de la figura sólo
+      // vale mientras frente y pierna no se alineen. En una prensa reclinada sí
+      // se alinean (0,99 de coseno medido): la proyección quedaba en nada, su
+      // normalización amplificaba el ruido y la rodilla saltaba de un lado a
+      // otro — la suela oscilaba hasta 18 cm dentro de la placa.
+      //
+      // La rodilla es una BISAGRA: su eje es el eje izquierda-derecha del
+      // cuerpo, así que dobla en el plano sagital pase lo que pase. Ese polo
+      // —perpendicular a la pierna por construcción— no se degenera nunca
+      // salvo con la pierna apuntando de lado, y para ese caso queda el frente.
+      const haciaElPie = target.clone().sub(cadera.getWorldPosition(new THREE.Vector3()));
+      const polo = new THREE.Vector3().crossVectors(derecha, haciaElPie);
+      if (polo.lengthSq() < 1e-4) polo.copy(frente);
+      else if (polo.dot(frente) < 0) polo.negate();
+      polo.normalize();
+      const cara = normal.dot(target);
+      const tocado = target.clone();
+      // HASTA DONDE LLEGA LA PIERNA. Si el punto pisado le queda lejos, la IK
+      // deja el tobillo corto y la suela se hunde en la placa por debajo del
+      // punto tocado: es el «pie atravesando la plataforma» del que avisó el
+      // diseñador. Acercar el objetivo SOBRE LA MISMA CARA —el punto más
+      // próximo que la pierna alcanza sin salirse del plano— deja la planta
+      // apoyada y honesta: la persona pisa donde llega, no donde no llega.
+      const alcance = cadera.getWorldPosition(new THREE.Vector3())
+        .distanceTo(rodilla.getWorldPosition(new THREE.Vector3()))
+        + rodilla.getWorldPosition(new THREE.Vector3())
+          .distanceTo(tobillo.getWorldPosition(new THREE.Vector3()));
+      const cadPos = cadera.getWorldPosition(new THREE.Vector3());
+      const enLaCara = (p: THREE.Vector3): THREE.Vector3 => {
+        if (p.distanceTo(cadPos) <= alcance - 0.5) return p;
+        const h = normal.dot(cadPos) - normal.dot(p);
+        const centro = cadPos.clone().addScaledVector(normal, -h);
+        const r2 = alcance * alcance - h * h;
+        if (r2 <= 0.25) return centro;
+        const r = Math.sqrt(r2) - 0.5;
+        const v = p.clone().sub(centro);
+        if (v.length() <= r) return p;
+        return centro.addScaledVector(v.normalize(), r);
+      };
+      target.addScaledVector(normal, this.altoDelPie(side));
+      target.copy(enLaCara(target));
+      solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+      this.nivelarTobillo(tobillo, normal);
+      // CUÁNTO CUELGA LA SUELA BAJO EL TOBILLO SE MIDE, no se predice
+      // (v0.3.11). `altoDelPie` lo estima suponiendo que la pieza del pie
+      // cuelga a plomo del pivote, y con el tobillo ya nivelado contra una cara
+      // inclinada la estimación se iba varios centímetros: la planta quedaba
+      // flotando 4 cm sobre la placa o metida dentro de ella. Nivelado, ese
+      // vuelo es una CONSTANTE de la pieza, así que basta medirlo una vez y
+      // rehacer el objetivo con él — sin perseguirlo fotograma a fotograma,
+      // que es lo que hacía oscilar la pierna.
+      this.humanFigure.updateMatrixWorld(true);
+      const primera = this.plantaSegunNormal(side, normal);
+      if (primera !== null) {
+        const vuelo = normal.dot(tobillo.getWorldPosition(new THREE.Vector3())) - primera;
+        target.copy(enLaCara(tocado.clone().addScaledVector(normal, vuelo)));
+        solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+        this.nivelarTobillo(tobillo, normal);
+      }
       // Y se remata con el residuo REAL: con la pierna en ángulo el tobillo no
       // queda justo encima de la planta, así que se mide dónde acabó la suela y
-      // se SUBE el objetivo lo que falte.
+      // se corrige el objetivo lo que falte, HASTA QUE LA SUELA SE POSA.
       //
-      // Dos cautelas, ambas aprendidas a base de verla salir disparada: hay que
-      // refrescar las matrices antes de medir (si no se lee la pose del
-      // fotograma anterior y la corrección se realimenta), y la corrección solo
-      // puede SUBIR y va acotada — con el objetivo fuera del alcance de la
-      // pierna la suela no responde como se predice y una corrección libre
+      // Es un lazo y no un solo retoque (v0.3.11) porque nivelar el tobillo
+      // vuelve a mover la suela: con una sola pasada la planta se quedaba
+      // 1,5 cm dentro de la placa parada y hasta 17,7 cm en marcha. Las
+      // cautelas de siempre siguen valiendo: refrescar las matrices antes de
+      // medir (si no se lee la pose del fotograma anterior y la corrección se
+      // realimenta) y ACOTAR cada paso — con el objetivo fuera del alcance de
+      // la pierna la suela no responde como se predice y una corrección libre
       // diverge.
       this.humanFigure.updateMatrixWorld(true);
-      const sola = this.plantaDelPie(side);
-      if (sola !== null && suelo - sola > 0.3) {
-        target.y += Math.min(suelo - sola, 8);
-        solveTwoBoneIK(cadera, rodilla, tobillo, target, frente);
-        this.nivelarTobillo(tobillo);
+      const sola = this.plantaSegunNormal(side, normal);
+      if (sola !== null && cara - sola > 0.3) {
+        target.copy(enLaCara(target.addScaledVector(normal, Math.min(cara - sola, 8))));
+        solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+        this.nivelarTobillo(tobillo, normal);
       }
     }
+  }
+
+  /**
+   * Normal MUNDIAL de la cara que se pisa. Sin normal guardada —apoyos de
+   * proyectos anteriores— se supone horizontal, que es lo que la aplicación
+   * daba por hecho hasta v0.3.11. Se orienta siempre hacia arriba: se pisa
+   * POR ENCIMA de la cara, y la normal cruda de una cara puede venir al revés
+   * según cómo esté volteada la pieza.
+   */
+  private normalDePisada(
+    t: { local: THREE.Vector3; normal?: THREE.Vector3 },
+    obj: SceneObject,
+  ): THREE.Vector3 {
+    if (!t.normal) return new THREE.Vector3(0, 1, 0);
+    const n = t.normal.clone().transformDirection(obj.mesh.matrixWorld).normalize();
+    if (!Number.isFinite(n.x) || n.lengthSq() < 0.5) return new THREE.Vector3(0, 1, 0);
+    if (n.y < 0) n.negate();
+    return n;
+  }
+
+  /**
+   * Cota de la PLANTA medida a lo largo de una normal (cm), o null si no hay
+   * pie. Con la normal +Y esto es exactamente `plantaDelPie`; con una cara
+   * inclinada es la única medida que dice si la suela está por dentro o por
+   * fuera de la placa.
+   */
+  private plantaSegunNormal(side: HandSide, normal: THREE.Vector3): number | null {
+    const fig = this.humanFigure;
+    if (!fig) return null;
+    let malla: THREE.Mesh | null = null;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === `pie-${side}`) malla = m;
+    });
+    if (!malla) return null;
+    const m = malla as THREE.Mesh;
+    m.updateWorldMatrix(true, false);
+    const v = new THREE.Vector3();
+    let min = Infinity;
+    for (const p of this.pielPropia(m)) {
+      v.copy(p).applyMatrix4(m.matrixWorld);
+      const d = normal.dot(v);
+      if (d < min) min = d;
+    }
+    return Number.isFinite(min) ? min : null;
   }
 
   /**
@@ -7928,12 +8065,40 @@ export class Editor {
    * plana, que es lo que hace un pie al pisar — con este cuerpo y con las
    * primitivas.
    */
-  private nivelarTobillo(tobillo: THREE.Object3D): void {
+  private nivelarTobillo(tobillo: THREE.Object3D, normal?: THREE.Vector3): void {
     if (!this.humanFigure) return;
     tobillo.updateWorldMatrix(true, false);
     const q = this.humanFigure.getWorldQuaternion(new THREE.Quaternion());
-    const actual = tobillo.getWorldQuaternion(new THREE.Quaternion());
-    tobillo.quaternion.premultiply(actual.invert().multiply(q));
+    // NIVELAR ES RESPECTO DE LA CARA QUE SE PISA, no del horizonte. Sobre una
+    // placa inclinada el pie tiene que acostarse SOBRE ella: dejarlo horizontal
+    // metía la puntera dentro de la placa por mucho que el punto tocado
+    // estuviera en su superficie. Con la cara horizontal el marco que sale de
+    // aquí es el de la figura, que es lo que se hacía hasta v0.3.11.
+    if (normal && Math.abs(normal.y) < 0.999) {
+      const arriba = normal.clone().normalize();
+      // EL MARCO SE LEVANTA DESDE EL EJE IZQUIERDA-DERECHA, no desde el frente.
+      // Recostada 50° en una prensa, la figura «mira» hacia arriba y adelante,
+      // que es casi la misma dirección que la normal de la placa (0,996 de
+      // coseno medido): proyectar el frente sobre el plano de la cara dejaba un
+      // vector diminuto, su normalización era ruido puro y el pie salía girado
+      // al azar — la suela acababa 25 cm por debajo del tobillo en vez de 7. El
+      // eje izquierda-derecha del cuerpo es horizontal y nunca se alinea con la
+      // normal de una superficie que se pisa.
+      const derecha = new THREE.Vector3(1, 0, 0).applyQuaternion(q).projectOnPlane(arriba);
+      if (derecha.lengthSq() < 1e-6) derecha.set(1, 0, 0).projectOnPlane(arriba);
+      if (derecha.lengthSq() < 1e-6) return;
+      derecha.normalize();
+      const frente = new THREE.Vector3().crossVectors(derecha, arriba).normalize();
+      q.setFromRotationMatrix(new THREE.Matrix4().makeBasis(derecha, arriba, frente));
+    }
+    // El local que deja el mundo en `q` es el inverso del padre por `q`. La
+    // primera versión componía el corrector por la izquierda del local, que
+    // solo coincide cuando los giros conmutan: con el tobillo ya girado por la
+    // tibia y una cara inclinada dejaba de coincidir, y el pie salía torcido.
+    const padre = tobillo.parent
+      ? tobillo.parent.getWorldQuaternion(new THREE.Quaternion())
+      : new THREE.Quaternion();
+    tobillo.quaternion.copy(padre.invert().multiply(q));
   }
 
   /**
@@ -11440,9 +11605,15 @@ export class Editor {
       // hundía media pelvis dentro de la pieza (8,8 cm medidos). Se levanta lo
       // que haga falta para que la carne SE POSE sobre la superficie.
       fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
+      // Y la espalda contra el respaldo: un apoyo solo apoya si se toca, y en
+      // un respaldo RECLINADO tocarlo exige reclinarse (v0.3.11) — deslizar
+      // hacia atrás con el tronco vertical dejaba la espalda a 11,5 cm de la
+      // placa, tocando sólo con la pelvis.
+      const respaldo = this.respaldoDelAsiento(destino.punto);
+      this.apoyoEspalda = respaldo?.id ?? null;
+      if (respaldo) this.reclinarComoElRespaldo(fig, respaldo, frente);
       fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
-      // Y la espalda contra el respaldo: un apoyo solo apoya si se toca.
-      this.apoyarContraRespaldo(fig, frente, destino.punto);
+      if (respaldo) this.deslizarHastaElRespaldo(fig, respaldo);
       // Sentada en un banco bajo, la pierna no cabe entre el asiento y el
       // suelo: se estira la rodilla, como haría cualquiera.
       this.noHundirse();
@@ -11455,10 +11626,13 @@ export class Editor {
       }
       this.figuraApoyadaEn = "suelo";
       this.alturaDelApoyo = null;
+      this.apoyoEspalda = null;
       this.applyPose("De pie", false);
       fig.position.set(destino.punto.x, 0, destino.punto.z);
+      // De pie no hay reclinación que valga: sólo mira hacia donde toca. (En
+      // el asiento el giro ya quedó puesto arriba, con su inclinación.)
+      fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
     }
-    fig.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(frente.x, frente.z));
     if (!destino.obj) (fig.userData.ground as (() => void) | undefined)?.();
     this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
     // Colocar define la PARTIDA: es el sitio y la pose desde los que arranca.
@@ -11718,22 +11892,81 @@ export class Editor {
   }
 
   /**
-   * APOYAR LA ESPALDA (v0.2.46). Un respaldo solo sirve si el cuerpo lo TOCA:
-   * la figura se desliza hacia atrás hasta el instante justo antes de meterse
-   * en él. Sin esto quedaba sentada en el aire, a 29 cm del respaldo, y
-   * cualquier medida de esfuerzo salía falseada porque no había punto de
-   * apoyo desde el que empujar.
+   * APOYAR LA ESPALDA (v0.2.46, reclinada en v0.3.11). Un respaldo solo sirve
+   * si el cuerpo lo TOCA: la figura se recuesta con su misma inclinación y se
+   * desliza hacia atrás hasta el instante justo antes de meterse en él. Sin
+   * esto quedaba sentada en el aire, a 29 cm del respaldo, y cualquier medida
+   * de esfuerzo salía falseada porque no había punto de apoyo desde el que
+   * empujar.
+   *
+   * El respaldo del asiento, si está AL ALCANCE (v0.2.51). La búsqueda es
+   * global y sin radio: en una sala con varias máquinas, el respaldo de la de
+   * al lado hacía retroceder a quien se sentaba en un banco. Como nunca
+   * llegaba a tocarlo, agotaba los pasos del bucle y lo dejaba 45 cm más
+   * atrás, fuera del banco.
    */
-  private apoyarContraRespaldo(fig: THREE.Group, frente: THREE.Vector3, cerca: THREE.Vector3): void {
+  private respaldoDelAsiento(cerca: THREE.Vector3): SceneObject | null {
     const respaldo = this.piezaCercana(
       cerca,
       (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo",
     );
-    // AL ALCANCE O NADA (v0.2.51). La búsqueda es global y sin radio: en una
-    // sala con varias máquinas, el respaldo de la de al lado hacía retroceder
-    // a quien se sentaba en un banco. Como nunca llegaba a tocarlo, agotaba
-    // los 45 pasos del bucle y lo dejaba 45 cm más atrás, fuera del banco.
-    if (!respaldo || respaldo.mesh.position.distanceTo(cerca) > 90) return;
+    if (!respaldo || respaldo.mesh.position.distanceTo(cerca) > 90) return null;
+    return respaldo;
+  }
+
+  /**
+   * LA ESPALDA COPIA LA INCLINACIÓN DEL RESPALDO (v0.3.11).
+   *
+   * En una prensa de piernas el respaldo va tumbado 50° y el asiento otros
+   * tantos: quien se sienta ahí se RECUESTA, no se queda erguido. Deslizando
+   * hacia atrás con el tronco vertical solo llegaba a tocar con la pelvis y la
+   * espalda se quedaba a 11,5 cm de la placa; sin ese apoyo detrás, el empuje
+   * del tren inferior no tenía contra qué hacerse y sacaba a la figura del
+   * asiento.
+   *
+   * La inclinación se MIDE en la propia pieza: de sus tres ejes se toma el más
+   * DELGADO —el grosor de la placa, que es su normal— orientado hacia quien se
+   * sienta, y lo que ese vector se levanta sobre la horizontal es lo que se
+   * recuesta el cuerpo. Un respaldo vertical da 0° y todo queda como estaba.
+   */
+  private reclinarComoElRespaldo(
+    fig: THREE.Group,
+    respaldo: SceneObject,
+    frente: THREE.Vector3,
+  ): void {
+    const caja = this.cajaDePieza(respaldo);
+    let iFino = 0;
+    for (let i = 1; i < 3; i++) if (caja.h[i] < caja.h[iFino]) iFino = i;
+    const normal = caja.e[iFino].clone().normalize();
+    if (normal.dot(frente) < 0) normal.negate();
+    const theta = Math.asin(Math.max(0, Math.min(1, normal.y)));
+    // Menos de 5° es un respaldo recto: no se toca nada, y así los bancos de
+    // siempre siguen comportándose exactamente igual.
+    if (theta < degToRad(5)) return;
+    const q = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      Math.atan2(frente.x, frente.z),
+    );
+    // Girar POSITIVO alrededor del eje X local echa el cuerpo hacia delante,
+    // así que recostarse es el signo contrario.
+    q.multiply(
+      new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(1, 0, 0),
+        -Math.min(theta, degToRad(RECLINACION_MAX)),
+      ),
+    );
+    fig.quaternion.copy(q);
+    fig.updateMatrixWorld(true);
+  }
+
+  /**
+   * Acerca (o separa) la figura de su respaldo hasta dejarla justo tocándolo.
+   *
+   * Es IDEMPOTENTE a propósito: se llama en cada re-apoyo, y una versión que
+   * solo supiera retroceder iría metiendo el cuerpo un poco más dentro del
+   * respaldo en cada postura. Si al empezar ya está dentro, primero sale.
+   */
+  private deslizarHastaElRespaldo(fig: THREE.Group, respaldo: SceneObject): void {
     const caja = this.cajaDePieza(respaldo);
     const espalda: THREE.Mesh[] = [];
     fig.traverse((n) => {
@@ -11743,16 +11976,27 @@ export class Editor {
       }
     });
     if (!espalda.length) return;
+    // El deslizamiento es HORIZONTAL: la altura la resuelve el asiento, y
+    // moverse a lo largo del cuerpo reclinado la desharía.
+    const frente = new THREE.Vector3(0, 0, 1)
+      .applyQuaternion(fig.quaternion)
+      .setY(0);
+    if (frente.lengthSq() < 1e-6) return;
+    frente.normalize();
     const origen = fig.position.clone();
-    let mejor = 0;
-    for (let d = 1; d <= 45; d++) {
-      fig.position.copy(origen).addScaledVector(frente, -d);
+    const mide = (d: number): number => {
+      fig.position.copy(origen).addScaledVector(frente, d);
       fig.updateMatrixWorld(true);
-      if (this.penetracionEnEstructura(espalda, [caja]) > 0.5) break;
+      return this.penetracionEnEstructura(espalda, [caja]);
+    };
+    let fuera = 0;
+    while (fuera < 45 && mide(fuera) > 0.5) fuera += 1;
+    let mejor = fuera;
+    for (let d = fuera; d >= fuera - 45; d -= 1) {
+      if (mide(d) > 0.5) break;
       mejor = d;
     }
-    fig.position.copy(origen).addScaledVector(frente, -mejor);
-    fig.updateMatrixWorld(true);
+    mide(mejor);
   }
 
   /** Pieza más cercana a un punto que cumpla el filtro. */
@@ -12120,8 +12364,35 @@ export class Editor {
         const dd = wp.distanceTo(hit.point);
         if (dd < bestD) { bestD = dd; best = lp; }
       }
-      const destino = this.attachTipo === "pie" ? this.footTargets : this.handTargets;
-      destino.set(this.attachSide, { objectId: obj.id, local: best });
+      // PISAR GUARDA LA CARA, no sólo el punto (v0.3.11). La IK del pie
+      // necesita saber hacia dónde mira la superficie para acostar la suela
+      // sobre ella; sin eso, sobre una placa inclinada el pie la atravesaba.
+      let normal: THREE.Vector3 | null = null;
+      if (this.attachTipo === "pie" && hit.face) {
+        const mundo = hit.face.normal
+          .clone()
+          .transformDirection(hit.object.matrixWorld)
+          .normalize();
+        // SÓLO SE PISA LO QUE MIRA HACIA ARRIBA. Rozando el canto de una placa,
+        // el rayo devuelve la normal de la cara LATERAL: quedarse con ella
+        // sería pedirle al pie que se apoye en una pared. Con una cara así se
+        // guarda el punto sin normal, y la IK vuelve a suponer horizontal, que
+        // es como se comportaba hasta v0.3.11.
+        if (Math.abs(mundo.y) < 0.3) {
+          normal = null;
+        } else {
+          normal = mundo
+            .clone()
+            .transformDirection(new THREE.Matrix4().copy(obj.mesh.matrixWorld).invert())
+            .normalize();
+          if (!Number.isFinite(normal.x) || normal.lengthSq() < 0.5) normal = null;
+        }
+      }
+      if (this.attachTipo === "pie") {
+        this.attachFoot(this.attachSide, obj.id, best, normal);
+      } else {
+        this.handTargets.set(this.attachSide, { objectId: obj.id, local: best });
+      }
       this.cancelAttachHand();
       this.updateHandIK();
       this.updateFootIK();

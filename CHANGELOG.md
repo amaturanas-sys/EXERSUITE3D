@@ -5,6 +5,61 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.11] — 2026-08-26
+
+### Arreglado
+
+Tres defectos encadenados que el diseñador destapó al sentar al maniquí en su
+prensa de piernas. La raíz común: **la ergonomía daba por hecho que todo apoyo
+es horizontal y todo respaldo es recto**, y en una prensa no lo es ninguno de
+los dos.
+
+**La espalda no llegaba al respaldo.** Al sentarse, la figura se deslizaba hacia
+atrás con el tronco vertical hasta rozar algo: en un respaldo tumbado 50° lo
+único que llegaba a tocar era la pelvis, y la espalda se quedaba **a 11,52 cm de
+la placa**. Ahora la figura **se recuesta con la misma inclinación del
+respaldo** —medida en la propia pieza, por su cara delgada— y luego se acerca:
+el hueco baja a **0,32 cm**. Un respaldo recto (menos de 5° de caída) no mueve
+nada, así que los bancos de siempre se comportan igual.
+
+**«Pisar» metía el pie DENTRO de la plataforma.** La IK del pie medía todo en el
+eje Y del mundo: subía el objetivo la altura del pie en vertical, dejaba la
+suela horizontal y comprobaba el residuo en Y. Sobre una placa inclinada 45° eso
+deja la planta a la altura del punto tocado mientras la placa sigue subiendo
+hacia la puntera — **5,6 cm de pie dentro de una placa de 3 cm de grosor**.
+Ahora «Pisar» **guarda la cara que se pisa**, no sólo el punto, y todo se mide
+contra su normal: el pie se acuesta sobre la placa (**0° de desvío**) y la
+planta se posa en ella (**0,01 cm**). Rozando el canto de una pieza, la cara
+lateral se descarta y se vuelve a suponer horizontal.
+
+**Y por eso el tren inferior la sacaba del asiento.** Sin espalda apoyada y con
+la planta atravesando la placa, accionar el gesto acababa con la persona de pie.
+Con las dos correcciones puestas, catorce pasos de tren inferior la dejan
+**sentada donde estaba (0 cm de desplazamiento)**, con la espalda pegada al
+respaldo y la planta sobre la placa.
+
+De paso, tres arreglos de fondo en la IK de la pierna que salieron al medir:
+
+- **La rodilla salía por donde tocaba, pero se volvía loca.** El polo de flexión
+  era el frente de la figura, y recostada 50° ese frente casi coincide con la
+  pierna (**0,996 de coseno**): la proyección quedaba en nada, su normalización
+  era ruido y la suela oscilaba **hasta 18 cm** entre fotogramas. La rodilla es
+  una bisagra, así que ahora el polo se levanta del eje izquierda-derecha del
+  cuerpo, que nunca se alinea con la pierna.
+- **Nivelar el tobillo componía el giro por el lado equivocado**, lo que sólo
+  acierta cuando las rotaciones conmutan. Con el pie ya girado por la tibia y
+  una cara inclinada, dejaba el pie torcido.
+- **Cuánto cuelga la suela bajo el tobillo se MIDE**, ya nivelado, en vez de
+  estimarlo suponiendo que el pie cuelga a plomo; y si el punto pisado le queda
+  lejos a la pierna, el objetivo se acerca **sobre la misma cara** hasta donde
+  alcanza, en vez de quedarse corto y hundir la planta.
+
+### Añadido
+
+- `pruebas/prueba-prensa-maniqui.mjs`: 21 comprobaciones sobre la prensa del
+  diseñador —espalda, planta, gesto, ida y vuelta del proyecto y una superficie
+  llana de control— midiendo centímetros contra el hierro con cajas orientadas.
+
 ## [0.3.10] — 2026-08-23
 
 ### Arreglado

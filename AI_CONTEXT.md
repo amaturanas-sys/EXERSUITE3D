@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-23. **Versión del código:** 0.3.9.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.11.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -459,6 +459,34 @@ X** — cualquier otro eje que deba cambiar necesita su propia acomodación.
 
 Manos y pies **no llevan collider**: son los puntos por los que la figura agarra,
 y si chocaran, la IK y el contacto se empujarían sin parar.
+
+### 6.5 Apoyos: nada es horizontal (v0.3.11)
+
+Hasta v0.3.11 la ergonomía suponía que todo asiento y toda plataforma están a
+nivel. En una prensa de piernas no lo está ninguno, y de ahí salieron tres
+defectos encadenados. Las reglas que quedaron:
+
+- **El respaldo manda la inclinación del cuerpo.** Al sentarse, la figura copia
+  la caída del respaldo —medida en la propia pieza, por la normal de su cara
+  más delgada, tope 60°— y sólo entonces se desliza hacia atrás hasta tocarlo.
+  Menos de 5° de caída no cambia nada: los bancos rectos siguen igual.
+- **La espalda se REPLANTA en cada re-apoyo.** `apoyoEspalda` guarda la pieza,
+  y el deslizamiento es idempotente (si ya está dentro, primero sale). Sin eso,
+  el primer gesto despegaba a la persona de su respaldo.
+- **«Pisar» guarda la CARA, no sólo el punto.** La normal viaja en el apoyo
+  —también al guardar el proyecto— y toda la IK del pie se mide contra ella:
+  el vuelo del tobillo, la nivelación de la suela y el residuo. Sin normal
+  guardada se supone horizontal, que es el comportamiento anterior.
+- **Una cara demasiado vertical no se pisa.** Rozando el canto de una placa el
+  rayo devuelve la normal lateral; con `|n.y| < 0,3` se descarta.
+- **El vuelo de la suela bajo el tobillo se MIDE, ya nivelado**, en vez de
+  estimarlo: es una constante de la pieza y así el objetivo se calcula de una
+  vez, sin perseguirlo fotograma a fotograma (perseguirlo oscilaba 18 cm).
+- **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
+  frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
+  Lo mismo vale para el marco con el que se nivela el tobillo.
+- **Si el punto pisado le queda lejos a la pierna**, el objetivo se acerca
+  *sobre la misma cara* hasta donde alcanza. Quedarse corto hundía la planta.
 
 ---
 

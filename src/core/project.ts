@@ -72,7 +72,7 @@ export interface HumanData {
   pose: Record<string, Vec3> | null;
   hands: { side: "L" | "R"; objectId: string; local: Vec3 }[];
   /** Pies apoyados en una plataforma o pedal (v0.2.52). */
-  feet?: { side: "L" | "R"; objectId: string; local: Vec3 }[];
+  feet?: { side: "L" | "R"; objectId: string; local: Vec3; normal?: Vec3 | null }[];
   /** Articulaciones bloqueadas con el candado (esquema Ergonómico v0.2.0). */
   locks?: string[];
   /** Simetría de pose activa (los cambios de un lado se replican al otro). */
@@ -81,6 +81,8 @@ export interface HumanData {
   support?: "suelo" | "pieza";
   /** Cota de la cara sobre la que se sentó, para reasentarla (v0.2.52). */
   supportY?: number | null;
+  /** Pieza contra la que descansa la espalda, si se sentó con respaldo. */
+  backSupport?: string | null;
   /** Zonas de movimiento activas y su lado (v0.2.49). */
   zones?: { id: string; side: string }[];
   /** POSTURA DE PARTIDA: pose y sitio a los que devuelve el ↺ (v0.2.49). */
