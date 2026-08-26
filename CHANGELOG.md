@@ -5,6 +5,60 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.12] — 2026-08-26
+
+### Arreglado
+
+Segunda vuelta sobre el maniquí en la prensa de piernas, con las capturas del
+diseñador delante. La v0.3.11 ya lo sentaba bien, pero al pisar y empujar
+seguían fallando dos cosas — y las dos tenían la misma raíz: **la aplicación
+daba por hecho que quien pisa está SIEMPRE por encima de lo que pisa**.
+
+**El pie se colocaba del revés y al otro lado de la placa.** En una prensa la
+plataforma va por ENCIMA y por delante del que empuja: la cara contra la que
+apoya la planta mira hacia abajo y hacia él. Al orientar toda normal «hacia
+arriba», el pie acababa sobre la cara de fuera y con la puntera invertida.
+Ahora la cara que se pisa es **la que mira al cuerpo**, y con eso el pie se
+acuesta sobre la placa (**0° de desvío**) con la puntera hacia arriba por la
+pendiente, que es como se pisa una prensa. De paso, marcar con el puntero la
+cara que se VE —la de arriba, la única visible desde fuera— coloca el pie en la
+**cara paralela de enfrente**, sin moverse de sitio: es lo que quiere decir ese
+clic.
+
+**Y el gesto no empujaba nada: se pegaba a la plataforma.** La cadena de una
+prensa es CERRADA —la planta no se despega—, así que al extender la pierna
+quien viaja es la máquina. Clavando el pie a un punto fijo, la IK deshacía la
+extensión en el mismo paso: el gesto no producía movimiento y lo poco que
+quedaba tiraba del cuerpo hacia la plataforma y lo despegaba del respaldo.
+Ahora la cadena se resuelve por el otro extremo. La rodilla fija cuánto mide la
+pierna y la placa solo puede correr por su guía, así que **dónde tiene que
+estar la placa sale de una ecuación**, se elige la solución más cercana a donde
+está y se acota el paso. Medido sobre la prensa del diseñador: catorce pasos de
+tren inferior **extienden la rodilla de 65,5° a 7,9°** y **hacen viajar la
+placa 19,1 cm por su guía**, con la figura **quieta en el asiento (0 cm)**, la
+espalda pegada al respaldo (**0,32 cm**) y la planta sin colarse en la placa en
+ningún paso (**peor caso −0,26 cm**).
+
+Dos apoyos de fondo que hicieron falta para que eso saliera:
+
+- **La carrera de una pieza se lee de sus canales**, y del conjunto entero: en
+  la prensa, la placa que se pisa no lleva canal ninguno; lo llevan los
+  travesaños del carro al que está soldada. Y cuando el canal no guarda QUÉ
+  guía lo ocupa —los proyectos anteriores a v0.3.4 no lo guardaban, y los
+  cuatro canales de esta prensa vienen así—, vale el eje del propio taladro.
+- **El vuelo de la suela bajo el tobillo se mide con el tobillo ya nivelado.**
+  Es constante sólo en esa orientación, y el reparto del gesto acaba de girar
+  cadera y rodilla: midiéndolo crudo, la placa se iba **27 cm de más** y la
+  planta acababa dentro de ella.
+
+### Cambiado
+
+- `pruebas/prueba-prensa-maniqui.mjs` sube a 25 comprobaciones: se añaden la
+  cara que mira al cuerpo, el sentido de la puntera y el viaje de la placa. El
+  punto de clic se busca barriendo la silueta de la placa en pantalla, del
+  centro hacia fuera, en vez de proyectar una coordenada fija que dependía de
+  dónde hubiera quedado la cámara.
+
 ## [0.3.11] — 2026-08-26
 
 ### Arreglado

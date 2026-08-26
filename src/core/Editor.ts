@@ -58,6 +58,13 @@ const PULLEY_IDS = new Set(["roldana", "polea", "bloque-poleas"]);
 const RECLINACION_MAX = 60;
 
 /**
+ * Cuánto puede correr una pieza empujada por el pie en UN paso de gesto (cm).
+ * El tope existe para que un paso no teletransporte la máquina cuando la
+ * ecuación de la cadena tiene una raíz lejana.
+ */
+const CARRERA_MAX_POR_PASO = 25;
+
+/**
  * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
  * proyecto: la elección no depende de desde dónde se esté mirando.
  */
@@ -4407,6 +4414,13 @@ export class Editor {
     if (equilibrio && this.acomodarEquilibrio(joints, equilibrio)) n++;
     if (mirada !== null && this.acomodarMirada(mirada, joints)) n++;
 
+    // 4 bis) EL PIE EMPUJA SU PEDAL. Si la planta apoya en una pieza que puede
+    //    correr —la placa de una prensa, un estribo—, extender la pierna la
+    //    EMPUJA: la persona se queda donde está y lo que viaja es la máquina.
+    //    Sin esto el gesto no tenía a dónde ir, la IK del pie lo deshacía en el
+    //    mismo paso y el cuerpo acababa arrastrado hacia la plataforma.
+    if (this.empujarLosPedales()) this.updateFootIK();
+
     this.reapoyarFigura();
     // 5) Y LOS PIES SE QUEDAN DONDE PISAN. Sin esto el peso muerto barría el
     //    suelo: la punta viajaba 120,81 cm y el talón 78,37, con la planta
@@ -7918,7 +7932,11 @@ export class Editor {
       // con la placa inclinada de una prensa, medir en Y significaba dejar la
       // suela a la altura del punto tocado mientras la placa seguía subiendo
       // hacia la puntera: el pie la atravesaba.
-      const normal = this.normalDePisada(t, obj);
+      const normal = this.normalDePisada(
+        t,
+        obj,
+        cadera.getWorldPosition(new THREE.Vector3()).sub(target),
+      );
       // Lo que pisa es la PLANTA, no el tobillo. La IK resuelve la posición
       // del tobillo, así que el objetivo se separa de la cara lo que el pie
       // cuelga por debajo de él; sin esta corrección la planta quedaba 9 cm
@@ -8006,6 +8024,142 @@ export class Editor {
   }
 
   /**
+   * POR DÓNDE PUEDE CORRER una pieza (unitario, mundo), o null si no corre.
+   *
+   * Se lee de sus CANALES: una pieza enhebrada en una o varias guías tubulares
+   * solo puede desplazarse a lo largo de ellas. Si la pieza forma parte de un
+   * conjunto —soldado o agrupado—, valen los canales de cualquiera de sus
+   * compañeras: en una prensa, la placa que se pisa no lleva canal ninguno; lo
+   * llevan los travesaños del carro al que está soldada.
+   */
+  private carreraDeLaPieza(obj: SceneObject): THREE.Vector3 | null {
+    const gid = this.groupOf(obj.id);
+    const piezas = gid ? this.objetosDelGrupo(gid) : [obj];
+    const suma = new THREE.Vector3();
+    let cuantas = 0;
+    for (const p of piezas.length ? piezas : [obj]) {
+      for (const c of p.params.canales ?? []) {
+        // EL CANAL YA DICE POR DÓNDE SE CORRE: es un taladro recto, y una
+        // pieza enhebrada solo puede deslizarse a lo largo de él. Si además se
+        // sabe QUÉ guía lo ocupa, se prefiere el eje del tubo, que es exacto;
+        // el del canal viene redondeado al eje local dominante de la pieza.
+        // Y hace falta el respaldo del canal: los proyectos anteriores a
+        // v0.3.4 guardaron sus canales SIN la guía (los cuatro de la prensa
+        // del diseñador vienen así), y sin esto la prensa no tendría carrera.
+        const g = c.guia ? this.objects.get(c.guia) : undefined;
+        const eje = new THREE.Vector3();
+        if (g) {
+          g.mesh.updateMatrixWorld();
+          eje.set(0, 1, 0).transformDirection(g.mesh.matrixWorld);
+        } else {
+          p.mesh.updateMatrixWorld();
+          eje.set(c.eje === "x" ? 1 : 0, c.eje === "y" ? 1 : 0, c.eje === "z" ? 1 : 0)
+            .transformDirection(p.mesh.matrixWorld);
+        }
+        if (eje.lengthSq() < 0.5) continue;
+        eje.normalize();
+        // Dos guías paralelas pueden venir con el tubo del revés: se alinean
+        // antes de promediar o se anularían entre ellas.
+        if (cuantas && suma.dot(eje) < 0) eje.negate();
+        suma.add(eje);
+        cuantas++;
+      }
+    }
+    return cuantas ? suma.normalize() : null;
+  }
+
+  /** Traslada una pieza y todo su conjunto, con la simulación en marcha o sin ella. */
+  private moverPiezaYSuGrupo(obj: SceneObject, d: THREE.Vector3): boolean {
+    const gid = this.groupOf(obj.id);
+    const piezas = gid ? this.objetosDelGrupo(gid) : [obj];
+    const poses = new Map<string, { p: THREE.Vector3; q: THREE.Quaternion }>();
+    for (const p of piezas.length ? piezas : [obj]) {
+      if (p.physics.fixed) continue;
+      poses.set(p.id, { p: p.mesh.position.clone().add(d), q: p.mesh.quaternion.clone() });
+    }
+    if (!poses.size) return false;
+    if (this.physics) return this.physics.recolocarPiezas(poses) > 0;
+    for (const [id, t] of poses) {
+      const p = this.objects.get(id);
+      if (!p) continue;
+      p.mesh.position.copy(t.p);
+      p.mesh.updateMatrixWorld(true);
+    }
+    return true;
+  }
+
+  /**
+   * EL PIE EMPUJA SU PEDAL (v0.3.12).
+   *
+   * En una prensa de piernas la cadena es CERRADA: la planta no se despega de
+   * la placa, así que al extender la pierna lo que se mueve es la MÁQUINA. La
+   * primera versión de «Pisar» clavaba el pie a un punto fijo de la placa y la
+   * IK deshacía la extensión en el mismo paso: el gesto no producía nada, y lo
+   * poco que quedaba tiraba del cuerpo hacia la plataforma y lo despegaba del
+   * respaldo — justo lo contrario de lo que hace una persona.
+   *
+   * Ahora se resuelve la cadena por el otro extremo. La rodilla fija cuánto
+   * mide la pierna (`cadera→tobillo` no depende de nada más), y la placa solo
+   * puede correr por su guía, así que la posición de la placa sale de una
+   * ecuación de segundo grado: dónde tiene que estar el punto de contacto para
+   * quedar a esa distancia de la cadera. Se elige la raíz más cercana a donde
+   * está —la máquina no se teletransporta— y se acota el paso.
+   */
+  private empujarLosPedales(): boolean {
+    const fig = this.humanFigure;
+    const joints = this.figureJoints();
+    if (!fig || !joints || this.footTargets.size === 0) return false;
+    fig.updateMatrixWorld(true);
+    let movio = false;
+    const yaMovidos = new Set<string>();
+    for (const [side, t] of this.footTargets) {
+      const obj = this.objects.get(t.objectId);
+      if (!obj || obj.physics.fixed) continue;
+      const conjunto = this.groupOf(obj.id) ?? obj.id;
+      if (yaMovidos.has(conjunto)) continue;
+      const dir = this.carreraDeLaPieza(obj);
+      if (!dir) continue;
+      const cadera = joints[`hip${side}`];
+      const tobillo = joints[`ankle${side}`];
+      if (!cadera || !tobillo) continue;
+      obj.mesh.updateMatrixWorld(true);
+      const contacto = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
+      const H = cadera.getWorldPosition(new THREE.Vector3());
+      const A = tobillo.getWorldPosition(new THREE.Vector3());
+      const normal = this.normalDePisada(t, obj, H.clone().sub(contacto));
+      // EL VUELO SE MIDE CON EL TOBILLO YA NIVELADO. Es una constante de la
+      // pieza sólo en esa orientación, y el reparto del gesto acaba de girar
+      // cadera y rodilla —los padres del tobillo—, así que ahora mismo la
+      // suela cuelga hacia cualquier lado. Midiéndolo crudo, la placa se iba
+      // 27 cm de más y la planta acababa dentro de ella. Nivelar aquí no
+      // estropea nada: la IK del pie vuelve a nivelarla enseguida.
+      this.nivelarTobillo(tobillo, normal);
+      fig.updateMatrixWorld(true);
+      const sola = this.plantaSegunNormal(side, normal);
+      if (sola === null) continue;
+      const vuelo = normal.dot(A) - sola;
+      const largo = H.distanceTo(A); // lo que mide la pierna con esta rodilla
+      // |contacto + s·dir + normal·vuelo − cadera| = largo
+      const v = contacto.clone().addScaledVector(normal, vuelo).sub(H);
+      const b = v.dot(dir);
+      const c = v.lengthSq() - largo * largo;
+      const disc = b * b - c;
+      if (disc < 0) continue; // la guía no pasa por donde la pierna alcanza
+      const raiz = Math.sqrt(disc);
+      const s1 = -b + raiz;
+      const s2 = -b - raiz;
+      const paso = Math.abs(s1) <= Math.abs(s2) ? s1 : s2;
+      if (!Number.isFinite(paso) || Math.abs(paso) < 0.05) continue;
+      const acotado = Math.max(-CARRERA_MAX_POR_PASO, Math.min(CARRERA_MAX_POR_PASO, paso));
+      if (this.moverPiezaYSuGrupo(obj, dir.clone().multiplyScalar(acotado))) {
+        movio = true;
+        yaMovidos.add(conjunto);
+      }
+    }
+    return movio;
+  }
+
+  /**
    * Normal MUNDIAL de la cara que se pisa. Sin normal guardada —apoyos de
    * proyectos anteriores— se supone horizontal, que es lo que la aplicación
    * daba por hecho hasta v0.3.11. Se orienta siempre hacia arriba: se pisa
@@ -8015,11 +8169,19 @@ export class Editor {
   private normalDePisada(
     t: { local: THREE.Vector3; normal?: THREE.Vector3 },
     obj: SceneObject,
+    haciaElCuerpo: THREE.Vector3,
   ): THREE.Vector3 {
     if (!t.normal) return new THREE.Vector3(0, 1, 0);
     const n = t.normal.clone().transformDirection(obj.mesh.matrixWorld).normalize();
     if (!Number.isFinite(n.x) || n.lengthSq() < 0.5) return new THREE.Vector3(0, 1, 0);
-    if (n.y < 0) n.negate();
+    // LA CARA QUE SE PISA MIRA AL CUERPO, no al cielo (v0.3.12). En un suelo,
+    // una tarima o un pedal, ambas cosas coinciden y por eso la primera versión
+    // se limitaba a apuntar la normal hacia arriba. En una PRENSA DE PIERNAS no
+    // coinciden: la placa va por encima y por delante del que empuja, y la cara
+    // contra la que apoya la planta mira hacia ABAJO y hacia él. Forzando la
+    // normal hacia arriba, el pie se colocaba al otro lado de la placa —encima
+    // en vez de debajo— y con la puntera del revés.
+    if (n.dot(haciaElCuerpo) < 0) n.negate();
     return n;
   }
 
@@ -12373,19 +12535,42 @@ export class Editor {
           .clone()
           .transformDirection(hit.object.matrixWorld)
           .normalize();
-        // SÓLO SE PISA LO QUE MIRA HACIA ARRIBA. Rozando el canto de una placa,
-        // el rayo devuelve la normal de la cara LATERAL: quedarse con ella
-        // sería pedirle al pie que se apoye en una pared. Con una cara así se
-        // guarda el punto sin normal, y la IK vuelve a suponer horizontal, que
-        // es como se comportaba hasta v0.3.11.
-        if (Math.abs(mundo.y) < 0.3) {
+        // SÓLO SE PISA UNA CARA QUE MIRE AL CUERPO. Rozando el canto de una
+        // placa, el rayo devuelve la normal de la cara LATERAL: quedarse con
+        // ella sería pedirle al pie que se apoye de perfil. El criterio NO es
+        // que la cara mire hacia arriba (v0.3.12): la placa de una prensa mira
+        // hacia abajo, hacia quien la empuja, y aun así se pisa. Lo que la
+        // define es que la planta pueda enfrentarse a ella, o sea que la cara
+        // mire hacia la cadera de ese lado.
+        const caderaP = this.figureJoints()?.[`hip${this.attachSide}`];
+        const haciaElCuerpo = caderaP
+          ? caderaP.getWorldPosition(new THREE.Vector3()).sub(hit.point).normalize()
+          : new THREE.Vector3(0, 1, 0);
+        if (Math.abs(mundo.dot(haciaElCuerpo)) < 0.34) {
           normal = null;
         } else {
           normal = mundo
             .clone()
             .transformDirection(new THREE.Matrix4().copy(obj.mesh.matrixWorld).invert())
             .normalize();
-          if (!Number.isFinite(normal.x) || normal.lengthSq() < 0.5) normal = null;
+          if (!Number.isFinite(normal.x) || normal.lengthSq() < 0.5) {
+            normal = null;
+          } else if (mundo.dot(haciaElCuerpo) < 0) {
+            // SE PISA LA CARA DE ENFRENTE. En una prensa, la única cara de la
+            // placa que se ve desde fuera es la de arriba, que le da la
+            // espalda a quien empuja; la que se pisa es la de abajo. Marcar la
+            // que se ve y pisar la que toca es lo que quiere decir el clic, así
+            // que el punto se pasa a la cara paralela sin moverse de sitio.
+            normal.negate();
+            best = best.clone();
+            const geo = obj.mesh.geometry;
+            if (!geo.boundingBox) geo.computeBoundingBox();
+            const bb = geo.boundingBox!;
+            const ejes: ("x" | "y" | "z")[] = ["x", "y", "z"];
+            let dom: "x" | "y" | "z" = "y";
+            for (const e of ejes) if (Math.abs(normal[e]) > Math.abs(normal[dom])) dom = e;
+            best[dom] = normal[dom] > 0 ? bb.max[dom] : bb.min[dom];
+          }
         }
       }
       if (this.attachTipo === "pie") {

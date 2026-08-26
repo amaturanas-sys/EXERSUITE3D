@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.11.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.12.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -487,6 +487,16 @@ defectos encadenados. Las reglas que quedaron:
   Lo mismo vale para el marco con el que se nivela el tobillo.
 - **Si el punto pisado le queda lejos a la pierna**, el objetivo se acerca
   *sobre la misma cara* hasta donde alcanza. Quedarse corto hundía la planta.
+- **La cara que se pisa MIRA AL CUERPO, no al cielo** (v0.3.12). Sobre un suelo
+  las dos cosas coinciden; en una prensa no: la placa va por encima del que
+  empuja. Marcar con el puntero la cara que se ve pone el pie en la cara
+  paralela de enfrente.
+- **La cadena del pie es CERRADA: el pie empuja su pedal** (v0.3.12). Si la
+  pieza pisada puede correr —sus canales, o los de su conjunto, dan la
+  dirección—, extender la pierna MUEVE LA MÁQUINA: la rodilla fija el largo de
+  la pierna y de ahí sale, por una ecuación de segundo grado, dónde tiene que
+  quedar la placa. Sin esto la IK deshacía el gesto y el cuerpo se despegaba
+  del respaldo.
 
 ---
 
@@ -618,6 +628,10 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
 - Si el `vite preview` se muere a media tanda, se lleva por delante todas las que
   corrían (`ERR_CONNECTION_REFUSED`). No es un fallo de la aplicación.
 - `prueba-sitio` necesita el Next.js levantado en el 3100; las otras no.
+- **`prueba-maquina-entera` falla a veces AUNQUE se corra sola**, y ya lo hacía
+  en v0.3.10: su comprobación «simular no desarma la máquina» salta en unas 2 de
+  cada 5 pasadas, con la misma pieza yéndose 41–51 cm. Verificado a mano contra
+  el build de v0.3.10 (2 rojos de 5), así que un rojo suyo no indica regresión.
 - **`prueba-freno` falla a veces AUNQUE se corra sola**, y ya lo hacía en v0.3.10.
   Su última comprobación —«la pila recibe más recorrido» con freno que sin él—
   compara dos simulaciones de 50 pasos cronometrados cuyo resultado oscila entre

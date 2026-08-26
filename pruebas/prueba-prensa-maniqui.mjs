@@ -1,18 +1,21 @@
-// EL MANIQUÍ EN LA PRENSA DE PIERNAS (v0.3.11).
+// EL MANIQUÍ EN LA PRENSA DE PIERNAS (v0.3.11 y v0.3.12).
 //
 // Sobre la prensa que armó el diseñador —asiento y respaldo tumbados ~50°, y
-// una placa de apoyo inclinada 45° que corre por dos guías— se comprueban las
-// tres cosas que fallaban:
+// una placa de apoyo inclinada 45° que corre por dos guías— se comprueba todo
+// lo que fallaba al sentarlo y ponerlo a empujar:
 //
 //   A) LA ESPALDA APOYA. El respaldo va reclinado, así que la figura tiene que
 //      recostarse para tocarlo. Antes se deslizaba hacia atrás con el tronco
 //      vertical, tocaba sólo con la pelvis y la espalda se quedaba a 11,5 cm.
-//   B) EL PIE PISA LA PLACA, NO LA ATRAVIESA. «Pisar» resolvía la IK midiendo
-//      todo en el eje Y del mundo: sobre una cara inclinada la suela acababa
-//      5,6 cm DENTRO de una placa de 3 cm de grosor.
-//   C) EL GESTO NO LA LEVANTA. Con la espalda apoyada y la planta en su sitio,
-//      accionar el tren inferior deja a la persona sentada donde estaba, en vez
-//      de sacarla del asiento y dejarla de pie.
+//   B) EL PIE PISA LA PLACA POR LA CARA QUE MIRA AL CUERPO. En una prensa la
+//      placa va por ENCIMA y por delante del que empuja: la cara contra la que
+//      apoya la planta mira hacia abajo y hacia él. Suponiendo que toda
+//      superficie pisable mira al cielo, el pie salía al otro lado de la placa
+//      y con la puntera del revés.
+//   C) EL PIE EMPUJA LA PLACA COMO UN PEDAL. La cadena es cerrada: al extender
+//      la pierna, quien viaja es la MÁQUINA. Antes la IK deshacía la extensión
+//      en el mismo paso, el gesto no producía nada y el cuerpo acababa
+//      arrastrado hacia la plataforma y despegado del respaldo.
 import { chromium } from "playwright-core";
 import { readFileSync } from "node:fs";
 const AQUI = new URL(".", import.meta.url).pathname;
@@ -133,24 +136,42 @@ const puntoPlaca = await page.evaluate(({ ids }) => {
     const q = v.clone().project(ed.sceneManager.camera);
     return { x: Math.round((q.x * 0.5 + 0.5) * rect.width), y: Math.round((-q.y * 0.5 + 0.5) * rect.height) };
   };
-  // EL PUNTO DE CLIC SE BUSCA, no se supone. Proyectar una coordenada local
-  // fija depende de dónde haya quedado la cámara: rozando el canto, el rayo
-  // devuelve la cara lateral y la prueba mide otra cosa. Se recorre la cara
-  // superior y se elige el primer sitio donde el rayo cae de verdad sobre ella.
+  // EL PUNTO DE CLIC SE BUSCA EN PANTALLA, no se supone. Proyectar una
+  // coordenada local fija depende de dónde haya quedado la cámara: desde este
+  // ángulo, el rayo que apunta a la cara superior entra antes por el canto de
+  // la placa o por un travesaño. Se barre la silueta de la placa y se elige el
+  // primer sitio donde el rayo cae de verdad en una de sus dos caras grandes.
+  const bb3 = geo.boundingBox;
+  const esquinas = [];
+  for (const x of [bb3.min.x, bb3.max.x]) for (const y of [bb3.min.y, bb3.max.y]) for (const z of [bb3.min.z, bb3.max.z]) {
+    esquinas.push(aPantalla(new T.Vector3(x, y, z).applyMatrix4(placa.mesh.matrixWorld)));
+  }
+  const x0 = Math.min(...esquinas.map((p) => p.x)), x1 = Math.max(...esquinas.map((p) => p.x));
+  const y0 = Math.min(...esquinas.map((p) => p.y)), y1 = Math.max(...esquinas.map((p) => p.y));
+  const cad = ed.figureJoints().hipL.getWorldPosition(new T.Vector3());
   let elegido = null;
-  for (let lz = 14; lz >= -14 && !elegido; lz -= 4) {
-    for (const lx of [-12, -14, -10, -16, -8]) {
-      const w = new T.Vector3(lx, geo.boundingBox.max.y, lz).applyMatrix4(placa.mesh.matrixWorld);
-      const q = w.clone().project(ed.sceneManager.camera);
-      ed.raycaster.setFromCamera(new T.Vector2(q.x, q.y), ed.sceneManager.camera);
+  // Del CENTRO hacia fuera: un punto pegado al borde de la placa deja el pie
+  // en un extremo y la prueba mediría un caso raro en vez del normal.
+  const orden = [];
+  for (let j = 1; j < 10; j++) for (let i = 1; i < 10; i++) orden.push([i, j]);
+  orden.sort((a, b) => (a[0] - 5) ** 2 + (a[1] - 5) ** 2 - ((b[0] - 5) ** 2 + (b[1] - 5) ** 2));
+  for (const [i, j] of orden) {
+    {
+      if (elegido) break;
+      const sx = x0 + ((x1 - x0) * i) / 10, sy = y0 + ((y1 - y0) * j) / 10;
+      const ndc = new T.Vector2((sx / rect.width) * 2 - 1, -((sy / rect.height) * 2 - 1));
+      ed.raycaster.setFromCamera(ndc, ed.sceneManager.camera);
       const h = ed.raycaster.intersectObjects(ed.sceneManager.content.children, true)[0];
       if (!h || !h.face) continue;
-      const n = h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize();
-      if (Math.abs(n.y) < 0.3) continue;
       let oid = null;
       for (let x = h.object; x && !oid; x = x.parent) if (x.userData.sceneObjectId) oid = x.userData.sceneObjectId;
       if (oid !== placa.id) continue;
-      elegido = aPantalla(w);
+      const n = h.face.normal.clone().transformDirection(h.object.matrixWorld).normalize();
+      // Vale cualquiera de las dos caras grandes: desde fuera sólo se ve la de
+      // arriba, y marcarla tiene que llevar el pie a la de abajo, que es la
+      // que se empuja. Lo que se descarta es el CANTO.
+      if (Math.abs(n.dot(cad.clone().sub(h.point).normalize())) < 0.34) continue;
+      elegido = { x: Math.round(sx), y: Math.round(sy) };
       break;
     }
   }
@@ -161,12 +182,27 @@ await page.evaluate(() => window.exersuite.editor.beginAttachFoot());
 await page.mouse.click(puntoPlaca.rodilla.x, puntoPlaca.rodilla.y); await page.waitForTimeout(250);
 await page.mouse.click(puntoPlaca.placa.x, puntoPlaca.placa.y); await page.waitForTimeout(400);
 const conNormal = await page.evaluate(() => {
-  const t = window.exersuite.editor.footTargets.get("L");
-  return t ? { hay: true, normal: t.normal ? [+t.normal.x.toFixed(2), +t.normal.y.toFixed(2), +t.normal.z.toFixed(2)] : null } : { hay: false };
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const t = ed.footTargets.get("L");
+  if (!t) return { hay: false };
+  const obj = ed.objects.get(t.objectId);
+  obj.mesh.updateMatrixWorld(true);
+  const mundo = t.normal ? t.normal.clone().transformDirection(obj.mesh.matrixWorld).normalize() : null;
+  const hacia = ed.figureJoints().hipL.getWorldPosition(new T.Vector3())
+    .sub(t.local.clone().applyMatrix4(obj.mesh.matrixWorld)).normalize();
+  return {
+    hay: true,
+    normal: t.normal ? [+t.normal.x.toFixed(2), +t.normal.y.toFixed(2), +t.normal.z.toFixed(2)] : null,
+    miraAlCuerpo: mundo ? +mundo.dot(hacia).toFixed(2) : null,
+  };
 });
 console.log("\n3) PISAR CON EL PUNTERO:", JSON.stringify(conNormal));
 chequear(conNormal.hay, "el clic en la placa deja el pie izquierdo apoyado en ella");
 chequear(!!conNormal.normal, "y guarda la NORMAL de la cara pisada, no sólo el punto");
+chequear(
+  (conNormal.miraAlCuerpo ?? -1) > 0.3,
+  `esa cara MIRA AL CUERPO aunque se marcara la de fuera (${conNormal.miraAlCuerpo})`,
+);
 
 // ── 4. La planta se posa SOBRE la placa inclinada, no dentro ───────────────
 const pisada = await page.evaluate(({ AYUDA, ids }) => {
@@ -175,42 +211,52 @@ const pisada = await page.evaluate(({ AYUDA, ids }) => {
   const placa = ed.objects.get(ids.placa);
   const geo = placa.mesh.geometry;
   const P = Object.getPrototypeOf(ed);
-  // El pie derecho se apoya con la API, para medir los dos.
-  ed.attachFoot("R", placa.id, new T.Vector3(12, geo.boundingBox.max.y, 0), new T.Vector3(0, 1, 0));
+  // El pie derecho se apoya con la API, sobre la MISMA cara inferior.
+  ed.attachFoot("R", placa.id, new T.Vector3(12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
   for (let i = 0; i < 3; i++) { P.updateFootIK.call(ed); ed.humanFigure.updateMatrixWorld(true); }
-  placa.mesh.updateMatrixWorld(true);
-  const n = new T.Vector3(0, 1, 0).transformDirection(placa.mesh.matrixWorld).normalize();
-  const nivel = n.dot(new T.Vector3(0, geo.boundingBox.max.y, 0).applyMatrix4(placa.mesh.matrixWorld));
-  const suela = (l) => +(P.plantaSegunNormal.call(ed, l, n) - nivel).toFixed(2);
-  // ¿Está el pie ACOSTADO sobre la placa? Su eje «arriba» debe seguir la normal.
+  const cara = () => {
+    placa.mesh.updateMatrixWorld(true);
+    const n = new T.Vector3(0, -1, 0).transformDirection(placa.mesh.matrixWorld).normalize();
+    return { n, nivel: n.dot(new T.Vector3(0, geo.boundingBox.min.y, 0).applyMatrix4(placa.mesh.matrixWorld)) };
+  };
+  const suela = (l) => { const c = cara(); return +(P.plantaSegunNormal.call(ed, l, c.n) - c.nivel).toFixed(2); };
+  window.__suela = suela;
+  const { n } = cara();
+  // ¿Está el pie ACOSTADO sobre la placa, y del derecho? Su eje «arriba» debe
+  // seguir la normal de la cara —no la contraria—, y la puntera tiene que ir
+  // hacia ARRIBA por la placa, que es como se pisa una prensa.
   const pieArriba = new T.Vector3(0, 1, 0)
+    .transformDirection(window.__seg("pie-L").matrixWorld).normalize();
+  const pieFrente = new T.Vector3(0, 0, 1)
     .transformDirection(window.__seg("pie-L").matrixWorld).normalize();
   return {
     suelaL: suela("L"), suelaR: suela("R"),
+    normal: n.toArray().map((v) => +v.toFixed(2)),
     inclina: +(Math.asin(Math.min(1, Math.abs(n.z))) * 180 / Math.PI).toFixed(1),
-    paralelo: +(Math.acos(Math.min(1, Math.abs(pieArriba.dot(n)))) * 180 / Math.PI).toFixed(1),
+    // Sin valor absoluto: del revés daría 180°, no 0°.
+    paralelo: +(Math.acos(Math.max(-1, Math.min(1, pieArriba.dot(n)))) * 180 / Math.PI).toFixed(1),
+    punteraArriba: +pieFrente.y.toFixed(2),
   };
 }, { AYUDA, ids: montaje.ids });
 console.log("\n4) LA PLANTA SOBRE LA PLACA:", JSON.stringify(pisada));
 chequear(pisada.inclina > 40, `la placa está INCLINADA (${pisada.inclina}°), que es donde fallaba`);
+chequear(pisada.normal[1] < 0, `la cara pisada MIRA AL CUERPO, hacia abajo (normal ${pisada.normal})`);
 chequear(pisada.suelaL >= -1, `la planta izquierda NO atraviesa la placa (${pisada.suelaL} cm; antes −5,6)`);
 chequear(pisada.suelaR >= -1, `la planta derecha NO atraviesa la placa (${pisada.suelaR} cm)`);
 chequear(pisada.suelaL <= 1.5 && pisada.suelaR <= 1.5, "y tampoco quedan flotando sobre ella");
-chequear(pisada.paralelo <= 12, `el pie se ACUESTA sobre la placa (${pisada.paralelo}° de desvío)`);
+chequear(pisada.paralelo <= 12, `el pie se ACUESTA sobre la placa y NO del revés (${pisada.paralelo}° de desvío)`);
+chequear(pisada.punteraArriba > 0.3, `y la puntera apunta HACIA ARRIBA por la placa (${pisada.punteraArriba})`);
 
-// ── 5. El tren inferior no la saca del asiento ─────────────────────────────
+// ── 5. El tren inferior EMPUJA LA PLACA y no saca a nadie del asiento ─────
 const gesto = await page.evaluate(({ AYUDA, ids }) => {
   eval(AYUDA);
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const placa = ed.objects.get(ids.placa), respaldo = ed.objects.get(ids.respaldo);
-  const geo = placa.mesh.geometry;
-  const P = Object.getPrototypeOf(ed);
-  const n = () => { placa.mesh.updateMatrixWorld(true); return new T.Vector3(0,1,0).transformDirection(placa.mesh.matrixWorld).normalize(); };
-  const suela = (l) => { const v = n();
-    return +(P.plantaSegunNormal.call(ed, l, v)
-      - v.dot(new T.Vector3(0, geo.boundingBox.max.y, 0).applyMatrix4(placa.mesh.matrixWorld))).toFixed(2); };
+  const suela = window.__suela;
   const glutes = () => +new T.Box3().setFromObject(window.__seg("pelvis")).min.y.toFixed(1);
-  const antes = { glutes: glutes(), suela: suela("L") };
+  const rodilla = () => +(ed.figureJoints().kneeL.rotation.x * 180 / Math.PI).toFixed(1);
+  const P = Object.getPrototypeOf(ed);
+  const antes = { glutes: glutes(), suela: suela("L"), rodilla: rodilla(), placa: placa.mesh.position.clone() };
   ed.activarZona("superior", null);
   ed.activarZona("inferior", "sim");
   let peorSuela = 0, peorGlutes = 0;
@@ -221,12 +267,20 @@ const gesto = await page.evaluate(({ AYUDA, ids }) => {
     peorGlutes = Math.max(peorGlutes, Math.abs(glutes() - antes.glutes));
   }
   return {
-    antes, peorSuela: +peorSuela.toFixed(2), peorGlutes: +peorGlutes.toFixed(1),
-    glutesFin: glutes(),
+    antes: { glutes: antes.glutes, rodilla: antes.rodilla },
+    peorSuela: +peorSuela.toFixed(2), peorGlutes: +peorGlutes.toFixed(1),
+    rodillaFin: rodilla(),
+    // Cuánto ha viajado la placa por su guía.
+    carrera: +placa.mesh.position.distanceTo(antes.placa).toFixed(1),
     huecoTorso: +(-window.__pen(window.__obb(window.__seg("torso")), window.__obb(respaldo.mesh))).toFixed(2),
   };
 }, { AYUDA, ids: montaje.ids });
 console.log("\n5) ACCIONANDO EL TREN INFERIOR:", JSON.stringify(gesto));
+chequear(gesto.carrera > 15, `la PLACA viaja por su guía, empujada como un pedal (${gesto.carrera} cm)`);
+chequear(
+  gesto.rodillaFin < gesto.antes.rodilla - 30,
+  `y la rodilla se EXTIENDE de verdad (${gesto.antes.rodilla}° → ${gesto.rodillaFin}°)`,
+);
 chequear(gesto.peorGlutes <= 3, `la figura SIGUE SENTADA todo el gesto (se movió ${gesto.peorGlutes} cm)`);
 chequear(gesto.peorSuela >= -1.5, `y la planta no se cuela en la placa en ningún paso (${gesto.peorSuela} cm)`);
 chequear(gesto.huecoTorso <= 1.5, `la espalda sigue apoyada al terminar (hueco ${gesto.huecoTorso} cm)`);
