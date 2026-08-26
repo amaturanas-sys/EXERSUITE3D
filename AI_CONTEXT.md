@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.13.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.14.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,12 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **Una banca plana es asiento Y respaldo** (v0.3.14): en el tramo central de
+  una cara horizontal de 90 cm o más, sin respaldo cerca, la figura SE ACUESTA
+  boca arriba (postura «Tumbado», `tumbadaEnElApoyo`); en los extremos se
+  sienta. Tumbada, la cota de re-apoyo la da la ESPALDA (`baseDeLaEspalda`), no
+  los glúteos, y no hay deslizamiento contra el respaldo: la espalda ya está
+  encima.
 - **El gizmo de la figura entera va en la CADERA** (v0.3.13), sobre el pivote
   `figuraProxy`, no sobre el grupo: el origen del rig no está donde está el
   cuerpo.

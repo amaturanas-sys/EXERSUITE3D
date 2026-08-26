@@ -491,6 +491,19 @@ export const BUILTIN_POSES: PoseMap = {
     shoulderL: [-20, 0, 0], shoulderR: [-20, 0, 0],
     elbowL: [-55, 0, 0], elbowR: [-55, 0, 0],
   },
+  // TUMBADO BOCA ARRIBA en un banco plano (v0.3.14). La banca hace de asiento
+  // y de respaldo a la vez: la espalda descansa a lo largo de ella, la cadera
+  // queda casi extendida y las rodillas dobladas para que los pies lleguen al
+  // suelo, que es como se tumba uno en un banco de press.
+  Tumbado: {
+    // Medido sobre el banco plano de la biblioteca (40,7 cm de alto): con la
+    // cadera algo extendida y muy abierta, la pierna sale POR EL COSTADO del
+    // banco y la planta llega al suelo (−1,3 cm) rozando el acolchado 0,8 cm.
+    hipL: [10, 0, -55], hipR: [10, 0, -55],
+    kneeL: [70, 0, 0], kneeR: [70, 0, 0],
+    shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
+    elbowL: [-20, 0, 0], elbowR: [-20, 0, 0],
+  },
   Remo: {
     spine: [35, 0, 0],
     hipL: [-15, 0, 0], hipR: [-15, 0, 0],

@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.14] — 2026-08-26
+
+### Añadido
+
+**La banca plana sirve de asiento Y de respaldo.** Era lo que quedaba
+pendiente de v0.3.13. Un banco de press no tiene respaldo porque no lo
+necesita: el respaldo es el propio banco, y uno se acuesta sobre él. Ahora
+colocar el maniquí **en el medio de una banca plana y larga** lo tiende boca
+arriba a lo largo de ella; **en los extremos sigue sentándose**, con las
+piernas colgando por el borde, exactamente como antes.
+
+La regla es la del cuerpo, y se mide: cara horizontal —para tumbarse hay que
+tener dónde—, al menos **90 cm** de largo (un tronco con su cabeza), el punto
+tocado dentro del **tramo central**, y ningún respaldo cerca: donde hay
+respaldo, el sitio es sentarse. Medido sobre el banco plano de la biblioteca
+(120 × 30, a 40,7 cm): la espalda y la pelvis descansan **en la cara del
+banco**, el cuerpo queda **horizontal (90° de la vertical)** y **las plantas
+llegan al suelo** (−0,3 cm), con la pierna saliendo por el costado del banco.
+
+Trae postura nueva de fábrica, **«Tumbado»**: cadera algo extendida y muy
+abierta, rodilla a 70° y brazos recogidos, que es lo que deja el pie en el
+suelo sin meter el muslo en el acolchado (0,8 cm de roce). Y el estado viaja
+con el proyecto: reabrirlo devuelve la figura tumbada donde estaba.
+
+### Cambiado
+
+- En el MEDIO de una banca plana ya no se sienta de costado. Hasta v0.3.13 era
+  lo único que la aplicación sabía hacer con ese punto; ahora se acuesta.
+  `pruebas/prueba-v251.mjs` recoge el cambio.
+
 ## [0.3.13] — 2026-08-26
 
 ### Arreglado

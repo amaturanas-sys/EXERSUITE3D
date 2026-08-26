@@ -69,10 +69,14 @@ const nueva = async (w = 1280, h = 900) => {
       const f = new T.Vector3(0, 0, 1).applyQuaternion(ed.humanFigure.quaternion);
       // ¿Mira hacia fuera del banco? Producto con el vector centro→asiento.
       const haciaFuera = new T.Vector3(p.x - cen.x, 0, p.z - cen.z);
+      const arriba = new T.Vector3(0, 1, 0).applyQuaternion(ed.humanFigure.quaternion);
       return {
         dentro: dentro(),
         haciaFuera: haciaFuera.lengthSq() > 1 ? +f.dot(haciaFuera.normalize()).toFixed(2) : null,
         deLado: +Math.abs(largoX ? f.z : f.x).toFixed(2),
+        // v0.3.14: en el MEDIO de una banca plana uno no se sienta, se acuesta.
+        tumbada: ed.tumbadaEnElApoyo === true,
+        inclina: +(Math.acos(Math.max(-1, Math.min(1, arriba.y))) * 180 / Math.PI).toFixed(0),
       };
     };
     // ¿CUÁNTO FLOTAN LOS GLÚTEOS? La otra mitad del compromiso: subir la figura
@@ -100,13 +104,20 @@ const nueva = async (w = 1280, h = 900) => {
   // 11,3 cm, que es el fallo que se corrigió eligiendo los glúteos como apoyo.
   // Las dos cosas a la vez no caben, así que se acota lo que un acolchado
   // absorbe (3 cm) y se vigila LA OTRA pared: que el trasero no flote.
-  ok(r.A.dentro <= 3 && r.medio.dentro <= 3 && r.B.dentro <= 3,
-    `el muslo entra en el acolchado lo justo (${r.A.dentro} / ${r.medio.dentro} / ${r.B.dentro} cm, máximo 3)`);
-  ok(r.A.hueco <= 0.5 && r.medio.hueco <= 0.5 && r.B.hueco <= 0.5,
-    `y los glúteos no flotan sobre el asiento (${r.A.hueco} / ${r.medio.hueco} / ${r.B.hueco} cm)`);
+  ok(r.A.dentro <= 3 && r.B.dentro <= 3,
+    `sentado en los extremos, el muslo entra en el acolchado lo justo (${r.A.dentro} / ${r.B.dentro} cm, máximo 3)`);
+  ok(r.A.hueco <= 0.5 && r.B.hueco <= 0.5,
+    `y los glúteos no flotan sobre el asiento (${r.A.hueco} / ${r.B.hueco} cm)`);
   ok(r.A.haciaFuera > 0.8 && r.B.haciaFuera > 0.8,
     `en los extremos mira HACIA FUERA del banco (${r.A.haciaFuera} y ${r.B.haciaFuera}, 1 = de frente al vacío)`);
-  ok(r.medio.deLado > 0.8, `y en el medio se sienta DE LADO, con las piernas al costado (${r.medio.deLado})`);
+  // EN EL MEDIO YA NO SE SIENTA DE LADO (v0.3.14): una banca plana y larga sin
+  // respaldo es donde uno SE ACUESTA, y la propia banca le hace de respaldo.
+  // Hasta v0.3.13 se sentaba de costado, que era lo único que la aplicación
+  // sabía hacer, no lo que hace una persona con un banco de press delante.
+  ok(r.medio.tumbada, "y en el MEDIO se acuesta: la banca hace de asiento y de respaldo");
+  ok(r.medio.inclina >= 85 && r.medio.inclina <= 95,
+    `boca arriba, con el cuerpo horizontal (${r.medio.inclina}° de la vertical)`);
+  ok(!r.A.tumbada && !r.B.tumbada, "y en los extremos sigue SENTADO, como siempre");
   await page.close();
 }
 

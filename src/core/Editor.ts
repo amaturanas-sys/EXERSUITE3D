@@ -3124,6 +3124,7 @@ export class Editor {
         support: this.figuraApoyadaEn,
         supportY: this.alturaDelApoyo,
         backSupport: this.apoyoEspalda,
+        lyingOnSupport: this.tumbadaEnElApoyo,
         zones: [...this.zonasActivas].map(([id, side]) => ({ id, side })),
         startPose: this.poseDePartida,
         startPoseName: this.nombreDePartida,
@@ -3557,6 +3558,7 @@ export class Editor {
         this.apoyoEspalda = data.human.backSupport
           ? idMap.get(data.human.backSupport) ?? null
           : null;
+        this.tumbadaEnElApoyo = data.human.lyingOnSupport === true;
         fig.position.fromArray(data.human.position);
         fig.quaternion.fromArray(data.human.quaternion);
         const joints = this.figureJoints();
@@ -7108,13 +7110,18 @@ export class Editor {
     // sentarse aunque se le cargara una postura sentada.
     if (this.alturaDelApoyo !== null) {
       fig.updateMatrixWorld(true);
-      fig.position.y += this.alturaDelApoyo - this.baseDeApoyoSentado(fig);
+      fig.position.y += this.alturaDelApoyo
+        - (this.tumbadaEnElApoyo ? this.baseDeLaEspalda(fig) : this.baseDeApoyoSentado(fig));
       fig.updateMatrixWorld(true);
     }
     // LA ESPALDA VUELVE A SU RESPALDO. Es lo que fija a la persona en la
     // máquina: sin replantarla, el primer gesto de tren inferior la empujaba
     // hacia delante y acababa de pie (v0.3.11).
-    const respaldo = this.apoyoEspalda ? this.objects.get(this.apoyoEspalda) : undefined;
+    // Tumbada, el respaldo ES el apoyo y la espalda ya descansa encima: no hay
+    // nada contra lo que deslizar, y hacerlo la sacaría de la banca.
+    const respaldo = this.apoyoEspalda && !this.tumbadaEnElApoyo
+      ? this.objects.get(this.apoyoEspalda)
+      : undefined;
     if (respaldo) this.deslizarHastaElRespaldo(fig, respaldo);
     this.noHundirse();
   }
@@ -7286,6 +7293,12 @@ export class Editor {
    * inferior lo empujaba fuera del asiento (v0.3.11).
    */
   private apoyoEspalda: string | null = null;
+  /**
+   * ¿Está TUMBADA sobre su apoyo? En una banca plana la misma pieza hace de
+   * asiento y de respaldo, y lo que descansa en ella es la espalda entera, no
+   * los glúteos: la cota de re-apoyo se mide distinto (v0.3.14).
+   */
+  private tumbadaEnElApoyo = false;
 
   /** Captura la pose actual (rotaciones de todas las articulaciones, en grados). */
   captureCurrentPose(): PoseDef {
@@ -11822,6 +11835,19 @@ export class Editor {
       // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
       this.figuraApoyadaEn = "pieza";
       this.alturaDelApoyo = new THREE.Box3().setFromObject(destino.obj.mesh).max.y;
+      // ¿SE SIENTA O SE TUMBA? En una banca plana y larga sin respaldo, el
+      // medio no es sitio para sentarse: es donde uno SE ACUESTA, y la propia
+      // banca hace de respaldo. Los extremos siguen siendo asiento.
+      if (this.esParaTumbarse(destino.obj, destino.punto)) {
+        this.acostarEnLaBanca(fig, destino.obj, destino.punto);
+        this.lastFigureTransform = { position: fig.position.clone(), quaternion: fig.quaternion.clone() };
+        this.marcarPoseDePartida("Tumbado");
+        if (this.physics) this.physics.añadirFigura(fig);
+        this.requestRender();
+        this.scheduleAutosave();
+        return;
+      }
+      this.tumbadaEnElApoyo = false;
       this.applyPose("Sentado", false);
       // La figura se APOYA sobre la cara superior del asiento. Aquí NO se
       // "aterriza": sentada, lo que toca el suelo son los pies por su cuenta,
@@ -11858,6 +11884,7 @@ export class Editor {
       this.figuraApoyadaEn = "suelo";
       this.alturaDelApoyo = null;
       this.apoyoEspalda = null;
+      this.tumbadaEnElApoyo = false;
       this.applyPose("De pie", false);
       fig.position.set(destino.punto.x, 0, destino.punto.z);
       // De pie no hay reclinación que valga: sólo mira hacia donde toca. (En
@@ -12120,6 +12147,96 @@ export class Editor {
       ],
       h: [semi.x * Math.abs(esc.x), semi.y * Math.abs(esc.y), semi.z * Math.abs(esc.z)],
     };
+  }
+
+  /**
+   * ¿ESTE APOYO ES PARA TUMBARSE? (v0.3.14)
+   *
+   * Una banca plana sirve de asiento Y de respaldo: uno se sienta en el
+   * extremo, con las piernas colgando, y SE ACUESTA en el medio, que es lo que
+   * hace un banco de press. Se pide lo que pide el cuerpo: cara horizontal
+   * —para tumbarse hay que tener dónde—, largo suficiente para un tronco, y
+   * que el punto tocado caiga en el tramo central; en los extremos manda el
+   * asiento. Y sólo si NO hay respaldo: con respaldo, el sitio es sentarse.
+   */
+  private esParaTumbarse(apoyo: SceneObject, punto: THREE.Vector3): boolean {
+    const cara = this.caraDeApoyo(apoyo);
+    if (cara.y < 0.8) return false; // no es una superficie sobre la que tenderse
+    if (this.respaldoDelAsiento(punto, apoyo)) return false;
+    const caja = this.cajaDePieza(apoyo);
+    // Eje horizontal más largo: es a lo largo de él como se tiende el cuerpo.
+    let iLargo = -1;
+    for (let i = 0; i < 3; i++) {
+      if (Math.abs(caja.e[i].y) > 0.5) continue; // ése es el grosor, va vertical
+      if (iLargo < 0 || caja.h[i] > caja.h[iLargo]) iLargo = i;
+    }
+    if (iLargo < 0) return false;
+    // Un tronco con su cabeza pide unos 90 cm de banca; menos es un taburete.
+    if (caja.h[iLargo] * 2 < 90) return false;
+    const t = punto.clone().sub(caja.c).dot(caja.e[iLargo]);
+    return Math.abs(t) <= caja.h[iLargo] * 0.5;
+  }
+
+  /**
+   * ACOSTAR LA FIGURA BOCA ARRIBA sobre su banca (v0.3.14).
+   *
+   * La banca hace de asiento y de respaldo a la vez, así que aquí no hay nada
+   * contra lo que deslizarse: la espalda YA descansa encima. Se tiende a lo
+   * largo de la banca, con la cabeza hacia el extremo que queda más despejado,
+   * y lo que se posa en la cara es la ESPALDA, no los glúteos.
+   */
+  private acostarEnLaBanca(fig: THREE.Group, apoyo: SceneObject, punto: THREE.Vector3): void {
+    const caja = this.cajaDePieza(apoyo);
+    let iLargo = 0;
+    for (let i = 0; i < 3; i++) {
+      if (Math.abs(caja.e[i].y) > 0.5) continue;
+      if (caja.h[i] > caja.h[iLargo] || Math.abs(caja.e[iLargo].y) > 0.5) iLargo = i;
+    }
+    const largo = caja.e[iLargo].clone().setY(0);
+    if (largo.lengthSq() < 1e-4) largo.set(0, 0, 1);
+    largo.normalize();
+    // LA CABEZA VA HACIA EL LADO MÁS DESPEJADO: si se tocó descentrado, hacia
+    // el extremo que queda por delante del punto; si no, da igual y se toma
+    // el sentido del eje tal cual.
+    const t = punto.clone().sub(caja.c).dot(caja.e[iLargo]);
+    if (t < -0.5) largo.negate();
+    this.tumbadaEnElApoyo = true;
+    this.apoyoEspalda = apoyo.id;
+    this.applyPose("Tumbado", false);
+    const alto = new THREE.Box3().setFromObject(apoyo.mesh).max.y;
+    fig.position.set(punto.x, alto, punto.z);
+    // Girar NEGATIVO alrededor del eje X local echa el cuerpo hacia atrás;
+    // noventa grados es quedarse tumbado boca arriba.
+    const q = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      Math.atan2(largo.x, largo.z),
+    );
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
+    fig.quaternion.copy(q);
+    fig.updateMatrixWorld(true);
+    fig.position.y += alto - this.baseDeLaEspalda(fig);
+    fig.updateMatrixWorld(true);
+    // Los pies buscan el suelo por su cuenta; nada puede quedar por debajo.
+    this.noHundirse();
+    this.updateHandIK();
+    this.updateFootIK();
+  }
+
+  /**
+   * Cota mundial más baja de lo que REPOSA en la banca al tumbarse: espalda y
+   * pelvis. Se excluyen piernas y brazos a propósito — cuelgan hacia el suelo
+   * y medirlos levantaría el cuerpo por encima de la banca.
+   */
+  private baseDeLaEspalda(fig: THREE.Group): number {
+    let y = Infinity;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (!m.isMesh || !m.visible) return;
+      const id = String(m.userData.segmentId ?? "");
+      if (id !== "torso" && id !== "pelvis") return;
+      y = Math.min(y, this.masBajoPropio(m));
+    });
+    return Number.isFinite(y) ? y : new THREE.Box3().setFromObject(fig).min.y;
   }
 
   /**

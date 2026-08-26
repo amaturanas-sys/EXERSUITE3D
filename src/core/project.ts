@@ -83,6 +83,8 @@ export interface HumanData {
   supportY?: number | null;
   /** Pieza contra la que descansa la espalda, si se sentó con respaldo. */
   backSupport?: string | null;
+  /** Tumbada boca arriba sobre su apoyo (banca plana que hace de respaldo). */
+  lyingOnSupport?: boolean;
   /** Zonas de movimiento activas y su lado (v0.2.49). */
   zones?: { id: string; side: string }[];
   /** POSTURA DE PARTIDA: pose y sitio a los que devuelve el ↺ (v0.2.49). */
