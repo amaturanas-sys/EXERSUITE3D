@@ -617,7 +617,14 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
   **vuelve a correr esa prueba sola** antes de creértelo.
 - Si el `vite preview` se muere a media tanda, se lleva por delante todas las que
   corrían (`ERR_CONNECTION_REFUSED`). No es un fallo de la aplicación.
-- `prueba-sitio` necesita el Next.js levantado en el 3100; las otras 80 no.
+- `prueba-sitio` necesita el Next.js levantado en el 3100; las otras no.
+- **`prueba-freno` falla a veces AUNQUE se corra sola**, y ya lo hacía en v0.3.10.
+  Su última comprobación —«la pila recibe más recorrido» con freno que sin él—
+  compara dos simulaciones de 50 pasos cronometrados cuyo resultado oscila entre
+  12,4 y 13,8 cm en las dos ramas: la diferencia que busca cabe dentro de su
+  propio ruido. Verificado a mano contra el build de v0.3.10 (1 rojo de 3
+  pasadas), así que un rojo suyo NO es señal de regresión. Merece rehacerse con
+  un criterio que no dependa del reloj.
 
 ---
 
