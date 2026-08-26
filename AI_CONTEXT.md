@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.12.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.13.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,16 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **El gizmo de la figura entera va en la CADERA** (v0.3.13), sobre el pivote
+  `figuraProxy`, no sobre el grupo: el origen del rig no está donde está el
+  cuerpo.
+- **Quién es el respaldo se MIDE** (v0.3.13): placas perpendiculares al asiento,
+  anchas, que se levantan por encima de él y cuya cara mira de lado; de ésas,
+  **manda la más baja**. Lo de arriba es cabecera. El nombre sólo vale de
+  respaldo del respaldo.
+- **El polo de la rodilla toma su signo de la rodilla ACTUAL** (v0.3.13), no del
+  frente de la figura: recostada, el frente no distingue lados y la IK saltaba
+  de rama, volteando la pierna.
 - **Si el punto pisado le queda lejos a la pierna**, el objetivo se acerca
   *sobre la misma cara* hasta donde alcanza. Quedarse corto hundía la planta.
 - **La cara que se pisa MIRA AL CUERPO, no al cielo** (v0.3.12). Sobre un suelo

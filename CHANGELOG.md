@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.13] — 2026-08-26
+
+### Arreglado
+
+Cuatro defectos que salieron al colocar la figura y correr la simulación sobre
+la prensa rediseñada.
+
+**El gizmo del maniquí aparecía lejos del maniquí.** Se colgaba del origen del
+grupo de la figura, que es un punto del rig y no del cuerpo: sentada a 50 cm,
+ese origen queda **30 cm bajo el suelo**, y colocarla obligaba a alejar la
+cámara para encontrarlo. Ahora el gizmo va sobre un pivote plantado en la
+**cadera**, que es el punto de equilibrio de una persona: sale **a 0 cm** del
+centro de la pelvis, y arrastrarlo mueve y gira la figura alrededor de ahí.
+
+**No reconocía cuál de las dos placas era el respaldo.** La búsqueda iba por
+nombre y por cercanía, así que una cabecera —o un travesaño del bastidor, que
+también es ancho y plano y además queda más bajo— podía ganarle al respaldo. La
+regla ahora es geométrica y dice lo que dice un cuerpo: entre las **placas
+perpendiculares al asiento** que se levantan por encima de él y miran de lado
+(no al cielo), **manda la más baja**; lo que quede por encima es cabecera. Sobre
+la prensa del diseñador, con dos respaldos y una decena de travesaños a menos de
+90 cm, elige el correcto.
+
+**Pisar la placa volteaba las piernas.** El polo de la rodilla tomaba su signo
+del frente de la figura, y recostada en una prensa ese frente casi no distingue
+un lado del otro: la IK saltaba a la rama contraria y resolvía una rodilla que
+dobla al revés. Ahora el signo lo da **la rodilla que ya hay** —el lado hacia el
+que está flexionada en ese instante—, así que la solución no cambia de rama
+nunca, que es lo que hace una articulación de verdad.
+
+**Y en simulación se despegaba del asiento sin empujar la placa.** Con lo
+anterior en su sitio, diez pasos de tren inferior con el motor corriendo dejan a
+la figura **quieta en el asiento (0 cm)**, la espalda a **0,32 cm** del
+respaldo, la planta **fuera de la placa en todo momento** (0,44–0,59 cm) y la
+rodilla extendiéndose de **77° a 34°** mientras la placa **viaja de z=30,6 a
+z=42,2** por su guía.
+
+### Pendiente
+
+Queda sin hacer una parte de lo pedido: que una **banca plana** sirva a la vez
+de asiento y de respaldo (figura supinada sobre ella). Es un cambio de POSTURA,
+no de apoyo, y no cabía en esta entrega.
+
 ## [0.3.12] — 2026-08-26
 
 ### Arreglado

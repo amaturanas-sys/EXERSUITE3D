@@ -108,7 +108,26 @@ const sentada = await page.evaluate(async ({ AYUDA, ids }) => {
   const oR = window.__obb(respaldo.mesh);
   // Lo que se recuesta el cuerpo: cuánto se aparta de la vertical su eje Y.
   const arriba = new T.Vector3(0, 1, 0).applyQuaternion(fig.quaternion);
+  // EL GIZMO DEL MANIQUÍ VA EN LA CADERA, su punto de equilibrio: con el
+  // origen del rig 30 cm bajo el suelo aparecía lejos del cuerpo.
+  const P = Object.getPrototypeOf(ed);
+  P.selectFigureRoot.call(ed);
+  const pelvisC = new T.Box3().setFromObject(window.__seg("pelvis")).getCenter(new T.Vector3());
+  const gz = ed.gizmo.object;
+  const antesPos = fig.position.clone();
+  ed.figuraProxy.position.x += 20;
+  P.aplicarDeltaDeLaFigura.call(ed);
+  const arrastre = +fig.position.distanceTo(antesPos).toFixed(1);
+  ed.figuraProxy.position.x -= 20;
+  P.aplicarDeltaDeLaFigura.call(ed);
+  // Y se suelta la selección: con el gizmo puesto sobre la figura, el clic de
+  // «Pisar» de la sección siguiente se lo comería.
+  ed.select(null);
+  ed.gizmo.detach();
   return {
+    respaldo: ed.apoyoEspalda ?? null,
+    gizmoCadera: gz ? +gz.getWorldPosition(new T.Vector3()).distanceTo(pelvisC).toFixed(1) : 999,
+    gizmoArrastre: arrastre,
     huecoTorso: +(-window.__pen(window.__obb(window.__seg("torso")), oR)).toFixed(2),
     huecoPelvis: +(-window.__pen(window.__obb(window.__seg("pelvis")), oR)).toFixed(2),
     reclina: +(Math.acos(Math.min(1, arriba.y)) * 180 / Math.PI).toFixed(1),
@@ -117,6 +136,12 @@ const sentada = await page.evaluate(async ({ AYUDA, ids }) => {
   };
 }, { AYUDA, ids: montaje.ids });
 console.log("\n2) SENTADA EN LA PRENSA:", JSON.stringify(sentada));
+chequear(
+  sentada.respaldo === montaje.ids.respaldo,
+  `el RESPALDO elegido es el bajo, no la cabecera (${sentada.respaldo} vs ${montaje.ids.respaldo})`,
+);
+chequear(sentada.gizmoCadera <= 5, `y el gizmo del maniquí sale EN SU CADERA (${sentada.gizmoCadera} cm)`);
+chequear(sentada.gizmoArrastre === 20, `arrastrar ese pivote mueve la figura igual (${sentada.gizmoArrastre} cm de 20)`);
 chequear(sentada.huecoTorso <= 1, `la ESPALDA toca el respaldo (hueco ${sentada.huecoTorso} cm; antes 11,52)`);
 chequear(sentada.huecoTorso >= -1.5, "y no se mete dentro de él");
 chequear(sentada.reclina > 40, `la figura se RECUESTA como el respaldo (${sentada.reclina}°)`);

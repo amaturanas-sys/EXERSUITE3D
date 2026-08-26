@@ -544,6 +544,17 @@ export class Editor {
   private selectedGroupId: string | null = null;
   private selectedJointName: string | null = null;
   private groupProxy = new THREE.Object3D();
+  /**
+   * Pivote del gizmo del MANIQUÍ, puesto en su cadera (v0.3.13).
+   *
+   * El grupo de la figura tiene su origen donde le toca al rig, que no es
+   * donde está el cuerpo: con la figura sentada a 50 cm, ese origen queda 30 cm
+   * BAJO el suelo, y el gizmo aparecía flotando lejos del maniquí —a veces
+   * fuera de la pantalla—, así que colocarlo obligaba a alejar la cámara. La
+   * cadera es el punto de equilibrio de una persona, y es donde debe estar.
+   */
+  private figuraProxy = new THREE.Object3D();
+  private figuraPrev = new THREE.Matrix4();
   private groupPrev = new THREE.Matrix4();
   // ---- Selección de área (marquee), portapapeles e historial (v0.1.8)
   private areaSelect = false;
@@ -704,6 +715,13 @@ export class Editor {
         this.applyMultiDelta();
         return;
       }
+      // Moviendo la figura entera: el gizmo vive en la cadera y lo que se
+      // arrastra es un pivote, así que el delta se traslada al grupo.
+      if (this.selectedFigure && !this.selectedJointName
+        && this.gizmo.object === this.figuraProxy) {
+        this.aplicarDeltaDeLaFigura();
+        return;
+      }
       // Posando el maniquí: al arrastrar el eje articular gira el segmento en
       // torno a la articulación, limitado a su eje/rango natural.
       if (this.selectedFigure && this.selectedJointName) {
@@ -726,6 +744,7 @@ export class Editor {
     this.sceneManager.scene.add(this.cableVisuals);
     this.sceneManager.scene.add(this.ropeVisuals);
     this.sceneManager.scene.add(this.groupProxy);
+    this.sceneManager.scene.add(this.figuraProxy);
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
@@ -6402,8 +6421,44 @@ export class Editor {
     this.selectedFigure = true;
     this.selectedJointName = null;
     this.resetGizmoAxes();
-    this.gizmo.attach(this.humanFigure);
+    this.plantarProxyEnLaCadera();
+    this.gizmo.attach(this.figuraProxy);
     this.setMode("translate");
+  }
+
+  /** Sitúa el pivote del gizmo en la cadera de la figura, con su orientación. */
+  private plantarProxyEnLaCadera(): void {
+    const fig = this.humanFigure;
+    if (!fig) return;
+    fig.updateMatrixWorld(true);
+    let pelvis: THREE.Mesh | null = null;
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      if (m.isMesh && m.userData.segmentId === "pelvis") pelvis = m;
+    });
+    const p = pelvis
+      ? new THREE.Box3().setFromObject(pelvis as THREE.Mesh).getCenter(new THREE.Vector3())
+      : new THREE.Box3().setFromObject(fig).getCenter(new THREE.Vector3());
+    this.figuraProxy.position.copy(p);
+    this.figuraProxy.quaternion.copy(fig.quaternion);
+    this.figuraProxy.scale.set(1, 1, 1);
+    this.figuraProxy.updateMatrixWorld(true);
+    this.figuraPrev.copy(this.figuraProxy.matrixWorld);
+  }
+
+  /** Lleva al grupo de la figura lo que el gizmo le hizo a su pivote. */
+  private aplicarDeltaDeLaFigura(): void {
+    const fig = this.humanFigure;
+    if (!fig) return;
+    this.figuraProxy.updateMatrixWorld(true);
+    const cur = this.figuraProxy.matrixWorld;
+    const delta = cur.clone().multiply(this.figuraPrev.clone().invert());
+    const m = new THREE.Matrix4().compose(fig.position, fig.quaternion, fig.scale);
+    m.premultiply(delta);
+    m.decompose(fig.position, fig.quaternion, fig.scale);
+    fig.updateMatrixWorld(true);
+    this.figuraPrev.copy(cur);
+    this.requestRender();
   }
 
   private figureJoints(): Record<string, THREE.Object3D> | null {
@@ -7952,10 +8007,24 @@ export class Editor {
       // cuerpo, así que dobla en el plano sagital pase lo que pase. Ese polo
       // —perpendicular a la pierna por construcción— no se degenera nunca
       // salvo con la pierna apuntando de lado, y para ese caso queda el frente.
-      const haciaElPie = target.clone().sub(cadera.getWorldPosition(new THREE.Vector3()));
+      const caderaP = cadera.getWorldPosition(new THREE.Vector3());
+      const haciaElPie = target.clone().sub(caderaP);
       const polo = new THREE.Vector3().crossVectors(derecha, haciaElPie);
-      if (polo.lengthSq() < 1e-4) polo.copy(frente);
-      else if (polo.dot(frente) < 0) polo.negate();
+      if (polo.lengthSq() < 1e-4) {
+        polo.copy(frente);
+      } else {
+        // EL SIGNO LO DA LA RODILLA QUE YA HAY, no el frente de la figura
+        // (v0.3.13). Recostada en una prensa, el frente casi no distingue un
+        // lado del otro y el polo podía salir invertido: la IK resolvía una
+        // rodilla que dobla al revés y la pierna aparecía volteada. Tomando el
+        // lado hacia el que la rodilla está flexionada AHORA, la solución nunca
+        // salta de rama, que es lo que hace una articulación de verdad.
+        const rod = rodilla.getWorldPosition(new THREE.Vector3()).sub(caderaP);
+        const eje = haciaElPie.clone().normalize();
+        const fuera = rod.clone().addScaledVector(eje, -rod.dot(eje));
+        const ref = fuera.lengthSq() > 1e-4 ? fuera : frente;
+        if (polo.dot(ref) < 0) polo.negate();
+      }
       polo.normalize();
       const cara = normal.dot(target);
       const tocado = target.clone();
@@ -11771,7 +11840,7 @@ export class Editor {
       // un respaldo RECLINADO tocarlo exige reclinarse (v0.3.11) — deslizar
       // hacia atrás con el tronco vertical dejaba la espalda a 11,5 cm de la
       // placa, tocando sólo con la pelvis.
-      const respaldo = this.respaldoDelAsiento(destino.punto);
+      const respaldo = this.respaldoDelAsiento(destino.punto, destino.obj);
       this.apoyoEspalda = respaldo?.id ?? null;
       if (respaldo) this.reclinarComoElRespaldo(fig, respaldo, frente);
       fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
@@ -12067,13 +12136,97 @@ export class Editor {
    * llegaba a tocarlo, agotaba los pasos del bucle y lo dejaba 45 cm más
    * atrás, fuera del banco.
    */
-  private respaldoDelAsiento(cerca: THREE.Vector3): SceneObject | null {
-    const respaldo = this.piezaCercana(
+  private respaldoDelAsiento(cerca: THREE.Vector3, asiento?: SceneObject | null): SceneObject | null {
+    // QUIÉN ES EL RESPALDO SE MIDE, no se lee del nombre (v0.3.13). En la
+    // prensa del diseñador hay DOS placas casi perpendiculares al asiento: el
+    // respaldo, que arranca a la altura del asiento, y una cabecera más
+    // pequeña y mucho más arriba. Tomando la más cercana al punto —o la que
+    // llevara «respaldo» en el nombre— podía ganar la cabecera, y la figura se
+    // recostaba contra ella. La regla es la de un cuerpo real: MANDA LA MÁS
+    // BAJA, la que empieza donde acaba el asiento; lo que quede por encima es
+    // cabecera.
+    const cara = asiento ? this.caraDeApoyo(asiento) : new THREE.Vector3(0, 1, 0);
+    const altoAsiento = asiento
+      ? new THREE.Box3().setFromObject(asiento.mesh).max.y
+      : cerca.y;
+    let mejor: SceneObject | null = null;
+    let mejorArranque = Infinity;
+    for (const o of this.objects.values()) {
+      if (asiento && o === asiento) continue;
+      // AL ALCANCE O NADA (v0.2.51): en una sala con varias máquinas, el
+      // respaldo de la de al lado hacía retroceder a quien se sentaba enfrente.
+      if (o.mesh.position.distanceTo(cerca) > 90) continue;
+      const caja = new THREE.Box3().setFromObject(o.mesh);
+      // Un respaldo es una PLACA: ancha y alta, y delgada en UN solo eje. Se
+      // mide en la caja PROPIA de la pieza, no en la del mundo: un tubo
+      // diagonal tiene una caja mundial enorme y se colaba como respaldo —en
+      // la prensa del diseñador ganaba un travesaño que baja al suelo.
+      const geo = o.mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const propio = geo.boundingBox!.getSize(new THREE.Vector3());
+      const lados = [propio.x, propio.y, propio.z].sort((a, b) => a - b);
+      if (lados[1] < 28 || lados[2] < 30) continue; // una espalda pide anchura
+      if (lados[0] > lados[1] / 3) continue; // no es una placa: es un bloque
+      // Y PERPENDICULAR al asiento: su cara de apoyo forma un buen ángulo con
+      // la del asiento. Paralela sería otro asiento, no un respaldo.
+      const suya = this.caraDeApoyo(o);
+      if (Math.abs(suya.dot(cara)) > 0.71) continue; // menos de 45°: no es respaldo
+      // Y su cara MIRA DE LADO, no al cielo: contra un respaldo uno se apoya
+      // hacia atrás. Los travesaños del bastidor son planos y anchos pero
+      // miran hacia arriba, y ganaban por estar más abajo que nadie.
+      if (Math.hypot(suya.x, suya.z) < 0.45) continue;
+      // De las placas que quedan, MANDA LA MÁS BAJA: el respaldo arranca donde
+      // acaba el asiento, y lo que quede por encima es cabecera. Y ninguna que
+      // empiece muy por encima del asiento: eso ya no es donde va la espalda.
+      if (caja.min.y - altoAsiento > 25) continue;
+      // Ni por debajo del asiento: lo que pasa por ahí es bastidor.
+      if (caja.getCenter(new THREE.Vector3()).y < altoAsiento - 10) continue;
+      // Y EL ASIENTO TIENE QUE ESTAR JUSTO DELANTE DE SU CARA. Es lo que
+      // distingue un respaldo de cualquier otro tablón de la máquina: uno se
+      // sienta a sus pies, tocándolo. Sin esto ganaban los travesaños del
+      // bastidor, que también son planos y anchos y además quedan más bajos.
+      const oc = this.cajaDePieza(o);
+      let iFino = 0;
+      for (let i = 1; i < 3; i++) if (oc.h[i] < oc.h[iFino]) iFino = i;
+      const rel = cerca.clone().sub(oc.c);
+      const t = [rel.dot(oc.e[0]), rel.dot(oc.e[1]), rel.dot(oc.e[2])];
+      if (Math.abs(t[iFino]) > 45) continue; // el asiento no está pegado a la cara
+      let dentro = true;
+      for (let i = 0; i < 3; i++) {
+        if (i === iFino) continue;
+        if (Math.abs(t[i]) > oc.h[i] + 15) dentro = false;
+      }
+      if (!dentro) continue; // el asiento no cae al pie de la placa
+      const centro = caja.getCenter(new THREE.Vector3()).y;
+      if (centro < mejorArranque) {
+        mejorArranque = centro;
+        mejor = o;
+      }
+    }
+    if (mejor) return mejor;
+    // Respaldo por NOMBRE, como respaldo del respaldo: proyectos viejos y
+    // piezas cuya forma no encaja en la regla de arriba.
+    const porNombre = this.piezaCercana(
       cerca,
-      (o) => /respaldo|back/i.test(o.name) || o.componentId === "respaldo",
+      (o) => (!asiento || o !== asiento)
+        && (/respaldo|back/i.test(o.name) || o.componentId === "respaldo"),
     );
-    if (!respaldo || respaldo.mesh.position.distanceTo(cerca) > 90) return null;
-    return respaldo;
+    if (!porNombre || porNombre.mesh.position.distanceTo(cerca) > 90) return null;
+    return porNombre;
+  }
+
+  /**
+   * Normal de la CARA DE APOYO de una pieza: la de su lado más delgado, que es
+   * sobre la que uno se sienta o se recuesta. Se devuelve mirando hacia
+   * arriba, para poder comparar dos piezas entre sí.
+   */
+  private caraDeApoyo(o: SceneObject): THREE.Vector3 {
+    const caja = this.cajaDePieza(o);
+    let fino = 0;
+    for (let i = 1; i < 3; i++) if (caja.h[i] < caja.h[fino]) fino = i;
+    const n = caja.e[fino].clone().normalize();
+    if (n.y < 0) n.negate();
+    return n;
   }
 
   /**
