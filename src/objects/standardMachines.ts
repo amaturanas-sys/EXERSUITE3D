@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Editor } from "../core/Editor";
 import type { PrimitiveParams } from "./types";
+import { LEG_PRESS, LEG_PRESS_UNIONES } from "./maquinas/legPress";
 import {
   UPPER_MACHINE,
   UPPER_MACHINE_CABLES,
@@ -70,6 +71,13 @@ export const STANDARD_MACHINES: MachinePrefab[] = [
     icon: "🧱",
     description:
       "Variante de la torre del diseñador con BLOQUE DE PESOS: la pila seleccionable abraza los tubos guía en lugar del carrier portadiscos — mismo bastidor, poleas, remo de polea alta y jalón bajo con sus dos cables.",
+  },
+  {
+    id: "legpress",
+    label: "Prensa de piernas",
+    icon: "🦵",
+    description:
+      "LegPress del diseñador: asiento reclinado con respaldo y reposacabezas sobre bastidor fijo, placa de empuje de 95×50 colgada del brazo articulado que corre por dos guías tubulares, y cuatro cuernos de carga. Es la máquina sobre la que se afinó la ergonomía del maniquí sentado.",
   },
   {
     id: "arbol-discos",
@@ -490,6 +498,12 @@ const SPECS: Record<string, MaquinaSpec> = {
   "arbol-discos": { label: "Árbol de discos", piezas: ARBOL },
   // Definición LITERAL revisada contra el motor actual (v0.2.36): sus 41
   // piezas viven en su propio módulo por tamaño.
+  // Prensa de piernas (v0.3.19): definición literal del prefab del diseñador.
+  legpress: {
+    label: "Prensa de piernas",
+    piezas: LEG_PRESS,
+    uniones: LEG_PRESS_UNIONES,
+  },
   uppermachine: {
     label: "UpperMachine",
     piezas: UPPER_MACHINE,

@@ -620,8 +620,9 @@ src/
     placaDentada.ts (521)       Placa con ganchos, generada entera desde su paso.
     espejar.ts (93)             Voltear HORNEANDO el espejo (nunca escala negativa).
     materials.ts (87)           20 presets PBR.
-    standardMachines.ts (645)   Las 8 máquinas de fábrica (specs VERBATIM de .prefab.json).
+    standardMachines.ts (658)   Las 9 máquinas de fábrica (specs VERBATIM de .prefab.json).
     maquinas/upperMachine.ts (1.052)   La más compleja: 41 piezas, 16 uniones, 2 cables.
+    maquinas/legPress.ts (1.173)   Prensa de piernas: 34 piezas, 29 uniones (v0.3.20).
     humanFigure.ts (577) poseLibrary.ts (742) movimientos.ts (539) barraManiqui.ts (328)
     Rope.ts (249)               Cadenas y correas (NO son SceneObject).
   physics/

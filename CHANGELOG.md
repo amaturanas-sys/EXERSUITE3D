@@ -5,6 +5,26 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.20] — 2026-08-27
+
+### Añadido
+
+**Prensa de piernas en el inventario de máquinas estándar.** El prefab del
+diseñador entra como definición LITERAL —34 piezas con su geometría exacta
+(trazados de viga, escalas, perforaciones y canales) y sus 29 uniones—, igual
+que la UpperMachine: asiento reclinado con respaldo y reposacabezas sobre el
+bastidor fijo, placa de empuje de 95×50 colgada del brazo articulado que corre
+por dos guías tubulares, y cuatro cuernos de carga. Es la máquina sobre la que
+se afinó la ergonomía del maniquí sentado en v0.3.11–v0.3.18.
+
+Medido al insertarla: 197×188×280 cm, apoyada en el suelo por sus travesaños
+de base, bastidor soldado en un solo cuerpo rígido (0 cm de deriva en
+simulación), y el carro baja 23,1 cm hasta su tope y ahí se queda. El maniquí
+reconoce su asiento (0 cm de hueco bajo las nalgas) y su respaldo.
+
+**Prueba `prueba-legpress`**: 18 comprobaciones sobre el armado, el anclaje al
+suelo, la estabilidad en simulación y el sentado del maniquí.
+
 ## [0.3.19] — 2026-08-27
 
 ### Cambiado
