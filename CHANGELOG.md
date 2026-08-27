@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.18] — 2026-08-27
+
+### Arreglado
+
+**Corregir la altura a mano no servía de nada.** El apoyo guarda a qué cota
+descansa el cuerpo, y el re-apoyo lo devuelve ahí en cada postura, cada gesto y
+al arrancar la simulación. Arrastrar la figura con el gizmo **no actualizaba
+esa cota**, así que a la primera de cambio saltaba a la altura vieja: la
+postura «colapsaba», perdía los pies apoyados, y al accionar el tren inferior
+el cuerpo se salía del asiento aunque los pies respetaran la plataforma. Ahora
+**arrastrar es recolocar**: la figura aprende su apoyo de donde la dejas.
+Medido: se sube 10 cm con el gizmo y se queda ahí tras cinco re-apoyos, seis
+pulsaciones de gesto y el arranque de la simulación (**0 cm** en los tres), con
+los dos pies apoyados intactos.
+
+**Y sentarse ya no es que dos números coincidan.** La cota de posado salía de
+la caja envolvente de la pieza marcada, que es una aproximación buena para una
+placa limpia y mala para cualquier otra cosa —un cojín curvo, un asiento
+partido en dos—: ahí la figura quedaba «sentada» en el aire. Ahora, después de
+colocarla, **se baja hasta que la carne toca el hierro** y se para justo antes
+de hundirse. No depende de la forma de nadie.
+
+### Pendiente
+
+Sigue sin hacerse, y es lo próximo que toca: que **cualquier parte del cuerpo
+empuje las piezas por contacto** —la punta del pie, el talón, la rodilla— y que
+la mano **tire** de su agarre como el pie empuja su pedal. Manos y pies entran
+hoy a la simulación sin cuerpo de colisión, a propósito, así que el contacto
+real no existe para ellos.
+
 ## [0.3.17] — 2026-08-27
 
 ### Arreglado

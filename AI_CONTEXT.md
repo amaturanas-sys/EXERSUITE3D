@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.17.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.18.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,12 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **Arrastrar la figura con el gizmo RECOLOCA su apoyo** (v0.3.18): sin eso,
+  `alturaDelApoyo` se queda en la cota de la colocación automática y el primer
+  re-apoyo deshace la corrección manual.
+- **Sentarse se resuelve BAJANDO hasta tocar** (`posarSobreElHierro`, v0.3.18),
+  no igualando la cota a la caja de la pieza: esa caja es mala aproximación en
+  cuanto el asiento no es una placa limpia.
 - **Asiento y respaldo son un SITIO, no dos apoyos** (v0.3.17): marcar
   cualquiera de los dos sienta en el asiento. Y cuál es cuál no lo dice la
   inclinación —un respaldo tumbado 50° mira casi al cielo—, sino la relación:

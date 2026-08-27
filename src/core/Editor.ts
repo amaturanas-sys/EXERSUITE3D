@@ -6480,6 +6480,18 @@ export class Editor {
     m.premultiply(delta);
     m.decompose(fig.position, fig.quaternion, fig.scale);
     fig.updateMatrixWorld(true);
+    // DONDE LA DEJAS ES SU SITIO (v0.3.18). El apoyo guarda a qué cota
+    // descansa el cuerpo, y el re-apoyo la devuelve ahí en cada postura, cada
+    // gesto y al arrancar la simulación. Moviéndola con el gizmo esa cota se
+    // quedaba en la de la colocación automática, así que corregir la altura a
+    // mano no servía de nada: en cuanto pasaba cualquier cosa, la figura
+    // volvía a saltar a la altura vieja —la postura «colapsaba» y perdía los
+    // pies apoyados—. Arrastrarla es RECOLOCARLA, así que aprende su apoyo.
+    if (this.figuraApoyadaEn === "pieza") {
+      this.alturaDelApoyo = this.tumbadaEnElApoyo
+        ? this.baseDeLaEspalda(fig)
+        : this.baseDeApoyoSentado(fig);
+    }
     this.figuraPrev.copy(cur);
     this.requestRender();
   }
@@ -12017,6 +12029,12 @@ export class Editor {
       this.apoyoEspalda = respaldo?.id ?? null;
       if (respaldo) this.reclinarComoElRespaldo(fig, respaldo, frente);
       fig.position.y += caja.max.y - this.baseDeApoyoSentado(fig);
+      // Y SE POSA DE VERDAD SOBRE LO QUE HAYA DEBAJO (v0.3.18). La cota de la
+      // caja envolvente de la pieza marcada es una aproximación que falla en
+      // cuanto la pieza no es una placa limpia —un cojín curvo, un asiento
+      // partido en dos—: la figura se quedaba «sentada» en el aire. Bajarla
+      // hasta que la carne toca el hierro no depende de la forma de nadie.
+      this.posarSobreElHierro(fig);
       if (respaldo) this.deslizarHastaElRespaldo(fig, respaldo);
       // Sentada en un banco bajo, la pierna no cabe entre el asiento y el
       // suelo: se estira la rodilla, como haría cualquiera.
@@ -12294,6 +12312,51 @@ export class Editor {
       ],
       h: [semi.x * Math.abs(esc.x), semi.y * Math.abs(esc.y), semi.z * Math.abs(esc.z)],
     };
+  }
+
+  /**
+   * BAJA LA FIGURA HASTA QUE SE POSA (v0.3.18).
+   *
+   * Sentarse es que la carne toque el hierro, no que un número coincida con
+   * otro. Se desciende de centímetro en centímetro y se para justo antes de
+   * hundirse; si al empezar ya está metida, primero sale hacia arriba. Si no
+   * encuentra nada debajo en 60 cm, se deja donde estaba: mejor un apoyo
+   * aproximado que mandar a la figura al suelo.
+   */
+  private posarSobreElHierro(fig: THREE.Group): void {
+    const cajas = this.cajasCercaDeLaFigura();
+    if (!cajas?.length) return;
+    const posadas: THREE.Mesh[] = [];
+    fig.traverse((n) => {
+      const m = n as THREE.Mesh;
+      const id = String(m.userData.segmentId ?? "");
+      if (m.isMesh && (id === "pelvis" || id.startsWith("muslo-"))) posadas.push(m);
+    });
+    if (!posadas.length) return;
+    const y0 = fig.position.y;
+    const toca = (dy: number): boolean => {
+      fig.position.y = y0 + dy;
+      fig.updateMatrixWorld(true);
+      return this.penetracionEnEstructura(posadas, cajas) > 0.5;
+    };
+    let dy = 0;
+    while (dy < 60 && toca(dy)) dy += 1; // metida: sale
+    if (dy >= 60) {
+      toca(0);
+      return;
+    }
+    let apoyo: number | null = null;
+    for (let d = dy; d >= dy - 60; d -= 1) {
+      if (toca(d)) break;
+      apoyo = d;
+    }
+    if (apoyo === null || apoyo === dy - 60) {
+      fig.position.y = y0; // no hay nada debajo: se respeta lo calculado
+      fig.updateMatrixWorld(true);
+      return;
+    }
+    fig.position.y = y0 + apoyo;
+    fig.updateMatrixWorld(true);
   }
 
   /**

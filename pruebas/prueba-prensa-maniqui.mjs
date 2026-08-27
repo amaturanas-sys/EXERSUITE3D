@@ -579,6 +579,62 @@ chequear(
 );
 chequear(porElRespaldo.huecoResp <= 2, `y la espalda queda apoyada (${porElRespaldo.huecoResp} cm)`);
 
+// ── 11. CORREGIR A MANO SE RESPETA ────────────────────────────────────────
+// El apoyo guarda a qué cota descansa el cuerpo, y el re-apoyo lo devuelve ahí
+// en cada postura, cada gesto y al arrancar la simulación. Si arrastrar con el
+// gizmo no actualiza esa cota, corregir la altura a mano no sirve de nada: a
+// la primera de cambio la figura salta a la altura vieja, «colapsa» y pierde
+// los pies apoyados.
+const aMano = await page.evaluate(async ({ AYUDA, ids }) => {
+  eval(AYUDA);
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const P = Object.getPrototypeOf(ed);
+  await ed.loadProject(window.__proy);
+  const byName = (n) => [...ed.objects.values()].find((o) => o.name.startsWith(n));
+  const asiento = byName("Asiento"), placa = byName("Base de soporte");
+  const eje = new T.Vector3(0, -0.701, -0.712).multiplyScalar(58);
+  for (const o of [...ed.objects.values()]) if (!o.physics.fixed) {
+    o.mesh.position.add(eje); o.mesh.updateMatrixWorld(true);
+  }
+  const caja = new T.Box3().setFromObject(asiento.mesh);
+  await ed.colocarFiguraEn({ punto: caja.getCenter(new T.Vector3()).setY(caja.max.y), obj: asiento });
+  const fig = ed.humanFigure;
+  const geo = placa.mesh.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
+  for (const l of ["L", "R"]) {
+    ed.attachFoot(l, placa.id, new T.Vector3(l === "L" ? -12 : 12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
+  }
+  for (let i = 0; i < 3; i++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+  // El usuario la sube 10 cm con el gizmo, porque le parece que va baja.
+  P.selectFigureRoot.call(ed);
+  ed.figuraProxy.position.y += 10;
+  P.aplicarDeltaDeLaFigura.call(ed);
+  ed.select(null); ed.gizmo.detach();
+  const puesta = fig.position.y;
+  // Y ahora pasa de todo: re-apoyos, gesto y arranque de simulación.
+  for (let i = 0; i < 5; i++) P.reapoyarFigura.call(ed);
+  const trasReapoyo = +(fig.position.y - puesta).toFixed(1);
+  ed.activarZona("superior", null);
+  ed.activarZona("inferior", "sim");
+  for (let i = 0; i < 6; i++) { ed.moverPrimitiva(1, 5); P.updateFootIK.call(ed); }
+  fig.updateMatrixWorld(true);
+  const trasGesto = +(fig.position.y - puesta).toFixed(1);
+  ed.startSimulation();
+  for (let i = 0; i < 200 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 25));
+  await new Promise((x) => setTimeout(x, 1200));
+  fig.updateMatrixWorld(true);
+  return {
+    trasReapoyo,
+    trasGesto,
+    trasSimular: +(fig.position.y - puesta).toFixed(1),
+    piesApoyados: ed.footTargets.size,
+  };
+}, { AYUDA, ids: montaje.ids });
+console.log("\n11) CORREGIDA A MANO:", JSON.stringify(aMano));
+chequear(Math.abs(aMano.trasReapoyo) <= 1, `donde la dejas SE QUEDA tras cinco re-apoyos (${aMano.trasReapoyo} cm)`);
+chequear(Math.abs(aMano.trasGesto) <= 1, `y tras accionar el tren inferior (${aMano.trasGesto} cm)`);
+chequear(Math.abs(aMano.trasSimular) <= 1, `y al arrancar la simulación (${aMano.trasSimular} cm)`);
+chequear(aMano.piesApoyados === 2, `sin perder los pies apoyados (${aMano.piesApoyados} de 2)`);
+
 console.log("\n" + (errores.length ? errores.join("\n") + "\n" : ""));
 console.log(fallos.length ? `✗ ${fallos.length} fallo(s)` : "TODO EN VERDE");
 await browser.close();
