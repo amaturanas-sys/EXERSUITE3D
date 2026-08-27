@@ -39,8 +39,15 @@ exacta y la planta no se mueve (0,13 cm).
 
 ### Cambiado
 
-- `pruebas/prueba-prensa-maniqui.mjs` sube a 31 comprobaciones: la fuga con el
-  respaldo fuera de alcance y la torsión de rodilla y cadera al retraer.
+- `pruebas/prueba-prensa-maniqui.mjs` sube a 37 comprobaciones. Además de la
+  fuga con el respaldo fuera de alcance y la torsión de rodilla y cadera al
+  retraer, recoge **la sesión entera tal como la hace el diseñador**: colocar,
+  guardar partidas por el camino, empujar hasta el final, volver, y aplicar una
+  partida guardada — 32 pulsaciones seguidas. Los invariantes son los que se
+  ven en sus capturas de referencia: la espalda pegada al respaldo Y los
+  glúteos en el asiento **a la vez** (0,32 y 0 cm en el peor momento), las dos
+  piernas **iguales** (0,3° de diferencia), la figura **quieta** (0 cm de
+  deriva) y la placa recorriendo el gesto entero (41,7 cm de ida).
 
 ## [0.3.14] — 2026-08-26
 

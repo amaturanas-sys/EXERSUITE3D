@@ -429,6 +429,89 @@ chequear(firme.deriva <= 1, `sin respaldo al alcance, veinte re-apoyos NO la mue
 chequear(firme.rodillaTorcida <= 0.5, `la rodilla es una BISAGRA: no gira sobre su eje (${firme.rodillaTorcida}° de torsión)`);
 chequear(firme.caderaGirada <= 20.5, `y la cadera no se va de rotación al retraer (${firme.caderaGirada}° de torsión)`);
 
+// ── 9. LA SESIÓN ENTERA, como la hace el diseñador ────────────────────────
+// Colocar, guardar partidas por el recorrido, ir y volver, y aplicar una
+// partida guardada. Los invariantes son los que se ven en sus capturas: la
+// espalda en el respaldo Y los glúteos en el asiento a la vez, las dos piernas
+// iguales, y la figura quieta mientras la que viaja es la máquina.
+const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
+  eval(AYUDA);
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const P = Object.getPrototypeOf(ed);
+  await ed.loadProject(window.__proy);
+  const byName = (n) => [...ed.objects.values()].find((o) => o.name.startsWith(n));
+  const asiento = byName("Asiento"), respaldo = byName("Respaldo ("), placa = byName("Base de soporte");
+  const eje = new T.Vector3(0, -0.701, -0.712).multiplyScalar(58);
+  for (const o of [...ed.objects.values()]) if (!o.physics.fixed) {
+    o.mesh.position.add(eje); o.mesh.updateMatrixWorld(true);
+  }
+  const caja = new T.Box3().setFromObject(asiento.mesh);
+  await ed.colocarFiguraEn({ punto: caja.getCenter(new T.Vector3()).setY(caja.max.y), obj: asiento });
+  const fig = ed.humanFigure;
+  const geo = placa.mesh.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
+  for (const l of ["L", "R"]) {
+    ed.attachFoot(l, placa.id, new T.Vector3(l === "L" ? -12 : 12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
+  }
+  for (let i = 0; i < 3; i++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+  const partida = fig.position.clone();
+  const seg = (id) => new T.Box3().setFromObject(window.__seg(id));
+  const grados = (j) => [j.rotation.x, j.rotation.y, j.rotation.z].map((v) => v * 180 / Math.PI);
+  let peorEspalda = 0, peorAsiento = 0, peorDeriva = 0, peorAsimetria = 0;
+  const mirar = () => {
+    fig.updateMatrixWorld(true);
+    peorEspalda = Math.max(peorEspalda, -window.__pen(window.__obb(window.__seg("torso")), window.__obb(respaldo.mesh)));
+    peorAsiento = Math.max(peorAsiento, Math.abs(seg("pelvis").min.y - caja.max.y));
+    peorDeriva = Math.max(peorDeriva, fig.position.distanceTo(partida));
+    // LAS DOS PIERNAS, IGUALES. En las vistas frontales del diseñador se ve
+    // que el gesto es simétrico; una diferencia grande sería una pierna
+    // resuelta por otra rama de la IK.
+    for (const fam of ["hip", "knee"]) {
+      const a = grados(ed.figureJoints()[`${fam}L`]), b = grados(ed.figureJoints()[`${fam}R`]);
+      // La Z va espejada por anatomía (abducción); X e Y tienen que coincidir.
+      peorAsimetria = Math.max(peorAsimetria, Math.abs(a[0] - b[0]), Math.abs(a[1] + b[1]));
+    }
+  };
+  mirar();
+  const guardadas = [];
+  // IDA: empuje completo, guardando una partida por el camino.
+  ed.activarZona("superior", null);
+  ed.activarZona("inferior", "sim");
+  for (let i = 0; i < 16; i++) {
+    ed.moverPrimitiva(1, 5);
+    for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+    mirar();
+    if (i === 5 || i === 11) guardadas.push(ed.guardarPartida());
+  }
+  const placaArriba = placa.mesh.position.clone();
+  // VUELTA: tracción completa.
+  for (let i = 0; i < 16; i++) {
+    ed.moverPrimitiva(-1, 5);
+    for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+    mirar();
+  }
+  const carreraIda = +placaArriba.distanceTo(placa.mesh.position).toFixed(1);
+  // Y APLICAR UNA PARTIDA GUARDADA no descoloca a nadie.
+  const aplicada = guardadas.length ? ed.aplicarPartida(guardadas[0]) : false;
+  for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+  mirar();
+  return {
+    partidas: guardadas.length,
+    aplicada,
+    carreraIda,
+    peorEspalda: +peorEspalda.toFixed(2),
+    peorAsiento: +peorAsiento.toFixed(2),
+    peorDeriva: +peorDeriva.toFixed(2),
+    peorAsimetria: +peorAsimetria.toFixed(1),
+  };
+}, { AYUDA, ids: montaje.ids });
+console.log("\n9) LA SESIÓN ENTERA:", JSON.stringify(sesion));
+chequear(sesion.carreraIda > 15, `la placa recorre el gesto entero (${sesion.carreraIda} cm de ida)`);
+chequear(sesion.peorDeriva <= 2, `la figura NO se mueve del sitio en las 32 pulsaciones (${sesion.peorDeriva} cm)`);
+chequear(sesion.peorAsiento <= 2, `los glúteos siguen en el asiento todo el rato (${sesion.peorAsiento} cm)`);
+chequear(sesion.peorEspalda <= 2, `y la espalda pegada al respaldo (${sesion.peorEspalda} cm el peor momento)`);
+chequear(sesion.peorAsimetria <= 3, `las dos piernas van IGUALES (${sesion.peorAsimetria}° de diferencia)`);
+chequear(sesion.partidas === 2 && sesion.aplicada, "guardar partidas por el camino y volver a una funciona");
+
 console.log("\n" + (errores.length ? errores.join("\n") + "\n" : ""));
 console.log(fallos.length ? `✗ ${fallos.length} fallo(s)` : "TODO EN VERDE");
 await browser.close();
