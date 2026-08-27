@@ -93,6 +93,7 @@ const montaje = await page.evaluate(async ({ PROY, AYUDA }) => {
     ids: { asiento: asiento.id, respaldo: respaldo.id, placa: placa.id },
   };
 }, { PROY, AYUDA });
+await page.evaluate((p) => { window.__proy = p; }, PROY);
 console.log("\n1) LA MÁQUINA DEL DISEÑADOR:", JSON.stringify(montaje));
 chequear(montaje.hay, "la prensa trae asiento, respaldo y placa de apoyo");
 chequear(montaje.inclinaRespaldo > 40, `y el respaldo va TUMBADO, no recto (${montaje.inclinaRespaldo}°)`);
@@ -359,6 +360,74 @@ const llano = await page.evaluate(async ({ AYUDA }) => {
 console.log("\n7) SIN NORMAL GUARDADA, SUPERFICIE LLANA:", JSON.stringify(llano));
 chequear(Math.abs(llano.suelaL) <= 1.5 && Math.abs(llano.suelaR) <= 1.5,
   `una tarima horizontal se pisa como siempre (${llano.suelaL} / ${llano.suelaR} cm)`);
+
+// ── 8. Ni se fuga ni se retuerce ──────────────────────────────────────────
+const firme = await page.evaluate(async ({ AYUDA, ids }) => {
+  eval(AYUDA);
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const P = Object.getPrototypeOf(ed);
+  await ed.loadProject(window.__proy);
+  const byName = (n) => [...ed.objects.values()].find((o) => o.name.startsWith(n));
+  const asiento = byName("Asiento"), respaldo = byName("Respaldo ("), placa = byName("Base de soporte");
+  const eje = new T.Vector3(0, -0.701, -0.712).multiplyScalar(58);
+  for (const o of [...ed.objects.values()]) if (!o.physics.fixed) {
+    o.mesh.position.add(eje); o.mesh.updateMatrixWorld(true);
+  }
+  const caja = new T.Box3().setFromObject(asiento.mesh);
+  await ed.colocarFiguraEn({ punto: caja.getCenter(new T.Vector3()).setY(caja.max.y), obj: asiento });
+  const fig = ed.humanFigure;
+  const geo = placa.mesh.geometry; if (!geo.boundingBox) geo.computeBoundingBox();
+  for (const l of ["L", "R"]) {
+    ed.attachFoot(l, placa.id, new T.Vector3(l === "L" ? -12 : 12, geo.boundingBox.min.y, 0), new T.Vector3(0, -1, 0));
+  }
+  for (let i = 0; i < 3; i++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+  // EL RESPALDO SE VA LEJOS y se pide re-apoyo veinte veces. Hasta v0.3.14 el
+  // barrido, al no encontrarlo, se quedaba con el final de su recorrido: 45 cm
+  // hacia atrás POR LLAMADA, y la figura se marchaba de la máquina.
+  const antes = fig.position.clone();
+  respaldo.mesh.position.add(new T.Vector3(0, 0, -300));
+  respaldo.mesh.updateMatrixWorld(true);
+  for (let i = 0; i < 20; i++) P.reapoyarFigura.call(ed);
+  const deriva = +fig.position.distanceTo(antes).toFixed(1);
+  respaldo.mesh.position.add(new T.Vector3(0, 0, 300));
+  respaldo.mesh.updateMatrixWorld(true);
+  fig.position.copy(antes); fig.updateMatrixWorld(true);
+  // Y LA PIERNA NO SE RETUERCE: la rodilla es bisagra y la cadera gira sobre
+  // su eje lo que gira una cadera. Se mira al retraer, que es donde salía.
+  ed.activarZona("superior", null);
+  ed.activarZona("inferior", "sim");
+  let peorRodilla = 0, peorCadera = 0;
+  for (let i = 0; i < 12; i++) {
+    ed.moverPrimitiva(-1, 5);
+    for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
+    // LA TORSIÓN, no el ángulo de Euler. Un hueso del rig descansa a lo largo
+    // de Y, así que lo que gira SOBRE SÍ MISMO es la componente del cuaternión
+    // en ese eje; la `z` de Euler forma parte de hacia dónde APUNTA el hueso y
+    // tiene que poder moverse, o la pierna no alcanzaría.
+    const torsion = (j) => {
+      const g = new T.Quaternion(0, j.quaternion.y, 0, j.quaternion.w);
+      if (g.lengthSq() < 1e-9) return 0;
+      g.normalize();
+      let a = 2 * Math.atan2(g.y, g.w);
+      if (a > Math.PI) a -= 2 * Math.PI;
+      if (a < -Math.PI) a += 2 * Math.PI;
+      return Math.abs(a);
+    };
+    for (const l of ["L", "R"]) {
+      peorRodilla = Math.max(peorRodilla, torsion(ed.figureJoints()[`knee${l}`]));
+      peorCadera = Math.max(peorCadera, torsion(ed.figureJoints()[`hip${l}`]));
+    }
+  }
+  return {
+    deriva,
+    rodillaTorcida: +(peorRodilla * 180 / Math.PI).toFixed(1),
+    caderaGirada: +(peorCadera * 180 / Math.PI).toFixed(1),
+  };
+}, { AYUDA, ids: montaje.ids });
+console.log("\n8) NI SE FUGA NI SE RETUERCE:", JSON.stringify(firme));
+chequear(firme.deriva <= 1, `sin respaldo al alcance, veinte re-apoyos NO la mueven (${firme.deriva} cm; antes 45 por llamada)`);
+chequear(firme.rodillaTorcida <= 0.5, `la rodilla es una BISAGRA: no gira sobre su eje (${firme.rodillaTorcida}° de torsión)`);
+chequear(firme.caderaGirada <= 20.5, `y la cadera no se va de rotación al retraer (${firme.caderaGirada}° de torsión)`);
 
 console.log("\n" + (errores.length ? errores.join("\n") + "\n" : ""));
 console.log(fallos.length ? `✗ ${fallos.length} fallo(s)` : "TODO EN VERDE");

@@ -65,6 +65,13 @@ const RECLINACION_MAX = 60;
 const CARRERA_MAX_POR_PASO = 25;
 
 /**
+ * Cuánto puede girar la cadera SOBRE SU PROPIO EJE cuando la IK resuelve un
+ * pie apoyado (grados). Es rotación interna/externa: en un gesto de prensa
+ * apenas la hay, y dejarla libre retorcía el muslo.
+ */
+const GIRO_AXIAL_CADERA = 20;
+
+/**
  * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
  * proyecto: la elección no depende de desde dónde se esté mirando.
  */
@@ -8066,6 +8073,7 @@ export class Editor {
       target.addScaledVector(normal, this.altoDelPie(side));
       target.copy(enLaCara(target));
       solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+      this.acotarPierna(side, joints);
       this.nivelarTobillo(tobillo, normal);
       // CUÁNTO CUELGA LA SUELA BAJO EL TOBILLO SE MIDE, no se predice
       // (v0.3.11). `altoDelPie` lo estima suponiendo que la pieza del pie
@@ -8081,6 +8089,7 @@ export class Editor {
         const vuelo = normal.dot(tobillo.getWorldPosition(new THREE.Vector3())) - primera;
         target.copy(enLaCara(tocado.clone().addScaledVector(normal, vuelo)));
         solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+        this.acotarPierna(side, joints);
         this.nivelarTobillo(tobillo, normal);
       }
       // Y se remata con el residuo REAL: con la pierna en ángulo el tobillo no
@@ -8100,6 +8109,7 @@ export class Editor {
       if (sola !== null && cara - sola > 0.3) {
         target.copy(enLaCara(target.addScaledVector(normal, Math.min(cara - sola, 8))));
         solveTwoBoneIK(cadera, rodilla, tobillo, target, polo);
+        this.acotarPierna(side, joints);
         this.nivelarTobillo(tobillo, normal);
       }
     }
@@ -8239,6 +8249,53 @@ export class Editor {
       }
     }
     return movio;
+  }
+
+  /**
+   * LA PIERNA NO SE RETUERCE (v0.3.15).
+   *
+   * `solveTwoBoneIK` orienta cada hueso hacia su objetivo con el giro mínimo,
+   * y ese giro deja LIBRE la rotación alrededor del propio hueso. En una
+   * prensa, con el objetivo casi alineado con la pierna, esa libertad se
+   * traducía en muslos volteados: la rodilla aparecía girada de canto y la
+   * cadera en rotación interna, sobre todo al retraer.
+   *
+   * La rodilla es una BISAGRA: su giro axial y su abducción son cero, siempre.
+   * Y la cadera gira sobre su eje lo que gira una cadera, no lo que le convenga
+   * a la IK. Anular el giro axial de un hueso NO mueve la articulación de
+   * abajo —es un giro alrededor de su propio eje—, así que esto no le quita
+   * alcance a la pierna: sólo le quita la torsión que no existe.
+   */
+  private acotarPierna(side: HandSide, joints: Record<string, THREE.Object3D>): void {
+    // SE QUITA LA TORSIÓN, NO LA DIRECCIÓN. El giro de un hueso se parte en
+    // dos: hacia dónde APUNTA y cuánto gira SOBRE SÍ MISMO. Lo primero es la
+    // solución de la IK y no se toca —tocarlo desplazaba el tobillo, y la
+    // planta acababa 10 cm dentro de la tarima—; lo segundo es lo que la IK
+    // deja al azar y lo que retorcía el muslo. Los huesos del rig descansan a
+    // lo largo de Y, así que la torsión es la componente del cuaternión en ese
+    // eje y se puede separar sin aproximar nada.
+    const destorcer = (nombre: string, maxGrados: number): void => {
+      const j = joints[nombre];
+      if (!j) return;
+      const q = j.quaternion;
+      const giro = new THREE.Quaternion(0, q.y, 0, q.w);
+      if (giro.lengthSq() < 1e-9) return;
+      giro.normalize();
+      const apunta = q.clone().multiply(giro.clone().invert());
+      let ang = 2 * Math.atan2(giro.y, giro.w);
+      if (ang > Math.PI) ang -= 2 * Math.PI;
+      if (ang < -Math.PI) ang += 2 * Math.PI;
+      const tope = degToRad(maxGrados);
+      const acotado = Math.max(-tope, Math.min(tope, ang));
+      if (Math.abs(acotado - ang) < 1e-6) return;
+      q.copy(apunta.multiply(
+        new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), acotado),
+      ));
+    };
+    // La rodilla es una BISAGRA: no gira sobre su eje, nunca. La cadera gira
+    // lo que gira una cadera en un gesto de prensa.
+    destorcer(`knee${side}`, 0);
+    destorcer(`hip${side}`, GIRO_AXIAL_CADERA);
   }
 
   /**
@@ -12423,10 +12480,28 @@ export class Editor {
     };
     let fuera = 0;
     while (fuera < 45 && mide(fuera) > 0.5) fuera += 1;
+    if (fuera >= 45) {
+      mide(0); // metida y sin salida: se queda donde estaba
+      return;
+    }
+    // SÓLO SE ACERCA SI LLEGA A TOCAR (v0.3.15). El barrido buscaba el último
+    // sitio libre yendo hacia atrás, y cuando el respaldo NO estaba al alcance
+    // —porque el gesto movió el cuerpo, o porque no hay respaldo detrás de
+    // verdad— se quedaba con el final del recorrido: 45 cm hacia atrás. Como
+    // esto se llama en CADA re-apoyo, eran 45 cm más cada vez, y la figura se
+    // marchaba en horizontal hasta salirse de la máquina.
     let mejor = fuera;
+    let tocado = false;
     for (let d = fuera; d >= fuera - 45; d -= 1) {
-      if (mide(d) > 0.5) break;
+      if (mide(d) > 0.5) {
+        tocado = true;
+        break;
+      }
       mejor = d;
+    }
+    if (!tocado) {
+      mide(0); // el respaldo no está ahí detrás: no hay nada a lo que arrimarse
+      return;
     }
     mide(mejor);
   }

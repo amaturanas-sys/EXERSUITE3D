@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.15] — 2026-08-27
+
+### Arreglado
+
+**La figura se marchaba en horizontal hasta salirse de la máquina.** Es el
+defecto más grave de los tres, y tenía una causa exacta. Al arrimar la espalda
+al respaldo se barren 45 cm hacia atrás buscando el punto justo antes de
+tocarlo; cuando el respaldo **no estaba al alcance** —porque el gesto había
+movido el cuerpo, o porque detrás no había respaldo de verdad—, el barrido se
+quedaba con el final de su recorrido: **45 cm hacia atrás**. Y como esto se
+ejecuta en CADA re-apoyo, eran 45 cm más cada vez. Ahora la figura sólo se
+mueve **si el barrido llega a tocar**; si no toca, se queda donde está. Medido:
+con el respaldo apartado 3 m, **veinte re-apoyos seguidos la mueven 0 cm**.
+
+Eso explica también **la figura despegada del asiento**: al irse hacia atrás
+salía de la cara del asiento, pero la cota de re-apoyo la seguía manteniendo a
+la altura de ésta, así que quedaba flotando al lado de la máquina.
+
+**Los muslos se volteaban al retraer.** `solveTwoBoneIK` orienta cada hueso
+hacia su objetivo con el giro mínimo, y ese giro deja **libre la rotación
+alrededor del propio hueso**. Con el objetivo casi alineado con la pierna —una
+prensa, justamente— esa libertad se veía como muslos volteados y rodillas de
+canto. Ahora se separa el giro en dos: **hacia dónde apunta** el hueso, que es
+la solución de la IK y no se toca, y **cuánto gira sobre sí mismo**, que es lo
+que sobraba. La rodilla es una bisagra y no gira sobre su eje (**0°**); la
+cadera gira lo que gira una cadera (tope de 20°, medido 6°).
+
+La separación se hace con el cuaternión, no con ángulos de Euler: un primer
+intento acotaba los ángulos y desplazaba el tobillo, dejando la planta **10 cm
+dentro** de la tarima. Separando por el eje del hueso, la dirección se conserva
+exacta y la planta no se mueve (0,13 cm).
+
+### Cambiado
+
+- `pruebas/prueba-prensa-maniqui.mjs` sube a 31 comprobaciones: la fuga con el
+  respaldo fuera de alcance y la torsión de rodilla y cadera al retraer.
+
 ## [0.3.14] — 2026-08-26
 
 ### Añadido

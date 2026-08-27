@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.14.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.15.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,14 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **Arrimarse al respaldo sólo mueve SI SE TOCA** (v0.3.15). El barrido que
+  busca el punto justo antes de tocarlo se quedaba con el final de su recorrido
+  cuando no encontraba nada: 45 cm hacia atrás por llamada, y esto corre en
+  cada re-apoyo.
+- **La IK deja LIBRE el giro de cada hueso sobre sí mismo** (v0.3.15), y eso se
+  ve como muslos volteados. Se acota separando el cuaternión en dirección y
+  torsión —por el eje del hueso, nunca con ángulos de Euler, que desplazan la
+  articulación de abajo—: la rodilla no gira sobre su eje, la cadera hasta 20°.
 - **Una banca plana es asiento Y respaldo** (v0.3.14): en el tramo central de
   una cara horizontal de 90 cm o más, sin respaldo cerca, la figura SE ACUESTA
   boca arriba (postura «Tumbado», `tumbadaEnElApoyo`); en los extremos se
