@@ -552,6 +552,33 @@ chequear(
   `y la fase excéntrica arranca de verdad desde el bloqueo (${sesion.vueltaAvanza}° recuperados)`,
 );
 
+// ── 10. MARCAR EL RESPALDO ES MARCAR EL SITIO ─────────────────────────────
+const porElRespaldo = await page.evaluate(async ({ AYUDA }) => {
+  eval(AYUDA);
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  await ed.loadProject(window.__proy);
+  const byName = (n) => [...ed.objects.values()].find((o) => o.name.startsWith(n));
+  const asiento = byName("Asiento"), respaldo = byName("Respaldo (");
+  const cjA = new T.Box3().setFromObject(asiento.mesh);
+  const cjR = new T.Box3().setFromObject(respaldo.mesh);
+  // El clic va sobre el RESPALDO, que es lo que hace uno cuando lo que ve es
+  // el respaldo. Antes eso sentaba a la figura a la altura de su BORDE ALTO.
+  await ed.colocarFiguraEn({ punto: cjR.getCenter(new T.Vector3()), obj: respaldo });
+  const seg = (id) => new T.Box3().setFromObject(window.__seg(id));
+  return {
+    asientoY: +cjA.max.y.toFixed(1),
+    respaldoTop: +cjR.max.y.toFixed(1),
+    huecoAsiento: +(seg("pelvis").min.y - cjA.max.y).toFixed(1),
+    huecoResp: +(-window.__pen(window.__obb(window.__seg("torso")), window.__obb(respaldo.mesh))).toFixed(2),
+  };
+}, { AYUDA });
+console.log("\n10) MARCANDO EL RESPALDO:", JSON.stringify(porElRespaldo));
+chequear(
+  Math.abs(porElRespaldo.huecoAsiento) <= 2,
+  `marcar el RESPALDO sienta en SU ASIENTO (${porElRespaldo.huecoAsiento} cm; antes 18,2 — la altura del borde alto)`,
+);
+chequear(porElRespaldo.huecoResp <= 2, `y la espalda queda apoyada (${porElRespaldo.huecoResp} cm)`);
+
 console.log("\n" + (errores.length ? errores.join("\n") + "\n" : ""));
 console.log(fallos.length ? `✗ ${fallos.length} fallo(s)` : "TODO EN VERDE");
 await browser.close();

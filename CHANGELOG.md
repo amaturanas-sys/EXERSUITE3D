@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.17] — 2026-08-27
+
+### Arreglado
+
+**Marcar el respaldo sentaba a la figura a la altura de su borde alto.** Es el
+caso que faltaba: al colocar el maniquí, uno hace clic en lo que ve, y lo que
+se ve de frente en una prensa es el RESPALDO. La aplicación lo tomaba por
+superficie donde posarse y ponía los glúteos en su cara más alta — **18,2 cm
+por encima del asiento**, con la figura pegada al respaldo pero flotando al
+lado de la máquina, y la espalda a 51,8 cm. Ahora se reconoce la **relación**:
+asiento y respaldo son las dos piezas de un mismo sitio, uno se posa en el
+asiento y se apoya en el respaldo, así que marcar cualquiera de los dos lleva
+al mismo sitio. Medido: **0 cm** de hueco con el asiento y **0,32 cm** con el
+respaldo, marcando el respaldo.
+
+Qué es asiento y qué es respaldo **no lo dice la inclinación**: un respaldo
+tumbado 50° tiene la cara mirando casi al cielo, igual que un asiento. Lo dice
+la relación entre los dos — el asiento está más abajo, va cosido al respaldo, y
+su cara llega a la altura del pie de éste o la pasa. Esa última condición es la
+que separa la pareja asiento-respaldo de la pareja asiento-bastidor: el chasis
+pasa muy por debajo del pie del asiento, y sin ella se colaba como asiento y
+sentaba a la persona en el suelo.
+
+### Pendiente
+
+Del mismo aviso quedan dos cosas fuera, y son de calado:
+
+- **Que cualquier parte del cuerpo empuje las piezas por contacto** — la punta
+  del pie, el talón, la rodilla —, y no sólo el apoyo fijado con «Pisar». Hoy
+  manos y pies entran a la simulación **sin cuerpo de colisión** a propósito
+  (son los puntos de agarre), así que el contacto real no existe para ellos.
+- **Agarrar y traccionar con las manos**: la mano apoyada SIGUE a su agarre
+  cuando la pieza se mueve, pero no tira de ella como el pie empuja su pedal.
+
+Las dos piden tocar el acoplamiento cuerpo-máquina en la física, no en la
+ergonomía, y no caben en esta entrega sin dejarlas a medias.
+
 ## [0.3.16] — 2026-08-27
 
 ### Arreglado

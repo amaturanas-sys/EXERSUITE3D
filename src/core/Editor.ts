@@ -11966,11 +11966,18 @@ export class Editor {
    * el frente del asiento (el lado opuesto a su respaldo); sobre el SUELO se
    * queda de pie mirando a la máquina más cercana.
    */
-  private async colocarFiguraEn(destino: { punto: THREE.Vector3; obj: SceneObject | null }): Promise<void> {
+  private async colocarFiguraEn(marcado: { punto: THREE.Vector3; obj: SceneObject | null }): Promise<void> {
     if (!this.humanFigure) await this.addHumanFigure();
     const fig = this.humanFigure;
     if (!fig) return;
     const frente = new THREE.Vector3(0, 0, 1);
+    // MARCAR EL RESPALDO ES MARCAR EL SITIO, no la altura (v0.3.17). Uno se
+    // posa en el ASIENTO y se apoya en el respaldo; son dos piezas de un mismo
+    // sitio. Tomando el respaldo por superficie de apoyo, la figura se sentaba
+    // a la altura de su BORDE ALTO —medio metro por encima del asiento— y
+    // quedaba pegada al respaldo pero flotando al lado de la máquina.
+    const enSuAsiento = marcado.obj ? this.asientoDeEsteApoyo(marcado.obj) : null;
+    const destino = enSuAsiento ?? marcado;
     if (destino.obj) {
       // Sentada, la figura NO se re-aterriza: lo que la sostiene es el asiento.
       this.figuraApoyadaEn = "pieza";
@@ -12287,6 +12294,58 @@ export class Editor {
       ],
       h: [semi.x * Math.abs(esc.x), semi.y * Math.abs(esc.y), semi.z * Math.abs(esc.z)],
     };
+  }
+
+  /**
+   * SI SE MARCÓ UN RESPALDO, DÓNDE ESTÁ SU ASIENTO (v0.3.17).
+   *
+   * Un sitio para sentarse son DOS piezas con una relación: la superficie
+   * horizontal donde se posan los glúteos y la placa que se levanta a sus pies
+   * para la espalda. Al usuario le da igual cuál de las dos marca —lo que
+   * señala es el sitio—, así que marcando el respaldo hay que sentarlo en su
+   * asiento. Devuelve null si lo marcado ya es una superficie donde posarse.
+   */
+  private asientoDeEsteApoyo(
+    obj: SceneObject,
+  ): { obj: SceneObject; punto: THREE.Vector3 } | null {
+    // QUÉ ES RESPALDO Y QUÉ ES ASIENTO NO LO DICE LA INCLINACIÓN. Un respaldo
+    // tumbado 50° tiene su cara mirando casi al cielo, igual que un asiento:
+    // por ahí no se distinguen. Lo que los distingue es la RELACIÓN entre los
+    // dos —son las dos piezas de un mismo sitio—: el asiento está MÁS ABAJO,
+    // arranca donde el respaldo tiene su pie, y va unido a él. Si lo marcado
+    // tiene una pieza así por debajo, lo marcado es el respaldo y donde uno se
+    // posa es la otra.
+    const caja = new THREE.Box3().setFromObject(obj.mesh);
+    let mejor: SceneObject | null = null;
+    let mejorD = Infinity;
+    for (const o of this.objects.values()) {
+      if (o === obj) continue;
+      if (this.caraDeApoyo(o).y < 0.6) continue; // no es para posarse encima
+      const geo = o.mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const propio = geo.boundingBox!.getSize(new THREE.Vector3());
+      const lados = [propio.x, propio.y, propio.z].sort((a, b) => a - b);
+      if (lados[1] < 20 || lados[2] < 25) continue; // no cabe nadie encima
+      const cj = new THREE.Box3().setFromObject(o.mesh);
+      // MÁS ABAJO, y lo marcado levantándose por encima: eso es un respaldo.
+      if (caja.max.y - cj.max.y < 12) continue;
+      // Y A LOS PIES de lo marcado, SOLAPÁNDOLO: la cara del asiento llega a
+      // la altura del pie del respaldo o la pasa, porque van cosidos. Es lo
+      // que separa la pareja asiento-respaldo de la pareja asiento-bastidor:
+      // el bastidor pasa muy por DEBAJO del pie del asiento, y sin esta
+      // comprobación se colaba como asiento y sentaba a la persona en el suelo.
+      if (cj.max.y < caja.min.y - 5) continue;
+      // Y UNIDO A ÉL: asiento y respaldo son la misma silla. Sin esto, la base
+      // del chasis se colaba como asiento y sentaba a la persona en el suelo.
+      if (this.separacionEntre(obj, o) > 20) continue;
+      const d = cj.getCenter(new THREE.Vector3()).distanceTo(caja.getCenter(new THREE.Vector3()));
+      if (d > 90 || d >= mejorD) continue;
+      mejorD = d;
+      mejor = o;
+    }
+    if (!mejor) return null;
+    const cj = new THREE.Box3().setFromObject(mejor.mesh);
+    return { obj: mejor, punto: cj.getCenter(new THREE.Vector3()).setY(cj.max.y) };
   }
 
   /**

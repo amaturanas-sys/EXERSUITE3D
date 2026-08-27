@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.16.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.17.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,14 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **Asiento y respaldo son un SITIO, no dos apoyos** (v0.3.17): marcar
+  cualquiera de los dos sienta en el asiento. Y cuál es cuál no lo dice la
+  inclinación —un respaldo tumbado 50° mira casi al cielo—, sino la relación:
+  el asiento está más abajo, va cosido, y su cara llega al pie del respaldo o
+  lo pasa. Sin esa última condición el bastidor se cuela como asiento.
+- **DEUDA**: manos y pies no tienen collider, así que ninguna parte del cuerpo
+  empuja piezas por contacto; sólo el apoyo fijado con «Pisar» mueve su pedal,
+  y la mano sigue su agarre pero no tira de él.
 - **La flexión de la rodilla se mide en la GEOMETRÍA**, no en Euler (v0.3.16):
   el ángulo entre fémur y tibia. En cuanto la pierna sale del plano sagital, el
   Euler en X deja de ser la flexión y una extensión sana se lee como −24°.
