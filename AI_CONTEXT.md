@@ -11,7 +11,7 @@
 > en las listas de fragilidad que devolvió cada lectura. Nada aquí es suposición
 > por el nombre de un archivo; cuando algo no está verificado, se dice.
 >
-> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.15.
+> **Fecha del barrido:** 2026-08-26. **Versión del código:** 0.3.16.
 > Si el repositorio ha avanzado mucho desde entonces, verifica antes de fiarte de
 > un número de línea concreto: los conceptos aguantan, los números se mueven.
 
@@ -485,6 +485,15 @@ defectos encadenados. Las reglas que quedaron:
 - **El polo de la rodilla sale del eje izquierda-derecha del cuerpo**, no del
   frente: recostada, el frente casi coincide con la pierna y la IK se degenera.
   Lo mismo vale para el marco con el que se nivela el tobillo.
+- **La flexión de la rodilla se mide en la GEOMETRÍA**, no en Euler (v0.3.16):
+  el ángulo entre fémur y tibia. En cuanto la pierna sale del plano sagital, el
+  Euler en X deja de ser la flexión y una extensión sana se lee como −24°.
+  Diagnosticar con esa lectura lleva a «arreglar» lo que no está roto.
+- **Junto al bloqueo, la cadena cerrada del pedal es SINGULAR** (v0.3.16): la
+  longitud de la pierna deja de depender del ángulo de la rodilla, así que la
+  ecuación no puede colocar la placa. Ahí manda el gesto con un paso mínimo. Y
+  la regla que ordena el final del recorrido: **empujando el pedal no retrocede,
+  traccionando no avanza.**
 - **Arrimarse al respaldo sólo mueve SI SE TOCA** (v0.3.15). El barrido que
   busca el punto justo antes de tocarlo se quedaba con el final de su recorrido
   cuando no encontraba nada: 45 cm hacia atrás por llamada, y esto corre en

@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.16] — 2026-08-27
+
+### Arreglado
+
+Con las posiciones ya correctas, quedaba la **cinemática del recorrido**: cómo
+va la pierna de flexionada a bloqueada y de vuelta, que es lo que muestran las
+capturas del diseñador. Trazándola paso a paso salieron dos fallos que ninguna
+comprobación anterior veía.
+
+**La fase excéntrica no arrancaba NUNCA.** Veinticinco pulsaciones de tracción
+desde el bloqueo, cero movimiento. Cerca de la extensión la cadena cerrada es
+**singular**: la placa se coloca resolviendo «a qué distancia de la cadera cabe
+esta pierna», y con la rodilla casi recta esa distancia deja de depender del
+ángulo —cinco grados no la cambian ni un milímetro—. Así que el reparto
+flexionaba la rodilla, la placa no se movía, y la IK devolvía la pierna al
+estirado en el mismo paso. Ahora, junto al bloqueo, **manda el gesto**: la
+placa avanza un paso mínimo en el sentido que toca y, en cuanto la rodilla se
+aparta de ahí, vuelve a mandar la ecuación.
+
+**El pedal retrocedía mientras se empujaba.** En esa misma zona singular la
+ecuación devolvía pasos de signo alterno, así que la placa daba marcha atrás
+con la tecla de empuje pulsada, y con el arreglo anterior a medias entraba en
+un vaivén perpetuo entre 19,4 y 20,9 cm. La regla que lo ordena todo es
+simple: **empujando, el pedal no va hacia atrás; traccionando, no va hacia
+delante.**
+
+Con las dos puestas, el recorrido medido sobre la prensa del diseñador es
+limpio: la rodilla se extiende de **73,5° a 19,4°** sin un solo retroceso
+(**0°**), el pedal recorre **41,7 cm**, y la vuelta recupera **86,4°** de
+flexión, también monótona.
+
+### Cambiado
+
+- `pruebas/prueba-prensa-maniqui.mjs` sube a 41 comprobaciones y mide la
+  flexión **en la geometría** —el ángulo entre fémur y tibia—, no en los
+  ángulos de Euler. Es un cambio importante para cualquiera que mida esto: en
+  cuanto la pierna sale del plano sagital, el Euler en X deja de ser la
+  flexión, y una extensión perfectamente sana se lee como −24°. Diagnosticando
+  con esa lectura falsa se «arreglan» cosas que no estaban rotas: un intento
+  intermedio acotó la rodilla por Euler y la dejó clavada en su tope.
+
 ## [0.3.15] — 2026-08-27
 
 ### Arreglado

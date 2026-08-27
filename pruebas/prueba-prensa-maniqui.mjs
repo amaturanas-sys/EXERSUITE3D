@@ -456,6 +456,19 @@ const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
   const partida = fig.position.clone();
   const seg = (id) => new T.Box3().setFromObject(window.__seg(id));
   const grados = (j) => [j.rotation.x, j.rotation.y, j.rotation.z].map((v) => v * 180 / Math.PI);
+  // FLEXIÓN DE LA RODILLA, MEDIDA EN LA GEOMETRÍA: el ángulo entre el fémur y
+  // la tibia. 0° es la pierna recta. El ángulo de Euler NO sirve aquí: en
+  // cuanto la pierna sale del plano sagital deja de ser la flexión, y una
+  // extensión perfectamente sana se lee como −24°.
+  const flexion = (l) => {
+    const J = ed.figureJoints();
+    const H = J[`hip${l}`].getWorldPosition(new T.Vector3());
+    const K = J[`knee${l}`].getWorldPosition(new T.Vector3());
+    const A = J[`ankle${l}`].getWorldPosition(new T.Vector3());
+    const u = K.clone().sub(H).normalize(), w = A.clone().sub(K).normalize();
+    return +(Math.acos(Math.max(-1, Math.min(1, u.dot(w)))) * 180 / Math.PI).toFixed(1);
+  };
+  const trazaIda = [], trazaVuelta = [];
   let peorEspalda = 0, peorAsiento = 0, peorDeriva = 0, peorAsimetria = 0;
   const mirar = () => {
     fig.updateMatrixWorld(true);
@@ -480,6 +493,7 @@ const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
     ed.moverPrimitiva(1, 5);
     for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
     mirar();
+    trazaIda.push([flexion("L"), +placa.mesh.position.length().toFixed(1)]);
     if (i === 5 || i === 11) guardadas.push(ed.guardarPartida());
   }
   const placaArriba = placa.mesh.position.clone();
@@ -488,13 +502,29 @@ const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
     ed.moverPrimitiva(-1, 5);
     for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
     mirar();
+    trazaVuelta.push([flexion("L"), +placa.mesh.position.length().toFixed(1)]);
   }
   const carreraIda = +placaArriba.distanceTo(placa.mesh.position).toFixed(1);
   // Y APLICAR UNA PARTIDA GUARDADA no descoloca a nadie.
   const aplicada = guardadas.length ? ed.aplicarPartida(guardadas[0]) : false;
   for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
   mirar();
+  // MONOTONÍA: empujando, la rodilla sólo se extiende y el pedal sólo se
+  // aleja; traccionando, al revés. Un retroceso es la firma de la IK saltando
+  // de rama, que es lo que se veía como piernas volteadas.
+  const retrocesos = (traza, signo) => {
+    let peor = 0;
+    for (let i = 1; i < traza.length; i++) {
+      peor = Math.max(peor, signo * (traza[i][0] - traza[i - 1][0]));
+    }
+    return +peor.toFixed(1);
+  };
   return {
+    flexionMax: Math.max(...trazaIda.map((t) => t[0])),
+    flexionMin: Math.min(...trazaIda.map((t) => t[0])),
+    saltoIda: retrocesos(trazaIda, 1),
+    saltoVuelta: retrocesos(trazaVuelta, -1),
+    vueltaAvanza: trazaVuelta[trazaVuelta.length - 1][0] - trazaVuelta[0][0],
     partidas: guardadas.length,
     aplicada,
     carreraIda,
@@ -511,6 +541,16 @@ chequear(sesion.peorAsiento <= 2, `los glúteos siguen en el asiento todo el rat
 chequear(sesion.peorEspalda <= 2, `y la espalda pegada al respaldo (${sesion.peorEspalda} cm el peor momento)`);
 chequear(sesion.peorAsimetria <= 3, `las dos piernas van IGUALES (${sesion.peorAsimetria}° de diferencia)`);
 chequear(sesion.partidas === 2 && sesion.aplicada, "guardar partidas por el camino y volver a una funciona");
+chequear(
+  sesion.flexionMax >= 60 && sesion.flexionMin <= 20,
+  `la rodilla recorre el gesto entero, de flexionada a bloqueada (${sesion.flexionMax}° → ${sesion.flexionMin}°)`,
+);
+chequear(sesion.saltoIda <= 1, `empujando, la rodilla SÓLO se extiende (${sesion.saltoIda}° de retroceso)`);
+chequear(sesion.saltoVuelta <= 1, `traccionando, SÓLO se flexiona (${sesion.saltoVuelta}° de retroceso)`);
+chequear(
+  sesion.vueltaAvanza > 20,
+  `y la fase excéntrica arranca de verdad desde el bloqueo (${sesion.vueltaAvanza}° recuperados)`,
+);
 
 console.log("\n" + (errores.length ? errores.join("\n") + "\n" : ""));
 console.log(fallos.length ? `✗ ${fallos.length} fallo(s)` : "TODO EN VERDE");

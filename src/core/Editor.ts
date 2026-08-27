@@ -72,6 +72,20 @@ const CARRERA_MAX_POR_PASO = 25;
 const GIRO_AXIAL_CADERA = 20;
 
 /**
+ * A cuántos grados de su tope se considera que la rodilla está EN BLOQUEO
+ * (extensión completa o flexión máxima). Ahí la cadena cerrada es singular:
+ * el ángulo cambia mucho con muy poco recorrido de la placa.
+ */
+const ZONA_DE_BLOQUEO = 15;
+
+/**
+ * Cuánto avanza el pedal por pulsación cuando la ecuación de la cadena no
+ * puede decidirlo (cm). Es el paso con el que arranca la fase excéntrica desde
+ * el bloqueo.
+ */
+const PASO_MINIMO_PEDAL = 1.5;
+
+/**
  * Direcciones de colocación de la roldana (v0.2.28), en los ejes GLOBALES del
  * proyecto: la elección no depende de desde dónde se esté mirando.
  */
@@ -4447,7 +4461,7 @@ export class Editor {
     //    EMPUJA: la persona se queda donde está y lo que viaja es la máquina.
     //    Sin esto el gesto no tenía a dónde ir, la IK del pie lo deshacía en el
     //    mismo paso y el cuerpo acababa arrastrado hacia la plataforma.
-    if (this.empujarLosPedales()) this.updateFootIK();
+    if (this.empujarLosPedales(sentido)) this.updateFootIK();
 
     this.reapoyarFigura();
     // 5) Y LOS PIES SE QUEDAN DONDE PISAN. Sin esto el peso muerto barría el
@@ -8197,7 +8211,7 @@ export class Editor {
    * quedar a esa distancia de la cadera. Se elige la raíz más cercana a donde
    * está —la máquina no se teletransporta— y se acota el paso.
    */
-  private empujarLosPedales(): boolean {
+  private empujarLosPedales(sentido: SentidoMov): boolean {
     const fig = this.humanFigure;
     const joints = this.figureJoints();
     if (!fig || !joints || this.footTargets.size === 0) return false;
@@ -8212,8 +8226,9 @@ export class Editor {
       const dir = this.carreraDeLaPieza(obj);
       if (!dir) continue;
       const cadera = joints[`hip${side}`];
+      const rodilla = joints[`knee${side}`];
       const tobillo = joints[`ankle${side}`];
-      if (!cadera || !tobillo) continue;
+      if (!cadera || !rodilla || !tobillo) continue;
       obj.mesh.updateMatrixWorld(true);
       const contacto = t.local.clone().applyMatrix4(obj.mesh.matrixWorld);
       const H = cadera.getWorldPosition(new THREE.Vector3());
@@ -8240,8 +8255,45 @@ export class Editor {
       const raiz = Math.sqrt(disc);
       const s1 = -b + raiz;
       const s2 = -b - raiz;
-      const paso = Math.abs(s1) <= Math.abs(s2) ? s1 : s2;
-      if (!Number.isFinite(paso) || Math.abs(paso) < 0.05) continue;
+      let paso = Math.abs(s1) <= Math.abs(s2) ? s1 : s2;
+      if (!Number.isFinite(paso)) continue;
+      // CERCA DEL BLOQUEO, LA DISTANCIA DEJA DE CONTAR (v0.3.16).
+      //
+      // La placa se coloca resolviendo «a qué distancia de la cadera cabe esta
+      // pierna», y con la rodilla casi estirada esa distancia deja de depender
+      // del ángulo: cinco grados de flexión la cambian una décima de
+      // milímetro. Resultado medido: la fase excéntrica no arrancaba NUNCA
+      // —veinticinco pulsaciones de tracción, cero movimiento— porque el
+      // reparto flexionaba la rodilla, la placa no se movía y la IK devolvía
+      // la pierna al estirado en el mismo paso.
+      //
+      // En esa zona manda el gesto: la placa avanza un paso mínimo en el
+      // sentido que toca —alejarse al empujar, acercarse al traccionar— y en
+      // cuanto la rodilla se aparta del bloqueo vuelve a mandar la ecuación.
+      // EL PEDAL NO VA HACIA ATRÁS MIENTRAS SE EMPUJA (v0.3.16), ni hacia
+      // delante mientras se tracciona. Es la regla que ordena todo el final
+      // del recorrido: cerca del bloqueo la cadena cerrada es singular —cinco
+      // grados de rodilla no cambian la longitud de la pierna ni un
+      // milímetro—, y sin esta regla la ecuación devolvía pasos de signo
+      // alterno: la placa retrocedía mientras se seguía empujando y luego
+      // entraba en un vaivén perpetuo.
+      const aleja = Math.sign(v.dot(dir)) || 1; // +1 si avanzar en `dir` aleja
+      const debido = sentido * aleja;           // el signo que toca al paso
+      if (paso * debido < 0) paso = 0;
+      // Y CUANDO LA ECUACIÓN NO SABE DECIDIR, manda el gesto: junto al bloqueo
+      // la placa avanza un paso mínimo en el sentido que toca, y en cuanto la
+      // rodilla se aparta de ahí vuelve a mandar la ecuación. Sin esto la fase
+      // excéntrica no arrancaba NUNCA: el reparto flexionaba la rodilla, la
+      // placa no se movía y la IK devolvía la pierna al estirado en el mismo
+      // paso —veinticinco pulsaciones de tracción sin mover un grado—.
+      if (Math.abs(paso) < 0.05) {
+        const lim = JOINT_DOF[`knee${side}`]?.x;
+        const rot = radToDeg(rodilla.rotation.x);
+        if (!lim || rot - lim[0] >= ZONA_DE_BLOQUEO) continue;
+        const recorrido = sentido > 0 ? rot - lim[0] : lim[1] - rot;
+        if (recorrido <= 0.5) continue;
+        paso = debido * PASO_MINIMO_PEDAL;
+      }
       const acotado = Math.max(-CARRERA_MAX_POR_PASO, Math.min(CARRERA_MAX_POR_PASO, paso));
       if (this.moverPiezaYSuGrupo(obj, dir.clone().multiplyScalar(acotado))) {
         movio = true;
@@ -8292,10 +8344,41 @@ export class Editor {
         new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), acotado),
       ));
     };
+    // Y NINGUNA ARTICULACIÓN SE SALE DE SU RANGO HUMANO (v0.3.16).
+    //
+    // `solveTwoBoneIK` orienta huesos por cuaterniones y no sabe nada de los
+    // topes de la anatomía: cuando el objetivo se aleja más de lo que la pierna
+    // da de sí, ESTIRA LA RODILLA AL REVÉS. Medido sobre la prensa: la rodilla
+    // bajaba suave de 76° a 12,9° y saltaba de golpe a −11,3° —23,6° en un
+    // paso, con la cadera saltando 12° a la vez—, la placa empezaba a
+    // RETROCEDER mientras se seguía empujando, y a partir de ahí la fase
+    // excéntrica se quedaba muerta: veinticinco pulsaciones de tracción sin
+    // mover un grado, porque la articulación estaba fuera de su rango y ya no
+    // le quedaba recorrido hacia ningún lado.
+    //
+    // Acotar la flexión SÍ mueve el tobillo, al revés que destorcer, y tiene
+    // que moverlo: si la rodilla no puede extenderse más, el pie no llega más
+    // lejos y el gesto se acaba, que es lo que hace un tope de verdad.
+    const alRango = (nombre: string): void => {
+      const j = joints[nombre];
+      const dof = JOINT_DOF[nombre];
+      if (!j || !dof?.x) return;
+      const e = new THREE.Euler().setFromQuaternion(j.quaternion, "XYZ");
+      const x = Math.max(degToRad(dof.x[0]), Math.min(degToRad(dof.x[1]), e.x));
+      if (Math.abs(x - e.x) < 1e-6) return;
+      e.x = x;
+      j.quaternion.setFromEuler(e);
+    };
     // La rodilla es una BISAGRA: no gira sobre su eje, nunca. La cadera gira
     // lo que gira una cadera en un gesto de prensa.
     destorcer(`knee${side}`, 0);
     destorcer(`hip${side}`, GIRO_AXIAL_CADERA);
+    // OJO: sólo la cadera. En la rodilla, el ángulo de Euler en X deja de ser
+    // la flexión en cuanto la pierna sale del plano sagital, y acotarlo ahí la
+    // clavaba en su tope: la fase excéntrica no despegaba nunca. Lo que
+    // impide que la rodilla se estire al revés es que el pedal no puede
+    // retroceder mientras se empuja (ver `empujarLosPedales`).
+    alRango(`hip${side}`);
   }
 
   /**
