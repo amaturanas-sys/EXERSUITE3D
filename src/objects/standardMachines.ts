@@ -589,7 +589,15 @@ export function aplicarUniones(
     if (u.min !== undefined) joint.min = u.min;
     if (u.max !== undefined) joint.max = u.max;
     joint.limitsEnabled = u.limites ?? (u.min !== undefined || u.max !== undefined);
-    if (u.bloqueada) joint.locked = true;
+    // Las bisagras de plegado de las máquinas de catálogo van BLOQUEADAS EN
+    // USO: son estructura, no una bisagra que el usuario vaya a mover. Se
+    // marcan como soldadura (v0.3.19) para que sigan fundiéndose en un solo
+    // cuerpo; el freno del lock switch es para las bisagras que se montan con
+    // la herramienta.
+    if (u.bloqueada) {
+      joint.locked = true;
+      joint.soldada = true;
+    }
     if (u.contactos) joint.contactos = true;
   }
   editor.refreshJointHelpers();

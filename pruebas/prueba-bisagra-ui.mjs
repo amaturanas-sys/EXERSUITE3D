@@ -108,9 +108,10 @@ chequear(!sinEjes.ejes && !sinEjes.caras && sinEjes.juntar,
 
 await page.click("#bisagra-panel .rold-ejes button:has-text('Media')");
 await page.check("#bisagra-panel .rold-check:has-text('Limitar') input");
-// Recorrido de −90° a 0°: la tapa puede abatirse hacia abajo y ahí topa.
-await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "-90");
-await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "0");
+// Recorrido en GRADOS DE LA PLACA (v0.3.19): de 90° (tapa abatida en ángulo
+// recto sobre la base) a 180° (tapa extendida). No hay grados negativos.
+await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "90");
+await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "180");
 await page.click("#bisagra-panel button:has-text('Instalar bisagra')");
 await page.waitForTimeout(500);
 
@@ -126,6 +127,8 @@ const res = await page.evaluate(() => {
     soldaduras: js.filter((j) => j.locked).length,
     eje: libre?.axis,
     limites: libre?.limitsEnabled ? [libre.min, libre.max] : null,
+    apertura0: libre?.apertura0 == null ? null : +libre.apertura0.toFixed(0),
+    sentido: libre?.sentidoApertura ?? 0,
     grupo: [...ed.groups.values()].map((g) => g.name),
     ejeVec: libre?.axisVec ? libre.axisVec.toArray().map((v) => +v.toFixed(2)) : null,
     // La Tapa arrancó en x = 26; juntar la arrima hasta el pasador.
@@ -148,7 +151,10 @@ const hueco = +(res.tapaX - 25 - (res.baseX + 25)).toFixed(2);
 chequear(res.baseX === -26 && Math.abs(hueco - 2.14) < 0.3,
   `la Tapa queda a la holgura del pasador y la Base no se mueve `
   + `(${res.baseX} | ${res.tapaX}; hueco ${hueco} cm = dos veces la holgura)`);
-chequear(!!res.limites && res.limites[0] === -90 && res.limites[1] === 0, `recorrido limitado −90–0° (${JSON.stringify(res.limites)})`);
+chequear(!!res.limites && res.limites[0] === 90 && res.limites[1] === 180,
+  `recorrido limitado 90–180° en grados de la placa (${JSON.stringify(res.limites)})`);
+chequear(res.apertura0 === 180 && res.sentido !== 0,
+  `la bisagra anota su apertura de diseño (${res.apertura0}°, sentido ${res.sentido})`);
 chequear(res.grupo.some((n) => /bisagra/i.test(n)), "el herraje quedó agrupado como 'Bisagra'");
 
 await page.screenshot({ path: "v232-bisagra-montada.png" });

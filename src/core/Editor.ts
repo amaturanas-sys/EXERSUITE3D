@@ -3100,6 +3100,9 @@ export class Editor {
         max: j.max,
         motor: { ...j.motor },
         locked: j.locked,
+        soldada: j.soldada || undefined,
+        apertura0: j.apertura0 ?? undefined,
+        sentidoApertura: j.apertura0 == null ? undefined : j.sentidoApertura,
         contactos: j.contactos || undefined,
       })),
       cables: this.listCables().map((c) => ({
@@ -3524,6 +3527,13 @@ export class Editor {
       j.max = jd.max;
       j.motor = { ...jd.motor };
       j.locked = jd.locked ?? false;
+      // MIGRACIÓN (v0.3.19): antes `locked` significaba «soldada» a secas. Un
+      // proyecto viejo se lee con esa misma lectura, así que su herraje sigue
+      // fundiéndose igual; sólo las uniones guardadas por esta versión en
+      // adelante distinguen soldadura de bisagra frenada.
+      j.soldada = jd.soldada ?? jd.locked ?? false;
+      j.apertura0 = jd.apertura0 ?? null;
+      j.sentidoApertura = jd.sentidoApertura ?? 1;
       j.contactos = jd.contactos ?? false;
     }
     this.migrarContactosBisagra(contactosExplicitos);
@@ -5690,6 +5700,7 @@ export class Editor {
     const joint = this.connect(b.id, a.id, "revolute", punto.clone());
     if (!joint) return false;
     joint.locked = true;
+    joint.soldada = true;
     joint.name = `Soldadura ${joint.id.split("_")[1]}`;
     return true;
   }
@@ -8913,7 +8924,7 @@ export class Editor {
   private migrarContactosBisagra(explicitas: Set<string>): void {
     const anfitrion = new Map<string, string>();
     for (const j of this.joints.values()) {
-      if (!j.locked) continue;
+      if (!j.soldada) continue;
       const a = this.objects.get(j.bodyAId);
       const b = this.objects.get(j.bodyBId);
       if (!a || !b) continue;
@@ -8924,7 +8935,7 @@ export class Editor {
       }
     }
     for (const j of this.joints.values()) {
-      if (j.locked || j.contactos || explicitas.has(j.id)) continue;
+      if (j.soldada || j.contactos || explicitas.has(j.id)) continue;
       const a = this.objects.get(j.bodyAId);
       const b = this.objects.get(j.bodyBId);
       if (a?.componentId !== "placa-bisagra" || b?.componentId !== "placa-bisagra") continue;
@@ -9237,6 +9248,7 @@ export class Editor {
       const j = this.connect(x.id, y.id, "revolute", punto.clone());
       if (!j) return;
       j.locked = true;
+      j.soldada = true;
       j.name = tt("Soldadura de bisagra", "Hinge weld");
     };
     soldar(a, placaA, placaA.mesh.position);
@@ -9253,10 +9265,32 @@ export class Editor {
       // EXACTO y no redondeado al eje global más parecido.
       bisagra.axisVec = montaje ? ejeMundo.clone() : null;
       bisagra.name = tt("Bisagra", "Hinge");
+      // ESCALA DE LA PROPIA PLACA (v0.3.19): el recorrido de una bisagra se
+      // pide como el ángulo que forman sus DOS PLACAS —180 abierta del todo,
+      // 0 plegada sobre sí misma, sin grados negativos—, que es lo que se ve
+      // en la máquina. Aquí se anota cuánto abren en la pose de diseño y
+      // hacia qué lado crece ese ángulo; la física traduce.
+      const plano = (v: THREE.Vector3): THREE.Vector3 =>
+        v.clone().projectOnPlane(ejeMundo).normalize();
+      const dA = plano(dirA);
+      const dB = plano(dirB);
+      const phi =
+        Math.atan2(
+          new THREE.Vector3().crossVectors(dA, dB).dot(ejeMundo),
+          dA.dot(dB),
+        ) * THREE.MathUtils.RAD2DEG;
+      bisagra.apertura0 = Math.abs(phi);
+      bisagra.sentidoApertura = phi >= 0 ? 1 : -1;
+      // Los límites pasan a leerse en ESA escala, así que los de fábrica
+      // tienen que nacer en ella: recorrido entero de la placa (0 a 180).
+      // Quien frena antes es el material —las placas topan— o el recorrido
+      // que se haya pedido en el panel.
+      bisagra.min = 0;
+      bisagra.max = 180;
       if (cfg.limite) {
         bisagra.limitsEnabled = true;
-        bisagra.min = cfg.limite[0];
-        bisagra.max = cfg.limite[1];
+        bisagra.min = Math.min(cfg.limite[0], cfg.limite[1]);
+        bisagra.max = Math.max(cfg.limite[0], cfg.limite[1]);
       }
       // COLISIÓN REAL ENTRE LAS DOS PIEZAS (v0.2.33): una bisagra montada
       // sobre una cara solo puede plegar hacia el lado donde el material no
@@ -9324,7 +9358,7 @@ export class Editor {
       // Una unión BLOQUEADA es una soldadura, no una articulación: se marca
       // pequeña y gris para que no tape el herraje (una bisagra real trae
       // tres soldaduras justo en la charnela).
-      const soldadura = joint.locked;
+      const soldadura = joint.soldada;
       // La BISAGRA REAL ya tiene su pasador a la vista: su marcador se reduce
       // para no taparlo (el herraje es la señal, no el globo).
       const conHerraje =
@@ -10873,6 +10907,7 @@ export class Editor {
     const joint = this.connect(b.id, a.id, "revolute", punto.clone());
     if (!joint) return;
     joint.locked = true;
+    joint.soldada = true;
     joint.name = `Soldadura ${joint.id.split("_")[1]}`;
     this.refreshJointHelpers();
     this.bus.emit("jointsChanged", { joints: this.listJoints() });
@@ -11243,6 +11278,7 @@ export class Editor {
       if (this.simDrag) {
         const destino = this.puntoDeArrastre();
         if (destino) this.physics?.dragTo(destino);
+        this.marcarArco(this.simDrag.arco);
       } else if (this.figureDrag && this.humanFigure &&
         this.raycaster.ray.intersectPlane(this.figureDrag.plane, at)) {
         this.humanFigure.position.copy(at.add(this.figureDrag.offset));
@@ -11754,8 +11790,11 @@ export class Editor {
    */
   private simDrag: {
     plane: THREE.Plane;
-    arco?: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number };
+    objectId: string;
+    arco?: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number };
   } | null = null;
+  /** Circunferencia que dibuja el recorrido de la bisagra agarrada. */
+  private marcaArco: THREE.Line | null = null;
   /** Arrastre del maniquí (plano horizontal + offset al punto de agarre). */
   private figureDrag: { plane: THREE.Plane; offset: THREE.Vector3 } | null = null;
 
@@ -11780,8 +11819,10 @@ export class Editor {
       const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
       this.simDrag = {
         plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point),
+        objectId: obj.id,
         arco,
       };
+      this.marcarArco(arco);
       this.orbit.enabled = false;
       return;
     }
@@ -11819,26 +11860,45 @@ export class Editor {
   private arcoDeAgarre(
     objectId: string,
     punto: THREE.Vector3,
-  ): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number } | undefined {
+  ): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number } | undefined {
     const bis = this.physics?.ejeDeGiro(objectId);
     if (!bis) return undefined;
-    const centro = bis.punto
-      .clone()
-      .add(bis.eje.clone().multiplyScalar(punto.clone().sub(bis.punto).dot(bis.eje)));
+    const alto = punto.clone().sub(bis.punto).dot(bis.eje);
+    const centro = bis.punto.clone().addScaledVector(bis.eje, alto);
     const radio = punto.distanceTo(centro);
-    return radio > 3 ? { centro, eje: bis.eje, radio } : undefined;
+    return radio > 3 ? { centro, eje: bis.eje, radio, alto } : undefined;
   }
 
   /**
    * Punto al que la mano lleva la pieza según el puntero: sobre el arco de su
    * bisagra si la tiene, y si no en el plano frente a la cámara.
    */
+  /**
+   * El arco AL DÍA (v0.3.19). El pasador de una bisagra montada sobre un brazo
+   * que también se mueve no se queda donde estaba al agarrarla: si el arco se
+   * congela en el instante del clic, la mano acaba tirando hacia una
+   * circunferencia que ya no existe —y eso es empujar contra el pasador, que
+   * es de donde salían los saltos—. El RADIO sí es invariante (la pieza está
+   * clavada a esa distancia del eje); lo que se refresca es el centro y la
+   * dirección del pasador.
+   */
+  private arcoVivo(): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number } | undefined {
+    const d = this.simDrag;
+    if (!d?.arco) return undefined;
+    const bis = this.physics?.ejeDeGiro(d.objectId);
+    if (!bis) return d.arco;
+    d.arco.centro = bis.punto.clone().addScaledVector(bis.eje, d.arco.alto);
+    d.arco.eje = bis.eje.clone();
+    return d.arco;
+  }
+
   private puntoDeArrastre(): THREE.Vector3 | null {
     const d = this.simDrag;
     if (!d) return null;
     const ray = this.raycaster.ray;
-    if (d.arco) {
-      const { centro, eje, radio } = d.arco;
+    const vivo = this.arcoVivo();
+    if (vivo) {
+      const { centro, eje, radio } = vivo;
       const q = new THREE.Vector3();
       const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(eje, centro);
       // Con el rayo casi contenido en el plano del arco la intersección se
@@ -11940,6 +12000,57 @@ export class Editor {
     const suelo = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const p = new THREE.Vector3();
     return this.raycaster.ray.intersectPlane(suelo, p) ? { punto: p, obj: null } : null;
+  }
+
+  /**
+   * CIRCUNFERENCIA DE LA BISAGRA (v0.3.19): mientras la mano sujeta una pieza
+   * articulada se dibuja el recorrido completo que su pasador le permite, de
+   * modo que se opera como en la máquina real —se ve por dónde va a ir antes
+   * de moverla—. Se redibuja en cada paso porque el pasador puede ir montado
+   * sobre otra pieza que también se mueve.
+   */
+  private marcarArco(
+    arco: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number } | undefined,
+  ): void {
+    if (!arco) {
+      this.quitarMarcaArco();
+      return;
+    }
+    if (!this.marcaArco) {
+      const puntos: THREE.Vector3[] = [];
+      for (let i = 0; i <= 96; i++) {
+        const a = (i / 96) * Math.PI * 2;
+        puntos.push(new THREE.Vector3(Math.cos(a), 0, Math.sin(a)));
+      }
+      this.marcaArco = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(puntos),
+        new THREE.LineBasicMaterial({
+          color: 0x22d3ee,
+          transparent: true,
+          opacity: 0.85,
+          depthTest: false,
+        }),
+      );
+      this.marcaArco.renderOrder = 999;
+      this.references.add(this.marcaArco);
+    }
+    // El círculo unitario nace en el plano XZ: se lleva al plano del pasador.
+    this.marcaArco.position.copy(arco.centro);
+    this.marcaArco.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      arco.eje.clone().normalize(),
+    );
+    this.marcaArco.scale.setScalar(Math.max(arco.radio, 0.1));
+    this.requestRender();
+  }
+
+  private quitarMarcaArco(): void {
+    if (!this.marcaArco) return;
+    this.references.remove(this.marcaArco);
+    this.marcaArco.geometry.dispose();
+    (this.marcaArco.material as THREE.Material).dispose();
+    this.marcaArco = null;
+    this.requestRender();
   }
 
   /** Anillo que marca dónde caería la figura. */
@@ -12751,6 +12862,7 @@ export class Editor {
   /** Termina los arrastres de simulación (mano y maniquí). */
   private endSimInteraction(): void {
     this.resaltarAgarrable(null);
+    this.quitarMarcaArco();
     if (this.simDrag) this.physics?.release();
     if (this.simDrag || this.figureDrag) this.orbit.enabled = true;
     this.simDrag = null;

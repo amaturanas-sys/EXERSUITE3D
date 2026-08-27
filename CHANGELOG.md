@@ -5,6 +5,59 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.19] — 2026-08-27
+
+### Cambiado
+
+**El recorrido de una bisagra se mide en la escala de su propia placa.** Antes
+se pedía en grados de giro desde la pose de diseño, con negativos y un cero que
+no se veía en ninguna parte. Ahora se pide como el ángulo que forman las DOS
+PLACAS —**180° extendida, 0° plegada, sin grados negativos**—, que es lo que se
+mira en la máquina. La herramienta anota cuánto abren las placas al montarlas y
+hacia qué lado crece ese ángulo, y la física traduce sola. Los proyectos
+anteriores conservan su lectura de siempre.
+
+**El lock switch de una bisagra ya no la convierte en hierro macizo.** En una
+articulación que no es una soldadura, ponerle el candado la deja como la
+bisagra de una máquina plegable real: **se sostiene sola donde la dejes**, no
+cae por su peso, y durante la simulación la mano puede seguir moviéndola —al
+soltarla se queda exactamente en el ángulo nuevo—. Soldar y frenar eran hasta
+ahora el mismo dato; ahora se distinguen, y las soldaduras se siguen fundiendo
+en un solo cuerpo como siempre.
+
+### Arreglado
+
+**La mano ya no arranca las bisagras de su sitio.** Tirando de una pieza
+articulada, el resorte de la mano iba en línea recta hacia el puntero: eso es
+empujar CONTRA el pasador, una fuerza que la unión tiene que devolver entera, y
+de ahí salían los saltos de las fotografías. Ahora el objetivo se lleva primero
+a su circunferencia —mismo plano, mismo radio, el punto más cercano a donde
+apunta el dedo— y la pieza sólo recibe empuje por donde de verdad puede ir. En
+el ensayo de dos placas la deriva del radio baja de varios centímetros a
+**0,01–0,07 cm** y el esfuerzo sostenido de la mano cae de **290 kg a 9–90 kg**
+para el mismo gesto.
+
+**El arco se recalcula mientras se mueve.** Se congelaba en el instante del
+clic, así que una bisagra montada sobre un brazo que también se mueve acababa
+tirando hacia una circunferencia que ya no existía.
+
+**Del arco se toma la dirección, no la fuerza.** Proyectar el objetivo acorta el
+error a una cuerda, y con ella el tirón: una bisagra de palanca corta se volvía
+inamovible aunque el dedo estuviera a dos metros. Ahora el arco decide hacia
+dónde y la distancia al dedo decide cuánto, así que la mano empuja igual de
+fuerte que siempre pero nunca contra el pasador.
+
+### Añadido
+
+**Se ve la circunferencia que describe la bisagra.** Mientras la mano sujeta
+una pieza articulada se dibuja el recorrido completo que le deja su pasador, de
+modo que se opera como en la máquina real: se ve por dónde va a ir antes de
+moverla.
+
+**Prueba `prueba-bisagra-mano`**: 23 comprobaciones sobre la escala de la
+placa, la deriva del radio bajo la mano, el freno del lock switch y el dibujo
+del arco.
+
 ## [0.3.18] — 2026-08-27
 
 ### Arreglado

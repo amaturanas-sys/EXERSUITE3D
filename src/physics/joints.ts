@@ -48,6 +48,28 @@ export class Joint {
    */
   locked = false;
   /**
+   * SOLDADURA (v0.3.19). `locked` significaba dos cosas a la vez: la unión
+   * soldada de la herramienta de soldar —dos piezas que pasan a ser un solo
+   * cuerpo— y el lock switch de una articulación. Ahora se distinguen: una
+   * unión SOLDADA sigue siendo rígida y se funde; una bisagra con el lock
+   * switch puesto es un FRENO —se sostiene sola donde la dejes, pero la mano
+   * puede moverla durante la simulación, como en una máquina plegable real—.
+   * Los proyectos anteriores a esta versión se leen con `soldada = locked`,
+   * de modo que su herraje se comporta igual que siempre.
+   */
+  soldada = false;
+  /**
+   * ÁNGULO ENTRE LAS DOS PLACAS en la pose de diseño (grados, 0..180), con
+   * 180 = placa extendida y 0 = placa plegada. Los límites de recorrido de
+   * una bisagra se piden en ESA escala —la de la propia placa, sin grados
+   * negativos— y se traducen aquí al giro relativo que entiende el motor.
+   * null = unión sin escala de placa (pivote clásico): los límites son el
+   * giro relativo de siempre.
+   */
+  apertura0: number | null = null;
+  /** Signo del giro relativo que ABRE la bisagra (+1 o −1). */
+  sentidoApertura = 1;
+  /**
    * COLISIÓN ENTRE LAS DOS PIEZAS UNIDAS (v0.2.33).
    *
    * Por omisión el motor APAGA los contactos entre los dos cuerpos que une

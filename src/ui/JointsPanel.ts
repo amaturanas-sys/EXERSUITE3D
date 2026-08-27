@@ -88,13 +88,21 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
     const juntarOn = el("input", { type: "checkbox" }) as HTMLInputElement;
     juntarOn.checked = true;
     const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-    const minIn = el("input", { type: "number", value: "0", step: "5" }) as HTMLInputElement;
-    const maxIn = el("input", { type: "number", value: "90", step: "5" }) as HTMLInputElement;
+    // RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.19): 180 = placa extendida,
+    // 0 = placa plegada. No hay grados negativos: se mide el ángulo que
+    // forman las dos placas, como se ve en la máquina.
+    const minIn = el("input", {
+      type: "number", value: "0", step: "5", min: "0", max: "180",
+    }) as HTMLInputElement;
+    const maxIn = el("input", {
+      type: "number", value: "180", step: "5", min: "0", max: "180",
+    }) as HTMLInputElement;
 
     const instalar = el("button", { class: "tool sim" }, [tt("Instalar bisagra", "Install hinge")]);
     instalar.addEventListener("click", () => {
-      const min = parseFloat(minIn.value);
-      const max = parseFloat(maxIn.value);
+      const acotar = (v: number): number => Math.min(180, Math.max(0, v));
+      const min = acotar(parseFloat(minIn.value));
+      const max = acotar(parseFloat(maxIn.value));
       cerrarYResolver({
         eje,
         tamano,
@@ -184,8 +192,17 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
         opcTam(12, tt("Grande", "Large")),
       ]),
       el("div", { class: "rold-seccion" }, [tt("Recorrido", "Travel")]),
-      el("label", { class: "rold-check" }, [limOn, tt("Limitar (grados)", "Limit (degrees)")]),
+      el("label", { class: "rold-check" }, [
+        limOn,
+        tt("Limitar (grados de la placa)", "Limit (leaf degrees)"),
+      ]),
       el("div", { class: "rold-nums" }, [minIn, maxIn]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "Se mide entre las DOS PLACAS: 180° = extendida, 0° = plegada. Sin grados negativos.",
+          "Measured between BOTH LEAVES: 180° = extended, 0° = folded. No negative degrees.",
+        ),
+      ]),
       el("div", { class: "field" }, [instalar]),
       el("div", { class: "rold-pie" }, [
         tt(
@@ -457,7 +474,10 @@ export class JointsPanel {
 
   private editorFor(j: Joint): HTMLElement {
     const isRev = j.kind === "revolute";
-    const angUnit = isRev ? "°" : "cm";
+    // En una bisagra con escala de placa los grados son los de la PLACA
+    // (180 extendida, 0 plegada), no el giro desde la pose de diseño.
+    const dePlaca = isRev && j.apertura0 != null;
+    const angUnit = isRev ? (dePlaca ? "° placa" : "°") : "cm";
     const velUnit = isRev ? "°/s" : "cm/s";
 
     // Eje. Si la unión giró con su grupo (eje libre en mundo), se muestra una
@@ -491,8 +511,9 @@ export class JointsPanel {
       j.limitsEnabled = limOn.checked;
       this.editor.jointUpdated();
     });
-    const minIn = this.num(j.min, (v) => (j.min = v));
-    const maxIn = this.num(j.max, (v) => (j.max = v));
+    const acotarPlaca = (v: number): number => (dePlaca ? Math.min(180, Math.max(0, v)) : v);
+    const minIn = this.num(j.min, (v) => (j.min = acotarPlaca(v)));
+    const maxIn = this.num(j.max, (v) => (j.max = acotarPlaca(v)));
 
     // Motor
     const motOn = el("input", { type: "checkbox" });
@@ -524,8 +545,10 @@ export class JointsPanel {
       "button",
       {
         class: `tool${j.locked ? " active" : ""}`,
-        title:
-          "Bloqueada: la articulación queda RÍGIDA en su pose actual (la máquina cambia de configuración con un clic)",
+        title: j.soldada
+          ? "Soldada: las dos piezas son un solo cuerpo"
+          : "Bloqueada: la bisagra SE SOSTIENE SOLA donde la dejes; durante la simulación "
+            + "la mano puede seguir moviéndola, como en una máquina plegable real",
       },
       [j.locked ? "🔒 Lock switch: bloqueada" : "🔓 Lock switch: libre"],
     );

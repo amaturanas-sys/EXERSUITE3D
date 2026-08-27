@@ -115,6 +115,24 @@ export class PhysicsWorld {
    * bien en cada consulta. Lo usa la mano interactiva para tirar SIGUIENDO EL
    * ARCO en vez de contra el pasador.
    */
+  /**
+   * BISAGRAS CON FRENO (lock switch, v0.3.19): las que se sostienen solas.
+   * Guardan su articulación, la pose relativa de diseño y el recorrido que
+   * tienen permitido, para poder soltarlas mientras la mano las mueve y
+   * volver a fijarlas en el ángulo nuevo al soltarlas.
+   */
+  private frenos = new Map<
+    R.RigidBody,
+    {
+      handle: R.UnitImpulseJoint;
+      a: R.RigidBody;
+      b: R.RigidBody;
+      eje: THREE.Vector3;
+      qRel0: THREE.Quaternion;
+      rango: [number, number];
+    }
+  >();
+
   private bisagras = new Map<
     R.RigidBody,
     { ref: R.RigidBody; ancla: { x: number; y: number; z: number }; eje: { x: number; y: number; z: number } }
@@ -141,6 +159,7 @@ export class PhysicsWorld {
     this.world?.free();
     this.bodies.clear();
     this.bisagras.clear();
+    this.frenos.clear();
     this.cables = [];
     this.guias = [];
     this.empotradas = [];
@@ -197,7 +216,7 @@ export class PhysicsWorld {
     // además su joint solo introduciría una restricción redundante que pelea
     // con el resto del ensamblaje.
     for (const joint of joints) {
-      if (joint.locked && soldadas.anfitrionDe.has(joint.bodyAId)) continue;
+      if (joint.soldada && soldadas.anfitrionDe.has(joint.bodyAId)) continue;
       this.addJoint(joint);
     }
     for (const cable of cables) this.addCable(cable);
@@ -1558,7 +1577,7 @@ export class PhysicsWorld {
     // Se anota el EJE DE GIRO de cada pieza articulada (para que la mano tire
     // por el arco, no contra el pasador). Cada cuerpo guarda el eje descrito
     // en el frame del OTRO, que es su referencia de giro.
-    if (joint.kind === "revolute" && !joint.locked) {
+    if (joint.kind === "revolute" && !joint.soldada) {
       if (b.body.isDynamic() && !this.bisagras.has(b.body)) {
         this.bisagras.set(b.body, { ref: a.body, ancla: anchorA, eje: axis });
       }
@@ -1568,17 +1587,61 @@ export class PhysicsWorld {
       }
     }
 
+    /**
+     * RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.19). Una bisagra se acota por
+     * el ángulo que forman sus dos placas —180 abierta del todo, 0 plegada—,
+     * que es lo que se ve y se mide en la máquina. El motor, en cambio, sólo
+     * conoce el giro RELATIVO desde la pose de diseño. La conversión es
+     * directa: si en el diseño las placas forman `apertura0` y el giro que
+     * abre lleva el signo `sentidoApertura`, un ángulo de placa `u` es
+     * `sentido · (u − apertura0)`.
+     */
+    const enGiroRelativo = (grados: number): number =>
+      joint.apertura0 == null
+        ? grados * DEG2RAD
+        : (joint.sentidoApertura >= 0 ? 1 : -1) * (grados - joint.apertura0) * DEG2RAD;
+    const rangoRevolute = (): [number, number] => {
+      const t0 = enGiroRelativo(joint.min);
+      const t1 = enGiroRelativo(joint.max);
+      return t0 <= t1 ? [t0, t1] : [t1, t0];
+    };
+
     if (joint.limitsEnabled) {
       const [min, max] =
-        joint.kind === "revolute"
-          ? [joint.min * DEG2RAD, joint.max * DEG2RAD]
-          : [joint.min * S, joint.max * S];
+        joint.kind === "revolute" ? rangoRevolute() : [joint.min * S, joint.max * S];
       handle.setLimits(min, max);
     }
 
     // Lock switch (diagrama Versatilidad): bloqueada = rígida en la pose de
     // diseño (el frame del joint nace en cero), sin motor.
-    if (joint.locked) {
+    //
+    // FRENO DE BISAGRA (v0.3.19): en una articulación que NO es una soldadura,
+    // el lock switch ya no la convierte en hierro macizo — la convierte en la
+    // bisagra de una máquina plegable, que se sostiene sola donde la dejas
+    // pero cede si la mano la mueve. Se guarda su pose y su recorrido para
+    // poder soltarla al agarrarla y volver a fijarla, en el ángulo nuevo, al
+    // soltarla (ver `soltarFreno` / `fijarFreno`).
+    if (joint.locked && !joint.soldada && joint.kind === "revolute") {
+      const qa = a.body.rotation();
+      const qb = b.body.rotation();
+      const qRel0 = new THREE.Quaternion(qa.x, qa.y, qa.z, qa.w)
+        .invert()
+        .multiply(new THREE.Quaternion(qb.x, qb.y, qb.z, qb.w));
+      const rango: [number, number] = joint.limitsEnabled
+        ? rangoRevolute()
+        : [-Math.PI, Math.PI];
+      const freno = {
+        handle,
+        a: a.body,
+        b: b.body,
+        eje: axisLocalB.clone().normalize(),
+        qRel0,
+        rango,
+      };
+      handle.setLimits(0, 0);
+      if (b.body.isDynamic()) this.frenos.set(b.body, freno);
+      if (a.body.isDynamic()) this.frenos.set(a.body, freno);
+    } else if (joint.locked) {
       handle.setLimits(0, 0);
     } else if (joint.motor.enabled) {
       const vel =
@@ -1746,7 +1809,7 @@ export class PhysicsWorld {
       return r;
     };
     for (const j of joints) {
-      if (!j.locked) continue;
+      if (!j.soldada) continue;
       if (!porId.has(j.bodyAId) || !porId.has(j.bodyBId)) continue;
       if (!padre.has(j.bodyAId)) padre.set(j.bodyAId, j.bodyAId);
       if (!padre.has(j.bodyBId)) padre.set(j.bodyBId, j.bodyBId);
@@ -2119,6 +2182,36 @@ export class PhysicsWorld {
   }
 
   /**
+   * Lleva el objetivo de la mano AL ARCO que la pieza puede recorrer.
+   *
+   * Si la pieza no está articulada, el objetivo es el que venga. Si lo está,
+   * se devuelve el punto de su circunferencia —centro en el pasador, radio el
+   * del punto agarrado, plano perpendicular al eje— más cercano a donde
+   * apunta el puntero.
+   */
+  private enElArco(body: R.RigidBody, agarre: THREE.Vector3, destino: THREE.Vector3): THREE.Vector3 {
+    const h = this.bisagras.get(body);
+    if (!h) return destino;
+    const t = h.ref.translation();
+    const r = h.ref.rotation();
+    const q = new THREE.Quaternion(r.x, r.y, r.z, r.w);
+    const pivote = new THREE.Vector3(h.ancla.x, h.ancla.y, h.ancla.z)
+      .applyQuaternion(q)
+      .add(new THREE.Vector3(t.x, t.y, t.z));
+    const eje = new THREE.Vector3(h.eje.x, h.eje.y, h.eje.z).applyQuaternion(q);
+    if (eje.lengthSq() < 1e-8) return destino;
+    eje.normalize();
+    const radio = agarre.clone().sub(pivote);
+    const alto = radio.dot(eje); // el arco vive en el plano del punto agarrado
+    const rp = radio.clone().projectOnPlane(eje);
+    const R = rp.length();
+    if (R < 1e-4) return destino;
+    const hacia = destino.clone().sub(pivote).projectOnPlane(eje);
+    if (hacia.lengthSq() < 1e-8) return destino;
+    return pivote.clone().addScaledVector(eje, alto).add(hacia.setLength(R));
+  }
+
+  /**
    * Eje de giro (en cm de mundo) de la pieza, si está articulada por una
    * bisagra libre: punto del pasador y dirección. La mano lo usa para
    * arrastrar SIGUIENDO EL ARCO que la pieza puede recorrer de verdad.
@@ -2360,6 +2453,7 @@ export class PhysicsWorld {
       .clone()
       .sub(new THREE.Vector3(t.x, t.y, t.z))
       .applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w).invert());
+    this.soltarFreno(e.body);
     this.drag = { body: e.body, local, target: worldM, firme };
     this.tensionMaxN = 0; // cada agarre mide su propia tensión
     this.tensionEMA = 0;
@@ -2373,7 +2467,52 @@ export class PhysicsWorld {
 
   /** Suelta la pieza agarrada. */
   release(): void {
+    if (this.drag) this.fijarFreno(this.drag.body);
     this.drag = null;
+  }
+
+  /**
+   * Ángulo que ha girado la bisagra desde su pose de diseño (radianes, con
+   * signo). Se saca de la rotación relativa entre los dos cuerpos, que es
+   * exactamente lo que el pasador deja variar.
+   */
+  private anguloFreno(f: {
+    a: R.RigidBody;
+    b: R.RigidBody;
+    eje: THREE.Vector3;
+    qRel0: THREE.Quaternion;
+  }): number {
+    const qa = f.a.rotation();
+    const qb = f.b.rotation();
+    const rel = new THREE.Quaternion(qa.x, qa.y, qa.z, qa.w)
+      .invert()
+      .multiply(new THREE.Quaternion(qb.x, qb.y, qb.z, qb.w));
+    const d = f.qRel0.clone().invert().multiply(rel);
+    const s = new THREE.Vector3(d.x, d.y, d.z).dot(f.eje);
+    return 2 * Math.atan2(s, d.w);
+  }
+
+  /** Suelta el freno de una bisagra: mientras la mano la sujeta, gira. */
+  private soltarFreno(body: R.RigidBody): void {
+    const f = this.frenos.get(body);
+    if (!f) return;
+    f.handle.setLimits(f.rango[0], f.rango[1]);
+    f.a.wakeUp();
+    f.b.wakeUp();
+  }
+
+  /**
+   * Vuelve a frenar la bisagra EN EL ÁNGULO EN QUE QUEDÓ. Ahí está el gesto
+   * que pedía la máquina plegable real: mueves la placa y se queda donde la
+   * dejaste, sin volver sola ni seguir cayendo.
+   */
+  private fijarFreno(body: R.RigidBody): void {
+    const f = this.frenos.get(body);
+    if (!f) return;
+    const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
+    f.handle.setLimits(t, t);
+    f.a.wakeUp();
+    f.b.wakeUp();
   }
 
   isDragging(): boolean {
@@ -2416,12 +2555,38 @@ export class PhysicsWorld {
     // máxima SOSTENIDA del agarre (ver tensionManoKg). La correa de error
     // y el tope solo protegen la estabilidad numérica del solver.
     const FMAX = 20_000; // N (~2 toneladas: nunca limita un ejercicio real)
+    // LA MANO NO TIRA FUERA DEL ARCO (v0.3.19).
+    //
+    // Una pieza articulada no puede ir a donde quiera: sólo recorre la
+    // circunferencia que le deja su pasador. Tirando en línea recta hacia el
+    // puntero, el resorte empujaba CONTRA el pasador —una fuerza que la unión
+    // tiene que devolver entera—, y de ahí salían los saltos: la bisagra se
+    // iba de sitio de un fotograma a otro. Ahora el objetivo se lleva primero
+    // a su arco: mismo plano, mismo radio, el punto más cercano a donde
+    // apunta el dedo. La mano sigue empujando igual, pero ya sólo por donde
+    // la pieza puede ir.
+    const objetivo = this.enElArco(d.body, pw, d.target);
     const err = new THREE.Vector3(
-      d.target.x - pw.x,
-      d.target.y - pw.y,
-      d.target.z - pw.z,
+      objetivo.x - pw.x,
+      objetivo.y - pw.y,
+      objetivo.z - pw.z,
     );
-    if (err.length() > 2) err.setLength(2); // correa: sin catapultas
+    // LA DIRECCIÓN CAMBIA, EL ALCANCE NO. Llevar el objetivo al arco acorta el
+    // error a una CUERDA —como mucho dos radios—, y con ella el tirón: una
+    // bisagra de palanca corta se volvía inamovible aunque el dedo estuviera a
+    // dos metros. Así que del arco se toma sólo hacia dónde, y la fuerza sigue
+    // midiéndose por lo lejos que está el dedo. La mano empuja igual de fuerte
+    // que siempre, pero ya nunca contra el pasador.
+    if (this.bisagras.has(d.body) && err.lengthSq() > 1e-8) {
+      const alcance = Math.hypot(
+        d.target.x - pw.x,
+        d.target.y - pw.y,
+        d.target.z - pw.z,
+      );
+      if (alcance > err.length()) err.setLength(alcance);
+    }
+    const correa = 2;
+    if (err.length() > correa) err.setLength(correa);
     const F = new THREE.Vector3(
       err.x * KP - v.x * KD,
       err.y * KP - v.y * KD,
@@ -2674,6 +2839,7 @@ export class PhysicsWorld {
     this.world = null;
     this.bodies.clear();
     this.bisagras.clear();
+    this.frenos.clear();
     this.cables = [];
     this.guias = [];
     this.empotradas = [];

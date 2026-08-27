@@ -332,7 +332,47 @@ son no-dinámicos, se materializa además **una barrera estática invisible** so
 la rama inferior de la elipse `|PA| + |PB| = arco`, calculada por bisección. Es
 la restricción de inextensibilidad **hecha geometría**.
 
-### 4.8 Regla geométrica transversal
+### 4.8 Bisagras: escala de la placa, arco y freno (v0.3.19)
+
+Tres invariantes que hay que respetar al tocar `Joint` o `applyDrag`:
+
+**El recorrido se mide entre las DOS PLACAS, no en giro relativo.** `apertura0`
+guarda el ángulo que forman en la pose de diseño (180 = extendida, 0 = plegada)
+y `sentidoApertura` hacia qué lado crece. La conversión al giro que entiende el
+motor es `sentido · (u − apertura0)`. **Si se asigna `apertura0` hay que
+reasignar también `min`/`max` en esa escala**: dejarlos en la escala vieja
+(−90..0) manda al solver un rango que ni siquiera contiene el cero y la pieza
+salta a una pose absurda al arrancar. Ese fue el bug que costó la primera
+medición.
+
+**La mano nunca tira fuera del arco.** `enElArco()` lleva el objetivo del
+resorte a la circunferencia del pasador —recalculada CADA PASO desde la pose
+viva de los cuerpos, porque el pasador puede ir montado sobre otra pieza que se
+mueve— antes de calcular el error. Tirar en línea recta es empujar contra el
+pasador: la unión devuelve esa fuerza entera y la bisagra salta. En el ensayo
+de dos placas la deriva del radio pasó de centímetros a 0,01–0,07 cm y el
+esfuerzo sostenido de 290 kg a 9–90 kg. La UI hace la misma proyección en
+`puntoDeArrastre`, y `arcoVivo()` refresca centro y eje sin tocar el radio (que
+sí es invariante).
+
+**Al separar `soldada` de `locked` hay que barrer TODOS los sitios que sueldan.**
+No son sólo las herramientas de soldar y de bisagra: `standardMachines.ts` marca
+sus bisagras de plegado con `bloqueada`, y olvidarlas dejó a las máquinas de
+catálogo sin fundir —el brazo se volvió una cadena floja y cayeron seis suites
+(`brazo-plano`, `atraviesa`, `mano-brazo`, `uppermachine`, `v251`,
+`maniqui-usa`) mientras la prueba nueva de la bisagra daba verde—. La lección
+es la de siempre: **un dato que significaba dos cosas se lee desde más sitios de
+los que se recuerdan**; `grep` de `locked = true` no basta, hace falta también
+`locked:` en literales.
+
+**`locked` significaba dos cosas.** Ahora `soldada` es la soldadura —la que
+funde cuerpos en `agruparSoldadas`— y `locked` sin `soldada`, sobre un
+`revolute`, es un FRENO: la bisagra se sostiene sola (límites fijados en su
+ángulo actual), `grab` la suelta y `release` la vuelve a fijar en el ángulo
+nuevo. Los proyectos anteriores se leen con `soldada = locked`, así que su
+herraje se comporta igual que siempre.
+
+### 4.9 Regla geométrica transversal
 
 **Las pruebas geométricas se hacen en el frame LOCAL con `localSizeAbs()`, nunca
 con la AABB de mundo.** La AABB se hincha y permuta ejes cuando la pieza está

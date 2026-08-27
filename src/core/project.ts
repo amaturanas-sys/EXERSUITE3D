@@ -38,6 +38,12 @@ export interface JointData {
   motor: JointMotor;
   /** Lock switch: la articulación queda rígida en su pose de diseño. */
   locked?: boolean;
+  /** La unión es una SOLDADURA (se funde), no una bisagra frenada (v0.3.19). */
+  soldada?: boolean;
+  /** Ángulo entre placas en la pose de diseño (grados, 0..180), v0.3.19. */
+  apertura0?: number | null;
+  /** Signo del giro relativo que abre la bisagra (v0.3.19). */
+  sentidoApertura?: number;
   /** Las dos piezas unidas siguen chocando entre sí (v0.2.33). */
   contactos?: boolean;
 }
