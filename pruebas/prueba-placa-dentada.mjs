@@ -424,6 +424,45 @@ ok(Number.isFinite(viejo.ceroDientes) && viejo.ceroDientes >= 1 && viejo.ceroPas
 ok(viejo.bestialDientes <= 200,
   `y 999.999 ganchos se topan en ${viejo.bestialDientes}, que es lo que separa una placa fea de una pestaña colgada`);
 
+// ── v0.3.23: DOS PARTES, ANCHO DEL PILAR Y DIÁMETRO DE AGARRE ───────────────
+const nuevo = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const placa = [...ed.objects.values()].find((o) => o.params.kind === "dentada");
+  const p = placa.params;
+  const out = { caraAnotada: p.dienteCaraCm ?? null };
+  const med = () => window.exersuite.dentada.medidas(p);
+  out.espina0 = +med().espina.toFixed(2);
+  // Pedir a mano una espina el DOBLE de la cara: no puede pasar de la cara.
+  const antesW = p.width;
+  p.width = (p.dienteCaraCm ?? 8) * 2 + med().vuelo;
+  out.espinaForzada = +med().espina.toFixed(2);
+  p.width = antesW;
+  // Diámetro de agarre: con un tubo fino el gancho se estrecha.
+  const g0 = +med().garganta.toFixed(2);
+  p.dienteAgarreCm = 4;
+  const g1 = +med().garganta.toFixed(2);
+  p.dienteAgarreCm = 12;
+  const g2 = +med().garganta.toFixed(2);
+  delete p.dienteAgarreCm;
+  out.gargantas = [g0, g1, g2];
+  // La malla trae plancha + dientes: más de un grupo de posiciones que antes.
+  placa.rebuildGeometry();
+  out.vertices = placa.mesh.geometry.getAttribute("position").count;
+  const c = new T.Box3().setFromObject(placa.mesh);
+  out.sana = Number.isFinite(c.min.x) && c.max.x > c.min.x;
+  return out;
+});
+console.log("v0.3.23:", JSON.stringify(nuevo));
+ok(nuevo.caraAnotada != null && nuevo.caraAnotada > 0,
+  `la placa anota el ancho de la cara del pilar (${nuevo.caraAnotada} cm)`);
+ok(Math.abs(nuevo.espinaForzada - nuevo.caraAnotada) < 0.01,
+  `pedir el doble de espina NO la saca del pilar: sigue en ${nuevo.espinaForzada} cm`);
+ok(nuevo.gargantas[1] < nuevo.gargantas[0] && nuevo.gargantas[2] > nuevo.gargantas[0],
+  `la cuna se ajusta a lo que tiene que agarrar (${nuevo.gargantas.join(" / ")} cm para ⌀4, barra y ⌀12)`);
+ok(nuevo.sana && nuevo.vertices > 0,
+  `la placa se fabrica en dos partes —plancha y dientes— y sale entera (${nuevo.vertices} vértices)`);
+
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0
   ? "\nTODO OK" : `\n${fallos.length} fallos, ${errores.length} errores de página`);

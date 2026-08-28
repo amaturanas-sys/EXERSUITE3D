@@ -380,6 +380,16 @@ pantalla, para que subir la mano suba la pieza mire donde mire el pasador.
 el evento no basta, porque el control de órbita escucha en el mismo lienzo y el
 orden de los oyentes no es nuestro.
 
+**Una bisagra nace SIN topes numéricos (v0.3.23).** Sus placas arrancan en
+línea, o sea con la apertura en 180 —justo encima del máximo por omisión—, así
+que dejar `limitsEnabled` puesto la clavaba contra ese tope desde el primer
+fotograma y parecía soldada aunque el lock switch estuviera abierto. Quien
+frena una bisagra recién puesta es el MATERIAL (los contactos), no los grados.
+
+**«Juntar» tiene que plantar el pasador en el CANTO de la primera pieza.**
+Dejarlo en el punto medio entre las dos cierra sólo la mitad del hueco y las
+deja igual de sueltas con el pasador flotando en medio.
+
 **La bisagra se engancha (v0.3.22).** El clic la toma y la deja tomada; el
 siguiente clic la suelta. `bisagraDrag` distingue `enganchada` (hasta el
 próximo clic) de `arrastrando` (botón abajo): sin lo segundo, mover el ratón no
@@ -645,6 +655,7 @@ src/
     standardMachines.ts (658)   Las 9 máquinas de fábrica (specs VERBATIM de .prefab.json).
     maquinas/upperMachine.ts (1.052)   La más compleja: 41 piezas, 16 uniones, 2 cables.
     maquinas/legPress.ts (1.173)   Prensa de piernas: 34 piezas, 29 uniones (v0.3.20).
+    placaDentada.ts (≈530)      Plancha + diente en DOS partes; perfil del .stl (v0.3.23).
     humanFigure.ts (577) poseLibrary.ts (742) movimientos.ts (539) barraManiqui.ts (328)
     Rope.ts (249)               Cadenas y correas (NO son SceneObject).
   physics/

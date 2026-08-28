@@ -97,6 +97,19 @@ export interface PrimitiveParams {
   /** Cuánto vuela el diente por delante de la plancha (cm). */
   dienteVuelo?: number;
   /**
+   * ANCHO DE LA CARA DEL PILAR sobre la que se montó (cm), v0.3.23. La
+   * superficie de contacto NUNCA lo supera: es lo que hace que la placa se
+   * vea del tamaño del poste y no montada encima de él.
+   */
+  dienteCaraCm?: number;
+  /**
+   * DIÁMETRO QUE TIENE QUE ADMITIR LA CUNA (cm), v0.3.23. Por omisión el de
+   * la barra olímpica tal como la ve el motor; poniéndole el de un tubo, la
+   * misma placa pasa de ser una fila de jotas a ser el herraje que fija una
+   * estructura tubular, igual que los pinholes fijan las jotas.
+   */
+  dienteAgarreCm?: number;
+  /**
    * VOLTEO / ESPEJADO (v0.2.32): ejes locales en los que la pieza está
    * espejada. Se hornea en la GEOMETRÍA en lugar de usar una escala
    * negativa, porque una escala negativa invierte también los ejes del

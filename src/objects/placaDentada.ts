@@ -106,6 +106,19 @@ export const DENTADA_PROPORCIONES = {
  */
 export const DENTADA_BARRA_CM = 6.94;
 
+/**
+ * EL DIÁMETRO QUE LA CUNA TIENE QUE ADMITIR (v0.3.23).
+ *
+ * Por omisión, la barra olímpica tal como la ve el motor. Pero la misma pieza
+ * hace un segundo trabajo: sujetar un TUBO —de una estructura estándar— igual
+ * que los pinholes sujetan una jota. Cambiando este número, todo el gancho
+ * —garganta, labio, paso mínimo— se redimensiona solo alrededor de lo que de
+ * verdad tiene que agarrar.
+ */
+export function agarreDentada(p: PrimitiveParams): number {
+  return Math.max(1, p.dienteAgarreCm ?? DENTADA_BARRA_CM);
+}
+
 export const DENTADA_PASO_DEF = 12.5;
 export const DENTADA_DIENTES_DEF = 6;
 
@@ -136,7 +149,7 @@ export function huecoDentada(p: PrimitiveParams): { vuelo: number; garganta: num
   const gargantaObj = R.garganta * vueloObj;
   // …y el suelo que las hace servir para algo: por la garganta tiene que
   // caber la barra.
-  const garganta = Math.max(gargantaObj, DENTADA_BARRA_CM + R.holguraBarra);
+  const garganta = Math.max(gargantaObj, agarreDentada(p) + R.holguraBarra);
   const dedo = Math.max(vueloObj - gargantaObj, R.dedoMin);
   return { vuelo: garganta + dedo, garganta };
 }
@@ -144,10 +157,10 @@ export function huecoDentada(p: PrimitiveParams): { vuelo: number; garganta: num
 /** Alto del labio: siempre por encima del EJE de la barra, o no la encierra. */
 function altoLabio(p: PrimitiveParams, paso: number): number {
   const R = DENTADA_PROPORCIONES;
-  const suelo = DENTADA_BARRA_CM / 2 + R.labioSobreEje;
+  const suelo = agarreDentada(p) / 2 + R.labioSobreEje;
   const alto = Math.max(p.dienteAlto ?? R.dedoAlto * paso, suelo);
   // Y nunca tan alto que tape la boca por la que la barra tiene que entrar.
-  return Math.min(alto, Math.max(suelo, paso - DENTADA_BARRA_CM - R.holguraBoca));
+  return Math.min(alto, Math.max(suelo, paso - agarreDentada(p) - R.holguraBoca));
 }
 
 /**
@@ -166,8 +179,7 @@ function altoLabio(p: PrimitiveParams, paso: number): number {
  * —con el coeficiente de segundo grado NEGATIVO, porque el dedo es más fino
  * que la barra—, y su raíz positiva es el faldón máximo.
  */
-function rampaMaxima(paso: number, vuelo: number, dedo: number, dedoAlto: number, chaflan: number): number {
-  const D = DENTADA_BARRA_CM;
+function rampaMaxima(D: number, paso: number, vuelo: number, dedo: number, dedoAlto: number, chaflan: number): number {
   const A = vuelo * (paso - dedoAlto - chaflan);
   const c = D * D - dedo * dedo;
   if (c <= 0) return Infinity; // dedo más gordo que la barra: nada estrangula
@@ -213,7 +225,7 @@ export function pasoMinimoDentada(p: PrimitiveParams): number {
 
 function minimoParaHueco(p: PrimitiveParams): number {
   const R = DENTADA_PROPORCIONES;
-  const D = DENTADA_BARRA_CM;
+  const D = agarreDentada(p);
   const { vuelo, garganta } = huecoDentada(p);
   const dedo = vuelo - garganta;
   const labio = D / 2 + R.labioSobreEje;
@@ -302,7 +314,14 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
   const paso = Math.max(pasoMinimoDentada(p), p.dienteEspaciado ?? DENTADA_PASO_DEF);
   // El ancho que llega es el TOTAL; la espina es lo que queda descontado el
   // vuelo, y nunca menos de un centímetro de respaldo.
-  const ancho = Math.max(vuelo + 1, p.width ?? R.espinaCm + vuelo);
+  let ancho = Math.max(vuelo + 1, p.width ?? R.espinaCm + vuelo);
+  // LA SUPERFICIE DE CONTACTO NO PASA DEL ANCHO DEL PILAR (v0.3.23). La
+  // plancha se apoya en una cara; si su espina fuera más ancha, la placa
+  // sobresaldría por los cantos del poste y se vería montada encima de él en
+  // vez de atornillada a su costado.
+  if (p.dienteCaraCm != null && p.dienteCaraCm > 0) {
+    ancho = Math.min(ancho, p.dienteCaraCm + vuelo);
+  }
   const espina = ancho - vuelo;
 
   const margen = R.margen * paso;
@@ -341,7 +360,7 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
   // dejar sitio para meterla. Cuando los dientes se juntan, se aplana.
   const rampa = Math.max(
     R.rampaMin,
-    Math.min(R.rampa * paso, rampaMaxima(paso, vuelo, vuelo - garganta, dedoAlto, chaflan)),
+    Math.min(R.rampa * paso, rampaMaxima(agarreDentada(p), paso, vuelo, vuelo - garganta, dedoAlto, chaflan)),
   );
 
   return {
@@ -364,42 +383,53 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
 }
 
 /**
- * EL CONTORNO DE LA PLACA, recorrido dejando el material a la izquierda.
+ * DOS PIEZAS, NO UNA (v0.3.23): LA PLACA Y EL DIENTE.
  *
- * Se sube por el canto de la espina y, en cada gancho, se sale en diagonal
- * hasta el canto exterior (el faldón), se sube por fuera (el dedo), se vuelve
- * por su cara interior y se cierra la vuelta rodeando la CUNA, que es un
- * semicírculo del diámetro de la garganta — es decir, del diámetro de la
- * barra. Por eso la barra se sienta y no baila.
+ * El modelo del diseñador se rehízo como un complejo de dos partes —una plancha
+ * lisa y un diente que se repite sobre ella—, y la herramienta lo copia: la
+ * plancha es un rectángulo del ancho de la cara del pilar, y cada gancho es un
+ * sólido aparte que la muerde por el canto. Ganan las dos cosas que se pedían:
+ * la placa se estira o se estrecha sin deformar los ganchos, y el diente se
+ * dibuja UNA vez en lugar de ir hilvanado dentro de un contorno de cien
+ * segmentos.
  *
- * La boca del gancho queda ARRIBA y sin cerrar: es por donde entra la barra.
+ * EL PERFIL DEL DIENTE ES MÁS SENCILLO que el anterior. Del `.stl` nuevo, con
+ * la silueta rasterizada: la espina ocupa 0,190 de las 0,358 unidades de ancho
+ * —exactamente el ancho de la plancha— y el gancho vuela las otras 0,171,
+ * ocupando 0,155 de alto. No hay chaflán ni faldón recto: hay una rampa curva
+ * que sale de la plancha, una cuna redonda y un dedo que sube y remata en
+ * punta ROMA. Tres curvas y dos rectas donde antes había siete tramos.
  */
-function contornoDentada(m: MedidasDentada): THREE.Shape {
+const DIENTE_SOLAPE = 0.6;
+
+/**
+ * El contorno de UN diente, en coordenadas de la plancha, con su asiento en
+ * `y`. Empieza dentro de la plancha (por eso el solape) para que al fundir las
+ * dos partes no quede una costura.
+ */
+function contornoDiente(m: MedidasDentada, y: number): THREE.Shape {
   const xEsp = m.cantoEspina;
   const xOut = m.ancho / 2;
   const xDed = m.caraDedo;
-  const Y = m.largo / 2;
   const r = m.garganta / 2;
   const cx = (xEsp + xDed) / 2;
+  const rPunta = Math.min(m.dedo / 2, m.dedoAlto / 2);
 
   const s = new THREE.Shape();
-  s.moveTo(-m.ancho / 2, -Y);
-  s.lineTo(xEsp, -Y); // canto de abajo, del ancho de la espina
-
-  for (let i = 0; i < m.dientes; i++) {
-    const y = m.asiento(i);
-    s.lineTo(xEsp, y - m.rampa); // sube por la espina
-    s.lineTo(xOut, y); // el faldón, en diagonal hasta el canto
-    s.lineTo(xOut, y + m.dedoAlto); // el canto exterior del dedo
-    s.lineTo(xDed, y + m.dedoAlto + m.chaflan); // la punta achaflanada
-    s.lineTo(xDed, y + r); // baja por la cara interior del dedo
-    s.absarc(cx, y + r, r, 0, Math.PI, true); // la cuna donde se sienta la barra
-    // El arco deja el trazo en (xEsp, y + r) y se sigue por la espina.
-  }
-
-  s.lineTo(xEsp, Y);
-  s.lineTo(-m.ancho / 2, Y); // canto de arriba
-  s.closePath(); // espalda: la cara que se atornilla al pilar
+  s.moveTo(xEsp - DIENTE_SOLAPE, y - m.rampa);
+  // LA RAMPA, CURVA. Sale de la plancha y se levanta hasta el canto exterior:
+  // es el envés del gancho, lo que en el acero real es un radio de doblado.
+  s.quadraticCurveTo(xEsp + m.vuelo * 0.55, y - m.rampa * 0.5, xOut, y);
+  // El dedo sube por fuera…
+  s.lineTo(xOut, y + m.dedoAlto - rPunta);
+  // …y remata en punta roma, sin chaflán.
+  s.absarc(xOut - rPunta, y + m.dedoAlto - rPunta, rPunta, 0, Math.PI, false);
+  s.lineTo(xDed, y + r);
+  // La cuna: media circunferencia del diámetro de la garganta, que es donde
+  // se sienta la barra (o el tubo) y por eso no baila.
+  s.absarc(cx, y + r, r, 0, Math.PI, true);
+  s.lineTo(xEsp - DIENTE_SOLAPE, y + r);
+  s.closePath();
   return s;
 }
 
@@ -427,14 +457,29 @@ function pernosDentada(m: MedidasDentada): { x: number; y: number }[] {
  */
 export function buildDentadaGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const m = medidasDentada(p);
-  const plancha = new THREE.ExtrudeGeometry(contornoDentada(m), {
-    depth: m.grosor,
-    bevelEnabled: false,
-    curveSegments: 10,
-  });
-  // La extrusión crece hacia +Z desde z=0; se centra en el grosor.
-  plancha.translate(0, 0, -m.grosor / 2);
-  const partes: THREE.BufferGeometry[] = [plancha];
+  const extruir = (forma: THREE.Shape): THREE.BufferGeometry => {
+    const g = new THREE.ExtrudeGeometry(forma, {
+      depth: m.grosor,
+      bevelEnabled: false,
+      curveSegments: 12,
+    });
+    // La extrusión crece hacia +Z desde z=0; se centra en el grosor.
+    g.translate(0, 0, -m.grosor / 2);
+    return g;
+  };
+
+  // PARTE 1 — LA PLANCHA. Un rectángulo liso del ancho de la cara del pilar:
+  // se estira, se estrecha y se engorda sin tocar los ganchos.
+  const plancha = new THREE.Shape();
+  plancha.moveTo(-m.ancho / 2, -m.largo / 2);
+  plancha.lineTo(m.cantoEspina, -m.largo / 2);
+  plancha.lineTo(m.cantoEspina, m.largo / 2);
+  plancha.lineTo(-m.ancho / 2, m.largo / 2);
+  plancha.closePath();
+  const partes: THREE.BufferGeometry[] = [extruir(plancha)];
+
+  // PARTE 2 — LOS DIENTES, uno por asiento, mordiendo el canto de la plancha.
+  for (let i = 0; i < m.dientes; i++) partes.push(extruir(contornoDiente(m, m.asiento(i))));
 
   // Los pernos son detalle, no estructura, pero sin ellos la placa parece
   // pegada al poste con saliva.

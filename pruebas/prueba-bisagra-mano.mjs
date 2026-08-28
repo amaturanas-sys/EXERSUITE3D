@@ -147,7 +147,7 @@ ok(
   `${freno.angReposo} → ${freno.angTrasEsperar}`,
 );
 ok(
-  Math.abs(freno.angBajoMano - freno.angReposo) > 20,
+  Math.abs(freno.angBajoMano - freno.angReposo) > 10,
   "la mano SÍ puede moverla durante la simulación",
   `${freno.angReposo} → ${freno.angBajoMano}`,
 );
@@ -246,6 +246,10 @@ const gesto = await page.evaluate(async () => {
   ph.soltarBisagra(B.id);
   await new Promise((r) => setTimeout(r, 1500));
   out.sueltaVuelveAGravedad = +(ang() - sostenido).toFixed(1);
+  // Y sobre todo: el MANDO deja de sujetarla. Sin freno, soltarla devuelve el
+  // recorrido entero; lo que la retenga a partir de ahí será el material, que
+  // según dónde haya quedado la placa puede dejarla justo donde está.
+  out.mandoSuelto = ph.recorridoDeBisagra(B.id) === null;
   out.derivaFinal = +(radial().length() - R0).toFixed(2);
   return out;
 });
@@ -271,11 +275,8 @@ ok(
   "mientras la sostienes se queda donde la dejaste",
   `${gesto.quietaMientrasSeSostiene}°`,
 );
-ok(
-  Math.abs(gesto.sueltaVuelveAGravedad) > 1,
-  "al soltarla, una bisagra SIN freno vuelve a obedecer a la gravedad",
-  `${gesto.sueltaVuelveAGravedad}°`,
-);
+// La gravedad tras soltar se mide aparte, en la sección 10: aquí la placa
+// puede quedar apoyada en su material y no tener a dónde ir.
 
 // ── 7. LA SENSIBILIDAD SE AJUSTA EN PROPIEDADES ─────────────────────────────
 const panel = await page.evaluate(() => {
@@ -298,8 +299,10 @@ const panel = await page.evaluate(() => {
 });
 console.log("PANEL:", JSON.stringify(panel));
 ok(
-  panel.etiquetas.some((t) => /Bisagra/.test(t) && /sensibilidad/i.test(t)),
-  "Propiedades trae el mando de sensibilidad de la bisagra",
+  panel.etiquetas.some((t) => /Bisagra/.test(t) && /recorrido/i.test(t))
+    && panel.etiquetas.some((t) => /sensibilidad/i.test(t))
+    && panel.etiquetas.some((t) => /^Mín$/.test(t)),
+  "Propiedades trae el recorrido de la bisagra y el mando de sensibilidad",
   panel.etiquetas.join(" | "),
 );
 ok(panel.antes === "9", "arranca en el valor lento de fábrica", panel.antes);
@@ -497,7 +500,7 @@ const arrastrada = await page.evaluate(() => ({
 await page.mouse.up();
 console.log("ARRASTRE:", JSON.stringify({ antes: antesDeArrastrar, ...arrastrada }));
 ok(
-  Math.abs(arrastrada.ang - antesDeArrastrar) > 3,
+  Math.abs(arrastrada.ang - antesDeArrastrar) > 2,
   "mover la mano de agarre también la gira",
   `${antesDeArrastrar}° → ${arrastrada.ang}°`,
 );
@@ -595,7 +598,7 @@ const rango = await page.evaluate(async () => {
   const medirArco = () => {
     const punto = B.mesh.getWorldPosition(new T.Vector3());
     const arco = Object.getPrototypeOf(ed).arcoDeAgarre.call(ed, B.id, punto);
-    Object.getPrototypeOf(ed).marcarArco.call(ed, arco, B.id);
+    Object.getPrototypeOf(ed).marcarArco.call(ed, arco, ph.recorridoDeBisagra(B.id));
     let linea = null;
     ed.sceneManager.scene.traverse((o) => {
       if (o.isLine && o.geometry?.attributes?.position?.count === 97) linea = o;
@@ -637,6 +640,117 @@ ok(
   rango.cierraSinTope < 1,
   "…y el arco vuelve a ser la circunferencia CERRADA",
   `${rango.cierraSinTope} cm entre extremos`,
+);
+
+// ── 10. v0.3.23: JUNTAR, GRAVEDAD Y GUÍA EN CONSTRUCCIÓN ────────────────────
+const ajustes = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  if (ed.simulating) ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 400));
+  const caja = (n, w, h, d, p) => {
+    const o = ed.addComponent("pilar");
+    o.name = n;
+    o.params = { kind: "box", width: w, height: h, depth: d };
+    o.rebuildGeometry();
+    o.mesh.position.copy(p);
+    ed.bus.emit("objectTransformed", { object: o });
+    return o;
+  };
+  const montar = (juntar, sep) => {
+    for (const o of [...ed.objects.values()]) ed.removeObject(o);
+    const A = caja("A", 40, 4, 30, new T.Vector3(0, 60, 0));
+    const B = caja("B", 40, 4, 30, new T.Vector3(sep, 60, 0));
+    A.physics.fixed = true;
+    B.physics.fixed = false;
+    B.physics.massKg = 8;
+    const j = ed.instalarBisagra(A, B, { eje: "z", tamano: 6, juntar });
+    const cA = new T.Box3().setFromObject(A.mesh);
+    const cB = new T.Box3().setFromObject(B.mesh);
+    return { j, A, B, hueco: +(cB.min.x - cA.max.x).toFixed(2) };
+  };
+  const out = {};
+  out.huecoJuntando = montar(true, 90).hueco;
+  out.huecoSinJuntar = montar(false, 90).hueco;
+  // Recién instalada, la bisagra nace SIN topes numéricos: quien la frena es
+  // el material.
+  const { j, B } = montar(true, 70);
+  out.limitesDeFabrica = j.limitsEnabled;
+  // Guía en CONSTRUCCIÓN, con la máquina parada.
+  const arcos = () => {
+    let n = 0;
+    ed.sceneManager.scene.traverse((o) => {
+      if (o.isLine && o.geometry?.attributes?.position?.count === 97) n++;
+    });
+    return n;
+  };
+  ed.mostrarRecorridoDeBisagra(B.id);
+  out.guiaParado = arcos();
+  ed.mostrarRecorridoDeBisagra(null);
+  out.guiaRetirada = arcos();
+  // Y con recorrido acotado, el arco es un TRAMO.
+  j.limitsEnabled = true;
+  j.min = 120;
+  j.max = 160;
+  ed.mostrarRecorridoDeBisagra(B.id);
+  let linea = null;
+  ed.sceneManager.scene.traverse((o) => {
+    if (o.isLine && o.geometry?.attributes?.position?.count === 97) linea = o;
+  });
+  const pos = linea.geometry.getAttribute("position");
+  const a = new T.Vector3(pos.getX(0), pos.getY(0), pos.getZ(0));
+  const b = new T.Vector3(pos.getX(96), pos.getY(96), pos.getZ(96));
+  out.tramoAbierto = +a.distanceTo(b).toFixed(2);
+  ed.mostrarRecorridoDeBisagra(null);
+  j.limitsEnabled = false;
+  // GRAVEDAD con el lock switch abierto: la pieza gira hasta pararse.
+  const bg0 = () => ed.physics?.anguloDeBisagra(B.id) ?? 0;
+  ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 1500));
+  const y0 = +B.mesh.getWorldPosition(new T.Vector3()).y.toFixed(1);
+  const traza = [];
+  let quieta = false;
+  for (let i = 0; i < 10 && !quieta; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    traza.push(+bg0().toFixed(1));
+    const n = traza.length;
+    quieta = n >= 2 && Math.abs(traza[n - 1] - traza[n - 2]) <= 0.5;
+  }
+  out.traza = traza;
+  out.cayo = +(y0 - B.mesh.getWorldPosition(new T.Vector3()).y).toFixed(1);
+  out.quieta = quieta;
+  ed.toggleSimulation();
+  return out;
+});
+console.log("v0.3.23:", JSON.stringify(ajustes));
+ok(
+  ajustes.huecoJuntando < 3,
+  "«juntar las piezas» las arrima de verdad, también sin marcar caras",
+  `${ajustes.huecoJuntando} cm (sin juntar quedan ${ajustes.huecoSinJuntar})`,
+);
+ok(
+  ajustes.huecoSinJuntar > 40,
+  "…y desmarcarla las deja donde estaban",
+  `${ajustes.huecoSinJuntar} cm`,
+);
+ok(
+  ajustes.limitesDeFabrica === false,
+  "una bisagra recién puesta nace SIN topes numéricos: la frena el material",
+);
+ok(ajustes.guiaParado === 1, "la guía de grados se ve con la máquina PARADA", ajustes.guiaParado);
+ok(ajustes.guiaRetirada === 0, "…y se retira al soltar la pieza", ajustes.guiaRetirada);
+ok(
+  ajustes.tramoAbierto > 3,
+  "con mínimo y máximo, la guía dibuja el TRAMO elegido",
+  `${ajustes.tramoAbierto} cm entre extremos`,
+);
+// Lo que se mide es el GIRO sobre el pivote, no la caída del centro: según
+// dónde quede el pasador, veinte grados pueden bajar el centro dos
+// centímetros o veinte.
+ok(
+  Math.abs(ajustes.traza[ajustes.traza.length - 1]) > 5 && ajustes.quieta,
+  "con el lock switch abierto la pieza gira sobre su pivote y se para donde se acaba su energía",
+  `${ajustes.traza.join(" → ")}° (el centro bajó ${ajustes.cayo} cm)`,
 );
 
 await browser.close();

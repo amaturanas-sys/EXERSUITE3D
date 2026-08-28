@@ -5,6 +5,62 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.23] — 2026-08-28
+
+### Cambiado
+
+**La placa dentada se fabrica en DOS PARTES: la plancha y el diente.** El
+modelo del diseñador se rehízo así y la herramienta lo copia. La plancha es un
+rectángulo liso —se estira, se estrecha y se engorda sin deformar los ganchos—
+y cada gancho es un sólido aparte que la muerde por el canto.
+
+**El perfil del diente es más sencillo.** Rasterizando la silueta del `.stl`
+nuevo: la espina ocupa 0,190 de las 0,358 unidades de ancho —exactamente el
+ancho de la plancha— y el gancho vuela las otras 0,171 en 0,155 de alto. Se
+va el chaflán y el faldón recto; queda una rampa curva que sale de la plancha,
+una cuna redonda y un dedo que remata en punta roma. Tres curvas y dos rectas
+donde había siete tramos.
+
+**La superficie de contacto nunca pasa del ancho del pilar.** La placa anota
+la cara sobre la que se montó y la respeta aunque luego se toque el ancho a
+mano: pedirle el doble de espina la deja igual, apoyada en su cara y no montada
+encima del poste.
+
+**Una bisagra recién puesta nace sin topes numéricos.** Nace con sus placas en
+línea —apertura 180, justo encima del máximo—, así que dejar los límites por
+omisión la clavaba contra ese tope desde el primer fotograma: con el lock
+switch abierto no caía ni cedía a nada, parecía soldada. Ahora la frena el
+MATERIAL, que ya choca, y los grados son para cuando se piden. Medido: la pieza
+gira 26° sobre su pivote y se para donde se le acaba la energía.
+
+### Arreglado
+
+**«Juntar las piezas» ya junta de verdad, y también sin marcar caras.** Tenía
+dos fallos: por el camino corto —dos clics en las piezas— la casilla no existía
+y no hacía nada, y por el camino de las caras el pasador se plantaba a medio
+camino entre las dos, cerrando la mitad del hueco (24 de 50 cm) y dejando el
+herraje estirado. Ahora el pasador se planta en el canto de la primera pieza y
+la segunda se arrima hasta la holgura: el hueco queda en **1,78 cm sea cual sea
+la separación de partida**, y desmarcar la casilla las deja donde estaban.
+
+### Añadido
+
+**La guía de grados se ve con la máquina PARADA.** El recorrido se elegía a
+ciegas —dos números y a arrancar la simulación para ver a dónde llevaban—.
+Ahora al seleccionar la pieza se dibuja su arco en el visor, y con mínimo y
+máximo puestos se dibuja el TRAMO. Los dos campos viven en Propiedades, junto
+a la sensibilidad, y el arco se repinta mientras se escriben.
+
+**La placa dentada también fija estructuras tubulares.** Un campo nuevo dice
+qué diámetro tiene que admitir la cuna: con el de la barra hace de jota, con el
+de un tubo hace de herraje que lo fija, igual que los pinholes fijan una jota.
+Todo el gancho —garganta, labio e intervalo mínimo— se redimensiona solo
+alrededor de ese número (5,06 / 8,00 / 13,06 cm de garganta para ⌀4, barra
+y ⌀12).
+
+`prueba-bisagra-mano` sube a 52 comprobaciones y `prueba-placa-dentada` suma
+las cuatro del modelo nuevo.
+
 ## [0.3.22] — 2026-08-28
 
 ### Cambiado

@@ -89,7 +89,12 @@ chequear(arriba.alturaHerraje > 4.9, `el herraje va sobre la cara superior (+${a
 chequear(arriba.holgura > 0, `el pasador no roza la pala contraria (holgura ${arriba.holgura} cm)`);
 const simA = await simular();
 console.log("  simulación arriba:", JSON.stringify(simA));
-chequear(Math.abs(simA.giro) < 12, `montada arriba NO pliega: topa contra el material (${simA.giro}°)`);
+// EL TOPE ES EL MATERIAL, NO UN NÚMERO (v0.3.23). Antes la bisagra nacía con
+// límites puestos y su pose de diseño caía justo encima del máximo, así que no
+// se movía ni un grado —parecía soldada aunque el lock switch estuviera
+// abierto—. Ahora cede lo que le deja la holgura del pasador y ahí topa: unos
+// grados, no el pliegue entero.
+chequear(Math.abs(simA.giro) < 30, `montada arriba topa PRONTO contra el material (${simA.giro}°)`);
 chequear(simA.separadas, "las dos vigas no se atraviesan");
 await page.screenshot({ path: `${OUT}/v233-arriba-topa.png` });
 

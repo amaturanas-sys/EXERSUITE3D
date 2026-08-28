@@ -107,7 +107,7 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
         eje,
         tamano,
         cara,
-        juntar: porCaras ? juntarOn.checked : false,
+        juntar: juntarOn.checked,
         limite:
           limOn.checked && Number.isFinite(min) && Number.isFinite(max) ? [min, max] : undefined,
       });
@@ -142,6 +142,17 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
       ]),
     ];
     const clasicoBloque: HTMLElement[] = [
+      el("div", { class: "rold-seccion" }, [tt("Montaje", "Assembly")]),
+      el("label", { class: "rold-check" }, [
+        juntarOn,
+        tt("Juntar las piezas", "Bring the parts together"),
+      ]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "La segunda pieza se arrima a la primera hasta el pasador, como las tapas de un libro.",
+          "The second part is brought up to the pin, like the covers of a book.",
+        ),
+      ]),
       el("div", { class: "rold-seccion" }, [tt("Eje de giro (global)", "Hinge axis (global)")]),
       el("div", { class: "rold-ejes" }, [
         opcEje(

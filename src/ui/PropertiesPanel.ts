@@ -421,6 +421,9 @@ export class PropertiesPanel {
   private show(obj: SceneObject | null): void {
     this.current = obj;
     this.groupShownId = null;
+    // El arco de recorrido pertenece a la pieza que se muestra: al cambiar de
+    // selección se retira, y `bisagraSection` lo vuelve a pintar si toca.
+    this.editor.mostrarRecorridoDeBisagra(null);
     clear(this.body);
     if (!obj) {
       this.body.append(
@@ -478,6 +481,32 @@ export class PropertiesPanel {
   private bisagraSection(obj: SceneObject): HTMLElement | null {
     const j = this.editor.bisagraQueSostiene(obj.id);
     if (!j) return null;
+    // Al seleccionar la pieza se dibuja SU RECORRIDO en el visor, con la
+    // máquina parada: el rango deja de elegirse a ciegas.
+    this.editor.mostrarRecorridoDeBisagra(obj.id);
+    const repintarArco = (): void => this.editor.mostrarRecorridoDeBisagra(obj.id);
+    const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
+      const inp = el("input", {
+        type: "number", min: "0", max: "180", step: "5", value: String(v),
+      }) as HTMLInputElement;
+      inp.addEventListener("input", () => {
+        const n = parseFloat(inp.value);
+        if (!Number.isFinite(n)) return;
+        set(Math.min(180, Math.max(0, n)));
+        this.editor.jointUpdated();
+        repintarArco();
+      });
+      return inp;
+    };
+    const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    limOn.checked = j.limitsEnabled;
+    limOn.addEventListener("change", () => {
+      j.limitsEnabled = limOn.checked;
+      this.editor.jointUpdated();
+      repintarArco();
+    });
+    const minIn = grados(j.min, (n) => (j.min = n));
+    const maxIn = grados(j.max, (n) => (j.max = n));
     const input = el("input", {
       type: "range",
       min: "1",
@@ -501,7 +530,22 @@ export class PropertiesPanel {
     });
     pintar();
     return el("div", { class: "field" }, [
-      el("label", {}, [tt("Bisagra · sensibilidad", "Hinge · sensitivity")]),
+      el("label", {}, [tt("Bisagra · recorrido", "Hinge · travel")]),
+      el("label", { class: "rold-check" }, [
+        limOn,
+        tt("Limitar (grados de la placa)", "Limit (leaf degrees)"),
+      ]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [el("label", {}, [tt("Mín", "Min")]), minIn]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Máx", "Max")]), maxIn]),
+      ]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          "180° = placas en línea, 0° = plegada. El arco del visor enseña el tramo elegido.",
+          "180° = leaves in line, 0° = folded. The arc in the viewport shows the chosen span.",
+        ),
+      ]),
+      el("label", {}, [tt("Sensibilidad del gesto", "Gesture sensitivity")]),
       input,
       lectura,
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
@@ -939,10 +983,46 @@ export class PropertiesPanel {
     });
     cuenta.append(el("label", {}, [tt("Ganchos", "Hooks")]), inputN);
 
+    // QUÉ TIENE QUE AGARRAR (v0.3.23). La misma placa hace dos trabajos: fila
+    // de jotas para la barra, o herraje que fija un tubo de una estructura
+    // estándar —igual que los pinholes fijan una jota—. Lo único que cambia es
+    // el diámetro que la cuna debe admitir, y con él se redimensiona el gancho
+    // entero: garganta, labio e intervalo mínimo.
+    const agarreIn = el("input", {
+      type: "number",
+      value: String(roundTo(obj.params.dienteAgarreCm ?? DENTADA_BARRA_CM, 1)),
+      step: "0.5",
+      min: "1",
+    }) as HTMLInputElement;
+    agarreIn.addEventListener("change", () => {
+      const v = parseFloat(agarreIn.value);
+      if (!Number.isFinite(v) || v < 1) return;
+      obj.params.dienteAgarreCm = v;
+      // El gancho cambia de tamaño: se reaplica el intervalo para que la placa
+      // no se despegue del pilar (misma cuenta que al tocar el intervalo).
+      aplicar(medidasDentada(obj.params).paso, medidasDentada(obj.params).dientes);
+      agarreIn.value = String(roundTo(obj.params.dienteAgarreCm ?? DENTADA_BARRA_CM, 1));
+    });
+    const agarre = el("div", { class: "sub" }, [
+      el("label", {}, [tt("Agarra ⌀ (cm)", "Grips ⌀ (cm)")]),
+      agarreIn,
+    ]);
+
     pintarNota();
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Ganchos de la placa", "Plate hooks")]),
       el("div", { class: "row" }, [paso, cuenta]),
+      el("div", { class: "row" }, [agarre]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          "Con el diámetro de la barra hace de jota; con el de un tubo, de herraje "
+            + "que fija una estructura tubular. La superficie que apoya en el pilar "
+            + "nunca pasa del ancho de su cara.",
+          "With the bar's diameter it acts as a J-hook; with a tube's, as the fitting "
+            + "that clamps a tubular structure. The surface resting on the upright "
+            + "never exceeds its face width.",
+        ),
+      ]),
       nota,
     ]);
   }

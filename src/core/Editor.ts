@@ -1206,6 +1206,8 @@ export class Editor {
   private startingSim = false;
 
   private async startSimulation(): Promise<void> {
+    // La guía de construcción se retira: en marcha manda la del agarre.
+    this.quitarMarcaArco();
     // El guard `startingSim` evita arranques concurrentes mientras carga el
     // WASM de Rapier (auto-repeat de Espacio): se creaban varios mundos y los
     // anteriores nunca se liberaban.
@@ -9226,6 +9228,31 @@ export class Editor {
       charnela = pivote
         .clone()
         .addScaledVector(normal, Math.max(sobresale(a), sobresale(b)) + medio + 0.1);
+
+      // JUNTAR LAS PIEZAS TAMBIÉN AQUÍ (v0.3.23). Antes sólo se arrimaban con
+      // las dos caras marcadas: instalando la bisagra por el camino corto —dos
+      // clics en las piezas— la casilla no hacía nada y el herraje quedaba
+      // estirado sobre el hueco que hubiera, que es lo que se veía como «no
+      // funciona». La segunda pieza se acerca por la línea que las une hasta
+      // dejar su canto a la holgura del pasador; si ya estaban tocándose, el
+      // paso sale cero y no se mueve nada.
+      if (cfg.juntar !== false && dirB.lengthSq() > 0.5) {
+        // El pasador se planta EN EL CANTO DE LA PRIMERA PIEZA, no a medio
+        // camino entre las dos: dejarlo en el punto medio cerraba sólo la
+        // mitad del hueco —24 de 50 cm en el ensayo— y las piezas quedaban
+        // igual de sueltas, con el pasador flotando entre ellas.
+        const lomo = this.soporteEnDireccion(a, dirB) + separacion;
+        charnela.addScaledVector(dirB, lomo - charnela.dot(dirB));
+        const cantoB = -this.soporteEnDireccion(b, dirB.clone().negate());
+        const paso = charnela.dot(dirB) + separacion - cantoB;
+        if (Math.abs(paso) > 1e-3) {
+          arrimo = Math.abs(paso);
+          b.mesh.position.addScaledVector(dirB, paso);
+          b.mesh.updateMatrixWorld(true);
+          cb.addScaledVector(dirB, paso);
+          this.bus.emit("objectTransformed", { object: b });
+        }
+      }
     }
     const letra = letraMasCercana(ejeMundo);
 
@@ -9312,8 +9339,15 @@ export class Editor {
       // que se haya pedido en el panel.
       bisagra.min = 0;
       bisagra.max = 180;
+      // SIN RECORRIDO PEDIDO, SIN TOPES NUMÉRICOS (v0.3.23). Una bisagra nace
+      // con sus placas EN LÍNEA, o sea con la apertura en 180 — justo encima
+      // del máximo—, así que dejar los límites puestos por omisión la clavaba
+      // contra ese tope desde el primer fotograma: con el lock switch abierto
+      // no caía, no cedía a nada, parecía soldada. Quien frena una bisagra
+      // recién puesta es el MATERIAL, que ya choca; los grados son para cuando
+      // el usuario los pide.
+      bisagra.limitsEnabled = !!cfg.limite;
       if (cfg.limite) {
-        bisagra.limitsEnabled = true;
         bisagra.min = Math.min(cfg.limite[0], cfg.limite[1]);
         bisagra.max = Math.max(cfg.limite[0], cfg.limite[1]);
       }
@@ -10321,6 +10355,9 @@ export class Editor {
     // la cuenta tiene que salir del paso REAL o sobrarían dientes.
     const paso = medidasDentada(p).paso;
     p.dienteEspaciado = paso;
+    // ANCHO DE LA CARA, ANOTADO EN LA PIEZA (v0.3.23): la superficie de
+    // contacto queda atada a ella aunque luego se toque el ancho a mano.
+    p.dienteCaraCm = c.anchoCara;
     p.width = c.anchoCara + vueloDentada(p);
     p.height = largo;
     p.dientes = dientesQueCaben(largo, paso);
@@ -11237,7 +11274,7 @@ export class Editor {
         y: event.clientY,
         haciaArriba: this.arribaEnLaPantalla(arco, obj.mesh.getWorldPosition(new THREE.Vector3())),
       };
-      this.marcarArco(arco, obj.id);
+      this.marcarArco(arco, this.physics?.recorridoDeBisagra(obj.id));
       id = obj.id;
     }
     event.preventDefault();
@@ -11388,7 +11425,7 @@ export class Editor {
       if (this.simDrag) {
         const destino = this.puntoDeArrastre();
         if (destino) this.physics?.dragTo(destino);
-        this.marcarArco(this.simDrag.arco, this.simDrag.objectId);
+        this.marcarArco(this.simDrag.arco, this.physics?.recorridoDeBisagra(this.simDrag.objectId));
       } else if (this.figureDrag && this.humanFigure &&
         this.raycaster.ray.intersectPlane(this.figureDrag.plane, at)) {
         this.humanFigure.position.copy(at.add(this.figureDrag.offset));
@@ -11965,7 +12002,7 @@ export class Editor {
           // pasador.
           haciaArriba: this.arribaEnLaPantalla(arco, hit.point),
         };
-        this.marcarArco(arco, obj.id);
+        this.marcarArco(arco, this.physics?.recorridoDeBisagra(obj.id));
         this.orbit.enabled = false;
         this.avisoTemporal(
           tt(
@@ -12087,7 +12124,7 @@ export class Editor {
     if (!d || !this.physics || pxArriba === 0) return;
     const grados = (pxArriba / 100) * this.sensibilidadDeLaBisagra(d.objectId) * d.haciaArriba;
     this.physics.girarBisagra(d.objectId, grados);
-    this.marcarArco(this.simDragArcoDe(d.objectId), d.objectId);
+    this.marcarArco(this.simDragArcoDe(d.objectId), this.physics?.recorridoDeBisagra(d.objectId));
     this.requestRender();
   }
 
@@ -12124,6 +12161,54 @@ export class Editor {
           && (cuerpo.has(j.bodyAId) || cuerpo.has(j.bodyBId)),
       ) ?? null
     );
+  }
+
+  /**
+   * GUÍA DE GRADOS EN CONSTRUCCIÓN (v0.3.23).
+   *
+   * El recorrido de una bisagra se elegía a ciegas: se escribían dos números y
+   * había que arrancar la simulación para ver a dónde llevaban. Aquí el arco
+   * se dibuja con la máquina parada, a partir de la unión y sin física: el
+   * pasador es su ancla, el eje su `ejeVector()`, y el tramo sale de sus
+   * grados de placa referidos a la apertura de diseño —que es donde la pieza
+   * está ahora mismo—.
+   */
+  mostrarRecorridoDeBisagra(objectId: string | null): void {
+    if (this.simulating) return;
+    const obj = objectId ? this.objects.get(objectId) : null;
+    const j = obj ? this.bisagraQueSostiene(obj.id) : null;
+    if (!obj || !j) {
+      this.quitarMarcaArco();
+      return;
+    }
+    const eje = j.ejeVector().normalize();
+    const punto = obj.mesh.getWorldPosition(new THREE.Vector3());
+    const alto = punto.clone().sub(j.anchor).dot(eje);
+    const centro = j.anchor.clone().addScaledVector(eje, alto);
+    const radial = punto.clone().sub(centro);
+    if (radial.lengthSq() < 9) {
+      this.quitarMarcaArco();
+      return;
+    }
+    const arco: Arco = {
+      centro,
+      eje,
+      radio: radial.length(),
+      alto,
+      ref: radial.clone().normalize(),
+    };
+    // El tramo, en grados y respecto de DONDE ESTÁ LA PIEZA: en la pose de
+    // diseño el ángulo de placa vale `apertura0`.
+    let tramo: { desde: number; hasta: number } | null = null;
+    if (j.limitsEnabled && j.apertura0 != null) {
+      const s = j.sentidoApertura >= 0 ? 1 : -1;
+      const a = s * (j.min - j.apertura0);
+      const b = s * (j.max - j.apertura0);
+      tramo = a <= b ? { desde: a, hasta: b } : { desde: b, hasta: a };
+    } else if (j.limitsEnabled) {
+      tramo = { desde: j.min, hasta: j.max };
+    }
+    this.marcarArco(arco, tramo);
   }
 
   /** Suelta la bisagra enganchada y devuelve el cursor al simulador. */
@@ -12275,7 +12360,10 @@ export class Editor {
    * de moverla—. Se redibuja en cada paso porque el pasador puede ir montado
    * sobre otra pieza que también se mueve.
    */
-  private marcarArco(arco: Arco | undefined, objectId?: string): void {
+  private marcarArco(
+    arco: Arco | undefined,
+    tramo?: { desde: number; hasta: number } | null,
+  ): void {
     if (!arco) {
       this.quitarMarcaArco();
       return;
@@ -12303,7 +12391,6 @@ export class Editor {
     // dibuja sólo el sector entre el mínimo y el máximo —ahí se ve de un
     // vistazo hasta dónde llega la pieza—; sin límites, la circunferencia
     // entera, que es su recorrido real.
-    const tramo = objectId ? this.physics?.recorridoDeBisagra(objectId) : null;
     const desde = tramo ? degToRad(tramo.desde) : 0;
     const hasta = tramo ? degToRad(tramo.hasta) : Math.PI * 2;
     const u = arco.ref.clone();
