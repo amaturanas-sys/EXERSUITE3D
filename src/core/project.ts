@@ -44,6 +44,8 @@ export interface JointData {
   apertura0?: number | null;
   /** Signo del giro relativo que abre la bisagra (v0.3.19). */
   sentidoApertura?: number;
+  /** Grados por cada 100 px de scroll al operarla en simulación (v0.3.21). */
+  sensibilidad?: number;
   /** Las dos piezas unidas siguen chocando entre sí (v0.2.33). */
   contactos?: boolean;
 }

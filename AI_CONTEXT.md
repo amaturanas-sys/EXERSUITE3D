@@ -365,6 +365,21 @@ es la de siempre: **un dato que significaba dos cosas se lee desde más sitios d
 los que se recuerdan**; `grep` de `locked = true` no basta, hace falta también
 `locked:` en literales.
 
+**Una bisagra se opera por su ÁNGULO, no con el resorte de la mano (v0.3.21).**
+`girarBisagra` mueve el TOPE de la articulación (`setLimits(t, t)`), que el
+solver cumple exacto y que por construcción sólo genera impulsos alrededor del
+pasador. Dos detalles que costaron medidas: un motor de posición
+(`configureMotorPosition`) NO sirve —con la placa cargada se queda en 18–25°
+de 40 pedidos, porque su par es proporcional al error—; y el mando tiene que
+ACUMULAR el gesto pero con una ventana (±15°) respecto del ángulo real: si sólo
+acumula se escapa cuando la placa topa, y si parte siempre del real pierde por
+el camino lo que no recorre entre evento y evento (54° pedidos se quedaban en
+32). El sentido del gesto sale de proyectar la tangente del arco en la
+pantalla, para que subir la mano suba la pieza mire donde mire el pasador.
+`orbit.enableZoom` se apaga mientras el puntero está sobre una bisagra: quedarse
+el evento no basta, porque el control de órbita escucha en el mismo lienzo y el
+orden de los oyentes no es nuestro.
+
 **`locked` significaba dos cosas.** Ahora `soldada` es la soldadura —la que
 funde cuerpos en `agruparSoldadas`— y `locked` sin `soldada`, sobre un
 `revolute`, es un FRENO: la bisagra se sostiene sola (límites fijados en su
@@ -726,6 +741,13 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
   en v0.3.10: su comprobación «simular no desarma la máquina» salta en unas 2 de
   cada 5 pasadas, con la misma pieza yéndose 41–51 cm. Verificado a mano contra
   el build de v0.3.10 (2 rojos de 5), así que un rojo suyo no indica regresión.
+- **`prueba-bisagra-mano` y `prueba-mano-brazo` miden asentamientos físicos en
+  tiempo de reloj**, así que en paralelo dan rojo mentiroso con facilidad (la
+  placa no llega a caer siquiera entre dos lecturas). Se juzgan SOLAS.
+- **El Euler de la pieza NO es el ángulo de la bisagra.** `prueba-mano-brazo`
+  leía `Euler.x` del segmento del brazo y marcaba 0,0° mientras el extremo
+  recorría 39 cm: la misma trampa que con la rodilla del maniquí. Se mide con
+  `physics.anguloDeBisagra()` y con el camino que recorre el extremo.
 - **`prueba-freno` falla a veces AUNQUE se corra sola**, y ya lo hacía en v0.3.10.
   Su última comprobación —«la pila recibe más recorrido» con freno que sin él—
   compara dos simulaciones de 50 pasos cronometrados cuyo resultado oscila entre

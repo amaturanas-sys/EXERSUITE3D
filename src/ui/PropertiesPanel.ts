@@ -461,7 +461,59 @@ export class PropertiesPanel {
     if (getDefinition(obj.componentId)?.ejePasante) this.body.append(this.pinSection(obj));
     if (obj.componentId === "guia-tubular") this.body.append(this.vinculacionSection(obj));
     if (esTubularOPilar(obj)) this.body.append(this.brazoSection(obj));
+    const bisagra = this.bisagraSection(obj);
+    if (bisagra) this.body.append(bisagra);
     this.body.append(this.physicsSection(obj));
+  }
+
+  /**
+   * BISAGRA: SENSIBILIDAD DEL GESTO (v0.3.21).
+   *
+   * Una pieza colgada de una bisagra no se empuja durante la simulación: se
+   * gira con el scroll —o subiendo y bajando la mano de agarre—, que es un
+   * mando de una sola dimensión y no mete ninguna fuerza fuera del pasador.
+   * Lo único que hay que graduar es cuánto gira por gesto, y eso depende del
+   * tamaño de la pieza: se guarda con la propia unión.
+   */
+  private bisagraSection(obj: SceneObject): HTMLElement | null {
+    const j = this.editor.bisagraQueSostiene(obj.id);
+    if (!j) return null;
+    const input = el("input", {
+      type: "range",
+      min: "1",
+      max: "45",
+      step: "1",
+      value: String(j.sensibilidad),
+    }) as HTMLInputElement;
+    const lectura = el("span", { class: "empty-hint" }, []);
+    const pintar = (): void => {
+      lectura.textContent = tt(
+        `${j.sensibilidad}° por cada 100 px de scroll`,
+        `${j.sensibilidad}° per 100 px of scroll`,
+      );
+    };
+    input.addEventListener("input", () => {
+      const v = parseFloat(input.value);
+      if (!Number.isFinite(v)) return;
+      j.sensibilidad = Math.min(45, Math.max(1, v));
+      pintar();
+      this.editor.jointUpdated();
+    });
+    pintar();
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Bisagra · sensibilidad", "Hinge · sensitivity")]),
+      input,
+      lectura,
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          "En simulación, esta pieza se opera GIRÁNDOLA: scroll arriba/abajo sobre "
+            + "ella, o agárrala y mueve la mano hacia arriba o hacia abajo. Más bajo, "
+            + "más fino.",
+          "In simulation this part is operated by TURNING it: scroll up/down over it, "
+            + "or grab it and move the hand up or down. Lower means finer.",
+        ),
+      ]),
+    ]);
   }
 
   /**

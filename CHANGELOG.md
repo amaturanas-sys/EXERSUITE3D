@@ -5,6 +5,54 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.21] — 2026-08-27
+
+### Cambiado
+
+**Una bisagra ya no se empuja: se gira.** Durante la simulación, una pieza
+colgada de una bisagra se opera con un gesto de scroll —rueda o dos dedos del
+trackpad sobre ella, como se desplaza una página— o agarrándola y subiendo y
+bajando la mano. Se acabó el resorte: por poca que fuera, la fuerza del tirón
+siempre dejaba una componente que el pasador tenía que devolver, y eso es lo
+que desestabilizaba el pivote.
+
+El mando no es un motor de resorte sino **el tope de la propia articulación**:
+se lleva su recorrido al ángulo pedido y el solver lo cumple exactamente, con
+impulsos que por construcción sólo pueden ir alrededor del pasador. En el
+ensayo de dos placas, 40° pedidos dan **39,1° recorridos con 0,08 cm de deriva
+del radio**, y mientras se sostiene la bisagra no se mueve ni un grado. (Un
+motor de posición se probó antes y no llega: con la placa cargada se queda en
+18–25° de los 40, porque su par es proporcional al error y la gravedad se come
+el resto.)
+
+El ángulo pedido acumula el gesto pero **nunca se aleja más de 15° del real**:
+si la placa topa con el material, el mando se planta con ella —como la bisagra
+de verdad— en vez de seguir corriendo por delante.
+
+Subir la mano sube la pieza **siempre**, mire donde mire el pasador: el sentido
+sale de proyectar la tangente del arco en la pantalla, no de adivinar el giro
+de cada bisagra.
+
+**Sobre una bisagra, la rueda deja de ser el zoom de la cámara.** Fuera de ese
+caso el zoom sigue exactamente igual.
+
+### Añadido
+
+**Sensibilidad del gesto, en Propiedades.** Cada bisagra guarda cuántos grados
+gira por cada 100 px de scroll: **9° de fábrica**, que es lento y cómodo —una
+pasada larga de trackpad da media vuelta y el ajuste fino sale solo—, regulable
+entre 1 y 45. Se guarda con la unión, así que viaja con el proyecto, y se lee
+en vivo: mover el mando se nota en el mismo gesto.
+
+**`prueba-mano-brazo` reescrita al gesto nuevo.** Codificaba el arrastre por el
+arco, que es justo lo que se retira. De paso destapó una trampa de medida ya
+conocida en otro sitio: el `Euler.x` del segmento del brazo marcaba 0,0° con el
+extremo recorriendo 39 cm; ahora se mide el ángulo de la unión.
+
+**Prueba `prueba-bisagra-mano` ampliada a 38 comprobaciones**, incluidos los
+gestos REALES sobre el lienzo —rueda y arrastre con el ratón, sin llamar a
+ninguna API— y el mando de Propiedades.
+
 ## [0.3.20] — 2026-08-27
 
 ### Añadido

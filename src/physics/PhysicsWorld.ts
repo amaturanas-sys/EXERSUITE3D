@@ -13,6 +13,7 @@ import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
 
 const DEG2RAD = Math.PI / 180;
+const RAD2DEG = 180 / Math.PI;
 
 /**
  * Cuerda de seguridad vista por el motor: extremos en MUNDO (cm) con la
@@ -120,6 +121,12 @@ export class PhysicsWorld {
    * Guardan su articulación, la pose relativa de diseño y el recorrido que
    * tienen permitido, para poder soltarlas mientras la mano las mueve y
    * volver a fijarlas en el ángulo nuevo al soltarlas.
+   *
+   * Desde v0.3.21 se anotan TODAS las bisagras, con freno o sin él: es lo que
+   * permite operarlas por su ÁNGULO —el gesto de scroll— en vez de empujarlas
+   * con un resorte. `signo` vale +1 cuando la pieza agarrada es la que el
+   * motor mueve (el cuerpo B de la unión) y −1 cuando es la otra, para que
+   * subir el dedo la lleve siempre hacia el mismo lado.
    */
   private frenos = new Map<
     R.RigidBody,
@@ -130,6 +137,13 @@ export class PhysicsWorld {
       eje: THREE.Vector3;
       qRel0: THREE.Quaternion;
       rango: [number, number];
+      /** Con freno: el lock switch la sostiene sola donde la dejes. */
+      freno: boolean;
+      /** Grados de placa por cada 100 px de scroll o de arrastre. */
+      sensibilidad: number;
+      /** Ángulo al que el motor la lleva mientras la mano la opera. */
+      objetivo: number | null;
+      signo: 1 | -1;
     }
   >();
 
@@ -1621,7 +1635,7 @@ export class PhysicsWorld {
     // pero cede si la mano la mueve. Se guarda su pose y su recorrido para
     // poder soltarla al agarrarla y volver a fijarla, en el ángulo nuevo, al
     // soltarla (ver `soltarFreno` / `fijarFreno`).
-    if (joint.locked && !joint.soldada && joint.kind === "revolute") {
+    if (joint.kind === "revolute" && !joint.soldada) {
       const qa = a.body.rotation();
       const qb = b.body.rotation();
       const qRel0 = new THREE.Quaternion(qa.x, qa.y, qa.z, qa.w)
@@ -1630,17 +1644,23 @@ export class PhysicsWorld {
       const rango: [number, number] = joint.limitsEnabled
         ? rangoRevolute()
         : [-Math.PI, Math.PI];
-      const freno = {
+      const comun = {
         handle,
         a: a.body,
         b: b.body,
         eje: axisLocalB.clone().normalize(),
         qRel0,
         rango,
+        freno: joint.locked,
+        sensibilidad: joint.sensibilidad,
+        objetivo: null,
       };
+      if (b.body.isDynamic()) this.frenos.set(b.body, { ...comun, signo: 1 });
+      if (a.body.isDynamic()) this.frenos.set(a.body, { ...comun, signo: -1 });
+    }
+
+    if (joint.locked && !joint.soldada && joint.kind === "revolute") {
       handle.setLimits(0, 0);
-      if (b.body.isDynamic()) this.frenos.set(b.body, freno);
-      if (a.body.isDynamic()) this.frenos.set(a.body, freno);
     } else if (joint.locked) {
       handle.setLimits(0, 0);
     } else if (joint.motor.enabled) {
@@ -2492,10 +2512,118 @@ export class PhysicsWorld {
     return 2 * Math.atan2(s, d.w);
   }
 
+  // ─────────────────────────────── OPERAR LA BISAGRA POR SU ÁNGULO (v0.3.21)
+  //
+  // Empujar una pieza articulada con el resorte de la mano siempre deja algo
+  // de fuerza que el pasador tiene que devolver: por poco que sea, es lo que
+  // desestabiliza el pivote. Una bisagra real no se empuja, se GIRA — y en
+  // pantalla el gesto natural para eso es el scroll, que ya es un mando de una
+  // sola dimensión.
+  //
+  // El mando no es un motor de resorte sino EL TOPE de la propia articulación:
+  // se lleva el recorrido permitido al ángulo pedido y el solver lo cumple
+  // exactamente, con impulsos que por construcción sólo pueden ir alrededor
+  // del pasador. No hay vector de fuerza que sacar del eje, ni siquiera en
+  // principio. (Un motor de posición se probó primero y no llega: con la
+  // bisagra cargada se queda a medio camino —18-25° de 40 pedidos en el ensayo
+  // de dos placas— porque su par es proporcional al error y la gravedad se
+  // come el resto.)
+  //
+  // Y el ángulo pedido se calcula desde el REAL, no desde un acumulador: si la
+  // placa topa con el material, el tope deja de avanzar con ella y la bisagra
+  // se planta, como la de verdad.
+  /** Tope de avance por evento (grados de placa), para que un golpe de rueda no salte. */
+  private static readonly PASO_MAX = 8;
+  /** Cuánto puede adelantarse el mando a la pieza (rad) antes de esperarla. */
+  private static readonly VENTANA_MANDO = 15 * DEG2RAD;
+
+  /** ¿Esta pieza se opera girando (está colgada de una bisagra)? */
+  esBisagra(objectId: string): boolean {
+    const e = this.bodies.get(objectId);
+    return !!e && this.frenos.has(e.body);
+  }
+
+  /** Grados de placa por cada 100 px de gesto, tal como los pide la unión. */
+  sensibilidadDeBisagra(objectId: string): number {
+    const e = this.bodies.get(objectId);
+    return (e && this.frenos.get(e.body)?.sensibilidad) || 9;
+  }
+
+  /** Ángulo actual de la bisagra que sostiene a esta pieza (grados). */
+  anguloDeBisagra(objectId: string): number | null {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenos.get(e.body);
+    return f ? this.anguloFreno(f) * RAD2DEG : null;
+  }
+
+  /**
+   * Toma la bisagra para operarla: la clava donde está, de modo que el primer
+   * giro parte de la pose real y no de un salto.
+   */
+  tomarBisagra(objectId: string): boolean {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenos.get(e.body);
+    if (!f) return false;
+    f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
+    f.handle.setLimits(f.objetivo, f.objetivo);
+    f.a.wakeUp();
+    f.b.wakeUp();
+    return true;
+  }
+
+  /**
+   * Gira la bisagra `deltaGrados` grados de placa (positivo = el gesto «hacia
+   * arriba»). Devuelve el ángulo resultante en grados, o null si la pieza no
+   * cuelga de una bisagra.
+   */
+  girarBisagra(objectId: string, deltaGrados: number): number | null {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenos.get(e.body);
+    if (!f) return null;
+    if (f.objetivo == null && !this.tomarBisagra(objectId)) return null;
+    const tope = PhysicsWorld.PASO_MAX;
+    const paso = Math.min(tope, Math.max(-tope, deltaGrados * f.signo)) * DEG2RAD;
+    // EL MANDO ACUMULA, PERO NO SE ESCAPA. Si sólo acumulara, el gesto se
+    // cumpliría entero aunque la placa estuviera topando y el tope acabaría
+    // metros por delante de la pieza; si partiera siempre del ángulo real, la
+    // pieza perdería por el camino lo que no llega a recorrer entre evento y
+    // evento —54° pedidos se quedaban en 32—. Así que acumula, pero nunca se
+    // aleja más de una VENTANA del ángulo que la pieza tiene de verdad.
+    const actual = this.anguloFreno(f);
+    const ventana = PhysicsWorld.VENTANA_MANDO;
+    const pedido = (f.objetivo ?? actual) + paso;
+    f.objetivo = Math.min(
+      Math.max(pedido, actual - ventana, f.rango[0]),
+      actual + ventana,
+    );
+    f.objetivo = Math.min(Math.max(f.objetivo, f.rango[0]), f.rango[1]);
+    f.handle.setLimits(f.objetivo, f.objetivo);
+    f.a.wakeUp();
+    f.b.wakeUp();
+    return f.objetivo * RAD2DEG;
+  }
+
+  /**
+   * Suelta la bisagra. Con freno queda clavada donde la dejaste —máquina
+   * plegable—; sin freno vuelve a mandar la gravedad.
+   */
+  soltarBisagra(objectId: string): void {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenos.get(e.body);
+    if (!f) return;
+    f.objetivo = null;
+    if (f.freno) this.fijarFreno(e!.body);
+    else f.handle.setLimits(f.rango[0], f.rango[1]);
+    f.a.wakeUp();
+    f.b.wakeUp();
+  }
+
   /** Suelta el freno de una bisagra: mientras la mano la sujeta, gira. */
   private soltarFreno(body: R.RigidBody): void {
     const f = this.frenos.get(body);
-    if (!f) return;
+    // El mapa anota TODAS las bisagras desde v0.3.21; sólo las que llevan el
+    // lock switch tienen freno que soltar o que volver a poner.
+    if (!f?.freno) return;
     f.handle.setLimits(f.rango[0], f.rango[1]);
     f.a.wakeUp();
     f.b.wakeUp();
@@ -2508,7 +2636,7 @@ export class PhysicsWorld {
    */
   private fijarFreno(body: R.RigidBody): void {
     const f = this.frenos.get(body);
-    if (!f) return;
+    if (!f?.freno) return;
     const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
     f.handle.setLimits(t, t);
     f.a.wakeUp();

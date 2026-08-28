@@ -70,6 +70,13 @@ export class Joint {
   /** Signo del giro relativo que ABRE la bisagra (+1 o −1). */
   sentidoApertura = 1;
   /**
+   * SENSIBILIDAD DEL GESTO (v0.3.21): grados de placa por cada 100 px de
+   * scroll —o de arrastre vertical de la mano— al operar la bisagra durante
+   * la simulación. Lenta por omisión, que es lo cómodo: una pasada larga de
+   * trackpad da media vuelta, y el ajuste fino sale solo.
+   */
+  sensibilidad = 9;
+  /**
    * COLISIÓN ENTRE LAS DOS PIEZAS UNIDAS (v0.2.33).
    *
    * Por omisión el motor APAGA los contactos entre los dos cuerpos que une

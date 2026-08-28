@@ -769,6 +769,10 @@ export class Editor {
 
     canvas.addEventListener("pointerdown", this.onPointerDown);
     canvas.addEventListener("pointermove", this.onPointerMove);
+    // El scroll opera las bisagras durante la simulación (v0.3.21). Va en
+    // captura y NO pasivo para poder quedarse con la rueda antes de que el
+    // orbit la use como zoom; fuera de ese caso no toca nada.
+    canvas.addEventListener("wheel", this.onWheel, { capture: true, passive: false });
     window.addEventListener("pointerup", this.onPointerUp);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
@@ -3103,6 +3107,7 @@ export class Editor {
         soldada: j.soldada || undefined,
         apertura0: j.apertura0 ?? undefined,
         sentidoApertura: j.apertura0 == null ? undefined : j.sentidoApertura,
+        sensibilidad: j.sensibilidad,
         contactos: j.contactos || undefined,
       })),
       cables: this.listCables().map((c) => ({
@@ -3411,6 +3416,8 @@ export class Editor {
     window.removeEventListener("keydown", this.onKeyDown);
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
+    this.canvas.removeEventListener("wheel", this.onWheel, { capture: true });
+    if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
     window.removeEventListener("pointerup", this.onPointerUp);
     for (const soltar of this.oyentes) soltar();
     this.oyentes = [];
@@ -3534,6 +3541,7 @@ export class Editor {
       j.soldada = jd.soldada ?? jd.locked ?? false;
       j.apertura0 = jd.apertura0 ?? null;
       j.sentidoApertura = jd.sentidoApertura ?? 1;
+      j.sensibilidad = jd.sensibilidad ?? 9;
       j.contactos = jd.contactos ?? false;
     }
     this.migrarContactosBisagra(contactosExplicitos);
@@ -3883,6 +3891,9 @@ export class Editor {
   setSimHerramienta(tool: "mano" | "orbitar"): void {
     if (this.simTool === tool) return;
     this.simTool = tool;
+    // Al cambiar de herramienta se devuelve el zoom: sólo se le quita mientras
+    // la mano está encima de una bisagra.
+    this.orbit.enableZoom = true;
     this.bus.emit("simToolChanged", { tool });
   }
 
@@ -11179,6 +11190,68 @@ export class Editor {
    * Previsualiza el anclaje (indicador) y la línea recta al colocar
    * cable/cuerda/pieza de línea, y arrastra los nodos en modo doblado.
    */
+  /** Temporizador que suelta la bisagra cuando el scroll deja de llegar. */
+  private soltarTrasScroll: number | null = null;
+
+  /**
+   * SCROLL SOBRE UNA BISAGRA (v0.3.21).
+   *
+   * Durante la simulación, la rueda —o el gesto de dos dedos del trackpad—
+   * sobre una pieza colgada de una bisagra la hace girar, igual que se
+   * desplaza una página. No hace falta ni pulsar: se toma sola al primer
+   * impulso y se suelta cuando el gesto para. Fuera de ese caso la rueda
+   * sigue siendo el zoom de la cámara, intacto.
+   */
+  private onWheel = (event: WheelEvent): void => {
+    if (!this.simulating || !this.physics) return;
+    let id = this.bisagraDrag?.objectId ?? null;
+    if (!id) {
+      if (this.simTool !== "mano") return;
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      const obj = this.piezaAgarrableBajoPuntero();
+      if (!obj || !this.physics.esBisagra(obj.id)) return;
+      const arco = this.simDragArcoDe(obj.id);
+      if (!arco || !this.physics.tomarBisagra(obj.id)) return;
+      this.bisagraDrag = {
+        objectId: obj.id,
+        y: event.clientY,
+        haciaArriba: this.arribaEnLaPantalla(arco, obj.mesh.getWorldPosition(new THREE.Vector3())),
+      };
+      this.marcarArco(arco);
+      id = obj.id;
+    }
+    event.preventDefault();
+    // INMEDIATA, no a secas: el control de órbita escucha la rueda en ESTE
+    // mismo lienzo, y `stopPropagation` sólo corta el viaje a otros nodos.
+    event.stopImmediatePropagation();
+    // `deltaY` positivo es «hacia abajo», como en cualquier página.
+    this.girarBisagraConElGesto(-this.pasosDeRueda(event));
+    // Se suelta sola en cuanto el gesto para, salvo que la mano la sujete.
+    if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
+    this.soltarTrasScroll = window.setTimeout(() => {
+      this.soltarTrasScroll = null;
+      if (!this.bisagraDrag || this.simDrag) return;
+      this.physics?.soltarBisagra(this.bisagraDrag.objectId);
+      this.bisagraDrag = null;
+      this.quitarMarcaArco();
+      this.requestRender();
+    }, 500);
+  };
+
+  /**
+   * Píxeles de gesto que trae un evento de rueda. Un ratón manda «líneas» o
+   * «páginas» y un trackpad manda píxeles: se normaliza a píxeles para que la
+   * sensibilidad signifique lo mismo con los dos.
+   */
+  private pasosDeRueda(event: WheelEvent): number {
+    if (event.deltaMode === 1) return event.deltaY * 16; // líneas
+    if (event.deltaMode === 2) return event.deltaY * 400; // páginas
+    return event.deltaY;
+  }
+
   private onPointerMove = (event: PointerEvent): void => {
     if (this.marquee) {
       this.updateMarquee(event);
@@ -11249,6 +11322,15 @@ export class Editor {
       return;
     }
 
+    // La altura del puntero se guarda SIEMPRE: al tomar una bisagra el gesto
+    // arranca desde donde está el dedo, sin el salto del primer fotograma.
+    const anteriorY = this.punteroY;
+    this.punteroY = event.clientY;
+    // BISAGRA TOMADA: el arrastre vertical la gira; no hay resorte ni plano.
+    if (this.simulating && this.bisagraDrag) {
+      this.girarBisagraConElGesto(anteriorY - event.clientY);
+      return;
+    }
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
     // AIM ASSIST DE LA MANO (v0.2.41): con la herramienta elegida, la pieza
     // que se agarraría se resalta al pasar por encima. Así se ve de un
@@ -11258,7 +11340,14 @@ export class Editor {
       this.pointer.x = ((event.clientX - rect0.left) / rect0.width) * 2 - 1;
       this.pointer.y = -((event.clientY - rect0.top) / rect0.height) * 2 + 1;
       this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
-      this.resaltarAgarrable(this.piezaAgarrableBajoPuntero());
+      const bajoElDedo = this.piezaAgarrableBajoPuntero();
+      this.resaltarAgarrable(bajoElDedo);
+      // SOBRE UNA BISAGRA, LA RUEDA DEJA DE SER ZOOM (v0.3.21). No basta con
+      // quedarse el evento: el control de órbita escucha en el mismo lienzo y
+      // el orden de los oyentes no es nuestro. Se le apaga el zoom mientras el
+      // puntero está encima de una pieza que se opera girando, y se le
+      // devuelve en cuanto sale.
+      this.orbit.enableZoom = !(bajoElDedo && this.physics?.esBisagra(bajoElDedo.id));
       return;
     }
     if (
@@ -11793,6 +11882,18 @@ export class Editor {
     objectId: string;
     arco?: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number };
   } | null = null;
+  /**
+   * BISAGRA TOMADA (v0.3.21): no hay resorte, hay un mando de una dimensión.
+   * `y` es la última altura del puntero y `haciaArriba` el signo que convierte
+   * «subir en pantalla» en «crecer el ángulo» para ESTA bisagra.
+   */
+  private bisagraDrag: {
+    objectId: string;
+    y: number;
+    haciaArriba: 1 | -1;
+  } | null = null;
+  /** Última altura del puntero en la ventana (px), para el gesto de bisagra. */
+  private punteroY = 0;
   /** Circunferencia que dibuja el recorrido de la bisagra agarrada. */
   private marcaArco: THREE.Line | null = null;
   /** Arrastre del maniquí (plano horizontal + offset al punto de agarre). */
@@ -11815,6 +11916,31 @@ export class Editor {
       const obj = id ? this.objects.get(id) : undefined;
       if (!obj) continue;
       const arco = this.arcoDeAgarre(obj.id, hit.point);
+      // UNA BISAGRA NO SE EMPUJA, SE GIRA (v0.3.21). Con el resorte de la mano
+      // siempre queda algo de fuerza que el pasador debe devolver, y eso es lo
+      // que desestabilizaba el pivote. Una pieza colgada de una bisagra se
+      // opera por su ÁNGULO: scroll arriba/abajo, o la mano de agarre subiendo
+      // y bajando, que es el mismo gesto de una sola dimensión.
+      if (arco && this.physics?.esBisagra(obj.id)) {
+        if (!this.physics.tomarBisagra(obj.id)) continue;
+        this.bisagraDrag = {
+          objectId: obj.id,
+          y: this.punteroY,
+          // Hacia dónde va la pieza en PANTALLA cuando el ángulo crece: es lo
+          // que hace que subir el dedo la suba siempre, mande donde mande el
+          // pasador.
+          haciaArriba: this.arribaEnLaPantalla(arco, hit.point),
+        };
+        this.marcarArco(arco);
+        this.orbit.enabled = false;
+        this.avisoTemporal(
+          tt(
+            "Bisagra tomada: mueve la mano arriba/abajo o usa el scroll",
+            "Hinge taken: move the hand up/down or scroll",
+          ),
+        );
+        return;
+      }
       if (!this.physics?.grab(obj.id, hit.point, !!arco)) continue;
       const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
       this.simDrag = {
@@ -11890,6 +12016,100 @@ export class Editor {
     d.arco.centro = bis.punto.clone().addScaledVector(bis.eje, d.arco.alto);
     d.arco.eje = bis.eje.clone();
     return d.arco;
+  }
+
+  /**
+   * ¿Sube o baja en PANTALLA la pieza cuando el ángulo de su bisagra crece?
+   *
+   * El pasador puede mirar a cualquier lado y la cámara estar donde sea, así
+   * que «arriba» no es una dirección del mundo: se proyecta la TANGENTE del
+   * arco en el punto de agarre y se mira su componente vertical en pantalla.
+   * Así, subir la mano sube la pieza siempre, sin que el usuario tenga que
+   * adivinar el sentido de giro de cada bisagra.
+   */
+  private arribaEnLaPantalla(
+    arco: { centro: THREE.Vector3; eje: THREE.Vector3 },
+    punto: THREE.Vector3,
+  ): 1 | -1 {
+    const radio = punto.clone().sub(arco.centro).projectOnPlane(arco.eje);
+    if (radio.lengthSq() < 1e-8) return 1;
+    // Tangente del giro POSITIVO alrededor del eje: eje × radio.
+    const tangente = new THREE.Vector3().crossVectors(arco.eje, radio).normalize();
+    const cam = this.sceneManager.camera;
+    const aqui = punto.clone().project(cam);
+    const alla = punto.clone().addScaledVector(tangente, 1).project(cam);
+    // En coordenadas de proyección la Y crece hacia ARRIBA de la pantalla.
+    return alla.y >= aqui.y ? 1 : -1;
+  }
+
+  /**
+   * Mueve la bisagra tomada según un gesto vertical (px hacia arriba). La
+   * sensibilidad la manda la propia unión: grados de placa por 100 px.
+   */
+  private girarBisagraConElGesto(pxArriba: number): void {
+    const d = this.bisagraDrag;
+    if (!d || !this.physics || pxArriba === 0) return;
+    const grados = (pxArriba / 100) * this.sensibilidadDeLaBisagra(d.objectId) * d.haciaArriba;
+    this.physics.girarBisagra(d.objectId, grados);
+    this.marcarArco(this.simDragArcoDe(d.objectId));
+    this.requestRender();
+  }
+
+  /**
+   * LA BISAGRA QUE SOSTIENE A ESTA PIEZA (v0.3.21).
+   *
+   * No basta con mirar las uniones que tocan la pieza: el herraje de una
+   * bisagra real une las dos PALAS, y cada pala va soldada a su pieza. Así que
+   * primero se junta el cuerpo del que la pieza forma parte —siguiendo las
+   * soldaduras, igual que hace el motor al fundirlas— y después se busca la
+   * articulación libre que sale de ese cuerpo.
+   */
+  bisagraQueSostiene(objectId: string): Joint | null {
+    const uniones = this.listJoints();
+    const cuerpo = new Set([objectId]);
+    for (let crecio = true; crecio; ) {
+      crecio = false;
+      for (const j of uniones) {
+        if (!j.soldada) continue;
+        if (cuerpo.has(j.bodyAId) && !cuerpo.has(j.bodyBId)) {
+          cuerpo.add(j.bodyBId);
+          crecio = true;
+        } else if (cuerpo.has(j.bodyBId) && !cuerpo.has(j.bodyAId)) {
+          cuerpo.add(j.bodyAId);
+          crecio = true;
+        }
+      }
+    }
+    return (
+      uniones.find(
+        (j) =>
+          j.kind === "revolute"
+          && !j.soldada
+          && (cuerpo.has(j.bodyAId) || cuerpo.has(j.bodyBId)),
+      ) ?? null
+    );
+  }
+
+  /**
+   * Sensibilidad vigente de la bisagra que sostiene a esta pieza. Se lee de la
+   * UNIÓN y no de la copia que guardó el motor al arrancar, para que mover el
+   * mando en Propiedades se note en el mismo gesto, sin reconstruir el mundo.
+   */
+  private sensibilidadDeLaBisagra(objectId: string): number {
+    return (
+      this.bisagraQueSostiene(objectId)?.sensibilidad
+      ?? this.physics?.sensibilidadDeBisagra(objectId)
+      ?? 9
+    );
+  }
+
+  /** Circunferencia viva de una bisagra tomada (el pasador puede moverse). */
+  private simDragArcoDe(objectId: string):
+    | { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number }
+    | undefined {
+    const obj = this.objects.get(objectId);
+    if (!obj) return undefined;
+    return this.arcoDeAgarre(objectId, obj.mesh.getWorldPosition(new THREE.Vector3()));
   }
 
   private puntoDeArrastre(): THREE.Vector3 | null {
@@ -12863,6 +13083,12 @@ export class Editor {
   private endSimInteraction(): void {
     this.resaltarAgarrable(null);
     this.quitarMarcaArco();
+    this.orbit.enableZoom = true;
+    if (this.bisagraDrag) {
+      this.physics?.soltarBisagra(this.bisagraDrag.objectId);
+      this.bisagraDrag = null;
+      this.orbit.enabled = true;
+    }
     if (this.simDrag) this.physics?.release();
     if (this.simDrag || this.figureDrag) this.orbit.enabled = true;
     this.simDrag = null;

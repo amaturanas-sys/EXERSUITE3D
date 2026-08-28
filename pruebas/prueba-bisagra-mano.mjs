@@ -197,6 +197,277 @@ ok(marca.radio > 3, "el arco tiene radio de palanca", `${marca.radio} cm`);
 ok(marca.conMarca === 1, "se dibuja la circunferencia del recorrido", marca.conMarca);
 ok(marca.sinMarca === 0, "y se retira al soltar", marca.sinMarca);
 
+// ── 6. SE OPERA CON SCROLL, NO CON EMPUJONES (v0.3.21) ──────────────────────
+const gesto = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const moviles = [...ed.objects.values()].filter((o) => o.name === "Movil");
+  const B = moviles[moviles.length - 1];
+  const ph = ed.physics;
+  const bg = ph.ejeDeGiro(B.id);
+  const P = bg.punto.clone();
+  const E = bg.eje.clone();
+  const radial = () => B.mesh.getWorldPosition(new T.Vector3()).sub(P).projectOnPlane(E);
+  const ang = () => (Math.atan2(radial().y, radial().x) * 180) / Math.PI;
+  const R0 = radial().length();
+  const out = {
+    esBisagra: ph.esBisagra(B.id),
+    sensibilidad: ph.sensibilidadDeBisagra(B.id),
+  };
+  await new Promise((r) => setTimeout(r, 1200));
+  const a0 = ang();
+  // Ocho impulsos de 5° «hacia arriba», como ocho vueltas de rueda.
+  ph.tomarBisagra(B.id);
+  let deriva = 0;
+  for (let k = 0; k < 8; k++) {
+    ph.girarBisagra(B.id, 5);
+    await new Promise((r) => setTimeout(r, 120));
+    deriva = Math.max(deriva, Math.abs(radial().length() - R0));
+  }
+  await new Promise((r) => setTimeout(r, 1200));
+  out.pedido = 40;
+  out.logrado = +(ang() - a0).toFixed(1);
+  out.deriva = +deriva.toFixed(2);
+  // Se deja asentar y luego se comprueba que YA NO se mueve: el mando puede
+  // ir unos grados por delante de la placa cuando el gesto para, y lo que
+  // importa es que se detenga, no que frene en seco.
+  await new Promise((r) => setTimeout(r, 1500));
+  const sostenido = ang();
+  await new Promise((r) => setTimeout(r, 1500));
+  out.quietaMientrasSeSostiene = +(ang() - sostenido).toFixed(1);
+  ph.soltarBisagra(B.id);
+  await new Promise((r) => setTimeout(r, 1500));
+  out.sueltaVuelveAGravedad = +(ang() - sostenido).toFixed(1);
+  out.derivaFinal = +(radial().length() - R0).toFixed(2);
+  return out;
+});
+console.log("GESTO:", JSON.stringify(gesto));
+ok(gesto.esBisagra === true, "la pieza se declara operable como bisagra");
+ok(gesto.sensibilidad === 9, "la sensibilidad de fábrica es lenta y cómoda", gesto.sensibilidad);
+ok(
+  Math.abs(gesto.logrado - gesto.pedido) <= 12,
+  "el scroll gira lo que se le pide",
+  `pedidos ${gesto.pedido}°, logrados ${gesto.logrado}°`,
+);
+ok(
+  gesto.deriva <= 0.5,
+  "girándola por su ángulo el pivote NO se mueve",
+  `${gesto.deriva} cm`,
+);
+ok(
+  Math.abs(gesto.quietaMientrasSeSostiene) <= 1,
+  "mientras la sostienes se queda exactamente donde la dejaste",
+  `${gesto.quietaMientrasSeSostiene}°`,
+);
+ok(
+  Math.abs(gesto.sueltaVuelveAGravedad) > 1,
+  "al soltarla, una bisagra SIN freno vuelve a obedecer a la gravedad",
+  `${gesto.sueltaVuelveAGravedad}°`,
+);
+
+// ── 7. LA SENSIBILIDAD SE AJUSTA EN PROPIEDADES ─────────────────────────────
+const panel = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const moviles = [...ed.objects.values()].filter((o) => o.name === "Movil");
+  const B = moviles[moviles.length - 1];
+  if (ed.simulating) ed.toggleSimulation();
+  ed.select(B);
+  const inspector = document.getElementById("inspector");
+  const etiquetas = [...inspector.querySelectorAll("label")].map((l) => l.textContent);
+  const rango = [...inspector.querySelectorAll('input[type="range"]')];
+  const mando = rango[rango.length - 1];
+  const antes = mando ? mando.value : null;
+  if (mando) {
+    mando.value = "20";
+    mando.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  const j = ed.bisagraQueSostiene(B.id);
+  return { etiquetas, antes, guardado: j?.sensibilidad ?? null };
+});
+console.log("PANEL:", JSON.stringify(panel));
+ok(
+  panel.etiquetas.some((t) => /Bisagra/.test(t) && /sensibilidad/i.test(t)),
+  "Propiedades trae el mando de sensibilidad de la bisagra",
+  panel.etiquetas.join(" | "),
+);
+ok(panel.antes === "9", "arranca en el valor lento de fábrica", panel.antes);
+ok(panel.guardado === 20, "moverlo guarda el valor en la unión", panel.guardado);
+
+// ── 8. EL GESTO REAL SOBRE EL LIENZO: RUEDA Y ARRASTRE ──────────────────────
+// Aquí no se llama a ninguna API: se hace el gesto con el ratón, como el
+// usuario, y se comprueba que la rueda gira la bisagra en vez de acercar la
+// cámara, y que subir la mano la sube.
+const preparado = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const moviles = [...ed.objects.values()].filter((o) => o.name === "Movil");
+  const B = moviles[moviles.length - 1];
+  ed.setSimHerramienta("mano");
+  if (!ed.simulating) ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 2000));
+  window.__B = B.id;
+  const p = B.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera);
+  const rect = ed.canvas.getBoundingClientRect();
+  const ph = ed.physics;
+  const bg = ph.ejeDeGiro(B.id);
+  window.__P = bg.punto.clone();
+  window.__E = bg.eje.clone();
+  window.__ang = () => {
+    const r = B.mesh.getWorldPosition(new T.Vector3()).sub(window.__P).projectOnPlane(window.__E);
+    return +((Math.atan2(r.y, r.x) * 180) / Math.PI).toFixed(1);
+  };
+  window.__pantallaY = () => {
+    const B2 = ed.objects.get(window.__B);
+    return +B2.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera).y.toFixed(3);
+  };
+  window.__radio = () =>
+    +B.mesh
+      .getWorldPosition(new T.Vector3())
+      .sub(window.__P)
+      .projectOnPlane(window.__E)
+      .length()
+      .toFixed(2);
+  return {
+    x: rect.left + ((p.x + 1) / 2) * rect.width,
+    y: rect.top + ((1 - p.y) / 2) * rect.height,
+    ang: window.__ang(),
+    radio: window.__radio(),
+    camara: ed.sceneManager.camera.position.length(),
+  };
+});
+
+await page.mouse.move(preparado.x, preparado.y);
+await page.waitForTimeout(300);
+for (let i = 0; i < 10; i++) {
+  await page.mouse.wheel(0, 60);
+  await page.waitForTimeout(60);
+}
+await page.waitForTimeout(1500);
+const conRueda = await page.evaluate(() => ({
+  ang: window.__ang(),
+  radio: window.__radio(),
+  camara: window.exersuite.editor.sceneManager.camera.position.length(),
+}));
+console.log("RUEDA:", JSON.stringify({ antes: preparado.ang, ...conRueda }));
+ok(
+  Math.abs(conRueda.ang - preparado.ang) > 3,
+  "la rueda sobre la bisagra la hace girar",
+  `${preparado.ang}° → ${conRueda.ang}°`,
+);
+ok(
+  Math.abs(conRueda.camara - preparado.camara) < 1,
+  "…y NO acerca la cámara: el scroll deja de ser zoom sobre una bisagra",
+  `${preparado.camara.toFixed(1)} → ${conRueda.camara.toFixed(1)}`,
+);
+ok(
+  Math.abs(conRueda.radio - preparado.radio) <= 0.5,
+  "el pivote sigue en su sitio tras el scroll",
+  `${preparado.radio} → ${conRueda.radio} cm`,
+);
+
+// Se espera a que la bisagra se suelte sola tras el scroll y se hace el otro
+// gesto: agarrar y subir la mano.
+await page.waitForTimeout(900);
+// Se devuelve la placa a media carrera antes del segundo gesto: tras el
+// scroll puede haber quedado contra el material, y ahí no cede hacia ese lado
+// —lo correcto— pero la prueba dejaría de medir lo que quiere medir.
+const centrada = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  const ph = ed.physics;
+  ph.tomarBisagra(window.__B);
+  // Se sube hasta el tope de arriba, midiendo, y luego se baja 25°: así queda
+  // en un sitio conocido CON RECORRIDO POR ENCIMA, que es lo que el gesto de
+  // la prueba va a pedir.
+  let previo = null;
+  for (let k = 0; k < 24; k++) {
+    ph.girarBisagra(window.__B, 5);
+    await new Promise((r) => setTimeout(r, 100));
+    const a = ph.anguloDeBisagra(window.__B);
+    if (previo !== null && Math.abs(a - previo) < 0.2) break;
+    previo = a;
+  }
+  await new Promise((r) => setTimeout(r, 600));
+  const tope = ph.anguloDeBisagra(window.__B);
+  for (let k = 0; k < 5; k++) {
+    ph.girarBisagra(window.__B, -5);
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  await new Promise((r) => setTimeout(r, 800));
+  const aqui = ph.anguloDeBisagra(window.__B);
+  ph.soltarBisagra(window.__B);
+  await new Promise((r) => setTimeout(r, 900));
+  return { tope: +tope.toFixed(1), aqui: +aqui.toFixed(1) };
+});
+console.log("CENTRADA:", JSON.stringify(centrada));
+// La placa ya no está donde estaba: se vuelve a buscar en pantalla.
+const ahora = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const B = ed.objects.get(window.__B);
+  const p = B.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera);
+  const rect = ed.canvas.getBoundingClientRect();
+  return {
+    x: rect.left + ((p.x + 1) / 2) * rect.width,
+    y: rect.top + ((1 - p.y) / 2) * rect.height,
+    ang: window.__ang(),
+    pantallaY: window.__pantallaY(),
+  };
+});
+// EL SIGNO SE COMPRUEBA DONDE EL DEDO TOCA, no en el centro de la placa: en
+// un giro, dos puntos del mismo sólido a distinta posición angular pueden ir
+// uno hacia arriba y otro hacia abajo, y lo que el usuario espera es que le
+// siga LO QUE TIENE BAJO EL DEDO. Se rota ese punto 2° a mano y se mira si
+// sube en pantalla; tiene que coincidir con lo que dice `arribaEnLaPantalla`.
+const signo = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const B = ed.objects.get(window.__B);
+  const punto = B.mesh.getWorldPosition(new T.Vector3());
+  const arco = Object.getPrototypeOf(ed).arcoDeAgarre.call(ed, window.__B, punto);
+  const dice = Object.getPrototypeOf(ed).arribaEnLaPantalla.call(ed, arco, punto);
+  const cam = ed.sceneManager.camera;
+  const girado = punto
+    .clone()
+    .sub(arco.centro)
+    .applyAxisAngle(arco.eje, T.MathUtils.degToRad(2))
+    .add(arco.centro);
+  const sube = girado.project(cam).y - punto.clone().project(cam).y;
+  return { dice, sube: +sube.toFixed(5) };
+});
+console.log("SIGNO:", JSON.stringify(signo));
+ok(
+  signo.dice === (signo.sube >= 0 ? 1 : -1),
+  "el gesto sabe hacia dónde sube en pantalla el punto que se agarra",
+  JSON.stringify(signo),
+);
+
+const antesDeArrastrar = ahora.ang;
+await page.mouse.move(ahora.x, ahora.y);
+await page.mouse.down();
+for (let i = 1; i <= 10; i++) {
+  await page.mouse.move(ahora.x, ahora.y - i * 20);
+  await page.waitForTimeout(60);
+}
+await page.waitForTimeout(1200);
+const arrastrada = await page.evaluate(() => ({
+  ang: window.__ang(),
+  radio: window.__radio(),
+  pantallaY: window.__pantallaY(),
+}));
+await page.mouse.up();
+console.log("ARRASTRE:", JSON.stringify({ antes: antesDeArrastrar, ...arrastrada }));
+ok(
+  Math.abs(arrastrada.ang - antesDeArrastrar) > 3,
+  "subir la mano de agarre también la gira",
+  `${antesDeArrastrar}° → ${arrastrada.ang}°`,
+);
+
+ok(
+  Math.abs(arrastrada.radio - preparado.radio) <= 0.5,
+  "y tampoco saca la bisagra de su circunferencia",
+  `${arrastrada.radio} cm`,
+);
+
 await browser.close();
 console.log(fallos === 0 ? "TODO OK" : `${fallos} FALLOS`);
 process.exit(fallos === 0 ? 0 : 1);
