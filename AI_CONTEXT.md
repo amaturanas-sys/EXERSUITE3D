@@ -380,6 +380,13 @@ pantalla, para que subir la mano suba la pieza mire donde mire el pasador.
 el evento no basta, porque el control de órbita escucha en el mismo lienzo y el
 orden de los oyentes no es nuestro.
 
+**La bisagra se engancha (v0.3.22).** El clic la toma y la deja tomada; el
+siguiente clic la suelta. `bisagraDrag` distingue `enganchada` (hasta el
+próximo clic) de `arrastrando` (botón abajo): sin lo segundo, mover el ratón no
+manda nada. OJO al medir: una placa apoyada en su tope sigue acomodándose uno o
+dos grados sola, así que «el ratón no la mueve» se comprueba CONTANDO las
+llamadas a `girarBisagra`, no midiendo el ángulo.
+
 **`locked` significaba dos cosas.** Ahora `soldada` es la soldadura —la que
 funde cuerpos en `agruparSoldadas`— y `locked` sin `soldada`, sobre un
 `revolute`, es un FRENO: la bisagra se sostiene sola (límites fijados en su

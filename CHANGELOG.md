@@ -5,6 +5,35 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.22] — 2026-08-28
+
+### Cambiado
+
+**La bisagra se engancha con un clic y se suelta con otro.** Antes soltaba el
+dedo y soltaba la pieza; ahora queda tomada —con su arco a la vista— hasta que
+vuelves a hacer clic, así que puedes scrollear con el trackpad sin sujetar el
+botón. Mientras está enganchada pero sin pulsar, pasear el ratón no la mueve:
+sólo la giran el scroll y el arrastre con el botón abajo. El segundo clic la
+libera, retira el arco y devuelve el cursor y el zoom al simulador.
+
+**Al tomarla se para en seco.** Si venía cayendo, el tope tardaba unos pasos en
+matar su velocidad y la pieza seguía derivando varios grados después del clic
+—se sentía como si el agarre no hubiera prendido—. Una mano sujeta al instante,
+así que ahora también.
+
+### Añadido
+
+**El arco muestra el RANGO ACTIVO.** Cuando la bisagra tiene mínimo y máximo,
+la pista deja de ser la circunferencia entera y pasa a ser el tramo que de
+verdad puede recorrer, dibujado más tenue: se ve de un vistazo hasta dónde
+llega la pieza. Sin recorrido acotado sigue siendo la circunferencia completa,
+que es su recorrido real.
+
+`prueba-bisagra-mano` sube a 46 comprobaciones: el enganche por clic, el paseo
+del ratón que no la mueve —contando las órdenes de giro, no los grados, porque
+una placa apoyada en su tope sigue acomodándose sola—, el segundo clic que la
+suelta y el arco que se abre en tramo cuando hay límites.
+
 ## [0.3.21] — 2026-08-27
 
 ### Cambiado

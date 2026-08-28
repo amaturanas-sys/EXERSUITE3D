@@ -102,6 +102,19 @@ export type DireccionRoldana =
  * placas. "auto" elige el eje global más perpendicular a la línea que une las
  * dos piezas — el que hace de charnela natural entre ellas.
  */
+/**
+ * Arco que una bisagra deja recorrer a la pieza agarrada: circunferencia en el
+ * plano del pasador. `ref` es la dirección radial del punto que se tomó, y
+ * sirve de origen de ángulos para dibujar el tramo permitido.
+ */
+export interface Arco {
+  centro: THREE.Vector3;
+  eje: THREE.Vector3;
+  radio: number;
+  alto: number;
+  ref: THREE.Vector3;
+}
+
 export interface ConfigBisagra {
   eje: "auto" | "x" | "y" | "z";
   /**
@@ -1279,6 +1292,7 @@ export class Editor {
 
   stopSimulation(): void {
     if (!this.simulating) return;
+    this.soltarLaBisagra();
     this.endSimInteraction();
     this.simulating = false;
     this.physics?.dispose();
@@ -11215,12 +11229,15 @@ export class Editor {
       if (!obj || !this.physics.esBisagra(obj.id)) return;
       const arco = this.simDragArcoDe(obj.id);
       if (!arco || !this.physics.tomarBisagra(obj.id)) return;
+      // Tomada por el SCROLL sin clic: no queda enganchada, se suelta sola.
       this.bisagraDrag = {
         objectId: obj.id,
+        enganchada: false,
+        arrastrando: false,
         y: event.clientY,
         haciaArriba: this.arribaEnLaPantalla(arco, obj.mesh.getWorldPosition(new THREE.Vector3())),
       };
-      this.marcarArco(arco);
+      this.marcarArco(arco, obj.id);
       id = obj.id;
     }
     event.preventDefault();
@@ -11233,7 +11250,7 @@ export class Editor {
     if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
     this.soltarTrasScroll = window.setTimeout(() => {
       this.soltarTrasScroll = null;
-      if (!this.bisagraDrag || this.simDrag) return;
+      if (!this.bisagraDrag || this.simDrag || this.bisagraDrag.enganchada) return;
       this.physics?.soltarBisagra(this.bisagraDrag.objectId);
       this.bisagraDrag = null;
       this.quitarMarcaArco();
@@ -11328,7 +11345,11 @@ export class Editor {
     this.punteroY = event.clientY;
     // BISAGRA TOMADA: el arrastre vertical la gira; no hay resorte ni plano.
     if (this.simulating && this.bisagraDrag) {
-      this.girarBisagraConElGesto(anteriorY - event.clientY);
+      // Enganchada pero con el botón suelto, el ratón sólo pasea: la bisagra
+      // espera al scroll o a que se vuelva a arrastrar.
+      if (this.bisagraDrag.arrastrando) {
+        this.girarBisagraConElGesto(anteriorY - event.clientY);
+      }
       return;
     }
     const simInteract = this.simulating && (this.simDrag !== null || this.figureDrag !== null);
@@ -11367,7 +11388,7 @@ export class Editor {
       if (this.simDrag) {
         const destino = this.puntoDeArrastre();
         if (destino) this.physics?.dragTo(destino);
-        this.marcarArco(this.simDrag.arco);
+        this.marcarArco(this.simDrag.arco, this.simDrag.objectId);
       } else if (this.figureDrag && this.humanFigure &&
         this.raycaster.ray.intersectPlane(this.figureDrag.plane, at)) {
         this.humanFigure.position.copy(at.add(this.figureDrag.offset));
@@ -11880,7 +11901,7 @@ export class Editor {
   private simDrag: {
     plane: THREE.Plane;
     objectId: string;
-    arco?: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number };
+    arco?: Arco;
   } | null = null;
   /**
    * BISAGRA TOMADA (v0.3.21): no hay resorte, hay un mando de una dimensión.
@@ -11891,6 +11912,10 @@ export class Editor {
     objectId: string;
     y: number;
     haciaArriba: 1 | -1;
+    /** Enganchada por un CLIC: se queda tomada hasta el siguiente clic. */
+    enganchada: boolean;
+    /** El botón está pulsado ahora mismo: el movimiento vertical la gira. */
+    arrastrando: boolean;
   } | null = null;
   /** Última altura del puntero en la ventana (px), para el gesto de bisagra. */
   private punteroY = 0;
@@ -11905,6 +11930,13 @@ export class Editor {
    * si toca el maniquí, lo desliza por el suelo para situarlo.
    */
   private beginSimInteraction(): void {
+    // SEGUNDO CLIC = SOLTAR (v0.3.22). Mientras una bisagra está enganchada el
+    // cursor es suyo; un clic más la libera y el simulador vuelve a estar
+    // entero disponible —agarrar otra pieza, orbitar, usar otra herramienta—.
+    if (this.bisagraDrag?.enganchada) {
+      this.soltarLaBisagra();
+      return;
+    }
     // Se recorren TODOS los impactos, no solo el primero: si delante hay una
     // pieza anclada (un montante, el respaldo), la mano sigue buscando detrás
     // hasta encontrar algo que de verdad se pueda mover. El rayo es
@@ -11925,18 +11957,20 @@ export class Editor {
         if (!this.physics.tomarBisagra(obj.id)) continue;
         this.bisagraDrag = {
           objectId: obj.id,
+          enganchada: true,
+          arrastrando: true,
           y: this.punteroY,
           // Hacia dónde va la pieza en PANTALLA cuando el ángulo crece: es lo
           // que hace que subir el dedo la suba siempre, mande donde mande el
           // pasador.
           haciaArriba: this.arribaEnLaPantalla(arco, hit.point),
         };
-        this.marcarArco(arco);
+        this.marcarArco(arco, obj.id);
         this.orbit.enabled = false;
         this.avisoTemporal(
           tt(
-            "Bisagra tomada: mueve la mano arriba/abajo o usa el scroll",
-            "Hinge taken: move the hand up/down or scroll",
+            "Bisagra tomada: mueve la mano arriba/abajo o usa el scroll · otro clic la suelta",
+            "Hinge taken: move the hand up/down or scroll · click again to release",
           ),
         );
         return;
@@ -11986,13 +12020,15 @@ export class Editor {
   private arcoDeAgarre(
     objectId: string,
     punto: THREE.Vector3,
-  ): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number } | undefined {
+  ): Arco | undefined {
     const bis = this.physics?.ejeDeGiro(objectId);
     if (!bis) return undefined;
     const alto = punto.clone().sub(bis.punto).dot(bis.eje);
     const centro = bis.punto.clone().addScaledVector(bis.eje, alto);
     const radio = punto.distanceTo(centro);
-    return radio > 3 ? { centro, eje: bis.eje, radio, alto } : undefined;
+    return radio > 3
+      ? { centro, eje: bis.eje, radio, alto, ref: punto.clone().sub(centro).normalize() }
+      : undefined;
   }
 
   /**
@@ -12008,7 +12044,7 @@ export class Editor {
    * clavada a esa distancia del eje); lo que se refresca es el centro y la
    * dirección del pasador.
    */
-  private arcoVivo(): { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number } | undefined {
+  private arcoVivo(): Arco | undefined {
     const d = this.simDrag;
     if (!d?.arco) return undefined;
     const bis = this.physics?.ejeDeGiro(d.objectId);
@@ -12051,7 +12087,7 @@ export class Editor {
     if (!d || !this.physics || pxArriba === 0) return;
     const grados = (pxArriba / 100) * this.sensibilidadDeLaBisagra(d.objectId) * d.haciaArriba;
     this.physics.girarBisagra(d.objectId, grados);
-    this.marcarArco(this.simDragArcoDe(d.objectId));
+    this.marcarArco(this.simDragArcoDe(d.objectId), d.objectId);
     this.requestRender();
   }
 
@@ -12090,6 +12126,18 @@ export class Editor {
     );
   }
 
+  /** Suelta la bisagra enganchada y devuelve el cursor al simulador. */
+  private soltarLaBisagra(): void {
+    if (!this.bisagraDrag) return;
+    this.physics?.soltarBisagra(this.bisagraDrag.objectId);
+    this.bisagraDrag = null;
+    this.quitarMarcaArco();
+    this.orbit.enabled = true;
+    this.orbit.enableZoom = true;
+    this.avisoTemporal(tt("Bisagra soltada", "Hinge released"));
+    this.requestRender();
+  }
+
   /**
    * Sensibilidad vigente de la bisagra que sostiene a esta pieza. Se lee de la
    * UNIÓN y no de la copia que guardó el motor al arrancar, para que mover el
@@ -12104,9 +12152,7 @@ export class Editor {
   }
 
   /** Circunferencia viva de una bisagra tomada (el pasador puede moverse). */
-  private simDragArcoDe(objectId: string):
-    | { centro: THREE.Vector3; eje: THREE.Vector3; radio: number; alto: number }
-    | undefined {
+  private simDragArcoDe(objectId: string): Arco | undefined {
     const obj = this.objects.get(objectId);
     if (!obj) return undefined;
     return this.arcoDeAgarre(objectId, obj.mesh.getWorldPosition(new THREE.Vector3()));
@@ -12229,21 +12275,20 @@ export class Editor {
    * de moverla—. Se redibuja en cada paso porque el pasador puede ir montado
    * sobre otra pieza que también se mueve.
    */
-  private marcarArco(
-    arco: { centro: THREE.Vector3; eje: THREE.Vector3; radio: number } | undefined,
-  ): void {
+  private marcarArco(arco: Arco | undefined, objectId?: string): void {
     if (!arco) {
       this.quitarMarcaArco();
       return;
     }
+    const N = 96;
     if (!this.marcaArco) {
-      const puntos: THREE.Vector3[] = [];
-      for (let i = 0; i <= 96; i++) {
-        const a = (i / 96) * Math.PI * 2;
-        puntos.push(new THREE.Vector3(Math.cos(a), 0, Math.sin(a)));
-      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute(
+        "position",
+        new THREE.BufferAttribute(new Float32Array((N + 1) * 3), 3),
+      );
       this.marcaArco = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(puntos),
+        geo,
         new THREE.LineBasicMaterial({
           color: 0x22d3ee,
           transparent: true,
@@ -12254,13 +12299,28 @@ export class Editor {
       this.marcaArco.renderOrder = 999;
       this.references.add(this.marcaArco);
     }
-    // El círculo unitario nace en el plano XZ: se lleva al plano del pasador.
-    this.marcaArco.position.copy(arco.centro);
-    this.marcaArco.quaternion.setFromUnitVectors(
-      new THREE.Vector3(0, 1, 0),
-      arco.eje.clone().normalize(),
-    );
-    this.marcaArco.scale.setScalar(Math.max(arco.radio, 0.1));
+    // EL TRAMO QUE DE VERDAD PUEDE RECORRER (v0.3.22). Con recorrido acotado se
+    // dibuja sólo el sector entre el mínimo y el máximo —ahí se ve de un
+    // vistazo hasta dónde llega la pieza—; sin límites, la circunferencia
+    // entera, que es su recorrido real.
+    const tramo = objectId ? this.physics?.recorridoDeBisagra(objectId) : null;
+    const desde = tramo ? degToRad(tramo.desde) : 0;
+    const hasta = tramo ? degToRad(tramo.hasta) : Math.PI * 2;
+    const u = arco.ref.clone();
+    const v = new THREE.Vector3().crossVectors(arco.eje, u).normalize();
+    const pos = this.marcaArco.geometry.getAttribute("position") as THREE.BufferAttribute;
+    const p = new THREE.Vector3();
+    for (let i = 0; i <= N; i++) {
+      const a = desde + ((hasta - desde) * i) / N;
+      p.copy(arco.centro)
+        .addScaledVector(u, Math.cos(a) * arco.radio)
+        .addScaledVector(v, Math.sin(a) * arco.radio);
+      pos.setXYZ(i, p.x, p.y, p.z);
+    }
+    pos.needsUpdate = true;
+    this.marcaArco.geometry.computeBoundingSphere();
+    // El tramo acotado se pinta más tenue: es una pista, no un mando.
+    (this.marcaArco.material as THREE.LineBasicMaterial).opacity = tramo ? 0.5 : 0.85;
     this.requestRender();
   }
 
@@ -13082,6 +13142,17 @@ export class Editor {
   /** Termina los arrastres de simulación (mano y maniquí). */
   private endSimInteraction(): void {
     this.resaltarAgarrable(null);
+    if (this.bisagraDrag?.enganchada) {
+      // Levantar el dedo NO la suelta: sigue tomada, esperando el scroll o el
+      // clic que la libere. El arco queda a la vista como recordatorio.
+      this.bisagraDrag.arrastrando = false;
+      this.orbit.enabled = true;
+      if (this.simDrag) this.physics?.release();
+      if (this.simDrag || this.figureDrag) this.orbit.enabled = true;
+      this.simDrag = null;
+      this.figureDrag = null;
+      return;
+    }
     this.quitarMarcaArco();
     this.orbit.enableZoom = true;
     if (this.bisagraDrag) {
@@ -13898,7 +13969,7 @@ export class Editor {
       this.scheduleAutosave();
       return;
     }
-    if (this.simDrag || this.figureDrag) {
+    if (this.simDrag || this.figureDrag || this.bisagraDrag) {
       this.endSimInteraction();
       return;
     }

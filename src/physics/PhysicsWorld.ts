@@ -2549,6 +2549,25 @@ export class PhysicsWorld {
     return (e && this.frenos.get(e.body)?.sensibilidad) || 9;
   }
 
+  /**
+   * RECORRIDO PERMITIDO, visto desde el ángulo actual (grados). Devuelve null
+   * si la bisagra no tiene recorrido acotado —entonces no hay nada que dibujar
+   * que no sea la circunferencia entera—.
+   */
+  recorridoDeBisagra(objectId: string): { desde: number; hasta: number } | null {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenos.get(e.body);
+    if (!f) return null;
+    const [min, max] = f.rango;
+    if (max - min >= 2 * Math.PI - 0.01) return null;
+    const actual = this.anguloFreno(f);
+    // Se devuelve en el sentido del ARCO (el del eje que publica `ejeDeGiro`),
+    // que es +1 para el cuerpo movido y −1 para el otro.
+    const a = (min - actual) * f.signo * RAD2DEG;
+    const b = (max - actual) * f.signo * RAD2DEG;
+    return a <= b ? { desde: a, hasta: b } : { desde: b, hasta: a };
+  }
+
   /** Ángulo actual de la bisagra que sostiene a esta pieza (grados). */
   anguloDeBisagra(objectId: string): number | null {
     const e = this.bodies.get(objectId);
@@ -2566,6 +2585,13 @@ export class PhysicsWorld {
     if (!f) return false;
     f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
     f.handle.setLimits(f.objetivo, f.objetivo);
+    // SE PARA EN SECO donde la tomas. Si venía cayendo, el tope tarda unos
+    // pasos en matar su velocidad y la pieza sigue derivando varios grados
+    // después del clic —se siente como si el agarre no hubiera prendido—. Una
+    // mano sujeta al instante, así que aquí también.
+    const quieta = { x: 0, y: 0, z: 0 };
+    if (f.b.isDynamic()) f.b.setAngvel(quieta, true);
+    if (f.a.isDynamic()) f.a.setAngvel(quieta, true);
     f.a.wakeUp();
     f.b.wakeUp();
     return true;

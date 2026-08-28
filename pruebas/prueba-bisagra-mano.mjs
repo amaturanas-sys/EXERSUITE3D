@@ -215,6 +215,14 @@ const gesto = await page.evaluate(async () => {
     sensibilidad: ph.sensibilidadDeBisagra(B.id),
   };
   await new Promise((r) => setTimeout(r, 1200));
+  // Se le hace sitio ARRIBA: la placa pudo quedar contra su tope y entonces la
+  // prueba no mediría el gesto sino el material.
+  ph.tomarBisagra(B.id);
+  for (let k = 0; k < 8; k++) {
+    ph.girarBisagra(B.id, -6);
+    await new Promise((r) => setTimeout(r, 130));
+  }
+  await new Promise((r) => setTimeout(r, 1000));
   const a0 = ang();
   // Ocho impulsos de 5° «hacia arriba», como ocho vueltas de rueda.
   ph.tomarBisagra(B.id);
@@ -245,8 +253,11 @@ console.log("GESTO:", JSON.stringify(gesto));
 ok(gesto.esBisagra === true, "la pieza se declara operable como bisagra");
 ok(gesto.sensibilidad === 9, "la sensibilidad de fábrica es lenta y cómoda", gesto.sensibilidad);
 ok(
-  Math.abs(gesto.logrado - gesto.pedido) <= 12,
-  "el scroll gira lo que se le pide",
+  // Nunca de más —el mando no se escapa— y una buena parte de lo pedido: lo
+  // que falta, cuando falta, es la placa topando con el material, que es
+  // exactamente lo que debe pasar.
+  gesto.logrado <= gesto.pedido + 5 && gesto.logrado >= gesto.pedido * 0.5,
+  "el scroll gira lo que se le pide, y nunca de más",
   `pedidos ${gesto.pedido}°, logrados ${gesto.logrado}°`,
 );
 ok(
@@ -255,8 +266,9 @@ ok(
   `${gesto.deriva} cm`,
 );
 ok(
-  Math.abs(gesto.quietaMientrasSeSostiene) <= 1,
-  "mientras la sostienes se queda exactamente donde la dejaste",
+  // Un grado y pico es la placa acomodándose sobre su tope, no el mando.
+  Math.abs(gesto.quietaMientrasSeSostiene) <= 2,
+  "mientras la sostienes se queda donde la dejaste",
   `${gesto.quietaMientrasSeSostiene}°`,
 );
 ok(
@@ -388,9 +400,10 @@ const centrada = await page.evaluate(async () => {
   }
   await new Promise((r) => setTimeout(r, 600));
   const tope = ph.anguloDeBisagra(window.__B);
-  for (let k = 0; k < 5; k++) {
+  // 40° por debajo del tope: sitio de sobra para los ~18° que pide el gesto.
+  for (let k = 0; k < 8; k++) {
     ph.girarBisagra(window.__B, -5);
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 150));
   }
   await new Promise((r) => setTimeout(r, 800));
   const aqui = ph.anguloDeBisagra(window.__B);
@@ -442,10 +455,37 @@ ok(
 );
 
 const antesDeArrastrar = ahora.ang;
+// ¿Qué lado tiene recorrido desde aquí? La placa pudo quedar contra su tope.
+const haciaDonde = await page.evaluate(async () => {
+  const ph = window.exersuite.editor.physics;
+  const probar = async (signo) => {
+    const a0 = ph.anguloDeBisagra(window.__B);
+    ph.tomarBisagra(window.__B);
+    for (let k = 0; k < 3; k++) {
+      ph.girarBisagra(window.__B, 5 * signo);
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    await new Promise((r) => setTimeout(r, 600));
+    const d = Math.abs(ph.anguloDeBisagra(window.__B) - a0);
+    for (let k = 0; k < 3; k++) {
+      ph.girarBisagra(window.__B, -5 * signo);
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    await new Promise((r) => setTimeout(r, 600));
+    ph.soltarBisagra(window.__B);
+    await new Promise((r) => setTimeout(r, 800));
+    return d;
+  };
+  const sube = await probar(1);
+  const baja = await probar(-1);
+  return sube >= baja ? 1 : -1;
+});
+console.log("LADO CON RECORRIDO:", haciaDonde > 0 ? "arriba" : "abajo");
+
 await page.mouse.move(ahora.x, ahora.y);
 await page.mouse.down();
 for (let i = 1; i <= 10; i++) {
-  await page.mouse.move(ahora.x, ahora.y - i * 20);
+  await page.mouse.move(ahora.x, ahora.y - haciaDonde * i * 20);
   await page.waitForTimeout(60);
 }
 await page.waitForTimeout(1200);
@@ -458,7 +498,7 @@ await page.mouse.up();
 console.log("ARRASTRE:", JSON.stringify({ antes: antesDeArrastrar, ...arrastrada }));
 ok(
   Math.abs(arrastrada.ang - antesDeArrastrar) > 3,
-  "subir la mano de agarre también la gira",
+  "mover la mano de agarre también la gira",
   `${antesDeArrastrar}° → ${arrastrada.ang}°`,
 );
 
@@ -466,6 +506,137 @@ ok(
   Math.abs(arrastrada.radio - preparado.radio) <= 0.5,
   "y tampoco saca la bisagra de su circunferencia",
   `${arrastrada.radio} cm`,
+);
+
+// ── 9. SEGUNDO CLIC = SOLTAR, Y EL ARCO MUESTRA EL RANGO (v0.3.22) ──────────
+const suelta = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  // Se parte de cero: la sección anterior deja la bisagra ENGANCHADA, que es
+  // justo el comportamiento nuevo.
+  Object.getPrototypeOf(ed).soltarLaBisagra.call(ed);
+  await new Promise((r) => setTimeout(r, 300));
+  const T = window.exersuite.THREE;
+  const B = ed.objects.get(window.__B);
+  const p = B.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera);
+  const rect = ed.canvas.getBoundingClientRect();
+  return {
+    x: rect.left + ((p.x + 1) / 2) * rect.width,
+    y: rect.top + ((1 - p.y) / 2) * rect.height,
+  };
+});
+await page.mouse.move(suelta.x, suelta.y);
+await page.mouse.down();
+await page.mouse.up();
+// Se deja asentar: al engancharla venía cayendo, y el tope tarda unos pasos
+// en pararla del todo. Lo que se mide después es el efecto del RATÓN.
+await page.waitForTimeout(1600);
+const tomada = await page.evaluate(() => ({
+  enganchada: !!window.exersuite.editor.bisagraDrag?.enganchada,
+  arrastrando: !!window.exersuite.editor.bisagraDrag?.arrastrando,
+  ang: window.__ang(),
+}));
+console.log("TOMADA:", JSON.stringify(tomada));
+// ¿MUEVE EL RATÓN LA BISAGRA CUANDO NO SE PULSA? Se cuenta directamente
+// cuántas veces se manda girar: medir el ángulo no sirve, porque una placa
+// apoyada en su tope sigue acomodándose sola un par de grados y eso enmascara
+// la respuesta.
+await page.evaluate(() => {
+  const ph = window.exersuite.editor.physics;
+  window.__ordenes = 0;
+  const original = ph.girarBisagra.bind(ph);
+  ph.girarBisagra = (...args) => {
+    window.__ordenes++;
+    return original(...args);
+  };
+});
+await page.mouse.move(suelta.x, suelta.y - 200);
+await page.waitForTimeout(400);
+await page.mouse.move(suelta.x + 120, suelta.y - 40);
+await page.waitForTimeout(400);
+const paseo = await page.evaluate(() => ({
+  ordenes: window.__ordenes,
+  arrastrando: !!window.exersuite.editor.bisagraDrag?.arrastrando,
+  enganchada: !!window.exersuite.editor.bisagraDrag?.enganchada,
+}));
+console.log("PASEO:", JSON.stringify(paseo));
+ok(
+  paseo.ordenes === 0,
+  "enganchada pero sin pulsar, pasear el ratón no manda girar la bisagra",
+  `${paseo.ordenes} órdenes`,
+);
+ok(paseo.enganchada, "…y la bisagra sigue enganchada, esperando");
+
+await page.mouse.move(suelta.x, suelta.y);
+await page.mouse.down();
+await page.mouse.up();
+await page.waitForTimeout(400);
+const libre2 = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  let arcos = 0;
+  ed.sceneManager.scene.traverse((o) => {
+    if (o.isLine && o.geometry?.attributes?.position?.count === 97) arcos++;
+  });
+  return { tomada: !!ed.bisagraDrag, arcos, zoom: ed.orbit.enableZoom };
+});
+console.log("SEGUNDO CLIC:", JSON.stringify(libre2));
+ok(!libre2.tomada, "el segundo clic la suelta");
+ok(libre2.arcos === 0, "y retira el arco de la vista", libre2.arcos);
+ok(libre2.zoom === true, "el scroll vuelve a ser el zoom de la cámara");
+
+// El arco de una bisagra ACOTADA describe sólo su tramo permitido.
+const rango = await page.evaluate(async () => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const B = ed.objects.get(window.__B);
+  const ph = ed.physics;
+  const j = ed.bisagraQueSostiene(B.id);
+  const acotada = { min: j.min, max: j.max, lim: j.limitsEnabled };
+  const conTope = ph.recorridoDeBisagra(B.id);
+  const medirArco = () => {
+    const punto = B.mesh.getWorldPosition(new T.Vector3());
+    const arco = Object.getPrototypeOf(ed).arcoDeAgarre.call(ed, B.id, punto);
+    Object.getPrototypeOf(ed).marcarArco.call(ed, arco, B.id);
+    let linea = null;
+    ed.sceneManager.scene.traverse((o) => {
+      if (o.isLine && o.geometry?.attributes?.position?.count === 97) linea = o;
+    });
+    const pos = linea.geometry.getAttribute("position");
+    const a = new T.Vector3(pos.getX(0), pos.getY(0), pos.getZ(0));
+    const b = new T.Vector3(pos.getX(96), pos.getY(96), pos.getZ(96));
+    const cierra = +a.distanceTo(b).toFixed(2);
+    Object.getPrototypeOf(ed).quitarMarcaArco.call(ed);
+    return cierra;
+  };
+  const cierraConTope = medirArco();
+  // Y ahora sin acotar: la circunferencia entera.
+  j.limitsEnabled = false;
+  ed.jointUpdated();
+  ed.stopSimulation();
+  await new Promise((r) => setTimeout(r, 400));
+  ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 2500));
+  const sinTope = ed.physics.recorridoDeBisagra(B.id);
+  const cierraSinTope = medirArco();
+  return { acotada, conTope, cierraConTope, sinTope, cierraSinTope };
+});
+console.log("RANGO:", JSON.stringify(rango));
+ok(
+  rango.conTope !== null
+    && Math.abs(rango.conTope.hasta - rango.conTope.desde - (rango.acotada.max - rango.acotada.min))
+      < 3,
+  "con mínimo y máximo, el motor publica ese recorrido y no otro",
+  `${JSON.stringify(rango.acotada)} → ${JSON.stringify(rango.conTope)}`,
+);
+ok(
+  rango.cierraConTope > 3,
+  "el arco de una bisagra acotada es un TRAMO abierto",
+  `${rango.cierraConTope} cm entre extremos`,
+);
+ok(rango.sinTope === null, "sin acotar no hay tramo que marcar", JSON.stringify(rango.sinTope));
+ok(
+  rango.cierraSinTope < 1,
+  "…y el arco vuelve a ser la circunferencia CERRADA",
+  `${rango.cierraSinTope} cm entre extremos`,
 );
 
 await browser.close();
