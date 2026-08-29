@@ -1092,6 +1092,20 @@ export class PropertiesPanel {
       agarreIn,
     ]);
 
+    // PLACA DOBLE (v0.3.25): la misma placa en la cara de enfrente, atada a
+    // esta en medidas, sentido, posición y giro.
+    const dobleOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    dobleOn.checked = !!obj.params.dentadaGemela;
+    dobleOn.addEventListener("change", () => {
+      if (dobleOn.checked) {
+        const gemela = this.editor.hacerDentadaDoble(obj);
+        if (!gemela) dobleOn.checked = false;
+      } else {
+        this.editor.deshacerDentadaDoble(obj);
+      }
+      this.editor.bus.emit("objectTransformed", { object: obj });
+    });
+
     pintarNota();
     pintarPernos();
     return el("div", { class: "field" }, [
@@ -1115,6 +1129,18 @@ export class PropertiesPanel {
       el("div", { class: "row" }, [
         el("div", { class: "sub" }, [el("label", {}, [tt("Dientes", "Teeth")]), ladoSel]),
         el("div", { class: "sub" }, [el("label", {}, [tt("Boca", "Mouth")]), bocaSel]),
+      ]),
+      el("label", { class: "rold-check" }, [
+        dobleOn,
+        tt("Placa doble (cara opuesta)", "Double plate (opposite face)"),
+      ]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          "La gemela se monta en la cara de enfrente de la misma viga y copia todo: "
+            + "medidas, sentido, posición y giro.",
+          "The twin mounts on the beam's opposite face and copies everything: sizes, "
+            + "direction, position and rotation.",
+        ),
       ]),
       el("div", { class: "row" }, [agarre]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [

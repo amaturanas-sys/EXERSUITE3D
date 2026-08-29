@@ -128,6 +128,39 @@ export function buildBeamGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const D = p.depth ?? 5; // fondo del perfil (cm)
   const path = p.path ?? straightPath(100);
 
+  if (p.ramas?.length) return conRamas(buildBeamSinRamas(p, W, D, path), p, rectShape(W, D));
+  return buildBeamSinRamas(p, W, D, path);
+}
+
+/**
+ * RAMAS (v0.3.25): cada prolongación nodal se barre con el MISMO perfil de la
+ * pieza y se funde con ella. No son piezas soldadas: son parte del sólido, así
+ * que se mueven, se giran y se guardan con él.
+ */
+function conRamas(
+  tronco: THREE.BufferGeometry,
+  p: PrimitiveParams,
+  perfil: THREE.Shape,
+): THREE.BufferGeometry {
+  const partes: THREE.BufferGeometry[] = [tronco.toNonIndexed()];
+  for (const rama of p.ramas ?? []) {
+    if (!rama.path || rama.path.length < 2) continue;
+    partes.push(sweepProfile(perfil, rama.path).toNonIndexed());
+  }
+  if (partes.length === 1) return tronco;
+  const geo = mergeGeometries(partes, false) ?? tronco;
+  geo.computeVertexNormals();
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+  return geo;
+}
+
+function buildBeamSinRamas(
+  p: PrimitiveParams,
+  W: number,
+  D: number,
+  path: [number, number, number][],
+): THREE.BufferGeometry {
   if (!pathIsStraight(path)) return buildBentBeam(p, W, D, path);
 
   const L = Math.max(pathLength(path), 1);
@@ -190,13 +223,12 @@ export function buildBeamGeometry(p: PrimitiveParams): THREE.BufferGeometry {
 export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const r = p.radius ?? 2.4;
   const path = p.path ?? straightPath(100);
-  if (pathIsStraight(path)) {
-    const L = Math.max(pathLength(path), 1);
-    return new THREE.CylinderGeometry(r, r, L, 24, 1);
-  }
   const circle = new THREE.Shape();
   circle.absarc(0, 0, r, 0, Math.PI * 2, false);
-  return sweepProfile(circle, path);
+  const tronco = pathIsStraight(path)
+    ? new THREE.CylinderGeometry(r, r, Math.max(pathLength(path), 1), 24, 1)
+    : sweepProfile(circle, path);
+  return p.ramas?.length ? conRamas(tronco, p, circle) : tronco;
 }
 
 interface TramoPlano {

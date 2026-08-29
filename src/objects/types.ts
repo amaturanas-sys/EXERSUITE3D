@@ -119,6 +119,22 @@ export interface PrimitiveParams {
   dienteLado?: "derecha" | "izquierda";
   dienteBoca?: "arriba" | "abajo";
   /**
+   * PLACA DOBLE (v0.3.25): id de la placa gemela montada en la cara opuesta
+   * de la misma viga. Las dos se editan como una —medidas, sentido, posición
+   * y giro— y borrar una borra la otra.
+   */
+  dentadaGemela?: string | null;
+  /** Separación entre las dos caras de montaje de una placa doble (cm). */
+  dentadaSepCm?: number;
+  /**
+   * RAMAS (v0.3.25): prolongaciones nodales que salen de un nodo del trazado
+   * principal. Cada una es un trazado propio, en coordenadas LOCALES de la
+   * pieza, y se edita con el mismo sistema de deformación por nodos. Es lo
+   * que permite armar una estructura ramificada sin soldar un cuerpo aparte:
+   * la pieza sigue siendo UNA.
+   */
+  ramas?: RamaNodal[];
+  /**
    * VOLTEO / ESPEJADO (v0.2.32): ejes locales en los que la pieza está
    * espejada. Se hornea en la GEOMETRÍA en lugar de usar una escala
    * negativa, porque una escala negativa invierte también los ejes del
@@ -167,6 +183,18 @@ export interface PrimitiveParams {
  * perpendicular. El par de coordenadas del plano es (Y,Z) para el eje X,
  * (Z,X) para el eje Y y (X,Y) para el eje Z.
  */
+/** Prolongación nodal que sale de un nodo del trazado principal (v0.3.25). */
+export interface RamaNodal {
+  /** Índice del nodo del `path` principal del que arranca. */
+  desde: number;
+  /**
+   * Nodos de la rama en coordenadas locales de la pieza, EMPEZANDO por el
+   * nodo de origen: así la rama y el tronco comparten ese punto y la unión no
+   * se abre al mover el tronco.
+   */
+  path: [number, number, number][];
+}
+
 export interface VentanaRect {
   /** Eje local que atraviesa la pieza de lado a lado. */
   eje: "x" | "y" | "z";

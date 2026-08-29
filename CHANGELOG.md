@@ -5,6 +5,69 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.25] — 2026-08-29
+
+### Añadido
+
+**Nodos nuevos con doble clic, donde se toca.** Hasta ahora el botón «añadir
+nodo» partía por la mitad el tramo más largo: si el codo se quería a tres
+cuartos de una viga había que meter el nodo donde no tocaba y luego arrastrarlo
+hasta el sitio. Ahora se hace doble clic sobre el punto exacto de la pieza y el
+nodo nace ahí, insertado en el tramo que corresponde. Medido: doble clic a la
+altura y=40 de una viga de 120 cm y el trazado pasa de `-60, 0, 60` a
+`-60, 0, 41, 60`.
+
+**Burbuja de opciones con el clic derecho sobre un nodo.** Sale pegada al
+puntero con las dos cosas que se pueden hacer con ese nodo —🪾 ramificar y 🚫
+eliminarlo— y se cierra sola al elegir o al tocar fuera.
+
+**Ramificación desde un nodo: estructuras complejas sin soldar nada.** Ramificar
+saca del nodo una prolongación **perpendicular** al trazado, con sus propios dos
+nodos, editables con el mismo sistema de deformación (asas verdes para las
+ramas, cian para el tronco, ámbar para la activa). La rama se barre con el
+perfil de la pieza y se funde en su geometría: **es la misma pieza**, no un
+cuerpo soldado encima, así que no hay unión que romper ni masa que sumar. Se
+pueden sacar varias del mismo nodo, y cada una **busca el hueco libre** —se
+puntúan doce candidatas perpendiculares por el espacio despejado que tienen
+delante y por lo lejos que quedan de las ramas que ya salen de ahí—, así que la
+segunda no se mete dentro de la primera. Medido: perpendicularidad exacta
+(coseno 0,00 contra la tangente del tronco) y coseno **−0,50** entre la primera
+y la segunda rama.
+
+**Borrar un nodo suelto.** Quita ESE nodo y la trayectoria se recalcula por los
+que quedan; nunca baja de dos. Las ramas que colgaban del nodo borrado se van
+con él y las demás se reindexan a su nuevo origen.
+
+**Placa dentada doble.** Un interruptor en Propiedades y la placa se replica en
+la cara de enfrente de la viga. La gemela no es una copia suelta: se define
+siempre en función de la otra —mismo giro más media vuelta sobre el eje del
+poste, más la separación entre caras—, y la fórmula es simétrica, así que
+mover o girar cualquiera de las dos con el gizmo coloca la otra donde le toca.
+Los cambios de Propiedades (ancho, agarre, sentido de los dientes) se copian, y
+borrar una se lleva a la otra. El grosor del poste **se mide**, preguntándole a
+la pieza que hay detrás de la espina cuánto ocupa en esa dirección.
+
+### Corregido
+
+**El doble clic no llegaba nunca.** Estaba escuchándose en `pointerdown`, y en
+Chromium los `pointerdown` llegan SIEMPRE con `detail: 0` —el contador de clics
+solo lo llevan los eventos de ratón—, así que la condición «detail === 2» no se
+cumplía jamás. Escuchador `dblclick` propio.
+
+**El primer clic del doble clic cerraba la herramienta.** En modo nodos,
+cualquier clic que no cayera sobre un asa salía del modo; el primero de los dos
+caía sobre el cuerpo de la pieza y ya no había herramienta que recibiera el
+segundo. Ahora solo se sale pulsando FUERA de la pieza.
+
+**El botón derecho sacaba de la herramienta de nodos.** El mismo camino: el
+`pointerdown` del clic derecho no encontraba asa y cerraba el modo antes de que
+el `contextmenu` pudiera abrir la burbuja. El botón derecho ya no toca nada ahí.
+
+**La gemela nacía encima de la original.** La separación se calculaba restando
+los dos apoyos del poste en vez de sumarlos, y en cualquier pieza simétrica eso
+da cero: las dos placas quedaban a 0,8 cm —el grosor de una plancha— en lugar
+de a los 8,8 cm que separan las dos caras de una viga de 8.
+
 ## [0.3.24] — 2026-08-28
 
 ### Añadido

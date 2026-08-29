@@ -561,7 +561,16 @@ export class Editor {
   private lineAnclaA: { obj: string; local: [number, number, number] } | null = null;
   private bendTarget: SceneObject | null = null;
   private bendHandles: THREE.Group | null = null;
-  private bendDrag: { index: number; plane: THREE.Plane; origin: THREE.Vector3 } | null = null;
+  private bendDrag: {
+    index: number;
+    rama: number;
+    plane: THREE.Plane;
+    origin: THREE.Vector3;
+  } | null = null;
+  /** Rama del nodo ACTIVO (−1 = tronco). */
+  private bendNodeRama = -1;
+  /** Burbuja de opciones sobre un nodo (ramificar / eliminar). */
+  private bendBurbuja: HTMLElement | null = null;
   /** Soldadura pendiente mientras el nodo arrastrado está imantado a otra figura. */
   private bendWeld: { objetoId: string; punto: THREE.Vector3 } | null = null;
   /** Nodo ACTIVO del modo Doblar (el último tocado): lo mueven los cursores del Arrastre preciso. */
@@ -786,6 +795,8 @@ export class Editor {
     // captura y NO pasivo para poder quedarse con la rueda antes de que el
     // orbit la use como zoom; fuera de ese caso no toca nada.
     canvas.addEventListener("wheel", this.onWheel, { capture: true, passive: false });
+    canvas.addEventListener("contextmenu", this.onContextMenu);
+    canvas.addEventListener("dblclick", this.onDobleClic);
     window.addEventListener("pointerup", this.onPointerUp);
     window.addEventListener("resize", this.onResize);
     window.addEventListener("keydown", this.onKeyDown);
@@ -796,6 +807,14 @@ export class Editor {
     this.unsubSegments = figureSegments.onChanged(() => {
       if (this.humanFigure && this.humanMode === "mannequin") void this.addHumanFigure(this.humanHeight);
     });
+    // PLACA DOBLE (v0.3.25): cualquier cambio en una de las dos —del gizmo o
+    // de Propiedades— se copia en la otra al vuelo.
+    this.bus.on("objectTransformed", ({ object }) => {
+      if (object.params.kind === "dentada" && object.params.dentadaGemela) {
+        this.sincronizarDentadaGemela(object);
+      }
+    });
+
     // Al mover una pieza, actualiza las cuerdas ancladas a ella.
     this.bus.on("objectTransformed", ({ object }) => this.actualizarAtadosDeObjeto(object.id));
     // Los visuales de cable solo se reconstruyen cuando algo cambió (no por frame).
@@ -2496,6 +2515,17 @@ export class Editor {
   }
 
   removeObject(obj: SceneObject): void {
+    // Una placa doble se va entera: dejar la gemela huérfana daría una placa
+    // que ya no se sincroniza con nadie y que el usuario no pidió.
+    const gemelaId = obj.params.dentadaGemela;
+    if (gemelaId) {
+      obj.params.dentadaGemela = null;
+      const gemela = this.objects.get(gemelaId);
+      if (gemela) {
+        gemela.params.dentadaGemela = null;
+        this.removeObject(gemela);
+      }
+    }
     if (this.bendTarget === obj) this.endBendNodes();
     if (this.selected === obj) this.select(null);
     // Una guía borrada deja de administrar nada.
@@ -3433,6 +3463,9 @@ export class Editor {
     this.canvas.removeEventListener("pointerdown", this.onPointerDown);
     this.canvas.removeEventListener("pointermove", this.onPointerMove);
     this.canvas.removeEventListener("wheel", this.onWheel, { capture: true });
+    this.canvas.removeEventListener("contextmenu", this.onContextMenu);
+    this.canvas.removeEventListener("dblclick", this.onDobleClic);
+    this.cerrarBurbujaDeNodo();
     if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
     window.removeEventListener("pointerup", this.onPointerUp);
     for (const soltar of this.oyentes) soltar();
@@ -10894,8 +10927,28 @@ export class Editor {
       );
       h.renderOrder = 1001;
       h.userData.bendIndex = i;
+      h.userData.bendRama = -1;
       group.add(h);
     }
+    // Y un asa por cada nodo de cada RAMA (v0.3.25), salvo el de origen, que
+    // es el mismo nodo del tronco y ya tiene la suya.
+    (obj.params.ramas ?? []).forEach((rama, ri) => {
+      for (let i = 1; i < rama.path.length; i++) {
+        const h = new THREE.Mesh(
+          new THREE.SphereGeometry(r, 16, 12),
+          new THREE.MeshBasicMaterial({
+            color: 0x86efac,
+            depthTest: false,
+            transparent: true,
+            opacity: 0.95,
+          }),
+        );
+        h.renderOrder = 1001;
+        h.userData.bendIndex = i;
+        h.userData.bendRama = ri;
+        group.add(h);
+      }
+    });
     this.bendHandles = group;
     this.sceneManager.scene.add(group);
     this.refreshBendHandles();
@@ -11018,6 +11071,417 @@ export class Editor {
     this.requestRender();
   }
 
+  /**
+   * DOBLE CLIC = NODO NUEVO AHÍ MISMO (v0.3.25). Va en su propio escuchador y
+   * no dentro de `onPointerDown` porque en Chromium los `pointerdown` llegan
+   * SIEMPRE con `detail: 0` —el contador de clics solo lo llevan los eventos
+   * de ratón—, así que la condición `detail === 2` no se cumplía nunca y el
+   * nodo no llegaba a nacer.
+   */
+  private onDobleClic = (event: MouseEvent): void => {
+    if (!this.bendTarget || !this.bendHandles || this.simulating) return;
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+    // Si el doble clic cae sobre un asa no se añade nada: ahí el gesto es
+    // agarrar el nodo que ya existe.
+    if (this.raycaster.intersectObjects(this.bendHandles.children, false)[0]) return;
+    const enPieza = this.raycaster.intersectObject(this.bendTarget.mesh, true);
+    if (enPieza[0]) this.agregarNodoEnPunto(enPieza[0].point);
+  };
+
+  /**
+   * BURBUJA DE OPCIONES DEL NODO (v0.3.25): clic derecho sobre un asa y salen
+   * las dos cosas que se pueden hacer con él —ramificar o borrarlo—. Va pegada
+   * al puntero, se cierra sola al elegir o al tocar fuera.
+   */
+  private onContextMenu = (event: MouseEvent): void => {
+    if (!this.bendTarget || !this.bendHandles || this.simulating) return;
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+    const asa = this.raycaster.intersectObjects(this.bendHandles.children, false)[0]?.object
+      ?? this.asaMasCercaEnPantalla(event.clientX, event.clientY, 26);
+    if (!asa) return;
+    event.preventDefault();
+    const indice = asa.userData.bendIndex as number;
+    const rama = (asa.userData.bendRama as number) ?? -1;
+    this.bendNodeIndex = indice;
+    this.bendNodeRama = rama;
+    this.refreshBendHandles();
+    this.abrirBurbujaDeNodo(event.clientX, event.clientY, rama, indice);
+  };
+
+  /**
+   * El asa más cercana al puntero EN PANTALLA, dentro de un radio en píxeles.
+   * Un nodo es una bola de 4 cm: apuntarle exacto con el botón derecho es pedir
+   * puntería, y si la cámara se está frenando todavía el rayo pasa de largo.
+   * Con esta red de seguridad el clic derecho «cerca» también abre la burbuja.
+   */
+  private asaMasCercaEnPantalla(cx: number, cy: number, radioPx: number): THREE.Object3D | null {
+    if (!this.bendHandles) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const cam = this.sceneManager.camera;
+    let mejor: THREE.Object3D | null = null;
+    let corta = radioPx;
+    for (const h of this.bendHandles.children) {
+      const p = h.getWorldPosition(new THREE.Vector3()).project(cam);
+      if (p.z > 1) continue;
+      const px = rect.left + ((p.x + 1) / 2) * rect.width;
+      const py = rect.top + ((1 - p.y) / 2) * rect.height;
+      const d = Math.hypot(px - cx, py - cy);
+      if (d < corta) {
+        corta = d;
+        mejor = h;
+      }
+    }
+    return mejor;
+  }
+
+  private abrirBurbujaDeNodo(x: number, y: number, rama: number, indice: number): void {
+    this.cerrarBurbujaDeNodo();
+    const burbuja = document.createElement("div");
+    burbuja.className = "nodo-burbuja";
+    burbuja.style.cssText =
+      `position:fixed;left:${x + 8}px;top:${y - 8}px;z-index:9999;display:flex;gap:6px;`
+      + "padding:6px;border-radius:10px;background:#1f2937;box-shadow:0 6px 20px rgba(0,0,0,.45);";
+    const boton = (icono: string, titulo: string, alPulsar: () => void): HTMLElement => {
+      const b = document.createElement("button");
+      b.className = "tool";
+      b.title = titulo;
+      b.textContent = icono;
+      b.style.cssText = "font-size:18px;line-height:1;padding:6px 10px;";
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.cerrarBurbujaDeNodo();
+        alPulsar();
+      });
+      return b;
+    };
+    burbuja.append(
+      boton("🪾", tt("Ramificar desde este nodo", "Branch from this node"), () =>
+        this.ramificarNodo(rama, indice),
+      ),
+      boton("🚫", tt("Eliminar este nodo", "Delete this node"), () =>
+        this.borrarNodoBend(rama, indice),
+      ),
+    );
+    document.body.append(burbuja);
+    this.bendBurbuja = burbuja;
+    // Se cierra al tocar fuera; el `setTimeout` evita que el mismo clic que la
+    // abrió la cierre en el acto.
+    window.setTimeout(() => {
+      window.addEventListener("pointerdown", this.cerrarBurbujaAlTocarFuera, { once: true });
+    }, 0);
+  }
+
+  private cerrarBurbujaAlTocarFuera = (ev: PointerEvent): void => {
+    if (this.bendBurbuja?.contains(ev.target as Node)) return;
+    this.cerrarBurbujaDeNodo();
+  };
+
+  private cerrarBurbujaDeNodo(): void {
+    if (!this.bendBurbuja) return;
+    this.bendBurbuja.remove();
+    this.bendBurbuja = null;
+    window.removeEventListener("pointerdown", this.cerrarBurbujaAlTocarFuera);
+  }
+
+  /** Evita el ida y vuelta al sincronizar las dos placas de una doble. */
+  private sincronizandoDentada = false;
+
+  /**
+   * PLACA DENTADA DOBLE (v0.3.25): la misma placa en la cara de enfrente.
+   *
+   * Una viga con ganchos por los dos costados es lo normal en un rack, y
+   * hacerlo a mano obliga a colocar la segunda placa a ojo y a repetir en ella
+   * cada cambio. Con el interruptor puesto, la gemela nace en la cara opuesta
+   * —medida sobre el propio poste, no adivinada— y a partir de ahí las dos
+   * andan juntas: medidas, sentido, POSICIÓN y GIRO.
+   *
+   * La gemela se define SIEMPRE en función de la otra: mismo giro más media
+   * vuelta sobre el eje de la viga, y la separación entre las dos caras. La
+   * fórmula es simétrica —aplicarla dos veces devuelve el original—, así que
+   * da igual cuál de las dos se mueva.
+   */
+  hacerDentadaDoble(obj: SceneObject): SceneObject | null {
+    if (obj.params.kind !== "dentada" || obj.params.dentadaGemela) return null;
+    obj.mesh.updateMatrixWorld(true);
+    // Del lado de los ganchos hacia el poste.
+    const haciaElPoste = new THREE.Vector3(-1, 0, 0)
+      .applyQuaternion(obj.mesh.quaternion)
+      .normalize();
+    const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
+    // EL ANFITRIÓN, MEDIDO: se busca la pieza que hay detrás de la espina y se
+    // le pregunta cuánto ocupa en esa dirección. Así la gemela cae sobre la
+    // cara de enfrente de VERDAD, sea un poste de 5 cm o una viga de 12.
+    let host: SceneObject | null = null;
+    let mejor = Infinity;
+    for (const o of this.objects.values()) {
+      if (o === obj || o.params.kind === "dentada") continue;
+      const caja = o.worldBoxBody(new THREE.Box3());
+      const p = caja.clampPoint(centro, new THREE.Vector3());
+      const d = p.distanceTo(centro);
+      if (d < mejor && d < 40) {
+        mejor = d;
+        host = o;
+      }
+    }
+    const grosorPlaca = medidasDentada(obj.params).grosor;
+    const sep = host
+      // Los dos apoyos SE SUMAN: juntos son el grosor entero del poste. Restarlos
+      // daba cero en cualquier pieza simétrica y la gemela nacía encima.
+      ? this.soporteEnDireccion(host, haciaElPoste)
+        + this.soporteEnDireccion(host, haciaElPoste.clone().negate())
+        + grosorPlaca
+      : (obj.params.dienteCaraCm ?? 8) + grosorPlaca;
+    const gemela = this.duplicateObject(obj, new THREE.Vector3());
+    if (!gemela) return null;
+    gemela.name = obj.name.replace(/\s*\(gemela\)$/, "") + " (gemela)";
+    gemela.mesh.name = gemela.name;
+    obj.params.dentadaGemela = gemela.id;
+    obj.params.dentadaSepCm = sep;
+    gemela.params.dentadaGemela = obj.id;
+    gemela.params.dentadaSepCm = sep;
+    this.colocarGemelaDentada(obj, gemela);
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+    return gemela;
+  }
+
+  /** Deshace la placa doble: se va la gemela y la original queda simple. */
+  deshacerDentadaDoble(obj: SceneObject): void {
+    const gemela = obj.params.dentadaGemela ? this.objects.get(obj.params.dentadaGemela) : null;
+    obj.params.dentadaGemela = null;
+    if (gemela) {
+      gemela.params.dentadaGemela = null;
+      this.removeObject(gemela);
+    }
+    this.scheduleAutosave();
+  }
+
+  /** Pone la gemela donde le toca: media vuelta y a la cara de enfrente. */
+  private colocarGemelaDentada(fuente: SceneObject, gemela: SceneObject): void {
+    const sep = fuente.params.dentadaSepCm ?? 0;
+    const q = fuente.mesh.quaternion.clone();
+    const haciaElPoste = new THREE.Vector3(-1, 0, 0).applyQuaternion(q).normalize();
+    gemela.mesh.quaternion
+      .copy(q)
+      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+    gemela.mesh.position.copy(fuente.mesh.position).addScaledVector(haciaElPoste, sep);
+    gemela.mesh.scale.copy(fuente.mesh.scale);
+    gemela.mesh.updateMatrixWorld(true);
+  }
+
+  /**
+   * Copia a la gemela lo que cambió en su pareja: medidas y sentido de los
+   * dientes por un lado, sitio y giro por otro.
+   */
+  sincronizarDentadaGemela(obj: SceneObject): void {
+    if (this.sincronizandoDentada) return;
+    const id = obj.params.dentadaGemela;
+    const gemela = id ? this.objects.get(id) : null;
+    if (!gemela) return;
+    this.sincronizandoDentada = true;
+    try {
+      const suyo = gemela.params.dentadaGemela;
+      gemela.params = { ...obj.params, dentadaGemela: suyo };
+      gemela.rebuildGeometry();
+      this.colocarGemelaDentada(obj, gemela);
+      this.bus.emit("objectTransformed", { object: gemela });
+    } finally {
+      this.sincronizandoDentada = false;
+    }
+  }
+
+  /** Trazado al que pertenece un nodo: el tronco (−1) o una rama. */
+  private trazadoDeNodo(
+    obj: SceneObject,
+    rama: number,
+  ): [number, number, number][] | undefined {
+    return rama < 0 ? obj.params.path : obj.params.ramas?.[rama]?.path;
+  }
+
+  /**
+   * NODO NUEVO EN EL SITIO DONDE SE TOCA (v0.3.25).
+   *
+   * El doble clic sobre la pieza mete un nodo justo ahí, en vez de partir por
+   * la mitad el tramo más largo: la trayectoria se corrige donde hace falta y
+   * no donde le toque al reparto. Se busca el tramo —del tronco o de cualquier
+   * rama— cuyo segmento pasa más cerca del punto tocado y se inserta entre sus
+   * dos extremos.
+   */
+  private agregarNodoEnPunto(mundo: THREE.Vector3): boolean {
+    const obj = this.bendTarget;
+    if (!obj) return false;
+    obj.mesh.updateMatrixWorld(true);
+    const local = mundo.clone().applyMatrix4(obj.mesh.matrixWorld.clone().invert());
+    type Cand = { rama: number; i: number; punto: THREE.Vector3; d: number };
+    let mejor: Cand | null = null;
+    const mirar = (rama: number, path: [number, number, number][] | undefined): void => {
+      if (!path || path.length < 2) return;
+      for (let i = 0; i < path.length - 1; i++) {
+        const a = new THREE.Vector3().fromArray(path[i]);
+        const b = new THREE.Vector3().fromArray(path[i + 1]);
+        const ab = b.clone().sub(a);
+        const t = THREE.MathUtils.clamp(local.clone().sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-6), 0, 1);
+        const p = a.clone().addScaledVector(ab, t);
+        const d = p.distanceTo(local);
+        if (!mejor || d < (mejor as Cand).d) mejor = { rama, i, punto: p, d };
+      }
+    };
+    mirar(-1, obj.params.path);
+    (obj.params.ramas ?? []).forEach((r, ri) => mirar(ri, r.path));
+    const elegido = mejor as Cand | null;
+    if (!elegido) return false;
+    const trazado = this.trazadoDeNodo(obj, elegido.rama);
+    if (!trazado) return false;
+    // El nodo se pone donde APUNTA el dedo, no sobre el segmento: así se puede
+    // meter un nodo y sacarlo del sitio en un solo gesto.
+    trazado.splice(elegido.i + 1, 0, [local.x, local.y, local.z]);
+    obj.rebuildGeometry();
+    this.rehacerAsasDeNodos(elegido.rama, elegido.i + 1);
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    return true;
+  }
+
+  /** Rehace las asas conservando el modo y dejando activo el nodo indicado. */
+  private rehacerAsasDeNodos(rama: number, indice: number): void {
+    const obj = this.bendTarget;
+    if (!obj) return;
+    this.endBendNodes();
+    this.select(obj);
+    this.beginBendNodes();
+    this.bendNodeIndex = indice;
+    this.bendNodeRama = rama;
+    this.refreshBendHandles();
+    this.requestRender();
+  }
+
+  /**
+   * BORRAR UN NODO (v0.3.25): se va ese y sólo ese, y la trayectoria se
+   * recalcula por los que quedan. Un trazado necesita dos nodos para existir,
+   * así que por debajo de eso no se borra; y borrar el ORIGEN de una rama se
+   * lleva la rama entera, porque sin él no sale de ninguna parte.
+   */
+  borrarNodoBend(rama: number, indice: number): void {
+    const obj = this.bendTarget;
+    const trazado = obj ? this.trazadoDeNodo(obj, rama) : undefined;
+    if (!obj || !trazado) return;
+    if (trazado.length <= 2) {
+      this.avisoTemporal(
+        rama < 0
+          ? tt("Una pieza necesita al menos dos nodos", "A part needs at least two nodes")
+          : tt("Una rama necesita al menos dos nodos", "A branch needs at least two nodes"),
+      );
+      return;
+    }
+    trazado.splice(indice, 1);
+    if (rama < 0) {
+      // Las ramas que colgaban de nodos posteriores se recolocan, y las que
+      // colgaban del nodo borrado se van con él.
+      obj.params.ramas = (obj.params.ramas ?? []).filter((r) => r.desde !== indice);
+      for (const r of obj.params.ramas) if (r.desde > indice) r.desde -= 1;
+      this.normalizarPathRecto(obj);
+    }
+    obj.rebuildGeometry();
+    this.rehacerAsasDeNodos(rama, Math.max(0, Math.min(indice, trazado.length - 1)));
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+  }
+
+  /**
+   * RAMIFICAR DESDE UN NODO (v0.3.25).
+   *
+   * Sale una prolongación PERPENDICULAR al trazado en ese punto, y se edita
+   * con el mismo sistema de nodos: es lo que permite armar una estructura
+   * ramificada sin soldar un cuerpo aparte —la pieza sigue siendo una—.
+   *
+   * LA DIRECCIÓN NO ES FIJA: se prueban doce perpendiculares alrededor de la
+   * tangente y gana la que deja más sitio libre. «Sitio» es lo que de verdad
+   * estorba: las ramas que ya salen de esa pieza y las demás piezas de la
+   * escena, medidas con un rayo. Sin esto, la segunda rama de un nodo nace
+   * dentro de la primera.
+   */
+  ramificarNodo(rama: number, indice: number): void {
+    const obj = this.bendTarget;
+    const trazado = obj ? this.trazadoDeNodo(obj, rama) : undefined;
+    if (!obj || !trazado || !obj.params.path) return;
+    const nodo = new THREE.Vector3().fromArray(trazado[indice]);
+    // Tangente local del trazado en el nodo.
+    const otro = trazado[indice + 1] ?? trazado[indice - 1];
+    const tang = otro
+      ? new THREE.Vector3().fromArray(otro).sub(nodo).normalize()
+      : new THREE.Vector3(0, 1, 0);
+    if (tang.lengthSq() < 0.5) tang.set(0, 1, 0);
+    // Base perpendicular a la tangente.
+    const u = new THREE.Vector3()
+      .crossVectors(tang, Math.abs(tang.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0))
+      .normalize();
+    const v = new THREE.Vector3().crossVectors(tang, u).normalize();
+
+    const largo = Math.max(15, this.largoDelTrazado(obj.params.path) * 0.3);
+    obj.mesh.updateMatrixWorld(true);
+    const aMundo = obj.mesh.matrixWorld;
+    const nodoMundo = nodo.clone().applyMatrix4(aMundo);
+    const ocupadas: THREE.Vector3[] = [];
+    for (const r of obj.params.ramas ?? []) {
+      if (r.path.length < 2) continue;
+      ocupadas.push(
+        new THREE.Vector3().fromArray(r.path[1]).sub(new THREE.Vector3().fromArray(r.path[0])).normalize(),
+      );
+    }
+    const estorbos = [...this.objects.values()].filter((o) => o !== obj).map((o) => o.mesh);
+    let mejorDir: THREE.Vector3 | null = null;
+    let mejorHueco = -Infinity;
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      const dir = u.clone().multiplyScalar(Math.cos(a)).addScaledVector(v, Math.sin(a)).normalize();
+      // Lo más parecido que ya haya: cuanto más cerca, peor sitio.
+      let hueco = largo;
+      for (const o of ocupadas) hueco = Math.min(hueco, largo * (1 - Math.max(0, o.dot(dir))));
+      // Y lo que haya delante en la escena, medido con un rayo.
+      const dirMundo = dir.clone().transformDirection(aMundo).normalize();
+      const rayo = new THREE.Raycaster(nodoMundo.clone().addScaledVector(dirMundo, 0.5), dirMundo, 0, largo);
+      const choques = rayo.intersectObjects(estorbos, true);
+      if (choques[0]) hueco = Math.min(hueco, choques[0].distance);
+      if (hueco > mejorHueco) {
+        mejorHueco = hueco;
+        mejorDir = dir;
+      }
+    }
+    const dir = mejorDir ?? u;
+    const punta = nodo.clone().addScaledVector(dir, largo);
+    obj.params.ramas = [...(obj.params.ramas ?? [])];
+    // La rama arranca EN el nodo del tronco: comparten punto y la unión no se
+    // abre al mover el tronco.
+    obj.params.ramas.push({
+      desde: rama < 0 ? indice : (obj.params.ramas[rama]?.desde ?? 0),
+      path: [[nodo.x, nodo.y, nodo.z], [punta.x, punta.y, punta.z]],
+    });
+    obj.rebuildGeometry();
+    this.rehacerAsasDeNodos(obj.params.ramas.length - 1, 1);
+    this.bus.emit("objectTransformed", { object: obj });
+    this.avisoTemporal(
+      tt(
+        `Rama ${obj.params.ramas.length}: arrástrala por sus nodos`,
+        `Branch ${obj.params.ramas.length}: drag it by its nodes`,
+      ),
+    );
+    this.scheduleAutosave();
+  }
+
+  private largoDelTrazado(path: [number, number, number][]): number {
+    let L = 0;
+    for (let i = 0; i < path.length - 1; i++) {
+      L += new THREE.Vector3().fromArray(path[i]).distanceTo(new THREE.Vector3().fromArray(path[i + 1]));
+    }
+    return L;
+  }
+
   /** Coloca las asas sobre los nodos del path (en coordenadas de mundo). */
   private refreshBendHandles(): void {
     const obj = this.bendTarget;
@@ -11025,16 +11489,21 @@ export class Editor {
     obj.mesh.updateMatrixWorld(true);
     for (const h of this.bendHandles.children) {
       const i = h.userData.bendIndex as number;
-      const n = obj.params.path![i];
+      const ri = (h.userData.bendRama as number) ?? -1;
+      const n = this.trazadoDeNodo(obj, ri)?.[i];
+      if (!n) continue;
       h.position.set(n[0], n[1], n[2]).applyMatrix4(obj.mesh.matrixWorld);
-      // El nodo ACTIVO (el que mueven los cursores) se pinta distinto.
+      // El nodo ACTIVO (el que mueven los cursores) se pinta distinto; las
+      // ramas van en verde para distinguirlas del tronco de un vistazo.
+      const activo = i === this.bendNodeIndex && ri === this.bendNodeRama;
       ((h as THREE.Mesh).material as THREE.MeshBasicMaterial).color.setHex(
-        i === this.bendNodeIndex ? 0xf59e0b : 0x22d3ee,
+        activo ? 0xf59e0b : ri < 0 ? 0x22d3ee : 0x86efac,
       );
     }
   }
 
   endBendNodes(): void {
+    this.cerrarBurbujaDeNodo();
     if (!this.bendTarget) return;
     if (this.bendHandles) {
       this.sceneManager.scene.remove(this.bendHandles);
@@ -11049,6 +11518,7 @@ export class Editor {
     this.bendDrag = null;
     this.bendWeld = null;
     this.bendNodeIndex = null;
+    this.bendNodeRama = -1;
     this.snap.hideIndicator();
     this.orbit.enabled = true;
     // Reengancha el gizmo si la pieza sigue seleccionada.
@@ -11455,8 +11925,9 @@ export class Editor {
       this.emitDragMeasure(hit.clone().sub(this.bendDrag.origin));
       obj.mesh.updateMatrixWorld(true);
       const local = hit.applyMatrix4(obj.mesh.matrixWorld.clone().invert());
-      obj.params.path![this.bendDrag.index] = [local.x, local.y, local.z];
-      this.normalizarPathRecto(obj);
+      const trazado = this.trazadoDeNodo(obj, this.bendDrag.rama);
+      if (trazado) trazado[this.bendDrag.index] = [local.x, local.y, local.z];
+      if (this.bendDrag.rama < 0) this.normalizarPathRecto(obj);
       obj.rebuildGeometry();
       this.refreshBendHandles();
       this.bus.emit("objectTransformed", { object: obj });
@@ -13647,22 +14118,34 @@ export class Editor {
 
     // Modo doblado: clic en un asa inicia el arrastre del nodo; fuera, sale.
     if (this.bendTarget && this.bendHandles) {
+      // El botón derecho no toca nada aquí: es el que abre la burbuja de
+      // opciones del nodo (`onContextMenu`), y encuadrar la vista con él no
+      // debe sacar de la herramienta.
+      if (event.button !== 0) return;
+      const enPieza = this.raycaster.intersectObject(this.bendTarget.mesh, true);
       const hits = this.raycaster.intersectObjects(this.bendHandles.children, false);
       if (hits[0]) {
         const idx = hits[0].object.userData.bendIndex as number;
+        const ri = (hits[0].object.userData.bendRama as number) ?? -1;
         const node = hits[0].object.position.clone();
         const normal = this.sceneManager.camera.getWorldDirection(new THREE.Vector3());
         this.bendDrag = {
           index: idx,
+          rama: ri,
           plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, node),
           origin: node.clone(),
         };
+        this.bendNodeRama = ri;
         // El nodo tocado pasa a ser el ACTIVO: los cursores del Arrastre
         // preciso lo moverán en cualquier eje (deformación multi-eje).
         this.bendNodeIndex = idx;
         this.refreshBendHandles();
         this.orbit.enabled = false;
-      } else {
+      } else if (!enPieza[0]) {
+        // Solo se sale de la herramienta pulsando FUERA de la pieza. Antes el
+        // primer clic de un doble clic caía sobre el cuerpo —no sobre un asa—
+        // y cerraba el modo nodos: el segundo clic ya no encontraba nada que
+        // partir y el nodo nuevo no llegaba a existir nunca.
         this.endBendNodes();
       }
       return;

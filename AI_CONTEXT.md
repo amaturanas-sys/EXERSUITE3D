@@ -479,6 +479,45 @@ una sigmoidea imposible de corregir). Una viga **doblada** se particiona por
 comba acumulada en tramos planos que **conservan sus pinholes** y codos que se
 barren lisos: así una jota puede calzar en una cara diagonal.
 
+### 5.6 Ramas nodales (v0.3.25)
+
+`params.ramas: RamaNodal[]`, cada una `{ desde, path }` — el índice del nodo del
+tronco del que sale y sus propios nodos locales. `buildBeamGeometry` /
+`buildTubeGeometry` construyen primero el tronco y luego `conRamas()` barre cada
+rama **con el mismo perfil de la pieza** y funde el resultado. Consecuencia que
+importa: una rama **no es un cuerpo soldado**, es la misma malla y el mismo
+cuerpo rígido; no hay `Joint` que registrar ni masa nueva que sumar, y todo lo
+que ya sabía tratar la pieza (pinholes, física, gizmo) la trata sin cambios.
+
+Al borrar un nodo del tronco hay que **arrastrar las ramas**: las que colgaban
+de él se van con él, y las de índice mayor se reindexan (`desde--`). Olvidarlo
+deja ramas apuntando a un nodo que ya no existe.
+
+**Trampa de eventos que costó dos vueltas:** en Chromium los `pointerdown`
+llegan siempre con `detail: 0` — el contador de clics solo lo llevan los eventos
+de ratón (`click`, `dblclick`, `mousedown`). Un doble clic no se detecta desde
+`pointerdown`; hace falta escuchador `dblclick`. Y en un modo que se cierra «al
+pulsar fuera», ese cierre tiene que discriminar el cuerpo de la pieza: si no, el
+primer clic del doble clic mata el modo y el segundo no encuentra nada. Lo mismo
+con el botón derecho: su `pointerdown` llega ANTES que el `contextmenu`, así que
+si el modo se cierra ahí, el menú contextual nunca llega a abrirse.
+
+### 5.7 Placa dentada doble (v0.3.25)
+
+`params.dentadaGemela` guarda el id de la otra placa y `dentadaSepCm` la
+distancia entre caras. La gemela **nunca se guarda como pose independiente**:
+`colocarGemelaDentada()` la deriva de la fuente —mismo cuaternión × Ry(π), más
+la separación por el −X local—, y la fórmula es **simétrica**, aplicarla dos
+veces devuelve el original. Por eso da igual cuál de las dos mueva el usuario:
+el escuchador de `objectTransformed` recoloca la otra con la misma llamada (con
+un pestillo `sincronizandoDentada` para no entrar en bucle).
+
+La separación se **mide** sobre el anfitrión con
+`soporteEnDireccion(host, d) + soporteEnDireccion(host, −d)`. Los dos apoyos se
+**suman** —juntos son el grosor entero—; restarlos da cero en cualquier pieza
+simétrica, que es exactamente el fallo que hizo nacer la gemela encima de la
+original.
+
 ---
 
 ## 6. El maniquí
