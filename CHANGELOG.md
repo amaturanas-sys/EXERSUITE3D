@@ -5,6 +5,34 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.24] — 2026-08-28
+
+### Añadido
+
+**El ancho de la placa dentada se edita en Propiedades.** Es LA medida que hacía
+falta poder tocar: una placa más ancha que la viga sobresale por los cantos y
+deja de parecer atornillada a ella —los ganchos tienen que ser lo único que
+asoma del perfil—. El campo pide directamente la superficie de contacto, así
+que se le pone el ancho de la viga y ya. Al cambiarlo, la pieza se corre media
+diferencia por su propio eje para que **la cara que apoya en el pilar se quede
+exactamente donde estaba** (medido: 0 cm de desvío).
+
+**Los tornillos siguen a la placa.** Eran seis fijos —una terna por extremo—
+dibujados sobre una espina que se daba por hecha: al estrechar la placa se
+salían del acero y al alargarla dejaban los dos metros de en medio al aire.
+Ahora se reparten en una columna por cada ~4,5 cm de espina y una fila por cada
+~28 cm de plancha, siempre con fila en los dos extremos. Medido: **3 tornillos
+en una placa de 4 cm, 9 en una de 14**.
+
+**Se elige el sentido de los dientes.** Dos mandos: por qué canto salen los
+ganchos —para montar la placa en una cara o en la de enfrente sin girar la
+pieza entera— y hacia dónde abre la cuna, arriba (la jota de siempre) o abajo
+(el herraje que muerde un tubo por debajo). Se aplica como espejo exacto sobre
+la pieza ya fundida y sobre sus cajas de colisión, así que la geometría y la
+física dicen siempre lo mismo (desvío 0 cm en los dos ejes).
+
+`prueba-placa-dentada` suma siete comprobaciones.
+
 ## [0.3.23] — 2026-08-28
 
 ### Cambiado

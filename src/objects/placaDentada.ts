@@ -403,6 +403,39 @@ export function medidasDentada(p: PrimitiveParams): MedidasDentada {
 const DIENTE_SOLAPE = 0.6;
 
 /**
+ * SENTIDO DE LOS DIENTES (v0.3.24), como par de espejos sobre la pieza entera.
+ *
+ * `lado` mueve la espina de un canto al otro —la placa se monta en la cara de
+ * enfrente sin tener que girarla y volver a colocarla— y `boca` voltea la cuna
+ * de arriba abajo: con la boca arriba es la jota de siempre, con la boca abajo
+ * es el herraje que muerde un tubo por debajo. Se aplica al final, sobre la
+ * geometría ya fundida y sobre las cajas de colisión, para que las dos cosas
+ * digan siempre lo mismo.
+ */
+export function espejoDentada(p: PrimitiveParams): [number, number] {
+  return [p.dienteLado === "izquierda" ? -1 : 1, p.dienteBoca === "abajo" ? -1 : 1];
+}
+
+/**
+ * Voltea las caras de una geometría sin índice: un espejo invierte el sentido
+ * de giro de los triángulos y, sin esto, la pieza se ve del revés (iluminada
+ * por dentro y transparente por fuera).
+ */
+function voltearCaras(g: THREE.BufferGeometry): void {
+  for (const nombre of Object.keys(g.attributes)) {
+    const a = g.getAttribute(nombre);
+    for (let i = 0; i < a.count; i += 3) {
+      for (let c = 0; c < a.itemSize; c++) {
+        const t = a.array[(i + 1) * a.itemSize + c];
+        a.array[(i + 1) * a.itemSize + c] = a.array[(i + 2) * a.itemSize + c];
+        a.array[(i + 2) * a.itemSize + c] = t;
+      }
+    }
+    a.needsUpdate = true;
+  }
+}
+
+/**
  * El contorno de UN diente, en coordenadas de la plancha, con su asiento en
  * `y`. Empieza dentro de la plancha (por eso el solape) para que al fundir las
  * dos partes no quede una costura.
@@ -435,18 +468,38 @@ function contornoDiente(m: MedidasDentada, y: number): THREE.Shape {
 
 /** Centros de los pernos de fijación, en la espina (coordenadas locales). */
 function pernosDentada(m: MedidasDentada): { x: number; y: number }[] {
-  // Terna por extremo, como en el `.obj`: dos al filo y uno hacia adentro.
-  const x0 = -m.ancho / 2;
-  const a = x0 + m.espina * 0.2;
-  const b = x0 + m.espina * 0.75;
-  const c = (a + b) / 2;
+  // LOS TORNILLOS SIGUEN A LA PLACA (v0.3.24). Antes eran seis fijos —una
+  // terna por extremo— dibujados sobre una espina que se daba por hecha. Al
+  // poder estrecharse la placa hasta el ancho de la viga, esa terna se salía
+  // del acero o se amontonaba; y al alargarla, los dos extremos quedaban
+  // atornillados y los dos metros de en medio al aire.
+  //
+  // Así que se reparten: una columna por cada ~4,5 cm de espina (una, dos o
+  // tres, que es lo que lleva un herraje de verdad) y una fila por cada ~28 cm
+  // de plancha, siempre con fila en los dos extremos.
+  const margenX = Math.max(1, Math.min(1.8, m.espina * 0.22));
+  const util = Math.max(0, m.espina - 2 * margenX);
+  const cols = Math.max(1, Math.min(3, Math.floor(m.espina / 4.5)));
+  const x0 = -m.ancho / 2 + margenX;
+  const xs =
+    cols === 1
+      ? [x0 + util / 2]
+      : Array.from({ length: cols }, (_, i) => x0 + (util * i) / (cols - 1));
+
+  const margenY = Math.min(m.paso * 0.3, m.largo * 0.12);
+  const utilY = Math.max(0, m.largo - 2 * margenY);
+  const filas = Math.max(2, Math.min(24, Math.round(utilY / 28) + 1));
+  const y0 = -m.largo / 2 + margenY;
+  const ys = Array.from({ length: filas }, (_, i) => y0 + (utilY * i) / (filas - 1));
+
   const out: { x: number; y: number }[] = [];
-  for (const s of [1, -1]) {
-    const yBorde = s * (m.largo / 2 - m.paso * 0.15);
-    const yDentro = s * (m.largo / 2 - m.paso * 0.39);
-    out.push({ x: a, y: yBorde }, { x: b, y: yBorde }, { x: c, y: yDentro });
-  }
+  for (const y of ys) for (const x of xs) out.push({ x, y });
   return out;
+}
+
+/** Cuántos tornillos lleva la placa con sus medidas actuales. */
+export function pernosQueLleva(p: PrimitiveParams): number {
+  return pernosDentada(medidasDentada(p)).length;
 }
 
 /**
@@ -496,6 +549,13 @@ export function buildDentadaGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   }
 
   const geo = mergeGeometries(partes, false) ?? partes[0];
+  // EL SENTIDO SE APLICA AL FINAL, sobre la pieza ya fundida: espejo en X para
+  // sacar los ganchos por el otro canto y en Y para volcar la boca de la cuna.
+  const [sx, sy] = espejoDentada(p);
+  if (sx < 0 || sy < 0) {
+    geo.scale(sx, sy, 1);
+    if (sx * sy < 0) voltearCaras(geo);
+  }
   geo.computeVertexNormals();
   geo.computeBoundingBox();
   geo.computeBoundingSphere();
@@ -524,6 +584,7 @@ export interface CajaDentada {
 
 export function cajasDentada(p: PrimitiveParams): CajaDentada[] {
   const m = medidasDentada(p);
+  const [sx, sy] = espejoDentada(p);
   const out: CajaDentada[] = [];
 
   // La espina, de punta a punta: respaldo de la placa y pared interior de
@@ -561,6 +622,9 @@ export function cajasDentada(p: PrimitiveParams): CajaDentada[] {
       centro: [(m.caraDedo + m.ancho / 2) / 2, y + (m.dedoAlto - fondo) / 2, 0],
       tam: [m.dedo, m.dedoAlto + fondo, m.grosor],
     });
+  }
+  if (sx < 0 || sy < 0) {
+    for (const c of out) c.centro = [c.centro[0] * sx, c.centro[1] * sy, c.centro[2]];
   }
   return out;
 }

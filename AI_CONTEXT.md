@@ -655,7 +655,9 @@ src/
     standardMachines.ts (658)   Las 9 máquinas de fábrica (specs VERBATIM de .prefab.json).
     maquinas/upperMachine.ts (1.052)   La más compleja: 41 piezas, 16 uniones, 2 cables.
     maquinas/legPress.ts (1.173)   Prensa de piernas: 34 piezas, 29 uniones (v0.3.20).
-    placaDentada.ts (≈530)      Plancha + diente en DOS partes; perfil del .stl (v0.3.23).
+    placaDentada.ts (≈600)      Plancha + diente en DOS partes; perfil del .stl (v0.3.23),
+                                ancho editable, pernos que se reparten y espejo
+                                de sentido (v0.3.24).
     humanFigure.ts (577) poseLibrary.ts (742) movimientos.ts (539) barraManiqui.ts (328)
     Rope.ts (249)               Cadenas y correas (NO son SceneObject).
   physics/

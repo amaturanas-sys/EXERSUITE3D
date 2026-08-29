@@ -110,6 +110,15 @@ export interface PrimitiveParams {
    */
   dienteAgarreCm?: number;
   /**
+   * SENTIDO DE LOS DIENTES (v0.3.24). `lado` dice por cuál canto de la plancha
+   * salen los ganchos —para montarla en una cara o en la de enfrente sin
+   * girar la pieza entera— y `boca` hacia dónde abre la cuna: arriba, que es
+   * la jota de toda la vida, o abajo, que es el herraje que agarra un tubo
+   * por debajo.
+   */
+  dienteLado?: "derecha" | "izquierda";
+  dienteBoca?: "arriba" | "abajo";
+  /**
    * VOLTEO / ESPEJADO (v0.2.32): ejes locales en los que la pieza está
    * espejada. Se hornea en la GEOMETRÍA en lugar de usar una escala
    * negativa, porque una escala negativa invierte también los ejes del

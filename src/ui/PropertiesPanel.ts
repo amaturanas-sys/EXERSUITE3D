@@ -7,6 +7,7 @@ import { degToRad, radToDeg, roundTo } from "../core/units";
 import { tt } from "../core/i18n";
 import {
   DENTADA_BARRA_CM,
+  pernosQueLleva,
   dientesQueCaben,
   medidasDentada,
   pasoMinimoDentada,
@@ -983,6 +984,89 @@ export class PropertiesPanel {
     });
     cuenta.append(el("label", {}, [tt("Ganchos", "Hooks")]), inputN);
 
+    /**
+     * ANCHO DE LA PLACA (v0.3.24), que es el de su superficie de contacto.
+     *
+     * Es LA medida que hay que poder tocar: una placa más ancha que la viga
+     * sobresale por los cantos y deja de parecer atornillada a ella —los
+     * ganchos tienen que ser lo único que asoma del perfil—. Al cambiarla, la
+     * pieza se corre media diferencia por su propio eje X para que la cara que
+     * apoya en el pilar se quede donde estaba, y los tornillos se reparten de
+     * nuevo sobre la espina nueva.
+     */
+    const anchoIn = el("input", {
+      type: "number",
+      value: String(roundTo(medidasDentada(obj.params).espina, 1)),
+      step: "0.5",
+      min: "1",
+    }) as HTMLInputElement;
+    const pintarPernos = (): void => {
+      clear(pernosNota);
+      pernosNota.append(
+        tt(
+          `${pernosQueLleva(obj.params)} tornillos`,
+          `${pernosQueLleva(obj.params)} bolts`,
+        ),
+      );
+    };
+    const pernosNota = el("span", { class: "empty-hint" }, []);
+    anchoIn.addEventListener("change", () => {
+      const v = parseFloat(anchoIn.value);
+      if (!Number.isFinite(v) || v < 1) return;
+      const antes = medidasDentada(obj.params);
+      // El ancho que pide el usuario ES la superficie de contacto: se declara
+      // como tal para que la regla del pilar siga valiendo.
+      obj.params.dienteCaraCm = v;
+      obj.params.width = v + antes.vuelo;
+      const ahora = medidasDentada(obj.params);
+      const desplazamiento = (ahora.ancho - antes.ancho) / 2;
+      if (Math.abs(desplazamiento) > 1e-6) {
+        const ejeGanchos = new THREE.Vector3(1, 0, 0).applyQuaternion(obj.mesh.quaternion);
+        obj.mesh.position.addScaledVector(ejeGanchos, desplazamiento);
+      }
+      obj.rebuildGeometry();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+      anchoIn.value = String(roundTo(ahora.espina, 1));
+      pintarPernos();
+      pintarNota();
+    });
+
+    /** SENTIDO DE LOS DIENTES: por qué canto salen y hacia dónde abren. */
+    const selector = (
+      valor: string,
+      opciones: [string, string][],
+      alCambiar: (v: string) => void,
+    ): HTMLSelectElement => {
+      const sel = el("select", { class: "select" }) as HTMLSelectElement;
+      for (const [v, etiqueta] of opciones) {
+        const o = el("option", { value: v }, [etiqueta]) as HTMLOptionElement;
+        if (v === valor) o.selected = true;
+        sel.append(o);
+      }
+      sel.addEventListener("change", () => {
+        alCambiar(sel.value);
+        obj.rebuildGeometry();
+        this.editor.bus.emit("objectTransformed", { object: obj });
+      });
+      return sel;
+    };
+    const ladoSel = selector(
+      obj.params.dienteLado ?? "derecha",
+      [
+        ["derecha", tt("Salen a la derecha", "Out to the right")],
+        ["izquierda", tt("Salen a la izquierda", "Out to the left")],
+      ],
+      (v) => (obj.params.dienteLado = v as "derecha" | "izquierda"),
+    );
+    const bocaSel = selector(
+      obj.params.dienteBoca ?? "arriba",
+      [
+        ["arriba", tt("Boca arriba (jota)", "Mouth up (J-hook)")],
+        ["abajo", tt("Boca abajo (agarra por debajo)", "Mouth down (grips from below)")],
+      ],
+      (v) => (obj.params.dienteBoca = v as "arriba" | "abajo"),
+    );
+
     // QUÉ TIENE QUE AGARRAR (v0.3.23). La misma placa hace dos trabajos: fila
     // de jotas para la barra, o herraje que fija un tubo de una estructura
     // estándar —igual que los pinholes fijan una jota—. Lo único que cambia es
@@ -1009,9 +1093,29 @@ export class PropertiesPanel {
     ]);
 
     pintarNota();
+    pintarPernos();
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Ganchos de la placa", "Plate hooks")]),
       el("div", { class: "row" }, [paso, cuenta]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [
+          el("label", {}, [tt("Ancho de la placa (cm)", "Plate width (cm)")]),
+          anchoIn,
+        ]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Tornillos", "Bolts")]), pernosNota]),
+      ]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          "Ponle el ancho de la viga: así los ganchos son lo único que asoma del perfil. "
+            + "Los tornillos se reparten solos sobre la placa nueva.",
+          "Set it to the beam's width: then the hooks are the only thing sticking out of "
+            + "the profile. The bolts lay themselves out again over the new plate.",
+        ),
+      ]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [el("label", {}, [tt("Dientes", "Teeth")]), ladoSel]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Boca", "Mouth")]), bocaSel]),
+      ]),
       el("div", { class: "row" }, [agarre]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
         tt(

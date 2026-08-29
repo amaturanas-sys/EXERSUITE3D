@@ -24,7 +24,12 @@ import { componentModels } from "./core/componentModels";
 import { figureSegments } from "./core/figureSegments";
 import { prefabsMaquina } from "./core/prefabsMaquina";
 import { parsearPrefab, prefabDeFabrica, serializarPrefab } from "./core/prefabIO";
-import { medidasDentada, pasoMinimoDentada } from "./objects/placaDentada";
+import {
+  cajasDentada,
+  medidasDentada,
+  pasoMinimoDentada,
+  pernosQueLleva,
+} from "./objects/placaDentada";
 import { hornearMaquina } from "./core/maquinasModelo";
 import {
   COMPONENT_LIBRARY,
@@ -305,7 +310,12 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // no se pueden deducir de los params sueltos. Calcularlas otra vez en el
     // guion de prueba seria copiar la formula: si la formula se equivoca, la
     // copia se equivoca igual y la prueba pasa.
-    dentada: { medidas: medidasDentada, pasoMinimo: pasoMinimoDentada },
+    dentada: {
+      medidas: medidasDentada,
+      pasoMinimo: pasoMinimoDentada,
+      pernos: pernosQueLleva,
+      cajas: cajasDentada,
+    },
     // BARRA EN MANOS (v0.2.81): la tabla de ejercicios y los desplazamientos
     // medidos, por lo mismo — que la prueba compare contra la fuente y no
     // contra una copia de los números.

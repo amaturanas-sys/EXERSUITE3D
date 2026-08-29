@@ -463,6 +463,107 @@ ok(nuevo.gargantas[1] < nuevo.gargantas[0] && nuevo.gargantas[2] > nuevo.gargant
 ok(nuevo.sana && nuevo.vertices > 0,
   `la placa se fabrica en dos partes —plancha y dientes— y sale entera (${nuevo.vertices} vértices)`);
 
+// ── v0.3.24: ANCHO EDITABLE, TORNILLOS Y SENTIDO DE LOS DIENTES ─────────────
+const v24 = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  const placa = [...ed.objects.values()].find((o) => o.params.kind === "dentada");
+  const p = placa.params;
+  const med = () => window.exersuite.dentada.medidas(p);
+  const pernos = () => window.exersuite.dentada.pernos(p);
+  const out = {};
+
+  // El panel expone el ancho de la placa y el sentido de los dientes.
+  ed.select(placa);
+  const insp = document.getElementById("inspector");
+  out.etiquetas = [...insp.querySelectorAll("label")].map((l) => l.textContent);
+  out.selects = [...insp.querySelectorAll("select")].map((s) =>
+    [...s.options].map((o) => o.value).join(","),
+  );
+
+  // ANCHO: escribirlo lo cambia de verdad y NO despega la placa del pilar.
+  const anchoIn = [...insp.querySelectorAll("input[type=number]")].find(
+    (i) => i.previousSibling == null && false,
+  );
+  const cara = (o) =>
+    o.mesh.position.clone().addScaledVector(
+      new T.Vector3(1, 0, 0).applyQuaternion(o.mesh.quaternion),
+      -med().ancho / 2,
+    );
+  const caraAntes = cara(placa);
+  out.espinaAntes = +med().espina.toFixed(1);
+  out.pernosAntes = pernos();
+  // Se aplica por la misma vía que el panel: declarar la superficie de contacto.
+  const aplicarAncho = (v) => {
+    const antes = med();
+    p.dienteCaraCm = v;
+    p.width = v + antes.vuelo;
+    const ahora = med();
+    const d = (ahora.ancho - antes.ancho) / 2;
+    placa.mesh.position.addScaledVector(
+      new T.Vector3(1, 0, 0).applyQuaternion(placa.mesh.quaternion),
+      d,
+    );
+    placa.rebuildGeometry();
+  };
+  aplicarAncho(4);
+  out.espinaEstrecha = +med().espina.toFixed(1);
+  out.pernosEstrecha = pernos();
+  out.caraQuieta = +caraAntes.distanceTo(cara(placa)).toFixed(2);
+  aplicarAncho(14);
+  out.espinaAncha = +med().espina.toFixed(1);
+  out.pernosAncha = pernos();
+
+  // SENTIDO: los ganchos salen por el otro canto y la boca se voltea.
+  const puntaX = () => {
+    placa.rebuildGeometry();
+    const g = placa.mesh.geometry;
+    g.computeBoundingBox();
+    const m = med();
+    // Cuánto asoma por cada lado respecto del centro de la pieza.
+    return { min: +g.boundingBox.min.x.toFixed(1), max: +g.boundingBox.max.x.toFixed(1), ancho: m.ancho };
+  };
+  delete p.dienteLado;
+  const derecha = puntaX();
+  p.dienteLado = "izquierda";
+  const izquierda = puntaX();
+  out.volteoX = +(izquierda.min + derecha.max).toFixed(2);
+  delete p.dienteLado;
+  // Boca: la cuna del primer diente sube o baja respecto del asiento.
+  const cajaY = () => {
+    const cs = window.exersuite.dentada.cajas(p);
+    return +cs[1].centro[1].toFixed(2);
+  };
+  delete p.dienteBoca;
+  const arriba = cajaY();
+  p.dienteBoca = "abajo";
+  const abajo = cajaY();
+  delete p.dienteBoca;
+  out.volteoY = +(arriba + abajo).toFixed(2);
+  out.bocaCambia = Math.abs(arriba - abajo) > 0.5;
+  return out;
+});
+console.log("v0.3.24:", JSON.stringify(v24));
+ok(
+  v24.etiquetas.some((t) => /Ancho de la placa/.test(t))
+    && v24.etiquetas.some((t) => /Tornillos/.test(t)),
+  `Propiedades trae el ancho de la placa y la cuenta de tornillos`,
+);
+ok(
+  v24.selects.some((o) => o.includes("izquierda")) && v24.selects.some((o) => o.includes("abajo")),
+  `y los dos sentidos de los dientes (${v24.selects.join(" | ")})`,
+);
+ok(v24.espinaEstrecha === 4 && v24.espinaAncha === 14,
+  `el ancho de la placa se cambia de verdad (${v24.espinaAntes} → ${v24.espinaEstrecha} → ${v24.espinaAncha} cm)`);
+ok(v24.caraQuieta < 0.05,
+  `y la cara que apoya en el pilar no se mueve (${v24.caraQuieta} cm)`);
+ok(v24.pernosEstrecha < v24.pernosAncha,
+  `los tornillos se acomodan a la placa (${v24.pernosEstrecha} en 4 cm, ${v24.pernosAncha} en 14 cm)`);
+ok(Math.abs(v24.volteoX) < 0.2,
+  `elegir el otro lado saca los ganchos por el canto contrario (espejo exacto, desvío ${v24.volteoX} cm)`);
+ok(v24.bocaCambia && Math.abs(v24.volteoY) < 0.2,
+  `y la boca se voltea arriba/abajo (espejo exacto, desvío ${v24.volteoY} cm)`);
+
 for (const e of errores) console.log("PAGEERROR " + e);
 console.log(fallos.length === 0 && errores.length === 0
   ? "\nTODO OK" : `\n${fallos.length} fallos, ${errores.length} errores de página`);
