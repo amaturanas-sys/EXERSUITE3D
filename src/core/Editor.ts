@@ -240,7 +240,13 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
-import type { CanalTubo, ComponentCategory, PrimitiveParams, VentanaRect } from "../objects/types";
+import type {
+  CanalTubo,
+  ComponentCategory,
+  EspejoDentada,
+  PrimitiveParams,
+  VentanaRect,
+} from "../objects/types";
 import { componentModels } from "./componentModels";
 import { figureSegments } from "./figureSegments";
 import { loadModelRoot, mergeRootGeometry } from "./modelLoading";
@@ -11201,50 +11207,36 @@ export class Editor {
    * —medida sobre el propio poste, no adivinada— y a partir de ahí las dos
    * andan juntas: medidas, sentido, POSICIÓN y GIRO.
    *
-   * La gemela se define SIEMPRE en función de la otra: mismo giro más media
-   * vuelta sobre el eje de la viga, y la separación entre las dos caras. La
-   * fórmula es simétrica —aplicarla dos veces devuelve el original—, así que
-   * da igual cuál de las dos se mueva.
+   * LA REFERENCIA ES EL PLANO MEDIO DE LA VIGA, el paralelo a la cara sobre la
+   * que apoya la placa. La gemela es el REFLEJO de su pareja en ese plano, no
+   * una copia corrida: por eso mover o girar una reproduce el gesto del lado
+   * contrario, y por eso da igual dónde estuviera la placa cuando se encendió
+   * el interruptor —el espejo la coloca donde le corresponda—. Reflejar es su
+   * propio inverso, así que la misma regla sirve para las dos.
    */
   hacerDentadaDoble(obj: SceneObject): SceneObject | null {
     if (obj.params.kind !== "dentada" || obj.params.dentadaGemela) return null;
     obj.mesh.updateMatrixWorld(true);
-    // Del lado de los ganchos hacia el poste.
-    const haciaElPoste = new THREE.Vector3(-1, 0, 0)
-      .applyQuaternion(obj.mesh.quaternion)
-      .normalize();
-    const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
-    // EL ANFITRIÓN, MEDIDO: se busca la pieza que hay detrás de la espina y se
-    // le pregunta cuánto ocupa en esa dirección. Así la gemela cae sobre la
-    // cara de enfrente de VERDAD, sea un poste de 5 cm o una viga de 12.
-    let host: SceneObject | null = null;
-    let mejor = Infinity;
-    for (const o of this.objects.values()) {
-      if (o === obj || o.params.kind === "dentada") continue;
-      const caja = o.worldBoxBody(new THREE.Box3());
-      const p = caja.clampPoint(centro, new THREE.Vector3());
-      const d = p.distanceTo(centro);
-      if (d < mejor && d < 40) {
-        mejor = d;
-        host = o;
-      }
+    const espejo = this.planoDeLaCaraDentada(obj);
+    if (!espejo) {
+      // SIN VIGA NO HAY PLANO, y sin plano no hay dónde reflejar. Se dice, que
+      // el interruptor apagándose solo no explica nada.
+      this.avisoTemporal(
+        tt(
+          "La placa doble necesita la viga sobre la que apoya: acércala a un poste y vuelve a intentarlo.",
+          "The double plate needs the beam it rests on: move it against a post and try again.",
+        ),
+      );
+      return null;
     }
-    const grosorPlaca = medidasDentada(obj.params).grosor;
-    const sep = host
-      // Los dos apoyos SE SUMAN: juntos son el grosor entero del poste. Restarlos
-      // daba cero en cualquier pieza simétrica y la gemela nacía encima.
-      ? this.soporteEnDireccion(host, haciaElPoste)
-        + this.soporteEnDireccion(host, haciaElPoste.clone().negate())
-        + grosorPlaca
-      : (obj.params.dienteCaraCm ?? 8) + grosorPlaca;
     const gemela = this.duplicateObject(obj, new THREE.Vector3());
     if (!gemela) return null;
     gemela.name = obj.name.replace(/\s*\(gemela\)$/, "") + " (gemela)";
     gemela.mesh.name = gemela.name;
     obj.params.dentadaGemela = gemela.id;
-    obj.params.dentadaSepCm = sep;
+    obj.params.dentadaEspejo = espejo;
     gemela.params.dentadaGemela = obj.id;
-    gemela.params.dentadaSepCm = sep;
+    gemela.params.dentadaEspejo = espejo;
     this.colocarGemelaDentada(obj, gemela);
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
     this.scheduleAutosave();
@@ -11262,15 +11254,102 @@ export class Editor {
     this.scheduleAutosave();
   }
 
-  /** Pone la gemela donde le toca: media vuelta y a la cara de enfrente. */
+  /**
+   * EL PLANO MEDIO DE LA VIGA SOBRE LA QUE APOYA LA PLACA.
+   *
+   * La cara de apoyo es perpendicular al **Z local** de la placa: la plancha se
+   * extruye en Z, el ancho de contacto va en X y la espina en Y. El plano
+   * espejo es el paralelo a esa cara que pasa por el centro de la viga, y se
+   * devuelve en coordenadas LOCALES de la viga para que la siga si la viga se
+   * mueve.
+   */
+  private planoDeLaCaraDentada(obj: SceneObject): EspejoDentada | null {
+    obj.mesh.updateMatrixWorld(true);
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(obj.mesh.quaternion).normalize();
+    const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
+    // LA VIGA, BUSCADA: la pieza más cercana que hay detrás de la plancha.
+    let host: SceneObject | null = null;
+    let mejor = Infinity;
+    for (const o of this.objects.values()) {
+      if (o === obj || o.params.kind === "dentada") continue;
+      const caja = o.worldBoxBody(new THREE.Box3());
+      const d = caja.clampPoint(centro, new THREE.Vector3()).distanceTo(centro);
+      if (d < mejor && d < 40) {
+        mejor = d;
+        host = o;
+      }
+    }
+    if (!host) return null;
+    host.mesh.updateMatrixWorld(true);
+    // EL PLANO ES EL DE LA VIGA, NO EL DE LA PLACA. Se toma el eje de la viga
+    // más parecido a la normal de la placa: así el espejo cae en el medio
+    // EXACTO de la viga y paralelo a su cara aunque la placa no esté puesta
+    // perfectamente a ras.
+    const caja = this.cajaOrientada(host);
+    let normalViga = normal.clone();
+    let parecido = 0;
+    for (const u of caja.u) {
+      const d = u.dot(normal);
+      if (Math.abs(d) > parecido) {
+        parecido = Math.abs(d);
+        normalViga = d < 0 ? u.clone().negate() : u.clone();
+      }
+    }
+    const aLocal = host.mesh.matrixWorld.clone().invert();
+    const puntoLocal = caja.c.clone().applyMatrix4(aLocal);
+    const normalLocal = normalViga.transformDirection(aLocal).normalize();
+    return {
+      host: host.id,
+      n: [normalLocal.x, normalLocal.y, normalLocal.z],
+      c: [puntoLocal.x, puntoLocal.y, puntoLocal.z],
+    };
+  }
+
+  /** El plano espejo de una pareja, en coordenadas del mundo. */
+  private espejoEnElMundo(
+    espejo: EspejoDentada | null | undefined,
+  ): { n: THREE.Vector3; c: THREE.Vector3 } | null {
+    const host = espejo ? this.objects.get(espejo.host) : null;
+    if (!espejo || !host) return null;
+    host.mesh.updateMatrixWorld(true);
+    return {
+      n: new THREE.Vector3(...espejo.n).transformDirection(host.mesh.matrixWorld).normalize(),
+      c: new THREE.Vector3(...espejo.c).applyMatrix4(host.mesh.matrixWorld),
+    };
+  }
+
+  /**
+   * Pone la gemela donde le toca: REFLEJADA en el plano medio de la viga.
+   *
+   * El sitio es el reflejo del sitio de su pareja, y el giro es el giro
+   * reflejado. Un reflejo no es un giro —cambia la mano—, pero la plancha se
+   * extruye CENTRADA en su grosor, o sea que es simétrica respecto de su plano
+   * Z=0: la pieza reflejada es la misma pieza con el eje Z local del revés, y
+   * eso ya es un giro legítimo. De ahí las columnas (X', Y', −Z').
+   *
+   * Con la placa plana sobre la cara esto se reduce a cruzarla al otro costado
+   * sin tocarle el giro; en cuanto se la mueve o se la inclina, cada gesto sale
+   * copiado del lado contrario, que es de lo que se trata.
+   */
   private colocarGemelaDentada(fuente: SceneObject, gemela: SceneObject): void {
-    const sep = fuente.params.dentadaSepCm ?? 0;
-    const q = fuente.mesh.quaternion.clone();
-    const haciaElPoste = new THREE.Vector3(-1, 0, 0).applyQuaternion(q).normalize();
-    gemela.mesh.quaternion
-      .copy(q)
-      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
-    gemela.mesh.position.copy(fuente.mesh.position).addScaledVector(haciaElPoste, sep);
+    const plano =
+      this.espejoEnElMundo(fuente.params.dentadaEspejo) ??
+      this.espejoEnElMundo(gemela.params.dentadaEspejo);
+    if (!plano) return;
+    const { n, c } = plano;
+    const reflejarPunto = (p: THREE.Vector3): THREE.Vector3 =>
+      p.clone().addScaledVector(n, -2 * p.clone().sub(c).dot(n));
+    const reflejarDir = (v: THREE.Vector3): THREE.Vector3 =>
+      v.clone().addScaledVector(n, -2 * v.dot(n));
+
+    const ejes = new THREE.Matrix4().makeRotationFromQuaternion(fuente.mesh.quaternion);
+    const X = reflejarDir(new THREE.Vector3().setFromMatrixColumn(ejes, 0));
+    const Y = reflejarDir(new THREE.Vector3().setFromMatrixColumn(ejes, 1));
+    const Z = reflejarDir(new THREE.Vector3().setFromMatrixColumn(ejes, 2)).negate();
+    gemela.mesh.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().makeBasis(X.normalize(), Y.normalize(), Z.normalize()),
+    );
+    gemela.mesh.position.copy(reflejarPunto(fuente.mesh.position));
     gemela.mesh.scale.copy(fuente.mesh.scale);
     gemela.mesh.updateMatrixWorld(true);
   }
@@ -11287,6 +11366,9 @@ export class Editor {
     this.sincronizandoDentada = true;
     try {
       const suyo = gemela.params.dentadaGemela;
+      // EL PLANO ESPEJO SÍ SE COPIA TAL CUAL: es el mismo para las dos, porque
+      // reflejar es su propio inverso. Lo único que no se comparte es a quién
+      // señala cada una como pareja.
       gemela.params = { ...obj.params, dentadaGemela: suyo };
       gemela.rebuildGeometry();
       this.colocarGemelaDentada(obj, gemela);

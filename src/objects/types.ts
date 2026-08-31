@@ -124,7 +124,15 @@ export interface PrimitiveParams {
    * y giro— y borrar una borra la otra.
    */
   dentadaGemela?: string | null;
-  /** Separación entre las dos caras de montaje de una placa doble (cm). */
+  /**
+   * EL PLANO MEDIO DE LA VIGA, que es el espejo de la pareja (v0.3.26). Se
+   * guarda en coordenadas LOCALES del anfitrión —normal y punto— para que
+   * siga a la viga si la viga se mueve. Las dos placas guardan el MISMO
+   * plano: reflejar es su propio inverso, así que la misma regla aplicada
+   * desde cualquiera de las dos devuelve la otra.
+   */
+  dentadaEspejo?: EspejoDentada | null;
+  /** @deprecated v0.3.25; lo sustituyó `dentadaEspejo`. */
   dentadaSepCm?: number;
   /**
    * RAMAS (v0.3.25): prolongaciones nodales que salen de un nodo del trazado
@@ -183,6 +191,17 @@ export interface PrimitiveParams {
  * perpendicular. El par de coordenadas del plano es (Y,Z) para el eje X,
  * (Z,X) para el eje Y y (X,Y) para el eje Z.
  */
+/**
+ * Plano de simetría de una placa dentada doble (v0.3.26): el plano medio de la
+ * viga, paralelo a la cara sobre la que apoya la placa. `n` (normal) y `c` (un
+ * punto) van en coordenadas LOCALES de la pieza anfitriona.
+ */
+export interface EspejoDentada {
+  host: string;
+  n: [number, number, number];
+  c: [number, number, number];
+}
+
 /** Prolongación nodal que sale de un nodo del trazado principal (v0.3.25). */
 export interface RamaNodal {
   /** Índice del nodo del `path` principal del que arranca. */

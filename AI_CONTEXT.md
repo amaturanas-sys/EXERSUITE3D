@@ -504,19 +504,55 @@ si el modo se cierra ahí, el menú contextual nunca llega a abrirse.
 
 ### 5.7 Placa dentada doble (v0.3.25)
 
-`params.dentadaGemela` guarda el id de la otra placa y `dentadaSepCm` la
-distancia entre caras. La gemela **nunca se guarda como pose independiente**:
-`colocarGemelaDentada()` la deriva de la fuente —mismo cuaternión × Ry(π), más
-la separación por el −X local—, y la fórmula es **simétrica**, aplicarla dos
-veces devuelve el original. Por eso da igual cuál de las dos mueva el usuario:
-el escuchador de `objectTransformed` recoloca la otra con la misma llamada (con
-un pestillo `sincronizandoDentada` para no entrar en bucle).
+**Los ejes locales de la placa** (de `buildDentadaGeometry`, y hay que tenerlos
+delante antes de tocar nada): **X** = ancho de contacto, y por ahí asoman los
+ganchos; **Y** = espina (el largo); **Z** = grosor, que es el eje de extrusión.
+Luego **la cara que apoya en el poste es perpendicular a Z**. Cruzar el poste
+por cualquier otro eje es cruzarlo *por dentro de su propia cara*.
 
-La separación se **mide** sobre el anfitrión con
+**LA REFERENCIA ES LA VIGA, NO LA PLACA.** `params.dentadaEspejo` guarda el
+**plano de simetría de la viga** —normal y punto, en coordenadas LOCALES del
+anfitrión, para que lo siga si la viga se mueve— y la gemela es su pareja
+**reflejada** en él: `colocarGemelaDentada()` no traslada, dobla. Ese es el
+modelo que pidió el diseñador, y es el que hace que cada gesto salga copiado del
+lado contrario sin casos especiales: correrla por la cara, separarla de ella,
+inclinarla, o encender el interruptor **después** de haberla colocado a mano.
+
+El plano pasa por `cajaOrientada(host).c` —el centro VERDADERO de la viga, no el
+del mundo— y su normal se **ajusta al eje propio de la viga** más parecido a la
+normal de la placa, para que caiga en su medio exacto aunque la placa no esté a
+ras. Reflejar es su propio inverso, así que **las dos placas guardan el mismo
+plano** y no hace falta signo ni distinguir cuál es la original;
+`sincronizarDentadaGemela` copia los params tal cual salvo a quién señala cada
+una como pareja (con un pestillo `sincronizandoDentada` para no entrar en
+bucle).
+
+**Un reflejo no es un giro, pero aquí se puede escribir como uno.** Las columnas
+de la matriz salen `(M·X, M·Y, −M·Z)`: reflejar cambia la mano, y negar la
+tercera columna la devuelve. Es legítimo **solo** porque la plancha se extruye
+CENTRADA en su grosor y por tanto es simétrica respecto de su plano Z=0. La
+consecuencia que rompe pruebas ingenuas: el punto local (0,0,10) de una placa
+**no** es el (0,0,10) de la otra, aunque el acero de las dos coincida punto por
+punto. Un espejo se comprueba sobre los **vértices de la malla**, no sobre
+coordenadas homólogas.
+
+Con la placa a ras el reflejo se reduce a cruzarla al otro costado sin tocarle
+el giro. El `Ry(π)` que hubo en v0.3.25 es lo que sacaba la gemela con los
+ganchos al otro canto y boca abajo.
+
+Cuando hace falta medir el grosor del anfitrión se usa
 `soporteEnDireccion(host, d) + soporteEnDireccion(host, −d)`. Los dos apoyos se
 **suman** —juntos son el grosor entero—; restarlos da cero en cualquier pieza
-simétrica, que es exactamente el fallo que hizo nacer la gemela encima de la
-original.
+simétrica.
+
+**Cómo se escondieron los dos fallos anteriores:** la prueba montaba la placa
+desplazada en **X** respecto del poste —por el canto, no por la cara—, o sea que
+llevaba dentro el mismo malentendido que el código y le daba verde. Una prueba
+que construye su escena con la misma idea equivocada que la implementación no
+prueba nada. El caso que lo destapa a gritos es la **viga inclinada**: con el
+eje equivocado se mide la viga a lo largo y el error salta en decenas de
+centímetros, no en decimales. Cuando una pieza se coloca contra otra, la prueba
+debe **colocarla como la coloca la herramienta**, y con el anfitrión torcido.
 
 ---
 

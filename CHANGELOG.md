@@ -5,6 +5,61 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.26] — 2026-08-31
+
+### Cambiado
+
+**La placa homóloga es ahora un REFLEJO en el plano medio de la viga.** La
+referencia ya no es la placa, es la viga: se toma su **plano de simetría** —el
+paralelo a la cara sobre la que apoya la plancha, por el centro verdadero de la
+viga, no por el del mundo— y la gemela es la pareja **doblada** por ese plano,
+como se dobla una hoja por su eje. De ahí sale todo lo demás sin casos
+especiales: correr la placa por la cara corre a la gemela por la suya, separarla
+de la viga separa a la gemela otro tanto del lado contrario, e inclinarla la
+inclina en espejo. Y **da igual cuándo se encienda el interruptor**: colocada la
+placa a mano y activada después, la gemela nace ya en su sitio, porque el sitio
+lo dicta el plano y no dónde estuviera la placa al activarla.
+
+Medido sobre una viga a 34° de inclinación, con la placa corrida 30 cm por la
+viga y 2,5 cm por su cara **antes** de encender el interruptor: el plano cae a
+**0,00 cm** del centro de la viga y la gemela queda a **0,00 cm** de ser su
+reflejo exacto —comparando vértice a vértice el acero de las dos, no sus
+coordenadas—. Con la placa además separada de la cara e inclinada con el gizmo,
+el reflejo sigue siendo exacto y las dos quedan equidistantes del plano
+(**0,00 cm** de diferencia).
+
+El plano se guarda en coordenadas **de la viga**, así que la sigue si la viga se
+mueve, y se alinea con el eje propio de la viga para caer en su medio exacto
+aunque la placa no esté puesta perfectamente a ras. Como reflejar es su propio
+inverso, las dos placas guardan el **mismo** plano y la regla aplicada desde
+cualquiera devuelve la otra.
+
+### Corregido
+
+**La gemela caía lejos de la viga y del revés.** Los dos síntomas salían del
+mismo error: se cruzaba el poste por el **eje equivocado**. La plancha se
+extruye en su **Z local** —el ancho de contacto va en X y la espina en Y—, así
+que la cara que apoya en el poste es perpendicular a Z; el código saltaba por el
+**−X local**, que es una dirección que va *por dentro* de esa misma cara. De ahí
+que además midiera la viga **a lo largo** en vez de a lo ancho: sobre la viga
+inclinada de un rack eso son decenas de centímetros, y la gemela aparecía suelta
+en mitad del aire. Ahora se separa **8,8 cm** —los 8 del poste más los 0,8 de
+plancha— y queda a **0,4 cm** de la viga.
+
+**Y ya no sale volteada.** Se le daba media vuelta sobre su eje, que es lo que
+ponía los ganchos mirando al otro canto y boca abajo. El reflejo no la voltea:
+puesta a ras, la gemela conserva el giro de su pareja (coseno 1,000 en los tres
+ejes) y los dientes de los dos costados reciben la barra por el mismo lado, como
+en un rack de verdad.
+
+La prueba anterior daba verde porque **traía dentro el mismo malentendido**:
+montaba la placa desplazada en X, o sea por el canto y no por la cara. Ahora
+monta como monta la herramienta, comprueba el caso que falló —viga en diagonal—,
+que el poste queda **entre** las dos placas, y mide el espejo sobre los vértices
+de la malla en vez de sobre coordenadas homólogas: el reflejo invierte el eje
+del grosor, así que el punto (0,0,10) de una placa **no** es el (0,0,10) de la
+otra aunque el acero coincida punto por punto.
+
 ## [0.3.25] — 2026-08-29
 
 ### Añadido
