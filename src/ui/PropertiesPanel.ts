@@ -488,12 +488,12 @@ export class PropertiesPanel {
     const repintarArco = (): void => this.editor.mostrarRecorridoDeBisagra(obj.id);
     const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
       const inp = el("input", {
-        type: "number", min: "0", max: "180", step: "5", value: String(v),
+        type: "number", min: "0", max: "360", step: "5", value: String(v),
       }) as HTMLInputElement;
       inp.addEventListener("input", () => {
         const n = parseFloat(inp.value);
         if (!Number.isFinite(n)) return;
-        set(Math.min(180, Math.max(0, n)));
+        set(Math.min(360, Math.max(0, n)));
         this.editor.jointUpdated();
         repintarArco();
       });

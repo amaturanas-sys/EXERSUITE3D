@@ -85,6 +85,7 @@ const libro = await p.evaluate(`(() => {
     huecoAntes,
     huecoDespues: r2(B.mesh.position.x - 20 - (A.mesh.position.x + 20)),
     seMovioA: r2(A.mesh.position.x + 26),
+    seMovioB: r2(26 - B.mesh.position.x),
     nPlacas: pl.length,
     hayPasador: !!pas,
     ejeDesvioZ: ejeReal ? grados(ejeReal, new T.Vector3(0, 0, 1)) : null,
@@ -115,18 +116,22 @@ ok(libro.caraA !== null && libro.caraA < 0.5 && libro.caraB < 0.5,
 ok(Math.abs(libro.pasY - 52.6) < 0.3,
   `el pasador se apoya justo encima de la cara, no dentro de la madera `
   + `(y = ${libro.pasY}; la cara está en 52 y la placa mide 0,8 de espesor)`);
-ok(libro.seMovioA === 0,
-  `la primera pieza NO se mueve: es la referencia (${libro.seMovioA} cm)`);
+// JERARQUÍA (v0.3.27): las dos tablas están sueltas, o sea que las dos pueden
+// moverse y NINGUNA manda. Se encuentran a medio camino, que es como se comporta
+// una articulación de verdad. (Cosida una de ellas por sus dos extremos, sería
+// la referencia y no se movería: eso lo mide `prueba-bisagra-montaje`.)
+ok(Math.abs(libro.seMovioA - libro.seMovioB) < 0.2 && libro.seMovioA > 1,
+  `sin jerarquía las dos tablas se arriman lo mismo (${libro.seMovioA} y ${libro.seMovioB} cm)`);
 ok(libro.huecoDespues < libro.huecoAntes && Math.abs(libro.huecoDespues - 2.2) < 0.3,
   `y la segunda se arrima hasta el pasador (hueco ${libro.huecoAntes} → ${libro.huecoDespues} cm, `
   + `la holgura del pasador)`);
-// El lomo del libro no es el medio de los dos clics: es el CANTO de la primera
-// tabla (x = −6) más la holgura del pasador. Poner ahí la charnela es lo que
-// impide que arrimar la segunda pieza la meta dentro de la primera cuando el
-// clic cae lejos del canto.
-ok(Math.abs(libro.pasX - (-4.93)) < 0.15,
-  `y el pasador se planta en el CANTO de la primera tabla, no en el medio de los `
-  + `clics (x = ${libro.pasX}; canto en −6 más 1,07 de holgura)`);
+// El lomo del libro sale de los DOS CLICS (v0.3.27): sin jerarquía, del medio
+// de ambos. Que las tablas no se metan una dentro de otra ya no lo garantiza
+// plantar la charnela en un canto, sino la corrección por material —si al
+// juntar los clics se pisan, se separan lo justo y el pasador se queda en
+// medio—, que es lo que mide el hueco de arriba.
+ok(Math.abs(libro.pasX) < 0.2,
+  `y el pasador cae en el medio de los dos clics (x = ${libro.pasX})`);
 ok(Math.abs(libro.holguraA - libro.holguraB) < 0.05
   && Math.abs(libro.holguraA - 1.07) < 0.1,
   `con la misma holgura a los dos lados (${libro.holguraA} y ${libro.holguraB} cm)`);

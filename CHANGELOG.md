@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.27] — 2026-09-01
+
+### Cambiado
+
+**El recorrido de la bisagra llega a la vuelta entera.** La escala de la placa
+tiene ahora sus tres hitos: **0° enfrentadas**, **180° extendidas**, **360° la
+revolución completa**. Antes era un ángulo SIN SIGNO que se doblaba en los
+extremos —pasado 180 volvía sobre sus pasos—, así que no había manera de pedir
+un recorrido que cruzara la extensión, y menos una vuelta. Ahora es un ángulo
+dirigido alrededor del pasador, medido siempre sobre el mismo eje que usa la
+física, de modo que el grado de la placa y el giro del pasador crecen a la par.
+
+El margen libre del motor **se queda en ±180°**, que ya es la vuelta entera
+—media a cada lado—. Abrirlo a ±360° para «dejar sitio» salió caro: el tope de
+un revolute se mide sobre un ángulo que vive en (−180°, 180°], y con el margen
+fuera de esa horquilla la bisagra frenada dejó de ceder a la mano —de 28,9° de
+recorrido a 1,4—. Queda anotado en `AI_CONTEXT`.
+
+**Jerarquía entre las dos placas.** Una placa montada sobre un segmento con el
+extremo al aire está en la parte que se mueve; una sobre un tramo cosido por
+los dos lados, en la que manda. Al articular se arrima **la que puede moverse**,
+y el pasador nace en el clic de la que manda. Y si las dos pueden —dos
+estructuras móviles—, **no hay jerarquía**: se encuentran a medio camino y la
+bisagra queda como una articulación de verdad, que es lo que pide una máquina
+plegable. Medido: con un travesaño cosido entre dos postes contra un brazo
+suelto, el travesaño se mueve **0 cm** y el brazo **31,9**; entre dos brazos
+sueltos, **5,9 y 5,9**.
+
+### Corregido
+
+**Las placas nacen donde se toca.** El punto que se marca sobre la cara ya no es
+una pista, es EL SITIO: cada placa arranca en el clic de su pieza y el pasador
+cae donde los dos clics se encuentran. Antes la charnela se plantaba en el
+**canto** de la primera pieza —medido con su caja— y no en el punto marcado, así
+que la bisagra aparecía lejos de donde se había señalado. Medido: tocando a 12
+cm del canto, el pasador cae a **69,1 cm** (el clic estaba en 68; el canto, en
+80) y cada placa queda a **0,0 cm** de su punto.
+
+**Articular funciona a cualquier distancia.** El arrimado salía de las CAJAS de
+las piezas y del canto de la primera; con las piezas separadas eso daba pasos
+que no cerraban el hueco y herrajes estirados sobre él. Ahora sale de los
+propios clics: cada pieza se mueve lo justo para que SU punto quede a la holgura
+del pasador, sin importar lo lejos que empiece ni cuánto mida. Medido: con 140
+cm de hueco, la pieza libre recorre **138,9 cm** y las dos quedan a **2,1 cm**,
+la holgura del pasador; el herraje conserva sus **8 cm** pedidos.
+
 ## [0.3.26] — 2026-08-31
 
 ### Cambiado

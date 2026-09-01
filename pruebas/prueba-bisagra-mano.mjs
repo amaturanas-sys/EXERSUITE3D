@@ -118,7 +118,10 @@ const libre = await ensayo("libre");
 console.log("LIBRE:", JSON.stringify(libre));
 ok(!libre.error, "la bisagra se monta y queda articulada", libre.error);
 ok(libre.apertura0 === 180, "dos placas en línea abren 180° en el diseño", libre.apertura0);
-ok(libre.min === 0 && libre.max === 180, "el recorrido de fábrica va de 0 a 180", `${libre.min}..${libre.max}`);
+// v0.3.27: la escala de la placa es DIRIGIDA y llega a la vuelta entera —0
+// enfrentadas, 180 extendidas, 360 la revolución—, así que el recorrido de
+// fábrica es 0..360 y no 0..180.
+ok(libre.min === 0 && libre.max === 360, "el recorrido de fábrica es la vuelta entera de la placa", `${libre.min}..${libre.max}`);
 ok(libre.min >= 0 && libre.max >= 0, "no hay grados negativos en la escala de la placa");
 ok(!libre.soldada, "la bisagra NO es una soldadura");
 ok(

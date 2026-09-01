@@ -1641,6 +1641,11 @@ export class PhysicsWorld {
       const qRel0 = new THREE.Quaternion(qa.x, qa.y, qa.z, qa.w)
         .invert()
         .multiply(new THREE.Quaternion(qb.x, qb.y, qb.z, qb.w));
+      // EL MARGEN LIBRE SE QUEDA EN ±π, QUE YA ES LA VUELTA ENTERA (media a
+      // cada lado). Subirlo a ±2π para «dejar sitio» a los recorridos de 360°
+      // salió caro: el tope de un revolute de Rapier se mide sobre un ángulo
+      // que vive en (−π, π], y con el margen fuera de esa horquilla la bisagra
+      // frenada dejó de ceder a la mano —28,9° de recorrido pasaron a 1,4—.
       const rango: [number, number] = joint.limitsEnabled
         ? rangoRevolute()
         : [-Math.PI, Math.PI];

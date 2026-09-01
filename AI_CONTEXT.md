@@ -337,13 +337,44 @@ la restricción de inextensibilidad **hecha geometría**.
 Tres invariantes que hay que respetar al tocar `Joint` o `applyDrag`:
 
 **El recorrido se mide entre las DOS PLACAS, no en giro relativo.** `apertura0`
-guarda el ángulo que forman en la pose de diseño (180 = extendida, 0 = plegada)
-y `sentidoApertura` hacia qué lado crece. La conversión al giro que entiende el
-motor es `sentido · (u − apertura0)`. **Si se asigna `apertura0` hay que
-reasignar también `min`/`max` en esa escala**: dejarlos en la escala vieja
-(−90..0) manda al solver un rango que ni siquiera contiene el cero y la pieza
-salta a una pose absurda al arrancar. Ese fue el bug que costó la primera
-medición.
+guarda el ángulo que forman en la pose de diseño y `sentidoApertura` hacia qué
+lado crece; la conversión al giro que entiende el motor es
+`sentido · (u − apertura0)`. **Si se asigna `apertura0` hay que reasignar
+también `min`/`max` en esa escala**: dejarlos en la escala vieja (−90..0) manda
+al solver un rango que ni siquiera contiene el cero y la pieza salta a una pose
+absurda al arrancar. Ese fue el bug que costó la primera medición.
+
+Desde v0.3.27 la escala es **dirigida y de vuelta entera**: `apertura0 ∈ [0,360)`
+—0 enfrentadas, 180 extendidas, 360 la revolución— y `sentidoApertura` vale
+siempre 1. Antes era el ángulo SIN SIGNO entre las palas, y un ángulo sin signo
+**se dobla en sus extremos**: pasado 180 vuelve sobre sus pasos, así que no
+había forma de expresar un recorrido que cruzara la extensión. La clave para que
+el sentido salga constante es medir el ángulo de placa **alrededor del mismo eje
+que usa la física** (`ejeMundo`): así el grado de placa y el giro del pasador
+crecen a la par y la conversión se queda en una resta.
+
+**El margen libre se queda en ±π**, aunque la escala llegue a 360. Subirlo a
+±2π para «dejar sitio» a esos recorridos parece inofensivo y no lo es: el tope
+de un revolute de Rapier se mide sobre un ángulo que vive en (−π, π], y con el
+margen fuera de esa horquilla el freno deja de ceder a la mano (28,9° de
+recorrido pasaron a 1,4 en `prueba-bisagra-mano`). ±π ya es la vuelta entera,
+media a cada lado.
+
+**El clic ES el sitio, no una pista.** El montaje por caras recibe un punto
+sobre la cara de cada pieza: cada pala nace ahí y el pasador cae donde los dos
+puntos se encuentran. Todo lo que se deduzca de las CAJAS de las piezas
+—`soporteEnDireccion`, cantos, envolventes— es exactamente lo que hacía que la
+bisagra apareciera lejos de donde se había señalado y que articular no cerrara
+el hueco cuando las piezas estaban lejos. La dirección del eje sí sale de las
+normales (no depende de dónde estén las piezas); el punto sale de los clics.
+
+**Jerarquía: `tieneExtremoLibre()`.** Decide quién se arrima al articular y de
+qué clic nace el pasador. Una pieza con una punta al aire es la que se mueve;
+cosida por los dos lados, es la que manda; las dos libres, se encuentran a medio
+camino (pesos 0,5/0,5) y la bisagra queda como una articulación de verdad.
+**`physics.fixed` no sirve para esto**: una pieza estructural NACE anclada, así
+que lo estaría todo. Sólo cuenta al revés — `fixed === false`, o sea soltada a
+propósito, es móvil sin más que mirar.
 
 **La mano nunca tira fuera del arco.** `enElArco()` lleva el objetivo del
 resorte a la circunferencia del pasador —recalculada CADA PASO desde la pose

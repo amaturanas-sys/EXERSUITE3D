@@ -144,12 +144,13 @@ chequear(res.soldaduras === 3, "tres soldaduras al herraje");
 chequear(res.eje === "z" && !!res.ejeVec && Math.abs(res.ejeVec[2]) > 0.99,
   `el eje del pivote sale SOLO de las dos caras marcadas: el canto entre las `
   + `piezas (${JSON.stringify(res.ejeVec)})`);
-// Las dos cajas ya nacían casi tocándose (2 cm de hueco), así que «juntar» aquí
-// no las acerca: las deja exactamente a la holgura del pasador. La Base, que es
-// la referencia, no se mueve ni un milímetro.
+// «Juntar» deja las dos exactamente a la holgura del pasador. Las dos cajas
+// están sueltas —ninguna cosida por sus extremos—, así que desde v0.3.27 no hay
+// jerarquía entre ellas: se encuentran a medio camino en vez de moverse sólo
+// una. Lo que se comprueba es el hueco final y que quedan simétricas.
 const hueco = +(res.tapaX - 25 - (res.baseX + 25)).toFixed(2);
-chequear(res.baseX === -26 && Math.abs(hueco - 2.14) < 0.3,
-  `la Tapa queda a la holgura del pasador y la Base no se mueve `
+chequear(Math.abs(res.baseX + res.tapaX) < 0.3 && Math.abs(hueco - 2.14) < 0.3,
+  `las dos quedan a la holgura del pasador, simétricas `
   + `(${res.baseX} | ${res.tapaX}; hueco ${hueco} cm = dos veces la holgura)`);
 chequear(!!res.limites && res.limites[0] === 90 && res.limites[1] === 180,
   `recorrido limitado 90–180° en grados de la placa (${JSON.stringify(res.limites)})`);

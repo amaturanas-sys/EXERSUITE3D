@@ -8959,6 +8959,38 @@ export class Editor {
   }
 
   /** Hasta dónde llega la pieza en la dirección `n` (cm, proyección sobre n). */
+  /**
+   * ¿TIENE LA PIEZA UN EXTREMO LIBRE? Es lo que decide la jerarquía de una
+   * bisagra: una placa montada sobre un segmento que termina en el aire va en
+   * la parte que se mueve; una sobre un tramo atado por los dos lados, en la
+   * que manda. Se mira la punta de la pieza por su eje largo y se pregunta si
+   * hay algo ahí; una pieza anclada por física nunca cuenta como libre.
+   */
+  private tieneExtremoLibre(o: SceneObject): boolean {
+    // OJO CON `physics.fixed`: una pieza estructural NACE anclada, así que
+    // «anclado» no distingue nada aquí —lo estaría todo—. Sólo cuenta al
+    // revés: si el usuario la soltó a propósito, es móvil y no hay más que
+    // mirar.
+    if (o.physics && o.physics.fixed === false) return true;
+    const caja = this.cajaOrientada(o);
+    let k = 0;
+    for (let i = 1; i < 3; i++) if (caja.e[i] > caja.e[k]) k = i;
+    const largo = caja.e[k];
+    // Una pieza sin eje largo (un cubo, una placa) no tiene «extremos» que
+    // valgan: se la trata como móvil, que es lo que suele ser.
+    if (largo <= 0.01) return true;
+    const cerca = Math.max(2, largo * 0.2);
+    const otras = [...this.objects.values()].filter((x) => x !== o);
+    for (const signo of [1, -1]) {
+      const punta = caja.c.clone().addScaledVector(caja.u[k], signo * largo);
+      const pegada = otras.some(
+        (x) => x.worldBoxBody(new THREE.Box3()).distanceToPoint(punta) <= cerca,
+      );
+      if (!pegada) return true;
+    }
+    return false;
+  }
+
   private soporteEnDireccion(o: SceneObject, n: THREE.Vector3): number {
     const caja = this.cajaOrientada(o);
     return (
@@ -9071,8 +9103,9 @@ export class Editor {
       return new THREE.Vector3().crossVectors(n, t).normalize();
     };
 
-    /** Cuánto hubo que arrimar la segunda pieza para formar la articulación. */
+    /** Cuánto hubo que arrimar para formar la articulación, y a quién. */
     let arrimo = 0;
+    const arrimados: string[] = [];
     // (Se inicializan en vacío porque las dos ramas de abajo las rellenan, y
     // en la de las caras lo hace un cierre que el compilador no sigue.)
     let ejeMundo = new THREE.Vector3(0, 1, 0);
@@ -9084,97 +9117,138 @@ export class Editor {
     let normalB = new THREE.Vector3(0, 1, 0);
 
     if (montaje) {
-      // ── MONTAJE POR CARAS (v0.3.8) ────────────────────────────────────────
+      // ── MONTAJE POR CARAS ─────────────────────────────────────────────────
       //
-      // La herramienta ya no se conforma con dos piezas: pide un PUNTO sobre
-      // una cara de cada una, como la instalación de roldanas externas. Con
-      // eso queda dicho todo lo que antes había que adivinar o teclear en el
-      // panel — sobre qué cara se pega cada placa y en qué sitio—, y el eje
-      // del pivote se deduce solo: es la arista donde se encuentran los dos
-      // planos de las palas. El pasador queda pegado a las dos placas, como el
-      // lomo de un libro.
+      // La herramienta pide un PUNTO sobre una cara de cada pieza. Ese punto no
+      // es una pista: es EL SITIO. Cada pala nace en el clic de su pieza y sale
+      // de ahí hacia el cuerpo que tapa, y el pasador cae donde los dos clics
+      // se encuentran. Antes la charnela se plantaba en el CANTO de la pieza A
+      // —medido con su caja— y no en el clic: la bisagra aparecía lejos de
+      // donde se había señalado, y con las piezas separadas el herraje salía
+      // estirado sobre el hueco.
       normalA = montaje.a.normal.clone().normalize();
       normalB = montaje.b.normal.clone().normalize();
       // Plano medio de cada pala: paralelo a su cara, medio espesor por fuera.
       const qA = montaje.a.punto.clone().addScaledVector(normalA, medio);
       const qB = montaje.b.punto.clone().addScaledVector(normalB, medio);
       const enEsquina = new THREE.Vector3().crossVectors(normalA, normalB).length() > 0.15;
-      /** Canto de la pieza B más próximo a la charnela, medido sobre `d`. */
-      const cantoDeB = (d: THREE.Vector3): number =>
-        -this.soporteEnDireccion(b, d.clone().negate());
+
+      // EJE DEL PASADOR. En una esquina es la arista donde se cortan los dos
+      // planos de las palas; con las caras paralelas, la perpendicular a la
+      // línea que une los dos clics dentro de la cara de A. La dirección no
+      // depende de dónde estén las piezas, sólo de cómo están orientadas: por
+      // eso sale bien aunque estén lejos.
+      const haciaB = qB.clone().sub(qA);
+      haciaB.addScaledVector(normalA, -haciaB.dot(normalA));
+      if (haciaB.lengthSq() < 1e-8) haciaB.copy(perpDe(normalA));
+      haciaB.normalize();
+      ejeMundo = enEsquina
+        ? new THREE.Vector3().crossVectors(normalA, normalB).normalize()
+        : new THREE.Vector3().crossVectors(normalA, haciaB).normalize();
+
+      // Dirección de cada pala: dentro de SU cara, perpendicular al eje y
+      // hacia el cuerpo de su pieza, que es el material que la placa tapa.
+      const palaDe = (n: THREE.Vector3, centro: THREE.Vector3, q: THREE.Vector3,
+                      respaldo: THREE.Vector3): THREE.Vector3 => {
+        const d = new THREE.Vector3().crossVectors(ejeMundo, n);
+        if (d.lengthSq() < 1e-8) return respaldo.clone();
+        d.normalize();
+        const hacia = d.dot(centro.clone().sub(q));
+        // Clic justo en el centro de la pieza: no hay «hacia dónde», se usa
+        // la línea entre los dos clics para no jugársela a un signo de ruido.
+        if (Math.abs(hacia) < 1e-3) return d.dot(respaldo) >= 0 ? d : d.negate();
+        return hacia >= 0 ? d : d.negate();
+      };
+      // Con las caras paralelas NO se pregunta «hacia dónde está el cuerpo de
+      // la pieza»: lo dice la línea entre los dos clics, y sin ambigüedad. El
+      // criterio del cuerpo se decide por el signo de una proyección, y con el
+      // clic cerca del centro de la pieza ese signo es ruido: bastaba medio
+      // centímetro para que una pala saliera al revés, y entonces el pasador
+      // caía al otro lado y las dos piezas acababan cruzadas —82 cm de solape
+      // en el ensayo de las dos tablas—.
+      dirA = enEsquina ? palaDe(normalA, ca, qA, haciaB.clone().negate()) : haciaB.clone().negate();
+      dirB = enEsquina ? palaDe(normalB, cb, qB, haciaB.clone()) : haciaB.clone();
+
+      // JERARQUÍA ENTRE LAS PLACAS. Una placa montada sobre un segmento con el
+      // extremo libre está en la parte que se mueve; una sobre un tramo atado
+      // por los dos lados, en la que manda. Al articular, se arrima la que
+      // puede moverse. Y si las dos pueden —dos estructuras móviles—, no hay
+      // jerarquía: se encuentran a medio camino y la bisagra queda como una
+      // articulación de verdad, que es lo que pide una máquina plegable.
+      const libreA = this.tieneExtremoLibre(a);
+      const libreB = this.tieneExtremoLibre(b);
+      const wA = libreA === libreB ? 0.5 : libreA ? 1 : 0;
+      const wB = 1 - wA;
+
+      const mover = (o: SceneObject, centro: THREE.Vector3, t: THREE.Vector3): void => {
+        if (t.lengthSq() <= 1e-6) return;
+        arrimo = Math.max(arrimo, t.length());
+        if (!arrimados.includes(o.name)) arrimados.push(o.name);
+        o.mesh.position.add(t);
+        o.mesh.updateMatrixWorld(true);
+        centro.add(t);
+        this.bus.emit("objectTransformed", { object: o });
+      };
+      /** Canto de una pieza más próximo a la charnela, medido sobre `d`. */
+      const canto = (o: SceneObject, d: THREE.Vector3): number =>
+        -this.soporteEnDireccion(o, d.clone().negate());
 
       if (enEsquina) {
-        // ESQUINA (una tapa sobre el canto de una caja): las dos caras se
-        // cortan y la charnela ES esa arista. Se toma el punto de la arista
-        // más cercano al medio de los dos clics, que es donde el usuario dijo
-        // que va la bisagra a lo largo de ella. Arrimar la pieza B no la
-        // mueve: el deslizamiento va DENTRO del plano de su propia pala.
-        ejeMundo = new THREE.Vector3().crossVectors(normalA, normalB).normalize();
+        // ESQUINA (una tapa sobre el canto de una caja). Aquí la charnela NO se
+        // negocia en el plano: es la arista donde se cortan los dos planos de
+        // las palas, y sacarla de ahí deja una placa flotando fuera de su cara.
+        // Lo que sí dice el clic es DÓNDE a lo largo de esa arista.
         const m = qA.clone().add(qB).multiplyScalar(0.5);
         const c = normalA.dot(normalB);
-        const u = qA.clone().sub(m).dot(normalA);
-        const v = qB.clone().sub(m).dot(normalB);
+        const uu = qA.clone().sub(m).dot(normalA);
+        const vv = qB.clone().sub(m).dot(normalB);
         const den = 1 - c * c;
         charnela = m
-          .addScaledVector(normalA, (u - c * v) / den)
-          .addScaledVector(normalB, (v - c * u) / den);
-        // Cada pala sale de la charnela HACIA su punto: así la placa tapa el
-        // sitio que se marcó, que es lo que se ve al instalarla.
-        const hacia = (q: THREE.Vector3, n: THREE.Vector3, centro: THREE.Vector3) => {
-          const d = q.clone().sub(charnela);
-          d.addScaledVector(ejeMundo, -d.dot(ejeMundo));
-          d.addScaledVector(n, -d.dot(n));
-          if (d.lengthSq() > 1e-4) return d.normalize();
-          // Clic justo sobre la arista: la pala sale hacia el lado de su pieza.
-          const alt = new THREE.Vector3().crossVectors(ejeMundo, n).normalize();
-          return alt.dot(centro.clone().sub(charnela)) >= 0 ? alt : alt.negate();
-        };
-        dirA = hacia(qA, normalA, ca);
-        dirB = hacia(qB, normalB, cb);
+          .addScaledVector(normalA, (uu - c * vv) / den)
+          .addScaledVector(normalB, (vv - c * uu) / den);
+        const sEje = qA.dot(ejeMundo) * (1 - wA) + qB.dot(ejeMundo) * wA;
+        charnela.addScaledVector(ejeMundo, sEje - charnela.dot(ejeMundo));
         if (cfg.juntar !== false) {
-          const paso = charnela.dot(dirB) + separacion - cantoDeB(dirB);
-          if (Math.abs(paso) > 1e-4) {
-            arrimo = Math.abs(paso);
-            b.mesh.position.addScaledVector(dirB, paso);
-            b.mesh.updateMatrixWorld(true);
-            cb.addScaledVector(dirB, paso);
-            this.bus.emit("objectTransformed", { object: b });
-          }
+          // Cada pieza se arrima por SU propia dirección, que va dentro del
+          // plano de su pala y por tanto no mueve la arista de sitio.
+          const arrimar = (o: SceneObject, centro: THREE.Vector3, d: THREE.Vector3): void => {
+            const paso = charnela.dot(d) + separacion - canto(o, d);
+            mover(o, centro, d.clone().multiplyScalar(paso));
+          };
+          if (wA > 0) arrimar(a, ca, dirA);
+          if (wB > 0) arrimar(b, cb, dirB);
         }
       } else {
-        // CARAS PARALELAS (dos tablas sobre la misma mesa): no hay arista que
-        // cortar. La charnela corre perpendicular a la línea que une los dos
-        // puntos, y con las piezas juntas se planta donde de verdad se tocan:
-        // pegada al canto de la primera, que es el lomo del libro. Ponerla en
-        // el medio de los dos clics sin más metía la segunda pieza DENTRO de
-        // la primera cuando el clic caía lejos del canto.
-        const haciaB = qB.clone().sub(qA);
-        haciaB.addScaledVector(normalA, -haciaB.dot(normalA));
-        if (haciaB.lengthSq() < 1e-8) haciaB.copy(perpDe(normalA));
-        haciaB.normalize();
-        ejeMundo = new THREE.Vector3().crossVectors(normalA, haciaB).normalize();
-        const m = qA.clone().add(qB).multiplyScalar(0.5);
-        const sLomo =
-          cfg.juntar !== false
-            ? this.soporteEnDireccion(a, haciaB) + separacion
-            : m.dot(haciaB);
-        charnela = new THREE.Vector3()
-          .addScaledVector(ejeMundo, m.dot(ejeMundo))
-          .addScaledVector(normalA, qA.dot(normalA))
-          .addScaledVector(haciaB, sLomo);
-        dirA = haciaB.clone().negate();
-        dirB = haciaB.clone();
+        // CARAS PARALELAS. EL PASADOR, DEDUCIDO DE LOS CLICS: cada clic implica
+        // un sitio para el pasador —el suyo, retranqueado la holgura por su
+        // propia pala—, y el pasador va donde manda la jerarquía entre esos dos.
+        const pA = qA.clone().addScaledVector(dirA, -separacion);
+        const pB = qB.clone().addScaledVector(dirB, -separacion);
+        charnela = pA.clone().lerp(pB, wA);
         if (cfg.juntar !== false) {
-          // Enrasar las dos caras y arrimar el canto hasta la holgura.
-          const t = new THREE.Vector3()
-            .addScaledVector(normalA, qA.dot(normalA) - qB.dot(normalA))
-            .addScaledVector(haciaB, sLomo + separacion - cantoDeB(haciaB));
-          if (t.lengthSq() > 1e-8) {
-            arrimo = t.length();
-            b.mesh.position.add(t);
-            b.mesh.updateMatrixWorld(true);
-            cb.add(t);
-            this.bus.emit("objectTransformed", { object: b });
+          // ARTICULAR: cada pieza se mueve lo justo para que SU CLIC quede en
+          // la holgura del pasador. Al salir de los clics y no de las cajas, da
+          // igual lo lejos que estuvieran y cuánto midan.
+          if (wA > 0) mover(a, ca, charnela.clone().sub(pA));
+          if (wB > 0) mover(b, cb, charnela.clone().sub(pB));
+
+          // …PERO EL MATERIAL TIENE LA ÚLTIMA PALABRA EN EL ACERCAMIENTO.
+          // Juntar los dos clics a secas mete una pieza dentro de la otra
+          // siempre que se toque hacia dentro del canto —y acertarle al canto
+          // justo es pedir puntería—: dos tablas encaradas se solapaban 32 cm.
+          // Si se pisan, se separan lo justo por el eje de acercamiento y el
+          // pasador se queda en medio. Cuando NO se pisan —una pata contra el
+          // centro de una viga— el clic manda entero y el pasador no se va al
+          // canto, que era el fallo de siempre.
+          const u = dirB.clone();
+          const cantoA = this.soporteEnDireccion(a, u);
+          const cantoB = canto(b, u);
+          const falta = 2 * separacion - (cantoB - cantoA);
+          if (falta > 1e-3) {
+            if (wA > 0) mover(a, ca, u.clone().multiplyScalar(-falta * wA));
+            if (wB > 0) mover(b, cb, u.clone().multiplyScalar(falta * wB));
+            const enMedio = (cantoA - falta * wA + (cantoB + falta * wB)) / 2;
+            charnela.addScaledVector(u, enMedio - charnela.dot(u));
           }
         }
       }
@@ -9286,6 +9360,7 @@ export class Editor {
         const paso = charnela.dot(dirB) + separacion - cantoB;
         if (Math.abs(paso) > 1e-3) {
           arrimo = Math.abs(paso);
+          arrimados.push(b.name);
           b.mesh.position.addScaledVector(dirB, paso);
           b.mesh.updateMatrixWorld(true);
           cb.addScaledVector(dirB, paso);
@@ -9356,11 +9431,13 @@ export class Editor {
       // EXACTO y no redondeado al eje global más parecido.
       bisagra.axisVec = montaje ? ejeMundo.clone() : null;
       bisagra.name = tt("Bisagra", "Hinge");
-      // ESCALA DE LA PROPIA PLACA (v0.3.19): el recorrido de una bisagra se
-      // pide como el ángulo que forman sus DOS PLACAS —180 abierta del todo,
-      // 0 plegada sobre sí misma, sin grados negativos—, que es lo que se ve
-      // en la máquina. Aquí se anota cuánto abren en la pose de diseño y
-      // hacia qué lado crece ese ángulo; la física traduce.
+      // ESCALA DE LA PROPIA PLACA, VUELTA ENTERA (v0.3.27). El recorrido se
+      // pide como el ángulo que forman las DOS PLACAS, con los tres hitos que
+      // se ven en la máquina: **0° enfrentadas**, **180° extendidas** y **360°
+      // la vuelta completa**. Es un ángulo DIRIGIDO alrededor del pasador, no
+      // el ángulo sin signo de antes: aquel se doblaba en 0 y en 180 —pasado
+      // el tope volvía sobre sus pasos— y por eso no había manera de pedir un
+      // recorrido que cruzara la extensión, ni menos aún una revolución.
       const plano = (v: THREE.Vector3): THREE.Vector3 =>
         v.clone().projectOnPlane(ejeMundo).normalize();
       const dA = plano(dirA);
@@ -9370,14 +9447,16 @@ export class Editor {
           new THREE.Vector3().crossVectors(dA, dB).dot(ejeMundo),
           dA.dot(dB),
         ) * THREE.MathUtils.RAD2DEG;
-      bisagra.apertura0 = Math.abs(phi);
-      bisagra.sentidoApertura = phi >= 0 ? 1 : -1;
-      // Los límites pasan a leerse en ESA escala, así que los de fábrica
-      // tienen que nacer en ella: recorrido entero de la placa (0 a 180).
-      // Quien frena antes es el material —las placas topan— o el recorrido
-      // que se haya pedido en el panel.
+      // Medido siempre alrededor del MISMO eje que usa la física, el ángulo de
+      // placa y el giro del pasador crecen a la par: el sentido es siempre +1
+      // y la conversión se queda en una resta.
+      bisagra.apertura0 = ((phi % 360) + 360) % 360;
+      bisagra.sentidoApertura = 1;
+      // Los límites se leen en ESA escala, así que los de fábrica nacen en
+      // ella: la vuelta entera de la placa. Quien frena antes es el material
+      // —las placas topan— o el recorrido que se pida en el panel.
       bisagra.min = 0;
-      bisagra.max = 180;
+      bisagra.max = 360;
       // SIN RECORRIDO PEDIDO, SIN TOPES NUMÉRICOS (v0.3.23). Una bisagra nace
       // con sus placas EN LÍNEA, o sea con la apertura en 180 — justo encima
       // del máximo—, así que dejar los límites puestos por omisión la clavaba
@@ -9434,8 +9513,9 @@ export class Editor {
       anterior: "front",
       posterior: "back",
     };
-    const arrimoES = arrimo > 0.05 ? `; ${b.name} se arrimó ${arrimo.toFixed(1)} cm` : "";
-    const arrimoEN = arrimo > 0.05 ? `; ${b.name} moved in ${arrimo.toFixed(1)} cm` : "";
+    const quien = arrimados.length === 2 ? tt("las dos piezas", "both parts") : arrimados[0];
+    const arrimoES = arrimo > 0.05 ? `; se arrimó ${quien} ${arrimo.toFixed(1)} cm` : "";
+    const arrimoEN = arrimo > 0.05 ? `; ${quien} moved in ${arrimo.toFixed(1)} cm` : "";
     this.avisoTemporal(
       tt(
         `✓ Bisagra instalada entre ${a.name} y ${b.name} (eje ${letra.toUpperCase()}, cara ${caraES[nombreCara]}${arrimoES})`,

@@ -88,19 +88,19 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
     const juntarOn = el("input", { type: "checkbox" }) as HTMLInputElement;
     juntarOn.checked = true;
     const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-    // RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.19): 180 = placa extendida,
-    // 0 = placa plegada. No hay grados negativos: se mide el ángulo que
-    // forman las dos placas, como se ve en la máquina.
+    // RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.27): 0 = placas enfrentadas,
+    // 180 = extendidas, 360 = vuelta completa. No hay grados negativos: se
+    // mide el ángulo que forman las dos placas, como se ve en la máquina.
     const minIn = el("input", {
-      type: "number", value: "0", step: "5", min: "0", max: "180",
+      type: "number", value: "0", step: "5", min: "0", max: "360",
     }) as HTMLInputElement;
     const maxIn = el("input", {
-      type: "number", value: "180", step: "5", min: "0", max: "180",
+      type: "number", value: "180", step: "5", min: "0", max: "360",
     }) as HTMLInputElement;
 
     const instalar = el("button", { class: "tool sim" }, [tt("Instalar bisagra", "Install hinge")]);
     instalar.addEventListener("click", () => {
-      const acotar = (v: number): number => Math.min(180, Math.max(0, v));
+      const acotar = (v: number): number => Math.min(360, Math.max(0, v));
       const min = acotar(parseFloat(minIn.value));
       const max = acotar(parseFloat(maxIn.value));
       cerrarYResolver({
@@ -210,8 +210,8 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
       el("div", { class: "rold-nums" }, [minIn, maxIn]),
       el("div", { class: "rold-pie" }, [
         tt(
-          "Se mide entre las DOS PLACAS: 180° = extendida, 0° = plegada. Sin grados negativos.",
-          "Measured between BOTH LEAVES: 180° = extended, 0° = folded. No negative degrees.",
+          "Se mide entre las DOS PLACAS: 0° enfrentadas, 180° extendidas, 360° vuelta completa. Sin grados negativos.",
+          "Measured between BOTH LEAVES: 0° facing, 180° extended, 360° full revolution. No negative degrees.",
         ),
       ]),
       el("div", { class: "field" }, [instalar]),
@@ -486,7 +486,8 @@ export class JointsPanel {
   private editorFor(j: Joint): HTMLElement {
     const isRev = j.kind === "revolute";
     // En una bisagra con escala de placa los grados son los de la PLACA
-    // (180 extendida, 0 plegada), no el giro desde la pose de diseño.
+    // (0 enfrentadas, 180 extendidas, 360 la vuelta), no el giro desde la
+    // pose de diseño.
     const dePlaca = isRev && j.apertura0 != null;
     const angUnit = isRev ? (dePlaca ? "° placa" : "°") : "cm";
     const velUnit = isRev ? "°/s" : "cm/s";
@@ -522,7 +523,7 @@ export class JointsPanel {
       j.limitsEnabled = limOn.checked;
       this.editor.jointUpdated();
     });
-    const acotarPlaca = (v: number): number => (dePlaca ? Math.min(180, Math.max(0, v)) : v);
+    const acotarPlaca = (v: number): number => (dePlaca ? Math.min(360, Math.max(0, v)) : v);
     const minIn = this.num(j.min, (v) => (j.min = acotarPlaca(v)));
     const maxIn = this.num(j.max, (v) => (j.max = acotarPlaca(v)));
 
