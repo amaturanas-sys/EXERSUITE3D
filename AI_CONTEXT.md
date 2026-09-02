@@ -368,6 +368,29 @@ bisagra apareciera lejos de donde se había señalado y que articular no cerrara
 el hueco cuando las piezas estaban lejos. La dirección del eje sí sale de las
 normales (no depende de dónde estén las piezas); el punto sale de los clics.
 
+**UNA MÁQUINA PUEDE TENER VARIAS BISAGRAS, y los registros tienen que
+admitirlo.** `frenos` guarda por cuerpo rígido **una lista**, no una entrada, y
+`elegirBisagra(objectId, punto)` fija cuál se opera: la que **más mueve el punto
+agarrado** —la de mayor radio— que es el arco que la pieza describe de verdad y
+el que se dibuja. Antes había además un segundo mapa (`bisagras`) con el mismo
+problema; ahora el arco vive DENTRO del registro del freno, así que elegir la
+bisagra elige de una vez el arco, el eje, la sensibilidad y el recorrido. Ojo al
+detalle que lo escondía: las piezas soldadas se funden en UN cuerpo, así que las
+dos bisagras de una banca ajustable llegan al mismo `RigidBody` y la segunda
+pisaba a la primera sin que nada fallara — simplemente el cursor mandaba siempre
+sobre la misma.
+
+**`soldada` SE ESCRIBE SIEMPRE, también en falso.** Omitirlo al serializar
+parece ahorro y es pérdida de datos: la migración de v0.3.19 lee
+`jd.soldada ?? jd.locked`, o sea que sin el dato deduce «soldada» de `locked`, y
+`locked` es el **freno**. Toda bisagra frenada resucitaba como soldadura al
+recargar, y la pieza que colgaba de ella quedaba muerta. Regla general: **un
+campo cuyo `false` es significativo no se puede escribir como `x || undefined`**
+cuando alguien río abajo hace `?? otraCosa`. Y como red: una unión con
+`apertura0` es la articulación de una bisagra —las soldaduras del herraje no lo
+llevan—, así que nunca se lee como soldadura; eso repara los proyectos que ya
+se guardaron mal.
+
 **Jerarquía: `tieneExtremoLibre()`.** Decide quién se arrima al articular y de
 qué clic nace el pasador. Una pieza con una punta al aire es la que se mueve;
 cosida por los dos lados, es la que manda; las dos libres, se encuentran a medio

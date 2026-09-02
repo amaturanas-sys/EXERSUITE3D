@@ -3156,7 +3156,12 @@ export class Editor {
         max: j.max,
         motor: { ...j.motor },
         locked: j.locked,
-        soldada: j.soldada || undefined,
+        // SE ESCRIBE SIEMPRE, TAMBIÉN EN FALSO. Omitirlo cuando vale `false`
+        // parecía ahorro y era pérdida de datos: al releer, la migración no
+        // encontraba el dato y lo deducía de `locked`, así que toda bisagra
+        // FRENADA —`locked` sin soldar— resucitaba convertida en soldadura y
+        // dejaba de poder manipularse. Un guardado y una recarga bastaban.
+        soldada: j.soldada,
         apertura0: j.apertura0 ?? undefined,
         sentidoApertura: j.apertura0 == null ? undefined : j.sentidoApertura,
         sensibilidad: j.sensibilidad,
@@ -3595,6 +3600,16 @@ export class Editor {
       // adelante distinguen soldadura de bisagra frenada.
       j.soldada = jd.soldada ?? jd.locked ?? false;
       j.apertura0 = jd.apertura0 ?? null;
+      // UNA ARTICULACIÓN NO ES UNA SOLDADURA, DIGA LO QUE DIGA EL FICHERO.
+      // `apertura0` sólo lo lleva la unión libre de una bisagra —las soldaduras
+      // del herraje no lo tienen—, así que es el testigo fiable de que esto es
+      // un pivote. Repara los proyectos guardados mientras `soldada` no se
+      // escribía en falso, donde cada bisagra frenada volvía soldada y sólo
+      // respondía una de las dos de la máquina.
+      // (No hay camino legítimo para soldar una articulación: el interruptor
+      // del candado sólo pone `locked`, que es el freno. Un `soldada: true`
+      // ahí dentro es siempre rastro de aquella migración.)
+      if (j.apertura0 != null) j.soldada = false;
       j.sentidoApertura = jd.sentidoApertura ?? 1;
       j.sensibilidad = jd.sensibilidad ?? 9;
       j.contactos = jd.contactos ?? false;
@@ -11896,7 +11911,10 @@ export class Editor {
       this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
       const obj = this.piezaAgarrableBajoPuntero();
       if (!obj || !this.physics.esBisagra(obj.id)) return;
-      const arco = this.simDragArcoDe(obj.id);
+      // Con el scroll sin clic se elige igual, por donde está el puntero.
+      const donde = this.raycaster.intersectObject(obj.mesh, true)[0]?.point;
+      if (donde) this.physics.elegirBisagra(obj.id, donde);
+      const arco = donde ? this.arcoDeAgarre(obj.id, donde) : this.simDragArcoDe(obj.id);
       if (!arco || !this.physics.tomarBisagra(obj.id)) return;
       // Tomada por el SCROLL sin clic: no queda enganchada, se suelta sola.
       this.bisagraDrag = {
@@ -12617,6 +12635,11 @@ export class Editor {
       const id = hit.object.userData.sceneObjectId as string | undefined;
       const obj = id ? this.objects.get(id) : undefined;
       if (!obj) continue;
+      // ANTES DE NADA, A QUÉ BISAGRA SE MANDA. La pieza puede colgar de varias
+      // —una banca ajustable cuelga de la del respaldo y de la del pilar de
+      // apoyo—; se elige por el punto que se acaba de tocar, y sólo después se
+      // calcula el arco, que ya sale el de la bisagra elegida.
+      this.physics?.elegirBisagra(obj.id, hit.point);
       const arco = this.arcoDeAgarre(obj.id, hit.point);
       // UNA BISAGRA NO SE EMPUJA, SE GIRA (v0.3.21). Con el resorte de la mano
       // siempre queda algo de fuerza que el pasador debe devolver, y eso es lo
@@ -12770,7 +12793,7 @@ export class Editor {
    * soldaduras, igual que hace el motor al fundirlas— y después se busca la
    * articulación libre que sale de ese cuerpo.
    */
-  bisagraQueSostiene(objectId: string): Joint | null {
+  bisagraQueSostiene(objectId: string, punto?: THREE.Vector3): Joint | null {
     const uniones = this.listJoints();
     const cuerpo = new Set([objectId]);
     for (let crecio = true; crecio; ) {
@@ -12786,14 +12809,36 @@ export class Editor {
         }
       }
     }
-    return (
-      uniones.find(
-        (j) =>
-          j.kind === "revolute"
-          && !j.soldada
-          && (cuerpo.has(j.bodyAId) || cuerpo.has(j.bodyBId)),
-      ) ?? null
+    const candidatas = uniones.filter(
+      (j) =>
+        j.kind === "revolute"
+        && !j.soldada
+        && (cuerpo.has(j.bodyAId) || cuerpo.has(j.bodyBId)),
     );
+    if (candidatas.length <= 1) return candidatas[0] ?? null;
+    // MÁS DE UNA BISAGRA EN EL MISMO CUERPO: HAY QUE ELEGIR (v0.3.28). Una
+    // banca ajustable tiene dos —la del respaldo y la del pilar de apoyo— y
+    // quedarse con la primera de la lista dejaba la otra muerta: se cogiera
+    // donde se cogiera, el cursor mandaba siempre sobre la misma.
+    //
+    // Manda la que MÁS MUEVE EL PUNTO QUE SE AGARRÓ, o sea aquella cuyo eje
+    // queda más lejos de él: es el arco que la pieza describe de verdad bajo
+    // la mano, y es también el que se dibuja en pantalla. Agarrar el pilar de
+    // apoyo manda sobre su pivote; agarrar el respaldo, sobre el suyo.
+    const p = punto ?? this.objects.get(objectId)?.mesh.getWorldPosition(new THREE.Vector3());
+    if (!p) return candidatas[0];
+    let mejor = candidatas[0];
+    let radio = -1;
+    for (const j of candidatas) {
+      const eje = j.ejeVector().normalize();
+      const d = p.clone().sub(j.anchor);
+      const r = d.addScaledVector(eje, -d.dot(eje)).length();
+      if (r > radio) {
+        radio = r;
+        mejor = j;
+      }
+    }
+    return mejor;
   }
 
   /**

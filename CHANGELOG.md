@@ -5,6 +5,39 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.28] — 2026-09-01
+
+### Corregido
+
+**Guardar y recargar convertía en soldadura toda bisagra frenada.** El dato que
+distingue una soldadura de un pivote (`soldada`) **no se escribía cuando valía
+`false`** —parecía ahorro—, así que al releer el proyecto la migración no lo
+encontraba y lo deducía de `locked`, que es el candado del freno. Resultado: una
+bisagra a la que se le echa el candado —el gesto normal de una máquina plegable,
+que la sostiene donde la dejas— resucitaba **fundida en hierro macizo**, y la
+pieza que colgaba de ella dejaba de poder manipularse para siempre. Bastaba un
+guardado y una recarga. Ahora se escribe siempre, y además una unión con
+`apertura0` —el testigo de que es la articulación de una bisagra y no una de las
+soldaduras de su herraje— **nunca** se lee como soldadura, lo que repara también
+los proyectos ya guardados así. Medido sobre la banca ajustable del diseñador:
+sus dos bisagras llegan articuladas (**0 soldadas de 2**) y siguen siéndolo tras
+una ida y vuelta por disco.
+
+**El cursor no distinguía entre dos bisagras de la misma máquina.** Los dos
+registros que llevan las bisagras —el del arco y el del freno— guardaban **una
+por cuerpo rígido**, así que en una máquina con dos, la segunda pisaba a la
+primera y el cursor mandaba siempre sobre la misma se agarrara donde se
+agarrara. Ahora se anotan todas y se elige al agarrar: manda **la que más mueve
+el punto que se ha tocado**, o sea aquella cuyo eje queda más lejos de él, que
+es el arco que la pieza describe de verdad bajo la mano y el mismo que se
+dibuja en pantalla.
+
+Con eso la banca ajustable funciona como debe: agarrar el pilar de apoyo manda
+sobre su pivote —medido en **(−24,4 · 84,8)**— y agarrar el respaldo sobre el
+suyo —**(−24,8 · 42,2)**—, y **girar el pilar de apoyo inclina el respaldo**,
+que es para lo que existe el mecanismo: 71° de pilar llevan el respaldo de
+**0,9° a 20,3°** de inclinación.
+
 ## [0.3.27] — 2026-09-01
 
 ### Cambiado

@@ -1,0 +1,1295 @@
+{
+  "version": 1,
+  "objects": [
+    {
+      "id": "obj_82",
+      "name": "Pilar / travesaño (línea) 4",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            -6.047839789205398,
+            -38.52813551745169,
+            1.9721522630525295e-31
+          ],
+          [
+            0.6179809008224737,
+            -3.659485855769879,
+            0
+          ],
+          [
+            4.257814716334231,
+            28.45684903334908,
+            -0.38841278596954965
+          ],
+          [
+            7.105427357601002e-15,
+            41.358329081079525,
+            0
+          ],
+          [
+            -6.891530372630417,
+            62.027868226352176,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        0,
+        25,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0.573576436351046,
+        0.8191520442889918
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_83",
+      "name": "Pilar / travesaño (línea) 2",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -27.674110873437936,
+            0
+          ],
+          [
+            0,
+            -13.837055436718968,
+            0
+          ],
+          [
+            1.818822194034233,
+            6.97107071321017e-16,
+            3.13949114663867
+          ],
+          [
+            0,
+            13.837055436718966,
+            0
+          ],
+          [
+            0,
+            27.674110873437936,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        32.31729941283986,
+        3,
+        0
+      ],
+      "quaternion": [
+        -0.7071067811865475,
+        0,
+        0,
+        0.7071067811865475
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_84",
+      "name": "Pilar / travesaño (línea) 3",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -4.92512427410068,
+            0
+          ],
+          [
+            0,
+            -2.46256213705034,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            2.46256213705034,
+            0
+          ],
+          [
+            0,
+            4.92512427410068,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        -58.26963795122561,
+        2.588471014574915,
+        -0.38841278596954965
+      ],
+      "quaternion": [
+        0,
+        0,
+        0.7071067811865475,
+        0.7071067811865475
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_85",
+      "name": "Pilar / travesaño (línea) 4",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 0,
+        "holeSpacing": 5,
+        "path": [
+          [
+            -17.356849360871735,
+            -19.14860014638866,
+            0
+          ],
+          [
+            0.4864555801362016,
+            -15.621918941584104,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            4.2935742871281874,
+            19.490508839184532,
+            0
+          ],
+          [
+            7.966894889003093,
+            19.87934477273209,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        -44.56054486825255,
+        21.518725441255565,
+        -0.38841278596954965
+      ],
+      "quaternion": [
+        0,
+        0,
+        0.9986100603716301,
+        0.05270623610702152
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_86",
+      "name": "Pilar / travesaño (línea) 5",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 2,
+        "holeSpacing": 5,
+        "path": [
+          [
+            0,
+            -45.025401194176965,
+            0
+          ],
+          [
+            0,
+            -22.512700597088482,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            22.512700597088482,
+            0
+          ],
+          [
+            0,
+            45.025401194176965,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": false
+      },
+      "position": [
+        -28,
+        87.90283067546886,
+        -0.5
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_87",
+      "name": "Placa dentada (upright)",
+      "componentId": "placa-dentada",
+      "materialId": "cromo",
+      "params": {
+        "kind": "dentada",
+        "dientes": 5,
+        "dienteEspaciado": 12.5,
+        "dienteCaraCm": 6,
+        "width": 12.850000000000001,
+        "height": 50.40596110691564,
+        "dienteLado": "izquierda",
+        "dienteAgarreCm": 1,
+        "dentadaGemela": "obj_52",
+        "dentadaEspejo": {
+          "host": "obj_43",
+          "n": [
+            0,
+            0,
+            -1
+          ],
+          "c": [
+            -2.6964414119720423,
+            17.939001083374023,
+            -0.158311128616333
+          ]
+        }
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        7.86733399397261,
+        24.522495703198466,
+        3.6712154388427733
+      ],
+      "quaternion": [
+        -0.5000000000000001,
+        0.8660254037844386,
+        5.302876193624534e-17,
+        3.0616169978683836e-17
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_88",
+      "name": "Placa dentada (upright) (gemela)",
+      "componentId": "placa-dentada",
+      "materialId": "cromo",
+      "params": {
+        "kind": "dentada",
+        "dientes": 5,
+        "dienteEspaciado": 12.5,
+        "dienteCaraCm": 6,
+        "width": 12.850000000000001,
+        "height": 50.40596110691564,
+        "dienteLado": "izquierda",
+        "dienteAgarreCm": 1,
+        "dentadaGemela": "obj_51",
+        "dentadaEspejo": {
+          "host": "obj_43",
+          "n": [
+            0,
+            0,
+            -1
+          ],
+          "c": [
+            -2.6964414119720423,
+            17.939001083374023,
+            -0.158311128616333
+          ]
+        }
+      },
+      "physics": {
+        "massKg": 0,
+        "fixed": true
+      },
+      "position": [
+        7.86733399397261,
+        24.522495703198466,
+        -3.9878376960754394
+      ],
+      "quaternion": [
+        -0.5000000000000001,
+        0.8660254037844386,
+        -5.302876193624534e-17,
+        -3.0616169978683836e-17
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_89",
+      "name": "Placa de bisagra A",
+      "componentId": "placa-bisagra",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.5,
+        "depth": 3.75
+      },
+      "physics": {
+        "massKg": 0.4,
+        "fixed": false
+      },
+      "position": [
+        -21.602090261036363,
+        41.00706319532788,
+        -0.35145004394199475
+      ],
+      "quaternion": [
+        0,
+        0,
+        -0.1736481776669303,
+        0.9848077530122079
+      ],
+      "scale": [
+        0.9999999999999998,
+        0.9999999999999998,
+        1
+      ]
+    },
+    {
+      "id": "obj_90",
+      "name": "Placa de bisagra B",
+      "componentId": "placa-bisagra",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.5,
+        "depth": 3.75
+      },
+      "physics": {
+        "massKg": 0.4,
+        "fixed": false
+      },
+      "position": [
+        -24.750060540669157,
+        45.50283067546887,
+        -0.35145004394199475
+      ],
+      "quaternion": [
+        0.7071067811865475,
+        0.7071067811865476,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_91",
+      "name": "Pasador de bisagra",
+      "componentId": "pasador-bisagra",
+      "materialId": "acero-pulido",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 0.5,
+        "radiusBottom": 0.5,
+        "height": 4.75
+      },
+      "physics": {
+        "massKg": 0.2,
+        "fixed": false
+      },
+      "position": [
+        -24.750060540669157,
+        42.15283067546887,
+        -0.35145004394199475
+      ],
+      "quaternion": [
+        -0.7071067811865475,
+        0,
+        0,
+        0.7071067811865476
+      ],
+      "scale": [
+        1,
+        0.9999999999999998,
+        0.9999999999999998
+      ]
+    },
+    {
+      "id": "obj_92",
+      "name": "Asiento",
+      "componentId": "asiento",
+      "materialId": "tapizado",
+      "params": {
+        "kind": "box",
+        "width": 40,
+        "height": 6,
+        "depth": 35,
+        "bevel": 2
+      },
+      "physics": {
+        "massKg": 2,
+        "fixed": true
+      },
+      "position": [
+        -52,
+        44.44212089195046,
+        0
+      ],
+      "quaternion": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_93",
+      "name": "Pilar / travesaño (línea) 6",
+      "componentId": "pilar-linea",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "beam",
+        "depth": 6,
+        "width": 6,
+        "ends": "plano",
+        "holeDiameter": 4,
+        "holeSpacing": 9,
+        "path": [
+          [
+            0,
+            -28.140875746360592,
+            0
+          ],
+          [
+            0,
+            -14.070437873180296,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            14.070437873180296,
+            0
+          ],
+          [
+            0,
+            28.140875746360592,
+            0
+          ]
+        ]
+      },
+      "physics": {
+        "massKg": 1,
+        "fixed": false
+      },
+      "position": [
+        4.240874862670902,
+        88.02823274456067,
+        -0.5
+      ],
+      "quaternion": [
+        0,
+        0,
+        0.7071067811865475,
+        0.7071067811865476
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_94",
+      "name": "Placa de bisagra A",
+      "componentId": "placa-bisagra",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.5,
+        "depth": 3.75
+      },
+      "physics": {
+        "massKg": 0.4,
+        "fixed": false
+      },
+      "position": [
+        -21.4,
+        84.77823274456067,
+        -0.2160462557178704
+      ],
+      "quaternion": [
+        1,
+        -1.1102230246251565e-16,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_95",
+      "name": "Placa de bisagra B",
+      "componentId": "placa-bisagra",
+      "materialId": "acero-negro",
+      "params": {
+        "kind": "box",
+        "width": 5,
+        "height": 0.5,
+        "depth": 3.75
+      },
+      "physics": {
+        "massKg": 0.4,
+        "fixed": false
+      },
+      "position": [
+        -24.75,
+        81.42823274456067,
+        -0.2160462557178704
+      ],
+      "quaternion": [
+        0,
+        0,
+        -0.7071067811865475,
+        0.7071067811865476
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_96",
+      "name": "Pasador de bisagra",
+      "componentId": "pasador-bisagra",
+      "materialId": "acero-pulido",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 0.5,
+        "radiusBottom": 0.5,
+        "height": 4.75
+      },
+      "physics": {
+        "massKg": 0.2,
+        "fixed": false
+      },
+      "position": [
+        -24.75,
+        84.77823274456067,
+        -0.2160462557178704
+      ],
+      "quaternion": [
+        0.7071067811865475,
+        0,
+        0,
+        0.7071067811865475
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_97",
+      "name": "Respaldo",
+      "componentId": "respaldo",
+      "materialId": "tapizado",
+      "params": {
+        "kind": "box",
+        "width": 35,
+        "height": 70,
+        "depth": 6,
+        "bevel": 2
+      },
+      "physics": {
+        "massKg": 1,
+        "fixed": false
+      },
+      "position": [
+        -33,
+        83.90283067546886,
+        -0.5000000000000007
+      ],
+      "quaternion": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_98",
+      "name": "Respaldo 2",
+      "componentId": "respaldo",
+      "materialId": "tapizado",
+      "params": {
+        "kind": "box",
+        "width": 30,
+        "height": 20,
+        "depth": 6,
+        "bevel": 2
+      },
+      "physics": {
+        "massKg": 1,
+        "fixed": false
+      },
+      "position": [
+        -33,
+        128.90283067546886,
+        -0.5000000000000007
+      ],
+      "quaternion": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "joints": [
+    {
+      "name": "Soldadura 33",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_83",
+      "anchor": [
+        51.818822194034226,
+        6.139491146638669,
+        0
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura 34",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_85",
+      "anchor": [
+        -51.818822194034226,
+        43.86050885336133,
+        0
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura 35",
+      "kind": "revolute",
+      "bodyAId": "obj_84",
+      "bodyBId": "obj_85",
+      "anchor": [
+        -64.46163553767829,
+        3.000000000000025,
+        0
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura 36",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_85",
+      "anchor": [
+        -38.86411664552566,
+        39.145381640021,
+        0
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura 37",
+      "kind": "revolute",
+      "bodyAId": "obj_83",
+      "bodyBId": "obj_82",
+      "anchor": [
+        34.13612160687409,
+        6.139491146638669,
+        1.9721522630525295e-31
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_89",
+      "anchor": [
+        -21.602090261036363,
+        41.00706319532788,
+        -0.8984192843530678
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_86",
+      "bodyBId": "obj_90",
+      "anchor": [
+        -24.750060540669157,
+        45.50283067546887,
+        -0.8984192843530678
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_89",
+      "bodyBId": "obj_91",
+      "anchor": [
+        -24.750060540669157,
+        42.15283067546887,
+        -0.35145004394199475
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_89",
+      "bodyBId": "obj_90",
+      "anchor": [
+        -24.750060540669157,
+        42.15283067546887,
+        -0.35145004394199475
+      ],
+      "axis": "z",
+      "axisVec": [
+        0,
+        0,
+        -1
+      ],
+      "limitsEnabled": true,
+      "min": 15,
+      "max": 120,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": false,
+      "apertura0": 109.99999999999999,
+      "sentidoApertura": -1,
+      "sensibilidad": 9,
+      "contactos": true
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_93",
+      "bodyBId": "obj_94",
+      "anchor": [
+        -21.4,
+        84.77823274456067,
+        -0.2160462557178704
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_86",
+      "bodyBId": "obj_95",
+      "anchor": [
+        -24.75,
+        81.42823274456067,
+        -0.2160462557178704
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_94",
+      "bodyBId": "obj_96",
+      "anchor": [
+        -24.75,
+        84.77823274456067,
+        -0.2160462557178704
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Bisagra",
+      "kind": "revolute",
+      "bodyAId": "obj_94",
+      "bodyBId": "obj_95",
+      "anchor": [
+        -24.75,
+        84.77823274456067,
+        -0.2160462557178704
+      ],
+      "axis": "z",
+      "axisVec": [
+        0,
+        0,
+        1
+      ],
+      "limitsEnabled": true,
+      "min": 0,
+      "max": 180,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "apertura0": 89.99999999999999,
+      "sentidoApertura": -1,
+      "sensibilidad": 9,
+      "contactos": true
+    },
+    {
+      "name": "Soldadura 14",
+      "kind": "revolute",
+      "bodyAId": "obj_86",
+      "bodyBId": "obj_97",
+      "anchor": [
+        -30.5,
+        87.90283067546886,
+        -0.5000000000000002
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura 71",
+      "kind": "revolute",
+      "bodyAId": "obj_98",
+      "bodyBId": "obj_86",
+      "anchor": [
+        -30.5,
+        125.91553171001476,
+        -0.5000000000000002
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    }
+  ],
+  "cables": [],
+  "ropes": [],
+  "groups": [
+    {
+      "name": "Bisagra",
+      "ids": [
+        "obj_89",
+        "obj_90",
+        "obj_91"
+      ]
+    },
+    {
+      "name": "Bisagra",
+      "ids": [
+        "obj_94",
+        "obj_95",
+        "obj_96"
+      ]
+    }
+  ],
+  "human": {
+    "present": false,
+    "mode": "mannequin",
+    "heightCm": 175,
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "quaternion": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "pose": null,
+    "hands": [],
+    "feet": [],
+    "locks": [
+      "spine",
+      "neck",
+      "wristL",
+      "wristR",
+      "hipL",
+      "hipR",
+      "kneeL",
+      "kneeR",
+      "ankleL",
+      "ankleR"
+    ],
+    "symmetry": false,
+    "support": "suelo",
+    "supportY": null,
+    "backSupport": null,
+    "lyingOnSupport": false,
+    "zones": [
+      {
+        "id": "superior",
+        "side": "sim"
+      }
+    ],
+    "startPose": null,
+    "startPoseName": null,
+    "startPosition": null,
+    "startQuaternion": null,
+    "barra": null,
+    "startParts": null
+  },
+  "partidas": [
+    {
+      "nombre": "Partida 1",
+      "piezas": null,
+      "pose": {
+        "spine": [
+          0,
+          0,
+          0
+        ],
+        "neck": [
+          0,
+          0,
+          0
+        ],
+        "shoulderL": [
+          0,
+          0,
+          0
+        ],
+        "elbowL": [
+          0,
+          0,
+          0
+        ],
+        "wristL": [
+          0,
+          0,
+          0
+        ],
+        "shoulderR": [
+          0,
+          0,
+          0
+        ],
+        "elbowR": [
+          0,
+          0,
+          0
+        ],
+        "wristR": [
+          0,
+          0,
+          0
+        ],
+        "hipL": [
+          0,
+          0,
+          0
+        ],
+        "kneeL": [
+          0,
+          0,
+          0
+        ],
+        "ankleL": [
+          0,
+          0,
+          0
+        ],
+        "hipR": [
+          0,
+          0,
+          0
+        ],
+        "kneeR": [
+          0,
+          0,
+          0
+        ],
+        "ankleR": [
+          0,
+          0,
+          0
+        ]
+      },
+      "poseNombre": "De pie",
+      "position": [
+        -157.3504861813769,
+        -2.2888741391113854e-7,
+        129.02500261417597
+      ],
+      "quaternion": [
+        0,
+        0.9555759489857094,
+        0,
+        0.294744984215272
+      ]
+    }
+  ]
+}

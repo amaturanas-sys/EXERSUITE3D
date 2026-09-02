@@ -130,7 +130,7 @@ export class PhysicsWorld {
    */
   private frenos = new Map<
     R.RigidBody,
-    {
+    Array<{
       handle: R.UnitImpulseJoint;
       a: R.RigidBody;
       b: R.RigidBody;
@@ -144,13 +144,29 @@ export class PhysicsWorld {
       /** Ángulo al que el motor la lleva mientras la mano la opera. */
       objetivo: number | null;
       signo: 1 | -1;
-    }
+      /** Arco que describe esta pieza: el eje visto desde el OTRO cuerpo. */
+      arco: {
+        ref: R.RigidBody;
+        ancla: { x: number; y: number; z: number };
+        eje: { x: number; y: number; z: number };
+      };
+    }>
   >();
 
-  private bisagras = new Map<
-    R.RigidBody,
-    { ref: R.RigidBody; ancla: { x: number; y: number; z: number }; eje: { x: number; y: number; z: number } }
-  >();
+  /**
+   * LA BISAGRA ELEGIDA DE CADA CUERPO (v0.3.28). Un cuerpo puede colgar de
+   * VARIAS —una banca ajustable cuelga de la del respaldo y de la del pilar de
+   * apoyo—, y antes cada mapa guardaba una sola por cuerpo: la segunda pisaba
+   * a la primera y el cursor mandaba siempre sobre la misma pasara lo que
+   * pasara. Ahora se anotan todas y `elegirBisagra` fija cuál se opera.
+   */
+  private elegidas = new Map<R.RigidBody, number>();
+
+  private frenosDe(body: R.RigidBody) {
+    const lista = this.frenos.get(body);
+    if (!lista?.length) return undefined;
+    return lista[Math.min(this.elegidas.get(body) ?? 0, lista.length - 1)];
+  }
 
   /** Importa el modulo y carga/inicializa el WASM de Rapier una sola vez. */
   static init(): Promise<void> {
@@ -172,7 +188,7 @@ export class PhysicsWorld {
     // cables quedarian apuntando a cuerpos de un mundo liberado).
     this.world?.free();
     this.bodies.clear();
-    this.bisagras.clear();
+    this.elegidas.clear();
     this.frenos.clear();
     this.cables = [];
     this.guias = [];
@@ -1591,15 +1607,7 @@ export class PhysicsWorld {
     // Se anota el EJE DE GIRO de cada pieza articulada (para que la mano tire
     // por el arco, no contra el pasador). Cada cuerpo guarda el eje descrito
     // en el frame del OTRO, que es su referencia de giro.
-    if (joint.kind === "revolute" && !joint.soldada) {
-      if (b.body.isDynamic() && !this.bisagras.has(b.body)) {
-        this.bisagras.set(b.body, { ref: a.body, ancla: anchorA, eje: axis });
-      }
-      if (a.body.isDynamic() && !this.bisagras.has(a.body)) {
-        const e = axisLocalB;
-        this.bisagras.set(a.body, { ref: b.body, ancla: anchorB, eje: { x: e.x, y: e.y, z: e.z } });
-      }
-    }
+
 
     /**
      * RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.19). Una bisagra se acota por
@@ -1660,8 +1668,20 @@ export class PhysicsWorld {
         sensibilidad: joint.sensibilidad,
         objetivo: null,
       };
-      if (b.body.isDynamic()) this.frenos.set(b.body, { ...comun, signo: 1 });
-      if (a.body.isDynamic()) this.frenos.set(a.body, { ...comun, signo: -1 });
+      const anota = (
+        body: R.RigidBody,
+        signo: 1 | -1,
+        arco: { ref: R.RigidBody; ancla: { x: number; y: number; z: number };
+                eje: { x: number; y: number; z: number } },
+      ): void => {
+        if (!body.isDynamic()) return;
+        const lista = this.frenos.get(body) ?? [];
+        lista.push({ ...comun, signo, arco });
+        this.frenos.set(body, lista);
+      };
+      const eL = axisLocalB;
+      anota(b.body, 1, { ref: a.body, ancla: anchorA, eje: axis });
+      anota(a.body, -1, { ref: b.body, ancla: anchorB, eje: { x: eL.x, y: eL.y, z: eL.z } });
     }
 
     if (joint.locked && !joint.soldada && joint.kind === "revolute") {
@@ -2215,7 +2235,7 @@ export class PhysicsWorld {
    * apunta el puntero.
    */
   private enElArco(body: R.RigidBody, agarre: THREE.Vector3, destino: THREE.Vector3): THREE.Vector3 {
-    const h = this.bisagras.get(body);
+    const h = this.frenosDe(body)?.arco;
     if (!h) return destino;
     const t = h.ref.translation();
     const r = h.ref.rotation();
@@ -2244,7 +2264,7 @@ export class PhysicsWorld {
   ejeDeGiro(objectId: string): { punto: THREE.Vector3; eje: THREE.Vector3 } | null {
     const e = this.bodies.get(objectId);
     if (!e) return null;
-    const h = this.bisagras.get(e.body);
+    const h = this.frenosDe(e.body)?.arco;
     if (!h) return null;
     const t = h.ref.translation();
     const r = h.ref.rotation();
@@ -2545,13 +2565,53 @@ export class PhysicsWorld {
   /** ¿Esta pieza se opera girando (está colgada de una bisagra)? */
   esBisagra(objectId: string): boolean {
     const e = this.bodies.get(objectId);
-    return !!e && this.frenos.has(e.body);
+    return !!e && !!this.frenos.get(e.body)?.length;
+  }
+
+  /**
+   * ELIGE A QUÉ BISAGRA SE MANDA (v0.3.28).
+   *
+   * Una pieza puede colgar de varias —el respaldo de una banca ajustable
+   * cuelga del pivote del respaldo Y del pivote del pilar de apoyo—, y hasta
+   * ahora sólo se anotaba una por cuerpo: la segunda pisaba a la primera y el
+   * cursor mandaba siempre sobre la misma se agarrara donde se agarrara.
+   *
+   * Manda la que MÁS MUEVE EL PUNTO AGARRADO, es decir aquella cuyo eje queda
+   * más lejos de él: es el arco que la pieza describe de verdad bajo la mano,
+   * y es el mismo que se dibuja en pantalla. Agarrar el pilar de apoyo manda
+   * sobre su pivote; agarrar el respaldo, sobre el suyo.
+   */
+  elegirBisagra(objectId: string, punto: THREE.Vector3): boolean {
+    const e = this.bodies.get(objectId);
+    const lista = e && this.frenos.get(e.body);
+    if (!e || !lista?.length) return false;
+    let cual = 0;
+    let radio = -1;
+    for (let i = 0; i < lista.length; i++) {
+      const h = lista[i].arco;
+      const t = h.ref.translation();
+      const r = h.ref.rotation();
+      const q = new THREE.Quaternion(r.x, r.y, r.z, r.w);
+      const pivote = new THREE.Vector3(h.ancla.x, h.ancla.y, h.ancla.z)
+        .applyQuaternion(q)
+        .add(new THREE.Vector3(t.x, t.y, t.z))
+        .divideScalar(S);
+      const eje = new THREE.Vector3(h.eje.x, h.eje.y, h.eje.z).applyQuaternion(q).normalize();
+      const d = punto.clone().sub(pivote);
+      const rr = d.addScaledVector(eje, -d.dot(eje)).length();
+      if (rr > radio) {
+        radio = rr;
+        cual = i;
+      }
+    }
+    this.elegidas.set(e.body, cual);
+    return true;
   }
 
   /** Grados de placa por cada 100 px de gesto, tal como los pide la unión. */
   sensibilidadDeBisagra(objectId: string): number {
     const e = this.bodies.get(objectId);
-    return (e && this.frenos.get(e.body)?.sensibilidad) || 9;
+    return (e && this.frenosDe(e.body)?.sensibilidad) || 9;
   }
 
   /**
@@ -2561,7 +2621,7 @@ export class PhysicsWorld {
    */
   recorridoDeBisagra(objectId: string): { desde: number; hasta: number } | null {
     const e = this.bodies.get(objectId);
-    const f = e && this.frenos.get(e.body);
+    const f = e && this.frenosDe(e.body);
     if (!f) return null;
     const [min, max] = f.rango;
     if (max - min >= 2 * Math.PI - 0.01) return null;
@@ -2576,7 +2636,7 @@ export class PhysicsWorld {
   /** Ángulo actual de la bisagra que sostiene a esta pieza (grados). */
   anguloDeBisagra(objectId: string): number | null {
     const e = this.bodies.get(objectId);
-    const f = e && this.frenos.get(e.body);
+    const f = e && this.frenosDe(e.body);
     return f ? this.anguloFreno(f) * RAD2DEG : null;
   }
 
@@ -2586,7 +2646,7 @@ export class PhysicsWorld {
    */
   tomarBisagra(objectId: string): boolean {
     const e = this.bodies.get(objectId);
-    const f = e && this.frenos.get(e.body);
+    const f = e && this.frenosDe(e.body);
     if (!f) return false;
     f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
     f.handle.setLimits(f.objetivo, f.objetivo);
@@ -2609,7 +2669,7 @@ export class PhysicsWorld {
    */
   girarBisagra(objectId: string, deltaGrados: number): number | null {
     const e = this.bodies.get(objectId);
-    const f = e && this.frenos.get(e.body);
+    const f = e && this.frenosDe(e.body);
     if (!f) return null;
     if (f.objetivo == null && !this.tomarBisagra(objectId)) return null;
     const tope = PhysicsWorld.PASO_MAX;
@@ -2640,7 +2700,7 @@ export class PhysicsWorld {
    */
   soltarBisagra(objectId: string): void {
     const e = this.bodies.get(objectId);
-    const f = e && this.frenos.get(e.body);
+    const f = e && this.frenosDe(e.body);
     if (!f) return;
     f.objetivo = null;
     if (f.freno) this.fijarFreno(e!.body);
@@ -2651,7 +2711,7 @@ export class PhysicsWorld {
 
   /** Suelta el freno de una bisagra: mientras la mano la sujeta, gira. */
   private soltarFreno(body: R.RigidBody): void {
-    const f = this.frenos.get(body);
+    const f = this.frenosDe(body);
     // El mapa anota TODAS las bisagras desde v0.3.21; sólo las que llevan el
     // lock switch tienen freno que soltar o que volver a poner.
     if (!f?.freno) return;
@@ -2666,7 +2726,7 @@ export class PhysicsWorld {
    * dejaste, sin volver sola ni seguir cayendo.
    */
   private fijarFreno(body: R.RigidBody): void {
-    const f = this.frenos.get(body);
+    const f = this.frenosDe(body);
     if (!f?.freno) return;
     const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
     f.handle.setLimits(t, t);
@@ -2736,7 +2796,7 @@ export class PhysicsWorld {
     // dos metros. Así que del arco se toma sólo hacia dónde, y la fuerza sigue
     // midiéndose por lo lejos que está el dedo. La mano empuja igual de fuerte
     // que siempre, pero ya nunca contra el pasador.
-    if (this.bisagras.has(d.body) && err.lengthSq() > 1e-8) {
+    if (this.frenos.has(d.body) && err.lengthSq() > 1e-8) {
       const alcance = Math.hypot(
         d.target.x - pw.x,
         d.target.y - pw.y,
@@ -2997,7 +3057,7 @@ export class PhysicsWorld {
     this.world?.free();
     this.world = null;
     this.bodies.clear();
-    this.bisagras.clear();
+    this.elegidas.clear();
     this.frenos.clear();
     this.cables = [];
     this.guias = [];
