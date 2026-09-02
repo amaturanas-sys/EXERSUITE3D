@@ -181,9 +181,17 @@ ok(
 );
 
 // ── 4. BORRAR UN NODO ───────────────────────────────────────────────────────
+// Se dobla la viga ANTES de borrar. Hace falta: sobre un trazado recto los
+// nodos no llevan información de forma, y al quitar uno el resto se reparte
+// solo (`normalizarPathRecto`), así que la prueba no distinguiría «borró el
+// que le dije» de «borró otro y luego se recolocaron todos». Doblada, cada
+// nodo dice algo y el que falta se ve.
 const antesBorrar = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const v = ed.objects.get(window.__viga);
+  v.params.path[2][2] = 14;          // el nodo de y≈41, sacado 14 cm en Z
+  v.rebuildGeometry();
+  ed.bus.emit("objectTransformed", { object: v });
   return { nodos: v.params.path.length, ys: v.params.path.map((n) => +n[1].toFixed(0)) };
 });
 await page.mouse.click(sitioNodo.x, sitioNodo.y, { button: "right" });

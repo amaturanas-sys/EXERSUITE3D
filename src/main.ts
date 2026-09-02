@@ -1,3 +1,4 @@
+import { calcularBrazoPilar } from "./objects/brazoPilar";
 import "./ui/styles.css";
 import {
   abrirDialogoDerecha,
@@ -316,6 +317,9 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
       pernos: pernosQueLleva,
       cajas: cajasDentada,
     },
+    // MECANISMO BRAZO+PILAR (v0.3.29): la formula cerrada del largo del pilar,
+    // por lo mismo — que la prueba mida contra la fuente y no contra una copia.
+    brazoPilar: calcularBrazoPilar,
     // BARRA EN MANOS (v0.2.81): la tabla de ejercicios y los desplazamientos
     // medidos, por lo mismo — que la prueba compare contra la fuente y no
     // contra una copia de los números.

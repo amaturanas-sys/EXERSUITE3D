@@ -240,6 +240,8 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
+import { calcularBrazoPilar } from "../objects/brazoPilar";
+import type { CfgBrazoPilar, SolucionBrazoPilar } from "../objects/brazoPilar";
 import type {
   CanalTubo,
   ComponentCategory,
@@ -1419,6 +1421,118 @@ export class Editor {
    * Inserta una máquina estándar (prefab de componentes agrupado) con su
    * centro en `at` (o en el origen). El grupo resultante se mueve en bloque.
    */
+  /**
+   * BRAZO CON PILAR REGULABLE (v0.3.29). Arma el mecanismo del respaldo de una
+   * banca ajustable con el pilar YA CALCULADO: la viga de topes, el brazo que
+   * pivota en ella y el pilar que los une, con sus dos bisagras puestas.
+   *
+   * El largo del pilar no se elige, se deduce (ver `calcularBrazoPilar`): es lo
+   * que convierte «quiero que el respaldo vaya de 30° a 80°» en una pieza que
+   * se puede cortar.
+   */
+  crearBrazoConPilar(cfg: CfgBrazoPilar, at = new THREE.Vector3()): SolucionBrazoPilar {
+    const sol = calcularBrazoPilar(cfg);
+    if (sol.pilarCm <= 0) {
+      this.avisoTemporal(`⚠ ${sol.aviso ?? "No hay mecanismo posible con esas medidas."}`);
+      return sol;
+    }
+    const C = cfg.inclinacionC * THREE.MathUtils.DEG2RAD;
+    const dirViga = new THREE.Vector3(Math.cos(C), Math.sin(C), 0);
+    const pivote = at.clone();
+    // Se arma apoyado en SU PRIMER TOPE: el ángulo y la distancia tienen que
+    // salir del MISMO tope, porque el orden de la lista (por grados) no es el
+    // orden en que caen sobre la viga.
+    const tope0 = sol.topes[0] ?? { gradoBrazo: cfg.gradoA, distanciaCm: sol.desdeCm };
+    const th = tope0.gradoBrazo * THREE.MathUtils.DEG2RAD;
+    const dirBrazo = new THREE.Vector3(Math.cos(th), Math.sin(th), 0);
+    const pieDelPilar = pivote.clone().addScaledVector(dirViga, tope0.distanciaCm);
+    const codo = pivote.clone().addScaledVector(dirBrazo, cfg.brazoCm);
+
+    /** Una viga de línea recta entre dos puntos, con su perfil. */
+    const barra = (nombre: string, a: THREE.Vector3, b: THREE.Vector3, perfil: number) => {
+      const largo = a.distanceTo(b);
+      const o = this.addComponent("pilar-linea");
+      o.name = nombre;
+      o.params = {
+        kind: "beam", width: perfil, depth: perfil, ends: "plano",
+        holeDiameter: 0, holeSpacing: 5,
+        path: [[0, -largo / 2, 0], [0, largo / 2, 0]],
+      };
+      o.rebuildGeometry();
+      o.mesh.position.copy(a).add(b).multiplyScalar(0.5);
+      o.mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        b.clone().sub(a).normalize(),
+      );
+      this.bus.emit("objectTransformed", { object: o });
+      return o;
+    };
+
+    // La viga de topes va desde el primer tope hasta el último; el brazo, del
+    // pivote al codo; el pilar cierra el triángulo.
+    const dist = sol.topes.map((t) => t.distanciaCm);
+    const viga = barra(
+      tt("Viga de topes", "Notched beam"),
+      pivote.clone().addScaledVector(dirViga, Math.min(...dist)),
+      pivote.clone().addScaledVector(dirViga, Math.max(...dist)),
+      6,
+    );
+    viga.physics = { ...viga.physics, fixed: true };
+    const brazo = barra(tt("Brazo", "Arm"), pivote, codo, 6);
+    const pilar = barra(tt("Pilar de apoyo", "Support strut"), codo, pieDelPilar, 5);
+    pilar.physics = { ...pilar.physics, fixed: false, massKg: 1 };
+    brazo.physics = { ...brazo.physics, fixed: false, massKg: 1 };
+
+    // LOS TOPES, uno por nivel, sobre la cara de arriba de la viga.
+    const arriba = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize().negate();
+    for (const t of sol.topes) {
+      const c = this.addComponent("base-apoyo");
+      if (!c) break;
+      c.name = tt(`Tope ${t.gradoBrazo}°`, `Stop ${t.gradoBrazo}°`);
+      c.params = { kind: "box", width: 1.5, height: 2.5, depth: 6 };
+      c.rebuildGeometry();
+      c.mesh.position
+        .copy(pivote)
+        .addScaledVector(dirViga, t.distanciaCm)
+        .addScaledVector(arriba, 4.25);
+      c.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), arriba);
+      c.physics = { ...c.physics, fixed: true };
+      this.bus.emit("objectTransformed", { object: c });
+      const u = this.connect(viga.id, c.id, "revolute", c.mesh.position.clone());
+      if (u) {
+        u.locked = true;
+        u.soldada = true;
+        u.name = tt("Soldadura de tope", "Stop weld");
+      }
+    }
+
+    // LAS DOS BISAGRAS: la del pivote (viga ↔ brazo) y la del codo (brazo ↔
+    // pilar). Se montan por caras, con los puntos exactos del cálculo.
+    const perpViga = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize();
+    const perpBrazo = new THREE.Vector3(0, 0, 1).cross(dirBrazo).normalize();
+    this.instalarBisagra(viga, brazo, { eje: "auto", tamano: 8, juntar: false }, {
+      a: { punto: pivote.clone().addScaledVector(perpViga, 3), normal: perpViga.clone() },
+      b: { punto: pivote.clone().addScaledVector(perpBrazo, 3), normal: perpBrazo.clone() },
+    });
+    this.instalarBisagra(brazo, pilar, { eje: "auto", tamano: 8, juntar: false }, {
+      a: { punto: codo.clone().addScaledVector(perpBrazo, 3), normal: perpBrazo.clone() },
+      b: {
+        punto: codo.clone().addScaledVector(perpBrazo, 3),
+        normal: perpBrazo.clone().negate(),
+      },
+    });
+
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+    this.avisoTemporal(
+      tt(
+        `✓ Pilar de ${sol.pilarCm} cm · topes de ${sol.desdeCm} a ${sol.hastaCm} cm del pivote`,
+        `✓ ${sol.pilarCm} cm strut · stops from ${sol.desdeCm} to ${sol.hastaCm} cm from the pivot`,
+      ),
+    );
+    return sol;
+  }
+
   insertarMaquina(prefabId: string, at = new THREE.Vector3()): void {
     // PREFAB del usuario (v0.2.4): si la máquina fue sustituida por un
     // .prefab.json corregido, ese archivo ES la definición — se arma pieza a
@@ -9383,6 +9497,24 @@ export class Editor {
         }
       }
     }
+    // EL SENTIDO DEL EJE NO PUEDE QUEDAR AL AZAR (v0.3.29).
+    //
+    // El ángulo de placa se mide alrededor del pasador, así que apuntar el eje
+    // hacia un lado o hacia el otro cambia la lectura: la misma bisagra a medio
+    // abrir marcaba 90° o 270° según cayera el producto vectorial, y el panel
+    // de recorrido lo delataba con un rango que no se parecía a lo que se veía.
+    // Se fija de una vez: el eje se orienta de modo que la apertura de DISEÑO
+    // caiga en [0, 180]. Así 0 es siempre «placas enfrentadas», 180 «placas
+    // extendidas», y lo que pase de 180 es haber cruzado la extensión.
+    {
+      const plano = (v: THREE.Vector3): THREE.Vector3 =>
+        v.clone().projectOnPlane(ejeMundo).normalize();
+      const giro = Math.atan2(
+        new THREE.Vector3().crossVectors(plano(dirA), plano(dirB)).dot(ejeMundo),
+        plano(dirA).dot(plano(dirB)),
+      );
+      if (giro < 0) ejeMundo.negate();
+    }
     const letra = letraMasCercana(ejeMundo);
 
     const piezas: string[] = [];
@@ -11515,9 +11647,15 @@ export class Editor {
     if (!elegido) return false;
     const trazado = this.trazadoDeNodo(obj, elegido.rama);
     if (!trazado) return false;
-    // El nodo se pone donde APUNTA el dedo, no sobre el segmento: así se puede
-    // meter un nodo y sacarlo del sitio en un solo gesto.
-    trazado.splice(elegido.i + 1, 0, [local.x, local.y, local.z]);
+    // EL NODO NACE EN SITIO, SOBRE EL PROPIO TRAZADO (v0.3.29). Antes se
+    // plantaba donde apuntaba el dedo, que es la SUPERFICIE de la pieza: medio
+    // perfil por fuera del eje. Meter un nodo deformaba la estructura de
+    // entrada, y recolocarlo a ojo era imposible. Ahora se usa la proyección
+    // del toque sobre el segmento —que es el punto que ya se calculó para
+    // saber en qué tramo cae—, así que insertar un nodo NO cambia la forma: la
+    // cambia después el usuario arrastrándolo.
+    const p = elegido.punto;
+    trazado.splice(elegido.i + 1, 0, [p.x, p.y, p.z]);
     obj.rebuildGeometry();
     this.rehacerAsasDeNodos(elegido.rama, elegido.i + 1);
     this.bus.emit("objectTransformed", { object: obj });

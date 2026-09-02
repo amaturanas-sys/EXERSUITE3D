@@ -17,6 +17,7 @@ import {
   configureTube,
 } from "./lineToolDialog";
 import { pasoMinimoDentada } from "../objects/placaDentada";
+import { calcularBrazoPilar } from "../objects/brazoPilar";
 import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
@@ -232,6 +233,88 @@ export class ComponentPalette {
    * despliega tocando su título — la lista larga se navega por secciones.
    * Devuelve el contenedor donde van los botones del grupo.
    */
+  /**
+   * DIÁLOGO DEL BRAZO CON PILAR (v0.3.29). Se piden los cuatro números que el
+   * diseñador SÍ conoce —largo del brazo, recorrido que quiere, largo e
+   * inclinación de la viga— y el quinto, el largo del pilar, sale calculado
+   * delante de él mientras teclea. Es la pieza que no se puede elegir a ojo.
+   */
+  private abrirBrazoPilar(): void {
+    const num = (v: number, paso = "1"): HTMLInputElement =>
+      el("input", { type: "number", value: String(v), step: paso }) as HTMLInputElement;
+    const brazo = num(45);
+    const gA = num(15, "5");
+    const gB = num(80, "5");
+    const viga = num(40);
+    const incl = num(0, "5");
+    const topes = num(6);
+    const salida = el("div", { class: "rold-pie" });
+    const campo = (etiqueta: string, input: HTMLElement): HTMLElement =>
+      el("div", { class: "row" }, [el("div", { class: "sub" }, [etiqueta]), input]);
+
+    const leer = () => ({
+      brazoCm: parseFloat(brazo.value) || 1,
+      gradoA: parseFloat(gA.value) || 0,
+      gradoB: parseFloat(gB.value) || 0,
+      vigaCm: parseFloat(viga.value) || 1,
+      inclinacionC: parseFloat(incl.value) || 0,
+      topes: Math.max(2, Math.round(parseFloat(topes.value) || 2)),
+    });
+    const repintar = (): void => {
+      const s = calcularBrazoPilar(leer());
+      clear(salida);
+      if (s.pilarCm <= 0) {
+        salida.append(el("b", {}, [s.aviso ?? ""]));
+        return;
+      }
+      salida.append(
+        el("b", {}, [tt(`Pilar: ${s.pilarCm} cm`, `Strut: ${s.pilarCm} cm`)]),
+        el("div", {}, [
+          tt(
+            `Topes del pivote: ${s.desdeCm} a ${s.hastaCm} cm`,
+            `Stops from pivot: ${s.desdeCm} to ${s.hastaCm} cm`,
+          ),
+        ]),
+        el("div", {}, [
+          s.topes.map((t) => `${t.gradoBrazo}°`).join(" · "),
+        ]),
+        ...(s.aviso ? [el("div", {}, [`⚠ ${s.aviso}`])] : []),
+      );
+    };
+    for (const c of [brazo, gA, gB, viga, incl, topes]) c.addEventListener("input", repintar);
+
+    const crear = el("button", { class: "tool sim" }, [tt("Insertar", "Insert")]);
+    const cerrar = el("button", { class: "rold-cerrar" }, ["✕"]);
+    const panel = el("aside", { id: "rold-panel" }, [
+      el("div", { class: "rold-head" }, [
+        el("span", { class: "rold-titulo" }, [tt("Brazo con pilar", "Arm with strut")]),
+        cerrar,
+      ]),
+      el("div", { class: "rold-seccion" }, [tt("Lo que sabes", "What you know")]),
+      campo(tt("Brazo (cm)", "Arm (cm)"), brazo),
+      campo(tt("Recorrido desde (°)", "Travel from (°)"), gA),
+      campo(tt("…hasta (°)", "…to (°)"), gB),
+      campo(tt("Viga de topes (cm)", "Notched beam (cm)"), viga),
+      campo(tt("Inclinación de la viga (°)", "Beam tilt (°)"), incl),
+      campo(tt("Topes", "Stops"), topes),
+      el("div", { class: "rold-seccion" }, [tt("Lo que sale", "What comes out")]),
+      salida,
+      el("div", { class: "rold-dirs" }, [crear]),
+    ]);
+    const fuera = (): void => {
+      panel.remove();
+      cerrarDialogoDerecha();
+    };
+    cerrar.addEventListener("click", fuera);
+    crear.addEventListener("click", () => {
+      this.editor.crearBrazoConPilar(leer());
+      fuera();
+    });
+    repintar();
+    document.body.append(panel);
+    abrirDialogoDerecha(fuera);
+  }
+
   private seccionPlegable(
     body: HTMLElement,
     titulo: string,
@@ -271,6 +354,25 @@ export class ComponentPalette {
     if (sencillo) {
       body.append(el("div", { class: "palette-modo" }, ["Modo sencillo · piezas básicas"]));
     }
+    // MECANISMOS CALCULADOS (v0.3.29): no son prefabs fijos, se resuelven con
+    // los números que se le piden al diseñador.
+    const contMec = this.seccionPlegable(body, tt("Mecanismos", "Mechanisms"), "mecanismos");
+    const btnBrazo = el("button", {
+      class: "comp-btn maquina-btn",
+      title: tt(
+        "Brazo que pivota, pilar de apoyo y viga de topes. El largo del pilar se CALCULA a partir del recorrido que quieres.",
+        "Pivoting arm, support strut and notched beam. The strut length is COMPUTED from the travel you want.",
+      ),
+    }, [
+      el("span", { class: "swatch maquina-icon" }, ["📐"]),
+      tt("Brazo con pilar regulable", "Arm with adjustable strut"),
+    ]);
+    btnBrazo.addEventListener("click", () => {
+      if (this.consumeDragClick()) return;
+      this.abrirBrazoPilar();
+    });
+    contMec.append(btnBrazo);
+
     // Máquinas estándar (prefabs agrupados): clave para plantear la sala.
     const contMaquinas = this.seccionPlegable(body, "Máquinas estándar", "maquinas");
     for (const m of STANDARD_MACHINES) {

@@ -360,6 +360,13 @@ margen fuera de esa horquilla el freno deja de ceder a la mano (28,9° de
 recorrido pasaron a 1,4 en `prueba-bisagra-mano`). ±π ya es la vuelta entera,
 media a cada lado.
 
+**EL SENTIDO DEL EJE SE FIJA AL COLOCAR LA BISAGRA.** El ángulo de placa se
+mide alrededor del pasador, así que el signo de `ejeMundo` decide la lectura: la
+misma esquina marcaba 90° o 270° según cayera el producto vectorial. En
+`instalarBisagra`, justo antes de `letraMasCercana`, se orienta el eje para que
+la apertura de DISEÑO caiga en [0,180]. Hay que hacerlo **ahí**: después ya se
+han escrito `axisVec`, el pasador y `apertura0`.
+
 **El clic ES el sitio, no una pista.** El montaje por caras recibe un punto
 sobre la cara de cada pieza: cada pala nace ahí y el pasador cae donde los dos
 puntos se encuentran. Todo lo que se deduzca de las CAJAS de las piezas
@@ -533,6 +540,16 @@ una sigmoidea imposible de corregir). Una viga **doblada** se particiona por
 comba acumulada en tramos planos que **conservan sus pinholes** y codos que se
 barren lisos: así una jota puede calzar en una cara diagonal.
 
+### 5.5b Insertar un nodo NO deforma (v0.3.29)
+
+El doble clic mete el nodo en la proyección del toque **sobre el segmento**, no
+en el punto de la malla que devuelve el rayo. Son cosas distintas: el rayo pega
+en la SUPERFICIE, o sea medio perfil fuera del eje, y plantar el nodo ahí tuerce
+la pieza en el mismo gesto de crearlo. La proyección ya se calcula para decidir
+en qué tramo cae el toque (`elegido.punto`); usarla es gratis. Regla general
+para cualquier herramienta que edite un trazado: **el rayo dice DÓNDE tocó el
+usuario, no dónde va el dato**.
+
 ### 5.6 Ramas nodales (v0.3.25)
 
 `params.ramas: RamaNodal[]`, cada una `{ desde, path }` — el índice del nodo del
@@ -607,6 +624,29 @@ prueba nada. El caso que lo destapa a gritos es la **viga inclinada**: con el
 eje equivocado se mide la viga a lo largo y el error salta en decenas de
 centímetros, no en decimales. Cuando una pieza se coloca contra otra, la prueba
 debe **colocarla como la coloca la herramienta**, y con el anfitrión torcido.
+
+### 5.8 Mecanismo brazo + pilar + viga de topes (`brazoPilar.ts`, v0.3.29)
+
+El herraje del respaldo de una banca ajustable, resuelto en forma cerrada. Con
+el pivote del brazo en el origen y la viga saliendo de él con inclinación C, el
+pie del pilar vive sobre la recta de la viga a distancia `t` (CON SIGNO: puede
+caer al otro lado del pivote, y en una banca real cae), así que
+`L² = X² + t² − 2·X·t·cos(θ−C)`. Escrita en los dos extremos del recorrido y
+restada, la cuadrática se cancela y salen `t₀` y `L` despejados. Sin iteración.
+
+Dos trampas que costaron una vuelta cada una:
+
+- **La ecuación tiene DOS ramas** (el extremo A en la punta cercana de la viga o
+  en la lejana) y las dos cierran. Elegir por «que la viga empiece por delante
+  del pivote» escoge la absurda: 213 cm de pilar donde hay una solución de 51.
+  Se elige por **topes en escalera** (el ángulo monótono a lo largo de la viga)
+  y, entre ésas, el pilar más corto.
+- **`acos` sólo devuelve [0,180]**, y rechazar las distancias negativas tiraba
+  la mitad de los topes. `t` es una coordenada con signo sobre la recta, no una
+  distancia.
+
+Que los números cierren no quiere decir que la máquina exista: si el pilar sale
+desproporcionado respecto del brazo, se avisa en vez de publicarlo.
 
 ---
 

@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.29] — 2026-09-02
+
+### Añadido
+
+**Brazo con pilar regulable: un mecanismo que se CALCULA, no se monta a ojo.**
+Nuevo apartado «Mecanismos» en la paleta. Es el herraje del respaldo de una
+banca ajustable —un brazo que pivota, un pilar colgado de él por otra bisagra y
+una viga de topes donde ese pilar se apoya— y su gracia es que **el largo del
+pilar no se elige: se deduce**. Se le dan los cuatro números que el diseñador sí
+conoce —largo del brazo, recorrido en grados, largo e inclinación de la viga— y
+sale el quinto, delante de él mientras teclea, junto con el ángulo exacto que da
+cada tope.
+
+La cuenta es cerrada, sin iteración: con el pivote en el origen y la viga
+saliendo de él, el pie del pilar vive sobre la recta de la viga y los tres lados
+cierran un triángulo, así que vale el teorema del coseno en los dos extremos del
+recorrido; restando las dos ecuaciones la cuadrática se cancela y quedan `t₀` y
+`L` despejados. Medido: **el mismo pilar cierra el triángulo en todos los topes,
+con 0,03 cm en el peor caso**, y el pilar que se monta mide exactamente el
+calculado (**81,9 cm pedidos, 81,9 montados**).
+
+De las dos ramas que resuelven la ecuación se queda con la que da **topes en
+escalera** —el ángulo crece según se avanza por la viga— y, entre ésas, el pilar
+más corto. Cuando ninguna sirve lo dice en vez de colarse: un brazo de 45 cm que
+quiera ir de 15° a 80° sobre una viga de sólo 40 tiene solución exacta… **de 213
+cm de pilar**, y ese aviso es más útil que el número.
+
+### Corregido
+
+**Meter un nodo deformaba la pieza.** El doble clic plantaba el nodo donde
+apuntaba el dedo, que es la **superficie** de la viga: medio perfil fuera del
+eje. La estructura se torcía de entrada y recolocarla a ojo era imposible. Ahora
+se usa la proyección del toque **sobre el propio trazado** —el punto que ya se
+calculaba para saber en qué tramo caía—, así que insertar un nodo no cambia
+nada: la forma la cambia después el usuario arrastrándolo. Medido: **0,00 cm
+fuera del eje** y la pieza sigue midiendo 6 × 120 × 6.
+
+**La orientación de la bisagra era ambigua, y el rango lo delataba.** El ángulo
+de placa se mide alrededor del pasador, así que apuntar el eje a un lado o al
+otro cambia la lectura: la misma bisagra a medio abrir marcaba **90° o 270°**
+según cayera el producto vectorial, y el panel de recorrido mostraba un rango
+que no se parecía a lo que se veía. Se fija al colocarla: el eje se orienta para
+que la apertura de diseño caiga en **[0, 180]**. Así 0 son siempre «placas
+enfrentadas» y 180 «extendidas». Medido: la misma esquina montada en los dos
+órdenes da **90° y 90°**.
+
 ## [0.3.28] — 2026-09-01
 
 ### Corregido
