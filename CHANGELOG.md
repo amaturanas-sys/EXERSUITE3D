@@ -26,6 +26,12 @@ recorrido; restando las dos ecuaciones la cuadrática se cancela y quedan `t₀`
 con 0,03 cm en el peor caso**, y el pilar que se monta mide exactamente el
 calculado (**81,9 cm pedidos, 81,9 montados**).
 
+La inclinación de la viga se puede teclear **por cualquiera de sus dos
+sentidos** —−25° y 155° son la misma viga—: como el ángulo del brazo sólo puede
+caer en la banda [C, C+180], se prueba el representante de la recta que la
+ponga encima del recorrido pedido. Sin eso, medir la viga de la banca del
+diseñador (155°) devolvía topes de 230° a 300° para un recorrido de 10 a 80.
+
 De las dos ramas que resuelven la ecuación se queda con la que da **topes en
 escalera** —el ángulo crece según se avanza por la viga— y, entre ésas, el pilar
 más corto. Cuando ninguna sirve lo dice en vez de colarse: un brazo de 45 cm que

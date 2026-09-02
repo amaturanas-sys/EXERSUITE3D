@@ -89,9 +89,40 @@ function anguloEnTope(X: number, L: number, C: number, t: number): number | null
  * construir y usar.
  */
 export function calcularBrazoPilar(cfg: CfgBrazoPilar): SolucionBrazoPilar {
+  // UNA RECTA TIENE DOS SENTIDOS, y la inclinación de la viga se puede teclear
+  // por cualquiera de los dos: −25° y 155° son la MISMA viga. Con el sentido
+  // «contrario» los topes salían desplazados 180° —ángulos de 230° a 300° para
+  // un recorrido pedido de 10 a 80—, que es exactamente la ambigüedad que se
+  // acaba de quitar del eje de las bisagras. Se resuelve con los dos y gana el
+  // que devuelve el recorrido que se pidió.
+  // Como `acos` sólo devuelve [0,180], el ángulo del brazo sólo puede caer en
+  // la banda [C, C+180]: hay que elegir el representante de la recta que la
+  // ponga encima del recorrido pedido, y por eso se prueba también C−180 (que
+  // es el que hacía falta para la banca del diseñador: su placa mide 155° y el
+  // brazo trabaja en la banda de −25°).
+  const directo = resolver(cfg, cfg.inclinacionC);
+  if (cumpleElRecorrido(directo, cfg)) return directo;
+  for (const giro of [-180, 180, -360, 360]) {
+    const otro = resolver(cfg, cfg.inclinacionC + giro);
+    if (cumpleElRecorrido(otro, cfg)) return otro;
+  }
+  return directo;
+}
+
+/** ¿Los extremos de la escalera son los grados que se pidieron? */
+function cumpleElRecorrido(s: SolucionBrazoPilar, cfg: CfgBrazoPilar): boolean {
+  if (s.topes.length < 2) return false;
+  const A = Math.min(cfg.gradoA, cfg.gradoB);
+  const B = Math.max(cfg.gradoA, cfg.gradoB);
+  return (
+    Math.abs(s.topes[0].gradoBrazo - A) < 0.6
+    && Math.abs(s.topes[s.topes.length - 1].gradoBrazo - B) < 0.6
+  );
+}
+
+function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
   const X = Math.max(1, cfg.brazoCm);
   const Y = Math.max(1, cfg.vigaCm);
-  const C = cfg.inclinacionC;
   const nTopes = Math.max(2, Math.round(cfg.topes ?? 5));
   const A = Math.min(cfg.gradoA, cfg.gradoB);
   const B = Math.max(cfg.gradoA, cfg.gradoB);

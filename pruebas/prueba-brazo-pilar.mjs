@@ -258,6 +258,32 @@ ok(
   imposible.aviso ?? "no avisó",
 );
 
+// ── 4b. LA INCLINACIÓN DE LA VIGA, POR CUALQUIERA DE SUS DOS SENTIDOS ───────
+// Una recta tiene dos lecturas: −25° y 155° son LA MISMA viga. Medida sobre el
+// modelo del diseñador salía 155°, y con ese número los topes salían a 230-300°
+// para un recorrido pedido de 10 a 80.
+const sentido = await page.evaluate(() => {
+  const f = window.exersuite.brazoPilar;
+  const base = { brazoCm: 42.76, gradoA: 10, gradoB: 80, vigaCm: 60.06, topes: 6 };
+  const a = f({ ...base, inclinacionC: -25 });
+  const b = f({ ...base, inclinacionC: 155 });
+  return {
+    menos25: { pilar: a.pilarCm, extremos: [a.topes[0]?.gradoBrazo, a.topes.at(-1)?.gradoBrazo] },
+    mas155: { pilar: b.pilarCm, extremos: [b.topes[0]?.gradoBrazo, b.topes.at(-1)?.gradoBrazo] },
+  };
+});
+console.log("SENTIDO:", JSON.stringify(sentido));
+ok(
+  Math.abs(sentido.menos25.pilar - sentido.mas155.pilar) < 0.02,
+  "la misma viga leída por sus dos sentidos da el MISMO pilar",
+  `${sentido.menos25.pilar} y ${sentido.mas155.pilar} cm`,
+);
+ok(
+  sentido.mas155.extremos[0] === 10 && sentido.mas155.extremos[1] === 80,
+  "…y el recorrido pedido, no uno desplazado 180°",
+  `${sentido.mas155.extremos.join("° … ")}°`,
+);
+
 // ── 5. …Y EL MECANISMO SE ARMA ──────────────────────────────────────────────
 const armado = await page.evaluate(() => {
   const ed = window.exersuite.editor;
