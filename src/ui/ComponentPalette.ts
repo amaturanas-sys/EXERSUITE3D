@@ -247,6 +247,7 @@ export class ComponentPalette {
     const gB = num(80, "5");
     const viga = num(40);
     const incl = num(0, "5");
+    const desc = num(0);
     const topes = num(6);
     const salida = el("div", { class: "rold-pie" });
     const campo = (etiqueta: string, input: HTMLElement): HTMLElement =>
@@ -258,6 +259,7 @@ export class ComponentPalette {
       gradoB: parseFloat(gB.value) || 0,
       vigaCm: parseFloat(viga.value) || 1,
       inclinacionC: parseFloat(incl.value) || 0,
+      descentradoCm: parseFloat(desc.value) || 0,
       topes: Math.max(2, Math.round(parseFloat(topes.value) || 2)),
     });
     const repintar = (): void => {
@@ -271,8 +273,8 @@ export class ComponentPalette {
         el("b", {}, [tt(`Pilar: ${s.pilarCm} cm`, `Strut: ${s.pilarCm} cm`)]),
         el("div", {}, [
           tt(
-            `Topes del pivote: ${s.desdeCm} a ${s.hastaCm} cm`,
-            `Stops from pivot: ${s.desdeCm} to ${s.hastaCm} cm`,
+            `Topes: ${s.desdeCm} a ${s.hastaCm} cm por la viga`,
+            `Stops: ${s.desdeCm} to ${s.hastaCm} cm along the beam`,
           ),
         ]),
         el("div", {}, [
@@ -281,7 +283,9 @@ export class ComponentPalette {
         ...(s.aviso ? [el("div", {}, [`⚠ ${s.aviso}`])] : []),
       );
     };
-    for (const c of [brazo, gA, gB, viga, incl, topes]) c.addEventListener("input", repintar);
+    for (const c of [brazo, gA, gB, viga, incl, desc, topes]) {
+      c.addEventListener("input", repintar);
+    }
 
     const crear = el("button", { class: "tool sim" }, [tt("Insertar", "Insert")]);
     const cerrar = el("button", { class: "rold-cerrar" }, ["✕"]);
@@ -296,6 +300,7 @@ export class ComponentPalette {
       campo(tt("…hasta (°)", "…to (°)"), gB),
       campo(tt("Viga de topes (cm)", "Notched beam (cm)"), viga),
       campo(tt("Inclinación de la viga (°)", "Beam tilt (°)"), incl),
+      campo(tt("Descentrado de la viga (cm)", "Beam offset (cm)"), desc),
       campo(tt("Topes", "Stops"), topes),
       el("div", { class: "rold-seccion" }, [tt("Lo que sale", "What comes out")]),
       salida,

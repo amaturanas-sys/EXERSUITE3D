@@ -5,6 +5,35 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.30] — 2026-09-02
+
+### Añadido
+
+**El descentrado de la viga, como sexto dato del brazo con pilar.** La
+herramienta suponía que la recta de la viga de topes pasaba justo por el pivote
+del brazo, y en un bastidor de verdad no pasa: corre por debajo. Ahora se pide
+a qué distancia pasa, y la geometría lo lleva dentro. Con el pie del pilar en
+`E·n + t·u` y `n·u = 0`, la cuenta sigue saliendo cerrada:
+
+```
+L² = X² + E² + t² − 2·X·E·sen(θ−C) − 2·X·t·cos(θ−C)
+t₀ = [Y² − 2XY·cos β + 2XE·(sen α − sen β)] / [2·(X·cos β − X·cos α − Y)]
+```
+
+Con E = 0 se reduce a la fórmula anterior, así que los cálculos de antes no se
+mueven. Leer el ángulo de vuelta sí pide un paso más —queda
+`E·sen ψ + t·cos ψ = K`, una sola sinusoide— y el signo del arcocoseno lo
+decide cuál de las dos ramas deja los topes en escalera.
+
+Medido sobre la banca del diseñador (brazo 42,76, viga 60,06 a −25°,
+descentrado **+1,67 cm**): el pilar para un recorrido de 10 a 70° pasa de
+**46,17 a 44,09 cm**. Su pilar montado mide 44,99, o sea que el descentrado
+valía **2,1 cm de pieza**.
+
+Las distancias de los topes se miden desde el **pie de la perpendicular** —el
+punto de la viga más cercano al pivote—, que con descentrado cero es el pivote
+mismo.
+
 ## [0.3.29] — 2026-09-02
 
 ### Añadido

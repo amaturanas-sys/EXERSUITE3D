@@ -634,7 +634,15 @@ caer al otro lado del pivote, y en una banca real cae), así que
 `L² = X² + t² − 2·X·t·cos(θ−C)`. Escrita en los dos extremos del recorrido y
 restada, la cuadrática se cancela y salen `t₀` y `L` despejados. Sin iteración.
 
-Dos trampas que costaron una vuelta cada una:
+Con **descentrado** (`E`, la distancia a la que la recta de la viga pasa del
+pivote — en un bastidor real la viga corre por debajo) el pie está en
+`E·n + t·u`, y como `n·u = 0` la cuenta sigue cerrada:
+`L² = X² + E² + t² − 2XE·sen(θ−C) − 2Xt·cos(θ−C)`. Con E = 0 se reduce a la
+anterior. Leer el ángulo de vuelta ya no es un coseno despejado sino
+`E·sen ψ + t·cos ψ = K`, o sea `√(E²+t²)·cos(ψ−φ) = K` con `φ = atan2(E, t)`:
+salen DOS ramas y hay que probar las dos.
+
+Tres trampas que costaron una vuelta cada una:
 
 - **La ecuación tiene DOS ramas** (el extremo A en la punta cercana de la viga o
   en la lejana) y las dos cierran. Elegir por «que la viga empiece por delante
@@ -644,6 +652,12 @@ Dos trampas que costaron una vuelta cada una:
 - **`acos` sólo devuelve [0,180]**, y rechazar las distancias negativas tiraba
   la mitad de los topes. `t` es una coordenada con signo sobre la recta, no una
   distancia.
+- **Una recta tiene DOS sentidos** y el ángulo del brazo sólo puede caer en la
+  banda `[C, C+180]`: hay que elegir el representante de la inclinación que
+  ponga la banda sobre el recorrido pedido. Medir la viga de la banca daba 155°
+  y con ese número los topes salían a 230-300° para un recorrido de 10 a 80. Es
+  la misma ambigüedad que la del eje de las bisagras, y se resuelve igual:
+  probando y quedándose con el que devuelve lo que se pidió.
 
 Que los números cierren no quiere decir que la máquina exista: si el pilar sale
 desproporcionado respecto del brazo, se avisa en vez de publicarlo.

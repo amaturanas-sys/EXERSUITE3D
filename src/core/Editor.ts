@@ -1438,14 +1438,20 @@ export class Editor {
     }
     const C = cfg.inclinacionC * THREE.MathUtils.DEG2RAD;
     const dirViga = new THREE.Vector3(Math.cos(C), Math.sin(C), 0);
+    // LA RECTA DE LA VIGA NO PASA POR EL PIVOTE salvo que se pida: el
+    // descentrado la corre perpendicularmente, que es como va en un bastidor
+    // de verdad. Las distancias del cálculo se miden desde el PIE DE ESA
+    // PERPENDICULAR, no desde el pivote.
+    const perpViga0 = new THREE.Vector3(-Math.sin(C), Math.cos(C), 0);
     const pivote = at.clone();
+    const origenViga = pivote.clone().addScaledVector(perpViga0, cfg.descentradoCm ?? 0);
     // Se arma apoyado en SU PRIMER TOPE: el ángulo y la distancia tienen que
     // salir del MISMO tope, porque el orden de la lista (por grados) no es el
     // orden en que caen sobre la viga.
     const tope0 = sol.topes[0] ?? { gradoBrazo: cfg.gradoA, distanciaCm: sol.desdeCm };
     const th = tope0.gradoBrazo * THREE.MathUtils.DEG2RAD;
     const dirBrazo = new THREE.Vector3(Math.cos(th), Math.sin(th), 0);
-    const pieDelPilar = pivote.clone().addScaledVector(dirViga, tope0.distanciaCm);
+    const pieDelPilar = origenViga.clone().addScaledVector(dirViga, tope0.distanciaCm);
     const codo = pivote.clone().addScaledVector(dirBrazo, cfg.brazoCm);
 
     /** Una viga de línea recta entre dos puntos, con su perfil. */
@@ -1473,8 +1479,8 @@ export class Editor {
     const dist = sol.topes.map((t) => t.distanciaCm);
     const viga = barra(
       tt("Viga de topes", "Notched beam"),
-      pivote.clone().addScaledVector(dirViga, Math.min(...dist)),
-      pivote.clone().addScaledVector(dirViga, Math.max(...dist)),
+      origenViga.clone().addScaledVector(dirViga, Math.min(...dist)),
+      origenViga.clone().addScaledVector(dirViga, Math.max(...dist)),
       6,
     );
     viga.physics = { ...viga.physics, fixed: true };
@@ -1492,7 +1498,7 @@ export class Editor {
       c.params = { kind: "box", width: 1.5, height: 2.5, depth: 6 };
       c.rebuildGeometry();
       c.mesh.position
-        .copy(pivote)
+        .copy(origenViga)
         .addScaledVector(dirViga, t.distanciaCm)
         .addScaledVector(arriba, 4.25);
       c.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), arriba);

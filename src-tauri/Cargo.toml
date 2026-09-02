@@ -1,6 +1,6 @@
 [package]
 name = "exersuite3d"
-version = "0.3.29"
+version = "0.3.30"
 description = "EXERSUITE3D - empaquetado de escritorio (Windows/Tauri)"
 authors = ["EXERSUITE3D"]
 license = ""

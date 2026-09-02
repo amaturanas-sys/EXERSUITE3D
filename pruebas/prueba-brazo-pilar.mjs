@@ -186,11 +186,16 @@ const calculo = await page.evaluate(() => {
   // MISMO pilar: es la comprobación que no depende de la fórmula.
   const cierra = (cfg, s) => {
     const D2R = Math.PI / 180;
-    const lado = (grado, t) =>
-      Math.sqrt(
-        cfg.brazoCm ** 2 + t ** 2
-        - 2 * cfg.brazoCm * t * Math.cos((grado - cfg.inclinacionC) * D2R),
+    const E = cfg.descentradoCm ?? 0;
+    // Distancia del codo del brazo al pie del pilar, con el pie en `E·n + t·u`.
+    const lado = (grado, t) => {
+      const psi = (grado - cfg.inclinacionC) * D2R;
+      return Math.sqrt(
+        cfg.brazoCm ** 2 + E ** 2 + t ** 2
+        - 2 * cfg.brazoCm * E * Math.sin(psi)
+        - 2 * cfg.brazoCm * t * Math.cos(psi),
       );
+    };
     // Cada tope tiene que cerrar con SU distancia: se comprueban todos.
     return s.topes.map((t) =>
       +Math.abs(lado(t.gradoBrazo, t.distanciaCm) - s.pilarCm).toFixed(3));
@@ -199,11 +204,19 @@ const calculo = await page.evaluate(() => {
     { brazoCm: 45, gradoA: 15, gradoB: 60, vigaCm: 30, inclinacionC: 0, topes: 6 },
     { brazoCm: 60, gradoA: 30, gradoB: 70, vigaCm: 40, inclinacionC: 12, topes: 5 },
     { brazoCm: 35, gradoA: 10, gradoB: 55, vigaCm: 22, inclinacionC: -8, topes: 4 },
+    // DESCENTRADA: la recta de la viga pasa a 4,2 cm del pivote, que es lo que
+    // mide la banca del diseñador. Antes se ignoraba y el pilar salía con ese
+    // error metido dentro.
+    { brazoCm: 42.76, gradoA: 10, gradoB: 70, vigaCm: 60.06, inclinacionC: -25,
+      descentradoCm: 4.2, topes: 6 },
+    { brazoCm: 42.76, gradoA: 10, gradoB: 70, vigaCm: 60.06, inclinacionC: -25,
+      descentradoCm: -4.2, topes: 6 },
   ];
   return casos.map((c) => {
     const s = calc(c);
     return {
-      caso: `${c.brazoCm}cm ${c.gradoA}-${c.gradoB}° viga ${c.vigaCm}@${c.inclinacionC}°`,
+      caso: `${c.brazoCm}cm ${c.gradoA}-${c.gradoB}° viga ${c.vigaCm}@${c.inclinacionC}°`
+        + (c.descentradoCm ? ` desc ${c.descentradoCm}` : ""),
       pilar: s.pilarCm,
       recorrido: [s.topes[0]?.gradoBrazo, s.topes[s.topes.length - 1]?.gradoBrazo],
       topes: s.topes.length,
@@ -282,6 +295,40 @@ ok(
   sentido.mas155.extremos[0] === 10 && sentido.mas155.extremos[1] === 80,
   "…y el recorrido pedido, no uno desplazado 180°",
   `${sentido.mas155.extremos.join("° … ")}°`,
+);
+
+// ── 4c. EL DESCENTRADO CUENTA ───────────────────────────────────────────────
+// Con descentrado cero tiene que salir lo de siempre, y en cuanto la viga se
+// aparta del pivote el pilar TIENE que cambiar: si no cambiara, el dato se
+// estaría ignorando.
+const descentrado = await page.evaluate(() => {
+  const f = window.exersuite.brazoPilar;
+  const base = { brazoCm: 42.76, gradoA: 10, gradoB: 70, vigaCm: 60.06,
+                 inclinacionC: -25, topes: 6 };
+  const sinDato = f(base);
+  const cero = f({ ...base, descentradoCm: 0 });
+  const cuatro = f({ ...base, descentradoCm: 4.2 });
+  return {
+    sinDato: sinDato.pilarCm, cero: cero.pilarCm, cuatro: cuatro.pilarCm,
+    extremos: [cuatro.topes[0]?.gradoBrazo, cuatro.topes.at(-1)?.gradoBrazo],
+    aviso: cuatro.aviso,
+  };
+});
+console.log("DESCENTRADO:", JSON.stringify(descentrado));
+ok(
+  descentrado.sinDato === descentrado.cero,
+  "sin el dato se comporta como descentrado cero",
+  `${descentrado.sinDato} y ${descentrado.cero} cm`,
+);
+ok(
+  Math.abs(descentrado.cuatro - descentrado.cero) > 0.5,
+  "y apartar la viga 4,2 cm del pivote CAMBIA el pilar: el dato no se ignora",
+  `${descentrado.cero} → ${descentrado.cuatro} cm`,
+);
+ok(
+  descentrado.extremos[0] === 10 && descentrado.extremos[1] === 70,
+  "…sin perder el recorrido pedido",
+  `${descentrado.extremos.join("° … ")}°`,
 );
 
 // ── 5. …Y EL MECANISMO SE ARMA ──────────────────────────────────────────────

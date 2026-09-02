@@ -11,22 +11,31 @@
  *
  * ─── LA GEOMETRÍA ──────────────────────────────────────────────────────────
  *
- * Con el pivote del brazo en el origen y la viga saliendo de él con una
- * inclinación C, el pie del pilar vive SOBRE la recta de la viga, a una
- * distancia t del pivote. El brazo mide X y el pilar L, así que los tres
- * lados cierran un triángulo y vale el teorema del coseno:
+ * Con el pivote del brazo en el origen, la viga es una recta de inclinación C
+ * que pasa a distancia E del pivote —el DESCENTRADO: en una banca real la viga
+ * de topes no pasa por el pivote del respaldo, pasa por debajo—. Con `u` en la
+ * dirección de la viga y `n` perpendicular, el pie del pilar está en
+ * `E·n + t·u`, y el brazo en `X·(cos θ, sin θ)`. Como `n·u = 0`, el cuadrado
+ * de la distancia entre los dos sale limpio:
  *
- *     L² = X² + t² − 2·X·t·cos(θ − C)
+ *     L² = X² + E² + t² − 2·X·E·sen(θ−C) − 2·X·t·cos(θ−C)
  *
- * donde θ es el ángulo del brazo. Pedir que el recorrido vaya de A a B
- * apoyándose en una viga de largo Y es pedir que el pie recorra [t₀, t₀+Y]
- * mientras θ va de A a B. Son dos ecuaciones con dos incógnitas —t₀ y L—, y
- * restándolas la cuadrática se cancela sola:
+ * Pedir que el recorrido vaya de A a B apoyándose en una viga de largo Y es
+ * pedir que el pie recorra [t₀, t₀+Y] mientras θ va de A a B. Son dos
+ * ecuaciones con dos incógnitas —t₀ y L—, y al restarlas la cuadrática y el
+ * término de E² se cancelan solos:
  *
- *     t₀ = Y·(Y − 2X·cos β) / (2·(X·cos β − X·cos α − Y))      α = A−C, β = B−C
- *     L  = √(X² + t₀² − 2·X·t₀·cos α)
+ *     t₀ = [Y² − 2XY·cos β + 2XE·(sen α − sen β)] / [2·(X·cos β − X·cos α − Y)]
+ *     L  = √(X² + E² + t₀² − 2·X·E·sen α − 2·X·t₀·cos α)      α = A−C, β = B−C
  *
- * No hay iteración ni ajuste: es cerrado.
+ * Con E = 0 se reduce a la fórmula de siempre. No hay iteración ni ajuste: es
+ * cerrado.
+ *
+ * Leer el ángulo de vuelta —qué grados da un tope a distancia t— sí necesita
+ * un paso más, porque queda `E·sen ψ + t·cos ψ = K` con ψ = θ−C, que es una
+ * sola sinusoide: `√(E²+t²)·cos(ψ − φ) = K` con `φ = atan2(E, t)`. De ahí
+ * `θ = C + φ ± acos(K/√(E²+t²))`, y el signo lo decide cuál de los dos deja
+ * los topes en escalera.
  */
 
 const D2R = Math.PI / 180;
@@ -43,12 +52,22 @@ export interface CfgBrazoPilar {
   vigaCm: number;
   /** C: inclinación de la viga (grados sobre la horizontal). */
   inclinacionC: number;
+  /**
+   * E: DESCENTRADO de la viga (cm) — a qué distancia pasa su recta del pivote
+   * del brazo. Cero quiere decir que pasa justo por él. En una banca real la
+   * viga de topes corre por el bastidor, por debajo del pivote del respaldo:
+   * en la del diseñador son 4,2 cm.
+   */
+  descentradoCm?: number;
   /** Cuántos topes lleva la viga (mínimo 2). */
   topes?: number;
 }
 
 export interface TopeBrazoPilar {
-  /** Distancia del tope al pivote del brazo, sobre la recta de la viga. */
+  /**
+   * Distancia del tope al PIE DE LA PERPENDICULAR: el punto de la recta de la
+   * viga más cercano al pivote. Con descentrado cero ese punto ES el pivote.
+   */
   distanciaCm: number;
   /** Ángulo en que queda el brazo apoyado en ese tope. */
   gradoBrazo: number;
@@ -75,11 +94,16 @@ export interface SolucionBrazoPilar {
  * respaldo—. Rechazar los negativos tiraba la mitad de los topes y dejaba un
  * recorrido que no era el pedido.
  */
-function anguloEnTope(X: number, L: number, C: number, t: number): number | null {
-  if (Math.abs(t) <= 1e-6) return null;
-  const cos = (X * X + t * t - L * L) / (2 * X * t);
+function anguloEnTope(
+  X: number, E: number, L: number, C: number, t: number, rama: 1 | -1,
+): number | null {
+  const R = Math.hypot(E, t);
+  if (R <= 1e-6) return null;
+  const K = (X * X + E * E + t * t - L * L) / (2 * X);
+  const cos = K / R;
   if (!Number.isFinite(cos) || cos < -1 || cos > 1) return null;
-  return C + Math.acos(cos) * R2D;
+  const fase = Math.atan2(E, t) * R2D;
+  return C + fase + rama * Math.acos(cos) * R2D;
 }
 
 /**
@@ -123,6 +147,7 @@ function cumpleElRecorrido(s: SolucionBrazoPilar, cfg: CfgBrazoPilar): boolean {
 function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
   const X = Math.max(1, cfg.brazoCm);
   const Y = Math.max(1, cfg.vigaCm);
+  const E = cfg.descentradoCm ?? 0;
   const nTopes = Math.max(2, Math.round(cfg.topes ?? 5));
   const A = Math.min(cfg.gradoA, cfg.gradoB);
   const B = Math.max(cfg.gradoA, cfg.gradoB);
@@ -131,20 +156,22 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
   const probar = (p: number, q: number): { t0: number; L: number } | null => {
     const cp = Math.cos((p - C) * D2R);
     const cq = Math.cos((q - C) * D2R);
+    const sp = Math.sin((p - C) * D2R);
+    const sq = Math.sin((q - C) * D2R);
     const den = 2 * (X * cq - X * cp - Y);
     if (Math.abs(den) < 1e-9) return null;
-    const t0 = (Y * (Y - 2 * X * cq)) / den;
-    const L2 = X * X + t0 * t0 - 2 * X * t0 * cp;
+    const t0 = (Y * Y - 2 * X * Y * cq + 2 * X * E * (sp - sq)) / den;
+    const L2 = X * X + E * E + t0 * t0 - 2 * X * E * sp - 2 * X * t0 * cp;
     if (!(L2 > 0)) return null;
     return { t0, L: Math.sqrt(L2) };
   };
 
   /** Los topes de una candidata, y si sirven: todos resueltos y en escalera. */
-  const topesDe = (c: { t0: number; L: number }): TopeBrazoPilar[] => {
+  const topesDe = (c: { t0: number; L: number }, rama: 1 | -1): TopeBrazoPilar[] => {
     const out: TopeBrazoPilar[] = [];
     for (let i = 0; i < nTopes; i++) {
       const t = c.t0 + (Y * i) / (nTopes - 1);
-      const g = anguloEnTope(X, c.L, C, t);
+      const g = anguloEnTope(X, E, c.L, C, t, rama);
       if (g == null) return [];
       out.push({ distanciaCm: +t.toFixed(2), gradoBrazo: +g.toFixed(1) });
     }
@@ -160,9 +187,13 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
     return out;
   };
 
+  // Cuatro candidatas: las dos maneras de repartir el recorrido por las dos
+  // ramas del arcocoseno. Con descentrado cero la rama la decidía el signo de
+  // `t`; con descentrado hay que probar las dos y quedarse con la que deja los
+  // topes en escalera.
   const candidatas = [probar(A, B), probar(B, A)]
     .filter((c): c is { t0: number; L: number } => !!c)
-    .map((c) => ({ ...c, topes: topesDe(c) }));
+    .flatMap((c) => ([1, -1] as const).map((rama) => ({ ...c, topes: topesDe(c, rama) })));
   // PRIMERO LAS QUE DAN UNA ESCALERA DE TOPES USABLE; entre ésas, el pilar más
   // corto. Las dos ramas de la ecuación cierran el triángulo, pero una puede
   // pedir pilares de metros para el mismo recorrido, y ordenar sólo por largo
@@ -189,7 +220,9 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
       "Con esa viga los topes de en medio se salen del recorrido: el pie del pilar"
       + " pasa por encima del pivote. Alarga la viga, acorta el brazo o cierra el recorrido.";
   } else if (buena.t0 <= 0) {
-    aviso = `La viga arranca ${Math.abs(buena.t0).toFixed(1)} cm por DETRÁS del pivote: déjala pasar de largo o corre el pivote.`;
+    aviso =
+      `La viga arranca ${Math.abs(buena.t0).toFixed(1)} cm por DETRÁS del punto`
+      + " más cercano al pivote: déjala pasar de largo o corre el pivote.";
   } else if (buena.L < 5) {
     aviso = "El pilar sale demasiado corto para ser una pieza: alarga la viga o cierra el recorrido.";
   } else if (buena.L > 3 * X) {
