@@ -1703,12 +1703,18 @@ export class PhysicsWorld {
       anota(b.body, 1, { ref: a.body, ancla: anchorA, eje: axis });
       anota(a.body, -1, { ref: b.body, ancla: anchorB, eje: { x: eL.x, y: eL.y, z: eL.z } });
       // Los topes pedidos, corridos al frame del motor.
-      if (joint.limitsEnabled) handle.setLimits(base + rango[0], base + rango[1]);
+      if (joint.limitsEnabled) {
+        const t = PhysicsWorld.topes(base, rango);
+        handle.setLimits(t[0], t[1]);
+      }
     }
 
     if (joint.locked && !joint.soldada && joint.kind === "revolute") {
       // Frenada EN SU SITIO, no en el cero del motor.
-      const t = this.frenosDe(b.body.isDynamic() ? b.body : a.body)?.base ?? 0;
+      const t = PhysicsWorld.tope(
+        this.frenosDe(b.body.isDynamic() ? b.body : a.body)?.base ?? 0,
+        0,
+      );
       handle.setLimits(t, t);
     } else if (joint.locked) {
       handle.setLimits(0, 0);
@@ -2545,6 +2551,38 @@ export class PhysicsWorld {
    * signo). Se saca de la rotación relativa entre los dos cuerpos, que es
    * exactamente lo que el pasador deja variar.
    */
+  /**
+   * Un RECORRIDO (no un ángulo suelto) llevado al frame del motor.
+   *
+   * El tope de un revolute de Rapier se mide sobre un ángulo que vive en
+   * (−π, π]. Corregir el recorrido con el desfase `base` es lo correcto EN
+   * GEOMETRÍA, pero sólo se puede EXPRESAR si la ventana corrida cabe en esa
+   * horquilla —dándole, si hace falta, una vuelta entera de margen—. Si no
+   * cabe, Rapier la recorta y la bisagra se planta: el pilar del ensayo de dos
+   * bisagras se quedaba en 1,2° de los 71 pedidos, y el brazo del ensayo plano
+   * en 7,2° de su media circunferencia. En ese caso vale más el recorrido sin
+   * corregir —lo que se hacía hasta v0.3.30— que uno recortado.
+   */
+  private static topes(base: number, rango: [number, number]): [number, number] {
+    const T = Math.PI;
+    if (rango[1] - rango[0] >= 2 * T - 1e-6) return [-T, T];
+    for (const k of [0, -1, 1]) {
+      const lo = base + rango[0] + k * 2 * T;
+      const hi = base + rango[1] + k * 2 * T;
+      if (lo >= -T && hi <= T) return [lo, hi];
+    }
+    return rango;
+  }
+
+  /** Un ÁNGULO suelto (una bisagra clavada) llevado al frame del motor. */
+  private static tope(base: number, angulo: number): number {
+    const T = Math.PI;
+    let t = base + angulo;
+    while (t > T) t -= 2 * T;
+    while (t < -T) t += 2 * T;
+    return t;
+  }
+
   private anguloFreno(f: {
     a: R.RigidBody;
     b: R.RigidBody;
@@ -2673,7 +2711,10 @@ export class PhysicsWorld {
     const f = e && this.frenosDe(e.body);
     if (!f) return false;
     f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
-    f.handle.setLimits(f.base + f.objetivo, f.base + f.objetivo);
+    {
+      const t = PhysicsWorld.tope(f.base, f.objetivo);
+      f.handle.setLimits(t, t);
+    }
     // SE PARA EN SECO donde la tomas. Si venía cayendo, el tope tarda unos
     // pasos en matar su velocidad y la pieza sigue derivando varios grados
     // después del clic —se siente como si el agarre no hubiera prendido—. Una
@@ -2712,7 +2753,10 @@ export class PhysicsWorld {
       actual + ventana,
     );
     f.objetivo = Math.min(Math.max(f.objetivo, f.rango[0]), f.rango[1]);
-    f.handle.setLimits(f.base + f.objetivo, f.base + f.objetivo);
+    {
+      const t = PhysicsWorld.tope(f.base, f.objetivo);
+      f.handle.setLimits(t, t);
+    }
     f.a.wakeUp();
     f.b.wakeUp();
     return f.objetivo * RAD2DEG;
@@ -2728,7 +2772,10 @@ export class PhysicsWorld {
     if (!f) return;
     f.objetivo = null;
     if (f.freno) this.fijarFreno(e!.body);
-    else f.handle.setLimits(f.rango[0], f.rango[1]);
+    else {
+      const t = PhysicsWorld.topes(f.base, f.rango);
+      f.handle.setLimits(t[0], t[1]);
+    }
     f.a.wakeUp();
     f.b.wakeUp();
   }
@@ -2739,7 +2786,8 @@ export class PhysicsWorld {
     // El mapa anota TODAS las bisagras desde v0.3.21; sólo las que llevan el
     // lock switch tienen freno que soltar o que volver a poner.
     if (!f?.freno) return;
-    f.handle.setLimits(f.base + f.rango[0], f.base + f.rango[1]);
+    const t = PhysicsWorld.topes(f.base, f.rango);
+    f.handle.setLimits(t[0], t[1]);
     f.a.wakeUp();
     f.b.wakeUp();
   }
@@ -2753,7 +2801,8 @@ export class PhysicsWorld {
     const f = this.frenosDe(body);
     if (!f?.freno) return;
     const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
-    f.handle.setLimits(f.base + t, f.base + t);
+    const m = PhysicsWorld.tope(f.base, t);
+    f.handle.setLimits(m, m);
     f.a.wakeUp();
     f.b.wakeUp();
   }
