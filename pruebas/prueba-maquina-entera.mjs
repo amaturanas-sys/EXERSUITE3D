@@ -41,6 +41,15 @@ await p.evaluate(async () => {
   window.__retrato = () => Object.fromEntries(
     ed.listObjects().map((o) => [o.id, o.mesh.position.toArray().map((v) => +v.toFixed(2))]),
   );
+  // Retrato COMPLETO: posición y orientación. Es lo que mira el editor para
+  // decidir qué entra en la partida, y la prueba tiene que medir con su misma
+  // vara —contando sólo la traslación se le escapaba la pieza que gira sobre
+  // su bisagra sin desplazarse, y salía «13 congeladas de 12 movidas»—.
+  window.__poses = () => Object.fromEntries(
+    ed.listObjects().map((o) => [o.id, {
+      p: o.mesh.position.toArray(), q: o.mesh.quaternion.toArray(),
+    }]),
+  );
   // Cuánto se ha movido la pieza que más se ha movido, entre dos retratos.
   window.__deriva = (a, b) => {
     let peor = 0, quien = null;
@@ -75,6 +84,7 @@ await p.evaluate(async () => {
 const r = await p.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const diseno = window.__retrato();
+  window.__disenoPose = window.__poses();
   const pilaDiseno = window.__pila();
 
   // Sentado en el asiento de la máquina, con la herramienta real.
@@ -117,10 +127,13 @@ const r = await p.evaluate(async () => {
   const subioLaPila = pila ? +(pila.mesh.position.y - diseno[pila.id][1]).toFixed(2) : 0;
   // Cuántas piezas se movieron DE VERDAD durante el posado, contadas sobre las
   // mallas: es con lo que hay que comparar lo que la partida llegó a congelar.
-  const movidas = Object.entries(window.__retrato())
-    .filter(([id, p]) => {
-      const d = diseno[id];
-      return d && Math.hypot(p[0] - d[0], p[1] - d[1], p[2] - d[2]) > 0.05;
+  const movidas = Object.entries(window.__poses())
+    .filter(([id, a]) => {
+      const d = window.__disenoPose[id];
+      if (!d) return false;
+      const dist = Math.hypot(a.p[0] - d.p[0], a.p[1] - d.p[1], a.p[2] - d.p[2]);
+      const giro = new T.Quaternion(...d.q).angleTo(new T.Quaternion(...a.q));
+      return dist >= 0.05 || giro >= 1e-3;
     }).length;
   const congeladas = ed.terminarPoseMaquina().piezas;
   await new Promise((x) => setTimeout(x, 500));
