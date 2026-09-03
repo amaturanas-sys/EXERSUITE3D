@@ -45,6 +45,21 @@ mide una vez al montar la unión y **todos** los topes se dan sumándolo —el
 freno, el recorrido pedido, el mando del scroll y la fijación al soltar—. El
 mismo ensayo: **0,0 cm**.
 
+Corregir el cero es lo correcto en geometría, pero sólo se puede expresar
+dentro de (−π, π], que es donde vive el ángulo del tope de Rapier: una ventana
+corrida que se sale de esa horquilla Rapier la recorta, y la bisagra se planta
+—el pilar del ensayo de dos bisagras se quedaba en **1,2° de los 71 pedidos** y
+el brazo del ensayo plano en **7,2°** de su media circunferencia—. Así que el
+recorrido se corre sólo si cabe, dándole una vuelta entera de margen si con eso
+entra; la vuelta entera se deja tal cual, que ya admite cualquier ángulo; y si
+no cabe se usa sin corregir, como hasta v0.3.30.
+
+**Y el desfase es el de SU junta.** `frenosDe()` devuelve la bisagra elegida del
+cuerpo, y un cuerpo puede colgar de varias: al montar una junta frenada se
+estaba cogiendo el cero de la bisagra de al lado. En la máquina entera eso
+clavaba trece piezas fuera de sitio y la desarmaba, **44,28 cm** la que más se
+iba. Ahora se guarda el desfase de la junta que se está montando.
+
 ## [0.3.30] — 2026-09-02
 
 ### Añadido

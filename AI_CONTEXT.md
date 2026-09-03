@@ -409,13 +409,25 @@ propósito, es móvil sin más que mirar.
 **EL CERO DE RAPIER NO ES LA POSE DE DISEÑO.** El frame de un revolute se
 levanta como una base alrededor del eje EN CADA CUERPO, así que su ángulo cero
 cae donde los dos cuerpos comparten ORIENTACIÓN, no donde se montaron. Cada
-freno guarda ese desfase en `base` y **todo** `setLimits` lo suma: el freno, el
-recorrido pedido, el mando del scroll y la fijación al soltar. Se puede pasar
-años sin notarlo —las dos palas de una bisagra nacen casi alineadas, así que
-`base ≈ 0`— y salta a la vista en cuanto el eje atraviesa una pieza girada: el
-pasador con el brazo a 90° lo arrancaba de su sitio 20 cm en el primer
-fotograma. Regla: **un ángulo de junta sólo significa algo junto al frame en el
-que se mide**.
+freno guarda ese desfase en `base` y todo `setLimits` pasa por `topes()` (un
+recorrido) o `tope()` (un ángulo suelto). Se puede pasar años sin notarlo —las
+dos palas de una bisagra nacen casi alineadas, así que `base ≈ 0`— y salta a la
+vista en cuanto el eje atraviesa una pieza girada: el pasador con el brazo a 90°
+lo arrancaba de su sitio 20 cm en el primer fotograma. Regla: **un ángulo de
+junta sólo significa algo junto al frame en el que se mide**.
+
+Corregir es lo correcto EN GEOMETRÍA, pero sólo se puede EXPRESAR dentro de
+(−π, π], que es donde vive el ángulo del tope de Rapier. De ahí las tres reglas
+de `topes()`, cada una pagada con una regresión: la **vuelta entera** se deja
+tal cual (corrida se recorta y la bisagra deja de ceder —el pilar del ensayo de
+dos bisagras se quedó en 1,2° de los 71 pedidos—); una ventana estrecha se
+corre, dándole una vuelta de margen si con eso cabe; y si **no cabe** vale más
+el recorrido sin corregir que uno recortado (el brazo del ensayo plano, 7,2° de
+su media circunferencia). Y el desfase es **el de esa junta**: `frenosDe()`
+devuelve la bisagra ELEGIDA del cuerpo, y un cuerpo puede colgar de varias, así
+que al montar una junta frenada hay que guardarse su propio `base` —pedírselo
+al mapa clavaba trece piezas de la máquina entera en el cero de la bisagra de al
+lado y la desarmaba, 44,28 cm la que más se iba—.
 
 **La mano nunca tira fuera del arco.** `enElArco()` lleva el objetivo del
 resorte a la circunferencia del pasador —recalculada CADA PASO desde la pose
