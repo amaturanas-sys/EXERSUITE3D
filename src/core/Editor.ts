@@ -821,6 +821,16 @@ export class Editor {
       if (object.params.kind === "dentada" && object.params.dentadaGemela) {
         this.sincronizarDentadaGemela(object);
       }
+      // EL GIZMO DEFINE DÓNDE VA EL PASADOR: moverlo rehace sus uniones y sus
+      // taladros donde acaba de quedar, sin volver a abrir Propiedades.
+      if (object.componentId === "pasador" && !this.rehaciendoPasador) {
+        this.rehaciendoPasador = true;
+        try {
+          this.aplicarPasador(object);
+        } finally {
+          this.rehaciendoPasador = false;
+        }
+      }
     });
 
     // Al mover una pieza, actualiza las cuerdas ancladas a ella.
@@ -8369,6 +8379,8 @@ export class Editor {
     let cuantas = 0;
     for (const p of piezas.length ? piezas : [obj]) {
       for (const c of p.params.canales ?? []) {
+        // Los taladros de PASADOR no dan carrera: son pivotes.
+        if (c.pivote) continue;
         // EL CANAL YA DICE POR DÓNDE SE CORRE: es un taladro recto, y una
         // pieza enhebrada solo puede deslizarse a lo largo de él. Si además se
         // sabe QUÉ guía lo ocupa, se prefiere el eje del tubo, que es exacto;
@@ -11431,6 +11443,9 @@ export class Editor {
   /** Evita el ida y vuelta al sincronizar las dos placas de una doble. */
   private sincronizandoDentada = false;
 
+  /** Evita que rehacer el pasador se llame a sí mismo por sus propios avisos. */
+  private rehaciendoPasador = false;
+
   /**
    * PLACA DENTADA DOBLE (v0.3.25): la misma placa en la cara de enfrente.
    *
@@ -12377,8 +12392,119 @@ export class Editor {
    * no lo está, esa guía no se toma: el carro va montado a escuadra con sus
    * barras, también en la máquina real.
    */
+  /**
+   * EL PASADOR (v0.3.31): la bisagra sin placas.
+   *
+   * Un cilindro que se SUELDA a unas piezas —las anclas— y hace de pivote para
+   * otras —las móviles—, con el recorrido en grados y su interruptor de libre
+   * o frenado. Todo lo que la bisagra resuelve con dos palas y un pasador, esto
+   * lo resuelve con el pasador solo: es lo que hace falta cuando el eje
+   * ATRAVIESA las piezas en vez de atornillarse a su cara.
+   *
+   * Se puede llamar tantas veces como haga falta —al cambiar la lista, al
+   * mover el gizmo, al tocar el recorrido—: lo primero que hace es retirar las
+   * uniones que puso la vez anterior, así que no acumula herraje.
+   */
+  aplicarPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number } {
+    const marca = `Pasador ${obj.id}`;
+    for (const j of this.listJoints()) {
+      if (j.name.startsWith(marca)) this.removeJoint(j);
+    }
+    obj.mesh.updateMatrixWorld(true);
+    const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
+    // El eje del pasador es su Y local: es como se construye el cilindro.
+    const eje = new THREE.Vector3(0, 1, 0)
+      .applyQuaternion(obj.mesh.quaternion)
+      .normalize();
+    const vivo = (id: string): SceneObject | undefined => {
+      const o = this.objects.get(id);
+      return o && o !== obj ? o : undefined;
+    };
+    const anclas = (obj.params.pasadorAnclas ?? []).map(vivo).filter(Boolean) as SceneObject[];
+    const moviles = (obj.params.pasadorMoviles ?? []).map(vivo).filter(Boolean) as SceneObject[];
+
+    // ANCLAS: soldadas. El pasador y su soporte son un solo cuerpo, igual que
+    // el pasador de una bisagra va soldado a su pala.
+    for (const a of anclas) {
+      const j = this.connect(obj.id, a.id, "revolute", centro.clone());
+      if (!j) continue;
+      j.locked = true;
+      j.soldada = true;
+      j.name = `${marca}: anclaje a ${a.name}`;
+    }
+
+    // MÓVILES: articuladas sobre el eje del pasador. El recorrido se lee en la
+    // MISMA escala que la bisagra —0 alineado con el ancla, 180 extendido—
+    // para que los grados quieran decir lo mismo en las dos herramientas.
+    const dir = (o: SceneObject): THREE.Vector3 => {
+      const d = o.mesh.getWorldPosition(new THREE.Vector3()).sub(centro);
+      d.addScaledVector(eje, -d.dot(eje));
+      return d.lengthSq() > 1e-6 ? d.normalize() : new THREE.Vector3();
+    };
+    // La referencia de los grados: hacia dónde queda lo que ancla el pasador.
+    // Sin anclas se toma la vertical, que es la lectura que espera cualquiera.
+    let ref = new THREE.Vector3();
+    for (const a of anclas) ref.add(dir(a));
+    if (ref.lengthSq() < 1e-6) {
+      ref = new THREE.Vector3(0, -1, 0).projectOnPlane(eje);
+      if (ref.lengthSq() < 1e-6) ref = new THREE.Vector3(1, 0, 0).projectOnPlane(eje);
+    }
+    ref.normalize();
+    for (const m of moviles) {
+      const j = this.connect(obj.id, m.id, "revolute", centro.clone());
+      if (!j) continue;
+      j.name = `${marca}: pivote de ${m.name}`;
+      j.axisVec = eje.clone();
+      j.soldada = false;
+      // FRENADO = el candado de la bisagra: se sostiene donde lo dejes, pero
+      // cede a la mano. Libre = cae con la gravedad.
+      j.locked = obj.params.pasadorLibre === false;
+      const d = dir(m);
+      const phi = d.lengthSq() < 0.5
+        ? 0
+        : Math.atan2(new THREE.Vector3().crossVectors(ref, d).dot(eje), ref.dot(d))
+          * THREE.MathUtils.RAD2DEG;
+      j.apertura0 = ((phi % 360) + 360) % 360;
+      j.sentidoApertura = 1;
+      j.min = 0;
+      j.max = 360;
+      j.limitsEnabled = !!obj.params.pasadorLimite;
+      if (obj.params.pasadorLimite) {
+        j.min = Math.min(obj.params.pasadorMin ?? 0, obj.params.pasadorMax ?? 360);
+        j.max = Math.max(obj.params.pasadorMin ?? 0, obj.params.pasadorMax ?? 360);
+      }
+      // Contactos reales entre el pasador y lo que gira en él sólo si no se
+      // solapan ya: si se solapan —y con un eje PASANTE se solapan siempre—
+      // encenderlos los expulsaría al arrancar.
+      j.contactos = this.piezasSeparadas(obj, m);
+    }
+
+    // TALADROS: donde va el pasador quedan los agujeros, como en la máquina.
+    let taladros = 0;
+    if (obj.params.pasadorPerfora !== false) {
+      for (const o of [...anclas, ...moviles]) {
+        if (this.vincularAGuias(o, new Set([obj.id])) > 0) taladros++;
+      }
+    }
+    this.jointUpdated();
+    this.bus.emit("objectsChanged", { objects: this.listObjects() });
+    this.scheduleAutosave();
+    this.requestRender();
+    return { anclas: anclas.length, moviles: moviles.length, taladros };
+  }
+
+  /**
+   * ¿Esta pieza ABRE TALADROS en lo que atraviesa? La guía tubular lo hace
+   * desde v0.3.3 y el pasador desde v0.3.31: son cilindros que pasan de lado a
+   * lado, y en la máquina real donde va uno hay un agujero.
+   */
+  private perfora(o: SceneObject): boolean {
+    if (o.componentId === "guia-tubular") return true;
+    return o.componentId === "pasador" && o.params.pasadorPerfora !== false;
+  }
+
   vincularAGuias(obj: SceneObject, soloGuias?: ReadonlySet<string>): number {
-    if (obj.componentId === "guia-tubular") return 0;
+    if (this.perfora(obj)) return 0;
     // Un TOPE no se enhebra: se MONTA sobre la guía más cercana, coaxial, a la
     // altura a la que se soltó. Desde ahí el motor lo toma por espaciador y
     // acota el recorrido del carro.
@@ -12407,7 +12533,7 @@ export class Editor {
       }
     }
     for (const g of this.objects.values()) {
-      if (g === obj || g.componentId !== "guia-tubular") continue;
+      if (g === obj || !this.perfora(g)) continue;
       if (soloGuias && !soloGuias.has(g.id)) continue;
       const largo = g.params.height ?? 0;
       const radio = Math.max(g.params.radiusTop ?? 0, g.params.radiusBottom ?? 0);
@@ -12460,6 +12586,10 @@ export class Editor {
         // y el carro se agarrota en cuanto la malla tiene un vértice de más.
         radio: +(radio + 0.35).toFixed(3),
         guia: g.id,
+        // EL TALADRO DE UN PASADOR NO ES UNA CORREDERA: se anota como pivote
+        // para que `carreraDeLaPieza` no lo tome por una guía y deje a la
+        // pieza escapándose por el eje del propio pasador.
+        pivote: g.componentId === "pasador" || undefined,
       });
     }
     const antes = JSON.stringify(obj.params.canales ?? []);

@@ -137,6 +137,12 @@ export class PhysicsWorld {
       eje: THREE.Vector3;
       qRel0: THREE.Quaternion;
       rango: [number, number];
+      /**
+       * Desfase entre el cero del motor y la pose de diseño: el frame de un
+       * revolute tiene su cero donde los dos cuerpos comparten orientación, no
+       * donde se montaron. Todos los topes se dan sumándolo.
+       */
+      base: number;
       /** Con freno: el lock switch la sostiene sola donde la dejes. */
       freno: boolean;
       /** Grados de placa por cada 100 px de scroll o de arrastre. */
@@ -1628,10 +1634,8 @@ export class PhysicsWorld {
       return t0 <= t1 ? [t0, t1] : [t1, t0];
     };
 
-    if (joint.limitsEnabled) {
-      const [min, max] =
-        joint.kind === "revolute" ? rangoRevolute() : [joint.min * S, joint.max * S];
-      handle.setLimits(min, max);
+    if (joint.limitsEnabled && joint.kind !== "revolute") {
+      handle.setLimits(joint.min * S, joint.max * S);
     }
 
     // Lock switch (diagrama Versatilidad): bloqueada = rígida en la pose de
@@ -1657,6 +1661,21 @@ export class PhysicsWorld {
       const rango: [number, number] = joint.limitsEnabled
         ? rangoRevolute()
         : [-Math.PI, Math.PI];
+      // EL CERO DE RAPIER NO ES LA POSE DE DISEÑO (v0.3.31).
+      //
+      // El frame del revolute se construye levantando una base alrededor del
+      // eje EN CADA CUERPO, así que su ángulo cero es donde los dos cuerpos
+      // tienen la MISMA orientación, no donde están al montarlos. En una
+      // bisagra la diferencia es pequeña —las dos palas nacen casi alineadas—
+      // y no se notaba; con un pasador que atraviesa una pieza girada 90°,
+      // `setLimits(0,0)` la arrancaba de su sitio y la clavaba 90° más allá:
+      // el brazo del ensayo caía 20 cm de golpe en el primer fotograma.
+      //
+      // Se mide ese desfase UNA VEZ y todos los topes se dan sumándolo.
+      const base = 2 * Math.atan2(
+        new THREE.Vector3(qRel0.x, qRel0.y, qRel0.z).dot(axisLocalB.clone().normalize()),
+        qRel0.w,
+      );
       const comun = {
         handle,
         a: a.body,
@@ -1664,6 +1683,7 @@ export class PhysicsWorld {
         eje: axisLocalB.clone().normalize(),
         qRel0,
         rango,
+        base,
         freno: joint.locked,
         sensibilidad: joint.sensibilidad,
         objetivo: null,
@@ -1682,10 +1702,14 @@ export class PhysicsWorld {
       const eL = axisLocalB;
       anota(b.body, 1, { ref: a.body, ancla: anchorA, eje: axis });
       anota(a.body, -1, { ref: b.body, ancla: anchorB, eje: { x: eL.x, y: eL.y, z: eL.z } });
+      // Los topes pedidos, corridos al frame del motor.
+      if (joint.limitsEnabled) handle.setLimits(base + rango[0], base + rango[1]);
     }
 
     if (joint.locked && !joint.soldada && joint.kind === "revolute") {
-      handle.setLimits(0, 0);
+      // Frenada EN SU SITIO, no en el cero del motor.
+      const t = this.frenosDe(b.body.isDynamic() ? b.body : a.body)?.base ?? 0;
+      handle.setLimits(t, t);
     } else if (joint.locked) {
       handle.setLimits(0, 0);
     } else if (joint.motor.enabled) {
@@ -2649,7 +2673,7 @@ export class PhysicsWorld {
     const f = e && this.frenosDe(e.body);
     if (!f) return false;
     f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
-    f.handle.setLimits(f.objetivo, f.objetivo);
+    f.handle.setLimits(f.base + f.objetivo, f.base + f.objetivo);
     // SE PARA EN SECO donde la tomas. Si venía cayendo, el tope tarda unos
     // pasos en matar su velocidad y la pieza sigue derivando varios grados
     // después del clic —se siente como si el agarre no hubiera prendido—. Una
@@ -2688,7 +2712,7 @@ export class PhysicsWorld {
       actual + ventana,
     );
     f.objetivo = Math.min(Math.max(f.objetivo, f.rango[0]), f.rango[1]);
-    f.handle.setLimits(f.objetivo, f.objetivo);
+    f.handle.setLimits(f.base + f.objetivo, f.base + f.objetivo);
     f.a.wakeUp();
     f.b.wakeUp();
     return f.objetivo * RAD2DEG;
@@ -2715,7 +2739,7 @@ export class PhysicsWorld {
     // El mapa anota TODAS las bisagras desde v0.3.21; sólo las que llevan el
     // lock switch tienen freno que soltar o que volver a poner.
     if (!f?.freno) return;
-    f.handle.setLimits(f.rango[0], f.rango[1]);
+    f.handle.setLimits(f.base + f.rango[0], f.base + f.rango[1]);
     f.a.wakeUp();
     f.b.wakeUp();
   }
@@ -2729,7 +2753,7 @@ export class PhysicsWorld {
     const f = this.frenosDe(body);
     if (!f?.freno) return;
     const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
-    f.handle.setLimits(t, t);
+    f.handle.setLimits(f.base + t, f.base + t);
     f.a.wakeUp();
     f.b.wakeUp();
   }

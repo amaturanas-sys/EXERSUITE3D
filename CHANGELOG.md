@@ -5,6 +5,46 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.31] — 2026-09-03
+
+### Añadido
+
+**PASADOR: la bisagra sin placas.** Nueva pieza en MOVIMIENTO. Un cilindro que
+se ancla a unas piezas y hace de pivote para otras — lo que hace falta cuando el
+eje ATRAVIESA el material en vez de atornillarse a su cara.
+
+En Propiedades se dice, pieza por pieza, si **ancla** o si es **móvil**: las
+anclas se sueldan al pasador y las móviles se articulan sobre su eje exacto.
+Admite varias de cada. El recorrido se acota en grados, en la misma escala que
+la bisagra, y un interruptor lo deja **libre** (cae con la gravedad) o
+**frenado** (se sostiene donde lo dejes y cede a la mano). El **gizmo lo
+coloca**: al moverlo se rehacen sus uniones y sus taladros donde quedó, sin
+volver a abrir el panel.
+
+**Y perfora lo que atraviesa**, como la guía tubular, con el mismo mecanismo:
+donde va el pasador quedan los agujeros del mecanismo, del diámetro del eje más
+la holgura. Pero su taladro se anota como **pivote**, no como corredera: sin esa
+distinción, poner un pasador convertía a sus piezas en correderas que se
+escapaban por el eje del propio pasador.
+
+Medido: dos anclas soldadas y una móvil articulada de una sola llamada, taladro
+de radio 1,60 en la pieza atravesada, recorrido acotado 40–140°, libre cae 20 cm
+girando y frenado **0,0 cm**, y el eje aguanta sin moverse ni él ni sus anclas.
+
+### Corregido
+
+**El cero de un revolute no es la pose de diseño, y frenar lo arrancaba de su
+sitio.** El frame de un revolute se construye levantando una base alrededor del
+eje EN CADA CUERPO, así que su ángulo cero es donde los dos cuerpos comparten
+orientación, no donde están al montarlos. En una bisagra la diferencia es
+pequeña —las dos palas nacen casi alineadas— y llevaba sin notarse desde
+siempre; con un pasador que atraviesa una pieza girada 90°, `setLimits(0,0)`
+la arrancaba y la clavaba 90° más allá: el brazo del ensayo **caía 20 cm de
+golpe en el primer fotograma y se quedaba ahí rígido**. Ahora ese desfase se
+mide una vez al montar la unión y **todos** los topes se dan sumándolo —el
+freno, el recorrido pedido, el mando del scroll y la fijación al soltar—. El
+mismo ensayo: **0,0 cm**.
+
 ## [0.3.30] — 2026-09-02
 
 ### Añadido

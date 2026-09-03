@@ -452,6 +452,7 @@ export class PropertiesPanel {
     }
     if (isLine) this.body.append(this.lineSection(obj));
     if (isDentada) this.body.append(this.dentadaSection(obj));
+    if (obj.componentId === "pasador") this.body.append(this.pasadorSection(obj));
     this.body.append(this.transformSection(obj));
     if (parametric) {
       this.body.append(this.deformSection(obj));
@@ -870,6 +871,117 @@ export class PropertiesPanel {
    * trazó sobre el pilar, y lo que se recalcula es cuántos ganchos caben
    * dentro. Solo crece si se piden a mano más de los que entran.
    */
+  /**
+   * EL PASADOR (v0.3.31): qué piezas lo anclan, cuáles pivotan en él, cuánto
+   * recorrido tienen y si va libre o frenado.
+   *
+   * La lista es de TRES estados por pieza —nada, ancla, móvil— porque es la
+   * pregunta real del mecanismo: un eje no vale de nada si no se sabe qué lo
+   * sujeta y qué gira en él. Se aplica al momento: no hay botón de confirmar,
+   * porque cada cambio ya se ve en la máquina.
+   */
+  private pasadorSection(obj: SceneObject): HTMLElement {
+    const p = obj.params;
+    p.pasadorAnclas ??= [];
+    p.pasadorMoviles ??= [];
+    const aplicar = (): void => {
+      const r = this.editor.aplicarPasador(obj);
+      clear(resumen);
+      resumen.append(
+        tt(
+          `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s)`,
+          `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s)`,
+        ),
+      );
+    };
+    const resumen = el("div", { class: "sub" });
+
+    // Sólo se ofrecen las piezas que el pasador puede tocar: las de la escena
+    // que no son él mismo ni otro pasador.
+    const filas: HTMLElement[] = [];
+    for (const o of this.editor.listObjects()) {
+      if (o.id === obj.id || o.componentId === "pasador") continue;
+      const sel = el("select", { class: "select" }) as HTMLSelectElement;
+      for (const [v, t] of [
+        ["", tt("—", "—")],
+        ["ancla", tt("Ancla", "Anchor")],
+        ["movil", tt("Móvil", "Mobile")],
+      ] as const) {
+        const op = el("option", { value: v }, [t]) as HTMLOptionElement;
+        sel.append(op);
+      }
+      sel.value = p.pasadorAnclas!.includes(o.id)
+        ? "ancla"
+        : p.pasadorMoviles!.includes(o.id) ? "movil" : "";
+      sel.addEventListener("change", () => {
+        p.pasadorAnclas = p.pasadorAnclas!.filter((x) => x !== o.id);
+        p.pasadorMoviles = p.pasadorMoviles!.filter((x) => x !== o.id);
+        if (sel.value === "ancla") p.pasadorAnclas!.push(o.id);
+        if (sel.value === "movil") p.pasadorMoviles!.push(o.id);
+        aplicar();
+      });
+      filas.push(el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [o.name]),
+        sel,
+      ]));
+    }
+
+    const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
+    limOn.checked = !!p.pasadorLimite;
+    const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
+      const i = el("input", {
+        type: "number", min: "0", max: "360", step: "5", value: String(v),
+      }) as HTMLInputElement;
+      i.addEventListener("change", () => {
+        const n = parseFloat(i.value);
+        if (Number.isFinite(n)) set(Math.min(360, Math.max(0, n)));
+        aplicar();
+      });
+      return i;
+    };
+    const minIn = grados(p.pasadorMin ?? 0, (n) => (p.pasadorMin = n));
+    const maxIn = grados(p.pasadorMax ?? 360, (n) => (p.pasadorMax = n));
+    limOn.addEventListener("change", () => {
+      p.pasadorLimite = limOn.checked;
+      aplicar();
+    });
+
+    const libre = el("input", { type: "checkbox" }) as HTMLInputElement;
+    libre.checked = p.pasadorLibre !== false;
+    libre.addEventListener("change", () => {
+      p.pasadorLibre = libre.checked;
+      aplicar();
+    });
+    const perfora = el("input", { type: "checkbox" }) as HTMLInputElement;
+    perfora.checked = p.pasadorPerfora !== false;
+    perfora.addEventListener("change", () => {
+      p.pasadorPerfora = perfora.checked;
+      aplicar();
+    });
+
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Pasador", "Pin")]),
+      el("div", { class: "sub" }, [
+        tt(
+          "Di qué piezas lo sujetan y cuáles giran en él. El gizmo lo coloca; al moverlo se rehacen sus uniones y sus taladros.",
+          "Say which parts hold it and which pivot on it. The gizmo places it; moving it redoes its joints and holes.",
+        ),
+      ]),
+      ...filas,
+      el("label", { class: "row" }, [limOn, tt("Limitar recorrido (grados)", "Limit travel (degrees)")]),
+      el("div", { class: "row" }, [minIn, maxIn]),
+      el("label", { class: "row" }, [
+        libre,
+        tt("Libre (sin marcar: frenado)", "Free (unchecked: braked)"),
+      ]),
+      el("label", { class: "row" }, [
+        perfora,
+        tt("Perfora lo que atraviesa", "Bores through what it crosses"),
+      ]),
+      resumen,
+    ]);
+  }
+
   private dentadaSection(obj: SceneObject): HTMLElement {
     const p = obj.params;
     const m = medidasDentada(p);

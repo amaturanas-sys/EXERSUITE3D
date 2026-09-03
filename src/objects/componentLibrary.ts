@@ -545,6 +545,23 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description:
       "Barra guía cromada: se tiende entre dos anclajes y por ella corre el carro. Lo que va enhebrado en ella queda circunscrito a su recta.",
   },
+  // PASADOR (v0.3.31): la bisagra SIN PLACAS. Un cilindro que se ancla a unas
+  // piezas y hace de pivote para otras, con su recorrido en grados y su
+  // interruptor de libre o frenado. Como la guía tubular, PERFORA lo que
+  // atraviesa: donde se pone el pasador quedan los taladros del mecanismo.
+  {
+    id: "pasador",
+    label: "Pasador",
+    category: "movimiento",
+    materialId: "acero-pulido",
+    // Ø 2,5 cm y 20 de largo: la medida de un eje de banca. Nace acostado
+    // —el eje de giro es horizontal— porque es como se monta casi siempre.
+    defaults: { kind: "cylinder", radiusTop: 1.25, radiusBottom: 1.25, height: 20, radialSegments: 20 },
+    physics: { massKg: 0.3, fixed: false },
+    orientacion: [0, 0, Math.PI / 2],
+    description:
+      "Eje cilíndrico que hace de pivote: en Propiedades se le dicen qué piezas lo anclan y cuáles giran sobre él, con el recorrido en grados y el freno. Perfora lo que atraviesa, como una guía.",
+  },
   {
     id: "tope-guia",
     label: "Tope de guía",

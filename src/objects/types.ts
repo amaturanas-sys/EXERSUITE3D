@@ -125,6 +125,19 @@ export interface PrimitiveParams {
    */
   dentadaGemela?: string | null;
   /**
+   * PASADOR (v0.3.31). `anclas` son las piezas a las que va sujeto —se sueldan
+   * a él— y `moviles` las que pivotan. El recorrido va en grados de la misma
+   * escala que la bisagra (0 = alineado con el ancla, 180 = extendido) y
+   * `libre` distingue el pivote suelto del frenado, que se sostiene solo.
+   */
+  pasadorAnclas?: string[];
+  pasadorMoviles?: string[];
+  pasadorMin?: number;
+  pasadorMax?: number;
+  pasadorLimite?: boolean;
+  pasadorLibre?: boolean;
+  pasadorPerfora?: boolean;
+  /**
    * EL PLANO MEDIO DE LA VIGA, que es el espejo de la pareja (v0.3.26). Se
    * guarda en coordenadas LOCALES del anfitrión —normal y punto— para que
    * siga a la viga si la viga se mueve. Las dos placas guardan el MISMO
@@ -246,6 +259,13 @@ export interface CanalTubo {
   lados?: number;
   /** Id de la guía que lo abrió, para poder rehacer el vínculo. */
   guia?: string;
+  /**
+   * TALADRO DE PIVOTE, no de carrera (v0.3.31). El de una guía dice por dónde
+   * CORRE la pieza; el de un pasador dice sobre qué GIRA. Sin distinguirlos,
+   * poner un pasador convertía a sus piezas en correderas que se escapaban por
+   * el eje del propio pasador.
+   */
+  pivote?: boolean;
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */

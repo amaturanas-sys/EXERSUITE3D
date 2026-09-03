@@ -406,6 +406,17 @@ camino (pesos 0,5/0,5) y la bisagra queda como una articulación de verdad.
 que lo estaría todo. Sólo cuenta al revés — `fixed === false`, o sea soltada a
 propósito, es móvil sin más que mirar.
 
+**EL CERO DE RAPIER NO ES LA POSE DE DISEÑO.** El frame de un revolute se
+levanta como una base alrededor del eje EN CADA CUERPO, así que su ángulo cero
+cae donde los dos cuerpos comparten ORIENTACIÓN, no donde se montaron. Cada
+freno guarda ese desfase en `base` y **todo** `setLimits` lo suma: el freno, el
+recorrido pedido, el mando del scroll y la fijación al soltar. Se puede pasar
+años sin notarlo —las dos palas de una bisagra nacen casi alineadas, así que
+`base ≈ 0`— y salta a la vista en cuanto el eje atraviesa una pieza girada: el
+pasador con el brazo a 90° lo arrancaba de su sitio 20 cm en el primer
+fotograma. Regla: **un ángulo de junta sólo significa algo junto al frame en el
+que se mide**.
+
 **La mano nunca tira fuera del arco.** `enElArco()` lleva el objetivo del
 resorte a la circunferencia del pasador —recalculada CADA PASO desde la pose
 viva de los cuerpos, porque el pasador puede ir montado sobre otra pieza que se
