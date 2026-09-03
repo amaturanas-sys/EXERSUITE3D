@@ -1647,6 +1647,12 @@ export class PhysicsWorld {
     // pero cede si la mano la mueve. Se guarda su pose y su recorrido para
     // poder soltarla al agarrarla y volver a fijarla, en el ángulo nuevo, al
     // soltarla (ver `soltarFreno` / `fijarFreno`).
+    // El desfase del cero DE ESTA junta, para el freno de más abajo. No vale
+    // preguntárselo al mapa: un cuerpo puede colgar de varias bisagras y el
+    // mapa devuelve la ELEGIDA, que casi nunca es ésta —en la máquina entera
+    // eso clavaba trece piezas en el cero de la bisagra de al lado y la
+    // desarmaba, 44 cm la que más se iba—.
+    let baseJunta = 0;
     if (joint.kind === "revolute" && !joint.soldada) {
       const qa = a.body.rotation();
       const qb = b.body.rotation();
@@ -1676,6 +1682,7 @@ export class PhysicsWorld {
         new THREE.Vector3(qRel0.x, qRel0.y, qRel0.z).dot(axisLocalB.clone().normalize()),
         qRel0.w,
       );
+      baseJunta = base;
       const comun = {
         handle,
         a: a.body,
@@ -1711,10 +1718,7 @@ export class PhysicsWorld {
 
     if (joint.locked && !joint.soldada && joint.kind === "revolute") {
       // Frenada EN SU SITIO, no en el cero del motor.
-      const t = PhysicsWorld.tope(
-        this.frenosDe(b.body.isDynamic() ? b.body : a.body)?.base ?? 0,
-        0,
-      );
+      const t = PhysicsWorld.tope(baseJunta, 0);
       handle.setLimits(t, t);
     } else if (joint.locked) {
       handle.setLimits(0, 0);
