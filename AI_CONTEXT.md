@@ -461,6 +461,14 @@ esa pieza, las dos medidas:
     DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
     extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
     criba que ya hacía `elegirCaraDentada`.
+  · **`(0,0,1) × dir` no es «arriba»: es la perpendicular de un lado u otro
+    según hacia dónde mire `dir`.** En el brazo con pilar llevaba un `.negate()`
+    que la mandaba al suelo, así que la viga de topes se colocaba POR ENCIMA del
+    pie y los dedos colgaban bajo ella: el pie quedaba 4,76 cm por debajo del
+    eje del carril, sin nada en qué apoyarse. Ese era el motivo real de que el
+    pilar no asentara nunca, y ninguna mejora de la FORMA del tope lo arreglaba.
+    Regla: cuando un vector se llama «arriba», **fuerza su sentido** (`if (v.y <
+    0) v.negate()`), no confíes en el orden del producto vectorial.
   · **Un mecanismo que nace INTERPENETRADO no se sostiene, por buena que sea
     la cuenta.** El brazo con pilar calculaba bien y armaba mal: ponía el pie
     del pilar sobre el EJE de la viga de topes —3 cm dentro del material— y

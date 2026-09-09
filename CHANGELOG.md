@@ -5,6 +5,31 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.37] — 2026-09-09
+
+### Corregido
+
+**ARRIBA ERA ABAJO: los topes se montaban DEBAJO del carril.** La perpendicular
+al carril salía negada, así que apuntaba hacia el suelo: la viga de topes se
+colocaba por encima del pie del pilar y los dedos colgaban por debajo de ella.
+El pie quedaba a **4,76 cm POR DEBAJO** del eje del carril, sin nada en qué
+apoyarse, y por eso el pilar se escapaba hiciera lo que hiciera con la forma de
+los topes. Estaba así desde que existe la herramienta, y es la causa de que el
+pilar nunca llegara a asentar.
+
+Ahora el sentido se fuerza en vez de confiar en el orden del producto vectorial
+—que depende de hacia dónde mire el carril—, y el pie nace **4,76 cm por encima**
+del eje, sobre la cara de la viga y entre los dos dedos de su muesca.
+
+Medido sobre la banca del diseñador, rehecha entera con la herramienta (brazo
+42,6, recorrido 70–100°, carril de 50 a 30°, descentrado −2,8 → pilar de
+**42,86 cm**): **antes** el pie corría 19,9 cm y seguía; **ahora** se asienta y
+el corrimiento a lo largo del carril se queda en **0,95 cm**, con la pieza que
+más se mueve de toda la banca en 2,8 cm (eran 11,1).
+
+En el mecanismo suelto, el brazo mantiene sus **70,0° exactos** los seis
+segundos y el pie no corre por el carril más de **0,57 cm**.
+
 ## [0.3.36] — 2026-09-09
 
 ### Corregido

@@ -1494,7 +1494,14 @@ export class Editor {
     // justo lo que miden medio pie y medio perfil.
     const PERFIL_VIGA = 6;
     const PERFIL_PILAR = 5;
-    const arriba = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize().negate();
+    // ARRIBA ES ARRIBA. La perpendicular al carril salía NEGADA, así que
+    // apuntaba hacia abajo: la viga se colocaba por encima del pie y los topes
+    // colgaban por debajo de ella. El pilar no se apoyaba en nada —quedaba a
+    // 4,76 cm POR DEBAJO del eje del carril— y por eso se escapaba hiciera lo
+    // que hiciera con los topes. Se fuerza el sentido en vez de confiar en el
+    // orden del producto vectorial, que depende de hacia dónde mire el carril.
+    const arriba = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize();
+    if (arriba.y < 0) arriba.negate();
     const bajarViga = PERFIL_PILAR / 2 + PERFIL_VIGA / 2;
 
     // La viga de topes va desde el primer tope hasta el último; el brazo, del

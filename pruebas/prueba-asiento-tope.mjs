@@ -98,12 +98,21 @@ const quieto = await page.evaluate(async () => {
     const b = pilar.mesh.localToWorld(new T.Vector3(...p[p.length-1]));
     return a.y < b.y ? a : b;
   };
+  // LO QUE LA MUESCA TIENE QUE IMPEDIR ES QUE EL PIE CORRA POR EL CARRIL. El
+  // vaivén de lado no es escaparse; medir el desplazamiento total lo mezclaba
+  // todo, así que se proyecta sobre la dirección del carril.
+  const viga = ed.listObjects().find(o => /Viga de topes|Notched beam/.test(o.name));
+  viga.mesh.updateMatrixWorld(true);
+  const vp = viga.params.path;
+  const dirCarril = viga.mesh.localToWorld(new T.Vector3(...vp[vp.length-1]))
+    .sub(viga.mesh.localToWorld(new T.Vector3(...vp[0]))).normalize();
   const a0 = ang(), p0 = pieDe().clone();
   ed.toggleSimulation();
   const serie = [];
   for (let i=0;i<10;i++){
     await new Promise(r=>setTimeout(r,600));
-    serie.push({ ang: ang(), pie: +pieDe().distanceTo(p0).toFixed(2) });
+    const d = pieDe().sub(p0);
+    serie.push({ ang: ang(), pie: +d.dot(dirCarril).toFixed(2), total: +d.length().toFixed(2) });
   }
   ed.toggleSimulation(); await new Promise(r=>setTimeout(r,400));
   return { a0, serie };
@@ -116,12 +125,14 @@ ok(
   `${quieto.a0}° → ${quieto.serie[quieto.serie.length-1].ang}°`,
 );
 ok(
-  ultimos.every(s => Math.abs(s.pie - ultimos[0].pie) < 0.3),
-  "y el pie se asienta y SE QUEDA, no repta ni se escapa",
+  ultimos.every(s => Math.abs(s.pie - ultimos[0].pie) < 0.5),
+  "y el pie no repta por el carril: se asienta y se queda",
   ultimos.map(s => s.pie).join(" → "),
 );
+// El hueco de la muesca es el pie más 4 mm, así que más de un centímetro de
+// corrimiento ya sería haberse subido a un dedo.
 ok(
-  quieto.serie[quieto.serie.length-1].pie < 3,
+  Math.abs(quieto.serie[quieto.serie.length-1].pie) < 1,
   "sin salirse de su muesca",
   quieto.serie[quieto.serie.length-1].pie,
 );
