@@ -12405,7 +12405,7 @@ export class Editor {
    * mover el gizmo, al tocar el recorrido—: lo primero que hace es retirar las
    * uniones que puso la vez anterior, así que no acumula herraje.
    */
-  aplicarPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number } {
+  aplicarPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number; anclajes: number } {
     const marca = `Pasador ${obj.id}`;
     for (const j of this.listJoints()) {
       if (j.name.startsWith(marca)) this.removeJoint(j);
@@ -12479,6 +12479,16 @@ export class Editor {
       j.contactos = this.piezasSeparadas(obj, m);
     }
 
+    // EL EXTREMO PROXIMAL DE LO QUE GIRA, REDONDO. Una punta en escuadra barre
+    // la diagonal de su perfil —W/2·√2— y topa contra la horquilla o contra la
+    // propia viga mucho antes de acabar el recorrido; el semicírculo barre
+    // exactamente su radio y pasa. Es la pieza que faltaba para que el rango
+    // que se pide en Propiedades sea el rango que la máquina hace de verdad.
+    for (const m of moviles) this.redondearProximal(m, centro, obj.params.pasadorRedondea !== false);
+
+    // PUNTOS DE ANCLAJE: la horquilla que coge el eje POR LOS DOS LADOS.
+    const anclajes = this.montarAnclajes(obj, marca, anclas, moviles, centro, eje);
+
     // TALADROS: donde va el pasador quedan los agujeros, como en la máquina.
     let taladros = 0;
     if (obj.params.pasadorPerfora !== false) {
@@ -12490,7 +12500,160 @@ export class Editor {
     this.bus.emit("objectsChanged", { objects: this.listObjects() });
     this.scheduleAutosave();
     this.requestRender();
-    return { anclas: anclas.length, moviles: moviles.length, taladros };
+    return { anclas: anclas.length, moviles: moviles.length, taladros, anclajes };
+  }
+
+  /**
+   * Redondea —o vuelve a dejar en escuadra— la punta de una viga que gira, la
+   * que mira al pasador. Sólo toca el extremo PROXIMAL: el otro es el que hace
+   * el trabajo y se queda como esté.
+   */
+  private redondearProximal(m: SceneObject, centro: THREE.Vector3, poner: boolean): void {
+    if (m.params.kind !== "beam") return;
+    const path = m.params.path;
+    if (!path || path.length < 2) return;
+    m.mesh.updateMatrixWorld(true);
+    const enMundo = (n: [number, number, number]): THREE.Vector3 =>
+      m.mesh.localToWorld(new THREE.Vector3(...n));
+    const cual: "inicio" | "fin" =
+      enMundo(path[0]).distanceTo(centro) <= enMundo(path[path.length - 1]).distanceTo(centro)
+        ? "inicio"
+        : "fin";
+    const antes = m.params.extremoRedondo ?? null;
+    let despues: PrimitiveParams["extremoRedondo"];
+    if (poner) despues = antes === "ambos" || (antes && antes !== cual) ? "ambos" : cual;
+    // Al apagar el interruptor sólo se deshace ESTE extremo: si el otro venía
+    // redondeado de antes, no es cosa del pasador y se respeta.
+    else despues = antes === "ambos" ? (cual === "inicio" ? "fin" : "inicio") : antes === cual ? null : antes;
+    if ((despues ?? null) === antes) return;
+    m.params.extremoRedondo = despues ?? null;
+    m.rebuildGeometry();
+    this.bus.emit("objectTransformed", { object: m });
+  }
+
+  /**
+   * LAS HORQUILLAS DEL PASADOR (v0.3.32).
+   *
+   * Un eje no se monta en el aire: en la máquina va cogido por los dos lados
+   * por una horquilla soldada a la estructura, y el brazo entra entre sus
+   * orejas. Esto pone una por ancla, con el alma contra la cara de la viga que
+   * mira al pasador, la garganta a la medida de lo que gira y el taladro sobre
+   * el eje. Se rehacen enteras en cada pasada, así que no acumulan herraje.
+   */
+  private montarAnclajes(
+    obj: SceneObject,
+    marca: string,
+    anclas: SceneObject[],
+    moviles: SceneObject[],
+    centro: THREE.Vector3,
+    eje: THREE.Vector3,
+  ): number {
+    const marcaH = `${marca}: horquilla`;
+    for (const o of this.listObjects()) {
+      if (o.componentId === "punto-anclaje" && o.name.startsWith(marcaH)) this.removeObject(o);
+    }
+    if (!obj.params.pasadorAnclaje) return 0;
+
+    const radioEje = Math.max(obj.params.radiusTop ?? 1.25, 0.2);
+    // La garganta la manda lo que gira: lo que mide EN EL EJE, con holgura.
+    let garganta = 4.2;
+    let alto = Math.max(8, radioEje * 4);
+    if (moviles.length) {
+      const m = moviles[0];
+      garganta = this.medidaEn(m, eje) + 0.4;
+      // El alto de la oreja es el ancho del brazo en el plano de giro: así la
+      // punta redonda de la oreja y la del brazo son la MISMA circunferencia.
+      const perp = new THREE.Vector3()
+        .crossVectors(eje, m.mesh.getWorldPosition(new THREE.Vector3()).sub(centro))
+        .normalize();
+      if (perp.lengthSq() > 0.5) alto = this.medidaEn(m, perp);
+      alto = Math.max(alto, radioEje * 4);
+    }
+
+    let puestas = 0;
+    for (const a of anclas) {
+      a.mesh.updateMatrixWorld(true);
+      // LA CARA, NO LA DIRECCIÓN. El alma se apoya en una CARA del ancla, así
+      // que la referencia es uno de sus tres ejes locales —el que más mira al
+      // pasador de los que no son el eje de giro—, no la recta que une los dos
+      // centros: medir por esa recta da la diagonal y manda la horquilla lejos
+      // de la viga (en el ensayo, 31 cm de vuelo para una cara que estaba a 4).
+      const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
+      const ls = a.localSizeAbs();
+      // El eje LARGO del ancla tampoco vale: esa cara es la TAPA del extremo, y
+      // una horquilla no se suelda en la punta de un poste. Sin descartarla, un
+      // pasador puesto a media altura elegía la vertical —el poste mide 100 y
+      // sus caras 7— y la horquilla salía a 20 cm por dentro de la viga.
+      const iLargo = ls.x >= ls.y && ls.x >= ls.z ? 0 : ls.y >= ls.z ? 1 : 2;
+      const dea = centro.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3()));
+      let haciaEje: THREE.Vector3 | null = null;
+      let fuera = 0;
+      const bases = [
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, 1),
+      ];
+      for (let i = 0; i < 3; i++) {
+        if (i === iLargo) continue;
+        const n = bases[i].applyQuaternion(q).normalize();
+        // El eje de giro no vale de normal: por esa cara no se suelda nada.
+        if (Math.abs(n.dot(eje)) > 0.9) continue;
+        const d = dea.dot(n);
+        if (Math.abs(d) > Math.abs(fuera)) {
+          fuera = d;
+          haciaEje = d < 0 ? n.clone().negate() : n.clone();
+        }
+      }
+      if (!haciaEje) continue;
+      // El vuelo es lo que separa esa cara del eje del pasador: exactamente lo
+      // que la horquilla tiene que salvar.
+      const vuelo = Math.abs(fuera) - this.medidaEn(a, haciaEje) / 2;
+      if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra horquilla
+
+      const h = this.addComponent("punto-anclaje");
+      h.name = `${marcaH} de ${a.name}`;
+      h.mesh.name = h.name;
+      h.params = {
+        kind: "horquilla",
+        horquillaAlto: alto,
+        horquillaEspesor: 0.8,
+        horquillaGarganta: garganta,
+        horquillaVuelo: vuelo,
+        horquillaAgujero: radioEje + 0.05,
+      };
+      h.rebuildGeometry();
+      // Base local de la horquilla: X el eje del pasador, Z del alma hacia la
+      // boca —o sea, del ancla hacia el eje—, Y lo que queda.
+      const z = haciaEje.clone();
+      const y = new THREE.Vector3().crossVectors(z, eje).normalize();
+      h.mesh.quaternion.setFromRotationMatrix(
+        new THREE.Matrix4().makeBasis(eje.clone(), y, z),
+      );
+      h.mesh.position.copy(centro);
+      this.bus.emit("objectTransformed", { object: h });
+
+      const j = this.connect(h.id, a.id, "revolute", h.mesh.position.clone());
+      if (j) {
+        j.locked = true;
+        j.soldada = true;
+        j.name = `${marcaH}: soldadura a ${a.name}`;
+      }
+      puestas++;
+    }
+    return puestas;
+  }
+
+  /** Cuánto mide una pieza en una dirección del mundo (cm). */
+  private medidaEn(o: SceneObject, dir: THREE.Vector3): number {
+    o.mesh.updateMatrixWorld(true);
+    const q = o.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const ls = o.localSizeAbs();
+    const d = dir.clone().normalize();
+    return (
+      Math.abs(new THREE.Vector3(1, 0, 0).applyQuaternion(q).dot(d)) * ls.x +
+      Math.abs(new THREE.Vector3(0, 1, 0).applyQuaternion(q).dot(d)) * ls.y +
+      Math.abs(new THREE.Vector3(0, 0, 1).applyQuaternion(q).dot(d)) * ls.z
+    );
   }
 
   /**

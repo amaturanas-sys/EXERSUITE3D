@@ -5,6 +5,53 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.32] — 2026-09-09
+
+### Añadido
+
+**EL PUNTO DE ANCLAJE: la horquilla del pasador.** Nueva pieza en MOVIMIENTO, y
+lo que le faltaba al pasador para montarse como se monta de verdad. Un eje no
+se sostiene en el aire: en la máquina va cogido POR LOS DOS LADOS por una
+horquilla soldada a la estructura, y el brazo entra entre sus orejas.
+
+La forma es la del modelo: un **alma** plana —el bloque que va contra la cara de
+la viga, por donde se suelda—, dos **orejas** paralelas que vuelan del alma y
+dejan la **garganta** en medio, y un taladro en cada oreja sobre el eje. La
+punta de la oreja es **redonda**, un semicírculo centrado EN EL EJE, que es la
+única forma que no choca. En Propiedades se ajustan alto, espesor, garganta,
+vuelo del eje y radio del taladro.
+
+**Y el pasador las monta solo.** Con el interruptor de puntos de anclaje pone
+una horquilla por ancla, soldada, con el taladro sobre su eje y el alma contra
+la cara de la viga que mira al pasador. El vuelo no se pide: sale de la
+geometría, midiendo lo que esa cara se separa del eje. La garganta se abre a la
+medida de lo que gira, más 4 mm de holgura, y el alto de la oreja es el ancho
+del brazo, para que las dos puntas redondas sean la MISMA circunferencia. Se
+rehacen enteras en cada pasada: aplicarlo tres veces deja una horquilla, no
+tres.
+
+**EXTREMO PROXIMAL REDONDO.** La punta de una viga que pivota se remata en
+semicírculo en vez de en escuadra, y con eso el radio que barre al girar baja de
+la DIAGONAL de su perfil a su RADIO: **de 3,54 a 2,50 cm** en un perfil de 5.
+Ese centímetro es exactamente lo que topaba contra la horquilla y dejaba el
+recorrido a medias. El interruptor lo pone y lo quita, y al quitarlo sólo
+deshace ESE extremo: si el otro venía redondeado de antes, no es cosa del
+pasador y se respeta.
+
+Medido: horquilla de 5,8 × 8 cm con garganta libre y taladro de 1,3 sobre el
+eje; montada, su taladro cae a **0,00 cm** del eje del pasador, sus orejas
+quedan perpendiculares a él y el alma se apoya a **0,00 cm** de la cara del
+poste.
+
+### Corregido
+
+**La cara de soldadura no se elige por la recta que une los centros.** El alma
+se apoya en una CARA del ancla, así que la referencia tiene que ser uno de sus
+ejes locales, y ni el de giro ni el LARGO valen: el largo es la tapa del
+extremo, y una horquilla no se suelda en la punta de un poste. Midiendo por la
+recta, un pasador puesto a media altura de un poste de 100 cm pedía **31 cm de
+vuelo para una cara que estaba a 4,5**.
+
 ## [0.3.31] — 2026-09-03
 
 ### Añadido

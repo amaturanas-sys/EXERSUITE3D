@@ -449,6 +449,26 @@ es la de siempre: **un dato que significaba dos cosas se lee desde más sitios d
 los que se recuerdan**; `grep` de `locked = true` no basta, hace falta también
 `locked:` en literales.
 
+**UN EJE NO SE MONTA EN EL AIRE (v0.3.32).** El pasador resolvía la física pero
+no el herraje: en la máquina real va cogido POR LOS DOS LADOS por una horquilla
+soldada —el `punto-anclaje`—, y el brazo entra entre sus orejas. Dos reglas de
+esa pieza, las dos medidas:
+
+  · **La cara de soldadura se elige por un EJE LOCAL del ancla, nunca por la
+    recta que une los centros.** El alma se apoya en una cara, y la recta da la
+    diagonal: un pasador a media altura de un poste de 100 cm pedía 31 cm de
+    vuelo para una cara que estaba a 4,5. Y de los tres ejes hay que descartar
+    DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
+    extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
+    criba que ya hacía `elegirCaraDentada`.
+  · **La punta redonda tiene que estar centrada EN EL EJE, no en el extremo.**
+    Una esquina en escuadra barre la DIAGONAL del perfil (W/2·√2 = 3,54 en uno
+    de 5) y topa; el semicírculo barre su RADIO (2,50) y pasa. Pero eso sólo
+    vale si el pasador cae en el CENTRO DEL ARCO: con el eje en el ápice, la
+    punta redonda barre MÁS que la cuadrada —3,54 contra 2,50, justo al revés—.
+    Costó una lectura entera creer que el redondeo estaba mal cuando lo que
+    estaba mal era dónde se había puesto el eje.
+
 **Una bisagra se opera por su ÁNGULO, no con el resorte de la mano (v0.3.21).**
 `girarBisagra` mueve el TOPE de la articulación (`setLimits(t, t)`), que el
 solver cumple exacto y que por construcción sólo genera impulsos alrededor del

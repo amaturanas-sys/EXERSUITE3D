@@ -12,6 +12,7 @@ import {
   medidasDentada,
   pasoMinimoDentada,
 } from "../objects/placaDentada";
+import { medidasHorquilla } from "../objects/horquilla";
 import { getDefinition } from "../objects/componentLibrary";
 import { largoDeFabrica } from "../objects/estirar";
 import { clear, el } from "./dom";
@@ -440,7 +441,11 @@ export class PropertiesPanel {
     // nada —su geometría se genera antes de esa fase— así que enseñar esos
     // controles sería prometer algo que no pasa.
     const isDentada = obj.params.kind === "dentada";
-    const parametric = !obj.imported && !obj.customModel && !isLine && !isDentada;
+    // El punto de anclaje va igual: sus medidas son la garganta, el vuelo y el
+    // taladro, no «ancho, alto y fondo».
+    const isHorquilla = obj.params.kind === "horquilla";
+    const parametric =
+      !obj.imported && !obj.customModel && !isLine && !isDentada && !isHorquilla;
     this.body.append(this.nameField(obj));
     this.body.append(this.materialField(obj));
     if (obj.customModel) this.body.append(this.customModelHint());
@@ -452,6 +457,7 @@ export class PropertiesPanel {
     }
     if (isLine) this.body.append(this.lineSection(obj));
     if (isDentada) this.body.append(this.dentadaSection(obj));
+    if (isHorquilla) this.body.append(this.horquillaSection(obj));
     if (obj.componentId === "pasador") this.body.append(this.pasadorSection(obj));
     this.body.append(this.transformSection(obj));
     if (parametric) {
@@ -880,6 +886,50 @@ export class PropertiesPanel {
    * sujeta y qué gira en él. Se aplica al momento: no hay botón de confirmar,
    * porque cada cambio ya se ve en la máquina.
    */
+  /**
+   * PUNTO DE ANCLAJE: las medidas de la horquilla. La garganta es lo que cabe
+   * entre las orejas —el brazo—, el vuelo es lo que el eje se separa de la cara
+   * soldada, y el alto manda el radio de la punta redonda.
+   */
+  private horquillaSection(obj: SceneObject): HTMLElement {
+    const nota = el("div", { class: "sub" });
+    const pintar = () => {
+      const m = medidasHorquilla(obj.params);
+      clear(nota);
+      nota.append(
+        tt(
+          `Garganta ${roundTo(m.garganta, 1)} cm entre orejas de ${roundTo(m.esp, 1)}; el eje vuela ${roundTo(m.vuelo, 1)} cm y la punta redondea a ${roundTo(m.radio, 1)}.`,
+          `Throat ${roundTo(m.garganta, 1)} cm between ${roundTo(m.esp, 1)} lugs; the axis stands ${roundTo(m.vuelo, 1)} cm off and the tip rounds at ${roundTo(m.radio, 1)}.`,
+        ),
+      );
+    };
+    pintar();
+    const campo = (label: string, valor: number, min: number, set: (v: number) => void) => {
+      const i = el("input", {
+        type: "number", value: String(roundTo(valor, 2)), step: "0.1", min: String(min),
+      }) as HTMLInputElement;
+      i.addEventListener("change", () => {
+        const n = parseFloat(i.value);
+        if (!Number.isFinite(n)) return;
+        set(Math.max(min, n));
+        obj.rebuildGeometry();
+        this.editor.bus.emit("objectTransformed", { object: obj });
+        pintar();
+      });
+      return el("label", { class: "row" }, [el("span", {}, [label]), i]);
+    };
+    const m = medidasHorquilla(obj.params);
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Punto de anclaje", "Anchor point")]),
+      campo(tt("Alto (cm)", "Height (cm)"), m.alto, 0.4, (v) => (obj.params.horquillaAlto = v)),
+      campo(tt("Espesor (cm)", "Thickness (cm)"), m.esp, 0.1, (v) => (obj.params.horquillaEspesor = v)),
+      campo(tt("Garganta (cm)", "Throat (cm)"), m.garganta, 0.2, (v) => (obj.params.horquillaGarganta = v)),
+      campo(tt("Vuelo del eje (cm)", "Axis stand-off (cm)"), m.vuelo, 0.1, (v) => (obj.params.horquillaVuelo = v)),
+      campo(tt("Radio del taladro (cm)", "Bore radius (cm)"), m.agujero, 0.05, (v) => (obj.params.horquillaAgujero = v)),
+      nota,
+    ]);
+  }
+
   private pasadorSection(obj: SceneObject): HTMLElement {
     const p = obj.params;
     p.pasadorAnclas ??= [];
@@ -889,18 +939,20 @@ export class PropertiesPanel {
       clear(resumen);
       resumen.append(
         tt(
-          `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s)`,
-          `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s)`,
+          `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s) · ${r.anclajes} horquilla(s)`,
+          `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s) · ${r.anclajes} clevis(es)`,
         ),
       );
     };
     const resumen = el("div", { class: "sub" });
 
     // Sólo se ofrecen las piezas que el pasador puede tocar: las de la escena
-    // que no son él mismo ni otro pasador.
+    // que no son él mismo ni otro pasador. Las horquillas que él mismo pone
+    // tampoco: las rehace en cada pasada, así que asignarles papel no duraría.
     const filas: HTMLElement[] = [];
     for (const o of this.editor.listObjects()) {
       if (o.id === obj.id || o.componentId === "pasador") continue;
+      if (o.componentId === "punto-anclaje" && o.name.startsWith(`Pasador ${obj.id}`)) continue;
       const sel = el("select", { class: "select" }) as HTMLSelectElement;
       for (const [v, t] of [
         ["", tt("—", "—")],
@@ -958,6 +1010,18 @@ export class PropertiesPanel {
       p.pasadorPerfora = perfora.checked;
       aplicar();
     });
+    const anclaje = el("input", { type: "checkbox" }) as HTMLInputElement;
+    anclaje.checked = !!p.pasadorAnclaje;
+    anclaje.addEventListener("change", () => {
+      p.pasadorAnclaje = anclaje.checked;
+      aplicar();
+    });
+    const redondea = el("input", { type: "checkbox" }) as HTMLInputElement;
+    redondea.checked = p.pasadorRedondea !== false;
+    redondea.addEventListener("change", () => {
+      p.pasadorRedondea = redondea.checked;
+      aplicar();
+    });
 
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Pasador", "Pin")]),
@@ -977,6 +1041,14 @@ export class PropertiesPanel {
       el("label", { class: "row" }, [
         perfora,
         tt("Perfora lo que atraviesa", "Bores through what it crosses"),
+      ]),
+      el("label", { class: "row" }, [
+        anclaje,
+        tt("Puntos de anclaje (horquilla soldada)", "Anchor points (welded clevis)"),
+      ]),
+      el("label", { class: "row" }, [
+        redondea,
+        tt("Extremo proximal redondo", "Round the near end"),
       ]),
       resumen,
     ]);

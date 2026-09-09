@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { degToRad } from "../core/units";
 import { buildBeamGeometry, buildTubeGeometry } from "./linePieces";
 import { buildDentadaGeometry } from "./placaDentada";
+import { buildHorquillaGeometry } from "./horquilla";
 import type { PrimitiveParams } from "./types";
 
 // Construye una BufferGeometry a partir de parametros en centimetros.
@@ -134,6 +135,9 @@ export function buildGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   // La placa dentada se fabrica entera —plancha, ganchos y pernos— desde su
   // número de dientes y su paso; no admite el doblado/torsión de abajo.
   if (p.kind === "dentada") return buildDentadaGeometry(p);
+  // El punto de anclaje: alma soldable y dos orejas taladradas, con la punta
+  // redonda para que el brazo que sostiene complete su recorrido sin topar.
+  if (p.kind === "horquilla") return buildHorquillaGeometry(p);
   const bend = degToRad(p.bendDeg ?? 0);
   const twist = degToRad(p.twistDeg ?? 0);
   const deform = Math.abs(bend) > 1e-4 || Math.abs(twist) > 1e-4;

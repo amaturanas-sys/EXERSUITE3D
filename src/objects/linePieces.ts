@@ -167,12 +167,24 @@ function buildBeamSinRamas(
   const holeR = Math.max(0, (p.holeDiameter ?? 0) / 2);
   const spacing = Math.max(p.holeSpacing ?? 5, holeR * 2 + 0.5);
 
+  // EXTREMO REDONDO (v0.3.32): la punta se remata en semicírculo de radio W/2
+  // en vez de en escuadra. Es lo que le hace falta al extremo proximal de un
+  // brazo que pivota: la esquina de un corte recto barre W/2·√2 al girar y topa
+  // contra la horquilla —o contra la viga— mucho antes de acabar el recorrido;
+  // el semicírculo barre exactamente su radio y pasa. El centro del arco queda
+  // a W/2 de la punta, que es donde va el taladro del pasador.
+  const re = p.extremoRedondo ?? null;
+  const rIni = re === "inicio" || re === "ambos" ? W / 2 : 0;
+  const rFin = re === "fin" || re === "ambos" ? W / 2 : 0;
+
   // Cara del perfil: largo L en X, ancho W en Y; se extruye el fondo D en Z.
   const face = new THREE.Shape();
-  face.moveTo(-L / 2, -W / 2);
-  face.lineTo(L / 2, -W / 2);
-  face.lineTo(L / 2, W / 2);
-  face.lineTo(-L / 2, W / 2);
+  face.moveTo(-L / 2 + rIni, -W / 2);
+  face.lineTo(L / 2 - rFin, -W / 2);
+  if (rFin > 0) face.absarc(L / 2 - rFin, 0, rFin, -Math.PI / 2, Math.PI / 2, false);
+  else face.lineTo(L / 2, W / 2);
+  face.lineTo(-L / 2 + rIni, W / 2);
+  if (rIni > 0) face.absarc(-L / 2 + rIni, 0, rIni, Math.PI / 2, Math.PI * 1.5, false);
   face.closePath();
 
   if (holeR > 0.05) {
@@ -197,7 +209,7 @@ function buildBeamSinRamas(
   });
   geo.translate(0, 0, -D / 2);
 
-  if (p.ends === "diagonal") {
+  if (p.ends === "diagonal" && rIni === 0 && rFin === 0) {
     // Inglete a 45 grados: los vertices del anillo extremo se retranquean en X
     // proporcionalmente al ancho (la cara final queda plana e inclinada).
     const pos = geo.attributes.position as THREE.BufferAttribute;

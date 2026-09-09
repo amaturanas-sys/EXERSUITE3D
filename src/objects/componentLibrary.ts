@@ -562,6 +562,28 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description:
       "Eje cilíndrico que hace de pivote: en Propiedades se le dicen qué piezas lo anclan y cuáles giran sobre él, con el recorrido en grados y el freno. Perfora lo que atraviesa, como una guía.",
   },
+  // PUNTO DE ANCLAJE (v0.3.32): la horquilla que sostiene al pasador. El eje
+  // solo no se monta en el aire —en la máquina va cogido por los dos lados—, y
+  // sin esta pieza el pasador no se podía armar como se arma de verdad.
+  {
+    id: "punto-anclaje",
+    label: "Punto de anclaje",
+    category: "movimiento",
+    materialId: "acero-negro",
+    // Garganta de 4,2 cm: el ancho de un brazo de 4 con holgura. Taladro de
+    // 1,3 de radio, que es el pasador de 2,5 con su holgura.
+    defaults: {
+      kind: "horquilla",
+      horquillaAlto: 8,
+      horquillaEspesor: 0.8,
+      horquillaGarganta: 4.2,
+      horquillaVuelo: 4,
+      horquillaAgujero: 1.3,
+    },
+    physics: { massKg: 0.5, fixed: false },
+    description:
+      "Horquilla soldable que sostiene un pasador por los dos lados: el alma va contra la cara de la viga y el brazo entra entre las orejas, cuya punta redonda le deja completar el recorrido. La coloca sola la herramienta de pasador.",
+  },
   {
     id: "tope-guia",
     label: "Tope de guía",

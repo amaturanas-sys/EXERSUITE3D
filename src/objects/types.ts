@@ -10,7 +10,8 @@ export type PrimitiveKind =
   | "plane"
   | "beam" // perfil de acero (pilar/travesano) trazado entre dos puntos
   | "tube" // tubo de acero trazado entre dos puntos
-  | "dentada"; // placa de acero con ganchos, atornillada al costado de un pilar
+  | "dentada" // placa de acero con ganchos, atornillada al costado de un pilar
+  | "horquilla"; // punto de anclaje: abraza una viga y sostiene un pasador por los dos lados
 
 /**
  * Parametros dimensionales de una primitiva, SIEMPRE en centimetros (o grados/segmentos).
@@ -137,6 +138,30 @@ export interface PrimitiveParams {
   pasadorLimite?: boolean;
   pasadorLibre?: boolean;
   pasadorPerfora?: boolean;
+  /** ¿El pasador se monta sobre horquillas soldadas a sus anclas? (v0.3.32) */
+  pasadorAnclaje?: boolean;
+  /** ¿Se redondea el extremo proximal de las móviles para que no choquen? */
+  pasadorRedondea?: boolean;
+
+  // ── PUNTO DE ANCLAJE (horquilla, v0.3.32) ────────────────────────────────
+  /** Alto de la horquilla, a lo largo de la viga a la que se suelda (cm). */
+  horquillaAlto?: number;
+  /** Espesor de cada oreja y del alma (cm). */
+  horquillaEspesor?: number;
+  /** Separación entre orejas: lo que cabe dentro de la horquilla (cm). */
+  horquillaGarganta?: number;
+  /** Cuánto vuela el eje por delante del alma soldada (cm). */
+  horquillaVuelo?: number;
+  /** Radio del taladro por el que pasa el pasador (cm). */
+  horquillaAgujero?: number;
+
+  /**
+   * EXTREMO REDONDO (v0.3.32): la punta de una viga, rematada en semicilindro
+   * en vez de en escuadra. Es lo que le hace falta al extremo proximal de un
+   * brazo que pivota: con esquinas, el radio que barren topa contra la pieza
+   * de al lado mucho antes de completar el recorrido.
+   */
+  extremoRedondo?: "inicio" | "fin" | "ambos" | null;
   /**
    * EL PLANO MEDIO DE LA VIGA, que es el espejo de la pareja (v0.3.26). Se
    * guarda en coordenadas LOCALES del anfitrión —normal y punto— para que
