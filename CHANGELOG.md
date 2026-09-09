@@ -5,6 +5,33 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.36] — 2026-09-09
+
+### Corregido
+
+**EL PILAR YA SE ASIENTA EN EL TOPE.** El mecanismo de brazo con pilar regulable
+prometía un recorrido por niveles y no lo cumplía: el pilar se escapaba cuesta
+abajo cada vez. Eran dos cosas, y las dos de la manera de armarlo.
+
+**La recta del cálculo es por donde viaja EL PIE, no el eje de la viga.** El pie
+se colocaba sobre el eje de la viga de topes —tres centímetros DENTRO de su
+material— y encima del propio tope, así que el mecanismo nacía interpenetrado:
+el solver lo expulsaba de un golpe en el primer fotograma y a partir de ahí el
+pie rodaba por la pendiente. Ahora la viga se baja lo que miden medio pie y
+medio perfil, y su cara de arriba queda justo bajo la recta del cálculo.
+
+**Y un tope es una MUESCA, no un bulto.** Un taco de 1,5 × 2,5 al lado del pie
+no sujeta nada: en una viga inclinada el pie lo monta o lo sortea. Cada nivel
+lleva ahora **dos dedos**, uno a cada lado, que dejan entre ellos el hueco justo
+del pie —su ancho más 4 mm— y suben por encima de su centro para que no pueda
+salir rodando. Es el mismo gesto que el gancho de la placa dentada, con su cuna
+y su dedo.
+
+Medido con la propia herramienta, sobre las medidas de una banca real (brazo 46,
+recorrido 10–70°, viga 60 a 30°, descentrado 4,2): **antes** el pie reptaba 3 cm
+y saltaba a 17,8; **ahora** se asienta 1,55 cm en la muesca y se queda ahí los 6
+segundos, con el brazo clavado en sus **70,0°** de principio a fin.
+
 ## [0.3.35] — 2026-09-09
 
 ### Corregido

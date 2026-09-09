@@ -1484,14 +1484,27 @@ export class Editor {
       return o;
     };
 
+    // LA RECTA DEL CÁLCULO ES POR DONDE VIAJA EL PIE, NO EL EJE DE LA VIGA.
+    //
+    // Ponía el pie del pilar sobre el eje de la viga —tres centímetros DENTRO
+    // del material— y el tope encima del mismo punto, así que el mecanismo
+    // nacía interpenetrado: el solver lo expulsaba de un golpe en el primer
+    // fotograma y a partir de ahí el pie rodaba cuesta abajo (medido: reptaba
+    // 3 cm y saltaba a 17,8). La viga tiene que quedar POR DEBAJO de esa recta,
+    // justo lo que miden medio pie y medio perfil.
+    const PERFIL_VIGA = 6;
+    const PERFIL_PILAR = 5;
+    const arriba = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize().negate();
+    const bajarViga = PERFIL_PILAR / 2 + PERFIL_VIGA / 2;
+
     // La viga de topes va desde el primer tope hasta el último; el brazo, del
     // pivote al codo; el pilar cierra el triángulo.
     const dist = sol.topes.map((t) => t.distanciaCm);
     const viga = barra(
       tt("Viga de topes", "Notched beam"),
-      origenViga.clone().addScaledVector(dirViga, Math.min(...dist)),
-      origenViga.clone().addScaledVector(dirViga, Math.max(...dist)),
-      6,
+      origenViga.clone().addScaledVector(dirViga, Math.min(...dist)).addScaledVector(arriba, -bajarViga),
+      origenViga.clone().addScaledVector(dirViga, Math.max(...dist)).addScaledVector(arriba, -bajarViga),
+      PERFIL_VIGA,
     );
     viga.physics = { ...viga.physics, fixed: true };
     const brazo = barra(tt("Brazo", "Arm"), pivote, codo, 6);
@@ -1499,26 +1512,43 @@ export class Editor {
     pilar.physics = { ...pilar.physics, fixed: false, massKg: 1 };
     brazo.physics = { ...brazo.physics, fixed: false, massKg: 1 };
 
-    // LOS TOPES, uno por nivel, sobre la cara de arriba de la viga.
-    const arriba = new THREE.Vector3(0, 0, 1).cross(dirViga).normalize().negate();
+    // LOS TOPES SON CUNAS, NO BULTOS.
+    //
+    // Un taco solo, al lado del pie, no sujeta nada: en una viga inclinada el
+    // pie lo monta o lo sortea, que es lo que pasaba —el pilar se escapaba
+    // cuesta abajo cada vez—. Un tope de verdad es una MUESCA: dos dedos, uno a
+    // cada lado, que dejan entre ellos el hueco justo del pie y suben por
+    // encima de su centro para que no pueda salir rodando. Es el mismo gesto
+    // que el gancho de la placa dentada, con su cuna y su dedo.
+    const DEDO = 1.5;              // grueso de cada dedo
+    const HOLGURA = 0.4;           // lo que el pie baila dentro de la muesca
+    const semiHueco = (PERFIL_PILAR + HOLGURA) / 2;
+    // El dedo arranca en la cara de la viga y sube hasta pasar el centro del
+    // pie: por debajo lo sostiene la viga, por encima lo encierra el dedo.
+    const altoDedo = PERFIL_PILAR / 2 + 1.5;
     for (const t of sol.topes) {
-      const c = this.addComponent("base-apoyo");
-      if (!c) break;
-      c.name = tt(`Tope ${t.gradoBrazo}°`, `Stop ${t.gradoBrazo}°`);
-      c.params = { kind: "box", width: 1.5, height: 2.5, depth: 6 };
-      c.rebuildGeometry();
-      c.mesh.position
-        .copy(origenViga)
-        .addScaledVector(dirViga, t.distanciaCm)
-        .addScaledVector(arriba, 4.25);
-      c.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), arriba);
-      c.physics = { ...c.physics, fixed: true };
-      this.bus.emit("objectTransformed", { object: c });
-      const u = this.connect(viga.id, c.id, "revolute", c.mesh.position.clone());
-      if (u) {
-        u.locked = true;
-        u.soldada = true;
-        u.name = tt("Soldadura de tope", "Stop weld");
+      for (const lado of [-1, 1] as const) {
+        const c = this.addComponent("base-apoyo");
+        if (!c) break;
+        c.name = tt(
+          `Tope ${t.gradoBrazo}° (${lado < 0 ? "arriba" : "abajo"})`,
+          `Stop ${t.gradoBrazo}° (${lado < 0 ? "upper" : "lower"})`,
+        );
+        c.params = { kind: "box", width: DEDO, height: altoDedo, depth: PERFIL_VIGA };
+        c.rebuildGeometry();
+        c.mesh.position
+          .copy(origenViga)
+          .addScaledVector(dirViga, t.distanciaCm + lado * (semiHueco + DEDO / 2))
+          .addScaledVector(arriba, -PERFIL_PILAR / 2 + altoDedo / 2);
+        c.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), arriba);
+        c.physics = { ...c.physics, fixed: true };
+        this.bus.emit("objectTransformed", { object: c });
+        const u = this.connect(viga.id, c.id, "revolute", c.mesh.position.clone());
+        if (u) {
+          u.locked = true;
+          u.soldada = true;
+          u.name = tt("Soldadura de tope", "Stop weld");
+        }
       }
     }
 

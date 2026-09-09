@@ -461,6 +461,17 @@ esa pieza, las dos medidas:
     DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
     extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
     criba que ya hacía `elegirCaraDentada`.
+  · **Un mecanismo que nace INTERPENETRADO no se sostiene, por buena que sea
+    la cuenta.** El brazo con pilar calculaba bien y armaba mal: ponía el pie
+    del pilar sobre el EJE de la viga de topes —3 cm dentro del material— y
+    encima del propio tope. El solver lo expulsaba en el primer fotograma y
+    después rodaba cuesta abajo. La recta del cálculo es por donde viaja EL PIE;
+    la viga va POR DEBAJO de ella, medio pie más medio perfil.
+  · **Un tope tiene que CAPTURAR, no sólo estorbar.** Un taco al lado del pie,
+    en una viga inclinada, se monta o se sortea. Hacen falta dos dedos con el
+    hueco justo del pie que suban por encima de su centro —cuna y dedo, como el
+    gancho de la placa dentada—. Con el taco: reptaba 3 cm y saltaba a 17,8. Con
+    la muesca: 1,55 cm y quieto, con el brazo clavado en sus 70,0°.
   · **Una viga DOBLADA se mide por su SECCIÓN, no por su caja envolvente.** El
     chasis de la banca mide 38,9 × 105 de caja y 6 × 6 de perfil: midiendo por
     la caja, la abrazadera pedía 55 cm de vuelo. En una pieza de línea la

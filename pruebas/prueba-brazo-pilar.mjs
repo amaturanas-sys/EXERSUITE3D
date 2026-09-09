@@ -356,12 +356,18 @@ const armado = await page.evaluate(() => {
     largoReal: +largoReal.toFixed(1),
     piezas: objs.length,
     topes: objs.filter((o) => /Tope|Stop/.test(o.name)).length,
+    // Desde v0.3.36 cada nivel es una MUESCA de dos dedos, no un bulto suelto:
+    // lo que se cuenta es el número de NIVELES.
+    niveles: new Set(
+      objs.filter((o) => /Tope|Stop/.test(o.name)).map((o) => o.name.replace(/\s*\(.*\)$/, "")),
+    ).size,
     bisagras: ed.listJoints().filter((j) => j.apertura0 != null && !j.soldada).length,
   };
 });
 console.log("ARMADO:", JSON.stringify(armado));
 ok(armado.piezas > 8, "el mecanismo se arma entero", `${armado.piezas} piezas`);
-ok(armado.topes === 6, "con sus seis topes en la viga", armado.topes);
+ok(armado.niveles === 6, "con sus seis niveles en la viga", `${armado.niveles} niveles, ${armado.topes} dedos`);
+ok(armado.topes === armado.niveles * 2, "y cada nivel es una muesca de dos dedos", armado.topes);
 ok(armado.bisagras === 2, "y sus dos bisagras articuladas", armado.bisagras);
 ok(
   Math.abs(armado.largoReal - armado.pilarPedido) < 2,
