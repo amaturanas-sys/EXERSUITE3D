@@ -461,6 +461,13 @@ esa pieza, las dos medidas:
     DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
     extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
     criba que ya hacía `elegirCaraDentada`.
+  · **Una viga DOBLADA se mide por su SECCIÓN, no por su caja envolvente.** El
+    chasis de la banca mide 38,9 × 105 de caja y 6 × 6 de perfil: midiendo por
+    la caja, la abrazadera pedía 55 cm de vuelo. En una pieza de línea la
+    sección la dan `width`/`depth`, el eje largo es SIEMPRE el Y local, y el
+    origen es el punto del TRAZADO más cercano al pasador —en una viga doblada
+    el centro de la pieza ni siquiera cae sobre ella—. `localSizeAbs()` es la
+    caja, y para una pieza de línea la caja no es la pieza.
   · **Los dos estilos son el mismo cálculo con el signo cambiado.** La
     HORQUILLA apoya el alma en la cara y saca las orejas hacia fuera: necesita
     el eje POR DELANTE de esa cara. La ABRAZADERA apoya el alma en la cara y

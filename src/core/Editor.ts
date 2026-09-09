@@ -12588,7 +12588,7 @@ export class Editor {
       if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra herraje
       // Y la garganta tiene que dejar pasar la viga que cruza, no sólo el brazo.
       const gargantaAqui = abraza
-        ? Math.max(garganta, this.medidaEn(a, eje) + 0.4)
+        ? Math.max(garganta, this.seccionDeAncla(a, centro).cruza(eje) + 0.4)
         : garganta;
 
       const h = this.addComponent("punto-anclaje");
@@ -12652,9 +12652,9 @@ export class Editor {
   ): { clave: string; normal: THREE.Vector3; vuelo: number; etiqueta: string }[] {
     a.mesh.updateMatrixWorld(true);
     const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
-    const ls = a.localSizeAbs();
-    const iLargo = ls.x >= ls.y && ls.x >= ls.z ? 0 : ls.y >= ls.z ? 1 : 2;
-    const dea = centro.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3()));
+    const s = this.seccionDeAncla(a, centro);
+    const iLargo = s.iLargo;
+    const dea = centro.clone().sub(s.origen);
     const bases = [
       new THREE.Vector3(1, 0, 0),
       new THREE.Vector3(0, 1, 0),
@@ -12681,7 +12681,7 @@ export class Editor {
         // viga, así que el eje tiene que estar por detrás. De ahí que cada cara
         // sirva para uno de los dos estilos y nunca para los dos: el vuelo de
         // uno es el del otro con el signo cambiado.
-        const semi = this.medidaEn(a, normal) / 2;
+        const semi = s.semi[i];
         const vuelo = abraza ? semi - dea.dot(normal) : dea.dot(normal) - semi;
         salida.push({
           clave: `${signo > 0 ? "+" : "-"}${letras[i]}`,
@@ -12694,6 +12694,76 @@ export class Editor {
     // La que más mira al pasador va primera: es la que la herramienta toma sola.
     salida.sort((p, s) => s.vuelo - p.vuelo);
     return salida.filter((c) => c.vuelo >= 0.2);
+  }
+
+  /**
+   * LA SECCIÓN DE LA VIGA EN EL PUNTO DEL PASADOR, no la caja de la pieza
+   * entera. Es la diferencia entre un herraje y un disparate: el chasis de la
+   * banca es una viga DOBLADA, y su caja envolvente mide 38,9 × 105 cuando su
+   * perfil son 6 × 6 — con la caja, la abrazadera salía con **55 cm de vuelo**.
+   *
+   * En una pieza de línea la sección la dan `width` y `depth`, el eje largo es
+   * SIEMPRE el Y local (la trayectoria), y el origen desde el que se mide es el
+   * punto del trazado más cercano al pasador: en una viga doblada el centro de
+   * la pieza ni siquiera cae sobre ella. Para lo demás sigue valiendo la caja,
+   * que en una primitiva ES la pieza.
+   */
+  private seccionDeAncla(
+    a: SceneObject,
+    punto: THREE.Vector3,
+  ): { origen: THREE.Vector3; iLargo: number; semi: [number, number, number]; cruza: (d: THREE.Vector3) => number } {
+    a.mesh.updateMatrixWorld(true);
+    const ls = a.localSizeAbs();
+    const esLinea = a.params.kind === "beam" || a.params.kind === "tube";
+    if (!esLinea) {
+      const semi: [number, number, number] = [ls.x / 2, ls.y / 2, ls.z / 2];
+      return {
+        origen: a.mesh.getWorldPosition(new THREE.Vector3()),
+        iLargo: ls.x >= ls.y && ls.x >= ls.z ? 0 : ls.y >= ls.z ? 1 : 2,
+        semi,
+        cruza: (d) => this.medidaEn(a, d),
+      };
+    }
+    const r = a.params.radius ?? 2.4;
+    const W = a.params.kind === "tube" ? r * 2 : a.params.width ?? 5;
+    const D = a.params.kind === "tube" ? r * 2 : a.params.depth ?? 5;
+    // El punto del trazado más cercano: en una viga recta es su centro, en una
+    // doblada es el codo o el tramo que toca, y sólo ahí la sección significa
+    // algo.
+    let origen = a.mesh.getWorldPosition(new THREE.Vector3());
+    const path = a.params.path;
+    if (path && path.length >= 2) {
+      let mejor = Infinity;
+      const pa = new THREE.Vector3();
+      const pb = new THREE.Vector3();
+      for (let i = 0; i < path.length - 1; i++) {
+        pa.set(...path[i]);
+        pb.set(...path[i + 1]);
+        a.mesh.localToWorld(pa);
+        a.mesh.localToWorld(pb);
+        const ab = pb.clone().sub(pa);
+        const t = Math.min(Math.max(punto.clone().sub(pa).dot(ab) / Math.max(ab.lengthSq(), 1e-9), 0), 1);
+        const c = pa.clone().addScaledVector(ab, t);
+        const d = c.distanceToSquared(punto);
+        if (d < mejor) {
+          mejor = d;
+          origen = c;
+        }
+      }
+    }
+    const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const ejes = [
+      new THREE.Vector3(1, 0, 0).applyQuaternion(q),
+      new THREE.Vector3(0, 1, 0).applyQuaternion(q),
+      new THREE.Vector3(0, 0, 1).applyQuaternion(q),
+    ];
+    return {
+      origen,
+      iLargo: 1, // el Y local ES la trayectoria de una pieza de línea
+      semi: [W / 2, ls.y / 2, D / 2],
+      cruza: (d) =>
+        Math.abs(ejes[0].dot(d)) * W + Math.abs(ejes[2].dot(d)) * D + Math.abs(ejes[1].dot(d)) * ls.y,
+    };
   }
 
   /**

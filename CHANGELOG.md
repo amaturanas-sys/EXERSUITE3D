@@ -5,6 +5,23 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.35] — 2026-09-09
+
+### Corregido
+
+**Una viga DOBLADA se mide por su sección, no por su caja.** Salió aplicando la
+abrazadera al chasis de una banca real: es una viga doblada, y su caja
+envolvente mide **38,9 × 105 cm cuando su perfil son 6 × 6**. Como la cara de
+soldadura se medía sobre esa caja, el herraje salía pidiendo **55 cm de vuelo**
+—una abrazadera del tamaño de la banca—.
+
+Ahora la sección se mide EN EL PUNTO DEL PASADOR: en una pieza de línea la dan
+`width` y `depth`, el eje largo es siempre su Y local —la trayectoria— y el
+origen desde el que se mide es el punto del trazado más cercano al pasador,
+porque en una viga doblada el centro de la pieza ni siquiera cae sobre ella. El
+mismo montaje pasa de **55 cm de vuelo a 6**. Vale para cualquier ancla doblada
+o con ramas, no sólo para este caso.
+
 ## [0.3.34] — 2026-09-09
 
 ### Añadido

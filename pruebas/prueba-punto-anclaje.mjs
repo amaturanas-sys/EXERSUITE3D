@@ -437,6 +437,56 @@ ok(Math.abs(abrazo.vuelo - 3.5) < 0.2, "y las orejas cruzan de la cara al eje", 
 ok(Math.abs(abrazo.garganta - 5.4) < 0.05, "con la garganta abierta a la viga que cruza", abrazo.garganta);
 ok(abrazo.nombre, "y se llama por lo que es", abrazo.nombre);
 
+
+// ── 8. UNA VIGA DOBLADA SE MIDE POR SU SECCIÓN, NO POR SU CAJA ──────────────
+//
+// Salió aplicando la abrazadera al chasis de una banca real: es una viga
+// DOBLADA, y su caja envolvente medía 38,9 × 105 cuando su perfil son 6 × 6. Con
+// la caja, el herraje pedía 55 cm de vuelo. La sección hay que medirla EN EL
+// PUNTO DEL PASADOR, sobre el tramo del trazado que le queda más cerca.
+const doblada = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  const chasis = ed.addComponent("pilar-linea");
+  chasis.name = "Chasis";
+  // Una ele: sube 60 y dobla 40 en horizontal. Perfil de 6 × 6, caja 40 × 60.
+  chasis.params = {
+    kind: "beam", width: 6, depth: 6, ends: "plano",
+    path: [[0, -30, 0], [0, 10, 0], [40, 30, 0]],
+  };
+  chasis.rebuildGeometry();
+  chasis.mesh.position.set(0, 40, 0);
+  chasis.physics = { ...chasis.physics, fixed: true };
+  ed.bus.emit("objectTransformed", { object: chasis });
+  const caja = chasis.localSizeAbs();
+  const pas = ed.addComponent("pasador");
+  pas.params = { ...pas.params, height: 20 };
+  pas.rebuildGeometry();
+  pas.mesh.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(0, 0, 1));
+  // Junto al tramo bajo de la ele, 3 cm por fuera de su cara: vuelo de 3.
+  pas.mesh.position.set(6, 30, 0);
+  ed.bus.emit("objectTransformed", { object: pas });
+  pas.params.pasadorAnclas = [chasis.id];
+  pas.params.pasadorAnclaje = true;
+  pas.params.pasadorPerfora = false;
+  const r = ed.aplicarPasador(pas);
+  const h = ed.listObjects().find((o) => o.componentId === "punto-anclaje");
+  return {
+    caja: [caja.x, caja.y, caja.z].map((v) => +v.toFixed(1)),
+    anclajes: r.anclajes,
+    vuelo: h ? +(h.params.horquillaVuelo ?? 0).toFixed(1) : null,
+  };
+});
+console.log("DOBLADA:", JSON.stringify(doblada));
+ok(doblada.caja[0] > 30, "la viga doblada tiene una caja mucho mayor que su perfil", doblada.caja.join("×"));
+ok(doblada.anclajes === 1, "y aun así se le monta su herraje", doblada.anclajes);
+ok(
+  doblada.vuelo !== null && doblada.vuelo < 6,
+  "con el vuelo de su SECCIÓN, no el de su caja (que daría decenas de cm)",
+  doblada.vuelo,
+);
+
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();
 process.exit(fallos ? 1 : 0);
