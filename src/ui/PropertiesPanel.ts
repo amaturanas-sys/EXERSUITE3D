@@ -1018,6 +1018,13 @@ export class PropertiesPanel {
       aplicar();
     });
 
+    const abraza = el("input", { type: "checkbox" }) as HTMLInputElement;
+    abraza.checked = !!p.pasadorAbraza;
+    abraza.addEventListener("change", () => {
+      p.pasadorAbraza = abraza.checked;
+      aplicar();
+    });
+
     // EL SELECTOR DE CARA (v0.3.33). Cuál de las caras del ancla lleva la
     // horquilla no lo sabe la geometría —las dos de un mismo eje son igual de
     // legítimas—, lo sabe quien diseña. Por defecto manda la que más mira al
@@ -1033,7 +1040,7 @@ export class PropertiesPanel {
       for (const id of p.pasadorAnclas ?? []) {
         const a = this.editor.listObjects().find((o) => o.id === id);
         if (!a) continue;
-        const opciones = this.editor.carasDeAnclaje(a, centro, eje);
+        const opciones = this.editor.carasDeAnclaje(a, centro, eje, !!p.pasadorAbraza);
         // Con una sola cara alcanzable no hay nada que elegir, y un desplegable
         // de una opción es ruido: la herramienta ya la está usando.
         if (opciones.length < 2) continue;
@@ -1090,6 +1097,13 @@ export class PropertiesPanel {
       el("label", { class: "row" }, [
         anclaje,
         tt("Puntos de anclaje (horquilla soldada)", "Anchor points (welded clevis)"),
+      ]),
+      el("label", { class: "row" }, [
+        abraza,
+        tt(
+          "…que ABRACE la viga (orejas por los dos costados)",
+          "…that WRAPS the beam (lugs down both sides)",
+        ),
       ]),
       caras,
       el("label", { class: "row" }, [

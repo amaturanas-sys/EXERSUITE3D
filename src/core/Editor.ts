@@ -12555,7 +12555,9 @@ export class Editor {
     if (!obj.params.pasadorAnclaje) return 0;
 
     const radioEje = Math.max(obj.params.radiusTop ?? 1.25, 0.2);
-    // La garganta la manda lo que gira: lo que mide EN EL EJE, con holgura.
+    const abraza = !!obj.params.pasadorAbraza;
+    // La garganta la manda lo que va ENTRE LAS OREJAS: en la horquilla es lo
+    // que gira; en la abrazadera es la viga, que es lo que se cruza.
     let garganta = 4.2;
     let alto = Math.max(8, radioEje * 4);
     if (moviles.length) {
@@ -12573,24 +12575,30 @@ export class Editor {
     let puestas = 0;
     for (const a of anclas) {
       a.mesh.updateMatrixWorld(true);
-      const caras = this.carasDeAnclaje(a, centro, eje);
+      const caras = this.carasDeAnclaje(a, centro, eje, abraza);
       if (!caras.length) continue;
       // La cara que pida Propiedades; si no hay pedida —o la pieza se giró y ya
       // no existe— manda la que más mira al pasador, que es la primera.
       const pedida = (obj.params.pasadorCaras ?? {})[a.id];
       const cara = caras.find((c) => c.clave === pedida) ?? caras[0];
-      const haciaEje = cara.normal;
+      // Las orejas de la abrazadera van HACIA DENTRO: cruzan la viga desde la
+      // cara en la que se suelda el alma hasta el eje, que queda al otro lado.
+      const haciaEje = abraza ? cara.normal.clone().negate() : cara.normal;
       const vuelo = cara.vuelo;
-      if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra horquilla
+      if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra herraje
+      // Y la garganta tiene que dejar pasar la viga que cruza, no sólo el brazo.
+      const gargantaAqui = abraza
+        ? Math.max(garganta, this.medidaEn(a, eje) + 0.4)
+        : garganta;
 
       const h = this.addComponent("punto-anclaje");
-      h.name = `${marcaH} de ${a.name}`;
+      h.name = `${marcaH}${abraza ? " (abrazadera)" : ""} de ${a.name}`;
       h.mesh.name = h.name;
       h.params = {
         kind: "horquilla",
         horquillaAlto: alto,
         horquillaEspesor: 0.8,
-        horquillaGarganta: garganta,
+        horquillaGarganta: gargantaAqui,
         horquillaVuelo: vuelo,
         horquillaAgujero: radioEje + 0.05,
       };
@@ -12630,16 +12638,17 @@ export class Editor {
    *     poste de 100 cm elegía la vertical y pedía 31 cm de vuelo para una cara
    *     que estaba a 4,5.
    *
-   * Cada eje que queda da dos caras, pero SÓLO SE OFRECEN LAS ALCANZABLES: en
-   * la cara que da la espalda al pasador, las orejas tendrían que atravesar la
-   * viga para llegar al eje, y una horquilla de alma plana no envuelve nada.
-   * Ofrecerla sería ofrecer una opción que no produce herraje. Para poner la
-   * horquilla al otro lado se mueve el PASADOR, y ella lo sigue.
+   * Cada eje que queda da dos caras, pero sólo se ofrecen LAS ALCANZABLES por
+   * el estilo que se pida, y los dos estilos se reparten justo las contrarias:
+   * la HORQUILLA saca las orejas hacia fuera y necesita el eje por delante de
+   * la cara; la ABRAZADERA las mete hacia dentro, cruzando la viga, y necesita
+   * el eje por detrás. Por eso una cara que no vale para una vale para la otra.
    */
   carasDeAnclaje(
     a: SceneObject,
     centro: THREE.Vector3,
     eje: THREE.Vector3,
+    abraza = false,
   ): { clave: string; normal: THREE.Vector3; vuelo: number; etiqueta: string }[] {
     a.mesh.updateMatrixWorld(true);
     const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
@@ -12665,10 +12674,19 @@ export class Editor {
       if (Math.abs(n.dot(eje)) > 0.05) continue;
       for (const signo of [1, -1] as const) {
         const normal = n.clone().multiplyScalar(signo);
+        // LOS DOS ESTILOS SON EL MISMO CÁLCULO CON EL SIGNO CAMBIADO. La
+        // horquilla apoya el alma en la cara y saca las orejas HACIA FUERA, así
+        // que el eje tiene que estar por delante de esa cara. La abrazadera
+        // apoya el alma en la cara y mete las orejas HACIA DENTRO, cruzando la
+        // viga, así que el eje tiene que estar por detrás. De ahí que cada cara
+        // sirva para uno de los dos estilos y nunca para los dos: el vuelo de
+        // uno es el del otro con el signo cambiado.
+        const semi = this.medidaEn(a, normal) / 2;
+        const vuelo = abraza ? semi - dea.dot(normal) : dea.dot(normal) - semi;
         salida.push({
           clave: `${signo > 0 ? "+" : "-"}${letras[i]}`,
           normal,
-          vuelo: dea.dot(normal) - this.medidaEn(a, normal) / 2,
+          vuelo,
           etiqueta: this.nombreDeCara(normal),
         });
       }

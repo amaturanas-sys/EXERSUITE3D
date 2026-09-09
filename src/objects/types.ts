@@ -143,6 +143,15 @@ export interface PrimitiveParams {
   /** ¿Se redondea el extremo proximal de las móviles para que no choquen? */
   pasadorRedondea?: boolean;
   /**
+   * ESTILO DEL PUNTO DE ANCLAJE (v0.3.34). Con `false` —lo normal— es una
+   * HORQUILLA: el alma se suelda en la cara que mira al pasador y las orejas
+   * salen hacia fuera, con lo que gira entre ellas. Con `true` es una
+   * ABRAZADERA: el alma se suelda en la cara CONTRARIA y las orejas cruzan la
+   * viga por sus dos costados hasta el eje, que es lo que hace falta cuando el
+   * pasador atraviesa la viga por un pinhole en vez de quedar por delante.
+   */
+  pasadorAbraza?: boolean;
+  /**
    * La cara de cada ancla en la que se suelda su horquilla, por id de pieza
    * (`"+x"`, `"-z"`… en ejes LOCALES del ancla). Sin entrada —o con una que ya
    * no vale porque la pieza se giró— manda la que más mira al pasador.

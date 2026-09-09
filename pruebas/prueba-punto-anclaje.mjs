@@ -361,6 +361,82 @@ ok(
   JSON.stringify(selector.invalida),
 );
 
+
+// ── 7. LA ABRAZADERA ────────────────────────────────────────────────────────
+//
+// El caso que la horquilla NO puede resolver: el pasador ATRAVIESA la viga por
+// un pinhole, así que no queda por delante de ninguna cara y no hay dónde
+// apoyar un alma con las orejas hacia fuera. La abrazadera suelda el alma en la
+// cara contraria y cruza la viga por sus dos costados hasta el eje.
+const abrazo = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  const poste = ed.addComponent("pilar-linea");
+  poste.name = "Poste";
+  poste.params = {
+    kind: "beam", width: 7, depth: 5, ends: "plano",
+    path: [[0, -50, 0], [0, 50, 0]],
+  };
+  poste.rebuildGeometry();
+  poste.mesh.position.set(0, 50, 0);
+  poste.physics = { ...poste.physics, fixed: true };
+  ed.bus.emit("objectTransformed", { object: poste });
+  const pas = ed.addComponent("pasador");
+  pas.params = { ...pas.params, height: 20 };
+  pas.rebuildGeometry();
+  // El eje en Z, ATRAVESANDO el poste por su centro: es un pinhole.
+  pas.mesh.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(0, 0, 1));
+  pas.mesh.position.set(0, 80, 0);
+  ed.bus.emit("objectTransformed", { object: pas });
+  pas.params.pasadorAnclas = [poste.id];
+  pas.params.pasadorAnclaje = true;
+  pas.params.pasadorPerfora = false;
+
+  const centro = pas.mesh.getWorldPosition(new T.Vector3());
+  const eje = new T.Vector3(0, 1, 0).applyQuaternion(pas.mesh.quaternion).normalize();
+  const comoHorquilla = ed.carasDeAnclaje(poste, centro, eje, false);
+  const comoAbrazadera = ed.carasDeAnclaje(poste, centro, eje, true);
+
+  // Con el estilo normal no hay herraje posible.
+  ed.aplicarPasador(pas);
+  const sinAbrazar = ed.listObjects().filter((o) => o.componentId === "punto-anclaje").length;
+  // Y con la abrazadera, sí.
+  pas.params.pasadorAbraza = true;
+  const r = ed.aplicarPasador(pas);
+  const h = ed.listObjects().find((o) => o.componentId === "punto-anclaje");
+  if (!h) return { comoHorquilla: comoHorquilla.length, comoAbrazadera: comoAbrazadera.length, sinAbrazar, r };
+  h.mesh.updateMatrixWorld(true);
+  const z = new T.Vector3(0, 0, 1).applyQuaternion(h.mesh.quaternion).normalize();
+  const origen = h.mesh.getWorldPosition(new T.Vector3());
+  // El alma va a `vuelo` por detrás del eje, sobre la cara del poste.
+  const alma = origen.clone().addScaledVector(z, -(h.params.horquillaVuelo ?? 0));
+  // Y las orejas tienen que dejar pasar el poste: 5 cm de fondo en el eje Z.
+  return {
+    comoHorquilla: comoHorquilla.length,
+    comoAbrazadera: comoAbrazadera.length,
+    sinAbrazar,
+    r,
+    vuelo: +(h.params.horquillaVuelo ?? 0).toFixed(2),
+    garganta: +(h.params.horquillaGarganta ?? 0).toFixed(2),
+    almaX: +alma.x.toFixed(2),
+    ejeDentro: +origen.distanceTo(centro).toFixed(3),
+    nombre: h.name.includes("abrazadera"),
+  };
+});
+console.log("ABRAZO:", JSON.stringify(abrazo));
+ok(abrazo.comoHorquilla === 0, "con el eje DENTRO de la viga no hay horquilla posible", abrazo.comoHorquilla);
+ok(abrazo.sinAbrazar === 0, "y en efecto no se monta ninguna", abrazo.sinAbrazar);
+ok(abrazo.comoAbrazadera === 2, "pero la abrazadera alcanza las dos caras", abrazo.comoAbrazadera);
+ok(abrazo.r?.anclajes === 1, "y monta su herraje", JSON.stringify(abrazo.r));
+ok(abrazo.ejeDentro < 0.05, "con el taladro EN EL EJE, como siempre", abrazo.ejeDentro);
+// El poste mide 7 en X: el alma se suelda en una de sus caras, a 3,5 del centro.
+ok(Math.abs(Math.abs(abrazo.almaX) - 3.5) < 0.2, "el alma soldada en la cara de la viga", abrazo.almaX);
+ok(Math.abs(abrazo.vuelo - 3.5) < 0.2, "y las orejas cruzan de la cara al eje", abrazo.vuelo);
+// Y la garganta deja pasar el poste: 5 de fondo en Z más holgura.
+ok(Math.abs(abrazo.garganta - 5.4) < 0.05, "con la garganta abierta a la viga que cruza", abrazo.garganta);
+ok(abrazo.nombre, "y se llama por lo que es", abrazo.nombre);
+
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();
 process.exit(fallos ? 1 : 0);

@@ -461,6 +461,14 @@ esa pieza, las dos medidas:
     DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
     extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
     criba que ya hacía `elegirCaraDentada`.
+  · **Los dos estilos son el mismo cálculo con el signo cambiado.** La
+    HORQUILLA apoya el alma en la cara y saca las orejas hacia fuera: necesita
+    el eje POR DELANTE de esa cara. La ABRAZADERA apoya el alma en la cara y
+    mete las orejas hacia dentro, cruzando la viga: necesita el eje POR DETRÁS.
+    Así que cada cara sirve para uno de los dos y nunca para los dos, y el caso
+    que ninguna horquilla resuelve —el pasador ATRAVESANDO la viga por un
+    pinhole, sin quedar por delante de nada— es justo el que la abrazadera hace
+    sin esfuerzo.
   · **La cara de soldadura tiene que ser PERPENDICULAR al eje, no «poco
     paralela».** El alma apoya plana en la cara y las orejas salen a escuadra
     del eje: si la cara está inclinada, las dos cosas no se cumplen a la vez y

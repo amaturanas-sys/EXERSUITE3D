@@ -5,6 +5,30 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.34] — 2026-09-09
+
+### Añadido
+
+**LA ABRAZADERA: el punto de anclaje que cruza la viga por los dos costados.**
+Interruptor nuevo en Propiedades del pasador, y con él el caso que la horquilla
+no puede resolver: **cuando el pasador ATRAVIESA la viga por un pinhole** no
+queda por delante de ninguna cara, así que no hay dónde apoyar un alma con las
+orejas hacia fuera. La abrazadera suelda el alma en la cara CONTRARIA y mete las
+orejas hacia dentro, cruzando la viga por sus dos costados hasta el eje.
+
+Es la misma pieza —alma, dos orejas y el taladro sobre el eje— montada del
+revés, y por eso los dos estilos se reparten exactamente las caras contrarias:
+la horquilla necesita el eje POR DELANTE de la cara, la abrazadera POR DETRÁS.
+Una cara que no vale para una vale para la otra, y el selector de cara enseña
+las de la que esté puesta. La garganta se abre a lo que cruza —la viga, no sólo
+el brazo— y el herraje se llama por lo que es.
+
+Medido en un poste de 7 × 5 cm con el pasador en su centro: como horquilla,
+**cero caras posibles y cero herraje**; como abrazadera, **las dos caras**, alma
+soldada a 3,5 cm del centro —en la cara—, orejas cruzando esos mismos 3,5 hasta
+el eje, garganta de 5,4 para los 5 cm de fondo del poste y el taladro a
+**0,00 cm** del eje.
+
 ## [0.3.33] — 2026-09-09
 
 ### Añadido
