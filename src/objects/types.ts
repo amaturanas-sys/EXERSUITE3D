@@ -142,6 +142,12 @@ export interface PrimitiveParams {
   pasadorAnclaje?: boolean;
   /** ¿Se redondea el extremo proximal de las móviles para que no choquen? */
   pasadorRedondea?: boolean;
+  /**
+   * La cara de cada ancla en la que se suelda su horquilla, por id de pieza
+   * (`"+x"`, `"-z"`… en ejes LOCALES del ancla). Sin entrada —o con una que ya
+   * no vale porque la pieza se giró— manda la que más mira al pasador.
+   */
+  pasadorCaras?: Record<string, string>;
 
   // ── PUNTO DE ANCLAJE (horquilla, v0.3.32) ────────────────────────────────
   /** Alto de la horquilla, a lo largo de la viga a la que se suelda (cm). */

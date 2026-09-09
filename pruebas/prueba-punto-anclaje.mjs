@@ -266,6 +266,101 @@ ok(
 );
 ok(barrido.formaTras === null, "y apagar el interruptor lo deja como estaba", barrido.formaTras);
 
+
+// ── 6. EL SELECTOR DE CARA ──────────────────────────────────────────────────
+//
+// Cuando el eje NO va en paralelo a una arista de la viga, sobreviven dos ejes
+// locales y hay varias caras alcanzables: ahí la elección es real, y la hace
+// quien diseña, no la geometría. Se pide la segunda y se mide que la horquilla
+// se muda a esa cara.
+const selector = await page.evaluate(() => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  const poste = ed.addComponent("pilar-linea");
+  poste.name = "Poste";
+  poste.params = {
+    kind: "beam", width: 7, depth: 7, ends: "plano",
+    path: [[0, -50, 0], [0, 50, 0]],
+  };
+  poste.rebuildGeometry();
+  poste.mesh.position.set(0, 50, 0);
+  poste.physics = { ...poste.physics, fixed: true };
+  ed.bus.emit("objectTransformed", { object: poste });
+  const pas = ed.addComponent("pasador");
+  pas.params = { ...pas.params, height: 16 };
+  pas.rebuildGeometry();
+  // El eje VERTICAL, paralelo al poste: así ni X ni Z son el eje de giro, las
+  // dos son perpendiculares a él y las cuatro caras del perfil entran en juego.
+  // (Es el montaje de un brazo que barre en horizontal sobre una columna.)
+  pas.mesh.quaternion.identity();
+  // Y el pasador, por fuera de la ESQUINA: las caras +X y +Z le miran las dos,
+  // a distinta distancia, y ahí la elección es real.
+  pas.mesh.position.set(8, 80, 6);
+  ed.bus.emit("objectTransformed", { object: pas });
+  pas.params.pasadorAnclas = [poste.id];
+  pas.params.pasadorAnclaje = true;
+  pas.params.pasadorPerfora = false;
+
+  const centro = pas.mesh.getWorldPosition(new T.Vector3());
+  const eje = new T.Vector3(0, 1, 0).applyQuaternion(pas.mesh.quaternion).normalize();
+  const caras = ed.carasDeAnclaje(poste, centro, eje);
+  const normalDe = () => {
+    const h = ed.listObjects().find((o) => o.componentId === "punto-anclaje");
+    if (!h) return null;
+    h.mesh.updateMatrixWorld(true);
+    const z = new T.Vector3(0, 0, 1).applyQuaternion(h.mesh.quaternion).normalize();
+    return { x: +z.x.toFixed(2), y: +z.y.toFixed(2), z: +z.z.toFixed(2) };
+  };
+  ed.aplicarPasador(pas);
+  const auto = normalDe();
+  pas.params.pasadorCaras = { [poste.id]: caras[1]?.clave };
+  ed.aplicarPasador(pas);
+  const segunda = normalDe();
+  // Y una clave que ya no vale —la pieza pudo girarse— vuelve a la automática.
+  pas.params.pasadorCaras = { [poste.id]: "+inventada" };
+  ed.aplicarPasador(pas);
+  const invalida = normalDe();
+  return {
+    claves: caras.map((c) => c.clave),
+    etiquetas: caras.map((c) => c.etiqueta),
+    vuelos: caras.map((c) => +c.vuelo.toFixed(1)),
+    auto, segunda, invalida,
+  };
+});
+console.log("CARA:", JSON.stringify(selector));
+ok(selector.claves.length === 2, "el ancla ofrece las caras que la horquilla ALCANZA", selector.claves.join(","));
+ok(
+  !selector.claves.some((c) => c.endsWith("y")),
+  "nunca la TAPA del extremo: ahí no se suelda una horquilla",
+  selector.claves.join(","),
+);
+ok(
+  selector.vuelos.every((v) => v >= 0.2) && selector.vuelos[0] >= selector.vuelos[1],
+  "todas con vuelo utilizable, y la que más mira al pasador primero",
+  selector.vuelos.join(" / "),
+);
+ok(
+  selector.etiquetas[0] === "derecha" && selector.etiquetas[1] === "delante",
+  "y las nombra por dónde miran en el mundo, no por su letra",
+  selector.etiquetas.join(","),
+);
+ok(
+  selector.auto && Math.abs(selector.auto.x - 1) < 0.05,
+  "sin pedir nada manda la cara que más mira al pasador",
+  JSON.stringify(selector.auto),
+);
+ok(
+  selector.segunda && Math.abs(selector.segunda.z - 1) < 0.05,
+  "pedir la segunda muda la horquilla a esa cara",
+  JSON.stringify(selector.segunda),
+);
+ok(
+  selector.invalida && Math.abs(selector.invalida.x - 1) < 0.05,
+  "y una cara que ya no existe vuelve a la automática, no rompe",
+  JSON.stringify(selector.invalida),
+);
+
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();
 process.exit(fallos ? 1 : 0);

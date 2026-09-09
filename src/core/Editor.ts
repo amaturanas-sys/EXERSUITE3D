@@ -12573,41 +12573,14 @@ export class Editor {
     let puestas = 0;
     for (const a of anclas) {
       a.mesh.updateMatrixWorld(true);
-      // LA CARA, NO LA DIRECCIÓN. El alma se apoya en una CARA del ancla, así
-      // que la referencia es uno de sus tres ejes locales —el que más mira al
-      // pasador de los que no son el eje de giro—, no la recta que une los dos
-      // centros: medir por esa recta da la diagonal y manda la horquilla lejos
-      // de la viga (en el ensayo, 31 cm de vuelo para una cara que estaba a 4).
-      const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
-      const ls = a.localSizeAbs();
-      // El eje LARGO del ancla tampoco vale: esa cara es la TAPA del extremo, y
-      // una horquilla no se suelda en la punta de un poste. Sin descartarla, un
-      // pasador puesto a media altura elegía la vertical —el poste mide 100 y
-      // sus caras 7— y la horquilla salía a 20 cm por dentro de la viga.
-      const iLargo = ls.x >= ls.y && ls.x >= ls.z ? 0 : ls.y >= ls.z ? 1 : 2;
-      const dea = centro.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3()));
-      let haciaEje: THREE.Vector3 | null = null;
-      let fuera = 0;
-      const bases = [
-        new THREE.Vector3(1, 0, 0),
-        new THREE.Vector3(0, 1, 0),
-        new THREE.Vector3(0, 0, 1),
-      ];
-      for (let i = 0; i < 3; i++) {
-        if (i === iLargo) continue;
-        const n = bases[i].applyQuaternion(q).normalize();
-        // El eje de giro no vale de normal: por esa cara no se suelda nada.
-        if (Math.abs(n.dot(eje)) > 0.9) continue;
-        const d = dea.dot(n);
-        if (Math.abs(d) > Math.abs(fuera)) {
-          fuera = d;
-          haciaEje = d < 0 ? n.clone().negate() : n.clone();
-        }
-      }
-      if (!haciaEje) continue;
-      // El vuelo es lo que separa esa cara del eje del pasador: exactamente lo
-      // que la horquilla tiene que salvar.
-      const vuelo = Math.abs(fuera) - this.medidaEn(a, haciaEje) / 2;
+      const caras = this.carasDeAnclaje(a, centro, eje);
+      if (!caras.length) continue;
+      // La cara que pida Propiedades; si no hay pedida —o la pieza se giró y ya
+      // no existe— manda la que más mira al pasador, que es la primera.
+      const pedida = (obj.params.pasadorCaras ?? {})[a.id];
+      const cara = caras.find((c) => c.clave === pedida) ?? caras[0];
+      const haciaEje = cara.normal;
+      const vuelo = cara.vuelo;
       if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra horquilla
 
       const h = this.addComponent("punto-anclaje");
@@ -12641,6 +12614,90 @@ export class Editor {
       puestas++;
     }
     return puestas;
+  }
+
+  /**
+   * LAS CARAS EN LAS QUE SE PUEDE SOLDAR UNA HORQUILLA, ordenadas de la que más
+   * mira al pasador a la que menos. Es lo que ofrece el selector de Propiedades
+   * y, sin elección, lo que la herramienta usa por su cuenta (la primera).
+   *
+   * De los tres ejes locales del ancla se descartan dos:
+   *
+   *   · el EJE DE GIRO, porque por esa cara las orejas quedarían de canto y no
+   *     habría por dónde pasar el pasador;
+   *   · y el LARGO, que es la TAPA DEL EXTREMO —una horquilla no se suelda en
+   *     la punta de un poste—. Sin descartarlo, un pasador a media altura de un
+   *     poste de 100 cm elegía la vertical y pedía 31 cm de vuelo para una cara
+   *     que estaba a 4,5.
+   *
+   * Cada eje que queda da dos caras, pero SÓLO SE OFRECEN LAS ALCANZABLES: en
+   * la cara que da la espalda al pasador, las orejas tendrían que atravesar la
+   * viga para llegar al eje, y una horquilla de alma plana no envuelve nada.
+   * Ofrecerla sería ofrecer una opción que no produce herraje. Para poner la
+   * horquilla al otro lado se mueve el PASADOR, y ella lo sigue.
+   */
+  carasDeAnclaje(
+    a: SceneObject,
+    centro: THREE.Vector3,
+    eje: THREE.Vector3,
+  ): { clave: string; normal: THREE.Vector3; vuelo: number; etiqueta: string }[] {
+    a.mesh.updateMatrixWorld(true);
+    const q = a.mesh.getWorldQuaternion(new THREE.Quaternion());
+    const ls = a.localSizeAbs();
+    const iLargo = ls.x >= ls.y && ls.x >= ls.z ? 0 : ls.y >= ls.z ? 1 : 2;
+    const dea = centro.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3()));
+    const bases = [
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+    ];
+    const letras = ["x", "y", "z"];
+    const salida: { clave: string; normal: THREE.Vector3; vuelo: number; etiqueta: string }[] = [];
+    for (let i = 0; i < 3; i++) {
+      if (i === iLargo) continue;
+      const n = bases[i].applyQuaternion(q).normalize();
+      // PERPENDICULAR AL EJE, no «poco paralela». El alma tiene que apoyar
+      // PLANA en la cara y las orejas salir a escuadra del eje: si la cara está
+      // inclinada respecto al pasador las dos cosas no pueden cumplirse a la
+      // vez, y la base que se arma con ella sale torcida —el alma quedaba a 22°
+      // de la cara que decía estar tocando—. Una cara así habría que cortarla en
+      // ángulo, y eso ya no es esta pieza.
+      if (Math.abs(n.dot(eje)) > 0.05) continue;
+      for (const signo of [1, -1] as const) {
+        const normal = n.clone().multiplyScalar(signo);
+        salida.push({
+          clave: `${signo > 0 ? "+" : "-"}${letras[i]}`,
+          normal,
+          vuelo: dea.dot(normal) - this.medidaEn(a, normal) / 2,
+          etiqueta: this.nombreDeCara(normal),
+        });
+      }
+    }
+    // La que más mira al pasador va primera: es la que la herramienta toma sola.
+    salida.sort((p, s) => s.vuelo - p.vuelo);
+    return salida.filter((c) => c.vuelo >= 0.2);
+  }
+
+  /**
+   * El nombre de una cara por hacia dónde mira EN EL MUNDO. Decir «+X» no le
+   * dice nada a quien está mirando la máquina; «hacia la derecha», sí.
+   */
+  private nombreDeCara(n: THREE.Vector3): string {
+    const ejes: [THREE.Vector3, string, string][] = [
+      [new THREE.Vector3(1, 0, 0), tt("derecha", "right"), tt("izquierda", "left")],
+      [new THREE.Vector3(0, 1, 0), tt("arriba", "up"), tt("abajo", "down")],
+      [new THREE.Vector3(0, 0, 1), tt("delante", "front"), tt("detrás", "back")],
+    ];
+    let mejor = ejes[0];
+    let d = 0;
+    for (const e of ejes) {
+      const p = n.dot(e[0]);
+      if (Math.abs(p) > Math.abs(d)) {
+        d = p;
+        mejor = e;
+      }
+    }
+    return d >= 0 ? mejor[1] : mejor[2];
   }
 
   /** Cuánto mide una pieza en una dirección del mundo (cm). */

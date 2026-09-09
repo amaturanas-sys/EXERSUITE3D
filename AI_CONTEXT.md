@@ -461,6 +461,12 @@ esa pieza, las dos medidas:
     DOS: el de giro (por ahí no se suelda) y el LARGO, que es la tapa del
     extremo —una horquilla no se suelda en la punta de un poste—. Es la misma
     criba que ya hacía `elegirCaraDentada`.
+  · **La cara de soldadura tiene que ser PERPENDICULAR al eje, no «poco
+    paralela».** El alma apoya plana en la cara y las orejas salen a escuadra
+    del eje: si la cara está inclinada, las dos cosas no se cumplen a la vez y
+    `makeBasis` arma una base torcida —con un eje a 45°, el alma quedaba a 22°
+    de la cara que decía estar tocando—. `makeBasis` NO ortonormaliza: escribe
+    las columnas tal cual, así que hay que darle vectores que ya lo sean.
   · **La punta redonda tiene que estar centrada EN EL EJE, no en el extremo.**
     Una esquina en escuadra barre la DIAGONAL del perfil (W/2·√2 = 3,54 en uno
     de 5) y topa; el semicírculo barre su RADIO (2,50) y pasa. Pero eso sólo

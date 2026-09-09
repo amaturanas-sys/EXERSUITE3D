@@ -5,6 +5,34 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.33] — 2026-09-09
+
+### Añadido
+
+**EL SELECTOR DE CARA del punto de anclaje.** En Propiedades del pasador, cada
+ancla con más de una cara soldable trae su desplegable: se elige en cuál va su
+horquilla y la pieza se muda ahí. Las caras se nombran por **hacia dónde miran
+en el mundo** —«derecha», «delante»— porque «+X» no le dice nada a quien está
+mirando la máquina, y cada una enseña su **vuelo** en cm, que es lo que delata
+de un vistazo cuál queda a mano. Sin elegir nada manda la que más mira al
+pasador, que es lo que la herramienta hacía sola; y una elección que deja de
+valer —porque la pieza se giró— vuelve a la automática en vez de romper.
+
+Sólo se ofrecen las caras que la horquilla **alcanza de verdad**: la que da la
+espalda al pasador necesitaría que sus orejas atravesaran la viga, y un alma
+plana no envuelve nada. Para llevar la horquilla al otro lado se mueve el
+pasador, y ella lo sigue. Con una sola cara alcanzable el desplegable no
+aparece: no hay nada que elegir.
+
+### Corregido
+
+**Una cara inclinada respecto al eje no puede llevar la horquilla.** El filtro
+admitía cualquier cara que no fuera casi paralela al pasador, y con eso el alma
+tenía que apoyar plana en la cara mientras las orejas salían a escuadra del eje
+—dos condiciones que no se cumplen a la vez si la cara está inclinada—. La base
+salía torcida: con un eje a 45°, el alma quedaba a **22° de la cara que decía
+estar tocando**. Ahora la cara tiene que ser perpendicular al eje.
+
 ## [0.3.32] — 2026-09-09
 
 ### Añadido

@@ -936,6 +936,7 @@ export class PropertiesPanel {
     p.pasadorMoviles ??= [];
     const aplicar = (): void => {
       const r = this.editor.aplicarPasador(obj);
+      pintarCaras();
       clear(resumen);
       resumen.append(
         tt(
@@ -1016,12 +1017,56 @@ export class PropertiesPanel {
       p.pasadorAnclaje = anclaje.checked;
       aplicar();
     });
+
+    // EL SELECTOR DE CARA (v0.3.33). Cuál de las caras del ancla lleva la
+    // horquilla no lo sabe la geometría —las dos de un mismo eje son igual de
+    // legítimas—, lo sabe quien diseña. Por defecto manda la que más mira al
+    // pasador, que es lo que la herramienta hacía sola.
+    const caras = el("div", {});
+    const pintarCaras = () => {
+      clear(caras);
+      if (!p.pasadorAnclaje) return;
+      const T = THREE;
+      obj.mesh.updateMatrixWorld(true);
+      const centro = obj.mesh.getWorldPosition(new T.Vector3());
+      const eje = new T.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+      for (const id of p.pasadorAnclas ?? []) {
+        const a = this.editor.listObjects().find((o) => o.id === id);
+        if (!a) continue;
+        const opciones = this.editor.carasDeAnclaje(a, centro, eje);
+        // Con una sola cara alcanzable no hay nada que elegir, y un desplegable
+        // de una opción es ruido: la herramienta ya la está usando.
+        if (opciones.length < 2) continue;
+        const sel = el("select", { class: "select" }) as HTMLSelectElement;
+        sel.append(el("option", { value: "" }, [
+          tt(`Automática (${opciones[0].etiqueta})`, `Automatic (${opciones[0].etiqueta})`),
+        ]) as HTMLOptionElement);
+        for (const c of opciones) {
+          // El vuelo se enseña porque es lo que delata una cara imposible: en
+          // negativo, el eje cae DENTRO de la viga y ahí no hay horquilla.
+          sel.append(el("option", { value: c.clave }, [
+            `${c.etiqueta} · ${roundTo(c.vuelo, 1)} cm`,
+          ]) as HTMLOptionElement);
+        }
+        sel.value = (p.pasadorCaras ?? {})[id] ?? "";
+        sel.addEventListener("change", () => {
+          const mapa = { ...(p.pasadorCaras ?? {}) };
+          if (sel.value) mapa[id] = sel.value;
+          else delete mapa[id];
+          p.pasadorCaras = mapa;
+          aplicar();
+        });
+        caras.append(el("label", { class: "row" }, [el("span", {}, [a.name]), sel]));
+      }
+    };
     const redondea = el("input", { type: "checkbox" }) as HTMLInputElement;
     redondea.checked = p.pasadorRedondea !== false;
     redondea.addEventListener("change", () => {
       p.pasadorRedondea = redondea.checked;
       aplicar();
     });
+
+    pintarCaras();
 
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Pasador", "Pin")]),
@@ -1046,6 +1091,7 @@ export class PropertiesPanel {
         anclaje,
         tt("Puntos de anclaje (horquilla soldada)", "Anchor points (welded clevis)"),
       ]),
+      caras,
       el("label", { class: "row" }, [
         redondea,
         tt("Extremo proximal redondo", "Round the near end"),
