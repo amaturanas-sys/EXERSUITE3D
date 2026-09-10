@@ -61,6 +61,15 @@ export interface CfgBrazoPilar {
   descentradoCm?: number;
   /** Cuántos topes lleva la viga (mínimo 2). */
   topes?: number;
+  /**
+   * EN QUÉ TOPE NACE ARMADO (grados de brazo). Se usa el más cercano a este
+   * valor; sin él, el primero de la lista. Importa más de lo que parece: el
+   * mecanismo se construye RÍGIDO en ese tope, y si es el más tumbado el brazo
+   * puede nacer dentro de otra pieza —en la banca del diseñador, el primer tope
+   * mete el respaldo en el asiento, chocan a los 4,25 s y la simulación
+   * revienta—.
+   */
+  gradoInicial?: number;
 }
 
 export interface TopeBrazoPilar {

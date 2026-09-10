@@ -1458,7 +1458,15 @@ export class Editor {
     // Se arma apoyado en SU PRIMER TOPE: el ángulo y la distancia tienen que
     // salir del MISMO tope, porque el orden de la lista (por grados) no es el
     // orden en que caen sobre la viga.
-    const tope0 = sol.topes[0] ?? { gradoBrazo: cfg.gradoA, distanciaCm: sol.desdeCm };
+    // EL TOPE EN EL QUE NACE. Por defecto el primero, pero se puede pedir otro:
+    // el mecanismo se arma RÍGIDO ahí, así que nacer en el más tumbado puede
+    // meter el brazo dentro de otra pieza de la máquina.
+    const tope0 = (cfg.gradoInicial == null
+      ? sol.topes[0]
+      : sol.topes.reduce((mejor, t) =>
+          Math.abs(t.gradoBrazo - cfg.gradoInicial!) < Math.abs(mejor.gradoBrazo - cfg.gradoInicial!)
+            ? t : mejor, sol.topes[0])
+    ) ?? { gradoBrazo: cfg.gradoA, distanciaCm: sol.desdeCm };
     const th = tope0.gradoBrazo * THREE.MathUtils.DEG2RAD;
     const dirBrazo = new THREE.Vector3(Math.cos(th), Math.sin(th), 0);
     const pieDelPilar = origenViga.clone().addScaledVector(dirViga, tope0.distanciaCm);

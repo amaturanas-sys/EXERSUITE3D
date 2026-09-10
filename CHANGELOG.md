@@ -5,6 +5,22 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.38] — 2026-09-10
+
+### Añadido
+
+**EN QUÉ TOPE NACE EL MECANISMO (`gradoInicial`).** El brazo con pilar se armaba
+siempre en el PRIMER tope, el más tumbado, y se construye rígido ahí: si ese
+tope mete el brazo dentro de otra pieza de la máquina, la simulación arranca con
+las dos interpenetradas. En la banca del diseñador eso hacía que el respaldo
+naciera dentro del asiento; chocaban a los **4,25 s** y la simulación reventaba
+—el pie saltaba 50 cm en un paso—. Ahora se puede pedir el tope de partida y el
+mecanismo nace donde uno quiere; sin pedirlo, sigue el primero, como antes.
+
+Medido en la banca rehecha: armada en su primer tope revienta a los 4,25 s;
+armada en el de 90° —donde el respaldo estaba de verdad— **no revienta** en 11
+segundos de simulación.
+
 ## [0.3.37] — 2026-09-09
 
 ### Corregido

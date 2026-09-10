@@ -469,6 +469,15 @@ esa pieza, las dos medidas:
     pilar no asentara nunca, y ninguna mejora de la FORMA del tope lo arreglaba.
     Regla: cuando un vector se llama «arriba», **fuerza su sentido** (`if (v.y <
     0) v.negate()`), no confíes en el orden del producto vectorial.
+  · **UN MECANISMO NO SE SOSTIENE EN TODOS SUS TOPES, y no sé aún predecir en
+    cuáles.** Medido en el brazo con pilar: con `brazo 42,6 / 70–100° / viga 50
+    a 30° / E −2,8` sólo aguanta el tope de 70° (pierde 1,9°); en los demás el
+    brazo se desploma, también SIN carga y en escena aislada. Con
+    `brazo 46 / 10–70° / viga 60 a 30° / E +4,2` aguanta clavado en 70,0°. No es
+    el solver ni la forma del tope: es la configuración. Un criterio que probé y
+    NO sirve: si el pilar trabaja a compresión o a tracción —los topes que caen
+    también trabajan a compresión—. Queda pendiente encontrar el criterio y
+    avisar en la herramienta.
   · **Un mecanismo que nace INTERPENETRADO no se sostiene, por buena que sea
     la cuenta.** El brazo con pilar calculaba bien y armaba mal: ponía el pie
     del pilar sobre el EJE de la viga de topes —3 cm dentro del material— y
