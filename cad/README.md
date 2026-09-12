@@ -42,9 +42,25 @@ no un error del modelo.
 
 | Pieza | Script | Equivale en la app a |
 |---|---|---|
-| Punto de anclaje (horquilla) | `src/punto_anclaje.py` | `kind: "horquilla"` |
+| Punto de anclaje · horquilla | `src/punto_anclaje.py` | `kind: "horquilla"` |
+| Punto de anclaje · abrazadera | `src/punto_anclaje_abrazadera.py` | `pasadorAbraza: true` |
 | Placa dentada (6 ganchos) | `src/placa_dentada.py` | `kind: "dentada"` |
 | Carril de topes (5 muescas) | `src/carril_topes.py` | lo que arma «Brazo con pilar regulable» |
+
+### Una forma, dos piezas
+
+La horquilla y la abrazadera salen de la MISMA fábrica (`src/lib/horquilla.py`),
+porque en el acero son la misma pieza montada del revés. Lo único que cambia
+son los números: la garganta se abre a lo que pasa entre las orejas —el brazo
+que gira en una, la viga que se cruza en la otra— y el vuelo es lo que las
+orejas tienen que salvar hasta el eje.
+
+| | Garganta | Vuelo | Envolvente |
+|---|---|---|---|
+| Horquilla | 42 (el brazo) | 40 (cara → eje) | 58 × 80 × 88 |
+| Abrazadera | 54 (la viga) | 35 (cara → eje, cruzando) | 70 × 80 × 83 |
+
+`lib/` es código compartido, no modelos: nada de lo que hay ahí lleva `@step`.
 
 ### Las cotas no se vuelven a deducir aquí
 
