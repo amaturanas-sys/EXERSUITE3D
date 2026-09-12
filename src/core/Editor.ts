@@ -11,6 +11,7 @@ import { aplicarCables, aplicarUniones, construirMaquina, construirPiezas, STAND
 import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
 import { tt } from "./i18n";
+import { esferaDe, formatearHora, lecturaDe, tramoDesdeHoras, vuelta } from "./reloj";
 import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind } from "../physics/joints";
 import { Cable, type CableNode, type TopeCable } from "../physics/cables";
@@ -126,8 +127,15 @@ export interface ConfigBisagra {
   juntar?: boolean;
   /** Largo de cada placa desde el pasador (cm). */
   tamano: number;
-  /** Recorrido limitado de la bisagra (grados); ausente = giro libre. */
+  /** Recorrido limitado de la bisagra (grados de placa); ausente = giro libre. */
   limite?: [number, number];
+  /**
+   * RECORRIDO EN HORAS DEL RELOJ (v0.3.48), que es como lo pide el diálogo: de
+   * qué hora a qué hora y por qué lado. Se convierte a `limite` aquí, cuando ya
+   * hay placas montadas y por tanto una manecilla que leer — antes de eso no
+   * hay reloj, porque no hay nada que apunte a ninguna parte.
+   */
+  limiteReloj?: { desde: number; hasta: number };
   /**
    * CARA DE MONTAJE (v0.2.33): en cuál de las dos caras enfrentadas al eje se
    * atornilla el herraje, en direcciones GLOBALES. Es lo que decide hacia
@@ -1559,9 +1567,13 @@ export class Editor {
       for (const lado of [-1, 1] as const) {
         const c = this.addComponent("base-apoyo");
         if (!c) break;
+        // El tope se nombra por LA HORA A LA QUE DEJA EL BRAZO, no por sus
+        // grados sobre la horizontal: así el nombre de la pieza dice dónde va a
+        // quedar el brazo y se comprueba mirando la máquina.
+        const horaTope = formatearHora(90 - t.gradoBrazo);
         c.name = tt(
-          `Tope ${t.gradoBrazo}° (${lado < 0 ? "arriba" : "abajo"})`,
-          `Stop ${t.gradoBrazo}° (${lado < 0 ? "upper" : "lower"})`,
+          `Tope ${horaTope} (${lado < 0 ? "arriba" : "abajo"})`,
+          `Stop ${horaTope} (${lado < 0 ? "upper" : "lower"})`,
         );
         c.params = { kind: "box", width: DEDO, height: altoDedo, depth: PERFIL_VIGA };
         c.rebuildGeometry();
@@ -9724,10 +9736,33 @@ export class Editor {
       // no caía, no cedía a nada, parecía soldada. Quien frena una bisagra
       // recién puesta es el MATERIAL, que ya choca; los grados son para cuando
       // el usuario los pide.
-      bisagra.limitsEnabled = !!cfg.limite;
+      bisagra.limitsEnabled = !!cfg.limite || !!cfg.limiteReloj;
       if (cfg.limite) {
         bisagra.min = Math.min(cfg.limite[0], cfg.limite[1]);
         bisagra.max = Math.max(cfg.limite[0], cfg.limite[1]);
+      }
+      if (cfg.limiteReloj) {
+        // AQUÍ Y NO ANTES. El reloj necesita una manecilla, y la manecilla es la
+        // placa: hasta este punto no existía. Con las dos placas puestas en su
+        // pose de diseño, `relojDeUnion` ya sabe qué hora marca cada grado de
+        // escala y las horas que pidió el diálogo se convierten sin más.
+        const recta = this.relojDeUnion(bisagra);
+        if (recta) {
+          const { desde, hasta } = cfg.limiteReloj;
+          const t = tramoDesdeHoras(recta, desde, hasta, true);
+          bisagra.min = t.min;
+          bisagra.max = t.max;
+        } else {
+          // Eje vertical: no hay esfera. Se deja libre y se dice, en vez de
+          // clavar un recorrido inventado.
+          bisagra.limitsEnabled = false;
+          this.avisoTemporal(
+            tt(
+              "Esta bisagra gira sobre un eje vertical: no tiene horas y queda sin recorrido limitado.",
+              "This hinge turns about a vertical axis: it has no clock hours and is left unlimited.",
+            ),
+          );
+        }
       }
       // COLISIÓN REAL ENTRE LAS DOS PIEZAS (v0.2.33): una bisagra montada
       // sobre una cara solo puede plegar hacia el lado donde el material no
@@ -13478,15 +13513,43 @@ export class Editor {
    * eso al soltar se anuncia el destino —que se calcula redondeando, igual que
    * el freno— y no el ángulo en el que el brazo está de paso.
    */
+  /**
+   * QUÉ HORA MARCA AHORA MISMO la pieza que cuelga de una bisagra (v0.3.48).
+   *
+   * Vale con la máquina andando, que es donde hace falta: el eje se pide al
+   * motor —`ejeDeGiro` lo devuelve DONDE ESTÉ, y el pasador de una bisagra
+   * montada sobre un brazo que también se mueve no se queda quieto— y la
+   * manecilla es la posición real de la pieza. Nada de convertir escalas: se
+   * mira dónde apunta y se lee el reloj.
+   */
+  relojVivoDe(objectId: string): number | null {
+    const bis = this.physics?.ejeDeGiro(objectId);
+    const obj = this.objects.get(objectId);
+    if (!bis || !obj) return null;
+    const esfera = esferaDe(bis.eje);
+    if (!esfera) return null;
+    const mano = obj.mesh
+      .getWorldPosition(new THREE.Vector3())
+      .sub(bis.punto)
+      .projectOnPlane(bis.eje);
+    if (mano.lengthSq() < 0.01) return null;
+    return lecturaDe(esfera, mano.normalize());
+  }
+
   private anunciarBisagra(objectId: string, soltando: boolean): void {
     const a = this.physics?.anguloDeBisagra(objectId);
     if (a == null) return;
     const idx = this.physics?.indiceDeBisagra(objectId) ?? null;
-    const grados = idx ? (idx.indice * 360) / idx.posiciones : a;
     const cabeza = soltando ? tt("Se clava en", "Locks at") : tt("Bisagra", "Hinge");
+    // EN HORAS, NO EN GRADOS (v0.3.48). El grado de una bisagra se cuenta desde
+    // su propia pose de diseño, así que no dice dónde está la pieza; la hora sí
+    // —las 12 arriba, siempre—, y se comprueba mirando la máquina. Con el eje
+    // vertical no hay reloj que valga y se sigue diciendo en grados.
+    const reloj = this.relojVivoDe(objectId);
+    const donde = reloj != null ? formatearHora(reloj) : `${a.toFixed(1)}°`;
     const texto = idx
-      ? `${cabeza} ${grados.toFixed(1)}°  ·  ${tt("posición", "position")} ${idx.indice + 1}/${idx.posiciones}`
-      : `${cabeza} ${a.toFixed(1)}°`;
+      ? `${cabeza} ${donde}  ·  ${tt("posición", "position")} ${idx.indice + 1}/${idx.posiciones}`
+      : `${cabeza} ${donde}`;
     this.bus.emit("dragMeasure", { text: texto });
     if (soltando) {
       window.clearTimeout(this.avisoBisagra);
@@ -13566,6 +13629,66 @@ export class Editor {
    * grados de placa referidos a la apertura de diseño —que es donde la pieza
    * está ahora mismo—.
    */
+  /**
+   * EL RELOJ DE UNA UNIÓN (v0.3.48): la recta que lleva su escala interna a la
+   * esfera del mundo.
+   *
+   * Cada unión mide su recorrido en su propia escala —el ángulo de placa en una
+   * bisagra, el giro relativo en un pivote—, y esa escala no le dice nada a
+   * nadie. La esfera sí: las 12 arriba, siempre. Lo que hace falta para pasar
+   * de una a otra es una recta, porque la relación es un desfase y un sentido:
+   *
+   *     lectura(grado) = vuelta(c0 + s · grado)     con s = ±1
+   *
+   * `s` NO se deduce de la regla de la mano derecha ni del signo de
+   * `sentidoApertura`, que es justo donde se cuelan los errores de signo: se
+   * MIDE. Se gira la manecilla de verdad noventa grados de escala y se mira
+   * hacia dónde se movió en la esfera.
+   *
+   * La manecilla es lo que cualquiera dibujaría: el vector que va del eje a la
+   * pieza que cuelga. Devuelve null cuando no hay reloj que valga —eje vertical,
+   * o la pieza sentada justo encima del eje, sin manecilla que leer—.
+   */
+  relojDeUnion(j: Joint): { c0: number; s: 1 | -1 } | null {
+    const eje = j.ejeVector().normalize();
+    const esfera = esferaDe(eje);
+    if (!esfera) return null;
+    const b = this.objects.get(j.bodyBId);
+    if (!b) return null;
+    const manecilla = b.mesh
+      .getWorldPosition(new THREE.Vector3())
+      .sub(j.anchor)
+      .projectOnPlane(eje);
+    // Menos de 1 mm de manecilla no es una manecilla: la pieza está clavada en
+    // el eje y no hay dirección que leer.
+    if (manecilla.lengthSq() < 0.01) return null;
+    manecilla.normalize();
+    // La pose que se ve AHORA es la de diseño, y en ella la escala marca
+    // `apertura0` (o 0 en un pivote, que mide giro desde donde está).
+    const enDiseno = j.apertura0 ?? 0;
+    const sAp = j.sentidoApertura >= 0 ? 1 : -1;
+    const lecturaEn = (grado: number): number =>
+      lecturaDe(
+        esfera,
+        manecilla.clone().applyAxisAngle(eje, (grado - enDiseno) * sAp * THREE.MathUtils.DEG2RAD),
+      );
+    const c0 = lecturaEn(0);
+    const paso = ((lecturaEn(90) - c0 + 540) % 360) - 180;
+    return { c0, s: paso >= 0 ? 1 : -1 };
+  }
+
+  /** Qué hora marca esta unión cuando su escala vale `grado`. */
+  relojDeGrado(j: Joint, grado: number): number | null {
+    const r = this.relojDeUnion(j);
+    return r ? vuelta(r.c0 + r.s * grado) : null;
+  }
+
+  /** Y el grado de escala que corresponde a una hora. */
+  gradoDeReloj(j: Joint, reloj: number): number | null {
+    const r = this.relojDeUnion(j);
+    return r ? vuelta((reloj - r.c0) * r.s) : null;
+  }
+
   mostrarRecorridoDeBisagra(objectId: string | null): void {
     if (this.simulating) return;
     const obj = objectId ? this.objects.get(objectId) : null;

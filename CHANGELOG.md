@@ -5,6 +5,89 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.48] — 2026-09-12
+
+### Cambiado
+
+**LOS ÁNGULOS SE PIDEN EN HORAS DEL RELOJ, NO EN GRADOS.** Un grado no dice nada
+por sí solo: «la bisagra va de 0° a 90°» obliga a preguntar de qué cero se habla
+—¿de la pose de diseño?, ¿de las placas enfrentadas?, ¿del eje X?—, y la
+respuesta cambia con cada unión, así que el mismo número significa cosas
+distintas en dos bisagras de la misma máquina.
+
+El reloj no tiene ese problema porque **su cero no se negocia: las 12 están
+siempre arriba y las 6 siempre abajo**, en la máquina entera y en todas sus
+piezas. «El respaldo va de las 3 a las 6» se entiende sin más contexto y se
+comprueba mirando el modelo.
+
+  · Una hora son **30°** y un minuto **0,5°**: es la AGUJA DE LA HORA, o sea que
+    `4:30` cae a medio camino entre el 4 y el 5, igual que se dice en voz alta.
+    Se escribe `4:30`, `4h30` o `4.5`, y lo que no se entiende se rechaza en vez
+    de adivinarse.
+  · Una AMPLITUD no es una hora —«de las 12 a las 3» no vale «3»—, así que se
+    dice aparte y con su unidad: **3 h**, **1 h 30 min**, **30 min**.
+  · Los grados siguen abajo en gris, porque un plano de taller los lleva y
+    porque es lo que guarda el proyecto. Lo que cambia es cuál de los dos se
+    teclea.
+
+**EL TRAMO ACTIVO LO ELIGE EL USUARIO, Y LO ELIGE ESCRIBIENDO.** Dos horas no
+definen un tramo: definen DOS, el de ida y el de vuelta. Tomar siempre el más
+corto prohibiría un brazo que barre tres cuartos de vuelta; tomar siempre el más
+largo prohibiría el caso normal. Así que **el orden de las dos horas es el que
+manda**, contando por la derecha: de las 12 a las 3 es un cuarto de vuelta, y de
+las 3 a las 12 son los tres cuartos que faltan. El botón «⇄ el arco de enfrente»
+intercambia las dos, que es la manera rápida de pedir el otro.
+
+Dónde se nota:
+
+  · **Propiedades → Bisagra · recorrido** y el editor de articulaciones;
+  · el **diálogo de instalar bisagra**, que antes pedía grados de placa —una
+    escala que sólo significa algo una vez montada la bisagra y mirándola—;
+  · el **HUD de la simulación**, que ahora dice a qué hora está la pieza en vez
+    de cuántos grados lleva girados desde su pose de diseño;
+  · el **brazo con pilar**, cuyo recorrido se pedía en «grados sobre la
+    horizontal»: el brazo de ese mecanismo nace hacia la derecha y sube, así que
+    la horizontal son las 3 y la conversión es exacta. Sus topes se llaman ahora
+    por la hora a la que dejan el brazo;
+  · y el **paso del pasador indexado**, que con 24 posiciones son 30 min.
+
+**SIN RELOJ NO SE INVENTA UNO.** Una unión con el eje VERTICAL gira en un plano
+que es el suelo, y en el suelo no hay arriba: ahí no hay horas. El panel lo dice
+y sigue pidiendo grados, en vez de enseñar una lectura que daría tumbos con
+cualquier temblor del modelo.
+
+### Corregido
+
+**LA ESFERA SE MIRA SIEMPRE DESDE DELANTE.** El primer intento anclaba el
+sentido horario a la PUNTA DEL EJE, que parece natural y está mal: el pasador de
+una bisagra apunta hacia donde cayó el producto vectorial al montarla —a veces
++Z y a veces −Z, sin que el usuario lo haya pedido ni lo vea—, así que dos
+bisagras idénticas de la misma máquina daban horas espejadas. Se vio en la
+prueba de la interfaz: una tapa que se ve a la derecha marcaba **las 9**. Ahora
+la cara desde la que se lee la esfera la elige una regla del MUNDO —de frente
+(+Z), desempatando por +X y luego por +Y—, y esa tapa marca las 3.
+
+**Y se avisa cuando el tramo deja fuera a la pieza.** Escribir un arco que no
+contiene la pose en la que está la pieza es fácil —son dos horas y hay dos
+arcos—, y la unión nace entonces peleada con sus propios topes: al arrancar
+salta al más cercano y parece que la máquina se mueve sola. El panel lo dice
+antes, con la hora a la que está la pieza.
+
+### Pruebas
+
+`prueba-reloj.mjs` (nueva, 19 comprobaciones): la aritmética de la esfera y su
+ida y vuelta por el texto; que **el 12 es el arriba del MUNDO** —una pieza
+encima del pivote marca las 12, a la derecha las 3, debajo las 6, a la izquierda
+las 9—; que el eje vertical devuelve «no hay esfera» en vez de una lectura
+inventada; que de las 12 a las 3 son 90° y de las 3 a las 12 son 270°, o sea que
+el arco lo elige el orden y no el tamaño; y que con el pasador al revés el arco
+es el mismo y los campos no se dan la vuelta solos.
+
+`prueba-bisagra-ui.mjs` pide ahora el recorrido en horas y comprueba que la tapa
+que se ve a la derecha marca las 3 **aunque su pasador apunte a −Z**, que es el
+fallo de arriba. `prueba-bisagra-mano.mjs` y `prueba-pasador-indexado.mjs` leen
+las etiquetas y el HUD nuevos.
+
 ## [0.3.47] — 2026-09-12
 
 ### Añadido

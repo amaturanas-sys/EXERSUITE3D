@@ -43,6 +43,15 @@ import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
+import {
+  formatearAmplitud,
+  formatearHora,
+  gradosDesdeHora,
+  horaDesdeGrados,
+  horasDesdeTramo,
+  parsearHora,
+  tramoDesdeHoras,
+} from "./core/reloj";
 import { instalarSonidoUI } from "./ui/sonido";
 import { crearBarraHerramientas } from "./ui/ToolQuickBar";
 import { PrototipoFoto } from "./ui/PrototipoFoto";
@@ -302,6 +311,17 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     // Utilidades del ciclo de prefabs expuestas en el gancho de depuración
     // (las suites de verificación ejercitan exportar→validar→insertar).
     prefabIO: { serializarPrefab, parsearPrefab },
+    // EL RELOJ (v0.3.48): la aritmetica de la esfera, expuesta para que la
+    // verificacion la mida donde de verdad se usa y no sobre una copia suya.
+    reloj: {
+      formatearHora,
+      parsearHora,
+      gradosDesdeHora,
+      horaDesdeGrados,
+      formatearAmplitud,
+      tramoDesdeHoras,
+      horasDesdeTramo,
+    },
     // El carril derecho, para que la verificación pueda comprobar que hay UN
     // dueño: quien abre cierra al anterior y cualquiera puede cerrar el que
     // haya (cambiar de herramienta, volver a la Home).

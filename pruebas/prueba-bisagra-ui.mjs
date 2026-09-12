@@ -108,10 +108,13 @@ chequear(!sinEjes.ejes && !sinEjes.caras && sinEjes.juntar,
 
 await page.click("#bisagra-panel .rold-ejes button:has-text('Media')");
 await page.check("#bisagra-panel .rold-check:has-text('Limitar') input");
-// Recorrido en GRADOS DE LA PLACA (v0.3.19): de 90° (tapa abatida en ángulo
-// recto sobre la base) a 180° (tapa extendida). No hay grados negativos.
-await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "90");
-await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "180");
+// RECORRIDO EN HORAS DEL RELOJ (v0.3.48): la tapa nace extendida hacia la
+// derecha —las 3 en punto— y se le pide que pueda bajar hasta las 6, o sea un
+// cuarto de vuelta contando por la derecha. Eso es lo mismo que los 90°–180° de
+// placa que pedía esta prueba antes, pero dicho de una manera que se comprueba
+// MIRANDO la máquina en vez de sabiéndose la escala de memoria.
+await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "3:00");
+await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "6:00");
 await page.click("#bisagra-panel button:has-text('Instalar bisagra')");
 await page.waitForTimeout(500);
 
@@ -127,6 +130,18 @@ const res = await page.evaluate(() => {
     soldaduras: js.filter((j) => j.locked).length,
     eje: libre?.axis,
     limites: libre?.limitsEnabled ? [libre.min, libre.max] : null,
+    // Ida y vuelta por el reloj: lo que se tecleó tiene que volver a leerse.
+    horas: (() => {
+      if (!libre) return "sin union";
+      const r = ed.relojDeUnion(libre);
+      if (!r) return "sin esfera";
+      const t = window.exersuite.reloj.horasDesdeTramo(r, libre.min, libre.max);
+      const R = window.exersuite.reloj;
+      // Qué hora marca la tapa en la pose en que nace: tiene que ser la que se
+      // ve, no la que salga de hacia dónde cayera el pasador.
+      window.__SONDA = { enDiseno: R.formatearHora(r.c0 + r.s * libre.apertura0) };
+      return `${R.formatearHora(t.desde)} → ${R.formatearHora(t.hasta)}`;
+    })(),
     apertura0: libre?.apertura0 == null ? null : +libre.apertura0.toFixed(0),
     sentido: libre?.sentidoApertura ?? 0,
     grupo: [...ed.groups.values()].map((g) => g.name),
@@ -135,6 +150,7 @@ const res = await page.evaluate(() => {
     tapaX: +ed.objects.get(window.__B).mesh.position.x.toFixed(2),
     baseX: +ed.objects.get(window.__A).mesh.position.x.toFixed(2),
     aviso: document.querySelector(".drag-measure, #drag-measure")?.textContent ?? "",
+    sonda: window.__SONDA ?? null,
   };
 });
 console.log("  resultado:", JSON.stringify(res));
@@ -152,8 +168,17 @@ const hueco = +(res.tapaX - 25 - (res.baseX + 25)).toFixed(2);
 chequear(Math.abs(res.baseX + res.tapaX) < 0.3 && Math.abs(hueco - 2.14) < 0.3,
   `las dos quedan a la holgura del pasador, simétricas `
   + `(${res.baseX} | ${res.tapaX}; hueco ${hueco} cm = dos veces la holgura)`);
-chequear(!!res.limites && res.limites[0] === 90 && res.limites[1] === 180,
-  `recorrido limitado 90–180° en grados de la placa (${JSON.stringify(res.limites)})`);
+chequear(!!res.limites && Math.abs((res.limites[1] - res.limites[0]) - 90) < 0.6,
+  `el recorrido pedido de las 3 a las 6 barre un cuarto de vuelta `
+  + `(${JSON.stringify(res.limites)}, ${res.limites ? (res.limites[1] - res.limites[0]).toFixed(1) : "?"}°)`);
+chequear(res.horas === "3:00 → 6:00",
+  `y el panel lo vuelve a enseñar con las mismas horas (${res.horas})`);
+// EL 12 ES EL DEL MUNDO, NO EL DEL PASADOR. Esta bisagra monta con el eje hacia
+// −Z, y con la esfera anclada a la punta del eje la tapa —que se ve a la
+// derecha— marcaba las 9. La esfera se mira SIEMPRE desde delante.
+chequear(res.sonda?.enDiseno === "3:00",
+  `la tapa, que se ve a la derecha, marca las 3 aunque el pasador apunte a `
+  + `−Z (${res.sonda?.enDiseno}, eje ${JSON.stringify(res.ejeVec)})`);
 chequear(res.apertura0 === 180 && res.sentido !== 0,
   `la bisagra anota su apertura de diseño (${res.apertura0}°, sentido ${res.sentido})`);
 chequear(res.grupo.some((n) => /bisagra/i.test(n)), "el herraje quedó agrupado como 'Bisagra'");

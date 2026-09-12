@@ -304,8 +304,8 @@ console.log("PANEL:", JSON.stringify(panel));
 ok(
   panel.etiquetas.some((t) => /Bisagra/.test(t) && /recorrido/i.test(t))
     && panel.etiquetas.some((t) => /sensibilidad/i.test(t))
-    && panel.etiquetas.some((t) => /^Mín$/.test(t)),
-  "Propiedades trae el recorrido de la bisagra y el mando de sensibilidad",
+    && panel.etiquetas.some((t) => /^Desde$/.test(t)),
+  "Propiedades trae el recorrido de la bisagra —en horas del reloj— y el mando de sensibilidad",
   panel.etiquetas.join(" | "),
 );
 ok(panel.antes === "9", "arranca en el valor lento de fábrica", panel.antes);

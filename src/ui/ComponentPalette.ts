@@ -8,6 +8,7 @@ import {
   catalogoVigente,
 } from "../objects/componentLibrary";
 import type { ComponentDefinition } from "../objects/types";
+import { formatearHora, parsearHora } from "../core/reloj";
 import { componentModels } from "../core/componentModels";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
 import {
@@ -243,8 +244,21 @@ export class ComponentPalette {
     const num = (v: number, paso = "1"): HTMLInputElement =>
       el("input", { type: "number", value: String(v), step: paso }) as HTMLInputElement;
     const brazo = num(45);
-    const gA = num(15, "5");
-    const gB = num(80, "5");
+    // EL RECORRIDO DEL BRAZO, EN HORAS (v0.3.48). Antes se pedía en «grados
+    // sobre la horizontal», que obliga a tener en la cabeza dónde está esa
+    // horizontal y hacia qué lado sale el brazo. El brazo de este mecanismo
+    // nace hacia la DERECHA y sube —`dirBrazo = (cos θ, sin θ)`—, así que la
+    // horizontal son las 3 y cada grado que sube acerca las 12: la conversión
+    // es exacta, `θ = 90 − hora`, y no queda nada que imaginar.
+    const hora = (valor: string): HTMLInputElement =>
+      el("input", { type: "text", inputMode: "numeric", value: valor }) as HTMLInputElement;
+    const gA = hora("2:30");
+    const gB = hora("12:20");
+    /** De hora de la esfera a los grados sobre la horizontal que usa el cálculo. */
+    const sobreHorizontal = (campo: HTMLInputElement, porOmision: number): number => {
+      const h = parsearHora(campo.value);
+      return h == null ? porOmision : ((90 - h + 180) % 360 + 360) % 360 - 180;
+    };
     const viga = num(40);
     const incl = num(0, "5");
     const desc = num(0);
@@ -255,8 +269,8 @@ export class ComponentPalette {
 
     const leer = () => ({
       brazoCm: parseFloat(brazo.value) || 1,
-      gradoA: parseFloat(gA.value) || 0,
-      gradoB: parseFloat(gB.value) || 0,
+      gradoA: sobreHorizontal(gA, 15),
+      gradoB: sobreHorizontal(gB, 80),
       vigaCm: parseFloat(viga.value) || 1,
       inclinacionC: parseFloat(incl.value) || 0,
       descentradoCm: parseFloat(desc.value) || 0,
@@ -278,7 +292,7 @@ export class ComponentPalette {
           ),
         ]),
         el("div", {}, [
-          s.topes.map((t) => `${t.gradoBrazo}°`).join(" · "),
+          s.topes.map((t) => formatearHora(90 - t.gradoBrazo)).join(" · "),
         ]),
         ...(s.aviso ? [el("div", {}, [`⚠ ${s.aviso}`])] : []),
       );
@@ -296,8 +310,8 @@ export class ComponentPalette {
       ]),
       el("div", { class: "rold-seccion" }, [tt("Lo que sabes", "What you know")]),
       campo(tt("Brazo (cm)", "Arm (cm)"), brazo),
-      campo(tt("Recorrido desde (°)", "Travel from (°)"), gA),
-      campo(tt("…hasta (°)", "…to (°)"), gB),
+      campo(tt("Recorrido desde (hora)", "Travel from (hour)"), gA),
+      campo(tt("…hasta (hora)", "…to (hour)"), gB),
       campo(tt("Viga de topes (cm)", "Notched beam (cm)"), viga),
       campo(tt("Inclinación de la viga (°)", "Beam tilt (°)"), incl),
       campo(tt("Descentrado de la viga (cm)", "Beam offset (cm)"), desc),

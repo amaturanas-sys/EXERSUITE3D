@@ -199,8 +199,10 @@ ok(
   hud.enReposo,
 );
 ok(
-  /Bisagra .*°/.test(hud.girando ?? "") && /posición\s*\d+\/24/.test(hud.girando ?? ""),
-  "girando dice el ángulo y la posición",
+  // EN HORAS, NO EN GRADOS (v0.3.48): el grado se cuenta desde la pose de
+  // diseño de cada unión y no dice dónde está la pieza; la hora sí.
+  /Bisagra \d{1,2}:\d{2}/.test(hud.girando ?? "") && /posición\s*\d+\/24/.test(hud.girando ?? ""),
+  "girando dice la HORA a la que está y la posición del disco",
   hud.girando,
 );
 ok(

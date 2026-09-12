@@ -4,6 +4,8 @@ import type { Joint } from "../physics/joints";
 import { roundTo } from "../core/units";
 import { tt } from "../core/i18n";
 import { clear, el } from "./dom";
+import { parsearHora } from "../core/reloj";
+import { recorridoReloj } from "./recorridoReloj";
 
 /**
  * Configuración de la BISAGRA REAL (v0.2.32) tras elegir las dos piezas: eje
@@ -88,28 +90,28 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
     const juntarOn = el("input", { type: "checkbox" }) as HTMLInputElement;
     juntarOn.checked = true;
     const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-    // RECORRIDO EN LA ESCALA DE LA PLACA (v0.3.27): 0 = placas enfrentadas,
-    // 180 = extendidas, 360 = vuelta completa. No hay grados negativos: se
-    // mide el ángulo que forman las dos placas, como se ve en la máquina.
-    const minIn = el("input", {
-      type: "number", value: "0", step: "5", min: "0", max: "360",
-    }) as HTMLInputElement;
-    const maxIn = el("input", {
-      type: "number", value: "180", step: "5", min: "0", max: "360",
-    }) as HTMLInputElement;
-
+    // RECORRIDO EN HORAS DEL RELOJ (v0.3.48). Antes se pedía en la escala de la
+    // placa —0 enfrentadas, 180 extendidas—, que sólo significa algo una vez
+    // montada la bisagra y mirándola. La hora significa lo mismo en toda la
+    // máquina antes de montar nada: las 12 arriba, las 6 abajo. La conversión a
+    // esa escala la hace el editor cuando ya hay placas que leer.
+    const hora = (valor: string): HTMLInputElement =>
+      el("input", {
+        type: "text", inputMode: "numeric", value: valor, style: "text-align:center;",
+      }) as HTMLInputElement;
+    const minIn = hora("12:00");
+    const maxIn = hora("3:00");
     const instalar = el("button", { class: "tool sim" }, [tt("Instalar bisagra", "Install hinge")]);
     instalar.addEventListener("click", () => {
-      const acotar = (v: number): number => Math.min(360, Math.max(0, v));
-      const min = acotar(parseFloat(minIn.value));
-      const max = acotar(parseFloat(maxIn.value));
+      const desde = parsearHora(minIn.value);
+      const hasta = parsearHora(maxIn.value);
       cerrarYResolver({
         eje,
         tamano,
         cara,
         juntar: juntarOn.checked,
-        limite:
-          limOn.checked && Number.isFinite(min) && Number.isFinite(max) ? [min, max] : undefined,
+        limiteReloj:
+          limOn.checked && desde != null && hasta != null ? { desde, hasta } : undefined,
       });
     });
 
@@ -205,13 +207,13 @@ function elegirConfigBisagra(porCaras: boolean): Promise<ConfigBisagra | null> {
       el("div", { class: "rold-seccion" }, [tt("Recorrido", "Travel")]),
       el("label", { class: "rold-check" }, [
         limOn,
-        tt("Limitar (grados de la placa)", "Limit (leaf degrees)"),
+        tt("Limitar (horas del reloj)", "Limit (clock hours)"),
       ]),
       el("div", { class: "rold-nums" }, [minIn, maxIn]),
       el("div", { class: "rold-pie" }, [
         tt(
-          "Se mide entre las DOS PLACAS: 0° enfrentadas, 180° extendidas, 360° vuelta completa. Sin grados negativos.",
-          "Measured between BOTH LEAVES: 0° facing, 180° extended, 360° full revolution. No negative degrees.",
+          "DESDE qué hora HASTA qué hora, contando POR LA DERECHA. Las 12 están siempre arriba y las 6 abajo, en toda la máquina: 12→3 es un cuarto de vuelta, y 3→12 son los otros tres cuartos. El orden de las dos horas es el que elige el arco.",
+          "FROM which hour TO which hour, counting CLOCKWISE. 12 is always up and 6 down, across the whole machine: 12→3 is a quarter turn, and 3→12 the other three quarters. The order of the two hours is what picks the arc.",
         ),
       ]),
       el("div", { class: "field" }, [instalar]),
@@ -523,9 +525,28 @@ export class JointsPanel {
       j.limitsEnabled = limOn.checked;
       this.editor.jointUpdated();
     });
-    const acotarPlaca = (v: number): number => (dePlaca ? Math.min(360, Math.max(0, v)) : v);
-    const minIn = this.num(j.min, (v) => (j.min = acotarPlaca(v)));
-    const maxIn = this.num(j.max, (v) => (j.max = acotarPlaca(v)));
+    // RECORRIDO EN HORAS para lo que gira (v0.3.48); una corredera se sigue
+    // pidiendo en centimetros, que es lo que recorre.
+    const recorrido = isRev
+      ? recorridoReloj({
+        joint: j,
+        editor: this.editor,
+        alCambiar: () => {},
+        acotarPlaca: dePlaca,
+      })
+      : el("div", { class: "field" }, [
+        el("label", { style: "display:flex;gap:6px;align-items:center;" }, [limOn, "Limitar recorrido"]),
+        el("div", { class: "row" }, [
+          el("div", { class: "sub" }, [
+            el("label", {}, [`Min (${angUnit})`]),
+            this.num(j.min, (v) => (j.min = v)),
+          ]),
+          el("div", { class: "sub" }, [
+            el("label", {}, [`Max (${angUnit})`]),
+            this.num(j.max, (v) => (j.max = v)),
+          ]),
+        ]),
+      ]);
 
     // Motor
     const motOn = el("input", { type: "checkbox" });
@@ -595,13 +616,7 @@ export class JointsPanel {
         ),
       ]),
       el("div", { class: "field" }, [el("label", {}, ["Eje de la articulacion"]), axisSel]),
-      el("div", { class: "field" }, [
-        el("label", { style: "display:flex;gap:6px;align-items:center;" }, [limOn, "Limitar recorrido"]),
-        el("div", { class: "row" }, [
-          el("div", { class: "sub" }, [el("label", {}, [`Min (${angUnit})`]), minIn]),
-          el("div", { class: "sub" }, [el("label", {}, [`Max (${angUnit})`]), maxIn]),
-        ]),
-      ]),
+      recorrido,
       el("div", { class: "field" }, [
         el("label", { style: "display:flex;gap:6px;align-items:center;" }, [motOn, "Motor"]),
         el("div", { class: "sub" }, [el("label", {}, [`Velocidad (${velUnit})`]), velIn]),

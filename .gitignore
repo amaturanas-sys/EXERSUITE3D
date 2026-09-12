@@ -23,3 +23,4 @@ pruebas/*.prefab.json
 # Caché del núcleo CAD (cadgen): árboles de geometría, se regeneran solos.
 .cache/cadgen/
 __pycache__/
+/salidas/

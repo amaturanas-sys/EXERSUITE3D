@@ -16,6 +16,8 @@ import { medidasHorquilla } from "../objects/horquilla";
 import { getDefinition } from "../objects/componentLibrary";
 import { largoDeFabrica } from "../objects/estirar";
 import { clear, el } from "./dom";
+import { formatearAmplitud } from "../core/reloj";
+import { recorridoReloj } from "./recorridoReloj";
 
 /** Piezas que CALZAN en los agujeros de un poste (suben/bajan agujero a agujero). */
 const PIEZAS_CALCE = new Set([
@@ -493,28 +495,14 @@ export class PropertiesPanel {
     // máquina parada: el rango deja de elegirse a ciegas.
     this.editor.mostrarRecorridoDeBisagra(obj.id);
     const repintarArco = (): void => this.editor.mostrarRecorridoDeBisagra(obj.id);
-    const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
-      const inp = el("input", {
-        type: "number", min: "0", max: "360", step: "5", value: String(v),
-      }) as HTMLInputElement;
-      inp.addEventListener("input", () => {
-        const n = parseFloat(inp.value);
-        if (!Number.isFinite(n)) return;
-        set(Math.min(360, Math.max(0, n)));
-        this.editor.jointUpdated();
-        repintarArco();
-      });
-      return inp;
-    };
-    const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-    limOn.checked = j.limitsEnabled;
-    limOn.addEventListener("change", () => {
-      j.limitsEnabled = limOn.checked;
-      this.editor.jointUpdated();
-      repintarArco();
+    // EL RECORRIDO SE PIDE EN HORAS (v0.3.48), con el mando compartido: dos
+    // horas de la esfera del mundo y por qué lado va de una a la otra.
+    const recorrido = recorridoReloj({
+      joint: j,
+      editor: this.editor,
+      alCambiar: repintarArco,
+      acotarPlaca: j.apertura0 != null,
     });
-    const minIn = grados(j.min, (n) => (j.min = n));
-    const maxIn = grados(j.max, (n) => (j.max = n));
     const input = el("input", {
       type: "range",
       min: "1",
@@ -539,20 +527,7 @@ export class PropertiesPanel {
     pintar();
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Bisagra · recorrido", "Hinge · travel")]),
-      el("label", { class: "rold-check" }, [
-        limOn,
-        tt("Limitar (grados de la placa)", "Limit (leaf degrees)"),
-      ]),
-      el("div", { class: "row" }, [
-        el("div", { class: "sub" }, [el("label", {}, [tt("Mín", "Min")]), minIn]),
-        el("div", { class: "sub" }, [el("label", {}, [tt("Máx", "Max")]), maxIn]),
-      ]),
-      el("div", { class: "empty-hint", style: "padding:4px;" }, [
-        tt(
-          "180° = placas en línea, 0° = plegada. El arco del visor enseña el tramo elegido.",
-          "180° = leaves in line, 0° = folded. The arc in the viewport shows the chosen span.",
-        ),
-      ]),
+      recorrido,
       el("label", {}, [tt("Sensibilidad del gesto", "Gesture sensitivity")]),
       input,
       lectura,
@@ -942,11 +917,11 @@ export class PropertiesPanel {
         tt(
           `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s) · ${r.anclajes} horquilla(s)` +
             (p.pasadorIndexado
-              ? ` · ${roundTo(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)), 1)}° de paso`
+              ? ` · ${formatearAmplitud(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)))} de paso`
               : ""),
           `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s) · ${r.anclajes} clevis(es)` +
             (p.pasadorIndexado
-              ? ` · ${roundTo(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)), 1)}° step`
+              ? ` · ${formatearAmplitud(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)))} step`
               : ""),
         ),
       );
