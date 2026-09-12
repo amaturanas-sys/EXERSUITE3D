@@ -484,6 +484,13 @@ esa pieza, las dos medidas:
     encima del propio tope. El solver lo expulsaba en el primer fotograma y
     después rodaba cuesta abajo. La recta del cálculo es por donde viaja EL PIE;
     la viga va POR DEBAJO de ella, medio pie más medio perfil.
+  · **DIBUJAR UNA PIEZA PARA FABRICARLA ENCUENTRA LO QUE LA PANTALLA ESCONDE.**
+    El carril de topes iba de tope a tope exactamente, con lo que los dedos de
+    las puntas quedaban medio en el aire —sin acero bajo su mitad de fuera—.
+    En la escena no se nota; en el CAD de taller (`cad/`) es lo primero que se
+    ve, porque un dedo a medio soldar no es una pieza. Cuando una pieza de la
+    app vaya a existir en acero, modelarla en `cad/` es una revisión, no un
+    adorno.
   · **Un tope tiene que CAPTURAR, no sólo estorbar.** Un taco al lado del pie,
     en una viga inclinada, se monta o se sortea. Hacen falta dos dedos con el
     hueco justo del pie que suban por encima de su centro —cuna y dedo, como el

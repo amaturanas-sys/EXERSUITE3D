@@ -61,7 +61,21 @@ const geo = await page.evaluate(() => {
   const cerca = dedos.map(d => ({ n: d.name, p: v3(d), d: pie.distanceTo(v3(d)) }))
     .sort((x, y) => x.d - y.d).slice(0, 2);
   const hueco = cerca.length === 2 ? cerca[0].p.distanceTo(cerca[1].p) : null;
+  // ¿El carril pasa de sus dedos? El de cada punta tiene que tener acero
+  // debajo de TODA su base, no sólo de su mitad de dentro.
+  viga.mesh.updateMatrixWorld(true);
+  const vp2 = viga.params.path;
+  const va2 = viga.mesh.localToWorld(new T.Vector3(...vp2[0]));
+  const vb2 = viga.mesh.localToWorld(new T.Vector3(...vp2[vp2.length-1]));
+  const dv2 = vb2.clone().sub(va2).normalize();
+  const largoCarril = va2.distanceTo(vb2);
+  // Proyección de cada dedo sobre el carril: cuánto sobra por cada punta.
+  const proy = dedos.map(d => v3(d).clone().sub(va2).dot(dv2));
+  const sobraA = Math.min(...proy) - 0.75;          // medio dedo
+  const sobraB = largoCarril - (Math.max(...proy) + 0.75);
   return {
+    largoCarril: +largoCarril.toFixed(2),
+    sobraA: +sobraA.toFixed(2), sobraB: +sobraB.toFixed(2),
     pilarCm: sol.pilarCm, niveles: sol.topes.length, dedos: dedos.length,
     alEje: +alEje.toFixed(2),
     hueco: hueco === null ? null : +hueco.toFixed(2),
@@ -75,6 +89,13 @@ ok(geo.dedos === geo.niveles * 2, "cada nivel lleva DOS dedos: es una muesca, no
 ok(Math.abs(geo.alEje - 5.5) < 0.4, "el pie nace SOBRE la viga, no dentro de su material", geo.alEje);
 // Hueco entre centros = pie (5) + holgura (0,4) + un dedo (1,5).
 ok(Math.abs(geo.hueco - 6.9) < 0.2, "y los dedos dejan el hueco justo del pie", geo.hueco);
+// El carril cubre los cuatro pasos entre los cinco niveles (4 × 12,5 = 50) y
+// sobra por las dos puntas.
+ok(
+  geo.sobraA > 4 && geo.sobraB > 4,
+  "el carril PASA de sus dedos por las dos puntas, no acaba en ellos",
+  `${geo.sobraA} y ${geo.sobraB} cm`,
+);
 ok(
   geo.nombres.some(n => /arriba|upper/.test(n)) && geo.nombres.some(n => /abajo|lower/.test(n)),
   "uno por encima y otro por debajo, que es lo que encierra",

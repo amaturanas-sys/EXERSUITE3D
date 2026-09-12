@@ -5,6 +5,24 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.39] — 2026-09-12
+
+### Corregido
+
+**EL CARRIL DE TOPES AHORA PASA DE SUS DEDOS.** Iba de tope a tope exactamente,
+y como cada dedo se planta a 3,45 cm del centro de su nivel, los dos dedos de
+las puntas quedaban **medio en el aire**: sin acero debajo de su mitad de fuera.
+Eso se dibuja perfectamente y no se suelda. Ahora el carril sobra 9,2 cm por
+cada extremo —lo que mide la cara exterior del último dedo más un vuelo de 5—,
+así que toda la base de todos los dedos tiene viga debajo.
+
+Lo destapó modelar la pieza en CAD para el taller (`cad/src/carril_topes.py`):
+al dibujarla para fabricar, un dedo a medio soldar salta a la vista de un modo
+que en pantalla no saltaba.
+
+Medido: el pilar sigue clavado en sus **70,0°** los seis segundos y el pie corre
+por el carril **0,28 cm**, menos todavía que antes del arreglo (0,57).
+
 ## [0.3.38] — 2026-09-10
 
 ### Añadido

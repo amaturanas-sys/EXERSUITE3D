@@ -1512,13 +1512,33 @@ export class Editor {
     if (arriba.y < 0) arriba.negate();
     const bajarViga = PERFIL_PILAR / 2 + PERFIL_VIGA / 2;
 
-    // La viga de topes va desde el primer tope hasta el último; el brazo, del
-    // pivote al codo; el pilar cierra el triángulo.
+    // LAS MEDIDAS DE LA MUESCA, arriba del todo porque también deciden dónde
+    // acaba el carril.
+    const DEDO = 1.5;              // grueso de cada dedo
+    const HOLGURA = 0.4;           // lo que el pie baila dentro de la muesca
+    const semiHueco = (PERFIL_PILAR + HOLGURA) / 2;
+    // El dedo arranca en la cara de la viga y sube hasta pasar el centro del
+    // pie: por debajo lo sostiene la viga, por encima lo encierra el dedo.
+    const altoDedo = PERFIL_PILAR / 2 + 1.5;
+
+    // EL CARRIL TIENE QUE PASAR DE SUS DEDOS.
+    //
+    // Iba de tope a tope exactamente, y como cada dedo se planta a
+    // `semiHueco + DEDO/2` del centro de su nivel, los dos dedos de los
+    // extremos quedaban MEDIO EN EL AIRE: sin acero debajo de su mitad de
+    // fuera. Eso se dibuja, pero no se suelda. Lo destapó modelar la pieza en
+    // CAD para el taller (`cad/src/carril_topes.py`).
+    const caraDedoFuera = semiHueco + DEDO;
+    const VUELO_EXTREMO = 5;
+    const sobra = caraDedoFuera + VUELO_EXTREMO;
+
+    // La viga de topes cubre todos los niveles y sobra por las dos puntas; el
+    // brazo va del pivote al codo; el pilar cierra el triángulo.
     const dist = sol.topes.map((t) => t.distanciaCm);
     const viga = barra(
       tt("Viga de topes", "Notched beam"),
-      origenViga.clone().addScaledVector(dirViga, Math.min(...dist)).addScaledVector(arriba, -bajarViga),
-      origenViga.clone().addScaledVector(dirViga, Math.max(...dist)).addScaledVector(arriba, -bajarViga),
+      origenViga.clone().addScaledVector(dirViga, Math.min(...dist) - sobra).addScaledVector(arriba, -bajarViga),
+      origenViga.clone().addScaledVector(dirViga, Math.max(...dist) + sobra).addScaledVector(arriba, -bajarViga),
       PERFIL_VIGA,
     );
     viga.physics = { ...viga.physics, fixed: true };
@@ -1535,12 +1555,6 @@ export class Editor {
     // cada lado, que dejan entre ellos el hueco justo del pie y suben por
     // encima de su centro para que no pueda salir rodando. Es el mismo gesto
     // que el gancho de la placa dentada, con su cuna y su dedo.
-    const DEDO = 1.5;              // grueso de cada dedo
-    const HOLGURA = 0.4;           // lo que el pie baila dentro de la muesca
-    const semiHueco = (PERFIL_PILAR + HOLGURA) / 2;
-    // El dedo arranca en la cara de la viga y sube hasta pasar el centro del
-    // pie: por debajo lo sostiene la viga, por encima lo encierra el dedo.
-    const altoDedo = PERFIL_PILAR / 2 + 1.5;
     for (const t of sol.topes) {
       for (const lado of [-1, 1] as const) {
         const c = this.addComponent("base-apoyo");
