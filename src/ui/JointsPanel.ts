@@ -529,10 +529,17 @@ export class JointsPanel {
     // pidiendo en centimetros, que es lo que recorre.
     const recorrido = isRev
       ? recorridoReloj({
-        joint: j,
-        editor: this.editor,
-        alCambiar: () => {},
+        recta: this.editor.relojDeUnion(j),
+        leer: () => ({ min: j.min, max: j.max, limitado: j.limitsEnabled }),
+        escribir: (v) => {
+          j.min = v.min;
+          j.max = v.max;
+          j.limitsEnabled = v.limitado;
+          this.editor.jointUpdated();
+        },
+        posesDeDiseno: [j.apertura0 ?? 0],
         acotarPlaca: dePlaca,
+        alCambiar: () => {},
       })
       : el("div", { class: "field" }, [
         el("label", { style: "display:flex;gap:6px;align-items:center;" }, [limOn, "Limitar recorrido"]),

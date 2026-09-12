@@ -1,15 +1,21 @@
-import type { Editor } from "../core/Editor";
-import type { Joint } from "../physics/joints";
 import { tt } from "../core/i18n";
-import { formatearAmplitud, formatearHora, horasDesdeTramo, parsearHora, tramoDesdeHoras } from "../core/reloj";
+import {
+  formatearAmplitud,
+  formatearHora,
+  horasDesdeTramo,
+  parsearHora,
+  type Recta,
+  tramoDesdeHoras,
+  vuelta,
+} from "../core/reloj";
 import { el } from "./dom";
 
 /**
  * EL RECORRIDO DE UNA ARTICULACIÓN, EN HORAS (v0.3.48).
  *
- * El mando es el mismo en los tres sitios donde se pide un recorrido —el panel
- * de Propiedades, el de Articulaciones y el diálogo de instalar bisagra—, así
- * que vive una sola vez aquí.
+ * El mando es el mismo en los cuatro sitios donde se pide un recorrido —el
+ * panel de Propiedades, el de Articulaciones, el diálogo de instalar bisagra y
+ * el pasador—, así que vive una sola vez aquí.
  *
  * Pide DOS horas de la esfera del mundo, y el tramo va de la primera a la
  * segunda EN SENTIDO HORARIO.
@@ -26,19 +32,36 @@ import { el } from "./dom";
  * Los grados no desaparecen: siguen abajo en gris, porque un plano de taller
  * los lleva y porque el número que guarda el proyecto es ese. Lo que cambia es
  * cuál de los dos se teclea.
+ *
+ * NO SABE DE UNIONES (v0.3.49). Una bisagra guarda su rango en el `Joint`; el
+ * PASADOR lo guarda en los params de la pieza y lo reparte entre las varias
+ * uniones que monta. El mando no tiene por qué enterarse de eso: pide una recta
+ * —de la escala a la esfera— y dos funciones para leer y escribir, y quien lo
+ * usa pone lo que corresponda.
  */
-export function recorridoReloj(opts: {
-  joint: Joint;
-  editor: Editor;
+export interface ModeloRecorrido {
+  /** De la escala interna a la esfera. null = esta unión no tiene horas. */
+  recta: Recta | null;
+  leer: () => { min: number; max: number; limitado: boolean };
+  escribir: (v: { min: number; max: number; limitado: boolean }) => void;
+  /**
+   * Dónde están, EN LA ESCALA, las piezas que giran. Sirve para avisar cuando
+   * el tramo pedido las deja fuera; puede haber varias (un pasador con dos
+   * brazos) o ninguna.
+   */
+  posesDeDiseno: number[];
+  /** Acota a [0, 360]: la escala de placa de una bisagra no da la vuelta. */
+  acotarPlaca: boolean;
   /** Se llama tras cada cambio, para repintar el arco del visor. */
   alCambiar: () => void;
-  /** Acota a la escala de placa [0, 360]; los pivotes no la tienen. */
-  acotarPlaca: boolean;
-}): HTMLElement {
-  const { joint: j, editor, alCambiar, acotarPlaca } = opts;
+  titulo?: string;
+}
+
+export function recorridoReloj(m: ModeloRecorrido): HTMLElement {
+  const { recta, leer, escribir, posesDeDiseno, acotarPlaca, alCambiar } = m;
 
   const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-  limOn.checked = j.limitsEnabled;
+  limOn.checked = leer().limitado;
 
   const campo = (): HTMLInputElement =>
     el("input", {
@@ -69,43 +92,49 @@ export function recorridoReloj(opts: {
   }, [tt("⇄ El arco de enfrente", "⇄ The opposite arc")]);
   const lectura = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
 
-  const reloj = editor.relojDeUnion(j);
-
-  /** Repinta los tres mandos a partir de lo que la unión tiene puesto. */
-  const leerDeLaUnion = (): void => {
-    if (!reloj) return;
-    const tramo = horasDesdeTramo(reloj, j.min, j.max);
-    desdeIn.value = formatearHora(tramo.desde);
-    hastaIn.value = formatearHora(tramo.hasta);
-    pintar();
-  };
-
   const pintar = (): void => {
+    const { min, max, limitado } = leer();
+    const amplitud = Math.abs(max - min);
+    lectura.textContent = tt(
+      `Barre ${formatearAmplitud(amplitud)} (${amplitud.toFixed(1)}° de escala, de ${min.toFixed(1)} a ${max.toFixed(1)}).`,
+      `Sweeps ${formatearAmplitud(amplitud)} (${amplitud.toFixed(1)}° of scale, from ${min.toFixed(1)} to ${max.toFixed(1)}).`,
+    );
     // ¿EL TRAMO CONTIENE LA POSE EN LA QUE ESTÁ LA PIEZA? Si no, la unión nace
     // peleada con sus propios topes: el motor la empuja al tope más cercano en
     // el primer fotograma y parece que la máquina se mueve sola. Escribir un
     // arco que deja fuera la pieza es fácil —son dos horas y hay dos arcos—, así
     // que se dice en vez de dejar que se note más tarde y peor.
-    const enDiseno = j.apertura0 ?? 0;
-    const fuera = j.limitsEnabled && (enDiseno < j.min - 0.5 || enDiseno > j.max + 0.5);
-    const amplitud = Math.abs(j.max - j.min);
-    lectura.textContent = tt(
-      `Barre ${formatearAmplitud(amplitud)} (${amplitud.toFixed(1)}° de escala, de ${j.min.toFixed(1)} a ${j.max.toFixed(1)}).`,
-      `Sweeps ${formatearAmplitud(amplitud)} (${amplitud.toFixed(1)}° of scale, from ${j.min.toFixed(1)} to ${j.max.toFixed(1)}).`,
+    if (!limitado || !recta) return;
+    // SE COMPARA DANDO LA VUELTA. Un pasador puede tener el tramo en [−90, 90]
+    // y un brazo anotado en 270, que es el MISMO sitio que −90: restar a pelo
+    // lo daba por fuera y saltaba un aviso falso.
+    const ancho = vuelta(max - min);
+    const fuera = posesDeDiseno.filter((p) => vuelta(p - min) > ancho + 0.5);
+    if (fuera.length === 0) return;
+    const donde = fuera.map((p) => formatearHora(recta.c0 + recta.s * p)).join(", ");
+    lectura.textContent += " " + tt(
+      `⚠ Hay ${fuera.length === 1 ? "una pieza" : `${fuera.length} piezas`} AHORA a las ${donde}, `
+        + "fuera de ese tramo: al arrancar saltará al tope más cercano. "
+        + "Prueba con el arco de enfrente.",
+      `⚠ ${fuera.length === 1 ? "A part is" : `${fuera.length} parts are`} NOW at ${donde}, `
+        + "outside that span: it will jump to the nearest stop when the simulation "
+        + "starts. Try the opposite arc.",
     );
-    if (fuera && reloj) {
-      lectura.textContent += " " + tt(
-        `⚠ La pieza está AHORA a las ${formatearHora(reloj.c0 + reloj.s * enDiseno)}, que queda `
-          + "fuera de ese tramo: al arrancar saltará al tope más cercano. Prueba con el arco de enfrente.",
-        `⚠ The part is NOW at ${formatearHora(reloj.c0 + reloj.s * enDiseno)}, outside that span: `
-          + "it will jump to the nearest stop when the simulation starts. Try the opposite arc.",
-      );
-    }
   };
 
-  /** Y al revés: de los tres mandos a los grados que guarda la unión. */
-  const escribirEnLaUnion = (): void => {
-    if (!reloj) return;
+  /** Repinta los mandos a partir de lo que hay guardado. */
+  const leerDelModelo = (): void => {
+    if (!recta) return;
+    const { min, max } = leer();
+    const tramo = horasDesdeTramo(recta, min, max);
+    desdeIn.value = formatearHora(tramo.desde);
+    hastaIn.value = formatearHora(tramo.hasta);
+    pintar();
+  };
+
+  /** Y al revés: de las dos horas a los grados que se guardan. */
+  const escribirEnElModelo = (): void => {
+    if (!recta) return;
     const desde = parsearHora(desdeIn.value);
     const hasta = parsearHora(hastaIn.value);
     if (desde == null || hasta == null) {
@@ -115,10 +144,8 @@ export function recorridoReloj(opts: {
       );
       return;
     }
-    const { min, max, recortado } = tramoDesdeHoras(reloj, desde, hasta, acotarPlaca);
-    j.min = min;
-    j.max = max;
-    editor.jointUpdated();
+    const { min, max, recortado } = tramoDesdeHoras(recta, desde, hasta, acotarPlaca);
+    escribir({ min, max, limitado: limOn.checked });
     alCambiar();
     pintar();
     if (recortado) {
@@ -130,44 +157,46 @@ export function recorridoReloj(opts: {
   };
 
   for (const inp of [desdeIn, hastaIn]) {
-    inp.addEventListener("change", escribirEnLaUnion);
-    inp.addEventListener("blur", escribirEnLaUnion);
+    inp.addEventListener("change", escribirEnElModelo);
+    inp.addEventListener("blur", escribirEnElModelo);
   }
   invertir.addEventListener("click", () => {
     const a = desdeIn.value;
     desdeIn.value = hastaIn.value;
     hastaIn.value = a;
-    escribirEnLaUnion();
+    escribirEnElModelo();
   });
   limOn.addEventListener("change", () => {
-    j.limitsEnabled = limOn.checked;
-    editor.jointUpdated();
+    const { min, max } = leer();
+    escribir({ min, max, limitado: limOn.checked });
     alCambiar();
+    pintar();
   });
 
-  if (!reloj) {
+  if (!recta) {
     // SIN RELOJ NO SE INVENTA UNO. El eje vertical deja el plano de giro sobre
     // el suelo, y en el suelo no hay arriba: se pide en grados y se dice por
     // qué, en vez de enseñar unas horas que no significan nada.
-    const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
+    const grados = (cual: "min" | "max"): HTMLInputElement => {
       const inp = el("input", {
-        type: "number", step: "5", value: String(v),
+        type: "number", step: "5", value: String(leer()[cual]),
       }) as HTMLInputElement;
       inp.addEventListener("input", () => {
         const n = parseFloat(inp.value);
         if (!Number.isFinite(n)) return;
-        set(acotarPlaca ? Math.min(360, Math.max(0, n)) : n);
-        editor.jointUpdated();
+        const v = leer();
+        v[cual] = acotarPlaca ? Math.min(360, Math.max(0, n)) : n;
+        escribir({ ...v, limitado: limOn.checked });
         alCambiar();
       });
       return inp;
     };
     return el("div", { class: "field" }, [
-      el("label", {}, [tt("Recorrido", "Travel")]),
+      el("label", {}, [m.titulo ?? tt("Recorrido", "Travel")]),
       el("label", { class: "rold-check" }, [limOn, tt("Limitar recorrido", "Limit travel")]),
       el("div", { class: "row" }, [
-        el("div", { class: "sub" }, [el("label", {}, [tt("Mín", "Min")]), grados(j.min, (n) => (j.min = n))]),
-        el("div", { class: "sub" }, [el("label", {}, [tt("Máx", "Max")]), grados(j.max, (n) => (j.max = n))]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Mín", "Min")]), grados("min")]),
+        el("div", { class: "sub" }, [el("label", {}, [tt("Máx", "Max")]), grados("max")]),
       ]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
         tt(
@@ -180,9 +209,9 @@ export function recorridoReloj(opts: {
     ]);
   }
 
-  leerDeLaUnion();
+  leerDelModelo();
   return el("div", { class: "field" }, [
-    el("label", {}, [tt("Recorrido · horas del reloj", "Travel · clock hours")]),
+    el("label", {}, [m.titulo ?? tt("Recorrido · horas del reloj", "Travel · clock hours")]),
     el("label", { class: "rold-check" }, [limOn, tt("Limitar recorrido", "Limit travel")]),
     el("div", { class: "row" }, [
       el("div", { class: "sub" }, [el("label", {}, [tt("Desde", "From")]), desdeIn]),

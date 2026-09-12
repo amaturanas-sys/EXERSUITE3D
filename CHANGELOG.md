@@ -5,6 +5,54 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.49] — 2026-09-12
+
+### Cambiado
+
+**EL RECORRIDO DEL PASADOR TAMBIÉN SE PIDE EN HORAS.** Era el único sitio de
+recorrido al que no llegó v0.3.48, y donde los grados eran aún más opacos que en
+una bisagra: un pasador no tiene escala de placa, así que su cero es «alineado
+con lo que lo ancla» —hacia abajo si no hay anclas—, y para saber qué quiere
+decir un 90 había que tener en la cabeza dónde quedó el ancla.
+
+Hay una diferencia con la bisagra que decide el diseño: **un pasador monta
+VARIAS uniones —una por cada pieza móvil— y todas comparten un solo recorrido**.
+Por eso su reloj sale de la REFERENCIA del pasador y no de ninguno de los
+brazos: así las mismas horas quieren decir las mismas direcciones para todos los
+que cuelguen de ese eje, que es exactamente lo que los grados no daban.
+
+**Y su recorrido ya no se acota a [0, 360].** El cero de una bisagra son sus
+placas enfrentadas —el acero chocando, un tope de verdad— y por eso un tramo no
+puede cruzarlo. El cero de un pasador no es ningún tope: es una dirección de
+referencia, así que un recorrido puede pasar por encima. Ahora se puede pedir
+«de las 10 a las 2», que antes había que escribir como dos números imposibles.
+
+### Corregido
+
+**EL AVISO DE «LA PIEZA QUEDA FUERA» COMPARABA SIN DAR LA VUELTA.** Un pasador
+con el tramo en [−90, 90] y un brazo anotado en 270 —que es el MISMO sitio que
+−90— saltaba con un aviso falso. La pertenencia se mide ahora con la vuelta
+puesta.
+
+### Interno
+
+El mando de recorrido **deja de saber de uniones**. Una bisagra guarda su rango
+en el `Joint`; el pasador lo guarda en los params de la pieza y lo reparte entre
+las uniones que monta. En vez de enseñarle al mando los dos casos, ahora pide
+una recta —de la escala a la esfera— y dos funciones para leer y escribir, y
+cada panel pone lo que corresponda. La referencia del pasador, que antes vivía
+dentro de `aplicarPasador`, sale a su propia función: la usan el montaje y el
+panel, y deducirla dos veces sería copiar la fórmula.
+
+### Pruebas
+
+`prueba-reloj.mjs` sube a 23 comprobaciones con una sección de pasador: dos
+brazos en el mismo eje, uno a las 3 y otro a las 9, con un ancla debajo. Se mide
+que los dos marcan la hora que se ve, que el cero de la escala cae en el ancla
+—las 6, que es justo lo que el reloj hace innecesario saber—, que «de las 3 a
+las 9» son media vuelta y que **las dos uniones reciben el mismo tramo dicho con
+las mismas horas**.
+
 ## [0.3.48] — 2026-09-12
 
 ### Cambiado

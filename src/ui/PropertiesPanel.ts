@@ -498,10 +498,17 @@ export class PropertiesPanel {
     // EL RECORRIDO SE PIDE EN HORAS (v0.3.48), con el mando compartido: dos
     // horas de la esfera del mundo y por qué lado va de una a la otra.
     const recorrido = recorridoReloj({
-      joint: j,
-      editor: this.editor,
-      alCambiar: repintarArco,
+      recta: this.editor.relojDeUnion(j),
+      leer: () => ({ min: j.min, max: j.max, limitado: j.limitsEnabled }),
+      escribir: (v) => {
+        j.min = v.min;
+        j.max = v.max;
+        j.limitsEnabled = v.limitado;
+        this.editor.jointUpdated();
+      },
+      posesDeDiseno: [j.apertura0 ?? 0],
       acotarPlaca: j.apertura0 != null,
+      alCambiar: repintarArco,
     });
     const input = el("input", {
       type: "range",
@@ -960,24 +967,33 @@ export class PropertiesPanel {
       ]));
     }
 
-    const limOn = el("input", { type: "checkbox" }) as HTMLInputElement;
-    limOn.checked = !!p.pasadorLimite;
-    const grados = (v: number, set: (n: number) => void): HTMLInputElement => {
-      const i = el("input", {
-        type: "number", min: "0", max: "360", step: "5", value: String(v),
-      }) as HTMLInputElement;
-      i.addEventListener("change", () => {
-        const n = parseFloat(i.value);
-        if (Number.isFinite(n)) set(Math.min(360, Math.max(0, n)));
-        aplicar();
-      });
-      return i;
-    };
-    const minIn = grados(p.pasadorMin ?? 0, (n) => (p.pasadorMin = n));
-    const maxIn = grados(p.pasadorMax ?? 360, (n) => (p.pasadorMax = n));
-    limOn.addEventListener("change", () => {
-      p.pasadorLimite = limOn.checked;
-      aplicar();
+    // EL RECORRIDO DEL PASADOR, EN HORAS (v0.3.49). Es el mismo mando que la
+    // bisagra, pero el rango no vive en una unión: vive en los params de la
+    // pieza y el pasador lo reparte entre las varias uniones que monta. Por eso
+    // el reloj sale de la REFERENCIA del pasador y no de ninguna de ellas: así
+    // las mismas horas quieren decir las mismas direcciones para los dos brazos
+    // que cuelguen del mismo eje.
+    //
+    // Y sin acotar a [0, 360], al revés que en la bisagra: el cero de un
+    // pasador es «alineado con el ancla», que no es ningún tope físico, así que
+    // un recorrido puede cruzarlo —de las 10 a las 2, pongamos—.
+    const relojPin = this.editor.relojDePasador(obj);
+    const recorrido = recorridoReloj({
+      recta: relojPin,
+      leer: () => ({
+        min: p.pasadorMin ?? 0,
+        max: p.pasadorMax ?? 360,
+        limitado: !!p.pasadorLimite,
+      }),
+      escribir: (v) => {
+        p.pasadorMin = v.min;
+        p.pasadorMax = v.max;
+        p.pasadorLimite = v.limitado;
+      },
+      posesDeDiseno: relojPin?.poses ?? [],
+      acotarPlaca: false,
+      alCambiar: aplicar,
+      titulo: tt("Recorrido · horas del reloj", "Travel · clock hours"),
     });
 
     const libre = el("input", { type: "checkbox" }) as HTMLInputElement;
@@ -1082,8 +1098,7 @@ export class PropertiesPanel {
         ),
       ]),
       ...filas,
-      el("label", { class: "row" }, [limOn, tt("Limitar recorrido (grados)", "Limit travel (degrees)")]),
-      el("div", { class: "row" }, [minIn, maxIn]),
+      recorrido,
       el("label", { class: "row" }, [
         libre,
         tt("Libre (sin marcar: frenado)", "Free (unchecked: braked)"),

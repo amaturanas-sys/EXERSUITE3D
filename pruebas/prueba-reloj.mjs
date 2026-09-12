@@ -195,6 +195,85 @@ const hud = await page.evaluate(async () => {
 console.log("HUD:", JSON.stringify(hud));
 ok(hud.reloj === "3:00", "un brazo horizontal hacia la derecha está a las 3 en punto", hud.reloj);
 
+// ── 5. EL PASADOR TAMBIÉN (v0.3.49) ──────────────────────────────────────
+// Un pasador monta VARIAS uniones —una por brazo— y todas comparten un solo
+// recorrido. Por eso su reloj sale de la REFERENCIA del pasador y no de
+// ninguno de los brazos: las mismas horas tienen que querer decir las mismas
+// direcciones para los dos, que es lo que un eje del que cuelgan dos brazos
+// necesita y lo que los grados no daban.
+const pin = await page.evaluate(() => {
+  const ed = window.exersuite.editor, T = window.exersuite.THREE, R = window.exersuite.reloj;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  const caja = (nombre, w, h, d, x, y) => {
+    const o = ed.addComponent("prim-box");
+    o.name = nombre;
+    o.params = { kind: "box", width: w, height: h, depth: d };
+    o.rebuildGeometry();
+    o.mesh.position.set(x, y, 0);
+    o.mesh.updateMatrixWorld(true);
+    return o;
+  };
+  // Un ancla DEBAJO del eje —o sea el pasador colgado de un poste— y dos brazos
+  // que salen a lados opuestos: uno a las 3 y otro a las 9.
+  const ancla = caja("Ancla", 8, 30, 8, 0, 45);
+  const derecho = caja("Brazo derecho", 40, 6, 6, 22, 62);
+  const izquierdo = caja("Brazo izquierdo", 40, 6, 6, -22, 62);
+  const pas = ed.addComponent("pasador");
+  pas.mesh.position.set(0, 62, 0);
+  // El eje del pasador es su Y local: se tumba para que gire en el plano XY.
+  pas.mesh.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3(0, 0, 1));
+  pas.mesh.updateMatrixWorld(true);
+  pas.params.pasadorAnclas = [ancla.id];
+  pas.params.pasadorMoviles = [derecho.id, izquierdo.id];
+  ed.aplicarPasador(pas);
+
+  const reloj = ed.relojDePasador(pas);
+  const horaDe = (grado) => R.formatearHora(reloj.c0 + reloj.s * grado);
+  // Dónde marca cada brazo, y dónde está el cero de la escala del pasador.
+  const brazos = reloj.poses.map(horaDe).sort();
+  const cero = R.formatearHora(reloj.c0);
+
+  // Se pide el recorrido EN HORAS: de las 3 a las 9 por arriba, o sea media
+  // vuelta pasando por las 12.
+  const t = R.tramoDesdeHoras(reloj, R.parsearHora("3:00"), R.parsearHora("9:00"), false);
+  pas.params.pasadorLimite = true;
+  pas.params.pasadorMin = t.min;
+  pas.params.pasadorMax = t.max;
+  ed.aplicarPasador(pas);
+  const uniones = ed.listJoints()
+    .filter((j) => !j.soldada && j.name.includes("pivote"))
+    .map((j) => {
+      // Se leen COMO LAS LEE EL PANEL, que las canoniza en sentido horario.
+      const h = R.horasDesdeTramo(reloj, j.min, j.max);
+      return {
+        nombre: j.name,
+        rango: [+j.min.toFixed(1), +j.max.toFixed(1)],
+        desde: R.formatearHora(h.desde),
+        hasta: R.formatearHora(h.hasta),
+      };
+    });
+  return { brazos, cero, amplitud: +(t.max - t.min).toFixed(1), uniones };
+});
+console.log("PASADOR:", JSON.stringify(pin));
+ok(
+  JSON.stringify(pin.brazos) === JSON.stringify(["3:00", "9:00"]),
+  "los dos brazos de un mismo pasador marcan las 3 y las 9",
+  pin.brazos.join(" · "),
+);
+ok(
+  pin.cero === "6:00",
+  "y el cero de su escala cae donde está el ancla —debajo, las 6—, que es lo que "
+    + "el reloj hace innecesario saber",
+  pin.cero,
+);
+ok(pin.amplitud === 180, "de las 3 a las 9 por arriba son media vuelta", pin.amplitud);
+ok(
+  pin.uniones.length === 2
+    && pin.uniones.every((u) => u.desde === "3:00" && u.hasta === "9:00"),
+  "y LAS DOS uniones del pasador reciben el mismo tramo, dicho con las mismas horas",
+  JSON.stringify(pin.uniones),
+);
+
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();
 process.exit(fallos ? 1 : 0);

@@ -12537,6 +12537,81 @@ export class Editor {
    * mover el gizmo, al tocar el recorrido—: lo primero que hace es retirar las
    * uniones que puso la vez anterior, así que no acumula herraje.
    */
+  /**
+   * LA REFERENCIA DE LOS GRADOS DE UN PASADOR.
+   *
+   * Un pasador no tiene placas, así que su escala necesita un cero, y el cero
+   * es hacia dónde queda lo que lo ANCLA — como el 0 de una bisagra son sus dos
+   * palas enfrentadas. Sin anclas se toma la vertical hacia abajo, que es la
+   * lectura que espera cualquiera de una pieza que cuelga.
+   *
+   * Vive aparte porque la usan dos: el montaje, para repartir `apertura0` entre
+   * las móviles, y el panel, para saber qué hora marca cada grado de esa escala.
+   * Deducirla dos veces sería copiar la fórmula, y una copia se equivoca igual
+   * que su original sin que nadie lo note.
+   */
+  private referenciaDePasador(
+    centro: THREE.Vector3,
+    eje: THREE.Vector3,
+    anclas: SceneObject[],
+  ): { dir: (o: SceneObject) => THREE.Vector3; ref: THREE.Vector3 } {
+    const dir = (o: SceneObject): THREE.Vector3 => {
+      const d = o.mesh.getWorldPosition(new THREE.Vector3()).sub(centro);
+      d.addScaledVector(eje, -d.dot(eje));
+      return d.lengthSq() > 1e-6 ? d.normalize() : new THREE.Vector3();
+    };
+    let ref = new THREE.Vector3();
+    for (const a of anclas) ref.add(dir(a));
+    if (ref.lengthSq() < 1e-6) {
+      ref = new THREE.Vector3(0, -1, 0).projectOnPlane(eje);
+      if (ref.lengthSq() < 1e-6) ref = new THREE.Vector3(1, 0, 0).projectOnPlane(eje);
+    }
+    return { dir, ref: ref.normalize() };
+  }
+
+  /**
+   * EL RELOJ DE UN PASADOR (v0.3.49).
+   *
+   * A diferencia de una bisagra, un pasador monta VARIAS uniones —una por cada
+   * pieza móvil— y todas comparten un solo recorrido, medido desde la misma
+   * referencia. Así que el reloj también es uno solo y sale de la referencia,
+   * no de ninguna de las piezas: las mismas horas quieren decir las mismas
+   * direcciones para todas las que giren en él, que es justo lo que se pide de
+   * un eje del que cuelgan dos brazos.
+   *
+   * Devuelve además dónde está cada móvil EN LA ESCALA, para que el panel pueda
+   * avisar si el tramo pedido deja alguna fuera.
+   */
+  relojDePasador(obj: SceneObject): { c0: number; s: 1 | -1; poses: number[] } | null {
+    obj.mesh.updateMatrixWorld(true);
+    const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
+    const eje = new THREE.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
+    const esfera = esferaDe(eje);
+    if (!esfera) return null;
+    const vivo = (id: string): SceneObject | undefined => {
+      const o = this.objects.get(id);
+      return o && o !== obj ? o : undefined;
+    };
+    const anclas = (obj.params.pasadorAnclas ?? []).map(vivo).filter(Boolean) as SceneObject[];
+    const moviles = (obj.params.pasadorMoviles ?? []).map(vivo).filter(Boolean) as SceneObject[];
+    const { dir, ref } = this.referenciaDePasador(centro, eje, anclas);
+    const lecturaEn = (grado: number): number =>
+      lecturaDe(esfera, ref.clone().applyAxisAngle(eje, grado * THREE.MathUtils.DEG2RAD));
+    const c0 = lecturaEn(0);
+    const paso = ((lecturaEn(90) - c0 + 540) % 360) - 180;
+    const poses: number[] = [];
+    for (const m of moviles) {
+      const d = dir(m);
+      if (d.lengthSq() < 0.5) continue;
+      const phi = Math.atan2(
+        new THREE.Vector3().crossVectors(ref, d).dot(eje),
+        ref.dot(d),
+      ) * THREE.MathUtils.RAD2DEG;
+      poses.push(vuelta(phi));
+    }
+    return { c0, s: paso >= 0 ? 1 : -1, poses };
+  }
+
   aplicarPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number; anclajes: number } {
     const marca = `Pasador ${obj.id}`;
     for (const j of this.listJoints()) {
@@ -12568,20 +12643,7 @@ export class Editor {
     // MÓVILES: articuladas sobre el eje del pasador. El recorrido se lee en la
     // MISMA escala que la bisagra —0 alineado con el ancla, 180 extendido—
     // para que los grados quieran decir lo mismo en las dos herramientas.
-    const dir = (o: SceneObject): THREE.Vector3 => {
-      const d = o.mesh.getWorldPosition(new THREE.Vector3()).sub(centro);
-      d.addScaledVector(eje, -d.dot(eje));
-      return d.lengthSq() > 1e-6 ? d.normalize() : new THREE.Vector3();
-    };
-    // La referencia de los grados: hacia dónde queda lo que ancla el pasador.
-    // Sin anclas se toma la vertical, que es la lectura que espera cualquiera.
-    let ref = new THREE.Vector3();
-    for (const a of anclas) ref.add(dir(a));
-    if (ref.lengthSq() < 1e-6) {
-      ref = new THREE.Vector3(0, -1, 0).projectOnPlane(eje);
-      if (ref.lengthSq() < 1e-6) ref = new THREE.Vector3(1, 0, 0).projectOnPlane(eje);
-    }
-    ref.normalize();
+    const { dir, ref } = this.referenciaDePasador(centro, eje, anclas);
     for (const m of moviles) {
       const j = this.connect(obj.id, m.id, "revolute", centro.clone());
       if (!j) continue;
@@ -12607,6 +12669,10 @@ export class Editor {
         : 0;
       j.limitsEnabled = !!obj.params.pasadorLimite;
       if (obj.params.pasadorLimite) {
+        // SIN ACOTAR A [0, 360]. El cero de un pasador es «alineado con el
+        // ancla», que no es ningún tope físico —a diferencia del 0 de una
+        // bisagra, que son las placas chocando—, así que un recorrido puede
+        // cruzarlo tranquilamente: de las 10 a las 2, pongamos.
         j.min = Math.min(obj.params.pasadorMin ?? 0, obj.params.pasadorMax ?? 360);
         j.max = Math.max(obj.params.pasadorMin ?? 0, obj.params.pasadorMax ?? 360);
       }
