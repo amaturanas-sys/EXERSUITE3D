@@ -52,6 +52,21 @@ no un error del modelo.
 | Punto de anclaje · abrazadera | `src/punto_anclaje_abrazadera.py` | `pasadorAbraza: true` |
 | Placa dentada (6 ganchos) | `src/placa_dentada.py` | `kind: "dentada"` |
 | Carril de topes (5 muescas) | `src/carril_topes.py` | lo que arma «Brazo con pilar regulable» |
+| Disco indexado (24 posiciones) | `src/disco_indexado.py` | — (añadido opcional al pivote) |
+| Pin de seguro | `src/pin_seguro.py` | — (va con el disco) |
+
+### El seguro del pivote
+
+El disco y el pin son un sistema: el disco se ensarta en el mismo pasador que
+hace de pivote y va soldado al soporte; el brazo gira por delante con un solo
+taladro a la misma distancia del eje, y el pin los atraviesa. 24 agujeros, 15°
+de paso.
+
+Las dos medidas que los unen NO se escriben dos veces. El vástago del pin sale
+del agujero del disco menos la holgura (`from disco_indexado import SEGURO_R`),
+y el disco se niega a construirse si entre agujero y agujero queda menos acero
+que el radio del propio agujero. Subir `AGUJEROS` afina el paso y adelgaza ese
+puente: el guardián dice cuándo se pasó.
 
 ### Una forma, dos piezas
 

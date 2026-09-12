@@ -5,6 +5,34 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.41] — 2026-09-12
+
+### Añadido
+
+**EL SISTEMA DE FIJACIÓN DEL PIVOTE, en CAD de taller.** Lo que va junto al eje
+de un brazo articulado para clavarlo en un ángulo: un **disco indexado** con una
+corona de agujeros y un **pin de seguro** que lo atraviesa. Es el selector de
+una pila de pesos aplicado a un giro en vez de a una altura.
+
+El disco se ensarta en el MISMO pasador que hace de pivote —su taladro central
+es el del pasador— y va soldado a la horquilla o al soporte; el brazo gira por
+delante con un solo taladro a la misma distancia del eje. 24 posiciones: **15°
+de paso**.
+
+El pin lleva las tres partes que tiene el de verdad: vástago, collarín que topa
+contra el brazo y asa por donde sacarlo. Y el vástago va **achaflanado**: con el
+brazo cargado los dos agujeros nunca quedan perfectamente enfrentados, y un
+canto vivo se clava en el borde en vez de entrar.
+
+Dos medidas no se escriben a mano, y por eso no pueden separarse: el vástago
+sale del agujero del disco menos la holgura, y el disco **se niega a construirse**
+si entre agujero y agujero queda menos acero que el radio del propio agujero.
+Ese guardián saltó a la primera: con el pin de 16 que puse al principio quedaban
+**4,4 mm** de puente. Con el de 12 que llevan estos herrajes, 8,4.
+
+Medido: disco de 8 × 200 × 200 con 24 agujeros, pin de 131 × 70 × 22, los dos
+sólidos sanos y cerrados. Entran en la app como prefab con sus medidas exactas.
+
 ## [0.3.40] — 2026-09-12
 
 ### Añadido
