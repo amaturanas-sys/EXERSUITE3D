@@ -43,6 +43,21 @@ no un error del modelo.
 | Pieza | Script | Equivale en la app a |
 |---|---|---|
 | Punto de anclaje (horquilla) | `src/punto_anclaje.py` | `kind: "horquilla"` |
+| Placa dentada (6 ganchos) | `src/placa_dentada.py` | `kind: "dentada"` |
+
+### Las cotas no se vuelven a deducir aquí
+
+Los scripts NO recalculan las fórmulas de la app: llevan las medidas que
+`medidasDentada()` y compañía **resuelven** en la app, leídas de ella y pasadas
+a milímetros. Copiar la fórmula sería copiar también sus errores, y una prueba
+que compara una copia contra su original siempre pasa.
+
+### Los pernos son TALADROS, no bultos
+
+En la app los pernos se dibujan como cilindros salientes —detalle, para que la
+placa no parezca pegada con saliva—. Aquí son agujeros pasantes de Ø 9 mm, que
+es lo que un taller necesita. Por eso la placa mide 8 mm de grueso en el STEP y
+12,8 en la app: esos 4,8 de más eran las cabezas de los pernos.
 
 ## La estructura
 
