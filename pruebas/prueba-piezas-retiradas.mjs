@@ -22,6 +22,14 @@
 // No son piezas, son los BOTONES de la herramienta de cuerdas, y retirarlas
 // apagó la herramienta entera. La comprobación de abajo impide que vuelva a
 // pasar con cualquier otra.
+//
+// Y la CUERDA DE TRÍCEPS salió en v0.3.47, por el motivo contrario: VOLVIÓ al
+// catálogo. Se retiró porque lo único que había era un cilindro liso, y un
+// cilindro liso no es una cuerda; ahora trae su malla de CAD, así que deja de
+// ser una pieza retirada y su huella deja de ser la de antes —mide 14,6 × 32,75
+// × 5,6 cm en vez de 2,4 × 60 × 2,4 y pesa 0,6 kg en vez de 0,3—. Un proyecto
+// viejo que la llevara la verá cambiada; es el precio de arreglarla, y por eso
+// queda escrito aquí y no sólo en el CHANGELOG.
 import { chromium } from "playwright-core";
 
 // tamaño [x,y,z] en cm · masa en kg · si está anclada · material · vértices
@@ -39,7 +47,6 @@ const HUELLA = {
   "bloque-peso":      { tam: [30, 4, 18],      masa: 5,    fijo: false, material: "hierro-fundido", verts: 1236 },
   "micro-disco":      { tam: [12, 1.2, 12],    masa: 1.25, fijo: false, material: "hierro-fundido", verts: 196 },
   "agarradera":       { tam: [19, 19, 3],      masa: 0.4,  fijo: false, material: "goma",           verts: 561 },
-  "cuerda-triceps":   { tam: [2.4, 60, 2.4],   masa: 0.3,  fijo: false, material: "nylon",          verts: 196 },
   "barra-jalon":      { tam: [2.8, 120, 2.8],  masa: 2,    fijo: false, material: "cromo",          verts: 196 },
   "correa-tobillo":   { tam: [20, 8, 1],       masa: 0.2,  fijo: false, material: "nylon",          verts: 24 },
   // Segunda tanda (v0.3.2): el diseñador leyó el inventario actualizado y

@@ -33,6 +33,13 @@ Con ella van las otras dos piezas que la hacen reconocible:
 Mide 146 × 327,5 × 56 mm — los **33 cm de caída** del catálogo — y entra
 colgando, como sus hermanas.
 
+**Ojo con los proyectos viejos que la lleven.** Volver al catálogo le cambia la
+huella: pasa de 2,4 × 60 × 2,4 cm y 0,3 kg a 14,6 × 32,75 × 5,6 cm y 0,6 kg. Es
+lo contrario de lo que promete «retirar no es borrar» —que una pieza retirada
+sigue midiendo y pesando lo mismo para que un prefab antiguo no se mueva—, y por
+eso `prueba-piezas-retiradas.mjs` la saca de su lista con el motivo escrito al
+lado: aquí el cambio es el arreglo, no un descuido.
+
 ### Pruebas
 
 `prueba-cuerda-triceps.mjs` (7 comprobaciones). Las cinco primeras son las de
