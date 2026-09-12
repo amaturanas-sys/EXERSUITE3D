@@ -560,7 +560,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 0.3, fixed: false },
     orientacion: [0, 0, Math.PI / 2],
     description:
-      "Eje cilíndrico que hace de pivote: en Propiedades se le dicen qué piezas lo anclan y cuáles giran sobre él, con el recorrido en grados y el freno. Perfora lo que atraviesa, como una guía.",
+      "Eje cilíndrico que hace de pivote: en Propiedades se le dicen qué piezas lo anclan y cuáles giran sobre él, con el recorrido en HORAS DEL RELOJ y el freno. Perfora lo que atraviesa, como una guía.",
   },
   // PUNTO DE ANCLAJE (v0.3.32): la horquilla que sostiene al pasador. El eje
   // solo no se monta en el aire —en la máquina va cogido por los dos lados—, y
@@ -583,6 +583,43 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 0.5, fixed: false },
     description:
       "Horquilla soldable que sostiene un pasador por los dos lados: el alma va contra la cara de la viga y el brazo entra entre las orejas, cuya punta redonda le deja completar el recorrido. La coloca sola la herramienta de pasador.",
+  },
+  {
+    id: "pivote-indexado",
+    label: "Pivote indexado (silla)",
+    category: "movimiento",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 8.4, height: 13.2, depth: 16.4 },
+    physics: { massKg: 2.8, fixed: false },
+    // EL GLB SALE Y-ARRIBA por el convenio de glTF, así que la pieza entraría
+    // tumbada: el alto se le iría al fondo y la boca del disco al cielo.
+    orientacion: [Math.PI / 2, 0, 0],
+    // SIETE TRAMOS DE UNA HORA. El disco reparte media vuelta en 7 agujeros, o
+    // sea 30° de paso, que es EXACTAMENTE una hora de la esfera con la que se
+    // piden los recorridos: el brazo no queda «en el agujero 4», queda a las 4.
+    description:
+      "Pivote que se clava por tramos: un disco con 7 agujeros —una hora de paso— y una silla que abraza el montante y se calza en su pinhole con la espiga y la maneta. Se sube o se baja de nivel sin herramienta.",
+  },
+  {
+    id: "pivote-indexado-soldar",
+    label: "Pivote indexado (soldar)",
+    category: "movimiento",
+    materialId: "acero-negro",
+    defaults: { kind: "box", width: 8.4, height: 13.2, depth: 13.2 },
+    physics: { massKg: 2.2, fixed: false },
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "El mismo pivote de 7 tramos, con una cara plana en vez de la silla: para pegarlo donde no hay pinhole al que calzarse. El eje cae en el mismo sitio respecto de la cara de montaje.",
+  },
+  {
+    id: "pasador-manija",
+    label: "Pasador con manija",
+    category: "movimiento",
+    materialId: "acero-pulido",
+    defaults: { kind: "cylinder", radiusTop: 1.25, radiusBottom: 1.25, height: 21.6, radialSegments: 20 },
+    physics: { massKg: 0.8, fixed: false },
+    description:
+      "El eje del pivote indexado, que además se agarra: sobresale por fuera del brazo lo bastante para que una mano lo saque, suba o baje de pinhole y lo vuelva a calzar. Lleva cabeza de tope por dentro y taladro de clip por fuera.",
   },
   {
     id: "tope-guia",

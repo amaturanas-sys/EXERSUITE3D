@@ -42,6 +42,12 @@ export function medidasHorquilla(p: PrimitiveParams): {
   agujero: number;
   radio: number;
   ancho: number;
+  tramos: number;
+  arco: number;
+  seguro: number;
+  arcoR: number;
+  discoR: number;
+  paso: number;
 } {
   const alto = Math.max(p.horquillaAlto ?? 8, 0.4);
   const esp = Math.max(p.horquillaEspesor ?? 0.8, 0.1);
@@ -50,7 +56,63 @@ export function medidasHorquilla(p: PrimitiveParams): {
   const radio = alto / 2;
   // El taladro nunca se come la oreja: como mucho, la mitad del semicírculo.
   const agujero = Math.min(Math.max(p.horquillaAgujero ?? 1.3, 0.05), radio * 0.75);
-  return { alto, esp, garganta, vuelo, agujero, radio, ancho: garganta + 2 * esp };
+
+  // EL DISCO DE TRAMOS y su corona. Los dos radios NO son cotas que alguien
+  // teclea: SALEN de la cuenta, que es la misma que guarda `cad/src/lib/
+  // indexada.py`. Entre agujero y agujero tiene que quedar acero —al menos el
+  // radio del propio agujero—, y de ahí sale el radio mínimo de la corona:
+  //
+  //     2·R·sen(paso/2) − 2·s ≥ s   ⟹   R ≥ 1,5·s / sen(paso/2)
+  //
+  // Y la corona tiene que caer FUERA del semicírculo de la oreja, porque si no
+  // los agujeros se comerían el canto por el que gira el brazo.
+  const tramos = Math.max(0, Math.round(p.horquillaTramos ?? 0));
+  const arco = Math.min(360, Math.max(1, p.horquillaArco ?? 180));
+  // El seguro es más fino que el pasador: es un pin de retén, no un eje.
+  const seguro = Math.max(agujero * 0.5, 0.2);
+  const vueltaEntera = arco >= 359.9;
+  const paso = tramos >= 2 ? arco / (vueltaEntera ? tramos : tramos - 1) : 0;
+  const minimo = paso > 0
+    ? (1.5 * seguro) / Math.sin((paso * Math.PI) / 360)
+    : 0;
+  const arcoR = tramos >= 2 ? Math.max(minimo, radio + 2 * seguro) : 0;
+  const discoR = tramos >= 2 ? arcoR + 2 * seguro : 0;
+
+  return {
+    alto, esp, garganta, vuelo, agujero, radio, ancho: garganta + 2 * esp,
+    tramos, arco, seguro, arcoR, discoR, paso,
+  };
+}
+
+/**
+ * El perfil del DISCO DE TRAMOS: la oreja de fuera, crecida hasta ser un disco,
+ * con el taladro del eje y la corona de agujeros del seguro.
+ *
+ * Es lo que en la máquina real fija el brazo por tramos sin soltarlo, y lo que
+ * hace innecesaria la pieza suelta que había que soldar al lado del pivote y
+ * alinear a mano. La corona se centra en LA BOCA (+Z), que es hacia donde barre
+ * el brazo.
+ */
+function perfilDisco(m: ReturnType<typeof medidasHorquilla>): THREE.Shape {
+  const s = new THREE.Shape();
+  s.absarc(0, 0, m.discoR, 0, Math.PI * 2, false);
+  const taladro = new THREE.Path();
+  taladro.absarc(0, 0, m.agujero, 0, Math.PI * 2, true);
+  s.holes.push(taladro);
+  for (let k = 0; k < m.tramos; k++) {
+    const ang = ((-m.arco / 2 + k * m.paso) * Math.PI) / 180;
+    const hueco = new THREE.Path();
+    hueco.absarc(
+      m.arcoR * Math.cos(ang),
+      m.arcoR * Math.sin(ang),
+      m.seguro,
+      0,
+      Math.PI * 2,
+      true,
+    );
+    s.holes.push(hueco);
+  }
+  return s;
 }
 
 /**
@@ -81,22 +143,30 @@ export function buildHorquillaGeometry(p: PrimitiveParams): THREE.BufferGeometry
 
   // LAS DOS OREJAS. Se extruyen a lo largo de X —el eje del pasador— y se
   // colocan a un lado y otro de la garganta.
-  const oreja = new THREE.ExtrudeGeometry(perfilOreja(m), {
-    depth: m.esp,
-    bevelEnabled: false,
-    curveSegments: 24,
-  });
+  const extruir = (forma: THREE.Shape): THREE.ExtrudeGeometry =>
+    new THREE.ExtrudeGeometry(forma, {
+      depth: m.esp,
+      bevelEnabled: false,
+      curveSegments: 24,
+    });
+  const oreja = extruir(perfilOreja(m));
+  // EL DISCO VA EN UNA SOLA OREJA, la de fuera. Ponerlo en las dos duplicaría
+  // el acero sin duplicar nada útil: el seguro entra por un lado y ya está
+  // clavado. Es también lo que enseñan las fotos de las jaulas de verdad.
+  const disco = m.tramos >= 2 ? extruir(perfilDisco(m)) : null;
+  if (disco) disco.rotateY(-Math.PI / 2);
   // La extrusión sale en (x = nuestra z, y = nuestra y, z = espesor): un cuarto
   // de vuelta sobre Y lleva el espesor al eje X —del revés, ocupando [−esp, 0]—
   // y la profundidad de la horquilla al eje Z.
   oreja.rotateY(-Math.PI / 2);
   for (const lado of [-1, 1]) {
-    const g = oreja.clone();
+    const g = lado > 0 && disco ? disco.clone() : oreja.clone();
     // Cada oreja se corre hasta dejar su cara INTERIOR sobre la garganta.
     g.translate(lado < 0 ? -m.garganta / 2 : m.garganta / 2 + m.esp, 0, 0);
     partes.push(g.toNonIndexed());
   }
   oreja.dispose();
+  disco?.dispose();
 
   // EL ALMA: la placa que cierra la horquilla por detrás y que es la que se
   // suelda. Va contra la cara de la viga, al fondo del vuelo.

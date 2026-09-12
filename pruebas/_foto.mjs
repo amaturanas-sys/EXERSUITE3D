@@ -1,12 +1,14 @@
 // RETRATO DE UN COMPONENTE — utilidad, no prueba (no lleva `prueba-` delante).
 //
-//   node pruebas/_foto.mjs agarre-d pruebas/salidas/v346-d
+//   node pruebas/_foto.mjs agarre-d pruebas/salidas/v346-d [acercamiento]
 //
 // Inserta el componente en un lienzo vacío, lo levanta del suelo para que la
 // rejilla no lo tape y saca dos fotos: `-frente.png` y `-34.png`. Sirve para
 // mirar con los ojos lo que las pruebas miden con números.
 import { chromium } from "playwright-core";
 const ID = process.argv[2], SAL = process.argv[3];
+// Tercer argumento opcional: cuánto acercar la cámara (1 = la de siempre).
+const K = parseFloat(process.argv[4] ?? "1");
 const browser = await chromium.launch({
   executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
@@ -27,7 +29,7 @@ await page.evaluate(async (id) => {
   ed.select ? ed.select(null) : null;
   ed.clearSelection?.();
 }, ID);
-for (const [nombre, cam] of [["frente", [0, 13, 62]], ["34", [38, 34, 45]]]) {
+for (const [nombre, cam] of [["frente", [0, 12 + 1 * K, 62 * K]], ["34", [38 * K, 12 + 22 * K, 45 * K]]]) {
   await page.evaluate((c) => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
     const cam = ed.sceneManager.camera;

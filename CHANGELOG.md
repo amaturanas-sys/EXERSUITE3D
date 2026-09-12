@@ -5,6 +5,64 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.50] — 2026-09-12
+
+### Añadido
+
+**EL PIVOTE QUE SE CLAVA POR TRAMOS**, modelado en CAD y llevado a la
+herramienta. Es lo que las jaulas de verdad montan para sostener un brazo
+articulado y fijarle el ángulo sin soltarlo: un **disco con una corona de
+agujeros** por el que entra un seguro.
+
+Hasta ahora el modo indexado del pasador era **invisible**: la pieza se clavaba
+en múltiplos de un paso que no estaba dibujado en ninguna parte, así que había
+que fiarse de un número del panel. Ahora la horquilla que monta la herramienta
+lleva los agujeros, y se cuentan mirando.
+
+**LOS AGUJEROS SON LOS QUE EL RECORRIDO PERMITE, ni uno más.** Un disco con la
+corona entera al lado de un brazo que sólo barre media vuelta enseña seis
+agujeros a los que ese brazo no puede llegar, y quien lo monte se pregunta por
+qué no entra el seguro. Así que el arco del disco ES el recorrido pedido: con
+media vuelta y 12 posiciones salen **7 agujeros**, que son los dos cabos y los
+cinco de en medio. Sin recorrido limitado, la corona da la vuelta entera.
+
+**Y cada tramo es UNA HORA del reloj.** Siete posiciones en media vuelta dan 30°
+de paso, que es exactamente una hora de la esfera con la que se piden los
+recorridos desde v0.3.48. No es casualidad: está elegido así.
+
+**LOS DOS RADIOS DE LA CORONA NO SE TECLEAN, SALEN DE LA CUENTA.** Entre agujero
+y agujero tiene que quedar acero —al menos el radio del propio agujero—, y de
+ahí sale el radio mínimo de la corona:
+
+    2·R·sen(paso/2) − 2·s ≥ s   ⟹   R ≥ 1,5·s / sen(paso/2)
+
+Además la corona tiene que caer FUERA del semicírculo de la oreja, que es por
+donde gira el brazo. Apretar posiciones ensancha el disco en vez de adelgazar el
+acero hasta que se rompa: con 24 posiciones la corona pasa de 5,3 a 7,5 cm sola.
+
+En `cad/` van las tres piezas nuevas, y las tres entran también en la paleta:
+
+  · **`pivote_indexado`** (silla) — abraza el montante por tres caras y se sujeta
+    por su **espiga en el pinhole**, con una maneta que aprieta por el costado de
+    enfrente. Se sube o se baja de nivel sin herramienta. 84 × 132 × 164 mm.
+  · **`pivote_indexado_soldar`** — la misma pieza con una **cara plana** en vez de
+    la silla, para pegarla donde no hay pinhole que valga. Salen las dos de una
+    sola fábrica, igual que la horquilla y la abrazadera.
+  · **`pasador_manija`** — el eje, que además **se agarra**: entra por dentro,
+    cruza disco y brazo y sale por fuera hecho manija, con cabeza de tope, punta
+    en cúpula y taladro de clip. Sus cotas se leen del propio pivote, así que si
+    el disco engorda el pasador lo sigue.
+
+### Pruebas
+
+`prueba-pivote-indexado.mjs` (nueva, 13 comprobaciones): que la herramienta monta
+el disco sólo en modo indexado; que los agujeros son los que el recorrido permite
+(7 en media vuelta, 12 en la vuelta entera); que el puente de acero aguanta y la
+corona cae fuera de la oreja; que apretar posiciones ensancha el disco; que los
+agujeros están **calados de verdad** en la malla y sólo en una oreja; y que **el
+disco del CAD y el que resuelve la app miden lo mismo**, que es la regla de la
+casa —`cad/` no recalcula las fórmulas, lleva las medidas que la app resuelve—.
+
 ## [0.3.49] — 2026-09-12
 
 ### Cambiado

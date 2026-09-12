@@ -12804,6 +12804,7 @@ export class Editor {
         horquillaGarganta: gargantaAqui,
         horquillaVuelo: vuelo,
         horquillaAgujero: radioEje + 0.05,
+        ...this.tramosDeLaHorquilla(obj),
       };
       h.rebuildGeometry();
       // Base local de la horquilla: X el eje del pasador, Z del alma hacia la
@@ -12825,6 +12826,41 @@ export class Editor {
       puestas++;
     }
     return puestas;
+  }
+
+  /**
+   * EL DISCO DE TRAMOS DE LA HORQUILLA (v0.3.50).
+   *
+   * Hasta ahora el modo indexado del pasador era INVISIBLE: la pieza se clavaba
+   * en múltiplos de un paso que no estaba dibujado en ninguna parte, así que
+   * había que fiarse de un número del panel. En la máquina de verdad esos
+   * tramos son AGUJEROS, y se cuentan mirando.
+   *
+   * LOS AGUJEROS SON LOS QUE EL RECORRIDO PERMITE, ni uno más. Un disco con la
+   * corona entera al lado de un brazo que sólo barre media vuelta enseña doce
+   * agujeros a los que ese brazo no puede llegar — y el que lo monte se pregunta
+   * por qué no entra el seguro. Así que el arco del disco ES el recorrido
+   * pedido, y sus agujeros son las posiciones de ese tramo.
+   *
+   * Sin recorrido limitado la corona da la vuelta entera, que es el disco de
+   * toda la vida.
+   */
+  private tramosDeLaHorquilla(obj: SceneObject): {
+    horquillaTramos?: number;
+    horquillaArco?: number;
+  } {
+    if (!obj.params.pasadorIndexado) return {};
+    const paso = 360 / Math.max(2, Math.round(obj.params.pasadorPosiciones ?? 24));
+    const arco = obj.params.pasadorLimite
+      ? Math.min(360, Math.abs((obj.params.pasadorMax ?? 360) - (obj.params.pasadorMin ?? 0)))
+      : 360;
+    // Una vuelta entera cierra sobre sí misma, así que el último agujero ES el
+    // primero y no se cuenta dos veces; un arco abierto sí tiene los dos cabos.
+    const entera = arco >= 359.9;
+    const tramos = entera
+      ? Math.max(2, Math.round(360 / paso))
+      : Math.max(2, Math.round(arco / paso) + 1);
+    return { horquillaTramos: tramos, horquillaArco: entera ? 360 : arco };
   }
 
   /**

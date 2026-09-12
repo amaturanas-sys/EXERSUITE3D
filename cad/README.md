@@ -57,6 +57,9 @@ no un error del modelo.
 | Agarre doble de polea | `src/agarre_doble.py` | `agarre-doble` (en la paleta) |
 | Agarradera en D (una mano) | `src/agarre_simple.py` | `agarre-d` (en la paleta) |
 | Cuerda de tríceps | `src/cuerda_triceps.py` | `cuerda-triceps` (en la paleta) |
+| Pivote indexado · silla | `src/pivote_indexado.py` | `pivote-indexado` (en la paleta) |
+| Pivote indexado · soldar | `src/pivote_indexado_soldar.py` | `pivote-indexado-soldar` |
+| Pasador con manija | `src/pasador_manija.py` | `pasador-manija` (en la paleta) |
 
 ### Una pieza de `cad/` en la PALETA
 
@@ -68,6 +71,31 @@ variantes que vengan:
 3. la entrada `"<id>": "<id>.glb"` en `public/models/components/manifest.json`;
 4. y el componente en `componentLibrary.ts` con su bulto de reserva, su masa y
    —si el GLB lo deja tumbado— su `orientacion` de inserción.
+
+### El pivote que se clava por tramos
+
+`pivote_indexado` es lo que el `disco_indexado` quería ser: en vez de un disco
+suelto que hay que soldar junto al pivote y alinear a mano con la horquilla, los
+agujeros van **en la misma chapa que sostiene el eje**. Una pieza menos y una
+alineación menos que puede salir mal.
+
+De la misma fábrica (`lib/indexada.py`) salen sus dos montajes, que en el acero
+son la misma pieza con el culo distinto:
+
+| | Cómo se sujeta | Envolvente |
+|---|---|---|
+| Silla | abraza el montante por tres caras; espiga en el pinhole y maneta que aprieta | 84 × 132 × 164 |
+| Soldar | una cara plana, donde no hay pinhole al que calzarse | 84 × 132 × 132 |
+
+**Siete tramos en media vuelta dan 30° de paso, que es UNA HORA** de la esfera
+con la que la app pide los recorridos desde v0.3.48. El brazo no queda «en el
+agujero 4»: queda a las 4.
+
+Y los DOS RADIOS DE LA CORONA no se deducen aquí: los resuelve
+`medidasHorquilla()` en la app —entre agujero y agujero tiene que quedar el
+radio del propio agujero, y la corona tiene que caer fuera del semicírculo de la
+oreja— y el script los copia ya resueltos. `prueba-pivote-indexado.mjs` cruza los
+dos: el alto de la pieza de CAD tiene que ser el diámetro que la app calcula.
 
 ### El seguro del pivote
 

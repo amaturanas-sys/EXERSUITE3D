@@ -22,16 +22,24 @@ ESPESOR = 8.0           # la chapa de la silla
 VUELO = 30.0            # de la cara delantera del pilar al eje
 SILLA_ALTO = 90.0
 
-DISCO_R = 64.0
+DISCO_R = 66.0         # ⟵ de la app: `medidasHorquilla` lo RESUELVE, no se teclea
 DISCO_ESPESOR = 10.0    # más gorda que la silla: es la que lleva la carga
 EJE_R = 13.0            # el taladro del pasador: Ø25 con su holgura
 
 # LA CORONA. Siete posiciones en media vuelta dan 30° de paso, que es UNA HORA
 # de la esfera con la que la app pide los recorridos: el brazo no queda «en el
 # agujero 4», queda a las 4.
+#
+# LOS DOS RADIOS NO SE DEDUCEN AQUÍ. Los resuelve `medidasHorquilla()` en la app
+# —entre agujero y agujero tiene que quedar el radio del propio agujero, y la
+# corona tiene que caer fuera del semicírculo de la oreja— y aquí se copian ya
+# resueltos, que es la regla de la casa: repetir la fórmula sería repetir
+# también sus errores, y una prueba que compara una copia contra su original
+# siempre pasa. `prueba-pivote-indexado.mjs` cruza estos números con los de la
+# app.
 POSICIONES = 7
 ARCO = 180.0
-ARCO_R = 48.0
+ARCO_R = 53.0          # ⟵ ídem: 1,5·seguro / sen(paso/2), o el canto de la oreja
 
 ESPIGA_R = 12.0         # la espiga que entra en el pinhole del montante
 ESPIGA = 26.0

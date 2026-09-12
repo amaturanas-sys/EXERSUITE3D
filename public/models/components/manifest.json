@@ -67,5 +67,8 @@
   "jota-pr": "jota-pr.obj",
   "jota-rodillo-pr": "jota-rodillo-pr.obj",
   "riel-base-pr": "riel-base-pr.obj",
-  "agarre-doble": "agarre-doble.glb"
+  "agarre-doble": "agarre-doble.glb",
+  "pivote-indexado": "pivote-indexado.glb",
+  "pivote-indexado-soldar": "pivote-indexado-soldar.glb",
+  "pasador-manija": "pasador-manija.glb"
 }

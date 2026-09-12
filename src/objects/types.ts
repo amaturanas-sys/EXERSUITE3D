@@ -177,6 +177,13 @@ export interface PrimitiveParams {
   horquillaVuelo?: number;
   /** Radio del taladro por el que pasa el pasador (cm). */
   horquillaAgujero?: number;
+  /**
+   * DISCO DE TRAMOS (v0.3.50): cuántas posiciones lleva la corona de agujeros
+   * de la horquilla, y en qué arco se reparten. Con menos de 2 no hay disco y
+   * la oreja sigue siendo la de siempre — que es lo que era hasta ahora.
+   */
+  horquillaTramos?: number;
+  horquillaArco?: number;
 
   /**
    * EXTREMO REDONDO (v0.3.32): la punta de una viga, rematada en semicilindro

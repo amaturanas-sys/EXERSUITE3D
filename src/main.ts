@@ -43,6 +43,7 @@ import { addRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
+import { medidasHorquilla } from "./objects/horquilla";
 import {
   formatearAmplitud,
   formatearHora,
@@ -313,6 +314,10 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     prefabIO: { serializarPrefab, parsearPrefab },
     // EL RELOJ (v0.3.48): la aritmetica de la esfera, expuesta para que la
     // verificacion la mida donde de verdad se usa y no sobre una copia suya.
+    // LA HORQUILLA: sus medidas RESUELTAS, incluidos los dos radios del disco
+    // de tramos, que no son cotas tecleadas sino el resultado de la cuenta.
+    // La prueba las mide donde de verdad se usan y no sobre una copia suya.
+    horquilla: { medidas: medidasHorquilla },
     reloj: {
       formatearHora,
       parsearHora,
