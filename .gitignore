@@ -19,3 +19,6 @@ pruebas/*.prefab.json
 # prefijo se colaba en el commit: ahora se tapan TODOS los .png de la raiz,
 # que es donde no debe vivir ninguno.
 /*.png
+
+# Caché del núcleo CAD (cadgen): árboles de geometría, se regeneran solos.
+.cache/cadgen/
