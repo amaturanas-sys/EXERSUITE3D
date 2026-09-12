@@ -44,6 +44,7 @@ no un error del modelo.
 |---|---|---|
 | Punto de anclaje (horquilla) | `src/punto_anclaje.py` | `kind: "horquilla"` |
 | Placa dentada (6 ganchos) | `src/placa_dentada.py` | `kind: "dentada"` |
+| Carril de topes (5 muescas) | `src/carril_topes.py` | lo que arma «Brazo con pilar regulable» |
 
 ### Las cotas no se vuelven a deducir aquí
 
@@ -51,6 +52,14 @@ Los scripts NO recalculan las fórmulas de la app: llevan las medidas que
 `medidasDentada()` y compañía **resuelven** en la app, leídas de ella y pasadas
 a milímetros. Copiar la fórmula sería copiar también sus errores, y una prueba
 que compara una copia contra su original siempre pasa.
+
+### El carril sobresale de sus dedos
+
+En la app el carril empieza y acaba EXACTAMENTE en el primer y el último tope,
+con lo que los dos dedos de los extremos quedan medio en el aire: no hay acero
+debajo de su mitad de fuera. Se dibuja, pero no se suelda. El modelo CAD saca
+50 mm de carril por cada punta (`VUELO_EXTREMO`), y por eso mide 684 mm de largo
+donde la app pone 500.
 
 ### Los pernos son TALADROS, no bultos
 
