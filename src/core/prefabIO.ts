@@ -36,9 +36,29 @@ export interface PrefabArchivo {
 export function serializarPrefab(editor: Editor, label: string): string | null {
   const ids = editor.getSelectionIds();
   if (ids.length === 0) return null;
+  // LAS PIEZAS DIBUJADAS NO SALEN DE `serialize()`: las descarta a propósito
+  // (`!o.imported`), así que para ellas se lee la escena viva. Sin esto una
+  // selección de piezas de `cad/` se exportaba vacía y el prefab salía nulo.
   const todos = editor.serialize().objects;
   const datos = ids
-    .map((id) => todos.find((d) => d.id === id))
+    .map((id) => {
+      const guardado = todos.find((d) => d.id === id);
+      if (guardado) return guardado;
+      const vivo = editor.getObject(id);
+      if (!vivo) return undefined;
+      const q = vivo.mesh.quaternion;
+      return {
+        id,
+        name: vivo.name,
+        componentId: vivo.componentId,
+        params: { ...vivo.params },
+        materialId: vivo.materialId,
+        position: vivo.mesh.position.toArray() as [number, number, number],
+        quaternion: [q.x, q.y, q.z, q.w] as [number, number, number, number],
+        scale: vivo.mesh.scale.toArray() as [number, number, number],
+        physics: { ...vivo.physics },
+      };
+    })
     .filter((d): d is NonNullable<typeof d> => !!d && !d.componentId.startsWith("ws-"));
   if (datos.length === 0) return null;
 
@@ -77,6 +97,18 @@ export function serializarPrefab(editor: Editor, label: string): string | null {
     if (vivo) {
       const s = vivo.effectiveSize();
       pieza.dims = [r4(s.x), r4(s.y), r4(s.z)];
+      // UNA PIEZA DIBUJADA VIAJA CON SU MALLA (v0.3.40). Sin esto, exportar un
+      // prefab que contuviera una pieza importada guardaba su pose y su nombre
+      // y perdía la pieza: al reinsertarlo salía una caja.
+      const geo = vivo.mesh.geometry;
+      if (vivo.componentId === "imported" && geo?.attributes?.position) {
+        const pos = geo.attributes.position as THREE.BufferAttribute;
+        const crudo: number[] = [];
+        for (let i = 0; i < pos.count * 3; i++) crudo.push(r4(pos.array[i] as number));
+        pieza.malla = { pos: crudo };
+        const idx = geo.index;
+        if (idx) pieza.malla.idx = Array.from(idx.array as ArrayLike<number>);
+      }
     }
     return pieza;
   });
@@ -211,7 +243,11 @@ export function parsearPrefab(texto: string): ReportePrefab {
   const piezas: PiezaSpec[] = [];
   originales.forEach((p, i) => {
     if (!p || typeof p.comp !== "string" || !Array.isArray(p.pos)) return;
-    if (!getDefinition(p.comp)) {
+    // UNA PIEZA CON MALLA NO NECESITA COMPONENTE (v0.3.40): viene dibujada, no
+    // generada. Exigirle uno conocido dejaba fuera del formato todo lo que sale
+    // de `cad/` —el validador las rechazaba en bloque y el prefab entero moría
+    // con «no contiene piezas con componentes reconocidos»—.
+    if (!p.malla?.pos?.length && !getDefinition(p.comp)) {
       desconocidas.push(`${p.nombre ?? "(sin nombre)"} [${p.comp}]`);
       return;
     }

@@ -3518,6 +3518,40 @@ export class Editor {
   }
 
   /**
+   * UNA PIEZA A PARTIR DE SU MALLA (v0.3.40).
+   *
+   * Lo que hace falta para que una pieza dibujada en un CAD de verdad entre en
+   * la aplicación: no hay componente que la genere, así que llega con sus
+   * triángulos puestos. A diferencia de «Importar modelo 3D…», esto NO adivina
+   * unidades ni recoloca nada — los vértices vienen ya en centímetros y en el
+   * sistema de la pieza, y quien la inserta decide dónde va.
+   */
+  agregarPiezaDeMalla(
+    malla: { pos: number[]; idx?: number[] },
+    nombre: string,
+  ): SceneObject {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(malla.pos, 3));
+    if (malla.idx?.length) geo.setIndex(malla.idx);
+    geo.computeVertexNormals();
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    const obj = new SceneObject({
+      name: nombre,
+      componentId: "imported",
+      category: "primitiva",
+      params: { kind: "box" },
+      physics: { massKg: 1, fixed: true },
+      materialId: "generico",
+      importedGeometry: geo,
+    });
+    obj.mesh.name = nombre;
+    this.sceneManager.content.add(obj.mesh);
+    this.objects.set(obj.id, obj);
+    return obj;
+  }
+
+  /**
    * APAGA TODAS LAS HERRAMIENTAS DE COLOCACIÓN, de una vez.
    *
    * Existe porque la lista se había vuelto imposible de recordar: hay nueve

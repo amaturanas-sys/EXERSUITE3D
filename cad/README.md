@@ -14,8 +14,14 @@ El puente funciona en los dos sentidos:
 
 ```bash
 python -m pip install -r ../.claude/skills/cad/requirements.txt   # una vez
-python cad/src/punto_anclaje.py                                   # construye
+python cad/src/punto_anclaje.py    # construye STEP + STL + GLB
+python cad/a_prefab.py             # y el JSON para meterlo en la app
 ```
+
+`a_prefab.py` escribe en `JSON/` un prefab por pieza —la malla entera, en
+centímetros— que se inserta con «Archivo → Importar prefab…». Los ejes no se
+tocan (el GLB sí sale Y-arriba y hay que enderezarlo a mano); sólo cambian las
+unidades.
 
 Un script escribe **todas** sus salidas de una vez: las declara con decoradores
 (`@step`, `@stl`, `@glb`) y al ejecutarlo aparecen en sus carpetas. Para

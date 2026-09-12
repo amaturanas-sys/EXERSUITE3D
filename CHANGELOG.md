@@ -5,6 +5,41 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.40] — 2026-09-12
+
+### Añadido
+
+**LAS PIEZAS DE CAD ENTRAN COMO PREFAB.** Una pieza dibujada en un CAD de verdad
+no la genera ningún componente: no hay `comp` + `params` que la describan. Eso
+la dejaba fuera del formato de prefab —el validador la rechazaba y, si llegaba,
+se guardaba su pose y su nombre y se perdía la pieza—, así que meterla en la app
+era importar un GLB a mano y colocarla a ojo.
+
+Ahora un prefab puede llevar la **malla entera**: vértices en centímetros,
+triángulos por índice. `cad/a_prefab.py` escribe uno por cada pieza de `cad/`,
+y se inserta como cualquier otro prefab.
+
+    python cad/src/<pieza>.py    # construye STEP + STL + GLB
+    python cad/a_prefab.py       # y el JSON para la app
+
+Los ejes NO se tocan, a diferencia del GLB: cada modelo de `cad/src/` declara el
+sistema en el que está escrito y los que copian una pieza de la app usan el de
+la app, así que el prefab entra derecho. Sólo se convierten las unidades —cadgen
+en milímetros, la app en centímetros—.
+
+Medido en las cuatro piezas: entran con la malla puesta y con las medidas del
+STEP —punto de anclaje 5,8 × 8 × 8,8; abrazadera 7 × 8 × 8,3; placa dentada
+15,53 × 77 × 0,8; carril 68,4 × 6 × 10— y sobreviven a la ida y vuelta
+(exportarlas otra vez como prefab conserva sus vértices, uno a uno). Entre 20 y
+56 KB por pieza, con la malla indexada.
+
+### Corregido
+
+**Exportar un prefab con una pieza dibujada devolvía un prefab vacío.**
+`serialize()` descarta a propósito las piezas importadas, y el exportador leía
+de ahí: una selección de piezas de `cad/` salía sin ninguna. Ahora, para lo que
+`serialize()` no da, el exportador lee la escena viva.
+
 ## [0.3.39] — 2026-09-12
 
 ### Corregido

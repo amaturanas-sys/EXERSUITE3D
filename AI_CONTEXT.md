@@ -484,6 +484,16 @@ esa pieza, las dos medidas:
     encima del propio tope. El solver lo expulsaba en el primer fotograma y
     después rodaba cuesta abajo. La recta del cálculo es por donde viaja EL PIE;
     la viga va POR DEBAJO de ella, medio pie más medio perfil.
+  · **UNA PIEZA DIBUJADA NO CABE EN UN FORMATO PARAMÉTRICO.** El prefab
+    describía cada pieza con `comp` + `params`, que es todo lo que hace falta
+    mientras la geometría la GENERE la app. Una pieza de `cad/` no la genera
+    nadie, así que el formato tuvo que aprender a llevar la MALLA (`PiezaSpec
+    .malla`). Dos sitios lo daban por hecho y los dos fallaban callados: el
+    validador exigía un componente conocido y tiraba el prefab entero, y
+    `serialize()` descarta las piezas importadas a propósito, así que el
+    exportador leía de ahí y devolvía un prefab vacío. **Nota abierta:** por ese
+    mismo descarte, una pieza dibujada insertada en un proyecto NO se guarda con
+    él.
   · **DIBUJAR UNA PIEZA PARA FABRICARLA ENCUENTRA LO QUE LA PANTALLA ESCONDE.**
     El carril de topes iba de tope a tope exactamente, con lo que los dedos de
     las puntas quedaban medio en el aire —sin acero bajo su mitad de fuera—.

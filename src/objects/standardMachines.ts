@@ -104,6 +104,16 @@ export interface PiezaSpec {
   escala?: [number, number, number];
   /** Dimensiones locales al exportar: CONTROL de fidelidad al reimportar. */
   dims?: [number, number, number];
+  /**
+   * LA MALLA, cuando la pieza NO es paramétrica (v0.3.40).
+   *
+   * Una pieza dibujada en un CAD de verdad no se puede describir con `comp` y
+   * `params`: no hay componente que la genere. Así que el prefab la lleva
+   * entera —vértices en cm, triángulos por índice— y la app la reconstruye al
+   * insertarla. Es lo que deja que una pieza de `cad/` entre en la aplicación
+   * de un tirón, sin importar un GLB a mano y sin colocarla a ojo.
+   */
+  malla?: { pos: number[]; idx?: number[] };
 }
 
 /**
@@ -626,12 +636,15 @@ export function construirPiezas(
 ): string[] {
   const ids: string[] = [];
   for (const p of piezas) {
-    const obj = editor.addComponent(p.comp);
+    // Una pieza con MALLA no la genera ningún componente: viene dibujada.
+    const obj = p.malla
+      ? editor.agregarPiezaDeMalla(p.malla, p.nombre ?? p.comp)
+      : editor.addComponent(p.comp);
     if (p.nombre) {
       obj.name = `${p.nombre} (${label})`;
       obj.mesh.name = obj.name;
     }
-    if (p.params) {
+    if (p.params && !p.malla) {
       // COPIA PROFUNDA (v0.2.20): el spec de la máquina es un módulo
       // constante — sin clonar, doblar por nodos un pilar insertado mutaba
       // el `path` del propio spec y las siguientes inserciones de la
