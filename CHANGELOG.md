@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.47] — 2026-09-12
+
+### Añadido
+
+**LA CUERDA DE TRÍCEPS**, modelada en CAD (`cad/src/cuerda_triceps.py`) y de
+vuelta en la paleta. `cuerda-triceps` estaba RETIRADA del catálogo, y con razón:
+lo único que había era un cilindro liso, y un cilindro liso no es una cuerda.
+
+**La torsión no es decoración.** Lo que se reconoce de un vistazo en esta pieza
+es la colcha, así que los tres cabos se modelan de verdad: cada uno es un
+círculo barrido por SU hélice alrededor de la directriz, con 80 mm de paso. No
+es un tubo con una textura encima. La directriz —ramal recto, arco de medio
+punto, ramal recto— se recorre por longitud de arco y, como es plana, su
+binormal es constante: nada de marcos de Frenet degenerados en los tramos
+rectos.
+
+Con ella van las otras dos piezas que la hacen reconocible:
+
+  · la **abrazadera cromada** que muerde la cuerda en la cumbre, con la oreja
+    del mosquetón encima;
+  · y los dos **casquillos**, que son CAMPANAS y no discos: estrechos por
+    arriba, donde entra la cuerda, y ensanchando hasta una cúpula. Es lo que
+    frena el puño al resbalar, y un cilindro dejaría un canto vivo donde la
+    pieza real no lo tiene.
+
+Mide 146 × 327,5 × 56 mm — los **33 cm de caída** del catálogo — y entra
+colgando, como sus hermanas.
+
+### Pruebas
+
+`prueba-cuerda-triceps.mjs` (7 comprobaciones). Las cinco primeras son las de
+siempre —paleta, categoría, malla de CAD, medidas del STEP, cuelga derecha—; las
+dos últimas son las que valen para esta pieza, y cortan el ramal por una rodaja
+fina para medir desde su eje:
+
+  · la **sección es una colcha**, no un tubo: cresta a 1,28 cm del eje y valle a
+    0,61: un tubo liso daría las dos iguales;
+  · y la colcha **GIRA con la altura**: **56,8°** entre dos rodajas separadas 4
+    cm, que son los 60° que salen del paso de 80 mm. Tres varillas paralelas
+    darían 0.
+
 ## [0.3.46] — 2026-09-12
 
 ### Corregido

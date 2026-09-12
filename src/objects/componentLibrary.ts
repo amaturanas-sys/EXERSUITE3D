@@ -973,13 +973,17 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cuerda-triceps",
-    paleta: "retirada",
     label: "Cuerda de triceps",
     category: "ergonomico",
     materialId: "nylon",
-    defaults: { kind: "cylinder", radiusTop: 1.2, radiusBottom: 1.2, height: 60 },
-    physics: { massKg: 0.3, fixed: false },
-    description: "Cuerda doble para pushdowns y face pulls.",
+    defaults: { kind: "box", width: 14.6, height: 32.75, depth: 5.6 },
+    physics: { massKg: 0.6, fixed: false },
+    // Vuelve al catálogo en v0.3.47 con su malla de CAD: estaba retirada
+    // porque un cilindro liso no es una cuerda. Entra colgando, como sus
+    // hermanas: el GLB sale Y-arriba por el convenio de glTF.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Cuerda de tres cabos torcidos para polea: abrazadera con oreja arriba y casquillo en cada punta. Para extensiones de triceps y face pulls.",
   },
   {
     id: "barra-jalon",

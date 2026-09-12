@@ -44,7 +44,7 @@ CABOS = 3
 CABO_R = 5.9
 CABO_D = 6.6
 PASO = 80.0             # cuánto avanza la colcha en una vuelta entera
-MUESTRAS = 260          # puntos por hebra: ~2 mm de cuerda por punto
+MUESTRAS = 100          # puntos por hebra: ~14 por vuelta de colcha, que ya va sobrado
 
 # LA ABRAZADERA de la cumbre y su oreja.
 COLLAR_R = 21.0
@@ -55,9 +55,10 @@ OJO_R = 7.5
 OREJA_ESPESOR = 4.5     # a cada lado
 
 # LOS CASQUILLOS de las puntas.
-CASQUILLO_R = 28.0
-CASQUILLO_HOMBRO = 10.0   # cuánto asoma por encima de la boca
-CASQUILLO_CUELLO = -12.0  # dónde empieza la cúpula de abajo
+CASQUILLO_R = 28.0        # lo ancho, abajo del todo
+CASQUILLO_BOCA_R = 17.0   # y lo estrecho, por donde entra la cuerda
+CASQUILLO_BOCA = 14.0     # a qué altura está esa boca
+CASQUILLO_CUELLO = -12.0  # y dónde el faldón se convierte en cúpula
 
 CUMBRE_Y = RAMAL_ALTO + SEMI
 LARGO_RAMAL = RAMAL_ALTO - RAMAL_BAJO
@@ -111,7 +112,15 @@ def _hebra(vuelta: float):
 
 
 def _colcha():
-    """La cuerda entera: los tres cabos, soldados en una sola colcha."""
+    """La cuerda entera: los tres cabos, soldados en una sola colcha.
+
+    EL CANALILLO DEL CENTRO SE QUEDA. Con `CABO_R < CABO_D` los tres cabos se
+    tocan entre sí pero no llegan al eje, así que por dentro queda un hueco de
+    menos de un milímetro —igual que en la cuerda de verdad—. Taponarlo con un
+    alma barrida se probó y sale caro sin que se note: la malla pasaba de
+    105.000 caras a 642.000 y el GLB de 2 a 14 MB, por superficie que nadie ve
+    desde fuera.
+    """
     cuerda = _hebra(0.0)
     for k in range(1, CABOS):
         cuerda += _hebra(k / CABOS)
@@ -119,15 +128,22 @@ def _colcha():
 
 
 def _casquillo(x: float):
-    """El remate negro de una punta: cuello recto y cúpula abajo."""
-    cuello = bd.Pos(x, (CASQUILLO_HOMBRO + CASQUILLO_CUELLO) / 2.0, 0.0) * (
-        bd.Rot(90.0, 0.0, 0.0)
-        * bd.Cylinder(
-            radius=CASQUILLO_R,
-            height=CASQUILLO_HOMBRO - CASQUILLO_CUELLO,
+    """El remate negro de una punta: una CAMPANA, no un disco.
+
+    Es lo que se ve en las fotos y lo que se nota en la mano: estrecha por
+    arriba, donde entra la cuerda, y ensanchando hasta una cúpula que es la que
+    frena el puño al resbalar. Un cilindro del ancho de abajo dejaría un canto
+    vivo justo donde la cuerda sale, que en la pieza real no existe.
+    """
+    faldon = bd.Pos(x, (CASQUILLO_BOCA + CASQUILLO_CUELLO) / 2.0, 0.0) * (
+        bd.Rot(-90.0, 0.0, 0.0)
+        * bd.Cone(
+            bottom_radius=CASQUILLO_R,
+            top_radius=CASQUILLO_BOCA_R,
+            height=CASQUILLO_BOCA - CASQUILLO_CUELLO,
         )
     )
-    return cuello + bd.Pos(x, CASQUILLO_CUELLO, 0.0) * bd.Sphere(radius=CASQUILLO_R)
+    return faldon + bd.Pos(x, CASQUILLO_CUELLO, 0.0) * bd.Sphere(radius=CASQUILLO_R)
 
 
 def _abrazadera():
@@ -153,9 +169,17 @@ def _abrazadera():
     return collar + bd.extrude(perfil, amount=OREJA_ESPESOR, both=True)
 
 
+# LA MALLA, A PROPÓSITO GRUESA. Tres barridos helicoidales dan una superficie
+# con muchísimos tramos, y con la tolerancia de casa el STL salía con 900.000
+# caras y el GLB pesaba 21 MB: imposible de mover en la app. Quien manda aquí es
+# la tolerancia ANGULAR —la lineal es relativa a la diagonal de la pieza y
+# apenas muerde—, y con 1,1 rad la colcha baja a ~80.000 caras sin que la
+# torsión se vuelva un prisma. La fidelidad de verdad vive en el STEP, que es
+# exacto —aunque de exacto pese 19 MB: una cuerda trenzada de verdad son tres
+# superficies de forma libre con cien tramos cada una, y eso es lo que cuesta.
 @step(out="../STEP/cuerda_triceps.step")
-@stl(out="../STL/cuerda_triceps.stl")
-@glb(out="../GLB/cuerda_triceps.glb")
+@stl(out="../STL/cuerda_triceps.stl", mesh_tolerance=0.002, mesh_angular_tolerance=1.1)
+@glb(out="../GLB/cuerda_triceps.glb", mesh_tolerance=0.002, mesh_angular_tolerance=1.1)
 def cuerda_triceps():
     # MODO ÁLGEBRA A PROPÓSITO (ver `lib/tubos.py`): nada de `BuildPart`.
     pieza = _colcha() + _abrazadera()

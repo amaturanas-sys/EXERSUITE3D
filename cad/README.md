@@ -56,6 +56,7 @@ no un error del modelo.
 | Pin de seguro | `src/pin_seguro.py` | — (va con el disco) |
 | Agarre doble de polea | `src/agarre_doble.py` | `agarre-doble` (en la paleta) |
 | Agarradera en D (una mano) | `src/agarre_simple.py` | `agarre-d` (en la paleta) |
+| Cuerda de tríceps | `src/cuerda_triceps.py` | `cuerda-triceps` (en la paleta) |
 
 ### Una pieza de `cad/` en la PALETA
 
@@ -95,6 +96,33 @@ orejas tienen que salvar hasta el eje.
 | Abrazadera | 54 (la viga) | 35 (cara → eje, cruzando) | 70 × 80 × 83 |
 
 `lib/` es código compartido, no modelos: nada de lo que hay ahí lleva `@step`.
+
+### UNA CUERDA TORCIDA CUESTA LO QUE CUESTA
+
+La colcha de la cuerda de tríceps son TRES BARRIDOS HELICOIDALES —un círculo
+por cada cabo, siguiendo su propia hélice alrededor de la directriz—, y eso
+tiene un precio que ninguna otra pieza de aquí paga:
+
+  · el STEP pesa **19 MB**, más que todas las demás piezas juntas: son tres
+    superficies de forma libre con cien tramos cada una;
+  · y la malla, con la tolerancia de casa, salía con **900.000 caras** y 21 MB
+    de GLB. Quien manda ahí es la tolerancia ANGULAR (`mesh_angular_tolerance`),
+    no la lineal —que es RELATIVA a la diagonal de la pieza y apenas muerde—:
+    con 1,1 rad baja a 105.000 caras y 2 MB sin que el torcido se vuelva un
+    prisma.
+
+Dos cosas que se probaron y NO se quedaron, para no volver a intentarlas:
+
+  · **taponar el canalillo del centro** con un alma barrida. Con `CABO_R <
+    CABO_D` los tres cabos se tocan entre sí pero no llegan al eje, así que por
+    dentro queda un hueco de menos de un milímetro —como en la cuerda de
+    verdad—. El alma lo cerraba, sí, y de paso subía la malla de 105.000 a
+    642.000 caras y el GLB de 2 a 14 MB, todo por superficie que desde fuera no
+    se ve.
+  · **pedir marco de Frenet en la directriz**. Frenet se apoya en la curvatura y
+    la directriz tiene dos tramos RECTOS: el barrido revienta con
+    `MakePipeShell::MakeSolid`. Las hélices de los cabos no dan ese problema
+    porque no dejan de curvarse nunca.
 
 ### MODO ÁLGEBRA O `BuildPart`, PERO NO LOS DOS
 
