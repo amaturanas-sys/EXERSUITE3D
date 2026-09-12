@@ -5,6 +5,57 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.51] — 2026-09-12
+
+### Corregido
+
+**EL ÁNGULO DE UNA BISAGRA DABA LA VUELTA A MEDIA CARRERA, Y LA PIEZA SE IBA
+DETRÁS.** `atan2` devuelve (−π, π], y una bisagra no tiene por qué vivir
+centrada en ese intervalo: el respaldo de una banca cuya pose de diseño está
+lejos del cero de su unión cruza ese salto a mitad del recorrido, y la lectura
+pasa de −110° a +250° **sin que la pieza se haya movido un milímetro** —son el
+mismo sitio—.
+
+Todo lo que lee ese número se rompía ahí:
+
+  · el mando de la mano se llevaba su ventana al otro lado del círculo, así que
+    el freno conducía la pieza por el lado largo;
+  · y al soltar, el freno recortaba ese +250 contra un recorrido que iba de
+    −150 a +30 y la empujaba hasta el tope.
+
+Medido en la banca del diseñador: **el respaldo daba media vuelta y se iba 74
+cm** al seguir empujando contra el material. Ahora la lectura se desenrolla
+hasta la rama más cercana al centro del recorrido —única mientras la pieza esté
+dentro de él, porque un recorrido no pasa de una vuelta entera—.
+
+Se arregla **en un solo sitio**, `anguloFreno`. El primer intento lo puso
+también en el mando, desenrollando contra el objetivo en curso, y eso fue peor:
+las dos ramas se peleaban y la bisagra se quedaba clavada —lo delató
+`prueba-bisagra-mano.mjs`, que pasaba antes del cambio y fallaba después—.
+
+### Añadido
+
+**LA BANCA AJUSTABLE, CON EL PIVOTE INDEXADO.** `prueba-banca-indexada.mjs`
+cambia el mecanismo en el proyecto de verdad (`bancoajustable2.json`) y mide las
+dos versiones con la misma vara: cuánto se mueve el respaldo con la máquina
+andando.
+
+  · **ANTES**, con el puntal apoyado en el diente del carril: **30,4 cm** de
+    deriva en cuatro segundos. Es el problema conocido de ese mecanismo desde
+    v0.3.29, anotado y nunca resuelto.
+  · **DESPUÉS**, con el disco de tramos: **cuatro paradas seguidas** —a las
+    −30°, −60°, −90° y −120°, o sea hora a hora—, cada una clavada EN PUNTO,
+    con **0,02° de cesión y 0,01 cm de deriva** en tres segundos.
+
+Y con **18 piezas menos**: se van el carril, el puntal, los diez dedos y el
+herraje de las dos bisagras que los articulaban. Queda `bancoajustable3.json`.
+
+Al hacerlo salió a la luz algo que la banca escondía: **el respaldo no pivotaba
+sobre el chasis**. Iba soldado al brazo, y era el brazo el que pivotaba sobre el
+carril. Por eso aplicar el pivote indexado no es re-etiquetar una bisagra, sino
+rehacer el pivote con la herramienta del pasador — que monta sola la horquilla
+con su disco.
+
 ## [0.3.50] — 2026-09-12
 
 ### Añadido

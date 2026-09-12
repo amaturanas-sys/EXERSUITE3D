@@ -2590,11 +2590,31 @@ export class PhysicsWorld {
     return t;
   }
 
+  /**
+   * EL ÁNGULO DE UNA BISAGRA, EN LA RAMA DE SU PROPIO RECORRIDO (v0.3.50).
+   *
+   * `atan2` devuelve (−π, π] y ahí está el problema: una bisagra no tiene por
+   * qué vivir centrada en ese intervalo. El respaldo de una banca con la pose
+   * de diseño lejos del cero de su unión cruza el salto A MEDIA CARRERA, y la
+   * lectura pasa de −110° a +250° sin que la pieza se haya movido un milímetro
+   * —son el mismo sitio—.
+   *
+   * Todo lo que lee este número se rompe ahí: el mando se lleva su ventana al
+   * otro lado del círculo, y el freno, al soltar, recorta ese +250 contra un
+   * recorrido que va de −150 a +30 y conduce la pieza hasta el tope. Medido en
+   * la banca del diseñador: el respaldo daba media vuelta y se iba 74 cm.
+   *
+   * Así que la lectura se DESENROLLA hasta la rama más cercana al centro del
+   * recorrido. Un recorrido no pasa de una vuelta entera, así que esa rama es
+   * única mientras la pieza esté dentro de él — y si se sale, la que menos
+   * miente. Sin recorrido, la de siempre.
+   */
   private anguloFreno(f: {
     a: R.RigidBody;
     b: R.RigidBody;
     eje: THREE.Vector3;
     qRel0: THREE.Quaternion;
+    rango?: [number, number];
   }): number {
     const qa = f.a.rotation();
     const qb = f.b.rotation();
@@ -2603,7 +2623,11 @@ export class PhysicsWorld {
       .multiply(new THREE.Quaternion(qb.x, qb.y, qb.z, qb.w));
     const d = f.qRel0.clone().invert().multiply(rel);
     const s = new THREE.Vector3(d.x, d.y, d.z).dot(f.eje);
-    return 2 * Math.atan2(s, d.w);
+    const crudo = 2 * Math.atan2(s, d.w);
+    if (!f.rango) return crudo;
+    const VUELTA = 2 * Math.PI;
+    const centro = (f.rango[0] + f.rango[1]) / 2;
+    return crudo + Math.round((centro - crudo) / VUELTA) * VUELTA;
   }
 
   // ─────────────────────────────── OPERAR LA BISAGRA POR SU ÁNGULO (v0.3.21)
@@ -2752,6 +2776,11 @@ export class PhysicsWorld {
     // pieza perdería por el camino lo que no llega a recorrer entre evento y
     // evento —54° pedidos se quedaban en 32—. Así que acumula, pero nunca se
     // aleja más de una VENTANA del ángulo que la pieza tiene de verdad.
+    // La lectura viene YA DESENROLLADA en la rama del recorrido (v0.3.50, ver
+    // `anguloFreno`): sin eso, la ventana de abajo se iba al otro lado del
+    // círculo en cuanto la pieza cruzaba el salto de `atan2`. Desenrollar aquí
+    // OTRA VEZ, contra el objetivo, no arregla nada y rompe: las dos ramas se
+    // pelean y el mando se queda clavado.
     const actual = this.anguloFreno(f);
     const ventana = PhysicsWorld.VENTANA_MANDO;
     const pedido = (f.objetivo ?? actual) + paso;
