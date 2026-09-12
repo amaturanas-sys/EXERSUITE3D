@@ -200,6 +200,28 @@ body.simulating .edit-only {
   display: none !important;
 }
 
+/*
+ * LA EXCEPCIÓN: EL HUD QUE TIENE ALGO QUE DECIR (v0.3.43).
+ *
+ * Simulando se esconde el HUD porque en reposo no dice nada que importe. Pero
+ * al operar una bisagra sí: el ángulo y, con el disco indexado, en qué posición
+ * va a entrar el pin. Poner ese texto sin levantar el `display: none` fue
+ * exactamente eso — texto puesto y nadie mirándolo—. La clase la pone el propio
+ * HUD cuando tiene medida, y su especificidad (una clase más) gana a la regla
+ * de arriba.
+ *
+ * Sube por encima de la barra de simulación, que ocupa el bajo de la pantalla.
+ */
+body.simulating #hud.hablando {
+  display: block !important;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(150px + var(--safe-b));
+  max-width: min(520px, calc(100vw - 40px));
+  color: var(--text);
+  border-color: var(--accent, var(--border));
+}
+
 /* ---- Barra de herramientas de simulacion ---- */
 #simbar {
   display: none;

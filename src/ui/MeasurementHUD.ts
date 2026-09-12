@@ -44,12 +44,15 @@ export class MeasurementHUD {
 
   private update(): void {
     if (this.simulating) {
-      this.root.textContent = tt(
-        "● Simulando fisica (gravedad 9.81 m/s²) — Espacio para detener",
-        "● Simulating physics (gravity 9.81 m/s²) — Space to stop",
-      );
+      // SIMULANDO, EL HUD SÓLO HABLA CUANDO TIENE ALGO QUE DECIR. En reposo
+      // está escondido por CSS —y en reposo no dice nada que importe—; al
+      // operar una bisagra sí: el ángulo y, con el disco indexado, la posición
+      // en la que va a entrar el pin. La clase levanta ese escondite.
+      this.root.classList.toggle("hablando", !!this.measure);
+      if (this.measure) this.root.textContent = this.measure;
       return;
     }
+    this.root.classList.remove("hablando");
     const aviso =
       this.fuera > 0
         ? `⛔ ${this.fuera} ${

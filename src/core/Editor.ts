@@ -12192,7 +12192,9 @@ export class Editor {
     this.soltarTrasScroll = window.setTimeout(() => {
       this.soltarTrasScroll = null;
       if (!this.bisagraDrag || this.simDrag || this.bisagraDrag.enganchada) return;
-      this.physics?.soltarBisagra(this.bisagraDrag.objectId);
+      this.anunciarBisagra(this.bisagraDrag.objectId, true);
+      this.anunciarBisagra(this.bisagraDrag.objectId, true);
+    this.physics?.soltarBisagra(this.bisagraDrag.objectId);
       this.bisagraDrag = null;
       this.quitarMarcaArco();
       this.requestRender();
@@ -13463,8 +13465,39 @@ export class Editor {
     const grados = (pxArriba / 100) * this.sensibilidadDeLaBisagra(d.objectId) * d.haciaArriba;
     this.physics.girarBisagra(d.objectId, grados);
     this.marcarArco(this.simDragArcoDe(d.objectId), this.physics?.recorridoDeBisagra(d.objectId));
+    this.anunciarBisagra(d.objectId, false);
     this.requestRender();
   }
+
+  /**
+   * EL HUD, MIENTRAS SE OPERA UNA BISAGRA (v0.3.43).
+   *
+   * Girando dice el ángulo; al soltar, DÓNDE SE CLAVA. Con una bisagra indexada
+   * eso no es lo mismo: el brazo está en 23° y el pin va a entrar en el agujero
+   * de 30, y saberlo ANTES de soltar es la mitad de la utilidad del disco. Por
+   * eso al soltar se anuncia el destino —que se calcula redondeando, igual que
+   * el freno— y no el ángulo en el que el brazo está de paso.
+   */
+  private anunciarBisagra(objectId: string, soltando: boolean): void {
+    const a = this.physics?.anguloDeBisagra(objectId);
+    if (a == null) return;
+    const idx = this.physics?.indiceDeBisagra(objectId) ?? null;
+    const grados = idx ? (idx.indice * 360) / idx.posiciones : a;
+    const cabeza = soltando ? tt("Se clava en", "Locks at") : tt("Bisagra", "Hinge");
+    const texto = idx
+      ? `${cabeza} ${grados.toFixed(1)}°  ·  ${tt("posición", "position")} ${idx.indice + 1}/${idx.posiciones}`
+      : `${cabeza} ${a.toFixed(1)}°`;
+    this.bus.emit("dragMeasure", { text: texto });
+    if (soltando) {
+      window.clearTimeout(this.avisoBisagra);
+      this.avisoBisagra = window.setTimeout(
+        () => this.bus.emit("dragMeasure", { text: null }),
+        2200,
+      );
+    }
+  }
+
+  private avisoBisagra = 0;
 
   /**
    * LA BISAGRA QUE SOSTIENE A ESTA PIEZA (v0.3.21).
@@ -13574,6 +13607,7 @@ export class Editor {
   /** Suelta la bisagra enganchada y devuelve el cursor al simulador. */
   private soltarLaBisagra(): void {
     if (!this.bisagraDrag) return;
+    this.anunciarBisagra(this.bisagraDrag.objectId, true);
     this.physics?.soltarBisagra(this.bisagraDrag.objectId);
     this.bisagraDrag = null;
     this.quitarMarcaArco();
@@ -14603,7 +14637,9 @@ export class Editor {
     this.quitarMarcaArco();
     this.orbit.enableZoom = true;
     if (this.bisagraDrag) {
-      this.physics?.soltarBisagra(this.bisagraDrag.objectId);
+      this.anunciarBisagra(this.bisagraDrag.objectId, true);
+      this.anunciarBisagra(this.bisagraDrag.objectId, true);
+    this.physics?.soltarBisagra(this.bisagraDrag.objectId);
       this.bisagraDrag = null;
       this.orbit.enabled = true;
     }

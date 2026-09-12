@@ -5,6 +5,25 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.43] — 2026-09-12
+
+### Añadido
+
+**EL HUD DICE EN QUÉ POSICIÓN SE CLAVA LA BISAGRA.** Operando una bisagra
+durante la simulación, el HUD da el ángulo; y con el disco indexado, la posición
+del disco —«Bisagra 15,0° · posición 2/24»—. Al soltar cambia a **«Se clava
+en…»**: el destino, no dónde el brazo está de paso. Saber en qué agujero va a
+entrar el pin ANTES de soltar es la mitad de la utilidad del disco.
+
+### Corregido
+
+**Poner texto en un HUD escondido no lo enseña.** Simulando, el HUD se oculta por
+CSS (`display: none`) porque en reposo no dice nada que importe, y la rama de
+simulación de su `update()` salía además con un mensaje fijo que se comía la
+medida. Las dos cosas: ahora, simulando, el HUD sólo habla cuando tiene algo que
+decir, y al decirlo se pone una clase que levanta ese escondite. Sin lo segundo,
+lo primero era texto puesto y nadie mirándolo.
+
 ## [0.3.42] — 2026-09-12
 
 ### Añadido

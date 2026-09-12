@@ -155,6 +155,61 @@ ok(vuelta.despues === vuelta.antes && vuelta.antes > 0,
    "la unión se guarda y se recarga indexada", JSON.stringify(vuelta));
 ok(Math.abs((vuelta.paso ?? 0) - 15) < 0.01, "con su paso intacto", vuelta.paso);
 
+
+// ── 5. Y EL HUD LO DICE ─────────────────────────────────────────────────────
+//
+// Saber en qué agujero va a entrar el pin ANTES de soltar es la mitad de la
+// utilidad del disco. El HUD salía antes con su recordatorio de la gravedad y
+// se comía el texto de medida, así que operar una bisagra no decía nada.
+const hud = await page.evaluate(async () => {
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  const { brazo } = window.__escena(24);
+  // NO BASTA CON EL TEXTO: simulando, el HUD está escondido por CSS, y poner
+  // texto en un elemento con `display: none` es exactamente el fallo que esto
+  // vino a arreglar. Se lee el texto SÓLO si de verdad se está mostrando.
+  const leido = () => {
+    const h = document.getElementById("hud");
+    if (!h || getComputedStyle(h).display === "none") return null;
+    return h.textContent ?? null;
+  };
+  ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 800));
+  const enReposo = leido();
+  const punta = brazo.mesh.getWorldPosition(new T.Vector3());
+  ed.physics.elegirBisagra(brazo.id, punta);
+  ed.physics.tomarBisagra(brazo.id);
+  for (let i = 0; i < 6; i++) {
+    ed.physics.girarBisagra(brazo.id, 2);
+    await new Promise((r) => setTimeout(r, 60));
+  }
+  ed.anunciarBisagra?.(brazo.id, false);
+  const girando = leido();
+  ed.anunciarBisagra?.(brazo.id, true);
+  const soltando = leido();
+  ed.toggleSimulation();
+  await new Promise((r) => setTimeout(r, 400));
+  return { enReposo, girando, soltando };
+});
+console.log("HUD:", JSON.stringify(hud));
+// En reposo el HUD no habla de la bisagra: sólo cuando se la opera. (Puede
+// estar mostrando otro aviso de la escena, que es legítimo y manda.)
+ok(
+  !/posición\s*\d+\/|Se clava/.test(hud.enReposo ?? ""),
+  "en reposo el HUD no anuncia posiciones",
+  hud.enReposo,
+);
+ok(
+  /Bisagra .*°/.test(hud.girando ?? "") && /posición\s*\d+\/24/.test(hud.girando ?? ""),
+  "girando dice el ángulo y la posición",
+  hud.girando,
+);
+ok(
+  /posición\s*\d+\/24/.test(hud.soltando ?? ""),
+  "y al soltar dice en qué posición del disco se clava",
+  hud.soltando,
+);
+ok(/Se clava en/.test(hud.soltando ?? ""), "diciendo que es el destino, no dónde está de paso", hud.soltando);
+
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();
 process.exit(fallos ? 1 : 0);
