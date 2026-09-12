@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.46] — 2026-09-12
+
+### Corregido
+
+**UN TUBO FANTASMA ATRAVESABA EL AGARRE DOBLE.** Entre los dos mangos cruzaba
+una varilla de Ø 16 mm de lado a lado, justo por donde van las manos. En la
+pieza real no existe —el agarre doble es dos mangos libres colgando de una
+placa— y ahí estorbaba.
+
+No era un descuido de cotas sino de MODO. `build123d` decide qué hace
+`bd.Cylinder(...)` según haya o no un `BuildPart` abierto: sin él devuelve un
+sólido; con él **lo añade a la pieza en curso, en el origen**, y además te lo
+devuelve. Las fábricas de `lib/tubos.py` se llamaban dentro de un `BuildPart`,
+así que cada uno de los cuatro tubos del aspa depositaba de paso una copia suya
+centrada en el origen y apuntando a lo largo de Z: cuatro cilindros solapados
+que, fundidos, salían del mango de delante al de detrás.
+
+  · El modelo pasa a **modo álgebra** —se compone con `+` y `bd.Pos`/`bd.Rot`,
+    sin ningún `BuildPart`—, que es donde esas fábricas valen.
+  · Y `tubo()`, `codo()` y `varilla()` **se niegan a construirse** dentro de un
+    constructor abierto, con el porqué en el mensaje: mejor que salte en la
+    fábrica y no dentro de tres modelos.
+
+La pieza sigue midiendo 230 × 143 × 130 mm y sigue siendo un solo sólido sano;
+lo que cambia es que entre los dos mangos ya no hay nada.
+
+### Añadido
+
+**LA AGARRADERA EN D DE UNA MANO**, modelada en CAD (`cad/src/agarre_simple.py`)
+y puesta en la paleta. `agarre-d` llevaba desde el principio en la categoría
+ERGONÓMICO como un toro de reserva; ahora trae su malla de verdad.
+
+Es la hermana plana del agarre doble y comparte familia con él —la misma placa
+a dos aguas arriba, el mismo Ø 16 de varilla, la misma funda de goma—, pero
+todo vive en un solo plano: una varilla doblada en D, con el tramo recto de
+abajo por mango y los dobleces achaflanados, porque es ese canto el que roza la
+mano al tirar. La funda lleva un **collar cromado en cada punta**, que es el
+tope que la pieza real enseña. Mide 156 × 183 × 30 mm (15,6 × 18,3 × 3 cm en la
+app) y entra colgando, con la oreja del mosquetón arriba.
+
+### Pruebas
+
+  · `prueba-agarre-doble.mjs` mira ahora, en la franja de los mangos, cuánta
+    malla cae sobre el plano de en medio: el tubo fantasma daba cientos de
+    vértices ahí, y la pieza correcta da **cero**.
+  · `prueba-agarre-d.mjs` (nueva, 6 comprobaciones): en la paleta, en
+    ERGONÓMICO, con malla de CAD y no la primitiva, con las medidas del STEP,
+    de pie con la oreja arriba y con el hueco de la mano libre.
+
 ## [0.3.45] — 2026-09-12
 
 ### Corregido

@@ -28,7 +28,7 @@ from __future__ import annotations
 from cadgen import build123d as bd
 from cadgen import glb, step, stl
 
-from lib.tubos import tubo
+from lib.tubos import codo, tubo
 
 # ── COTAS (mm) ──────────────────────────────────────────────────────────────
 ANCHO = 230.0           # punta a punta del mango
@@ -57,70 +57,52 @@ ESQUINA_X = PLACA_SEMI_BAJO - TUBO_R
 
 def _mango(z: float):
     """Un mango: tubo de punta a punta, funda de goma y las dos bolas."""
-    with bd.BuildPart() as mango:
-        with bd.Locations(bd.Location((0.0, 0.0, z))):
-            bd.Cylinder(
-                radius=TUBO_R,
-                height=ANCHO - 2 * BOLA_R,
-                rotation=(0.0, 90.0, 0.0),
-                align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.CENTER),
-            )
-            bd.Cylinder(
-                radius=FUNDA_R,
-                height=FUNDA_LARGO,
-                rotation=(0.0, 90.0, 0.0),
-                align=(bd.Align.CENTER, bd.Align.CENTER, bd.Align.CENTER),
-            )
-        # LAS BOLAS de las puntas.
-        for lado in (-1.0, 1.0):
-            with bd.Locations(bd.Location((lado * (MEDIO - BOLA_R), 0.0, z))):
-                bd.Sphere(radius=BOLA_R)
-    return mango.part
+    eje = bd.Rot(0.0, 90.0, 0.0)
+    pieza = eje * bd.Cylinder(radius=TUBO_R, height=ANCHO - 2 * BOLA_R)
+    pieza += eje * bd.Cylinder(radius=FUNDA_R, height=FUNDA_LARGO)
+    for lado in (-1.0, 1.0):
+        pieza += bd.Pos(lado * (MEDIO - BOLA_R), 0.0, 0.0) * bd.Sphere(radius=BOLA_R)
+    return bd.Pos(0.0, 0.0, z) * pieza
 
 
 def _placa():
     """La chapa a dos aguas, con su agujero. Vertical, en el plano XY."""
-    with bd.BuildPart() as placa:
-        with bd.BuildSketch(bd.Plane.XY):
-            bd.Polygon(
-                (-PLACA_SEMI_BAJO, PLACA_BAJO),
-                (PLACA_SEMI_BAJO, PLACA_BAJO),
-                (PLACA_SEMI_ALTO, PLACA_ALTO),
-                (-PLACA_SEMI_ALTO, PLACA_ALTO),
-                align=None,
-            )
-            with bd.Locations((0.0, AGUJERO_Y)):
-                bd.Circle(AGUJERO_R, mode=bd.Mode.SUBTRACT)
-        bd.extrude(amount=PLACA_ESPESOR / 2.0, both=True)
-    return placa.part
+    perfil = bd.Polygon(
+        (-PLACA_SEMI_BAJO, PLACA_BAJO),
+        (PLACA_SEMI_BAJO, PLACA_BAJO),
+        (PLACA_SEMI_ALTO, PLACA_ALTO),
+        (-PLACA_SEMI_ALTO, PLACA_ALTO),
+        align=None,
+    )
+    perfil -= bd.Pos(0.0, AGUJERO_Y) * bd.Circle(AGUJERO_R)
+    return bd.extrude(perfil, amount=PLACA_ESPESOR / 2.0, both=True)
 
 
 @step(out="../STEP/agarre_doble.step")
 @stl(out="../STL/agarre_doble.stl")
 @glb(out="../GLB/agarre_doble.glb")
 def agarre_doble():
-    with bd.BuildPart() as agarre:
-        bd.add(_mango(SEPARACION / 2.0))
-        bd.add(_mango(-SEPARACION / 2.0))
-        bd.add(_placa())
-        # LOS CUATRO TUBOS EN ASPA: de cada esquina baja de la placa, uno a
-        # cada mango. Aquí está la pieza.
-        for lado_x in (-1.0, 1.0):
-            arranque = (lado_x * ESQUINA_X, PLACA_BAJO + TUBO_R * 0.5, 0.0)
-            for lado_z in (-1.0, 1.0):
-                bd.add(
-                    tubo(
-                        arranque,
-                        (lado_x * APOYO_X, 0.0, lado_z * SEPARACION / 2.0),
-                        TUBO_R,
-                    )
-                )
-            # La bola que funde los dos tubos con la placa en esa esquina.
-            bd.add(bd.Location(bd.Vector(arranque)) * bd.Sphere(radius=TUBO_R))
+    # MODO ÁLGEBRA A PROPÓSITO. Con un `BuildPart` abierto, las fábricas de
+    # `lib.tubos` —y cualquier `bd.Sphere(...)` suelto— se convierten en
+    # operaciones del constructor y depositan una copia en el ORIGEN: así
+    # aparecía un tubo de Ø16 atravesando los dos mangos de lado a lado, que no
+    # existe en la pieza real y estorbaría a las manos.
+    agarre = _mango(SEPARACION / 2.0) + _mango(-SEPARACION / 2.0) + _placa()
+    # LOS CUATRO TUBOS EN ASPA: de cada esquina baja de la placa, uno a cada
+    # mango. Aquí está la pieza.
+    for lado_x in (-1.0, 1.0):
+        arranque = (lado_x * ESQUINA_X, PLACA_BAJO + TUBO_R * 0.5, 0.0)
+        for lado_z in (-1.0, 1.0):
+            agarre += tubo(
+                arranque,
+                (lado_x * APOYO_X, 0.0, lado_z * SEPARACION / 2.0),
+                TUBO_R,
+            )
+        # La bola que funde los dos tubos con la placa en esa esquina.
+        agarre += codo(arranque, TUBO_R)
 
-    part = agarre.part
-    part.label = "agarre_doble_polea"
-    return part
+    agarre.label = "agarre_doble_polea"
+    return agarre
 
 
 if __name__ == "__main__":

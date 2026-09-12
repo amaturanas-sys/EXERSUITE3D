@@ -1,0 +1,43 @@
+// RETRATO DE UN COMPONENTE — utilidad, no prueba (no lleva `prueba-` delante).
+//
+//   node pruebas/_foto.mjs agarre-d pruebas/salidas/v346-d
+//
+// Inserta el componente en un lienzo vacío, lo levanta del suelo para que la
+// rejilla no lo tape y saca dos fotos: `-frente.png` y `-34.png`. Sirve para
+// mirar con los ojos lo que las pruebas miden con números.
+import { chromium } from "playwright-core";
+const ID = process.argv[2], SAL = process.argv[3];
+const browser = await chromium.launch({
+  executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
+});
+const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
+await page.goto("http://127.0.0.1:4174/");
+await page.waitForTimeout(1000);
+await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
+await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
+await page.evaluate(async (id) => {
+  const ed = window.exersuite.editor;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  for (let i = 0; i < 40 && !ed.tieneModelo?.(id); i++) await new Promise((r) => setTimeout(r, 150));
+  const o = ed.addComponent(id);
+  o.mesh.position.set(0, 12, 0);
+  ed.select ? ed.select(null) : null;
+  ed.clearSelection?.();
+}, ID);
+for (const [nombre, cam] of [["frente", [0, 13, 62]], ["34", [38, 34, 45]]]) {
+  await page.evaluate((c) => {
+    const ed = window.exersuite.editor, T = window.exersuite.THREE;
+    const cam = ed.sceneManager.camera;
+    cam.position.set(c[0], c[1], c[2]);
+    ed.orbit.target.set(0, 12, 0);
+    ed.orbit.update();
+    cam.lookAt(new T.Vector3(0, 12, 0));
+    cam.updateMatrixWorld(true);
+  }, cam);
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: `${SAL}-${nombre}.png` });
+}
+await browser.close();

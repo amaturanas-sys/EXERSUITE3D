@@ -55,6 +55,7 @@ no un error del modelo.
 | Disco indexado (24 posiciones) | `src/disco_indexado.py` | — (añadido opcional al pivote) |
 | Pin de seguro | `src/pin_seguro.py` | — (va con el disco) |
 | Agarre doble de polea | `src/agarre_doble.py` | `agarre-doble` (en la paleta) |
+| Agarradera en D (una mano) | `src/agarre_simple.py` | `agarre-d` (en la paleta) |
 
 ### Una pieza de `cad/` en la PALETA
 
@@ -94,6 +95,20 @@ orejas tienen que salvar hasta el eje.
 | Abrazadera | 54 (la viga) | 35 (cara → eje, cruzando) | 70 × 80 × 83 |
 
 `lib/` es código compartido, no modelos: nada de lo que hay ahí lleva `@step`.
+
+### MODO ÁLGEBRA O `BuildPart`, PERO NO LOS DOS
+
+`build123d` decide qué hace `bd.Cylinder(...)` según haya o no un `BuildPart`
+abierto: sin él DEVUELVE un sólido; con él **lo añade a la pieza en curso, en el
+origen**, y además te lo devuelve. Una fábrica escrita para modo álgebra
+—`lib/tubos.py`— llamada dentro de un `with BuildPart()` deja entonces una copia
+fantasma en el origen por cada llamada. Así apareció el tubo que atravesaba los
+dos mangos del agarre doble (v0.3.46): cuatro cilindros de Ø 16 solapados en el
+centro.
+
+Las fábricas de `lib/tubos.py` ahora se niegan a construirse dentro de un
+constructor y lo dicen. Un modelo que las use se compone con `+` y
+`bd.Pos`/`bd.Rot`, sin `BuildPart`.
 
 ### Las cotas no se vuelven a deducir aquí
 

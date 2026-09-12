@@ -60,8 +60,21 @@ const r = await page.evaluate(async () => {
   };
   const anchoArriba = franja(0.82, 1.0);
   const anchoAbajo = franja(0.0, 0.18);
+  // ¿HAY ALGO CRUZANDO ENTRE LOS DOS MANGOS? En la pieza real no lo hay: la
+  // mano necesita el hueco. Un `BuildPart` abierto hacía que las fábricas de
+  // varilla dejaran un tubo fantasma de Ø16 por el origen, que atravesaba los
+  // dos mangos de lado a lado. Se mira en la franja baja —la de los mangos—
+  // cuánta malla cae sobre el plano de en medio.
+  const zc = (caja.min.z + caja.max.z) / 2;
+  let cruce = 0;
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    o.mesh.localToWorld(v);
+    const f = (v.y - caja.min.y) / Math.max(caja.max.y - caja.min.y, 1e-6);
+    if (f <= 0.18 && Math.abs(v.z - zc) < 2) cruce++;
+  }
   return {
-    anchoArriba, anchoAbajo,
+    anchoArriba, anchoAbajo, cruce,
     enPaleta: botones.some((b) => /Agarre doble/i.test(b)),
     categoria: def?.category ?? "sin-lista",
     tam: [t.x, t.y, t.z].map((v) => +v.toFixed(2)),
@@ -96,6 +109,12 @@ ok(
   `arriba ${r.anchoArriba} cm, abajo ${r.anchoAbajo} cm`,
 );
 ok(r.masa > 0 && r.masa < 5, "con una masa de accesorio, no de estructura", r.masa);
+// EL HUECO DE LAS MANOS, LIBRE (v0.3.46).
+ok(
+  r.cruce === 0,
+  "y sin ningún tubo cruzando entre los dos mangos",
+  `${r.cruce} vértices sobre el plano de en medio`,
+);
 
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);
 await browser.close();

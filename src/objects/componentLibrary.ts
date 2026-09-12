@@ -961,10 +961,15 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     id: "agarre-d",
     label: "Agarradera en D",
     category: "ergonomico",
-    materialId: "goma",
-    defaults: { kind: "torus", radius: 6, tubeRadius: 1.2 },
-    physics: { massKg: 0.3, fixed: false },
-    description: "Mango en D para cable (single handle).",
+    materialId: "cromo",
+    defaults: { kind: "box", width: 15.6, height: 18.3, depth: 3 },
+    physics: { massKg: 0.5, fixed: false },
+    // El hermano de una mano del agarre doble, y por eso entra igual: el GLB
+    // sale Y-arriba y hay que ponerlo a colgar. Esta es PLANA —varilla y chapa
+    // en el mismo plano—, así que de perfil no mide ni 3 cm.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Estribo en D de una mano: oreja arriba para el mosqueton, funda de goma con sus dos collares abajo. Para polea alta o baja a un brazo.",
   },
   {
     id: "cuerda-triceps",

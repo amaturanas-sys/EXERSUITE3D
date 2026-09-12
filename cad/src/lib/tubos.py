@@ -10,8 +10,28 @@ from __future__ import annotations
 from cadgen import build123d as bd
 
 
+def _sin_builder(quien: str) -> None:
+    """Estas fábricas SOLO valen en modo álgebra.
+
+    build123d decide qué hace `bd.Cylinder(...)` según haya o no un `BuildPart`
+    abierto: sin él devuelve un sólido; con él LO AÑADE a la pieza en curso, en
+    el origen, y de paso te lo devuelve. Llamar a `tubo()` dentro de un
+    `with BuildPart()` mete entonces un tubo fantasma por el origen además del
+    que pedías —así apareció el tubo transversal que atravesaba los dos mangos
+    del agarre doble—. Mejor que salte aquí y no dentro de tres modelos.
+    """
+    ctx = bd.Builder._get_context(None, log=False)
+    if ctx is not None:
+        raise RuntimeError(
+            f"{quien}() se ha llamado dentro de un {type(ctx).__name__}: "
+            "estas fábricas son de modo álgebra y allí dejan piezas fantasma "
+            "en el origen. Compón con + y bd.Pos/bd.Rot, sin BuildPart."
+        )
+
+
 def tubo(a, b, radio: float):
     """Un tramo recto de varilla de `radio`, de `a` a `b`."""
+    _sin_builder("tubo")
     pa = bd.Vector(a)
     pb = bd.Vector(b)
     d = pb - pa
@@ -24,6 +44,7 @@ def tubo(a, b, radio: float):
 
 def codo(p, radio: float):
     """La bola que redondea un doblez y funde los dos tramos que llegan a él."""
+    _sin_builder("codo")
     return bd.Location(bd.Vector(p)) * bd.Sphere(radius=radio)
 
 
