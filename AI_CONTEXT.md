@@ -484,6 +484,13 @@ esa pieza, las dos medidas:
     encima del propio tope. El solver lo expulsaba en el primer fotograma y
     después rodaba cuesta abajo. La recta del cálculo es por donde viaja EL PIE;
     la viga va POR DEBAJO de ella, medio pie más medio perfil.
+  · **UN HERRAJE DIBUJADO NO ES UNA MECÁNICA.** El disco indexado y su pin
+    existían en `cad/` y la física seguía clavando la bisagra en cualquier
+    ángulo: la pieza prometía posiciones discretas y el motor daba un continuo.
+    Lo que las une es `Joint.indexPaso` y un redondeo en `fijarFreno` —el índice
+    manda AL SOLTAR, no mientras la mano sujeta—. Regla: cuando una pieza nueva
+    de `cad/` promete un comportamiento, hay que preguntarse qué parte de la
+    física lo sostiene; si ninguna, la pieza es un adorno.
   · **UNA PIEZA DIBUJADA NO CABE EN UN FORMATO PARAMÉTRICO.** El prefab
     describía cada pieza con `comp` + `params`, que es todo lo que hace falta
     mientras la geometría la GENERE la app. Una pieza de `cad/` no la genera

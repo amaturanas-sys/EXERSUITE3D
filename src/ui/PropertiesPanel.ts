@@ -940,8 +940,14 @@ export class PropertiesPanel {
       clear(resumen);
       resumen.append(
         tt(
-          `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s) · ${r.anclajes} horquilla(s)`,
-          `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s) · ${r.anclajes} clevis(es)`,
+          `${r.anclas} ancla(s) · ${r.moviles} móvil(es) · ${r.taladros} taladro(s) · ${r.anclajes} horquilla(s)` +
+            (p.pasadorIndexado
+              ? ` · ${roundTo(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)), 1)}° de paso`
+              : ""),
+          `${r.anclas} anchor(s) · ${r.moviles} mobile(s) · ${r.taladros} hole(s) · ${r.anclajes} clevis(es)` +
+            (p.pasadorIndexado
+              ? ` · ${roundTo(360 / Math.max(2, Math.round(p.pasadorPosiciones ?? 24)), 1)}° step`
+              : ""),
         ),
       );
     };
@@ -1015,6 +1021,23 @@ export class PropertiesPanel {
     anclaje.checked = !!p.pasadorAnclaje;
     anclaje.addEventListener("change", () => {
       p.pasadorAnclaje = anclaje.checked;
+      aplicar();
+    });
+
+    // MODO INDEXADO: el disco de posiciones del herraje, en la física.
+    const indexado = el("input", { type: "checkbox" }) as HTMLInputElement;
+    indexado.checked = !!p.pasadorIndexado;
+    indexado.addEventListener("change", () => {
+      p.pasadorIndexado = indexado.checked;
+      aplicar();
+    });
+    const posiciones = el("input", {
+      type: "number", min: "2", max: "180", step: "1",
+      value: String(p.pasadorPosiciones ?? 24),
+    }) as HTMLInputElement;
+    posiciones.addEventListener("change", () => {
+      const n = parseInt(posiciones.value, 10);
+      if (Number.isFinite(n)) p.pasadorPosiciones = Math.min(180, Math.max(2, n));
       aplicar();
     });
 
@@ -1109,6 +1132,14 @@ export class PropertiesPanel {
       el("label", { class: "row" }, [
         redondea,
         tt("Extremo proximal redondo", "Round the near end"),
+      ]),
+      el("label", { class: "row" }, [
+        indexado,
+        tt("Indexado: se clava por posiciones", "Indexed: locks by positions"),
+      ]),
+      el("label", { class: "row" }, [
+        el("span", {}, [tt("Posiciones del disco", "Disc positions")]),
+        posiciones,
       ]),
       resumen,
     ]);

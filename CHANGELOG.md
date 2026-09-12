@@ -5,6 +5,29 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.42] — 2026-09-12
+
+### Añadido
+
+**MODO INDEXADO DEL PASADOR: el disco de posiciones, en la física.** El herraje
+ya existía en `cad/` —un disco con su corona de agujeros y un pin de seguro—
+pero la simulación seguía clavando la bisagra donde la dejaras, con decimales
+que ningún agujero puede dar. Con el interruptor puesto se comporta como el pin:
+**sueltas el brazo donde sea y cae en el agujero más cercano**, ni a medio
+camino ni en el primero.
+
+Las posiciones se cuentan desde la pose de diseño, que es donde se supone que
+está el primer agujero del disco, y el paso sale de cuántas se pidan: 24 dan 15°,
+8 dan 45°. Se guarda con el proyecto.
+
+Mientras la mano lo sujeta el brazo gira libre, como debe ser: el índice sólo
+manda AL SOLTAR, que es cuando el pin entra.
+
+Medido: sin indexar se queda donde se soltó; con 24 posiciones, soltado en 10°
+se clava en **15,0°**; con 8, soltado en 10° se clava en **0,0°** —el múltiplo
+de 45 más próximo, no el siguiente—; y la unión se guarda y se recarga con su
+paso intacto.
+
 ## [0.3.41] — 2026-09-12
 
 ### Añadido

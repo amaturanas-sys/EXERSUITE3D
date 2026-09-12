@@ -46,6 +46,13 @@ export interface JointData {
   sentidoApertura?: number;
   /** Grados por cada 100 px de scroll al operarla en simulación (v0.3.21). */
   sensibilidad?: number;
+  /**
+   * MODO INDEXADO (v0.3.42): el paso angular en GRADOS al que la bisagra se
+   * clava al soltarla. Es el disco de posiciones llevado a la física — con 15,
+   * la bisagra solo se queda en múltiplos de 15°, como un pin que solo entra en
+   * los agujeros que hay—. Sin este campo, la bisagra se clava donde la dejes.
+   */
+  indexPaso?: number;
   /** Las dos piezas unidas siguen chocando entre sí (v0.2.33). */
   contactos?: boolean;
 }

@@ -140,6 +140,14 @@ export interface PrimitiveParams {
   pasadorPerfora?: boolean;
   /** ¿El pasador se monta sobre horquillas soldadas a sus anclas? (v0.3.32) */
   pasadorAnclaje?: boolean;
+  /**
+   * MODO INDEXADO (v0.3.42): con él puesto, lo que gira en el pasador sólo se
+   * queda en las posiciones de un disco —como el pin de seguro de `cad/`, que
+   * sólo entra en los agujeros que hay—. Sin él, se clava donde lo dejes.
+   */
+  pasadorIndexado?: boolean;
+  /** Cuántas posiciones tiene ese disco (el paso es 360/N). */
+  pasadorPosiciones?: number;
   /** ¿Se redondea el extremo proximal de las móviles para que no choquen? */
   pasadorRedondea?: boolean;
   /**

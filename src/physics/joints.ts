@@ -77,6 +77,14 @@ export class Joint {
    */
   sensibilidad = 9;
   /**
+   * MODO INDEXADO (v0.3.42): paso angular en GRADOS al que la bisagra se clava
+   * al soltarla. Es el disco de posiciones de `cad/` llevado a la física: con
+   * 15, la bisagra solo se queda en múltiplos de 15°, como un pin que sólo
+   * entra en los agujeros que hay. Con 0 se clava donde la dejes, que es como
+   * se ha comportado siempre.
+   */
+  indexPaso = 0;
+  /**
    * COLISIÓN ENTRE LAS DOS PIEZAS UNIDAS (v0.2.33).
    *
    * Por omisión el motor APAGA los contactos entre los dos cuerpos que une

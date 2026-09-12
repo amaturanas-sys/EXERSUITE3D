@@ -147,6 +147,8 @@ export class PhysicsWorld {
       freno: boolean;
       /** Grados de placa por cada 100 px de scroll o de arrastre. */
       sensibilidad: number;
+      /** Paso del disco de posiciones (rad). 0 = sin indexar, se clava donde sea. */
+      paso: number;
       /** Ángulo al que el motor la lleva mientras la mano la opera. */
       objetivo: number | null;
       signo: 1 | -1;
@@ -1693,6 +1695,7 @@ export class PhysicsWorld {
         base,
         freno: joint.locked,
         sensibilidad: joint.sensibilidad,
+        paso: Math.max(0, (joint.indexPaso ?? 0) * DEG2RAD),
         objetivo: null,
       };
       const anota = (
@@ -2784,6 +2787,38 @@ export class PhysicsWorld {
     f.b.wakeUp();
   }
 
+  /**
+   * EL ÁNGULO LLEVADO A SU POSICIÓN MÁS CERCANA (v0.3.42).
+   *
+   * Con el modo indexado, la bisagra no se clava donde la dejes: se clava en el
+   * agujero que le toca. Es lo que hace un pin de seguro contra un disco de
+   * posiciones — sueltas el brazo donde sea y el pin entra en el agujero más
+   * próximo, no a medio camino—. Las posiciones se cuentan desde la POSE DE
+   * DISEÑO, que es el cero de `anguloFreno` y donde se supone que está el
+   * primer agujero del disco.
+   *
+   * Sin paso, se devuelve el ángulo tal cual y la bisagra se comporta como
+   * siempre.
+   */
+  private alIndice(f: { paso: number }, angulo: number): number {
+    if (!(f.paso > 0)) return angulo;
+    return Math.round(angulo / f.paso) * f.paso;
+  }
+
+  /**
+   * ¿En qué posición del disco está esta bisagra, y cuántas tiene? Null si no
+   * está indexada. Lo usa la interfaz para decir «3 de 24» en vez de un ángulo
+   * con decimales que nadie puede repetir.
+   */
+  indiceDeBisagra(objectId: string): { indice: number; posiciones: number } | null {
+    const e = this.bodies.get(objectId);
+    const f = e && this.frenosDe(e.body);
+    if (!f || !(f.paso > 0)) return null;
+    const posiciones = Math.round((2 * Math.PI) / f.paso);
+    const i = Math.round(this.anguloFreno(f) / f.paso);
+    return { indice: ((i % posiciones) + posiciones) % posiciones, posiciones };
+  }
+
   /** Suelta el freno de una bisagra: mientras la mano la sujeta, gira. */
   private soltarFreno(body: R.RigidBody): void {
     const f = this.frenosDe(body);
@@ -2804,7 +2839,7 @@ export class PhysicsWorld {
   private fijarFreno(body: R.RigidBody): void {
     const f = this.frenosDe(body);
     if (!f?.freno) return;
-    const t = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
+    const t = Math.min(Math.max(this.alIndice(f, this.anguloFreno(f)), f.rango[0]), f.rango[1]);
     const m = PhysicsWorld.tope(f.base, t);
     f.handle.setLimits(m, m);
     f.a.wakeUp();

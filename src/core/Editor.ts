@@ -3354,6 +3354,7 @@ export class Editor {
         apertura0: j.apertura0 ?? undefined,
         sentidoApertura: j.apertura0 == null ? undefined : j.sentidoApertura,
         sensibilidad: j.sensibilidad,
+        indexPaso: j.indexPaso || undefined,
         contactos: j.contactos || undefined,
       })),
       cables: this.listCables().map((c) => ({
@@ -3835,6 +3836,7 @@ export class Editor {
       if (j.apertura0 != null) j.soldada = false;
       j.sentidoApertura = jd.sentidoApertura ?? 1;
       j.sensibilidad = jd.sensibilidad ?? 9;
+      j.indexPaso = jd.indexPaso ?? 0;
       j.contactos = jd.contactos ?? false;
     }
     this.migrarContactosBisagra(contactosExplicitos);
@@ -12561,6 +12563,11 @@ export class Editor {
       j.sentidoApertura = 1;
       j.min = 0;
       j.max = 360;
+      // MODO INDEXADO: el disco de posiciones llevado a la física. Al soltar,
+      // la bisagra no se queda donde sea: cae en el agujero más cercano.
+      j.indexPaso = obj.params.pasadorIndexado
+        ? 360 / Math.max(2, Math.round(obj.params.pasadorPosiciones ?? 24))
+        : 0;
       j.limitsEnabled = !!obj.params.pasadorLimite;
       if (obj.params.pasadorLimite) {
         j.min = Math.min(obj.params.pasadorMin ?? 0, obj.params.pasadorMax ?? 360);
