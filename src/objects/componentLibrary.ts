@@ -936,6 +936,24 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 2, fixed: false },
     description: "Soporte para la espalda.",
   },
+  // AGARRE DOBLE (v0.3.44): dibujado en CAD (`cad/src/agarre_doble.py`) y
+  // traído por el manifiesto de modelos. La primitiva de abajo es sólo el
+  // bulto con el que nace si el modelo no carga: nunca se ve en condiciones
+  // normales, pero sin ella la pieza no tendría ni tamaño ni masa.
+  {
+    id: "agarre-doble",
+    label: "Agarre doble (polea)",
+    category: "ergonomico",
+    materialId: "cromo",
+    defaults: { kind: "box", width: 23, height: 20, depth: 12.5 },
+    physics: { massKg: 1.4, fixed: false },
+    // DE PIE, CON LA OREJA ARRIBA. El GLB sale Y-arriba por el convenio de
+    // glTF, así que la pieza entraría tumbada de costado: un agarre que cuelga
+    // de un cable tiene que nacer colgando.
+    orientacion: [-Math.PI / 2, 0, 0],
+    description:
+      "Agarre de dos mangos para cable: oreja arriba para el mosqueton y dos punos enfrentados. Para remo neutro y jalon al pecho.",
+  },
   {
     id: "agarre-d",
     label: "Agarradera en D",

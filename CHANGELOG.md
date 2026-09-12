@@ -5,6 +5,30 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.44] — 2026-09-12
+
+### Añadido
+
+**AGARRE DOBLE DE POLEA, en ERGONÓMICO.** El accesorio de dos mangos que cuelga
+de un cable: una oreja arriba para el mosquetón y, bajando de ella, dos
+caballetes de varilla que terminan cada uno en un puño enfundado. Para remo
+neutro y jalón al pecho.
+
+Es **la primera pieza de `cad/` que entra en la PALETA**, no como prefab suelto:
+el componente declara su bulto y su masa, y el manifiesto de modelos le trae la
+malla dibujada en `cad/src/agarre_doble.py`. El camino ya existía —`j-hook` y
+`brazo-seguridad` llevan años así—; lo nuevo es que la malla la dibujamos
+nosotros en vez de importarla.
+
+Nace **de pie, con la oreja arriba**: el GLB sale Y-arriba por el convenio de
+glTF y entraría tumbado de costado, y un agarre que cuelga de un cable tiene que
+nacer colgando.
+
+Medidas: 230 × 199 × 125 mm, un solo sólido sano y cerrado. Mangos de 230 punta
+a punta con funda de 130 y topes en las dos puntas —sin topes la mano se sale
+por el extremo, que es el motivo entero de que existan—. La oreja va soldada de
+una pieza, sin giro: el cable trabaja siempre en el mismo plano.
+
 ## [0.3.43] — 2026-09-12
 
 ### Añadido

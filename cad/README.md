@@ -54,6 +54,18 @@ no un error del modelo.
 | Carril de topes (5 muescas) | `src/carril_topes.py` | lo que arma «Brazo con pilar regulable» |
 | Disco indexado (24 posiciones) | `src/disco_indexado.py` | — (añadido opcional al pivote) |
 | Pin de seguro | `src/pin_seguro.py` | — (va con el disco) |
+| Agarre doble de polea | `src/agarre_doble.py` | `agarre-doble` (en la paleta) |
+
+### Una pieza de `cad/` en la PALETA
+
+El agarre doble no se inserta como prefab: es un COMPONENTE. La receta, para las
+variantes que vengan:
+
+1. el modelo en `src/`, que escribe su GLB;
+2. `cp GLB/<pieza>.glb public/models/components/<id>.glb`;
+3. la entrada `"<id>": "<id>.glb"` en `public/models/components/manifest.json`;
+4. y el componente en `componentLibrary.ts` con su bulto de reserva, su masa y
+   —si el GLB lo deja tumbado— su `orientacion` de inserción.
 
 ### El seguro del pivote
 
