@@ -484,6 +484,11 @@ esa pieza, las dos medidas:
     encima del propio tope. El solver lo expulsaba en el primer fotograma y
     después rodaba cuesta abajo. La recta del cálculo es por donde viaja EL PIE;
     la viga va POR DEBAJO de ella, medio pie más medio perfil.
+  · **UNA CAJA ENVOLVENTE NO DISTINGUE DEL DERECHO DEL REVÉS.** El agarre doble
+    entraba boca abajo y la prueba pasaba: medía 23 × 14,3 × 13 de las dos
+    maneras. Para una pieza con arriba y abajo hay que comprobar DÓNDE está lo
+    ancho (una franja de vértices arriba contra otra abajo), no cuánto mide.
+    Vale para todo lo que se importe con `orientacion`.
   · **UN HERRAJE DIBUJADO NO ES UNA MECÁNICA.** El disco indexado y su pin
     existían en `cad/` y la física seguía clavando la bisagra en cualquier
     ángulo: la pieza prometía posiciones discretas y el motor daba un continuo.

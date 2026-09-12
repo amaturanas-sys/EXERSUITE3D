@@ -947,10 +947,13 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     materialId: "cromo",
     defaults: { kind: "box", width: 23, height: 20, depth: 12.5 },
     physics: { massKg: 1.4, fixed: false },
-    // DE PIE, CON LA OREJA ARRIBA. El GLB sale Y-arriba por el convenio de
+    // DE PIE, CON LA PLACA ARRIBA. El GLB sale Y-arriba por el convenio de
     // glTF, así que la pieza entraría tumbada de costado: un agarre que cuelga
-    // de un cable tiene que nacer colgando.
-    orientacion: [-Math.PI / 2, 0, 0],
+    // de un cable tiene que nacer colgando. Y el signo importa —con el otro
+    // cuarto de vuelta entra BOCA ABAJO, con la placa por debajo de los
+    // mangos—; la caja envolvente mide lo mismo de las dos maneras, así que
+    // esto se comprueba mirando dónde está lo ancho, no cuánto mide.
+    orientacion: [Math.PI / 2, 0, 0],
     description:
       "Agarre de dos mangos para cable: oreja arriba para el mosqueton y dos punos enfrentados. Para remo neutro y jalon al pecho.",
   },

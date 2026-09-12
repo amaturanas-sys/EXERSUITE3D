@@ -5,6 +5,34 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.45] — 2026-09-12
+
+### Corregido
+
+**EL AGARRE DOBLE ESTABA MAL MODELADO.** La primera versión montaba un
+caballete independiente por mango —dos tubos subiendo a su propia cumbre—, y eso
+no es un doble D: es un tipi. La topología de verdad es otra, y es lo único que
+había que acertar:
+
+  · arriba va una **placa plana a dos aguas**, vertical y paralela a los
+    mangos, con el agujero del mosquetón cerca de la cumbre — chapa cortada,
+    no un manguito;
+  · de **cada esquina baja de esa placa salen DOS tubos**, uno a cada mango:
+    cuatro en total, cruzados en aspa, que son las dos Λ anidadas que se ven
+    mirando la pieza de frente;
+  · y los dos mangos quedan **paralelos**, uno delante de otro.
+
+Los remates de las puntas pasan a ser **bolas**, que es lo que para la mano
+cuando resbala hasta el extremo.
+
+**Y entraba boca abajo.** El cuarto de vuelta de inserción tenía el signo
+cambiado, con lo que la placa quedaba por DEBAJO de los mangos. No saltó porque
+la comprobación miraba la caja envolvente, que mide lo mismo del derecho y del
+revés. Ahora se mira **dónde está lo ancho**: abajo los mangos (23 cm de punta a
+punta) y arriba la placa, mucho más estrecha.
+
+Medidas nuevas: 230 × 143 × 130 mm, un solo sólido sano y cerrado.
+
 ## [0.3.44] — 2026-09-12
 
 ### Añadido
