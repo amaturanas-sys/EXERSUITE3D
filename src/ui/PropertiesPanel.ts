@@ -919,6 +919,7 @@ export class PropertiesPanel {
     const aplicar = (): void => {
       const r = this.editor.aplicarPasador(obj);
       pintarCaras();
+    pintarChapa();
       clear(resumen);
       resumen.append(
         tt(
@@ -994,6 +995,39 @@ export class PropertiesPanel {
       acotarPlaca: false,
       alCambiar: aplicar,
       titulo: tt("Recorrido · horas del reloj", "Travel · clock hours"),
+    });
+
+    // HASTA DÓNDE LLEGA LA CHAPA DEL DISCO (v0.3.52). En HORAS, como toda
+    // amplitud desde v0.3.48: «6 h» son media vuelta de chapa. Vacío o 0 = lo
+    // justo para la corona, que es lo que casi siempre se quiere.
+    const chapaIn = el("input", {
+      type: "number", step: "0.5", min: "0", max: "12",
+      value: p.pasadorDiscoArco ? String(roundTo(p.pasadorDiscoArco / 30, 2)) : "",
+      placeholder: tt("auto", "auto"),
+      title: tt(
+        "Cuánta chapa lleva el disco alrededor del eje, en horas. Recortarlo lo "
+          + "deja como un Pacman y evita que el acero que no hace nada choque "
+          + "con el chasis. Vacío = lo justo para su corona de agujeros.",
+        "How much plate the disc carries around the axis, in hours. Trimming it "
+          + "leaves a Pacman and keeps the steel that does nothing from hitting "
+          + "the frame. Empty = just enough for its ring of holes.",
+      ),
+    }) as HTMLInputElement;
+    const chapaLee = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const pintarChapa = (): void => {
+      const h = this.editor.horquillaDelPasador(obj.id);
+      chapaLee.textContent = h
+        ? tt(
+          `Chapa: ${formatearAmplitud(h.discoArco)} para una corona de ${formatearAmplitud(h.arco)}.`,
+          `Plate: ${formatearAmplitud(h.discoArco)} for a ${formatearAmplitud(h.arco)} ring.`,
+        )
+        : "";
+    };
+    chapaIn.addEventListener("change", () => {
+      const n = parseFloat(chapaIn.value);
+      p.pasadorDiscoArco = Number.isFinite(n) && n > 0 ? Math.min(360, n * 30) : undefined;
+      aplicar();
+      pintarChapa();
     });
 
     const libre = el("input", { type: "checkbox" }) as HTMLInputElement;
@@ -1131,6 +1165,11 @@ export class PropertiesPanel {
         el("span", {}, [tt("Posiciones del disco", "Disc positions")]),
         posiciones,
       ]),
+      el("label", { class: "row" }, [
+        el("span", {}, [tt("Chapa del disco (horas)", "Disc plate (hours)")]),
+        chapaIn,
+      ]),
+      chapaLee,
       resumen,
     ]);
   }

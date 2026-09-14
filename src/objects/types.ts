@@ -148,6 +148,12 @@ export interface PrimitiveParams {
   pasadorIndexado?: boolean;
   /** Cuántas posiciones tiene ese disco (el paso es 360/N). */
   pasadorPosiciones?: number;
+  /**
+   * HASTA DÓNDE LLEGA LA CHAPA DEL DISCO (v0.3.52), en grados. 0 o ausente = lo
+   * justo para la corona que lleve. Es lo que evita que el acero que no hace
+   * nada choque con el chasis.
+   */
+  pasadorDiscoArco?: number;
   /** ¿Se redondea el extremo proximal de las móviles para que no choquen? */
   pasadorRedondea?: boolean;
   /**
@@ -184,6 +190,14 @@ export interface PrimitiveParams {
    */
   horquillaTramos?: number;
   horquillaArco?: number;
+  /**
+   * HASTA DÓNDE LLEGA LA CHAPA DEL DISCO (v0.3.52), en grados. El disco no
+   * tiene por qué ser redondo: lo que hace falta es la corona, y el acero que
+   * sobra alrededor es lo que choca con el chasis. Recortarlo lo deja como un
+   * Pacman —un cubo redondo alrededor del eje y un abanico hacia la boca—.
+   * Ausente = lo justo para la corona que lleve.
+   */
+  horquillaDiscoArco?: number;
 
   /**
    * EXTREMO REDONDO (v0.3.32): la punta de una viga, rematada en semicilindro
@@ -356,6 +370,17 @@ export interface PhysicalAttributes {
 
 /** Definicion de un tipo de componente en la libreria. */
 export interface ComponentDefinition {
+  /**
+   * VARIANTES (v0.3.52): una familia que se elige ANTES de insertar. El botón
+   * de la paleta no coloca nada: abre una burbuja con las opciones y se coloca
+   * la que se toque.
+   *
+   * Es para lo que de verdad son piezas distintas y no una pieza con un
+   * parámetro. Una mancuerna de 50 lb no es una de 10 estirada: tiene otras
+   * cotas, otra masa y otro número grabado en la cara, así que son cinco mallas
+   * y no un deslizador.
+   */
+  variantes?: { id: string; etiqueta: string }[];
   id: string;
   label: string;
   category: ComponentCategory;

@@ -605,7 +605,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Pivote indexado (soldar)",
     category: "movimiento",
     materialId: "acero-negro",
-    defaults: { kind: "box", width: 8.4, height: 13.2, depth: 13.2 },
+    defaults: { kind: "box", width: 8.4, height: 13.2, depth: 10.6 },
     physics: { massKg: 2.2, fixed: false },
     orientacion: [Math.PI / 2, 0, 0],
     description:
@@ -879,6 +879,111 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     physics: { massKg: 5, fixed: false },
     description:
       "Placa de la pila de pesos seleccionable, con dos orificios verticales que abrazan los tubos guía (se desliza por ellos como el carrier del TTP).",
+  },
+  {
+    /**
+     * MANCUERNA HEXAGONAL (v0.3.52): CINCO PIEZAS, UN SOLO BOTÓN.
+     *
+     * Una de 50 lb no es una de 10 estirada —tiene otras cotas, otra masa y
+     * otro número grabado en la cara—, así que son cinco mallas de verdad. Lo
+     * que no tiene sentido es cinco botones en la paleta para lo mismo: el
+     * botón abre una burbuja y se elige el peso antes de colocarla.
+     *
+     * El hexágono no es adorno: es lo que impide que ruede al soltarla, y por
+     * eso nace con una CARA abajo y no con una punta.
+     */
+    id: "mancuerna-hex",
+    label: "Mancuerna hexagonal",
+    category: "peso",
+    materialId: "goma",
+    // El bulto de reserva es el de la de 30, que es la del medio: si el modelo
+    // tardara en llegar, lo que se ve entretanto es una mancuerna creíble.
+    defaults: { kind: "box", width: 32.95, height: 12.82, depth: 14.81 },
+    physics: { massKg: 13.61, fixed: false },
+    variantes: [
+      { id: "mancuerna-10", etiqueta: "10 lb" },
+      { id: "mancuerna-20", etiqueta: "20 lb" },
+      { id: "mancuerna-30", etiqueta: "30 lb" },
+      { id: "mancuerna-40", etiqueta: "40 lb" },
+      { id: "mancuerna-50", etiqueta: "50 lb" },
+    ],
+    description:
+      "Mancuerna hexagonal de goma con el peso grabado en la cara. Al tocarla se elige el peso: 10, 20, 30, 40 o 50 libras. Cada uno es una pieza distinta —otras cotas y otra masa—, no la misma estirada.",
+  },
+  {
+    id: "mancuerna-10",
+    paleta: "oculta",
+    label: "Mancuerna 10 lb",
+    category: "peso",
+    materialId: "goma",
+    defaults: { kind: "box", width: 26.83, height: 8.89, depth: 10.27 },
+    physics: { massKg: 4.54, fixed: false },
+    // DE CARA, NO DE PUNTA. El GLB sale Y-arriba por el convenio de glTF, y sin
+    // este cuarto de vuelta el hexágono entra apoyado en un vértice: la
+    // mancuerna se bambolea, que es justo lo que ser hexagonal evita.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Mancuerna hexagonal de 10 libras (4.5 kg): cabezas de goma con el peso grabado y mango cromado.",
+  },
+  {
+    id: "mancuerna-20",
+    paleta: "oculta",
+    label: "Mancuerna 20 lb",
+    category: "peso",
+    materialId: "goma",
+    defaults: { kind: "box", width: 30.43, height: 11.2, depth: 12.94 },
+    physics: { massKg: 9.07, fixed: false },
+    // DE CARA, NO DE PUNTA. El GLB sale Y-arriba por el convenio de glTF, y sin
+    // este cuarto de vuelta el hexágono entra apoyado en un vértice: la
+    // mancuerna se bambolea, que es justo lo que ser hexagonal evita.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Mancuerna hexagonal de 20 libras (9.1 kg): cabezas de goma con el peso grabado y mango cromado.",
+  },
+  {
+    id: "mancuerna-30",
+    paleta: "oculta",
+    label: "Mancuerna 30 lb",
+    category: "peso",
+    materialId: "goma",
+    defaults: { kind: "box", width: 32.95, height: 12.82, depth: 14.81 },
+    physics: { massKg: 13.61, fixed: false },
+    // DE CARA, NO DE PUNTA. El GLB sale Y-arriba por el convenio de glTF, y sin
+    // este cuarto de vuelta el hexágono entra apoyado en un vértice: la
+    // mancuerna se bambolea, que es justo lo que ser hexagonal evita.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Mancuerna hexagonal de 30 libras (13.6 kg): cabezas de goma con el peso grabado y mango cromado.",
+  },
+  {
+    id: "mancuerna-40",
+    paleta: "oculta",
+    label: "Mancuerna 40 lb",
+    category: "peso",
+    materialId: "goma",
+    defaults: { kind: "box", width: 34.96, height: 14.11, depth: 16.3 },
+    physics: { massKg: 18.14, fixed: false },
+    // DE CARA, NO DE PUNTA. El GLB sale Y-arriba por el convenio de glTF, y sin
+    // este cuarto de vuelta el hexágono entra apoyado en un vértice: la
+    // mancuerna se bambolea, que es justo lo que ser hexagonal evita.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Mancuerna hexagonal de 40 libras (18.1 kg): cabezas de goma con el peso grabado y mango cromado.",
+  },
+  {
+    id: "mancuerna-50",
+    paleta: "oculta",
+    label: "Mancuerna 50 lb",
+    category: "peso",
+    materialId: "goma",
+    defaults: { kind: "box", width: 36.65, height: 15.2, depth: 17.56 },
+    physics: { massKg: 22.68, fixed: false },
+    // DE CARA, NO DE PUNTA. El GLB sale Y-arriba por el convenio de glTF, y sin
+    // este cuarto de vuelta el hexágono entra apoyado en un vértice: la
+    // mancuerna se bambolea, que es justo lo que ser hexagonal evita.
+    orientacion: [Math.PI / 2, 0, 0],
+    description:
+      "Mancuerna hexagonal de 50 libras (22.7 kg): cabezas de goma con el peso grabado y mango cromado.",
   },
   {
     id: "disco-peso",

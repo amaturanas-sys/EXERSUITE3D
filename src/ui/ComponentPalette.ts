@@ -520,6 +520,12 @@ export class ComponentPalette {
     const btn = el("button", { class: "comp-btn", title }, children);
     btn.addEventListener("click", () => {
       if (this.consumeDragClick()) return;
+      // UNA FAMILIA NO SE COLOCA A CIEGAS (v0.3.52). Con variantes, el botón no
+      // inserta nada: abre la burbuja y se elige antes.
+      if (def.variantes?.length) {
+        this.abrirBurbuja(btn, def);
+        return;
+      }
       if (def.placement === "rope-chain") this.editor.beginRope("chain");
       else if (def.placement === "rope-strap") this.editor.beginRope("strap");
       else if (def.placement === "beam") {
@@ -569,9 +575,74 @@ export class ComponentPalette {
       if (def.id === "puente-carro-ttp") {
         this.habilitarArrastre(btn, (suelo) => this.editor.insertarCarroDoble(suelo));
       } else {
-        this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(def.id, suelo));
+        this.habilitarArrastre(btn, (suelo) => void this.editor.addComponentAt(
+          def.variantes?.length ? this.varianteDe(def) : def.id,
+          suelo,
+        ));
       }
     }
     return btn;
   }
+  /**
+   * LA ÚLTIMA VARIANTE ELEGIDA de una familia, o la primera si no hay ninguna.
+   *
+   * Se recuerda por familia para que arrastrar tres mancuernas de 20 al visor
+   * no obligue a abrir la burbuja tres veces: la primera se elige, las demás
+   * salen iguales. Es lo que hace cualquiera que esté armando un estante.
+   */
+  private ultimaVariante: Record<string, string> = {};
+
+  private varianteDe(def: ComponentDefinition): string {
+    return this.ultimaVariante[def.id] ?? def.variantes?.[0]?.id ?? def.id;
+  }
+
+  /**
+   * LA BURBUJA DE UNA FAMILIA (v0.3.52): las opciones, pegadas a su botón.
+   *
+   * Pequeña y encima de la paleta, no un diálogo: elegir el peso de una
+   * mancuerna no es configurar una máquina, es señalar una de cinco. Se cierra
+   * al elegir, al tocar fuera o con Escape.
+   */
+  private abrirBurbuja(btn: HTMLElement, def: ComponentDefinition): void {
+    document.querySelector(".comp-burbuja")?.remove();
+    const caja = btn.getBoundingClientRect();
+    const burbuja = el("div", { class: "comp-burbuja" }, []);
+    const cerrar = (): void => {
+      burbuja.remove();
+      document.removeEventListener("pointerdown", fuera, true);
+      document.removeEventListener("keydown", tecla, true);
+    };
+    const fuera = (e: PointerEvent): void => {
+      if (!burbuja.contains(e.target as Node)) cerrar();
+    };
+    const tecla = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") cerrar();
+    };
+    const elegida = this.varianteDe(def);
+    for (const v of def.variantes ?? []) {
+      const op = el(
+        "button",
+        { class: `comp-burbuja-op${v.id === elegida ? " activa" : ""}` },
+        [v.etiqueta],
+      );
+      op.addEventListener("click", () => {
+        this.ultimaVariante[def.id] = v.id;
+        cerrar();
+        this.editor.addComponent(v.id);
+      });
+      burbuja.append(op);
+    }
+    burbuja.style.left = `${Math.round(caja.right + 8)}px`;
+    burbuja.style.top = `${Math.round(caja.top)}px`;
+    document.body.append(burbuja);
+    // La burbuja se sale por abajo en una paleta larga: se sube lo que haga
+    // falta para que quepa entera.
+    const suya = burbuja.getBoundingClientRect();
+    if (suya.bottom > window.innerHeight - 8) {
+      burbuja.style.top = `${Math.round(window.innerHeight - suya.height - 8)}px`;
+    }
+    document.addEventListener("pointerdown", fuera, true);
+    document.addEventListener("keydown", tecla, true);
+  }
+
 }

@@ -129,7 +129,22 @@ const corona = await page.evaluate(() => {
       radio: m.radio,
     };
   };
-  return { siete: caso(7, 180), apretado: caso(24, 360) };
+  // Y HASTA DÓNDE LLEGA LA CHAPA (v0.3.52): por omisión, lo justo para su
+  // corona; a petición, lo que se pida; y nunca menos que la propia corona,
+  // porque eso dejaría agujeros al aire.
+  const chapa = (tramos, arco, pedido) => {
+    const m = M({
+      kind: "horquilla", horquillaAlto: 8, horquillaEspesor: 0.8,
+      horquillaGarganta: 4.2, horquillaVuelo: 4, horquillaAgujero: 1.3,
+      horquillaTramos: tramos, horquillaArco: arco, horquillaDiscoArco: pedido,
+    });
+    return { arco: m.arco, discoArco: +m.discoArco.toFixed(2), cuboR: +m.cuboR.toFixed(2) };
+  };
+  return {
+    siete: caso(7, 180), apretado: caso(24, 360),
+    auto: chapa(7, 180), pedida: chapa(7, 180, 200), corta: chapa(7, 180, 90),
+    entera: chapa(12, 360),
+  };
 });
 console.log("CORONA:", JSON.stringify(corona));
 ok(
@@ -154,6 +169,33 @@ ok(
     && corona.apretado.puente >= corona.apretado.seguro,
   "apretar a 24 posiciones ensancha el disco en vez de adelgazar el acero",
   `de ${corona.siete.arcoR} a ${corona.apretado.arcoR} cm; puente ${corona.apretado.puente}`,
+);
+
+// EL PACMAN (v0.3.52): el disco no es redondo, es lo justo para su corona.
+ok(
+  corona.auto.discoArco > corona.auto.arco && corona.auto.discoArco < 360,
+  "por omisión la chapa se recorta a su corona más el margen del último agujero",
+  `corona de ${corona.auto.arco}° en una chapa de ${corona.auto.discoArco}°`,
+);
+ok(
+  corona.pedida.discoArco === 200,
+  "y el ángulo lo puede pedir el usuario, que es quien sabe con qué choca",
+  `${corona.pedida.discoArco}°`,
+);
+ok(
+  corona.corta.discoArco === corona.corta.arco,
+  "pero nunca menos que la propia corona: eso dejaría agujeros al aire",
+  `pidiendo 90° sobre una corona de 180° salen ${corona.corta.discoArco}°`,
+);
+ok(
+  corona.entera.discoArco === 360,
+  "con la corona entera, el disco vuelve a ser redondo",
+  `${corona.entera.discoArco}°`,
+);
+ok(
+  corona.auto.cuboR > 0,
+  "y el cubo del eje no se recorta nunca: es lo que agarra el pasador",
+  `cubo de ${corona.auto.cuboR} cm`,
 );
 
 // ── 3. LA MALLA TRAE LOS AGUJEROS ────────────────────────────────────────
@@ -208,7 +250,7 @@ const paleta = await page.evaluate(async () => {
 console.log("PALETA:", JSON.stringify(paleta));
 const cotas = {
   "pivote-indexado": [8.4, 13.2, 16.4],
-  "pivote-indexado-soldar": [8.4, 13.2, 13.2],
+  "pivote-indexado-soldar": [8.4, 13.2, 10.6],
   "pasador-manija": [21.55, 3.4, 3.4],
 };
 for (const [id, esperado] of Object.entries(cotas)) {

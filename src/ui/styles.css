@@ -3576,3 +3576,37 @@ body.modo-prototipo #simbar {
   .hub-banner { height: 220px; }
   .hub-banner-txt h2 { font-size: 1.3rem; }
 }
+
+/* ── LA BURBUJA DE UNA FAMILIA (v0.3.52) ──────────────────────────────────
+ *
+ * Las variantes de una pieza —los cinco pesos de una mancuerna— se eligen en
+ * una burbuja pegada a su botón, no en un diálogo: señalar una de cinco no es
+ * configurar una máquina. Va sobre todo lo demás porque la paleta tiene su
+ * propio scroll y, dentro de ella, la burbuja se recortaría.
+ */
+.comp-burbuja {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 8px;
+  background: var(--panel, #23262e);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.comp-burbuja-op {
+  min-width: 72px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--txt, #e6e8ee);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: pointer;
+}
+.comp-burbuja-op:hover { background: rgba(255, 255, 255, 0.1); }
+.comp-burbuja-op.activa { background: var(--acc, #3b82f6); color: #fff; }

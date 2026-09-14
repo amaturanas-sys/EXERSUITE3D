@@ -24,6 +24,7 @@ import {
   tramosCalce,
 } from "../objects/linePieces";
 import { espejoDe } from "../objects/espejar";
+import { medidasHorquilla } from "../objects/horquilla";
 import { largoDeFabrica, puntoTrasEstirar } from "../objects/estirar";
 import {
   EJERCICIOS_BARRA,
@@ -12829,6 +12830,21 @@ export class Editor {
   }
 
   /**
+   * LAS MEDIDAS RESUELTAS DE LA HORQUILLA QUE MONTÓ UN PASADOR (v0.3.52).
+   *
+   * El panel no puede deducirlas: los radios del disco y hasta dónde llega su
+   * chapa SALEN DE LA CUENTA, y esa cuenta vive en `medidasHorquilla`. Repetirla
+   * aquí sería repetir también sus errores.
+   */
+  horquillaDelPasador(objectId: string): ReturnType<typeof medidasHorquilla> | null {
+    const marca = `Pasador ${objectId}: horquilla`;
+    const h = this.listObjects().find(
+      (o) => o.componentId === "punto-anclaje" && o.name.startsWith(marca),
+    );
+    return h ? medidasHorquilla(h.params) : null;
+  }
+
+  /**
    * EL DISCO DE TRAMOS DE LA HORQUILLA (v0.3.50).
    *
    * Hasta ahora el modo indexado del pasador era INVISIBLE: la pieza se clavaba
@@ -12860,7 +12876,13 @@ export class Editor {
     const tramos = entera
       ? Math.max(2, Math.round(360 / paso))
       : Math.max(2, Math.round(arco / paso) + 1);
-    return { horquillaTramos: tramos, horquillaArco: entera ? 360 : arco };
+    // Y hasta dónde llega la chapa: lo que se pida, o lo justo para la corona.
+    const chapa = obj.params.pasadorDiscoArco;
+    return {
+      horquillaTramos: tramos,
+      horquillaArco: entera ? 360 : arco,
+      ...(chapa && chapa > 0 ? { horquillaDiscoArco: Math.min(360, chapa) } : {}),
+    };
   }
 
   /**

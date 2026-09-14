@@ -48,6 +48,8 @@ export function medidasHorquilla(p: PrimitiveParams): {
   arcoR: number;
   discoR: number;
   paso: number;
+  discoArco: number;
+  cuboR: number;
 } {
   const alto = Math.max(p.horquillaAlto ?? 8, 0.4);
   const esp = Math.max(p.horquillaEspesor ?? 0.8, 0.1);
@@ -78,9 +80,28 @@ export function medidasHorquilla(p: PrimitiveParams): {
   const arcoR = tramos >= 2 ? Math.max(minimo, radio + 2 * seguro) : 0;
   const discoR = tramos >= 2 ? arcoR + 2 * seguro : 0;
 
+  // HASTA DÓNDE LLEGA LA CHAPA (v0.3.52). Un disco redondo entero al lado de
+  // una corona que sólo cubre media vuelta es acero que no hace nada y que sí
+  // CHOCA: con el chasis, con la viga, con lo que haya detrás. Recortado queda
+  // como un Pacman, y lo que se recorta es justo lo que sobraba.
+  //
+  // Por omisión se le deja al abanico el arco de su corona MÁS el margen que
+  // el último agujero necesita por el costado — el mismo criterio que el
+  // `canto` usa por el radio, así que el acero alrededor de un agujero es igual
+  // por los cuatro lados—.
+  const margen = arcoR > 0
+    ? (Math.asin(Math.min(1, (2 * seguro) / arcoR)) * 180) / Math.PI
+    : 0;
+  const discoArco = tramos >= 2
+    ? Math.min(360, Math.max(arco, p.horquillaDiscoArco ?? arco + 2 * margen))
+    : 0;
+  // El cubo alrededor del eje NO se recorta nunca: es lo que agarra el pasador,
+  // y un abanico con el vértice en el propio taladro no agarraría nada.
+  const cuboR = tramos >= 2 ? Math.max(radio, agujero * 2) : 0;
+
   return {
     alto, esp, garganta, vuelo, agujero, radio, ancho: garganta + 2 * esp,
-    tramos, arco, seguro, arcoR, discoR, paso,
+    tramos, arco, seguro, arcoR, discoR, paso, discoArco, cuboR,
   };
 }
 
@@ -95,7 +116,23 @@ export function medidasHorquilla(p: PrimitiveParams): {
  */
 function perfilDisco(m: ReturnType<typeof medidasHorquilla>): THREE.Shape {
   const s = new THREE.Shape();
-  s.absarc(0, 0, m.discoR, 0, Math.PI * 2, false);
+  if (m.discoArco >= 359.9) {
+    s.absarc(0, 0, m.discoR, 0, Math.PI * 2, false);
+  } else {
+    // EL PACMAN, de una sola tirada: se sale por el canto del cubo, se va
+    // derecho al canto del abanico, se barre el abanico, se vuelve al cubo y se
+    // cierra por el cubo dando la vuelta POR EL LADO QUE SOBRA. Así es un solo
+    // contorno cerrado y no hay que unir dos formas, que `THREE.Shape` no sabe.
+    const media = (m.discoArco * Math.PI) / 360;
+    const a0 = -media;
+    const a1 = media;
+    s.moveTo(m.cuboR * Math.cos(a0), m.cuboR * Math.sin(a0));
+    s.lineTo(m.discoR * Math.cos(a0), m.discoR * Math.sin(a0));
+    s.absarc(0, 0, m.discoR, a0, a1, false);
+    s.lineTo(m.cuboR * Math.cos(a1), m.cuboR * Math.sin(a1));
+    s.absarc(0, 0, m.cuboR, a1, a0 + Math.PI * 2, false);
+    s.closePath();
+  }
   const taladro = new THREE.Path();
   taladro.absarc(0, 0, m.agujero, 0, Math.PI * 2, true);
   s.holes.push(taladro);

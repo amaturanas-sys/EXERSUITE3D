@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.52] — 2026-09-14
+
+### Añadido
+
+**LA CORONA DE AGUJEROS SE PUEDE RECORTAR COMO UN PAC-MAN.** El disco del
+pivote indexado nacía siempre redondo, y un disco redondo estorba: en cuanto la
+horquilla se monta pegada a otra pieza, la chapa que sobra por detrás —la que no
+lleva ningún agujero porque el recorrido no llega allí— se mete donde no cabe.
+
+Ahora el disco es un SECTOR. Se le da un ángulo y la chapa se queda en él; el
+resto se va, salvo el cubo alrededor del eje, que es lo que sostiene la pieza y
+no se toca nunca. El recorte va en HORAS de reloj, como todo lo que mide
+ángulos desde v0.3.48, y en el panel se escribe al lado del recorrido del
+pasador. En blanco, la app lo resuelve sola: el arco de los agujeros más el
+margen justo para que el último agujero no quede al borde de la chapa.
+
+Dos guardianes, porque un recorte mal puesto es una pieza rota y no un dibujo
+feo: el sector nunca puede ser menor que el arco de agujeros —se pide 90° sobre
+una corona de 180° y la app sube la petición a 180°, no corta agujeros—, y el
+cubo del eje queda siempre entero. El CAD lleva el mismo corte y la misma regla
+escrita en `cad/src/lib/indexada.py`, que revienta el modelo antes de exportar
+si el sector se queda corto. `pivote_indexado_soldar` pasó de 13,2 a 10,6 cm de
+alto: la prueba de que el corte llega a la malla y no solo al número.
+
+**MANCUERNAS HEXAGONALES DE 10, 20, 30, 40 Y 50 LIBRAS, CON EL PESO GRABADO.**
+Modeladas en `cad/src/mancuerna_hex.py`: dos cabezas de prisma hexagonal, mango
+cromado de Ø34 entre ellas, y el número hundido en un recuadro en la cara de
+fuera de cada cabeza —girado en la de atrás, para que se lea desde los dos
+lados—.
+
+No son la misma pieza estirada. El cuerpo es un prisma, así que su volumen va
+con el cubo de las cotas: para que la de 50 pese cinco veces lo que la de 10 y
+no dos veces y media, las cotas crecen con la RAÍZ CÚBICA del peso. Salen de la
+ficha de la mancuerna de 35 lb de catálogo —135 mm entre caras, 340 de largo—
+y de ahí las cinco: 26,8 / 30,4 / 32,9 / 35,0 / 36,7 cm de largo. **El mango no
+crece**: los 13 cm de agarre son los mismos en las cinco, porque una mano es una
+mano, y por eso la de 50 se ve corta de mango al lado de la de 10, igual que en
+el estante.
+
+El hexágono nace con una CARA abajo y no con una punta, que es toda la gracia de
+que sea hexagonal: de punta rodaría.
+
+En la paleta hay UN botón, no cinco. Al tocarlo se abre una burbuja con los
+cinco pesos y se elige antes de colocarla; el último elegido queda puesto para
+la siguiente. Arrastrar el botón coloca el peso elegido.
+
 ## [0.3.51] — 2026-09-12
 
 ### Corregido

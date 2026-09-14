@@ -69,6 +69,8 @@ def _disco(
     arco_r: float,
     posiciones: int,
     arco: float,
+    disco_arco: float,
+    cubo_r: float,
     x_interior: float,
 ):
     """El abanico con su corona, puesto por su CARA INTERIOR.
@@ -77,7 +79,28 @@ def _disco(
     el error que ya se pagó una vez en `lib/horquilla.py` y no se repite.
     """
     paso = comprueba(arco_r=arco_r, disco_r=disco_r, posiciones=posiciones, arco=arco)
-    perfil = bd.Circle(disco_r) - bd.Circle(eje_r)
+    if disco_arco < arco:
+        raise ValueError(
+            f"la chapa del disco ({disco_arco:.0f}°) no llega a cubrir su propia "
+            f"corona ({arco:.0f}°): habría agujeros al aire"
+        )
+    if disco_arco >= 359.9:
+        perfil = bd.Circle(disco_r)
+    else:
+        # EL PACMAN (v0.3.52). Un disco redondo entero al lado de una corona que
+        # sólo cubre media vuelta es acero que no hace nada y que sí CHOCA con
+        # lo que haya detrás. Se recorta a su abanico y se le deja el CUBO
+        # entero alrededor del eje, que es lo que agarra el pasador: un abanico
+        # con el vértice en el propio taladro no agarraría nada.
+        media = math.radians(disco_arco / 2.0)
+        n = max(8, int(disco_arco / 5.0))
+        fuera = disco_r * 1.3
+        puntos = [(0.0, 0.0)]
+        for i in range(n + 1):
+            t = -media + 2.0 * media * i / n
+            puntos.append((fuera * math.cos(t), fuera * math.sin(t)))
+        perfil = (bd.Circle(disco_r) & bd.Polygon(*puntos, align=None)) + bd.Circle(cubo_r)
+    perfil -= bd.Circle(eje_r)
     # LA CORONA, centrada en la boca (+Z): media vuelta que va de lo alto a lo
     # bajo pasando por delante, que es el recorrido que hace un brazo.
     for k in range(posiciones):
@@ -103,6 +126,8 @@ def indexada(
     arco_r: float,
     posiciones: int,
     arco: float,
+    disco_arco: float,
+    cubo_r: float,
     espiga_r: float,
     espiga: float,
     maneta_r: float,
@@ -126,6 +151,8 @@ def indexada(
         arco_r=arco_r,
         posiciones=posiciones,
         arco=arco,
+        disco_arco=disco_arco,
+        cubo_r=cubo_r,
         x_interior=x_disco,
     )
 

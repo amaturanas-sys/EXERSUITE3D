@@ -15,6 +15,8 @@ from lib.indexada import indexada
 from pivote_indexado import (
     ARCO,
     ARCO_R,
+    CUBO_R,
+    DISCO_ARCO,
     DISCO_ESPESOR,
     DISCO_R,
     EJE_R,
@@ -47,6 +49,8 @@ def pivote_indexado_soldar():
         arco_r=ARCO_R,
         posiciones=POSICIONES,
         arco=ARCO,
+        disco_arco=DISCO_ARCO,
+        cubo_r=CUBO_R,
         espiga_r=ESPIGA_R,
         espiga=ESPIGA,
         maneta_r=MANETA_R,

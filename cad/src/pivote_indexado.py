@@ -41,6 +41,14 @@ POSICIONES = 7
 ARCO = 180.0
 ARCO_R = 53.0          # ⟵ ídem: 1,5·seguro / sen(paso/2), o el canto de la oreja
 
+# HASTA DÓNDE LLEGA LA CHAPA (v0.3.52). El disco NO es redondo: se recorta al
+# abanico de su corona más el margen que el último agujero necesita por el
+# costado, y se le deja el cubo entero alrededor del eje. Un disco redondo del
+# todo es acero que no hace nada y que sí choca con lo que haya detrás.
+# También lo resuelve la app (`medidasHorquilla`), y de ahí vienen los números.
+DISCO_ARCO = 208.4
+CUBO_R = 40.0
+
 ESPIGA_R = 12.0         # la espiga que entra en el pinhole del montante
 ESPIGA = 26.0
 MANETA_R = 6.0          # el paso del tornillo de la maneta
@@ -70,6 +78,8 @@ def pivote_indexado():
         arco_r=ARCO_R,
         posiciones=POSICIONES,
         arco=ARCO,
+        disco_arco=DISCO_ARCO,
+        cubo_r=CUBO_R,
         espiga_r=ESPIGA_R,
         espiga=ESPIGA,
         maneta_r=MANETA_R,
