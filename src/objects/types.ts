@@ -540,6 +540,22 @@ export interface ComponentDefinition {
     /** Topes del control de Propiedades (cm). */
     minCm?: number;
     maxCm?: number;
+    /**
+     * LA ZONA LISA, cuando NO está en el centro (v0.3.54): `[desde, hasta]` en
+     * cm de fábrica, medidos desde el canto de la pieza por su eje del largo.
+     *
+     * `extremosCm` da por hecho que lo que estira es el centro y que los dos
+     * remates son igual de largos. Un brazo en voladizo no es así: por un lado
+     * lleva la culata y la cartela, por el otro una fila de agujeros y la
+     * pestaña, y lo único liso que tiene está entre el talón y el primer
+     * agujero — ni en el centro ni repartido. Estirar por el centro le
+     * convertiría los agujeros en óvalos.
+     *
+     * Con esto declarado, lo de antes de la banda y lo de después viajan
+     * RÍGIDOS, cada uno hacia su lado, y solo la banda se estira. Sin esto, se
+     * sigue estirando por el centro como siempre.
+     */
+    nucleoCm?: [number, number];
   };
   /**
    * TOPE DE UNA GUÍA TUBULAR (v0.3.3). El motor descubre las guías y sus

@@ -63,21 +63,36 @@ const p = await page.evaluate(async () => {
 
   // LA MALLA, EN EJES DE LA PIEZA. Se sondea la geometría directamente para
   // poder separar el cuerno de la placa: el bulto no distingue una cosa de otra.
+  // OJO CON LOS EJES: al cargar el GLB la malla se RECENTRA en su bulto, así
+  // que el cero local no es el del CAD. Todo se mide desde el canto de atrás
+  // —la punta de la lengüeta—, que es el único punto que la prueba conoce sin
+  // depender de dónde haya quedado el origen.
   const g = o.mesh.geometry;
   g.computeBoundingBox();
   const bb = g.boundingBox, tam = bb.getSize(new T.Vector3());
+  const atras = bb.min.z;               // la punta de la lengüeta
+  const CARA = atras + 3.2;             // la cara delantera de la placa
   const pos = g.attributes.position;
   // El CUERNO: todo lo que vive pasado el collar de la raíz. Su radio es el
   // mayor alejamiento del eje que se encuentre allí.
-  let rCuerno = 0, zMax = -1e9;
+  // OJO: la malla recentrada deja el eje del cuerno FUERA del y = 0, así que su
+  // Ø no se puede medir como distancia al origen. Se mide por su propio bulto,
+  // que es lo mismo y no depende de dónde esté el cero.
+  let cx0 = 1e9, cx1 = -1e9, cy0 = 1e9, cy1 = -1e9, zMax = -1e9;
   // LA LENGÜETA: lo que queda por DETRÁS de la placa (z < 0). Su sección es lo
   // que tiene que pasar por el pinhole.
   let lgAncho = 0, lgAlto = -1e9, lgBajo = 1e9, zMin = 1e9;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
     zMax = Math.max(zMax, z); zMin = Math.min(zMin, z);
-    if (z > 5) rCuerno = Math.max(rCuerno, Math.hypot(x, y));
-    if (z < -1.2) {
+    // El cuerno limpio: pasado el collar de la raíz (Ø68, hasta 1.4 cm de la
+    // cara) no queda nada más que el cilindro.
+    if (z > CARA + 3) {
+      cx0 = Math.min(cx0, x); cx1 = Math.max(cx1, x);
+      cy0 = Math.min(cy0, y); cy1 = Math.max(cy1, y);
+    }
+    // La lengüeta: lo único que vive por detrás de la placa.
+    if (z < atras + 2.3) {
       lgAncho = Math.max(lgAncho, Math.abs(x) * 2);
       lgAlto = Math.max(lgAlto, y); lgBajo = Math.min(lgBajo, y);
     }
@@ -85,8 +100,10 @@ const p = await page.evaluate(async () => {
   return {
     tam: [tam.x, tam.y, tam.z].map((v) => +v.toFixed(2)),
     vertices: pos.count,
-    zMin: +zMin.toFixed(2), zMax: +zMax.toFixed(2),
-    cuernoD: +(rCuerno * 2).toFixed(2),
+    zMin: +zMin.toFixed(2), zMax: +zMax.toFixed(2), cara: +CARA.toFixed(2),
+    vuelo: +(zMax - CARA).toFixed(2),
+    cuernoD: +Math.max(cx1 - cx0, cy1 - cy0).toFixed(2),
+    cuernoRedondo: +Math.abs((cx1 - cx0) - (cy1 - cy0)).toFixed(3),
     lengueta: [+lgAncho.toFixed(2), +(lgAlto - lgBajo).toFixed(2)],
     fija: o.physics?.fixed,
   };
@@ -105,14 +122,14 @@ ok(
   `${p.tam.join(" × ")} cm`,
 );
 ok(
-  Math.abs(p.zMax - CUERNO_LARGO) < 0.2 && p.zMin < -0.5,
-  `el cuerno vuela ${CUERNO_LARGO} cm por delante de la placa y la lengüeta sale por detrás`,
-  `de ${p.zMin} a ${p.zMax} cm`,
+  Math.abs(p.vuelo - CUERNO_LARGO) < 0.2,
+  `el cuerno vuela ${CUERNO_LARGO} cm por delante de la placa`,
+  `${p.vuelo} cm`,
 );
 ok(
-  Math.abs(p.cuernoD - CUERNO_D) < 0.15,
-  "el cuerno mide Ø5 cm — el orificio de un disco olímpico",
-  `Ø${p.cuernoD} cm`,
+  Math.abs(p.cuernoD - CUERNO_D) < 0.15 && p.cuernoRedondo < 0.05,
+  "el cuerno mide Ø5 cm y es REDONDO — el orificio de un disco olímpico",
+  `Ø${p.cuernoD} cm, ancho y alto difieren ${p.cuernoRedondo} cm`,
 );
 ok(p.fija === true, "el atril nace FIJO: es un estante, no una pieza del mecanismo");
 
@@ -146,10 +163,12 @@ const carga = await page.evaluate(async (n) => {
   o.rebuildGeometry?.();
   await new Promise((r) => setTimeout(r, 300));
   const partes = o.getCargaParts();
+  const g = o.mesh.geometry; g.computeBoundingBox();
+  const cara = g.boundingBox.min.z + 3.2;   // la cara delantera de la placa
   return {
     puestos: partes.length,
+    cara: +cara.toFixed(2),
     z: partes.map((m) => +m.position.z.toFixed(2)).sort((a, b) => a - b),
-    r: partes.length ? +(partes[0].geometry.boundingBox?.max.x ?? 0).toFixed(2) : 0,
   };
 }, 4);
 
@@ -157,15 +176,15 @@ ok(carga.puestos === 4, "se ensartan los cuatro discos pedidos", `${carga.puesto
 // EL PRIMERO, DELANTE DE LA CHAPA. La placa vive en z < 0; un disco con el
 // centro en z negativo está metido dentro de ella.
 ok(
-  carga.z.length > 0 && carga.z[0] > 0,
+  carga.z.length > 0 && carga.z[0] - 1.5 >= carga.cara - 0.05,
   "el primer disco asienta POR DELANTE de la placa, no dentro de ella",
-  `centros en z = ${carga.z.join(", ")} cm`,
+  `cara en z = ${carga.cara}; centros en z = ${carga.z.join(", ")} cm`,
 );
 // Y NINGUNO SE SALE POR LA PUNTA.
 ok(
-  carga.z.length > 0 && carga.z[carga.z.length - 1] < CUERNO_LARGO,
+  carga.z.length > 0 && carga.z[carga.z.length - 1] + 1.5 <= carga.cara + CUERNO_LARGO,
   "ninguno se sale por la punta del cuerno",
-  `el último en z = ${carga.z[carga.z.length - 1]} cm`,
+  `el último en z = ${carga.z[carga.z.length - 1]} cm, punta en ${(carga.cara + CUERNO_LARGO).toFixed(1)}`,
 );
 
 console.log(fallos === 0 ? "TODO OK" : `❌ ${fallos} fallo(s)`);

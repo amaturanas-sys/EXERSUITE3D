@@ -1755,7 +1755,13 @@ export class Editor {
       const aj = def.largoAjustable;
       if (aj && obj.params.largoCm) {
         const fabrica = largoDeFabrica(def, aj.eje);
-        p[aj.eje] = puntoTrasEstirar(p[aj.eje], fabrica, obj.params.largoCm, aj.extremosCm);
+        p[aj.eje] = puntoTrasEstirar(
+          p[aj.eje],
+          fabrica,
+          obj.params.largoCm,
+          aj.extremosCm,
+          aj.nucleoCm,
+        );
       }
       return p;
     }

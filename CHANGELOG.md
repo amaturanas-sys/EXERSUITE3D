@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.54] — 2026-09-14
+
+### Añadido
+
+**BRAZO SPOTTER: EL BRAZO DE SEGURIDAD EN VOLADIZO, CON EL LARGO A MEDIDA.**
+Nueva pieza estructural, modelada en `cad/src/brazo_spotter.py` a partir de las
+fotografías de referencia: una culata en C que abraza el montante de 3″, una
+espiga de Ø16 que lo cruza por arriba y es la que carga, un pasante abajo para
+el pomo de seguro, y un brazo de 74 cm con su cartela, su talón, su cuna
+forrada, su pestaña distal y la fila de once agujeros numerados.
+
+Se calza y se descalza como una jota: la espiga entra en el pinhole, el canto
+bajo de la culata apoya contra el montante y entre los dos apoyos queda cerrado
+el par que el peso de la barra quiere abrir. Se sube y se baja de nivel sin
+herramienta.
+
+No es el «Brazo de seguridad» que ya estaba: aquél se TIENDE entre los dos
+pilares de su lado y cuelga de ambos; éste vuela desde uno solo.
+
+**EL LARGO SE CAMBIA SIN DEFORMAR NADA MÁS.** Es lo que se pidió y es la parte
+que decide la forma de la pieza. Estirar una malla escalándola convierte los
+agujeros en óvalos y estira el anclaje; lo que se hace en el taller es cortar
+por un tramo recto y meter o quitar un trozo, y eso es lo que hace la app
+—pero el tramo recto de este brazo **no está en el centro**: está entre el talón
+y el primer agujero, porque por un lado lleva la culata y la cartela y por el
+otro los once agujeros y la pestaña.
+
+Así que el estirado aprende a cortar por donde la pieza diga (`nucleoCm`), no
+siempre por la mitad. La culata, la cartela, la pestaña y los once agujeros
+viajan **rígidos**, con sus cotas de fábrica al milímetro, y el acero nuevo
+aparece entero en la banda lisa. El modelo de CAD lleva escrita esa misma banda
+y revienta antes de exportar si algo se mete dentro —un agujero medio metido en
+la zona que estira no se ve en el render: se ve cuando alguien cambia el largo—.
+Las piezas que ya se alargaban siguen haciéndolo por el centro, sin cambio.
+
+### Corregido
+
+**LAS PIEZAS DE CAD ENTRABAN BIEN A LA VISTA PERO CON LOS EJES LOCALES
+TORCIDOS.** El GLB sale Y-arriba por el convenio de glTF, y la app lo enderezaba
+girando la MALLA al insertarla (`orientacion`). Eso deja la pieza bien puesta en
+pantalla, pero NO arregla los ejes de su geometría, y hay cosas que dependen de
+ellos: por qué eje se alarga una pieza, por cuál entran los discos, dónde cae su
+punto de calce. Ahora el cuarto de vuelta lo hornea el propio modelo de CAD, así
+que la geometría llega con Z arriba y el largo en Z de verdad. Afecta al atril
+de discos y al brazo spotter; el resto de la biblioteca no se toca.
+
 ## [0.3.53] — 2026-09-14
 
 ### Añadido

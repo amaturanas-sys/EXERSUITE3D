@@ -62,6 +62,7 @@ no un error del modelo.
 | Pasador con manija | `src/pasador_manija.py` | `pasador-manija` (en la paleta) |
 | Mancuerna hexagonal · 10 a 50 lb | `src/mancuerna_hex.py` | `mancuerna-10` … `mancuerna-50` (la paleta abre una burbuja para elegir el peso) |
 | Atril de discos | `src/atril_discos.py` | `atril-discos` (en la paleta) |
+| Brazo spotter (voladizo) | `src/brazo_spotter.py` | `brazo-spotter` (en la paleta, con largo a medida) |
 
 ### Una pieza de `cad/` en la PALETA
 

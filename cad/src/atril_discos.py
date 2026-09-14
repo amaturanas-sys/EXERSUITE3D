@@ -29,6 +29,15 @@ Sistema local, el de la familia del pinhole:
     Z = del montante hacia FUERA — el cuerno vuela en +Z
 
 El origen queda EN EL EJE DEL CUERNO, sobre la cara delantera de la viga.
+
+LOS EJES QUE SALEN AL GLB. glTF es Y-arriba, así que al exportar se gira todo un
+cuarto de vuelta: el Z de aquí acaba siendo el alto, y el Y, el fondo cambiado de
+signo. La app puede deshacerlo girando la MALLA al insertarla (`orientacion`),
+pero eso no arregla los ejes LOCALES de la geometría, y hay cosas que dependen de
+ellos —por dónde se alarga la pieza, por dónde entran los discos, dónde cae el
+punto de calce—. Así que el giro se hornea AQUÍ, al final: la pieza se exporta
+con Z arriba y −Y hacia fuera, que es justo lo que el convenio de glTF convierte
+en «Y arriba, Z hacia fuera» al otro lado.
 """
 from __future__ import annotations
 
@@ -141,6 +150,8 @@ def atril():
             radius=TALADRO_R, height=4.0 * PLACA_ESPESOR
         )
 
+    # Y EL CUARTO DE VUELTA DE EXPORTACIÓN (ver la cabecera).
+    pieza = pieza.rotate(bd.Axis.X, 90.0)
     pieza.label = "atril_discos"
     return pieza
 

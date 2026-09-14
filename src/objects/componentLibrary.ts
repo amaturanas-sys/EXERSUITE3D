@@ -199,10 +199,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     // El bulto de reserva son las cotas del CAD (7 × 20.6 × 28.2 cm).
     defaults: { kind: "box", width: 7, height: 20.6, depth: 28.2 },
     physics: { massKg: 4.2, fixed: true },
-    // DE FRENTE, NO DE CANTO. El GLB sale Y-arriba por el convenio de glTF:
-    // este cuarto de vuelta devuelve los ejes del CAD, y con ellos el cuerno a
-    // la horizontal. Sin él la pieza entra mirando al techo.
-    orientacion: [Math.PI / 2, 0, 0],
+    // SIN `orientacion`: el cuarto de vuelta del convenio de glTF lo hornea el
+    // propio modelo de CAD. Girar la MALLA al insertarla deja la pieza bien a
+    // la vista pero NO arregla sus ejes locales, y aquí importan: por el eje
+    // largo de la geometría es por donde se ensartan los discos.
     // LOS DISCOS SE ENSARTAN DE VERDAD. Entran por un lado —el cuerno vuela en
     // voladizo— y arrancan pasado el collar de la raíz: `mangaCm` mide desde el
     // canto de atrás de la pieza (la punta de la lengüeta) hasta donde el
@@ -210,6 +210,48 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     cargaDiscos: { lados: 1, diamCm: 45, grosorCm: 3, masaKg: 20, mangaCm: 4.6 },
     description:
       "Atril de discos: se cuelga por su lengüeta en el pinhole de cualquier viga y guarda los discos ensartados en su cuerno. El seguro de abajo impide que se salte del agujero.",
+  },
+  {
+    /**
+     * BRAZO SPOTTER (v0.3.54) — el brazo de seguridad en voladizo que se calza
+     * en el pinhole de un montante. Malla de `cad/src/brazo_spotter.py`.
+     *
+     * NO ES EL «Brazo de seguridad». Aquél se TIENDE entre los dos pilares de
+     * su lado y cuelga de ambos (`postesCalce: 2`); éste vuela desde UNO solo,
+     * como una jota, y por eso lleva culata, cartela y espiga. Un rack de
+     * cuatro postes usa el primero; uno de dos, éste.
+     *
+     * EL LARGO SE CAMBIA Y LA PIEZA NO SE DEFORMA. El tramo que estira NO está
+     * en el centro: está entre el talón y el primer agujero, que es lo único
+     * liso que la pieza tiene. Por eso declara `nucleoCm` en vez de fiarlo a
+     * `extremosCm`, y por eso la culata, la cartela, los once agujeros y la
+     * pestaña distal salen con sus cotas de fábrica a cualquier largo. El
+     * modelo de CAD lleva escrita esa misma banda y revienta si algo se mete
+     * dentro.
+     */
+    id: "brazo-spotter",
+    label: "Brazo spotter (voladizo)",
+    category: "estructural",
+    materialId: "acero-negro",
+    // Las cotas del CAD: 13.2 de ancho (la espiga asoma por las dos mejillas),
+    // 26 de alto (de la punta de la cartela al talón) y 82.8 de largo.
+    defaults: { kind: "box", width: 13.2, height: 26, depth: 82.8 },
+    physics: { massKg: 0, fixed: true },
+    // El eje del montante pasa por aquí, en ejes de la malla ya centrada.
+    calceLocal: [0, -37.2],
+    asientoBarra: true,
+    // LA BANDA LISA, en cm de fábrica desde el canto de atrás de la culata:
+    // del final del talón al primer agujero. `extremosCm` queda como red de
+    // seguridad por si algún día se quita la banda.
+    largoAjustable: {
+      eje: "z",
+      extremosCm: 24.8,
+      minCm: 65,
+      maxCm: 180,
+      nucleoCm: [24.8, 42.8],
+    },
+    description:
+      "Brazo de seguridad en voladizo: se calza por su espiga en el pinhole de un montante y sube o baja de nivel como una jota. El largo del brazo se cambia en Propiedades sin deformar ni el anclaje ni la pestaña distal.",
   },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
   {

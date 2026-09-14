@@ -169,7 +169,13 @@ export class SceneObject {
   private aLaMedida(geo: THREE.BufferGeometry): THREE.BufferGeometry {
     const ajuste = this.largoAjustable();
     if (!ajuste || !(this.params.largoCm && this.params.largoCm > 0)) return geo;
-    return estirarPorElCentro(geo, ajuste.eje, this.params.largoCm, ajuste.extremosCm);
+    return estirarPorElCentro(
+      geo,
+      ajuste.eje,
+      this.params.largoCm,
+      ajuste.extremosCm,
+      ajuste.nucleoCm,
+    );
   }
 
   /** Ficha de largo ajustable de esta pieza, si su componente la declara. */
