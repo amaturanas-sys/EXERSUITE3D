@@ -61,6 +61,7 @@ no un error del modelo.
 | Pivote indexado · soldar | `src/pivote_indexado_soldar.py` | `pivote-indexado-soldar` |
 | Pasador con manija | `src/pasador_manija.py` | `pasador-manija` (en la paleta) |
 | Mancuerna hexagonal · 10 a 50 lb | `src/mancuerna_hex.py` | `mancuerna-10` … `mancuerna-50` (la paleta abre una burbuja para elegir el peso) |
+| Atril de discos | `src/atril_discos.py` | `atril-discos` (en la paleta) |
 
 ### Una pieza de `cad/` en la PALETA
 

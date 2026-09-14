@@ -411,10 +411,17 @@ export class SceneObject {
     // cambio de grosor que delimita la manga (mangaCm, medido en la malla
     // real). Un lado (cuerno/atril): desde la base.
     const s0 = this.carga.lados === 2 ? (this.carga.mangaCm ?? L * 0.3) : 0;
+    // UN LADO: DESDE DÓNDE ARRANCAN (v0.3.53). Un cuerno suelto empieza en su
+    // propia base y por eso le bastaba 1 cm de margen. Un ATRIL no: por detrás
+    // del cuerno lleva su placa y su lengüeta, que también cuentan en el bulto,
+    // y el primer disco arrancaba dentro de la chapa. `mangaCm` dice, medido
+    // desde el canto de atrás, dónde puede asentar el primero; sin él se
+    // mantiene el centímetro de siempre y las piezas de antes no se mueven.
+    const arranque = this.carga.lados === 2 ? 0 : (this.carga.mangaCm ?? 1);
     const maxPorLado =
       this.carga.lados === 2
         ? Math.max(0, Math.floor((L / 2 - s0) / paso))
-        : Math.max(0, Math.floor((L - 2) / paso));
+        : Math.max(0, Math.floor((L - arranque - 1) / paso));
 
     for (let i = 0; i < n; i++) {
       const lado = this.carga.lados === 2 ? (i % 2 === 0 ? 1 : -1) : 1;
@@ -423,7 +430,7 @@ export class SceneObject {
       const s =
         this.carga.lados === 2
           ? s0 + (idx + 0.5) * paso
-          : -L / 2 + 1 + (idx + 0.5) * paso;
+          : -L / 2 + arranque + (idx + 0.5) * paso;
       const disco = new THREE.Mesh(
         this.geometriaDisco(this.carga.diamCm, this.carga.grosorCm),
         buildMaterial("hierro-fundido"),

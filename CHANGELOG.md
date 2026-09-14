@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.53] — 2026-09-14
+
+### Añadido
+
+**ATRIL DE DISCOS: EL CUERNO QUE SE CUELGA DE CUALQUIER VIGA CON PINHOLES.**
+Nueva pieza estructural, modelada en `cad/src/atril_discos.py` a partir de la
+fotografía de referencia: una placa que se apoya en la cara del montante, una
+lengüeta que entra por un pinhole, dos pasantes para el seguro y un cuerno
+horizontal de Ø50 —el orificio de un disco olímpico— que vuela 25 cm.
+
+Cómo trabaja, que es lo que decide las cotas: la lengüeta entra en el agujero y
+se apoya en su borde de abajo; el peso de los discos tira del cuerno hacia fuera
+y empuja el canto bajo de la placa contra la viga. Entre esos dos apoyos queda
+cerrado el par. El seguro de abajo no sostiene nada mientras la pieza está
+cargada: está para que no se salte de su agujero al descargarla de golpe, que es
+cuando un cuerno se suelta.
+
+La cota que manda es que **la lengüeta pase por el pinhole**, y entra por su
+diagonal, no por su lado: con la nariz incluida mide 16 × 17 mm, o sea 23,3 de
+diagonal contra los 25 del agujero. El modelo revienta antes de exportar si
+alguien la ensancha «para que aguante más» y deja de caber, porque eso no se ve
+en el render —se ve en el taller—.
+
+No es el «Cuerno de carga», que es el manguito olímpico de una máquina
+plate-loaded y forma parte de su mecanismo. Éste es un ESTANTE: vive en
+estructural, nace fijo y guarda los discos que no están en uso.
+
+### Corregido
+
+**EL PRIMER DISCO DE UN CUERNO ARRANCABA DESDE EL CANTO DE ATRÁS DEL BULTO.** En
+un cuerno suelto eso daba igual: el cuerno ES la pieza y su base es su raíz. En
+un atril no, porque por detrás del cuerno lleva placa y lengüeta y esas también
+cuentan en el bulto, así que el primer disco quedaba metido dentro de la propia
+chapa. `mangaCm` —que hasta ahora solo servía a las piezas de dos lados— dice
+también en las de un lado dónde puede asentar el primero. Las piezas que no lo
+declaran mantienen el centímetro de margen de siempre y no se mueven.
+
 ## [0.3.52] — 2026-09-14
 
 ### Añadido

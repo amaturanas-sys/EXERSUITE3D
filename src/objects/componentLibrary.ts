@@ -175,6 +175,42 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     largoAjustable: { eje: "z", extremosCm: 29, minCm: 60, maxCm: 240 },
     description: "Brazo/spotter de seguridad real: detiene la barra a una altura dada. Su largo se ajusta a la separación entre pilares.",
   },
+  {
+    /**
+     * ATRIL DE DISCOS (v0.3.53) — el cuerno que se cuelga de cualquier viga
+     * con pinholes. Malla de `cad/src/atril_discos.py`.
+     *
+     * NO ES EL `cuerno-carga`. Aquél es el manguito olímpico de una máquina
+     * plate-loaded: forma parte del mecanismo y se mueve con él. Éste es un
+     * ESTANTE —por eso vive en estructural y nace fijo—: se cuelga del
+     * montante para guardar los discos que no están en uso.
+     *
+     * CÓMO SE SOSTIENE: la lengüeta entra en un pinhole y carga el peso, y el
+     * canto bajo de la placa empuja contra la viga. Entre esos dos apoyos
+     * queda cerrado el par que el peso de los discos quiere abrir. Los dos
+     * pasantes de abajo son para el seguro, que no sostiene nada mientras la
+     * pieza está cargada: está para que no se salte del agujero al descargarla
+     * de golpe.
+     */
+    id: "atril-discos",
+    label: "Atril de discos",
+    category: "estructural",
+    materialId: "acero-negro",
+    // El bulto de reserva son las cotas del CAD (7 × 20.6 × 28.2 cm).
+    defaults: { kind: "box", width: 7, height: 20.6, depth: 28.2 },
+    physics: { massKg: 4.2, fixed: true },
+    // DE FRENTE, NO DE CANTO. El GLB sale Y-arriba por el convenio de glTF:
+    // este cuarto de vuelta devuelve los ejes del CAD, y con ellos el cuerno a
+    // la horizontal. Sin él la pieza entra mirando al techo.
+    orientacion: [Math.PI / 2, 0, 0],
+    // LOS DISCOS SE ENSARTAN DE VERDAD. Entran por un lado —el cuerno vuela en
+    // voladizo— y arrancan pasado el collar de la raíz: `mangaCm` mide desde el
+    // canto de atrás de la pieza (la punta de la lengüeta) hasta donde el
+    // primer disco puede asentar.
+    cargaDiscos: { lados: 1, diamCm: 45, grosorCm: 3, masaKg: 20, mangaCm: 4.6 },
+    description:
+      "Atril de discos: se cuelga por su lengüeta en el pinhole de cualquier viga y guarda los discos ensartados en su cuerno. El seguro de abajo impide que se salte del agujero.",
+  },
   // ---- Partes reales del despiece TTP001L (malla auténtica de biblioteca)
   {
     id: "montante-ttp",
