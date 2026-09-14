@@ -22,7 +22,16 @@ await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1200);
 // ficha del mercado.
 await page.evaluate(() => [...document.querySelectorAll(".hub-btn-card")]
   .find((b) => /Ver en 3D|View in 3D/.test(b.textContent)).click());
-await page.waitForTimeout(1000);
+// SE ESPERA AL CONTENIDO, NO AL RELOJ (v0.3.54). Con un `waitForTimeout` fijo
+// esta prueba se volvía roja cada vez que la biblioteca crecía: la lista tarda
+// un poco más en pintarse y el sondeo la leía a medio hacer. Lo que hace falta
+// es que el catálogo ESTÉ, así que se espera a que esté.
+await page.waitForFunction(
+  () => document.body.textContent.includes("Barra multi-agarre"),
+  null,
+  { timeout: 15000 },
+).catch(() => {});
+await page.waitForTimeout(300);
 // LA BIBLIOTECA ENSEÑA EL CATÁLOGO (v0.3.2). Hasta aquí listaba las 74
 // definiciones —plantillas internas y despiece de las máquinas incluidos—, y
 // esta prueba lo daba por bueno. Ahora enseña las mismas piezas que la paleta,
