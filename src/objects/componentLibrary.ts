@@ -960,6 +960,120 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     /**
+     * KETTLEBELL (v0.3.56) — la pesa rusa, en siete pesos. Malla de
+     * `cad/src/kettlebell.py`, con las cotas ajustadas a la tabla A/B/C/D de un
+     * despiece de fabricante.
+     *
+     * COMO LAS MANCUERNAS: un solo botón en la paleta que abre una burbuja para
+     * elegir el peso. Cada uno es una pieza distinta, no la misma estirada.
+     *
+     * EL ASA NO CRECE CON LA BOLA. De 10 a 20 kg crecen las dos; de 25 en
+     * adelante el asa ya está en su techo ergonómico —230 mm de ancho, Ø35 de
+     * agarre— y es EXACTAMENTE LA MISMA PIEZA en la de 25, la de 35, la de 45 y
+     * la de 55, mientras la bola sigue engordando de Ø18.7 a Ø25. Es lo que hace
+     * la tabla del fabricante y es lo que se ve en el estante.
+     *
+     * SIN `orientacion`: el modelo de CAD se dibuja ya con Z arriba, que es lo
+     * que el convenio de glTF convierte en «Y arriba» al otro lado. Entra de pie.
+     */
+    id: "kettlebell",
+    label: "Kettlebell",
+    category: "peso",
+    materialId: "hierro-fundido",
+    // El bulto de reserva es el de la de 20 kg, la del medio.
+    defaults: { kind: "box", width: 22.79, height: 26.14, depth: 17.19 },
+    physics: { massKg: 20, fixed: false },
+    variantes: [
+      { id: "kettlebell-10", etiqueta: "10 kg" },
+      { id: "kettlebell-15", etiqueta: "15 kg" },
+      { id: "kettlebell-20", etiqueta: "20 kg" },
+      { id: "kettlebell-25", etiqueta: "25 kg" },
+      { id: "kettlebell-35", etiqueta: "35 kg" },
+      { id: "kettlebell-45", etiqueta: "45 kg" },
+      { id: "kettlebell-55", etiqueta: "55 kg" },
+    ],
+    description:
+      "Pesa rusa de hierro con el peso grabado en el costado. Al tocarla se elige el peso: 10, 15, 20, 25, 35, 45 o 55 kg. El asa deja de crecer al llegar a su techo ergonómico y de ahí en adelante sólo engorda la bola.",
+  },
+  {
+    id: "kettlebell-10",
+    paleta: "oculta",
+    label: "Kettlebell 10 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 21.28, height: 21.86, depth: 13.19 },
+    physics: { massKg: 10, fixed: false },
+    description:
+      "Kettlebell de 10 kg: bola de Ø13.2 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-15",
+    paleta: "oculta",
+    label: "Kettlebell 15 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 22.12, height: 24.24, depth: 15.42 },
+    physics: { massKg: 15, fixed: false },
+    description:
+      "Kettlebell de 15 kg: bola de Ø15.4 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-20",
+    paleta: "oculta",
+    label: "Kettlebell 20 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 22.79, height: 26.14, depth: 17.19 },
+    physics: { massKg: 20, fixed: false },
+    description:
+      "Kettlebell de 20 kg: bola de Ø17.2 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-25",
+    paleta: "oculta",
+    label: "Kettlebell 25 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 22.87, height: 27.59, depth: 18.68 },
+    physics: { massKg: 25, fixed: false },
+    description:
+      "Kettlebell de 25 kg: bola de Ø18.7 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-35",
+    paleta: "oculta",
+    label: "Kettlebell 35 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 22.99, height: 29.99, depth: 21.16 },
+    physics: { massKg: 35, fixed: false },
+    description:
+      "Kettlebell de 35 kg: bola de Ø21.2 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-45",
+    paleta: "oculta",
+    label: "Kettlebell 45 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 23.19, height: 31.96, depth: 23.19 },
+    physics: { massKg: 45, fixed: false },
+    description:
+      "Kettlebell de 45 kg: bola de Ø23.2 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    id: "kettlebell-55",
+    paleta: "oculta",
+    label: "Kettlebell 55 kg",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 24.95, height: 33.66, depth: 24.95 },
+    physics: { massKg: 55, fixed: false },
+    description:
+      "Kettlebell de 55 kg: bola de Ø24.9 cm con la base rebajada y el peso grabado en el costado.",
+  },
+  {
+    /**
      * MANCUERNA HEXAGONAL (v0.3.52): CINCO PIEZAS, UN SOLO BOTÓN.
      *
      * Una de 50 lb no es una de 10 estirada —tiene otras cotas, otra masa y

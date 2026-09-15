@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.56] — 2026-09-15
+
+### Añadido
+
+**KETTLEBELLS DE 10, 15, 20, 25, 35, 45 Y 55 kg.** Bola de hierro con la base
+rebajada para que se quede quieta, asa de arco barrida de verdad —sección
+circular a lo largo de su camino, no tres cilindros pegados— y el peso grabado
+en una cara plana mecanizada en el costado. Modeladas en `cad/src/kettlebell.py`.
+
+En la paleta hay UN botón, como en las mancuernas: al tocarlo se abre una
+burbuja con los siete pesos y se elige antes de colocarla.
+
+**LAS COTAS SALEN DE LA TABLA DE UN FABRICANTE, no de una regla inventada.**
+Sobre los seis pesos de un despiece real (4, 8, 12, 16, 20 y 24 kg) se ajusta,
+para cada una de sus cotas, una recta en la raíz cúbica del peso —que es como
+tiene que ir, porque el peso va con el volumen— y el ajuste cae encima de la
+tabla: el Ø de la bola da 91/89, 142/142, 184/184; el ancho del asa 202/201,
+225/225; el Ø del agarre 30/30, 32/32.
+
+El término independiente del Ø de la bola no es un parche: es la parte del peso
+que NO está en la bola —el asa, que pesa casi lo mismo en todas—, y por eso una
+kettlebell pequeña tiene la bola más chica de lo que el cubo diría.
+
+**EL ASA DEJA DE CRECER, Y ESO LO DICE LA PROPIA TABLA.** De 4 a 24 kg la bola
+pasa de Ø89 a Ø184 —más del doble— mientras el asa se mueve de 201 a 230 y se
+planta, y el agarre de Ø29 a Ø35 y se planta también. Una mano es una mano. De
+25 kg en adelante el asa es **exactamente la misma pieza** en la de 25, la de
+35, la de 45 y la de 55 —230 mm de ancho, Ø35 de agarre, 57 de hueco— mientras
+la bola sigue engordando de Ø18,7 a Ø25 cm. Por debajo del techo sí crece, que
+es la otra mitad de la regla.
+
+El alto total NO se ajustó: sale de la geometría, y aun así cae a 3 mm del que
+la tabla declara para 20 kg (258 contra 255) y a 1 mm del de 16 (243 contra 244).
+
 ## [0.3.55] — 2026-09-15
 
 ### Cambiado

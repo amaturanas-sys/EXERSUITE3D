@@ -63,6 +63,7 @@ no un error del modelo.
 | Mancuerna hexagonal · 10 a 50 lb | `src/mancuerna_hex.py` | `mancuerna-10` … `mancuerna-50` (la paleta abre una burbuja para elegir el peso) |
 | Atril de discos | `src/atril_discos.py` | `atril-discos` (en la paleta) |
 | Brazo spotter (voladizo) | `src/brazo_spotter.py` | `brazo-spotter` (en la paleta, con largo a medida) |
+| Kettlebell · 10 a 55 kg | `src/kettlebell.py` | `kettlebell-10` … `kettlebell-55` (la paleta abre una burbuja para elegir el peso) |
 
 ### Una pieza de `cad/` en la PALETA
 
