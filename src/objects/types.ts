@@ -130,6 +130,14 @@ export interface PrimitiveParams {
    * a él— y `moviles` las que pivotan. El recorrido va en grados de la misma
    * escala que la bisagra (0 = alineado con el ancla, 180 = extendido) y
    * `libre` distingue el pivote suelto del frenado, que se sostiene solo.
+   *
+   * QUÉ ES «ANCLA» Y QUÉ NO ES (v0.3.55). Es la REFERENCIA de la jerarquía: la
+   * pieza respecto de la cual se mide y se mueve todo lo demás. NO quiere decir
+   * que esté clavada al suelo. Un pasador cuyas dos piezas son móviles es un
+   * montaje corriente —un eslabón de una biela, un brazo colgado de otro
+   * brazo—: el conjunto entero flota y el móvil sigue girando respecto del
+   * ancla, que es justo lo útil. Quien decide si algo está clavado al mundo es
+   * `physics.fixed` de cada pieza, y esta herramienta no lo toca nunca.
    */
   pasadorAnclas?: string[];
   pasadorMoviles?: string[];
@@ -140,6 +148,22 @@ export interface PrimitiveParams {
   pasadorPerfora?: boolean;
   /** ¿El pasador se monta sobre horquillas soldadas a sus anclas? (v0.3.32) */
   pasadorAnclaje?: boolean;
+  /**
+   * DE QUÉ LADO VA EL HERRAJE (v0.3.55): la horquilla y, con ella, el halo de
+   * agujeros del modo indexado.
+   *
+   * Hasta aquí iba siempre en el ancla, y eso ATABA DOS DECISIONES QUE NO
+   * TIENEN POR QUÉ IR JUNTAS: para mover la horquilla al otro lado había que
+   * cambiar los papeles, y cambiar los papeles cambia qué pieza gira respecto
+   * de cuál. En el acero no es así —una horquilla se suelda donde convenga
+   * soldarla— y en una máquina con todo el grupo móvil el sitio del herraje no
+   * dice nada de la jerarquía.
+   *
+   * `"ancla"` (lo de siempre, y lo que sigue saliendo por defecto), `"movil"`
+   * para soldarla al brazo que gira, o `"ambas"` para el montaje de dos
+   * horquillas enfrentadas.
+   */
+  pasadorHerrajeEn?: "ancla" | "movil" | "ambas";
   /**
    * MODO INDEXADO (v0.3.42): con él puesto, lo que gira en el pasador sólo se
    * queda en las posiciones de un disco —como el pin de seguro de `cad/`, que

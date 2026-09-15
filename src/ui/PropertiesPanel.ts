@@ -946,8 +946,8 @@ export class PropertiesPanel {
       const sel = el("select", { class: "select" }) as HTMLSelectElement;
       for (const [v, t] of [
         ["", tt("—", "—")],
-        ["ancla", tt("Ancla", "Anchor")],
-        ["movil", tt("Móvil", "Mobile")],
+        ["ancla", tt("Base (referencia)", "Base (reference)")],
+        ["movil", tt("Móvil (gira)", "Mobile (turns)")],
       ] as const) {
         const op = el("option", { value: v }, [t]) as HTMLOptionElement;
         sel.append(op);
@@ -1085,7 +1085,15 @@ export class PropertiesPanel {
       obj.mesh.updateMatrixWorld(true);
       const centro = obj.mesh.getWorldPosition(new T.Vector3());
       const eje = new T.Vector3(0, 1, 0).applyQuaternion(obj.mesh.quaternion).normalize();
-      for (const id of p.pasadorAnclas ?? []) {
+      // LAS CARAS SON LAS DE QUIEN LLEVA EL HERRAJE (v0.3.55), no las del
+      // ancla: desde que la horquilla puede ir en el otro lado, preguntar por
+      // las caras del ancla sería preguntar por una pieza que no la lleva.
+      const ladoH = p.pasadorHerrajeEn ?? "ancla";
+      const portadores =
+        ladoH === "movil" ? (p.pasadorMoviles ?? [])
+        : ladoH === "ambas" ? [...(p.pasadorAnclas ?? []), ...(p.pasadorMoviles ?? [])]
+        : (p.pasadorAnclas ?? []);
+      for (const id of portadores) {
         const a = this.editor.listObjects().find((o) => o.id === id);
         if (!a) continue;
         const opciones = this.editor.carasDeAnclaje(a, centro, eje, !!p.pasadorAbraza);
@@ -1121,6 +1129,33 @@ export class PropertiesPanel {
       aplicar();
     });
 
+    // INVERTIR LA JERARQUÍA (v0.3.55). Un botón, no un desplegable: lo que hace
+    // es cambiar de bando las dos listas, y eso es un gesto, no un ajuste.
+    const invertir = el("button", { class: "btn" }, [
+      tt("⇄ Invertir jerarquía", "⇄ Swap hierarchy"),
+    ]) as HTMLButtonElement;
+    invertir.addEventListener("click", () => {
+      this.editor.invertirPasador(obj);
+      // Se repinta el panel entero: los papeles cambiaron de bando y con ellos
+      // los desplegables de cada pieza y la lista de caras.
+      this.show(obj);
+    });
+
+    // DE QUÉ LADO VA EL HERRAJE (v0.3.55), aparte de quién gira.
+    const ladoSel = el("select", { class: "select" }) as HTMLSelectElement;
+    for (const [v, t] of [
+      ["ancla", tt("En la base", "On the base")],
+      ["movil", tt("En el móvil", "On the mobile part")],
+      ["ambas", tt("En las dos", "On both")],
+    ] as const) {
+      ladoSel.append(el("option", { value: v }, [t]) as HTMLOptionElement);
+    }
+    ladoSel.value = p.pasadorHerrajeEn ?? "ancla";
+    ladoSel.addEventListener("change", () => {
+      p.pasadorHerrajeEn = ladoSel.value as "ancla" | "movil" | "ambas";
+      aplicar();
+    });
+
     pintarCaras();
 
     return el("div", { class: "field" }, [
@@ -1131,7 +1166,14 @@ export class PropertiesPanel {
           "Say which parts hold it and which pivot on it. The gizmo places it; moving it redoes its joints and holes.",
         ),
       ]),
+      el("div", { class: "sub" }, [
+        tt(
+          "«Base» es la REFERENCIA, no una pieza clavada al suelo: el móvil gira respecto de ella y el conjunto entero puede moverse. Quien está anclado al mundo se dice en Física, pieza por pieza.",
+          "«Base» is the REFERENCE, not a part pinned to the ground: the mobile part turns relative to it and the whole group may still move. What is anchored to the world is said in Physics, part by part.",
+        ),
+      ]),
       ...filas,
+      el("div", { class: "row" }, [invertir]),
       recorrido,
       el("label", { class: "row" }, [
         libre,
@@ -1151,6 +1193,10 @@ export class PropertiesPanel {
           "…que ABRACE la viga (orejas por los dos costados)",
           "…that WRAPS the beam (lugs down both sides)",
         ),
+      ]),
+      el("label", { class: "row" }, [
+        el("span", {}, [tt("Herraje soldado…", "Clevis welded…")]),
+        ladoSel,
       ]),
       caras,
       el("label", { class: "row" }, [

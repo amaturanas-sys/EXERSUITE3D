@@ -12695,9 +12695,34 @@ export class Editor {
     // exactamente su radio y pasa. Es la pieza que faltaba para que el rango
     // que se pide en Propiedades sea el rango que la máquina hace de verdad.
     for (const m of moviles) this.redondearProximal(m, centro, obj.params.pasadorRedondea !== false);
+    // Y LA QUE DEJA DE GIRAR, EN ESCUADRA OTRA VEZ (v0.3.55). Al invertir la
+    // jerarquía la punta redonda se quedaba puesta en la pieza que ya no barre
+    // nada: acero comido por un recorrido que ahora hace la otra.
+    for (const a of anclas) this.redondearProximal(a, centro, false);
 
     // PUNTOS DE ANCLAJE: la horquilla que coge el eje POR LOS DOS LADOS.
-    const anclajes = this.montarAnclajes(obj, marca, anclas, moviles, centro, eje);
+    //
+    // DE QUÉ LADO (v0.3.55). El herraje ya no va forzosamente en el ancla: va
+    // donde se diga. Quien lo LLEVA es la pieza a cuya cara se suelda el alma;
+    // quien PASA es la otra, la que entra entre las orejas y a cuya medida sale
+    // la garganta. Cambiar el lado no cambia quién gira respecto de quién: eso
+    // lo siguen diciendo los papeles, y sólo ellos.
+    const lado = obj.params.pasadorHerrajeEn ?? "ancla";
+    let anclajes = 0;
+    if (lado === "ancla" || lado === "ambas") {
+      anclajes += this.montarAnclajes(obj, marca, anclas, moviles, centro, eje, "ancla");
+    }
+    if (lado === "movil" || lado === "ambas") {
+      anclajes += this.montarAnclajes(obj, marca, moviles, anclas, centro, eje, "movil");
+    }
+    if (lado !== "ancla" && lado !== "ambas") {
+      // Barrido de las que hubiera puesto el lado contrario en una pasada
+      // anterior: se rehacen enteras, así que no puede quedar herraje huérfano.
+      this.barrerHorquillas(`${marca}: horquilla`, "ancla");
+    }
+    if (lado !== "movil" && lado !== "ambas") {
+      this.barrerHorquillas(`${marca}: horquilla`, "movil");
+    }
 
     // TALADROS: donde va el pasador quedan los agujeros, como en la máquina.
     let taladros = 0;
@@ -12711,6 +12736,27 @@ export class Editor {
     this.scheduleAutosave();
     this.requestRender();
     return { anclas: anclas.length, moviles: moviles.length, taladros, anclajes };
+  }
+
+  /**
+   * INVERTIR LA JERARQUÍA DE UN PASADOR (v0.3.55).
+   *
+   * Cambia de bando las dos listas: lo que era referencia pasa a girar y lo que
+   * giraba pasa a ser referencia. El herraje NO se mueve —su lado lo dice
+   * `pasadorHerrajeEn` y esto no lo toca—, así que se puede tener la horquilla
+   * soldada donde toca en el acero y aun así decidir cuál de las dos piezas se
+   * mueve respecto de la otra.
+   *
+   * En un conjunto que flota entero las dos versiones son el mismo mecanismo
+   * visto desde dos sitios, y por eso la elección es del usuario y no de la
+   * geometría: lo que cambia es desde dónde se leen las horas del recorrido y
+   * qué pieza conduce el freno.
+   */
+  invertirPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number; anclajes: number } {
+    const anclas = [...(obj.params.pasadorAnclas ?? [])];
+    obj.params.pasadorAnclas = [...(obj.params.pasadorMoviles ?? [])];
+    obj.params.pasadorMoviles = anclas;
+    return this.aplicarPasador(obj);
   }
 
   /**
@@ -12750,18 +12796,29 @@ export class Editor {
    * mira al pasador, la garganta a la medida de lo que gira y el taladro sobre
    * el eje. Se rehacen enteras en cada pasada, así que no acumulan herraje.
    */
+  /**
+   * Retira el herraje que un pasador puso en UN LADO. Se rehace entero en cada
+   * pasada, así que barrer antes es lo que impide que se acumule; y barrer por
+   * lado es lo que permite montar los dos a la vez sin que uno borre al otro.
+   */
+  private barrerHorquillas(marcaH: string, lado: "ancla" | "movil"): void {
+    const suyo = `${marcaH}·${lado}`;
+    for (const o of this.listObjects()) {
+      if (o.componentId === "punto-anclaje" && o.name.startsWith(suyo)) this.removeObject(o);
+    }
+  }
+
   private montarAnclajes(
     obj: SceneObject,
     marca: string,
-    anclas: SceneObject[],
-    moviles: SceneObject[],
+    portadores: SceneObject[],
+    pasantes: SceneObject[],
     centro: THREE.Vector3,
     eje: THREE.Vector3,
+    lado: "ancla" | "movil",
   ): number {
     const marcaH = `${marca}: horquilla`;
-    for (const o of this.listObjects()) {
-      if (o.componentId === "punto-anclaje" && o.name.startsWith(marcaH)) this.removeObject(o);
-    }
+    this.barrerHorquillas(marcaH, lado);
     if (!obj.params.pasadorAnclaje) return 0;
 
     const radioEje = Math.max(obj.params.radiusTop ?? 1.25, 0.2);
@@ -12770,8 +12827,8 @@ export class Editor {
     // que gira; en la abrazadera es la viga, que es lo que se cruza.
     let garganta = 4.2;
     let alto = Math.max(8, radioEje * 4);
-    if (moviles.length) {
-      const m = moviles[0];
+    if (pasantes.length) {
+      const m = pasantes[0];
       garganta = this.medidaEn(m, eje) + 0.4;
       // El alto de la oreja es el ancho del brazo en el plano de giro: así la
       // punta redonda de la oreja y la del brazo son la MISMA circunferencia.
@@ -12783,7 +12840,7 @@ export class Editor {
     }
 
     let puestas = 0;
-    for (const a of anclas) {
+    for (const a of portadores) {
       a.mesh.updateMatrixWorld(true);
       const caras = this.carasDeAnclaje(a, centro, eje, abraza);
       if (!caras.length) continue;
@@ -12802,7 +12859,7 @@ export class Editor {
         : garganta;
 
       const h = this.addComponent("punto-anclaje");
-      h.name = `${marcaH}${abraza ? " (abrazadera)" : ""} de ${a.name}`;
+      h.name = `${marcaH}·${lado}${abraza ? " (abrazadera)" : ""} de ${a.name}`;
       h.mesh.name = h.name;
       h.params = {
         kind: "horquilla",
@@ -12929,8 +12986,21 @@ export class Editor {
     ];
     const letras = ["x", "y", "z"];
     const salida: { clave: string; normal: THREE.Vector3; vuelo: number; etiqueta: string }[] = [];
+    // ¿ESTÁ EL PASADOR OFF THE END? (v0.3.55) La tapa del extremo se descarta
+    // porque una horquilla no se suelda en la punta de un poste… salvo cuando
+    // la punta ES el sitio: el brazo que pivota por su extremo lleva ahí su
+    // horquilla, y esa es justamente la pieza a la que ahora se le puede pedir
+    // el herraje. Lo que distingue un caso del otro no es el papel de la pieza
+    // sino DÓNDE CAE EL EJE: off the end si su desvío LATERAL respecto de la
+    // línea de la viga cabe dentro del propio perfil. Un pasador a media altura
+    // de un poste está a 4,5 cm de costado y no pasa esta prueba; el de la punta
+    // de un brazo está sobre su eje y sí.
+    const largoDir = bases[iLargo].clone().applyQuaternion(q).normalize();
+    const lateral = dea.clone().addScaledVector(largoDir, -dea.dot(largoDir)).length();
+    const perfil = Math.max(...s.semi.filter((_, k) => k !== iLargo));
+    const offTheEnd = lateral <= perfil + 0.2;
     for (let i = 0; i < 3; i++) {
-      if (i === iLargo) continue;
+      if (i === iLargo && !offTheEnd) continue;
       const n = bases[i].applyQuaternion(q).normalize();
       // PERPENDICULAR AL EJE, no «poco paralela». El alma tiene que apoyar
       // PLANA en la cara y las orejas salir a escuadra del eje: si la cara está
@@ -12948,7 +13018,20 @@ export class Editor {
         // viga, así que el eje tiene que estar por detrás. De ahí que cada cara
         // sirva para uno de los dos estilos y nunca para los dos: el vuelo de
         // uno es el del otro con el signo cambiado.
-        const semi = s.semi[i];
+        // EL SEMIANCHO DEL EJE LARGO NO ES MEDIA PIEZA (v0.3.55). En una viga
+        // el origen se mide SOBRE EL TRAZADO, recortado al tramo: para un
+        // pasador off the end ese origen ES la punta, así que de ahí a la tapa
+        // no queda nada. Restando media viga —como en las caras de costado— el
+        // vuelo salía de −17 cm y la tapa se descartaba sola. Lo que hay que
+        // restar es lo que queda de origen a la tapa, y eso es media pieza
+        // MENOS lo que el origen ya se ha corrido desde el centro.
+        let semi = s.semi[i];
+        if (i === iLargo) {
+          const corrido = Math.abs(
+            s.origen.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3())).dot(largoDir),
+          );
+          semi = Math.max(0, semi - corrido);
+        }
         const vuelo = abraza ? semi - dea.dot(normal) : dea.dot(normal) - semi;
         salida.push({
           clave: `${signo > 0 ? "+" : "-"}${letras[i]}`,

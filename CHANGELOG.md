@@ -5,6 +5,52 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.55] — 2026-09-15
+
+### Cambiado
+
+**LA JERARQUÍA DEL PASADOR SE PROGRAMA, Y NO LA DECIDE DÓNDE ESTÉ LA
+HORQUILLA.** Quién gira respecto de quién es una decisión de diseño, no un
+hecho de la geometría: en un conjunto que flota entero, «el brazo gira sobre la
+viga» y «la viga gira sobre el brazo» son el mismo mecanismo visto desde dos
+sitios, y el que vale lo elige quien diseña. Tres cambios:
+
+  · **«Ancla» pasa a llamarse «Base (referencia)»**, que es lo que siempre fue.
+    No quiere decir clavada al suelo —eso se dice en Física, pieza por pieza, y
+    esta herramienta no lo toca nunca—: quiere decir la pieza respecto de la
+    cual se mide y se mueve todo lo demás. Un pasador con las dos piezas
+    móviles es un montaje corriente y ahora el panel lo dice.
+
+  · **Un botón para invertir la jerarquía.** Cambia de bando las dos listas de
+    una vez. La punta redonda del extremo proximal viaja con el papel: la que
+    deja de girar vuelve a quedar en escuadra, en vez de conservar un redondeo
+    que se comía acero por un recorrido que ahora hace la otra.
+
+  · **El herraje se suelda donde se diga**, no forzosamente en la base: en la
+    base, en el móvil, o en las dos —dos horquillas enfrentadas—. Hasta aquí
+    iba siempre en el ancla, así que para cambiarlo de lado había que cambiar
+    los papeles, y cambiar los papeles cambia quién gira. En el acero no es
+    así: una horquilla se suelda donde convenga soldarla.
+
+El selector de cara de Propiedades sigue ahora a quien LLEVA el herraje, que ya
+no tiene por qué ser la base.
+
+### Corregido
+
+**UNA HORQUILLA NO SE PODÍA SOLDAR EN LA PUNTA DE UN BRAZO.** La tapa del
+extremo estaba descartada como cara de soldadura, y con razón para un poste: un
+pasador a media altura elegía la vertical y pedía 31 cm de vuelo para una cara
+que estaba a 4,5. Pero el brazo que pivota POR SU EXTREMO lleva la horquilla
+justo ahí. Lo que distingue un caso del otro no es el papel de la pieza sino
+dónde cae el eje: la tapa vuelve a ofrecerse cuando el pasador está *off the
+end* —su desvío lateral respecto de la línea de la viga cabe dentro del propio
+perfil—, que es falso para el poste y cierto para el brazo.
+
+**Y el vuelo de esa cara salía en negativo.** En una pieza de línea el origen se
+mide sobre el TRAZADO, recortado al tramo, así que para un pasador off the end
+ese origen ya ES la punta y de ahí a la tapa no queda nada; restando media viga
+—como en las caras de costado— salían −17 cm y la cara se descartaba sola.
+
 ## [0.3.54] — 2026-09-14
 
 ### Añadido
