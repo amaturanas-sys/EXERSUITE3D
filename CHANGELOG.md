@@ -5,6 +5,26 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.57] — 2026-09-15
+
+### Corregido
+
+**UN PASADOR METIDO DENTRO DE UNA VIGA VOLVÍA A OFRECER LA TAPA DEL EXTREMO.**
+Regresión de v0.3.55, que es cuando se volvió a permitir soldar una horquilla en
+la punta de un brazo. La regla decía «off the end si el desvío LATERAL del eje
+respecto de la línea de la viga cabe dentro del propio perfil», y eso lo cumple
+también un eje que atraviesa la viga por dentro —donde no hay tapa que valga,
+sólo abrazadera—. Resultado: cuatro caras ofrecidas donde hay dos, y la
+abrazadera se montaba contra la tapa en vez de contra el costado.
+
+Son DOS condiciones y faltaba la segunda: además de estar sobre la línea, el eje
+tiene que estar **pasado el extremo** —su distancia a lo largo tiene que superar
+lo que queda del origen a la tapa—. En una pieza de línea el origen se recorta al
+trazado, así que para un eje off the end eso que queda es cero y la cuenta sale
+sola; para uno metido dentro es media viga y no pasa.
+
+Lo cazó `prueba-punto-anclaje`, que ya medía exactamente esto desde antes.
+
 ## [0.3.56] — 2026-09-15
 
 ### Añadido

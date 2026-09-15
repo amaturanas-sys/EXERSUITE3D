@@ -12991,14 +12991,24 @@ export class Editor {
     // la punta ES el sitio: el brazo que pivota por su extremo lleva ahí su
     // horquilla, y esa es justamente la pieza a la que ahora se le puede pedir
     // el herraje. Lo que distingue un caso del otro no es el papel de la pieza
-    // sino DÓNDE CAE EL EJE: off the end si su desvío LATERAL respecto de la
-    // línea de la viga cabe dentro del propio perfil. Un pasador a media altura
-    // de un poste está a 4,5 cm de costado y no pasa esta prueba; el de la punta
-    // de un brazo está sobre su eje y sí.
+    // sino DÓNDE CAE EL EJE.
+    //
+    // SON DOS CONDICIONES, Y LA SEGUNDA SE ME OLVIDÓ (v0.3.57). Que el eje esté
+    // sobre la LÍNEA de la viga —desvío lateral dentro del propio perfil— no
+    // basta: un pasador metido DENTRO de la viga también lo cumple, y ahí no hay
+    // tapa que valga, sólo abrazadera. Hace falta además que esté PASADO EL
+    // EXTREMO, o sea que su distancia a lo largo supere lo que queda de origen a
+    // la tapa. En una pieza de línea el origen se recorta al trazado, así que
+    // para un eje off the end eso que queda es cero y la cuenta sale sola.
     const largoDir = bases[iLargo].clone().applyQuaternion(q).normalize();
     const lateral = dea.clone().addScaledVector(largoDir, -dea.dot(largoDir)).length();
     const perfil = Math.max(...s.semi.filter((_, k) => k !== iLargo));
-    const offTheEnd = lateral <= perfil + 0.2;
+    const corridoOrigen = Math.abs(
+      s.origen.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3())).dot(largoDir),
+    );
+    const hastaLaTapa = Math.max(0, s.semi[iLargo] - corridoOrigen);
+    const offTheEnd =
+      lateral <= perfil + 0.2 && Math.abs(dea.dot(largoDir)) > hastaLaTapa + 0.05;
     for (let i = 0; i < 3; i++) {
       if (i === iLargo && !offTheEnd) continue;
       const n = bases[i].applyQuaternion(q).normalize();
@@ -13025,13 +13035,8 @@ export class Editor {
         // vuelo salía de −17 cm y la tapa se descartaba sola. Lo que hay que
         // restar es lo que queda de origen a la tapa, y eso es media pieza
         // MENOS lo que el origen ya se ha corrido desde el centro.
-        let semi = s.semi[i];
-        if (i === iLargo) {
-          const corrido = Math.abs(
-            s.origen.clone().sub(a.mesh.getWorldPosition(new THREE.Vector3())).dot(largoDir),
-          );
-          semi = Math.max(0, semi - corrido);
-        }
+        // (ver `hastaLaTapa` arriba: es esta misma cuenta, y se reutiliza)
+        const semi = i === iLargo ? hastaLaTapa : s.semi[i];
         const vuelo = abraza ? semi - dea.dot(normal) : dea.dot(normal) - semi;
         salida.push({
           clave: `${signo > 0 ? "+" : "-"}${letras[i]}`,
