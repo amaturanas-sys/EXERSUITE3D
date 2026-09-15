@@ -24,3 +24,7 @@ pruebas/*.prefab.json
 .cache/cadgen/
 __pycache__/
 /salidas/
+
+# El grafo de graphify: se reconstruye con `graphify update .` en un minuto y
+# graph.html pesa casi 4 MB. Lo que sí se versiona es la skill y el .graphifyignore.
+graphify-out/

@@ -1,0 +1,32 @@
+# QUÉ NO ENTRA EN EL GRAFO (v0.3.57)
+#
+# `.gitignore` ya se respeta solo, así que aquí sólo va lo que SÍ está versionado
+# y aun así no dice nada de la arquitectura. La primera pasada lo dejó claro: el
+# segundo nodo más conectado de todo el proyecto era `ha()`, con 234 aristas, y
+# resultó ser una función del decodificador Draco minificado que viene de fuera.
+# Un grafo cuyos dos primeros concentradores son ruido de terceros orienta mal.
+
+# TERCEROS Y MINIFICADOS. Ni se escriben aquí ni se leen: se actualizan de golpe.
+public/draco/
+**/*.min.js
+
+# ACTIVOS BINARIOS. Mallas, modelos y descargas: peso, no estructura.
+public/models/
+hf-descargas/
+
+# LAS SALIDAS DEL CAD. Lo que se lee es `cad/src/`, que es el modelo; STEP, STL,
+# GLB y los prefabs son lo que ese modelo escribe, y cambian en cada compilación.
+cad/STEP/
+cad/STL/
+cad/GLB/
+cad/JSON/
+
+# LA CÁPSULA DEL TIEMPO y los prefabs: historia y datos, no código.
+docs/capsula-del-tiempo/
+docs/prefabs/
+
+# EL ANDAMIAJE DE ANDROID. Gradle, manifiestos y el wrapper no son la app.
+android/
+
+# Y EL PROPIO GRAFO, que si no se indexa a sí mismo.
+graphify-out/
