@@ -25,6 +25,13 @@ pruebas/*.prefab.json
 __pycache__/
 /salidas/
 
-# El grafo de graphify: se reconstruye con `graphify update .` en un minuto y
-# graph.html pesa casi 4 MB. Lo que sí se versiona es la skill y el .graphifyignore.
-graphify-out/
+# El grafo de graphify. Fuera graph.json y graph.html —4 y 3,7 MB, y se rehacen
+# con `graphify update .` en un minuto—, pero DENTRO el informe: son 51 KB de
+# markdown legible y nombrar sus 319 comunidades cuesta una pasada de LLM que no
+# hay por qué repetir en cada clon.
+#
+# OJO CON LA REGLA DE GIT: hay que excluir el CONTENIDO (`graphify-out/*`), no la
+# carpeta. Excluida la carpeta, git ni se asoma dentro y el `!` de abajo no
+# rescataría nada.
+graphify-out/*
+!graphify-out/GRAPH_REPORT.md
