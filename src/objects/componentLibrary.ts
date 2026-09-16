@@ -1179,9 +1179,11 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     /**
-     * DISCO DE PESO (v0.3.63) — el disco olímpico, en cinco libras distintas.
-     * Mallas de `cad/src/disco_barbell.py`, copiadas de la foto del juego y de
-     * la ficha «Olympic Weight Plate Specifications» del fabricante.
+     * DISCO DE PESO (v0.3.64) — el disco olímpico, en cinco libras distintas.
+     * Mallas de `cad/src/disco_barbell.py`, levantadas del OBJ original del
+     * disco —que es el que manda en cómo se construye la rueda: cubo macizo,
+     * alma finísima, llanta achaflanada— y rotuladas y acotadas según el cartel
+     * del juego, que va en pulgadas y en libras.
      *
      * COMO LAS MANCUERNAS Y LAS KETTLEBELLS: un botón que abre la burbuja de
      * pesos. El de este `def` no tiene malla propia; al tocarlo se coloca
@@ -1191,9 +1193,13 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
      * ficha lo repite en sus siete filas. Es la única cota que no se mueve,
      * porque un disco que no enfila la barra no es un disco.
      *
-     * DOS FAMILIAS, COMO EN LA FOTO: los de 35 y 45 lb llevan la CRUZ de cuatro
-     * radios con sus cuatro cuarteles rebajados; los de 10, 15 y 25 son lisos,
-     * con un anillo rebajado y el renglón de texto dando la vuelta entera.
+     * DOS FAMILIAS, COMO EN EL CARTEL: los de 35 y 45 lb llevan la CRUZ de
+     * cuatro radios con sus cuatro cuarteles vaciados, «BARBELL» arriba y
+     * «STANDARD» abajo; los de 5, 10 y 25 no la llevan —su alma es un anillo
+     * liso— y su rotulado da la vuelta entera a la llanta.
+     *
+     * 45, 35 Y 25 TIENEN EL MISMO CANTO: 1.4 pulgadas los tres. El disco grande
+     * no es el chico engordado: crece de diámetro y se queda igual de grueso.
      *
      * SIN `orientacion`: el cuarto de vuelta va horneado en el modelo de CAD,
      * así que el GLB llega ya de pie y con los ejes locales sanos —el disco se
@@ -1208,17 +1214,17 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "peso",
     materialId: "hierro-fundido",
     // El bulto de reserva es el de 25 lb, el del medio.
-    defaults: { kind: "box", width: 29.06, height: 29.06, depth: 3.55 },
+    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 4.06 },
     physics: { massKg: 11.34, fixed: false },
     variantes: [
+      { id: "disco-barbell-5", etiqueta: "5 lb" },
       { id: "disco-barbell-10", etiqueta: "10 lb" },
-      { id: "disco-barbell-15", etiqueta: "15 lb" },
       { id: "disco-barbell-25", etiqueta: "25 lb" },
       { id: "disco-barbell-35", etiqueta: "35 lb" },
       { id: "disco-barbell-45", etiqueta: "45 lb" },
     ],
     description:
-      "Disco olimpico de hierro con BARBELL arriba y STANDARD abajo en relieve, por las dos caras, y las libras y los kilos a los lados. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles rebajados; los chicos son lisos.",
+      "Disco olimpico de hierro fundido con las letras STANDARD BARBELL en relieve por las dos caras y el peso en libras y en kilos. Al tocarlo se elige el peso: 5, 10, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles vaciados; los de 5, 10 y 25 son lisos y llevan el rotulo dando la vuelta a la llanta.",
   },
   {
     id: "disco-barbell-10",
@@ -1226,21 +1232,21 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 10 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 22.04, height: 22.04, depth: 2.83 },
+    defaults: { kind: "box", width: 23.5, height: 23.5, depth: 2.66 },
     physics: { massKg: 4.54, fixed: false },
     description:
-      "Disco de 10 libras (4.5 kg): O22 cm por 2.3 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
+      "Disco de 10 libras (4.5 kg): O23.5 cm por 2.16 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 10 LBS y 4.5 KGS dando la vuelta a la llanta.",
   },
   {
-    id: "disco-barbell-15",
+    id: "disco-barbell-5",
     paleta: "oculta",
-    label: "Disco 15 lb",
+    label: "Disco 5 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 24.12, height: 24.12, depth: 3.18 },
-    physics: { massKg: 6.8, fixed: false },
+    defaults: { kind: "box", width: 19.69, height: 19.69, depth: 2.15 },
+    physics: { massKg: 2.27, fixed: false },
     description:
-      "Disco de 15 libras (6.8 kg): O24.1 cm por 2.7 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
+      "Disco de 5 libras (2.3 kg): O19.7 cm por 1.65 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 5 LBS y 2.3 KGS dando la vuelta a la llanta.",
   },
   {
     id: "disco-barbell-25",
@@ -1248,10 +1254,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 25 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 29.06, height: 29.06, depth: 3.55 },
+    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 4.06 },
     physics: { massKg: 11.34, fixed: false },
     description:
-      "Disco de 25 libras (11.3 kg): O29.1 cm por 3.1 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
+      "Disco de 25 libras (11.3 kg): O27.9 cm por 3.56 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 25 LBS y 11.3 KGS dando la vuelta a la llanta.",
   },
   {
     id: "disco-barbell-35",
@@ -1259,10 +1265,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 35 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 36.42, height: 36.42, depth: 3.75 },
+    defaults: { kind: "box", width: 34.93, height: 34.93, depth: 4.06 },
     physics: { massKg: 15.88, fixed: false },
     description:
-      "Disco de 35 libras (15.9 kg): O36.4 cm por 3.3 de canto, con la cruz de cuatro radios, cuatro cuarteles rebajados y las libras y los kilos a los lados.",
+      "Disco de 35 libras (15.9 kg): O34.9 cm por 3.56 de canto, con la cruz de cuatro radios, BARBELL y STANDARD en la llanta y 35 LBS / 15.9 KGS en los cuarteles.",
   },
   {
     id: "disco-barbell-45",
@@ -1270,10 +1276,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 45 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 44.5, height: 44.5, depth: 4.0 },
+    defaults: { kind: "box", width: 44.13, height: 44.13, depth: 4.06 },
     physics: { massKg: 20.41, fixed: false },
     description:
-      "Disco de 45 libras (20.4 kg): O44.5 cm por 3.5 de canto, el mayor del juego, con la cruz de cuatro radios y los cuarteles rebajados casi hasta el alma.",
+      "Disco de 45 libras (20.4 kg): O44.1 cm por 3.56 de canto, el mayor del juego, con la cruz de cuatro radios y el alma vaciada hasta dejarla en 4 mm.",
   },
   {
     id: "contrapeso",

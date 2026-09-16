@@ -198,7 +198,7 @@ export const TRADUCCIONES: Record<string, string> = {
   "Bloque de peso": "Weight block",
   "Disco de peso": "Weight plate",
   "Disco 10 lb": "10 lb plate",
-  "Disco 15 lb": "15 lb plate",
+  "Disco 5 lb": "5 lb plate",
   "Disco 25 lb": "25 lb plate",
   "Disco 35 lb": "35 lb plate",
   "Disco 45 lb": "45 lb plate",
@@ -619,18 +619,18 @@ export const TRADUCCIONES: Record<string, string> = {
   "Pasador cromado que ATRAVIESA un pinhole del pilar y hace de tope de seguridad o de gancho. Calza agujero a agujero; su largo, su diámetro y el sobrante a cada lado se ajustan en Propiedades.": "Chromed pin that GOES THROUGH a post's pinhole and acts as a safety stop or a hook. It seats hole by hole; its length, its diameter and the overhang on each side are set in Properties.",
   "Pesa rusa de hierro con el peso grabado en el costado. Al tocarla se elige el peso: 10, 15, 20, 25, 35, 45 o 55 kg. El asa deja de crecer al llegar a su techo ergonómico y de ahí en adelante sólo engorda la bola.": "Cast-iron kettlebell with the weight engraved on its side. Touch it to pick the weight: 10, 15, 20, 25, 35, 45 or 55 kg. The handle stops growing once it reaches its ergonomic ceiling, and from there on only the ball gets bigger.",
   "Mancuerna hexagonal de goma con el peso grabado en la cara. Al tocarla se elige el peso: 10, 20, 30, 40 o 50 libras. Cada uno es una pieza distinta —otras cotas y otra masa—, no la misma estirada.": "Rubber hex dumbbell with the weight engraved on its face. Touch it to pick the weight: 10, 20, 30, 40 or 50 pounds. Each one is a different part —other dimensions, another mass—, not the same one stretched.",
-  "Disco olimpico de hierro con BARBELL arriba y STANDARD abajo en relieve, por las dos caras, y las libras y los kilos a los lados. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles rebajados; los chicos son lisos.":
-    "Cast-iron Olympic plate with BARBELL raised across the top and STANDARD across the bottom, on both faces, and the pounds and kilos on the sides. Touch it to pick the weight: 10, 15, 25, 35 or 45 pounds. The bore is always 5 cm so it threads onto Olympic sleeves. The 35 and 45 carry the four-spoke cross with its recessed quarters; the small ones are plain.",
-  "Disco de 10 libras (4.5 kg): O22 cm por 2.3 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.":
-    "10 pound plate (4.5 kg): Ø22 cm by 2.3 thick, plain, with the ring recessed on both faces and the lettering running all the way round the rim.",
-  "Disco de 15 libras (6.8 kg): O24.1 cm por 2.7 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.":
-    "15 pound plate (6.8 kg): Ø24.1 cm by 2.7 thick, plain, with the ring recessed on both faces and the lettering running all the way round the rim.",
-  "Disco de 25 libras (11.3 kg): O29.1 cm por 3.1 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.":
-    "25 pound plate (11.3 kg): Ø29.1 cm by 3.1 thick, plain, with the ring recessed on both faces and the lettering running all the way round the rim.",
-  "Disco de 35 libras (15.9 kg): O36.4 cm por 3.3 de canto, con la cruz de cuatro radios, cuatro cuarteles rebajados y las libras y los kilos a los lados.":
-    "35 pound plate (15.9 kg): Ø36.4 cm by 3.3 thick, with the four-spoke cross, four recessed quarters and the pounds and kilos on the sides.",
-  "Disco de 45 libras (20.4 kg): O44.5 cm por 3.5 de canto, el mayor del juego, con la cruz de cuatro radios y los cuarteles rebajados casi hasta el alma.":
-    "45 pound plate (20.4 kg): Ø44.5 cm by 3.5 thick, the largest of the set, with the four-spoke cross and the quarters recessed almost down to the web.",
+  "Disco olimpico de hierro fundido con las letras STANDARD BARBELL en relieve por las dos caras y el peso en libras y en kilos. Al tocarlo se elige el peso: 5, 10, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles vaciados; los de 5, 10 y 25 son lisos y llevan el rotulo dando la vuelta a la llanta.":
+    "Cast-iron Olympic plate with STANDARD BARBELL raised on both faces and the weight in pounds and kilos. Touch it to pick the weight: 5, 10, 25, 35 or 45 pounds. The bore is always 5 cm so it threads onto Olympic sleeves. The 35 and 45 carry the four-spoke cross with its hollowed quarters; the 5, 10 and 25 are plain and wear their lettering all the way round the rim.",
+  "Disco de 5 libras (2.3 kg): O19.7 cm por 1.65 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 5 LBS y 2.3 KGS dando la vuelta a la llanta.":
+    "5 pound plate (2.3 kg): Ø19.7 cm by 1.65 thick, no cross, with the web hollowed on both faces and STANDARD, 5 LBS and 2.3 KGS running round the rim.",
+  "Disco de 10 libras (4.5 kg): O23.5 cm por 2.16 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 10 LBS y 4.5 KGS dando la vuelta a la llanta.":
+    "10 pound plate (4.5 kg): Ø23.5 cm by 2.16 thick, no cross, with the web hollowed on both faces and STANDARD, 10 LBS and 4.5 KGS running round the rim.",
+  "Disco de 25 libras (11.3 kg): O27.9 cm por 3.56 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 25 LBS y 11.3 KGS dando la vuelta a la llanta.":
+    "25 pound plate (11.3 kg): Ø27.9 cm by 3.56 thick, no cross, with the web hollowed on both faces and STANDARD, 25 LBS and 11.3 KGS running round the rim.",
+  "Disco de 35 libras (15.9 kg): O34.9 cm por 3.56 de canto, con la cruz de cuatro radios, BARBELL y STANDARD en la llanta y 35 LBS / 15.9 KGS en los cuarteles.":
+    "35 pound plate (15.9 kg): Ø34.9 cm by 3.56 thick, with the four-spoke cross, BARBELL and STANDARD on the rim and 35 LBS / 15.9 KGS in the quarters.",
+  "Disco de 45 libras (20.4 kg): O44.1 cm por 3.56 de canto, el mayor del juego, con la cruz de cuatro radios y el alma vaciada hasta dejarla en 4 mm.":
+    "45 pound plate (20.4 kg): Ø44.1 cm by 3.56 thick, the largest of the set, with the four-spoke cross and the web hollowed down to 4 mm.",
   "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.": "2.2 m Olympic barbell: it loads plates at both ends.",
   "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas.": "Selectorised stack: the selector tube drags the plates above the pin upwards. Each plate carries the two vertical holes that hug the pulley system's guide tubes.",
   "Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central.": "Olympic sleeve where the plates are loaded (plate-loaded): they assemble through the centre hole.",

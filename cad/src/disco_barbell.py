@@ -1,46 +1,63 @@
-"""DISCOS DE PESO «STANDARD BARBELL» — cinco libras distintas, en CAD de taller.
+"""DISCOS «STANDARD BARBELL» — cinco libras distintas, en CAD de taller.
 
-Copiados de dos referencias del fabricante: la foto del juego completo tirado en
-el suelo y la ficha «PRODUCT DETAILS · Olympic Weight Plate Specifications».
+Copiados de tres referencias: el OBJ original del disco —que es el que manda en
+CÓMO SE CONSTRUYE—, el cartel del juego en libras con sus cotas en pulgadas, y
+la ficha «Olympic Weight Plate Specifications».
 
-CÓMO ES EL DISCO DE VERDAD, según esas fotos:
+CÓMO SE CONSTRUYE UN DISCO, medido en el OBJ original. No es una chapa plana:
+es una RUEDA, y su perfil de dentro afuera dice tres cosas y sólo tres —
 
-    · un CUBO redondo alrededor del agujero, en relieve;
-    · una LLANTA ancha por fuera, del grueso entero;
-    · entre los dos, CUATRO CUARTELES REBAJADOS separados por una CRUZ de
-      cuatro radios rectos a 45°… pero sólo en los discos grandes: los chicos
-      no llevan cruz, sólo un anillo rebajado;
-    · en la llanta, «BARBELL» arriba y «STANDARD» abajo, y —ojo— TODAS las
-      letras miran hacia AFUERA, así que la de abajo se lee del revés. No es un
-      error: es como sale del molde y es como se ve en la foto;
-    · las libras y los kilos, en dos renglones rectos, uno en el cuartel de la
-      izquierda y otro en el de la derecha.
+    · un CUBO macizo alrededor del agujero, del grueso entero;
+    · un ALMA FINÍSIMA en el medio: en el OBJ, 5 mm sobre 61 de canto. Eso es
+      el 8 %. El disco es casi hueco, y por eso pesa lo que pesa en vez del
+      doble;
+    · una LLANTA maciza por fuera, otra vez del grueso entero, con el canto
+      achaflanado.
 
-DE DÓNDE SALEN LAS COTAS. De la tabla del fabricante, que va en kilos:
+El OBJ no lleva cruz ni letras —es la rueda pelada—; eso lo ponen las fotos.
 
-    1.25 kg  Ø160 × 11        10 kg  Ø270 × 30        25 kg  Ø445 × 35
-    2.5  kg  Ø200 × 16        15 kg  Ø347 × 32
-    5    kg  Ø225 × 25        20 kg  Ø445 × 35
+LO QUE PONEN LAS FOTOS. En el cartel del juego, los de 45 y 35 lb llevan una
+CRUZ de cuatro radios rectos que parte el alma en cuatro cuarteles; los de 25,
+10 y 5 no la llevan, su alma es un anillo liso. Y el rotulado cambia con ello:
 
-El juego que pide la herramienta va en LIBRAS, así que cada disco se sitúa en esa
-tabla por su masa y se interpola entre las dos filas que lo abrazan. El de 45 lb
-cae justo en la fila de 20 kg —Ø445 × 35—, que es exactamente el disco rotulado
-«45 LBS · 20.4 KGS» de la ficha: la interpolación no se inventa ese, lo acierta.
+    con cruz   «BARBELL» arriba y «STANDARD» abajo en la llanta, y las libras
+               y los kilos en dos renglones rectos dentro de los cuarteles de
+               los lados —«45 / LBS» a la izquierda, «20.4 / KGS» a la derecha—;
+    sin cruz   un solo renglón dando la vuelta: «STANDARD» arriba, las libras
+               abajo a la izquierda y los kilos abajo a la derecha.
 
-EL AGUJERO NO CAMBIA NUNCA. Ø50, el de la manga olímpica, y la tabla lo repite
-en las siete filas. Un disco que no entra en la barra no es un disco, así que
-ésta es la única cota que no se toca por mucho que el peso suba.
+TODAS las letras miran hacia AFUERA, en los dos casos, así que las de abajo se
+leen del revés. No es un error: es como sale del molde y es como están en la
+foto.
 
-EL REBAJE NO ES ADORNO: ES LO QUE DA EL PESO. Macizo, el de 45 lb pesaría 38.7
-kg en vez de 20.4: sobra casi la mitad del material. Por eso este modelo no
-dibuja un rebaje «que quede bonito» y luego mide a ver qué sale — hace lo
-contrario:
+LAS COTAS, DEL CARTEL, EN PULGADAS Y EN LIBRAS —que es como se vende el juego,
+sin interpolar desde una tabla en kilos—:
 
-    se PIDE el peso de catálogo y se RESUELVE la hondura del rebaje.
+    45 lb  Ø17.375" × 1.4"     10 lb  Ø9.25"  × 0.85"
+    35 lb  Ø13.75"  × 1.4"      5 lb  Ø7.75"  × 0.65"
+    25 lb  Ø11"     × 1.4"
 
-`medidas()` despeja cuánto hay que ahondar los cuarteles por cada cara para que
-la pieza pese lo que dice la etiqueta, y revienta si eso dejara un alma más fina
-de lo que se puede fundir, en vez de exportar una pieza que miente sobre su peso.
+FÍJESE EN QUE 45, 35 Y 25 TIENEN EL MISMO CANTO: 1.4 pulgadas los tres. El disco
+grande no es el chico engordado — crece de diámetro y se queda igual de grueso.
+Eso es lo que ninguna proporción inventada acierta, y es la razón de copiar el
+cartel en vez de escalar.
+
+EL AGUJERO NO CAMBIA NUNCA. Ø50, el de la manga olímpica. Las tres referencias
+lo repiten —«opening collars 5cm», «50 aperture»— en todas sus filas. Un disco
+que no entra en la barra no es un disco.
+
+EL ALMA NO SE DIBUJA: SE RESUELVE. Macizo, el de 45 lb pesaría 38.7 kg en vez de
+20.4. Así que este modelo no ahonda el alma «a ojo» y luego mide a ver qué sale:
+
+    se PIDE el peso de catálogo y se DESPEJA cuánto hay que ahondar por cara.
+
+`medidas()` hace ese despeje y revienta si la cuenta pidiera un alma más fina de
+lo que se puede fundir, en vez de exportar una pieza que miente sobre su peso.
+Que al de 45 le salgan 4.3 mm de alma no es casualidad: el OBJ original tiene 5.
+
+SOBRE EL MATERIAL. Se cuenta con hierro fundido, 7.2 g/cm³, que es de lo que
+está hecho un disco de este tipo. Con la densidad del acero —7.85— habría que
+vaciar tanto el de 45 que el alma no llegaría a milímetro y medio: no se funde.
 
 Sistema local: Z es el eje del disco —el que enfila la barra— y el disco se
 dibuja en el plano XY. Al final se gira un cuarto de vuelta sobre X, que es el
@@ -53,35 +70,34 @@ import math
 from cadgen import build123d as bd
 from cadgen import glb, step, stl
 
-# ── LA FICHA DEL FABRICANTE ─────────────────────────────────────────────────
-# kg → (Ø mm, canto mm). El agujero es Ø50 en todas las filas.
-FICHA_KG = [
-    (1.25, 160.0, 11.0),
-    (2.50, 200.0, 16.0),
-    (5.00, 225.0, 25.0),
-    (10.0, 270.0, 30.0),
-    (15.0, 347.0, 32.0),
-    (20.0, 445.0, 35.0),
-    (25.0, 445.0, 35.0),
-]
+# ── EL CARTEL DEL JUEGO ─────────────────────────────────────────────────────
+# libras → (Ø pulgadas, canto pulgadas). El agujero es Ø50 mm en todas.
+PULGADA = 25.4
+CARTEL = {
+    2.5: (6.25, 0.45),
+    5: (7.75, 0.65),
+    10: (9.25, 0.85),
+    25: (11.0, 1.4),
+    35: (13.75, 1.4),
+    45: (17.375, 1.4),
+}
 LIBRA = 0.45359237      # kg por libra
-LIBRAS = [10, 15, 25, 35, 45]
+LIBRAS = [5, 10, 25, 35, 45]
 
-# ── LA PIEZA ────────────────────────────────────────────────────────────────
+# ── LA RUEDA ────────────────────────────────────────────────────────────────
 AGUJERO = 50.0          # Ø olímpico. LA COTA QUE NO CAMBIA.
-DENSIDAD = 7.2e-3       # g/mm³, hierro fundido
-CRUZ_DESDE = 15.0       # kg: de aquí arriba, la cruz de cuatro radios
+DENSIDAD = 7.2e-3       # g/mm³, hierro fundido (ver la cabecera)
+CRUZ_DESDE_LB = 35      # de aquí arriba, la cruz de cuatro radios
 RADIOS = 4
 CUBO_FRAC = 0.20        # radio del cubo, en fracción del radio del disco
 CUBO_PARED = 18.0       # …pero nunca menos que esta pared alrededor del agujero
-LLANTA_FRAC = 0.83     # radio interior de la llanta, ídem
+LLANTA_FRAC = 0.82      # radio interior de la llanta, ídem
 RADIO_FRAC = 0.13       # ancho de cada radio de la cruz, ídem
 RADIO_MIN = 14.0
-ALMA_MIN = 4.0          # lo más fino que se puede dejar el fondo del cuartel
+ALMA_MIN = 4.0          # lo más fino que se puede dejar el alma
+CHAFLAN_FRAC = 0.09     # el canto de la llanta, matado, en fracción del grueso
 
 # ── EL GRABADO ──────────────────────────────────────────────────────────────
-MARCA_ARRIBA = "BARBELL"
-MARCA_ABAJO = "STANDARD"
 # CUÁNTO SOBRESALE LA LETRA. 2.5 mm, que es lo que levanta una letra fundida de
 # verdad. Con menos la marca está y se mide, pero sobre el hierro oscuro de la
 # app no da sombra suficiente para leerse: el relieve de un disco se ve por el
@@ -93,40 +109,29 @@ NUMERO_ALTO = 0.21      # alto del número, en fracción del ancho del cuartel
 NUMERO_SEP = 1.25       # separación entre los dos renglones, en altos de letra
 
 
-def cotas(lb: int) -> tuple[float, float, float]:
-    """Diámetro, canto y masa de un disco de `lb` libras, según la ficha.
-
-    Se entra en la tabla POR LA MASA y se interpola entre las dos filas que la
-    abrazan. Fuera de la tabla se toma la fila del extremo: la ficha se acaba en
-    25 kg y no hay nada que extrapolar.
-    """
-    kg = lb * LIBRA
-    if kg <= FICHA_KG[0][0]:
-        return FICHA_KG[0][1], FICHA_KG[0][2], kg
-    for (k0, d0, t0), (k1, d1, t1) in zip(FICHA_KG, FICHA_KG[1:]):
-        if kg <= k1:
-            f = (kg - k0) / (k1 - k0)
-            return d0 + f * (d1 - d0), t0 + f * (t1 - t0), kg
-    return FICHA_KG[-1][1], FICHA_KG[-1][2], kg
+def cotas(lb: float) -> tuple[float, float, float]:
+    """Diámetro y canto en mm, y masa en kg, de un disco de `lb` libras."""
+    d, t = CARTEL[lb]
+    return d * PULGADA, t * PULGADA, lb * LIBRA
 
 
-def medidas(lb: int) -> dict:
-    """Todas las cotas de un disco, con la hondura del rebaje YA RESUELTA."""
+def medidas(lb: float) -> dict:
+    """Todas las cotas de un disco, con la hondura del alma YA RESUELTA."""
     diametro, espesor, kg = cotas(lb)
     r = diametro / 2.0
     r_agujero = AGUJERO / 2.0
     r_cubo = max(CUBO_FRAC * r, r_agujero + CUBO_PARED)
     r_llanta = LLANTA_FRAC * r
-    radios = RADIOS if kg >= CRUZ_DESDE else 0
+    radios = RADIOS if lb >= CRUZ_DESDE_LB else 0
     ancho_radio = max(RADIO_FRAC * r, RADIO_MIN)
 
     if r_llanta - r_cubo < 3.0 * ALMA_MIN:
         raise ValueError(
-            f"el disco de {lb} lb no deja anillo donde rebajar: cubo hasta "
+            f"el disco de {lb} lb no deja anillo donde vaciar: cubo hasta "
             f"{r_cubo:.1f} y llanta desde {r_llanta:.1f}"
         )
 
-    # EL ÁREA QUE SE REBAJA: el anillo entre cubo y llanta, menos lo que se
+    # EL ÁREA QUE SE VACÍA: el anillo entre cubo y llanta, menos lo que se
     # llevan los radios. Un radio es una barra recta que cruza el anillo, así
     # que su parte dentro del anillo es ancho × largo del tramo.
     anillo = math.pi * (r_llanta**2 - r_cubo**2)
@@ -141,12 +146,12 @@ def medidas(lb: int) -> dict:
     if hondo <= 0.0:
         raise ValueError(
             f"el disco de {lb} lb ya pesa {macizo * DENSIDAD / 1000:.2f} kg macizo "
-            f"y la etiqueta pide {kg:.2f}: no hay nada que rebajar"
+            f"y la etiqueta pide {kg:.2f}: no hay nada que vaciar"
         )
     if espesor - 2.0 * hondo < ALMA_MIN:
         raise ValueError(
-            f"el disco de {lb} lb pide rebajar {hondo:.1f} mm por cara sobre "
-            f"{espesor:.1f} de canto: el fondo quedaría en "
+            f"el disco de {lb} lb pide vaciar {hondo:.1f} mm por cara sobre "
+            f"{espesor:.1f} de canto: el alma quedaría en "
             f"{espesor - 2 * hondo:.1f} mm y no se funde por debajo de {ALMA_MIN}"
         )
 
@@ -167,12 +172,11 @@ def medidas(lb: int) -> dict:
 
 # ── EL GRABADO ──────────────────────────────────────────────────────────────
 #
-# EL RENGLÓN VA AL REVÉS, LAS LETRAS NO. Medido con una probeta, no razonado:
-# se exportaron cuatro tratamientos del mismo renglón a cuatro radios de un
-# mismo disco —crudo, espejando el conjunto, espejando cada letra, y con el
-# orden invertido— y se miraron en la app. El veredicto fue que las LETRAS
-# llegan bien —una «G» es una «G»— y que lo único torcido es el ORDEN: escrito
-# «FG» se lee «GF».
+# EL RENGLÓN VA AL REVÉS, LAS LETRAS NO. Medido con una probeta, no razonado: se
+# exportaron cuatro tratamientos del mismo renglón a cuatro radios de un mismo
+# disco —crudo, espejando el conjunto, espejando cada letra, y con el orden
+# invertido— y se miraron en la app. Las LETRAS llegan bien —una «G» es una
+# «G»—; lo único torcido es el ORDEN: escrito «FG» se lee «GF».
 #
 # Es lo que tiene dibujar sobre un círculo: el ángulo crece hacia la izquierda,
 # así que un renglón que se lee de izquierda a derecha por arriba va de ángulo
@@ -229,52 +233,66 @@ def _texto_recto(lineas: list[str], x: float, z: float, alto: float):
     return pieza
 
 
-def disco(lb: int):
-    """La pieza entera: cubo, cruz, llanta, rebaje resuelto y grabado."""
+def disco(lb: float):
+    """La rueda entera: cubo, alma vaciada, llanta achaflanada y grabado."""
     m = medidas(lb)
     t, r = m["espesor"], m["r"]
 
+    # LA RUEDA EN BRUTO, con el canto matado por fuera y por el agujero, como el
+    # OBJ original —un disco de canto vivo no sale de ningún molde—.
     pieza = bd.Cylinder(radius=r, height=t)
     pieza -= bd.Cylinder(radius=m["r_agujero"], height=t + 20.0)
+    chaflan = CHAFLAN_FRAC * t
+    fuera = [e for e in pieza.edges().filter_by(bd.GeomType.CIRCLE)
+             if abs(e.radius - r) < 0.01]
+    pieza = bd.chamfer(fuera, length=chaflan)
+    dentro = [e for e in pieza.edges().filter_by(bd.GeomType.CIRCLE)
+              if abs(e.radius - m["r_agujero"]) < 0.01]
+    pieza = bd.chamfer(dentro, length=chaflan / 2.0)
 
-    # LOS CUARTELES. El anillo entre cubo y llanta, menos la cruz. Una barra es
-    # simétrica respecto del centro, así que dos barras hacen los cuatro radios.
+    # EL ALMA. El anillo entre cubo y llanta, menos la cruz si la lleva. Una
+    # barra es simétrica respecto del centro, así que dos barras hacen los
+    # cuatro radios.
     zona = bd.Circle(m["r_llanta"]) - bd.Circle(m["r_cubo"])
     for i in range(m["radios"] // 2):
         ang = 45.0 + 90.0 * i
         zona -= bd.Rot(0.0, 0.0, ang - 90.0) * bd.Rectangle(m["ancho_radio"], 2.2 * r)
 
-    # Un corte por cara, cada uno sobresaliendo 10 mm por fuera del disco para
+    # Un vaciado por cara, cada uno sobresaliendo 10 mm por fuera del disco para
     # que la resta sea limpia y no deje caras coplanares.
     hondo = m["hondo"]
     corte = bd.extrude(zona, amount=hondo + 10.0)
     pieza -= bd.Pos(0.0, 0.0, t / 2.0 - hondo) * corte
     pieza -= bd.Pos(0.0, 0.0, -t / 2.0 - 10.0) * corte
 
-    # LA MARCA, en la llanta: «BARBELL» arriba y «STANDARD» abajo.
+    # EL ROTULADO. Cambia con la cruz, como en el cartel.
     ancho_llanta = r - m["r_llanta"]
     radio_texto = m["r_llanta"] + ancho_llanta / 2.0
     alto = ancho_llanta * TEXTO_ALTO
-    textos = [
-        _texto_curvo(MARCA_ARRIBA, radio_texto, alto, 90.0, t / 2.0),
-        _texto_curvo(MARCA_ABAJO, radio_texto, alto, 270.0, t / 2.0),
-    ]
-
-    # LAS CIFRAS. En los discos con cruz van rectas, en dos renglones, dentro de
-    # los cuarteles de los lados y apoyadas en su fondo —como en la foto—. En
-    # los chicos no hay cuartel donde meterlas: van en la llanta, curvadas, y el
-    # renglón de texto da la vuelta entera al disco.
     fondo = t / 2.0 - hondo
     kg = f"{m['kg']:.1f}"
+    lbs = f"{lb:g} LBS"
+
     if m["radios"]:
+        # CON CRUZ: la marca partida en dos —arriba y abajo— y las cifras
+        # rectas, en dos renglones, dentro de los cuarteles de los lados.
         ancho_cuartel = m["r_llanta"] - m["r_cubo"]
         medio = (m["r_llanta"] + m["r_cubo"]) / 2.0
         alto_num = ancho_cuartel * NUMERO_ALTO
-        textos.append(_texto_recto([str(lb), "LBS"], -medio, fondo, alto_num))
-        textos.append(_texto_recto([kg, "KGS"], medio, fondo, alto_num))
+        textos = [
+            _texto_curvo("BARBELL", radio_texto, alto, 90.0, t / 2.0),
+            _texto_curvo("STANDARD", radio_texto, alto, 270.0, t / 2.0),
+            _texto_recto([f"{lb:g}", "LBS"], -medio, fondo, alto_num),
+            _texto_recto([kg, "KGS"], medio, fondo, alto_num),
+        ]
     else:
-        textos.append(_texto_curvo(f"{lb} LBS", radio_texto, alto, 180.0, t / 2.0))
-        textos.append(_texto_curvo(f"{kg} KGS", radio_texto, alto, 0.0, t / 2.0))
+        # SIN CRUZ: los tres renglones dan la vuelta a la llanta, repartidos a
+        # tercios — «STANDARD» arriba, las libras y los kilos abajo.
+        textos = [
+            _texto_curvo("STANDARD", radio_texto, alto, 90.0, t / 2.0),
+            _texto_curvo(lbs, radio_texto, alto, 210.0, t / 2.0),
+            _texto_curvo(f"{kg} KGS", radio_texto, alto, 330.0, t / 2.0),
+        ]
 
     # EL MISMO GRABADO POR DETRÁS. Un disco enfilado en la barra se ve por las
     # dos caras, y uno con la marca sólo por delante se delata en cuanto la
@@ -285,9 +303,7 @@ def disco(lb: int):
     # X e Y y sólo le cambia la cara, así que mirándola desde atrás se lee al
     # revés. Lo que hace un molde de verdad es dar media vuelta al disco, y eso
     # es un GIRO de 180° sobre un eje del propio disco: cambia de cara y además
-    # invierte la X. El giro deja arriba lo de arriba y abajo lo de abajo, así
-    # que «BARBELL» sigue en la llanta alta y «STANDARD» en la baja; las cifras
-    # sí cambian de lado, que es lo que pasa al voltear un disco de verdad.
+    # invierte la X.
     for relieve in textos:
         if relieve is None:
             continue
@@ -296,8 +312,15 @@ def disco(lb: int):
 
     # El cuarto de vuelta del convenio de exportación (ver la cabecera).
     pieza = pieza.rotate(bd.Axis.X, 90.0)
-    pieza.label = f"disco_barbell_{lb}lb"
+    pieza.label = f"disco_barbell_{lb:g}lb"
     return pieza
+
+
+@step(out="../STEP/disco_barbell_5lb.step")
+@stl(out="../STL/disco_barbell_5lb.stl")
+@glb(out="../GLB/disco_barbell_5lb.glb")
+def disco_barbell_5lb():
+    return disco(5)
 
 
 @step(out="../STEP/disco_barbell_10lb.step")
@@ -305,13 +328,6 @@ def disco(lb: int):
 @glb(out="../GLB/disco_barbell_10lb.glb")
 def disco_barbell_10lb():
     return disco(10)
-
-
-@step(out="../STEP/disco_barbell_15lb.step")
-@stl(out="../STL/disco_barbell_15lb.stl")
-@glb(out="../GLB/disco_barbell_15lb.glb")
-def disco_barbell_15lb():
-    return disco(15)
 
 
 @step(out="../STEP/disco_barbell_25lb.step")
@@ -336,8 +352,8 @@ def disco_barbell_45lb():
 
 
 if __name__ == "__main__":
+    disco_barbell_5lb()
     disco_barbell_10lb()
-    disco_barbell_15lb()
     disco_barbell_25lb()
     disco_barbell_35lb()
     disco_barbell_45lb()

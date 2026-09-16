@@ -5,6 +5,59 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.64] — 2026-09-16
+
+### Cambiado
+
+**EL JUEGO DE DISCOS, LEVANTADO DEL OBJ ORIGINAL Y DEL CARTEL EN LIBRAS.** El
+juego pasa a ser de **5, 10, 25, 35 y 45 libras** —entra el de 5, sale el de 15—
+y las tres cosas que definen un disco se toman ahora de su fuente propia: la
+construcción del OBJ, las cotas del cartel, el rotulado de las fotos.
+
+**CÓMO SE CONSTRUYE, medido en el OBJ original.** No es una chapa plana: es una
+RUEDA, y su perfil de dentro afuera dice tres cosas y sólo tres — un **cubo
+macizo** alrededor del agujero, un **alma finísima** en el medio (5 mm sobre 61
+de canto: el 8 %; el disco es casi hueco, y por eso pesa lo que pesa en vez del
+doble) y una **llanta maciza** por fuera, con **el canto achaflanado**. El
+chaflán es nuevo: un disco de canto vivo no sale de ningún molde.
+
+**LAS COTAS, DEL CARTEL, EN PULGADAS Y EN LIBRAS** —que es como se vende el
+juego, sin interpolar desde una tabla en kilos, que es lo que hacía v0.3.63:
+
+| lb | kg | diámetro | canto |
+|---:|---:|---------:|------:|
+| 5 | 2.27 | 7.75" = 196.9 mm | 0.65" = 16.5 mm |
+| 10 | 4.54 | 9.25" = 235.0 mm | 0.85" = 21.6 mm |
+| 25 | 11.34 | 11" = 279.4 mm | **1.4" = 35.6 mm** |
+| 35 | 15.88 | 13.75" = 349.3 mm | **1.4"** |
+| 45 | 20.41 | 17.375" = 441.3 mm | **1.4"** |
+
+**Fíjese en que 45, 35 y 25 tienen EL MISMO CANTO.** El de 45 es 1.58 veces más
+ancho que el de 25 y exactamente igual de grueso: el disco grande no es el chico
+engordado. Eso es lo que ninguna proporción inventada acierta, y es la razón de
+copiar el cartel en vez de escalar.
+
+**EL ROTULADO, COMO EN EL CARTEL, Y CAMBIA CON LA CRUZ.** Los de 35 y 45 llevan
+la cruz de cuatro radios: «BARBELL» arriba y «STANDARD» abajo en la llanta, y
+las libras y los kilos en dos renglones rectos dentro de los cuarteles de los
+lados —«45 / LBS» a la izquierda, «20.4 / KGS» a la derecha—. Los de 5, 10 y 25
+no llevan cruz —su alma es un anillo liso— y su rótulo da la vuelta entera:
+«STANDARD» arriba, las libras abajo a la izquierda y los kilos abajo a la
+derecha. Todas las letras miran hacia afuera, así que las de abajo se leen del
+revés: es como sale del molde.
+
+**EL ALMA SIGUE SIN DIBUJARSE: SE RESUELVE.** Se pide el peso de catálogo y se
+despeja cuánto hay que vaciar por cara. Que al de 45 le salgan **4.3 mm de
+alma** no es casualidad: el OBJ original tiene 5. Los cinco caen a menos del
+0.5 % de su masa.
+
+**Sobre el material:** se cuenta con hierro fundido, 7.2 g/cm³, que es de lo que
+está hecho un disco de este tipo. Con la densidad del acero —7.85— habría que
+vaciar tanto el de 45 que el alma no llegaría a milímetro y medio, y el modelo
+se niega a construir lo que no se funde.
+
+**El agujero no cambia: Ø5 cm en los cinco.** Las tres referencias lo repiten.
+
 ## [0.3.63] — 2026-09-16
 
 ### Cambiado

@@ -1,4 +1,4 @@
-// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.63).
+// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.64).
 //
 // Cinco discos de libras distintas, copiados de la foto del juego y de la ficha
 // «Olympic Weight Plate Specifications» del fabricante. Lo que se comprueba, y
@@ -10,12 +10,11 @@
 //      disco. Se mide el radio MÍNIMO de la malla alrededor del eje, que es
 //      exactamente el borde del agujero.
 //
-//   2. QUE LAS COTAS SALEN DE LA FICHA. La prueba lleva la tabla del fabricante
-//      ESCRITA A MANO —leerla del CAD no comprobaría nada— y rehace por su
-//      cuenta la interpolación: la tabla va en kilos, el juego va en libras, y
-//      cada disco se sitúa en ella por su masa. El de 45 lb cae JUSTO en la fila
-//      de 20 kg, Ø445 × 35, que es el disco rotulado «45 LBS · 20.4 KGS» de la
-//      ficha: ésa se cruza contra la fila tal cual, sin interpolar nada.
+//   2. QUE LAS COTAS SALEN DEL CARTEL. La prueba lleva el cartel del juego
+//      ESCRITO A MANO, en pulgadas —leerlo del CAD no comprobaría nada— y
+//      convierte él mismo a milímetros. Y cruza el rasgo que ninguna proporción
+//      inventada acierta: 45, 35 y 25 lb tienen EL MISMO CANTO, 1.4 pulgadas
+//      los tres. El disco grande no es el chico engordado.
 //
 //   3. QUE LA MALLA PESA LO QUE DICE LA ETIQUETA. El rebaje de los cuarteles no
 //      es adorno: es LA MITAD LARGA de la pieza —al de 45 macizo le sobran 18
@@ -25,9 +24,9 @@
 //      alguien dibujara el rebaje «a ojo» y ajustara la masa a mano, esto lo
 //      caza.
 //
-//   4. LA CRUZ DE CUATRO RADIOS, Y SÓLO EN LOS GRANDES. En la foto los discos
-//      de 15 kg para arriba llevan cuatro radios rectos separando cuatro
-//      cuarteles rebajados, y los chicos no: sólo un anillo rebajado. Se mide
+//   4. LA CRUZ DE CUATRO RADIOS, Y SÓLO EN LOS GRANDES. En el cartel los de 35
+//      y 45 lb llevan cuatro radios rectos separando cuatro cuarteles vaciados,
+//      y los de 5, 10 y 25 no: su alma es un anillo liso. Se mide
 //      sin mirar el dibujo, contando por dónde la pieza conserva su grueso
 //      entero: en un disco con cruz hay CUATRO tramos de ángulo a tope de
 //      espesor; en uno liso, ninguno.
@@ -43,35 +42,26 @@ const ok = (cond, msg, dato) => {
   else { fallos++; console.log(`✗ ${msg}${dato === undefined ? "" : ` — ${dato}`}`); }
 };
 
-// LA FICHA DEL FABRICANTE, a mano: kg → [Ø mm, canto mm]. Agujero Ø50 en todas.
-const FICHA_KG = [
-  [1.25, 160, 11],
-  [2.5, 200, 16],
-  [5, 225, 25],
-  [10, 270, 30],
-  [15, 347, 32],
-  [20, 445, 35],
-  [25, 445, 35],
-];
+// EL CARTEL DEL JUEGO, a mano: libras → [Ø pulgadas, canto pulgadas].
+const CARTEL = {
+  5: [7.75, 0.65],
+  10: [9.25, 0.85],
+  25: [11.0, 1.4],
+  35: [13.75, 1.4],
+  45: [17.375, 1.4],
+};
+const PULGADA = 2.54;           // cm por pulgada
 const LIBRA = 0.45359237;
-const LIBRAS = [10, 15, 25, 35, 45];
+const LIBRAS = [5, 10, 25, 35, 45];
 const CON_CRUZ = [35, 45];      // los que llevan los cuatro radios
 const AGUJERO_CM = 5.0;         // Ø olímpico, la cota que no cambia
 const DENSIDAD = 7.2;           // g/cm³, hierro fundido
 const RELIEVE_CM = 0.25;        // cuánto asoma la letra de la llanta
 
-// La misma entrada en la tabla que hace el modelo, rehecha aquí a mano.
+// Las pulgadas del cartel, pasadas a centímetros aquí mismo.
 const segunLaFicha = (lb) => {
-  const kg = lb * LIBRA;
-  for (let i = 0; i < FICHA_KG.length - 1; i++) {
-    const [k0, d0, t0] = FICHA_KG[i], [k1, d1, t1] = FICHA_KG[i + 1];
-    if (kg <= k1) {
-      const f = (kg - k0) / (k1 - k0);
-      return { kg, diametro: (d0 + f * (d1 - d0)) / 10, canto: (t0 + f * (t1 - t0)) / 10 };
-    }
-  }
-  const u = FICHA_KG.at(-1);
-  return { kg, diametro: u[1] / 10, canto: u[2] / 10 };
+  const [d, t] = CARTEL[lb];
+  return { kg: lb * LIBRA, diametro: d * PULGADA, canto: t * PULGADA };
 };
 
 const browser = await chromium.launch({
@@ -218,7 +208,7 @@ for (const lb of LIBRAS) {
   const f = segunLaFicha(lb), m = medido[lb];
   ok(
     Math.abs(m.diametro - f.diametro) < 0.15,
-    `el de ${lb} lb mide Ø${m.diametro} cm; la ficha, entrada por sus ${f.kg.toFixed(2)} kg, pide Ø${f.diametro.toFixed(1)}`,
+    `el de ${lb} lb mide Ø${m.diametro} cm; el cartel pide ${CARTEL[lb][0]}" = Ø${f.diametro.toFixed(1)}`,
   );
   // EL CANTO INCLUYE EL RELIEVE de las dos caras: la ficha da el hierro, la
   // malla da el hierro más las letras.
@@ -227,23 +217,19 @@ for (const lb of LIBRAS) {
     `su canto es ${m.canto} cm: ${f.canto.toFixed(2)} de hierro y ${RELIEVE_CM} de letra por cara`,
   );
 }
-// LA FILA QUE NO SE INTERPOLA. El de 45 lb pesa 20.41 kg y cae dentro de la
-// fila de 20 kg de la ficha, así que sus cotas son las de esa fila tal cual —y
-// son las del disco que la ficha dibuja rotulado «45 LBS · 20.4 KGS».
+// ── 4. LOS TRES GRANDES, EL MISMO CANTO ──────────────────────────────────
+// Lo que ninguna proporción inventada acierta: el de 45, el de 35 y el de 25
+// miden 1.4 pulgadas de canto LOS TRES, aunque el mayor tenga metro y medio más
+// de contorno. El disco grande no es el chico engordado: crece de diámetro y se
+// queda igual de grueso. Un juego escalado subiría las dos cotas a la vez.
+const gordos = [25, 35, 45].map((lb) => medido[lb].canto);
 ok(
-  Math.abs(medido[45].diametro - 44.5) < 0.15 &&
-    Math.abs(medido[45].canto - (3.5 + 2 * RELIEVE_CM)) < 0.1,
-  `el de 45 lb es la fila de 20 kg de la ficha sin tocar: Ø${medido[45].diametro} × 3.5 cm de hierro`,
+  Math.max(...gordos) - Math.min(...gordos) < 0.05,
+  `el de 25, el de 35 y el de 45 tienen el mismo canto (${gordos.join(" · ")} cm)`,
 );
-
-// ── 4. CRECE A LO ANCHO, NO A LO GRUESO ──────────────────────────────────
-// Del de 10 al de 45 el diámetro DOBLA y el canto sube apenas la mitad. Es lo
-// que hace la ficha y lo que se ve en la foto: el disco se hace grande, no
-// gordo. Un juego escalado subiría las dos cotas al mismo ritmo.
-const crece = (k) => medido[45][k] / medido[10][k];
 ok(
-  crece("diametro") > 1.9 && crece("canto") < 1.6,
-  `crece a lo ancho: el diámetro se multiplica por ${crece("diametro").toFixed(2)} y el canto sólo por ${crece("canto").toFixed(2)}`,
+  medido[45].diametro > medido[25].diametro * 1.5,
+  `y sin embargo el de 45 es ${(medido[45].diametro / medido[25].diametro).toFixed(2)} veces más ancho que el de 25`,
 );
 const diams = LIBRAS.map((lb) => medido[lb].diametro);
 ok(
@@ -276,7 +262,7 @@ for (const lb of LIBRAS) {
   );
 }
 // Y QUE EL REBAJE ES GORDO: macizo, cada disco pesaría mucho más.
-for (const lb of [10, 45]) {
+for (const lb of [5, 45]) {
   const f = segunLaFicha(lb);
   const macizo = (Math.PI * ((f.diametro / 2) ** 2 - 2.5 ** 2) * f.canto * DENSIDAD) / 1000;
   const sobra = (100 * (macizo - f.kg)) / macizo;
@@ -316,7 +302,7 @@ const opciones = await page.evaluate(() =>
   [...document.querySelectorAll(".comp-burbuja-op")].map((o) => o.textContent.trim()),
 );
 ok(
-  opciones.join(" ") === "10 lb 15 lb 25 lb 35 lb 45 lb",
+  opciones.join(" ") === "5 lb 10 lb 25 lb 35 lb 45 lb",
   "la burbuja ofrece los cinco pesos, en orden",
   opciones.join(" | ") || "no se abrió",
 );

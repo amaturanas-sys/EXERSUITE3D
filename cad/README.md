@@ -64,7 +64,7 @@ no un error del modelo.
 | Atril de discos | `src/atril_discos.py` | `atril-discos` (en la paleta) |
 | Brazo spotter (voladizo) | `src/brazo_spotter.py` | `brazo-spotter` (en la paleta, con largo a medida) |
 | Kettlebell · 10 a 55 kg | `src/kettlebell.py` | `kettlebell-10` … `kettlebell-55` (la paleta abre una burbuja para elegir el peso) |
-| Disco «STANDARD BARBELL» · 10 a 45 lb | `src/disco_barbell.py` | `disco-barbell-10` … `disco-barbell-45` (la burbuja cuelga del botón `disco-peso`) |
+| Disco «STANDARD BARBELL» · 5 a 45 lb | `src/disco_barbell.py` | `disco-barbell-5` … `disco-barbell-45` (la burbuja cuelga del botón `disco-peso`) |
 
 ### Una pieza de `cad/` en la PALETA
 

@@ -1,6 +1,6 @@
 // RETRATO DE LOS DISCOS — utilidad, no prueba.
 import { chromium } from "playwright-core";
-const SAL = process.argv[2] ?? "pruebas/salidas/v363-discos";
+const SAL = process.argv[2] ?? "pruebas/salidas/v364-discos";
 const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
   args:["--no-sandbox","--use-gl=angle","--use-angle=swiftshader","--enable-webgl"]});
 const page = await b.newPage({ viewport:{width:1600,height:800}});
@@ -17,7 +17,7 @@ const info = await page.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   for (const o of [...ed.objects.values()]) ed.removeObject(o);
   const dims = []; let x = -80;
-  for (const lb of [10,15,25,35,45]) {
+  for (const lb of [5,10,25,35,45]) {
     const id = `disco-barbell-${lb}`;
     for (let i=0;i<90 && !ed.tieneModelo?.(id);i++) await new Promise(r=>setTimeout(r,150));
     const o = ed.addComponent(id);
