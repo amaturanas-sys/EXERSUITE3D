@@ -294,8 +294,16 @@ ok(Math.abs(arriba.vsHombro[2] - fondo.vsHombro[2]) < 2,
 // ---- 6. LOS DISCOS Y EL PESO
 await p.evaluate(() => window.exersuite.editor.setDiscosBarra(4));
 const cargada = await medir();
-ok(cargada.discos === 4 && cargada.kg === 100,
-  `cuatro discos de 20 sobre una barra de 20 dan ${cargada.kg} kg`);
+// LA CUENTA, NO EL NÚMERO REDONDO. Antes esperaba 100 kg clavados —4×20 sobre
+// una barra de 20— y se puso en rojo al modelarse los discos de verdad: los que
+// carga la barra son ahora los de 45 lb de la biblioteca, que pesan 20.41 kg y
+// no 20. Lo que hay que comprobar no es el número bonito sino que la máquina
+// SUMA: la barra más sus cuatro discos, con el peso que tengan.
+const DISCO_KG = 20.41, BARRA_KG = 20;
+ok(
+  cargada.discos === 4 && Math.abs(cargada.kg - (BARRA_KG + 4 * DISCO_KG)) < 0.05,
+  `cuatro discos de ${DISCO_KG} sobre una barra de ${BARRA_KG} dan ${cargada.kg} kg`,
+);
 await p.evaluate(() => window.exersuite.editor.setDiscosBarra(0));
 const vacia = await medir();
 ok(vacia.kg === 20, `quitarlos devuelve la barra a su peso (${vacia.kg} kg)`);
