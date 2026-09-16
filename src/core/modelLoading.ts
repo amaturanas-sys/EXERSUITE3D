@@ -206,6 +206,57 @@ export function separarRotulo(geo: THREE.BufferGeometry, asomaCm: number): boole
   return true;
 }
 
+/**
+ * SEPARA UNAS BANDAS A LO LARGO DE LA PIEZA, para pintarlas aparte (v0.3.69).
+ *
+ * La otra manera de tener dos materiales en una misma malla. `separarRotulo`
+ * busca un relieve; ésta no busca nada: la pieza DECLARA por dónde van sus
+ * bandas y aquí sólo se reparten los triángulos. Es lo que necesita el
+ * moleteado de una barra, que no sobresale de ninguna superficie —son surcos,
+ * hundidos— pero sí ocupa unos tramos concretos del eje.
+ *
+ * Los tramos vienen en FRACCIONES de 0 a 1 del eje LARGO de la pieza, no en
+ * centímetros: así la declaración de la biblioteca sigue valiendo si la pieza
+ * se remodela con otro largo, y no hay que tocarla cada vez.
+ *
+ * Un triángulo cae en la banda por su CENTRO. Los de la frontera se reparten a
+ * un lado o al otro y da igual: son una fila de triángulos en el borde de un
+ * surco, donde el propio surco ya rompe el reflejo.
+ */
+export function separarBandas(
+  geo: THREE.BufferGeometry,
+  tramos: [number, number][],
+): boolean {
+  const pos = geo.getAttribute("position");
+  if (!pos || geo.index || tramos.length === 0) return false;
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const size = new THREE.Vector3();
+  bb.getSize(size);
+  const ejes = [size.x, size.y, size.z];
+  const iEje = ejes.indexOf(Math.max(...ejes));   // el eje LARGO, no el corto
+  const largo = ejes[iEje];
+  if (largo <= 0) return false;
+  const min = bb.min.getComponent(iEje);
+  const eje = (i: number) =>
+    iEje === 0 ? pos.getX(i) : iEje === 1 ? pos.getY(i) : pos.getZ(i);
+
+  const cuerpo: number[] = [];
+  const banda: number[] = [];
+  for (let i = 0; i + 2 < pos.count; i += 3) {
+    const f = ((eje(i) + eje(i + 1) + eje(i + 2)) / 3 - min) / largo;
+    const dentro = tramos.some(([a, b]) => f >= a && f <= b);
+    (dentro ? banda : cuerpo).push(i, i + 1, i + 2);
+  }
+  if (banda.length === 0 || cuerpo.length === 0) return false;
+
+  geo.setIndex([...cuerpo, ...banda]);
+  geo.clearGroups();
+  geo.addGroup(0, cuerpo.length, 0);
+  geo.addGroup(cuerpo.length, banda.length, 1);
+  return true;
+}
+
 /** Fusiona todas las mallas de un modelo en una sola geometría (matrices aplicadas). */
 export function mergeRootGeometry(root: THREE.Object3D): THREE.BufferGeometry {
   root.updateMatrixWorld(true);

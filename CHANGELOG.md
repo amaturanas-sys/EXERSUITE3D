@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.69] — 2026-09-16
+
+### Añadido
+
+**LA BARRA OLÍMPICA, MODELADA EN CAD Y CON SU MOLETEADO.** Era un cilindro
+liso; ahora es una barra. Malla de `cad/src/barra_olimpica.py`, copiada de una
+ficha de despiece y de una foto macro del moleteado.
+
+**TRES DIÁMETROS, como la de verdad:** manga Ø49.4 × 433, collar Ø62 × 12 que le
+hace de tope al disco, y eje Ø28 con 1310 mm entre collares. **La manga va por
+debajo de su medida nominal a propósito:** manga y disco se llaman los dos
+«Ø50», pero si los dos MIDEN 50 el disco no entra. Se tornea a Ø49.4 y quedan
+**0.6 mm de juego**, que es lo que permite enfilar un disco y sacarlo.
+
+**Y EL EJE NO ES LISO DE PUNTA A PUNTA**, que es lo que se pedía: liso en el
+centro (±130), **moleteado** de 130 a 600 a cada lado, partido por la **marca de
+agarre** —un anillo liso de 8 mm en el 405, lo que se busca con el dedo para
+colocar las manos sin mirar— y liso otra vez del 600 al collar.
+
+**EL MOLETEADO VA EN SU PROPIO MATERIAL**, mate contra el cromo pulido del resto,
+que es lo que lo hace visible a la distancia a la que se mira una barra. Son
+surcos, no relieve, así que la regla de `separarRotulo` no lo encuentra: la pieza
+**declara** sus bandas y `separarBandas` reparte los triángulos. Es la segunda
+manera de tener dos materiales en una malla y sirve para cualquier pieza a
+franjas que venga después.
+
+### Sobre una decisión que se midió
+
+**EL MOLETEADO DE ROMBO SE CONSTRUYÓ Y SE DESCARTÓ, con su número al lado.** Se
+hizo el de verdad —cruzando los surcos anulares con una corona de generatrices,
+que es como se hace—, salió un sólido sano… y **1.9 millones de triángulos**:
+cada anillo se parte en 28 trozos y el mallador afina cada uno por su cuenta. Un
+disco de 45 lb, para comparar, son 38.000. La misma barra sólo con los anillos
+—que es un moleteado real, el recto— son **63.000**: treinta veces menos por una
+diferencia que a un metro de distancia no se ve. Queda anotado en la cabecera del
+modelo por si algún día compensa.
+
 ## [0.3.68] — 2026-09-16
 
 ### Añadido

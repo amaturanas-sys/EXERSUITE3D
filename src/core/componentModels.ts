@@ -3,7 +3,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { getDefinition } from "../objects/componentLibrary";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { deleteModel, getAllModels, putModel } from "./modelStore";
-import { bakeComponentGeometry, loadModelRoot, separarRotulo } from "./modelLoading";
+import { bakeComponentGeometry, loadModelRoot, separarBandas, separarRotulo } from "./modelLoading";
 
 /** Estado de un modelo entrante respecto al local, al importar un comprimido. */
 export type ImportStatus = "new" | "newer" | "older" | "unchanged" | "unknown";
@@ -88,8 +88,11 @@ class ComponentModelManager {
     componentId: string,
   ): Promise<THREE.BufferGeometry> {
     const geo = bakeComponentGeometry(await loadModelRoot(bytes, ext));
-    const rot = getDefinition(componentId)?.rotulo;
+    const def = getDefinition(componentId);
+    const rot = def?.rotulo;
     if (rot && separarRotulo(geo, rot.asomaCm)) geo.userData.rotulo = rot.materialId;
+    const ban = def?.bandas;
+    if (ban && separarBandas(geo, ban.tramos)) geo.userData.rotulo = ban.materialId;
     return geo;
   }
 

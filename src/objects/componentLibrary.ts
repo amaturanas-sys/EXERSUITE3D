@@ -1299,14 +1299,42 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     description: "Masa de equilibrado del mecanismo.",
   },
   {
+    /**
+     * BARRA OLÍMPICA (v0.3.69) — la de 20 kg, con su anatomía y su moleteado.
+     * Malla de `cad/src/barra_olimpica.py`.
+     *
+     * TRES DIÁMETROS, como la de verdad: manga Ø5 —el mismo agujero que llevan
+     * los discos—, collar Ø6.2 que les hace de tope, y eje Ø2.8 donde se agarra.
+     *
+     * EL MOLETEADO VA EN SU PROPIO MATERIAL. Son surcos, no relieve, así que la
+     * regla de `separarRotulo` no lo encuentra: la barra DECLARA sus bandas
+     * (`bandas`) en fracciones del eje largo y `separarBandas` reparte los
+     * triángulos. Los tramos salen de las cotas del modelo de CAD —moleteado de
+     * 130 a 600 mm del centro, partido por la marca de agarre del 405— sobre una
+     * barra de 2200: (1100±x)/2200.
+     *
+     * SIN `orientacion`: el modelo se dibuja con su eje en la Z del CAD, que el
+     * convenio de glTF convierte en la Y de la app. Entra de pie, igual que el
+     * cilindro al que sustituye, así que nada de lo ya colocado se mueve.
+     */
     id: "barra-olimpica",
     label: "Barra olímpica",
     category: "peso",
     materialId: "cromo",
-    defaults: { kind: "cylinder", radiusTop: 1.45, radiusBottom: 1.45, height: 220, radialSegments: 24 },
+    defaults: { kind: "cylinder", radiusTop: 1.4, radiusBottom: 1.4, height: 220, radialSegments: 24 },
     physics: { massKg: 20, fixed: false },
-    cargaDiscos: { lados: 2, diamCm: 44, grosorCm: 3, masaKg: 20, mangaCm: 75 },
-    description: "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.",
+    cargaDiscos: { lados: 2, diamCm: 44.13, grosorCm: 3.56, masaKg: 20.41, mangaCm: 43.3 },
+    bandas: {
+      materialId: "plata",
+      tramos: [
+        [0.2273, 0.3141],
+        [0.3177, 0.4409],
+        [0.5591, 0.6823],
+        [0.6859, 0.7727],
+      ],
+    },
+    description:
+      "Barra olimpica de 2.2 m y 20 kg: mangas de O5 cm para los discos, collares de tope y eje de O2.8 cm con moleteado en las zonas de agarre, marca de agarre y tramos lisos en el centro y junto a los collares.",
   },
   {
     id: "pila-pesos",

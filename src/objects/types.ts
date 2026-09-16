@@ -438,6 +438,13 @@ export interface ComponentDefinition {
    */
   rotulo?: { materialId: string; asomaCm: number };
   /**
+   * BANDAS CON MATERIAL PROPIO (v0.3.69). La otra manera de tener dos colores
+   * en una pieza: el moleteado de una barra no sobresale de nada —son surcos—
+   * pero sí ocupa tramos concretos del eje largo, y ahí se declaran, en
+   * fracciones de 0 a 1 de ese eje.
+   */
+  bandas?: { materialId: string; tramos: [number, number][] };
+  /**
    * Paso de la grilla de agujeros de calce (cm) en postes verticales: las
    * jotas y brazos de seguridad suben/bajan por el poste AGUJERO POR AGUJERO
    * con este paso.

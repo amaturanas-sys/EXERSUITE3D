@@ -65,6 +65,7 @@ no un error del modelo.
 | Brazo spotter (voladizo) | `src/brazo_spotter.py` | `brazo-spotter` (en la paleta, con largo a medida) |
 | Kettlebell · 10 a 55 kg | `src/kettlebell.py` | `kettlebell-10` … `kettlebell-55` (la paleta abre una burbuja para elegir el peso) |
 | Disco «STANDARD BARBELL» · 5 a 45 lb | `src/disco_barbell.py` | `disco-barbell-5` … `disco-barbell-45` (la burbuja cuelga del botón `disco-peso`) |
+| Barra olímpica (2.2 m, 20 kg) | `src/barra_olimpica.py` | `barra-olimpica` (en la paleta; el moleteado va en su propio material) |
 
 ### Una pieza de `cad/` en la PALETA
 

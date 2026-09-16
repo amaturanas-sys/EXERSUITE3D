@@ -631,7 +631,8 @@ export const TRADUCCIONES: Record<string, string> = {
     "35 pound plate (15.9 kg): Ø34.9 cm by 3.56 thick, with the four-spoke cross, BARBELL and STANDARD on the rim and 35 LBS / 15.9 KGS in the quarters.",
   "Disco de 45 libras (20.4 kg): O44.1 cm por 3.56 de canto, el mayor del juego, con la cruz de cuatro radios y el alma vaciada hasta dejarla en 4 mm.":
     "45 pound plate (20.4 kg): Ø44.1 cm by 3.56 thick, the largest of the set, with the four-spoke cross and the web hollowed down to 4 mm.",
-  "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.": "2.2 m Olympic barbell: it loads plates at both ends.",
+  "Barra olimpica de 2.2 m y 20 kg: mangas de O5 cm para los discos, collares de tope y eje de O2.8 cm con moleteado en las zonas de agarre, marca de agarre y tramos lisos en el centro y junto a los collares.":
+    "2.2 m, 20 kg Olympic barbell: Ø5 cm sleeves for the plates, collars to stop them, and a Ø2.8 cm shaft knurled where the hands go, with a grip mark and smooth runs at the centre and next to the collars.",
   "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas.": "Selectorised stack: the selector tube drags the plates above the pin upwards. Each plate carries the two vertical holes that hug the pulley system's guide tubes.",
   "Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central.": "Olympic sleeve where the plates are loaded (plate-loaded): they assemble through the centre hole.",
   "Superficie de apoyo del usuario.": "Surface the user rests on.",
