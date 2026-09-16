@@ -1178,14 +1178,97 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       "Mancuerna hexagonal de 50 libras (22.7 kg): cabezas de goma con el peso grabado y mango cromado.",
   },
   {
+    /**
+     * DISCO DE PESO (v0.3.62) — el disco olímpico, en cinco libras distintas.
+     * Mallas de `cad/src/disco_barbell.py`.
+     *
+     * COMO LAS MANCUERNAS Y LAS KETTLEBELLS: un botón que abre la burbuja de
+     * pesos. El de este `def` no tiene malla propia; al tocarlo se coloca
+     * siempre una variante.
+     *
+     * EL AGUJERO NO CAMBIA: Ø5 cm en los cinco, el de la manga olímpica. Es la
+     * única cota que no se mueve, porque un disco que no enfila la barra no es
+     * un disco.
+     *
+     * SIN `orientacion`: el cuarto de vuelta va horneado en el modelo de CAD,
+     * así que el GLB llega ya de pie y con los ejes locales sanos —el disco se
+     * enfila por su eje, y con la malla girada por fuera ese eje no sería el
+     * que la app cree—.
+     *
+     * OJO, NO SE PUEDE RENOMBRAR NI ESCONDER ESTE `id`: `main.ts` lo usa como
+     * plantilla de las placas de la pila de pesos (`plantillaDisco`).
+     */
     id: "disco-peso",
     label: "Disco de peso",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "cylinder", radiusTop: 22, radiusBottom: 22, height: 3 },
-    physics: { massKg: 20, fixed: false },
-    orientacion: [Math.PI / 2, 0, 0],
-    description: "Disco olimpico para barras o ejes.",
+    // El bulto de reserva es el de 25 lb, el del medio.
+    defaults: { kind: "box", width: 28.1, height: 28.1, depth: 4 },
+    physics: { massKg: 11.34, fixed: false },
+    variantes: [
+      { id: "disco-barbell-10", etiqueta: "10 lb" },
+      { id: "disco-barbell-15", etiqueta: "15 lb" },
+      { id: "disco-barbell-25", etiqueta: "25 lb" },
+      { id: "disco-barbell-35", etiqueta: "35 lb" },
+      { id: "disco-barbell-45", etiqueta: "45 lb" },
+    ],
+    description:
+      "Disco olimpico de hierro con las letras STANDARD BARBELL en relieve por las dos caras. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas; los de 35 y 45 llevan tres radios con sus ventanas.",
+  },
+  {
+    id: "disco-barbell-10",
+    paleta: "oculta",
+    label: "Disco 10 lb",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 23.1, height: 23.1, depth: 2.7 },
+    physics: { massKg: 4.54, fixed: false },
+    description:
+      "Disco de 10 libras (4.5 kg): Ø23.1 cm por 2.2 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.",
+  },
+  {
+    id: "disco-barbell-15",
+    paleta: "oculta",
+    label: "Disco 15 lb",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 25.4, height: 25.4, depth: 3.1 },
+    physics: { massKg: 6.8, fixed: false },
+    description:
+      "Disco de 15 libras (6.8 kg): Ø25.4 cm por 2.6 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.",
+  },
+  {
+    id: "disco-barbell-25",
+    paleta: "oculta",
+    label: "Disco 25 lb",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 28.1, height: 28.1, depth: 4 },
+    physics: { massKg: 11.34, fixed: false },
+    description:
+      "Disco de 25 libras (11.3 kg): Ø28.1 cm por 3.5 de canto, el mas grueso del juego, con alma rebajada y agujero olimpico de 5 cm.",
+  },
+  {
+    id: "disco-barbell-35",
+    paleta: "oculta",
+    label: "Disco 35 lb",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 37, height: 37, depth: 3.5 },
+    physics: { massKg: 15.88, fixed: false },
+    description:
+      "Disco de 35 libras (15.9 kg): Ø37 cm por 3 de canto, con tres radios y sus ventanas pasantes, y agujero olimpico de 5 cm.",
+  },
+  {
+    id: "disco-barbell-45",
+    paleta: "oculta",
+    label: "Disco 45 lb",
+    category: "peso",
+    materialId: "hierro-fundido",
+    defaults: { kind: "box", width: 45.2, height: 45.2, depth: 3.6 },
+    physics: { massKg: 20.41, fixed: false },
+    description:
+      "Disco de 45 libras (20.4 kg): Ø45.2 cm por 3.1 de canto, el mayor del juego, con tres radios de ventanas anchas y agujero olimpico de 5 cm.",
   },
   {
     id: "contrapeso",

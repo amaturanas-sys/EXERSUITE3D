@@ -5,6 +5,60 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.62] — 2026-09-16
+
+### Añadido
+
+**LOS DISCOS DE PESO, EN CINCO LIBRAS.** El botón «Disco de peso» abre ahora la
+misma burbuja de pesos que las mancuernas y las kettlebells, con **10, 15, 25,
+35 y 45 libras**. Cada uno es una pieza distinta modelada en CAD
+(`cad/src/disco_barbell.py`), no la misma escalada.
+
+**EL AGUJERO NO CAMBIA NUNCA: Ø5 cm en los cinco**, el de la manga olímpica. Es
+la única cota que no se toca por mucho que suba el peso, porque un disco que no
+enfila la barra no es un disco. Lo demás crece a su alrededor.
+
+**LAS COTAS SALEN DE LA FICHA DEL FABRICANTE, NO DE UNA REGLA INVENTADA:**
+
+| lb | diámetro | canto | masa |
+|---:|---------:|------:|-----:|
+| 10 | 231 mm | 22 mm | 4.54 kg |
+| 15 | 254 mm | 26 mm | 6.80 kg |
+| 25 | 281 mm | 35 mm | 11.34 kg |
+| 35 | 370 mm | 30 mm | 15.88 kg |
+| 45 | 452 mm | 31 mm | 20.41 kg |
+
+Fíjese en que no crecen ordenadamente: **el de 25 es más grueso que el de 35**, y
+el de 45 apenas más que el de 35 siendo mucho mayor. Es lo que hace un
+fabricante de verdad —cada molde tiene su historia— y es justo la razón de
+copiar la ficha en vez de inventarse una proporción.
+
+**EL REBAJE NO ES ADORNO: ES LO QUE DA EL PESO.** Macizo, el de 45 pesaría 35.4
+kg en vez de 20.4 — sobra el 42 % del material. Así que el modelo no dibuja un
+rebaje «que quede bonito» y luego mide a ver qué sale: **se pide el peso de
+catálogo y se resuelve el rebaje que lo consigue**, despejando el espesor del
+alma (10, 15 y 25) o el ángulo de los radios (35 y 45). Si la cuenta pidiera un
+alma más fina de lo que se puede fundir, el modelo revienta en vez de exportar
+una pieza que miente sobre su peso. Los cinco caen **a menos del 0.2 % de su
+masa de catálogo**.
+
+**DOS FAMILIAS, COMO EN EL ESTANTE.** Los de 10, 15 y 25 son macizos con las dos
+caras rebajadas; **los de 35 y 45 llevan tres radios y sus ventanas pasantes**,
+que es lo que se ve al trasluz y lo que explica que al de 45 le sobre un 42 % y
+al de 10 sólo un 28 %.
+
+**LAS LETRAS «STANDARD BARBELL» EN RELIEVE, POR LAS DOS CARAS**, siguiendo la
+curva de la llanta —letra a letra girada sobre el eje, porque una marca recta
+sobre una llanta de 45 cm se sale del anillo por las puntas— y el número de
+libras enfrente. Un disco enfilado en la barra se ve por los dos lados, así que
+el relieve se espeja: por detrás las letras salen invertidas, que es justamente
+como se leen bien mirándolas desde ese lado.
+
+### Sin cambios
+
+La **pila de pesos** sigue usando su placa de siempre: el `id` `disco-peso` es la
+plantilla de las placas del stack y no se ha tocado.
+
 ## [0.3.61] — 2026-09-16
 
 ### Añadido

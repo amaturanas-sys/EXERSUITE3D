@@ -197,6 +197,11 @@ export const TRADUCCIONES: Record<string, string> = {
   "Leva (cam)": "Cam",
   "Bloque de peso": "Weight block",
   "Disco de peso": "Weight plate",
+  "Disco 10 lb": "10 lb plate",
+  "Disco 15 lb": "15 lb plate",
+  "Disco 25 lb": "25 lb plate",
+  "Disco 35 lb": "35 lb plate",
+  "Disco 45 lb": "45 lb plate",
   Contrapeso: "Counterweight",
   "Barra olímpica": "Olympic barbell",
   "Pila de pesos": "Weight stack",
@@ -614,7 +619,18 @@ export const TRADUCCIONES: Record<string, string> = {
   "Pasador cromado que ATRAVIESA un pinhole del pilar y hace de tope de seguridad o de gancho. Calza agujero a agujero; su largo, su diámetro y el sobrante a cada lado se ajustan en Propiedades.": "Chromed pin that GOES THROUGH a post's pinhole and acts as a safety stop or a hook. It seats hole by hole; its length, its diameter and the overhang on each side are set in Properties.",
   "Pesa rusa de hierro con el peso grabado en el costado. Al tocarla se elige el peso: 10, 15, 20, 25, 35, 45 o 55 kg. El asa deja de crecer al llegar a su techo ergonómico y de ahí en adelante sólo engorda la bola.": "Cast-iron kettlebell with the weight engraved on its side. Touch it to pick the weight: 10, 15, 20, 25, 35, 45 or 55 kg. The handle stops growing once it reaches its ergonomic ceiling, and from there on only the ball gets bigger.",
   "Mancuerna hexagonal de goma con el peso grabado en la cara. Al tocarla se elige el peso: 10, 20, 30, 40 o 50 libras. Cada uno es una pieza distinta —otras cotas y otra masa—, no la misma estirada.": "Rubber hex dumbbell with the weight engraved on its face. Touch it to pick the weight: 10, 20, 30, 40 or 50 pounds. Each one is a different part —other dimensions, another mass—, not the same one stretched.",
-  "Disco olimpico para barras o ejes.": "Olympic plate for bars or axles.",
+  "Disco olimpico de hierro con las letras STANDARD BARBELL en relieve por las dos caras. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas; los de 35 y 45 llevan tres radios con sus ventanas.":
+    "Cast-iron Olympic plate with STANDARD BARBELL raised on both faces. Touch it to pick the weight: 10, 15, 25, 35 or 45 pounds. The bore is always 5 cm so it threads onto Olympic sleeves; the 35 and 45 carry three spokes with their windows.",
+  "Disco de 10 libras (4.5 kg): Ø23.1 cm por 2.2 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.":
+    "10 pound plate (4.5 kg): Ø23.1 cm by 2.2 thick, web recessed on both faces and a 5 cm Olympic bore.",
+  "Disco de 15 libras (6.8 kg): Ø25.4 cm por 2.6 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.":
+    "15 pound plate (6.8 kg): Ø25.4 cm by 2.6 thick, web recessed on both faces and a 5 cm Olympic bore.",
+  "Disco de 25 libras (11.3 kg): Ø28.1 cm por 3.5 de canto, el mas grueso del juego, con alma rebajada y agujero olimpico de 5 cm.":
+    "25 pound plate (11.3 kg): Ø28.1 cm by 3.5 thick, the thickest of the set, with a recessed web and a 5 cm Olympic bore.",
+  "Disco de 35 libras (15.9 kg): Ø37 cm por 3 de canto, con tres radios y sus ventanas pasantes, y agujero olimpico de 5 cm.":
+    "35 pound plate (15.9 kg): Ø37 cm by 3 thick, with three spokes and their through windows, and a 5 cm Olympic bore.",
+  "Disco de 45 libras (20.4 kg): Ø45.2 cm por 3.1 de canto, el mayor del juego, con tres radios de ventanas anchas y agujero olimpico de 5 cm.":
+    "45 pound plate (20.4 kg): Ø45.2 cm by 3.1 thick, the largest of the set, with three spokes and wide windows, and a 5 cm Olympic bore.",
   "Barra olimpica de 2.2 m (barbell): carga discos por ambos extremos.": "2.2 m Olympic barbell: it loads plates at both ends.",
   "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas.": "Selectorised stack: the selector tube drags the plates above the pin upwards. Each plate carries the two vertical holes that hug the pulley system's guide tubes.",
   "Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central.": "Olympic sleeve where the plates are loaded (plate-loaded): they assemble through the centre hole.",
