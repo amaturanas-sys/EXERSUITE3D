@@ -1,6 +1,6 @@
 // RETRATO DE LOS DISCOS — utilidad, no prueba.
 import { chromium } from "playwright-core";
-const SAL = process.argv[2] ?? "pruebas/salidas/v366-discos";
+const SAL = process.argv[2] ?? "pruebas/salidas/v367-discos";
 const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
   args:["--no-sandbox","--use-gl=angle","--use-angle=swiftshader","--enable-webgl"]});
 const page = await b.newPage({ viewport:{width:1600,height:800}});

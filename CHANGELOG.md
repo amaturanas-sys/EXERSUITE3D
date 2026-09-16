@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.67] — 2026-09-16
+
+### Cambiado
+
+**RADIOS ESTRECHOS, Y LA LLANTA QUE LOS PAGA.** Los radios de la cruz pasan de
+**0.16 R a 0.09 R** —la mitad de anchos, que es lo que mide el disco de la
+foto— y la llanta se ensancha de **0.16 R a 0.195 R**. Las dos cosas van juntas
+y ésa es toda la gracia del cambio.
+
+**POR QUÉ NO SE PODÍAN ESTRECHAR SIN MÁS.** Lo que hay que quitarle al disco
+está fijado por su peso de catálogo, así que un alma fina sólo se consigue
+vaciando una superficie MENOR y más honda. Unos radios estrechos dejan **más**
+superficie que vaciar, y por tanto un alma más **gorda**: la foto parecía pedir
+dos cosas incompatibles.
+
+**LO QUE LO PAGA ES LA LLANTA.** Es una banda maciza del **canto entero** que
+pone el límite por fuera a los radios y al alma —lo vaciado llega a su borde
+interior y ahí se para—, y eso es mucho hierro: en el de 45 lb, casi cuatro
+kilos. Ensancharla 0.035 R sobra para estrechar los radios a la mitad **y
+además** bajar el alma:
+
+| | v0.3.66 | v0.3.67 |
+|---|---:|---:|
+| ancho del radio | 0.16 R (35.3 mm) | **0.09 R (19.9 mm)** |
+| ancho de llanta | 0.16 R (35.3 mm) | **0.195 R (43.0 mm)** |
+| alma del de 45 lb | 3.03 mm | **2.74 mm** (7.7 % del canto) |
+
+El OBJ original tiene 5 mm de alma sobre 61 de canto: el 8.2 %. El de 45 lb va
+ahora por debajo de esa proporción.
+
+Los cinco siguen validando como sólido sano y cayendo a menos del 0.3 % de su
+masa de catálogo, y el rótulo sigue pintado entre el 4 y el 8 % de la
+superficie.
+
 ## [0.3.66] — 2026-09-16
 
 ### Cambiado

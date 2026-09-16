@@ -12,7 +12,11 @@ es una RUEDA, y su perfil de dentro afuera dice tres cosas y sólo tres —
       el 8 %. El disco es casi hueco, y por eso pesa lo que pesa en vez del
       doble;
     · una LLANTA maciza por fuera, otra vez del grueso entero, con el canto
-      achaflanado.
+      achaflanado. Y es ella la que PONE EL LÍMITE por fuera a los radios y al
+      alma: lo vaciado llega hasta su borde interior y ahí se para. Ese anillo
+      macizo del canto entero es mucho hierro —casi cuatro kilos en el de
+      45 lb—, y es lo que permite que los radios sean tan estrechos como en la
+      foto sin que el disco engorde.
 
 El OBJ no lleva cruz ni letras —es la rueda pelada—; eso lo ponen las fotos.
 
@@ -60,7 +64,7 @@ EL ALMA NO SE DIBUJA: SE RESUELVE. Macizo, el de 45 lb pesaría 38.7 kg en vez d
 
 `medidas()` hace ese despeje y revienta si la cuenta pidiera un alma más fina de
 lo que se puede fundir, en vez de exportar una pieza que miente sobre su peso.
-Que al de 45 le salgan 3.0 mm de alma —el 8.5 % de su canto— no es casualidad:
+Que al de 45 le salgan 2.7 mm de alma —el 7.7 % de su canto— no es casualidad:
 el OBJ original tiene 5 sobre 61, que es el 8.2 %.
 
 SOBRE EL MATERIAL. Se cuenta con hierro fundido, 7.2 g/cm³, que es de lo que
@@ -97,16 +101,26 @@ AGUJERO = 50.0          # Ø olímpico. LA COTA QUE NO CAMBIA.
 DENSIDAD = 7.2e-3       # g/mm³, hierro fundido (ver la cabecera)
 CRUZ_DESDE_LB = 35      # de aquí arriba, la cruz de cuatro radios
 RADIOS = 4
-# LAS PROPORCIONES SALEN DE LA FOTO, Y ADEMÁS SON LAS QUE ADELGAZAN EL ALMA.
-# Las dos cosas van juntas y conviene saber por qué: lo que hay que quitarle al
-# disco está FIJADO por su peso de catálogo, así que un alma más fina sólo se
-# consigue vaciando una superficie MENOR y más honda. Cubo grande y radios
-# anchos —que es lo que enseña la foto— es exactamente eso.
+# LAS PROPORCIONES SALEN DE LA FOTO, Y HAY QUE LEERLAS JUNTAS.
+#
+# Lo que hay que quitarle al disco está FIJADO por su peso de catálogo, así que
+# un alma más fina sólo se consigue vaciando una superficie MENOR y más honda.
+# Eso pone en tensión dos cosas que la foto pide a la vez: RADIOS ESTRECHOS —los
+# del disco de verdad no llegan a la décima parte del radio— y un ALMA FINA.
+# Radios estrechos dejan MÁS superficie que vaciar, y por tanto un alma más
+# gorda. Parece un callejón sin salida y no lo es.
+#
+# LO QUE LO PAGA ES LA LLANTA. En la foto, la llanta es una banda ancha que
+# llega al CANTO ENTERO del disco, y es ella la que pone el límite por fuera a
+# los radios y al alma: nada de lo vaciado la muerde. Ese anillo macizo es mucho
+# hierro —en el de 45 lb, casi cuatro kilos— y es el que compensa. Ensanchándola
+# de 0.16 R a 0.195 R sobra masa para estrechar los radios de 0.16 R a 0.09 R y
+# ADEMÁS bajar el alma de 3.0 a 2.7 mm.
 CUBO_FRAC = 0.29        # radio del cubo, en fracción del radio del disco
 CUBO_PARED = 18.0       # …pero nunca menos que esta pared alrededor del agujero
-LLANTA_FRAC = 0.84      # radio interior de la llanta, ídem
-RADIO_FRAC = 0.16       # ancho de cada radio de la cruz, ídem
-RADIO_MIN = 14.0
+LLANTA_FRAC = 0.805     # radio interior de la llanta, ídem
+RADIO_FRAC = 0.09       # ancho de cada radio de la cruz, ídem
+RADIO_MIN = 12.0
 ALMA_MIN = 2.5          # lo más fino que se puede dejar el alma
 CHAFLAN_FRAC = 0.09     # el canto de la llanta, matado, en fracción del grueso
 
