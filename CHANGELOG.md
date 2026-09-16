@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.68] — 2026-09-16
+
+### Añadido
+
+**LA LLANTA DOMINA A LOS RADIOS, 1 cm.** En la foto los radios no están a ras de
+la llanta: ésta sobresale sobre ellos, y ese escalón es lo que le da al disco su
+relieve y su sombra. Un disco con cruz tiene ahora **tres alturas** en vez de
+dos: llanta, radios y cuarteles.
+
+**NO ES GRATIS, Y CONVIENE SABER QUIÉN LO PAGA.** Bajar los radios 1 cm por cada
+cara le quita al de 45 lb casi **400 cm³ de hierro**, y ese hierro hay que
+devolverlo o el alma engorda —con la llanta de v0.3.67 el alma habría pasado de
+2.6 a 5.1 mm—. Lo devuelve, otra vez, **la llanta**: de 0.195 R a 0.22 R de
+ancho. Con eso el escalón entero sale y el alma se queda donde estaba:
+
+| | v0.3.67 | v0.3.68 |
+|---|---:|---:|
+| escalón de la llanta | — | **10.0 mm** (45 lb) |
+| ancho de llanta | 0.195 R | **0.22 R** |
+| alma del de 45 lb | 2.74 mm | **2.56 mm** |
+
+**EL DE 35 lb NO SE LLEVA EL CENTÍMETRO ENTERO, y no es un descuido.** Su
+cuartel sólo baja 11.9 mm, así que un escalón de 10 le dejaría 1.4 mm de cuartel
+por debajo del radio: la cruz se vería como un dibujo, no como una pieza
+fundida. Se le exige una **holgura mínima de 5 mm** bajo el radio y el escalón
+cede a **6.4 mm**. El escalón y el alma se persiguen —un escalón más hondo deja
+un alma más gorda y al revés—, así que se resuelven **a la vez**, iterando hasta
+que los dos encajan.
+
+### Cambiado
+
+**La prueba de la cruz mide ahora las TRES alturas.** Un rayo por cada grado y
+medio de vuelta, y de lo que devuelve se leen solos el escalón y la hondura del
+cuartel: la prueba no necesita saber ninguno de los dos números —los saca de la
+pieza— y comprueba que la llanta domina entre 0.5 y 1.05 cm y que al cuartel le
+quedan más de 4 mm por debajo del radio.
+
 ## [0.3.67] — 2026-09-16
 
 ### Cambiado

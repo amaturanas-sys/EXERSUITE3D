@@ -11,7 +11,9 @@ es una RUEDA, y su perfil de dentro afuera dice tres cosas y sólo tres —
     · un ALMA FINÍSIMA en el medio: en el OBJ, 5 mm sobre 61 de canto. Eso es
       el 8 %. El disco es casi hueco, y por eso pesa lo que pesa en vez del
       doble;
-    · una LLANTA maciza por fuera, otra vez del grueso entero, con el canto
+    · una LLANTA maciza por fuera, del grueso entero, que DOMINA a los radios
+      por un escalón de 1 cm —en la foto no están a ras: la llanta sobresale, y
+      ese escalón es lo que le da al disco su relieve y su sombra—, con el canto
       achaflanado. Y es ella la que PONE EL LÍMITE por fuera a los radios y al
       alma: lo vaciado llega hasta su borde interior y ahí se para. Ese anillo
       macizo del canto entero es mucho hierro —casi cuatro kilos en el de
@@ -118,9 +120,24 @@ RADIOS = 4
 # ADEMÁS bajar el alma de 3.0 a 2.7 mm.
 CUBO_FRAC = 0.29        # radio del cubo, en fracción del radio del disco
 CUBO_PARED = 18.0       # …pero nunca menos que esta pared alrededor del agujero
-LLANTA_FRAC = 0.805     # radio interior de la llanta, ídem
+LLANTA_FRAC = 0.78      # radio interior de la llanta, ídem
 RADIO_FRAC = 0.09       # ancho de cada radio de la cruz, ídem
 RADIO_MIN = 12.0
+# CUÁNTO SOBRESALE LA LLANTA SOBRE LOS RADIOS. En la foto los radios no están a
+# ras de la llanta: ésta los domina, y ese escalón es lo que le da al disco su
+# relieve y su sombra. 10 mm en los grandes, y nunca más de un tercio del canto
+# —un escalón de 1 cm en una chapa de 16 no deja radio—.
+#
+# NO ES GRATIS: bajar los radios quita hierro, y ese hierro hay que devolverlo o
+# el alma engorda. Lo devuelve, otra vez, la llanta: de 0.195 R a 0.22 R de
+# ancho. Con eso el escalón entero sale y el alma se queda donde estaba.
+SALIENTE = 10.0         # mm que la llanta domina a los radios
+SALIENTE_FRAC = 0.30    # …pero nunca más de esta fracción del canto
+# Y NUNCA TAN HONDO QUE SE COMA EL CUARTEL. El escalón baja los radios y el
+# vaciado baja los cuarteles: si los dos acaban a la misma altura, la cruz
+# desaparece. El de 35 lb lo enseñó —con 10 mm de escalón le quedaban 1.4 mm de
+# cuartel por debajo—, así que se le exige esta holgura y el escalón cede.
+CUARTEL_HOLGURA = 5.0
 ALMA_MIN = 2.5          # lo más fino que se puede dejar el alma
 CHAFLAN_FRAC = 0.09     # el canto de la llanta, matado, en fracción del grueso
 
@@ -169,18 +186,40 @@ def medidas(lb: float) -> dict:
     # llevan los radios. Un radio es una barra recta que cruza el anillo, así
     # que su parte dentro del anillo es ancho × largo del tramo.
     anillo = math.pi * (r_llanta**2 - r_cubo**2)
-    area = anillo - radios * ancho_radio * (r_llanta - r_cubo)
+    area_radios = radios * ancho_radio * (r_llanta - r_cubo)
+    area = anillo - area_radios
+    saliente = min(SALIENTE, SALIENTE_FRAC * espesor) if radios else 0.0
 
     # LO QUE HAY QUE QUITAR. Macizo con el agujero hecho, menos lo que debe
     # pesar. Se reparte a partes iguales entre las dos caras.
     macizo = math.pi * (r**2 - r_agujero**2) * espesor
     objetivo = (kg * 1000.0) / DENSIDAD
-    hondo = (macizo - objetivo) / (2.0 * area)
+    # EL ESCALÓN Y EL ALMA SE PERSIGUEN, así que se resuelven a la vez. Lo que
+    # se lleva el escalón ya no hay que quitarlo del alma —luego un escalón más
+    # hondo deja un alma más gorda—, y a su vez el escalón no puede acercarse al
+    # fondo del cuartel más de lo que manda la holgura. Se itera: cada vuelta
+    # recorta el escalón y el cuartel se ahonda, así que converge enseguida.
+    def _hondo(sal: float) -> float:
+        return (macizo - objetivo - area_radios * 2.0 * sal) / (2.0 * area)
+
+    hondo = _hondo(saliente)
+    for _ in range(8):
+        tope = hondo - CUARTEL_HOLGURA
+        nuevo = min(saliente, tope)
+        if abs(nuevo - saliente) < 1e-3:
+            break
+        saliente = max(0.0, nuevo)
+        hondo = _hondo(saliente)
 
     if hondo <= 0.0:
         raise ValueError(
             f"el disco de {lb} lb ya pesa {macizo * DENSIDAD / 1000:.2f} kg macizo "
             f"y la etiqueta pide {kg:.2f}: no hay nada que vaciar"
+        )
+    if saliente >= hondo:
+        raise ValueError(
+            f"el disco de {lb} lb pide un escalón de {saliente:.1f} mm y un alma "
+            f"a {hondo:.1f}: los radios quedarían por debajo de los cuarteles"
         )
     if espesor - 2.0 * hondo < ALMA_MIN:
         raise ValueError(
@@ -200,6 +239,7 @@ def medidas(lb: float) -> dict:
         "radios": radios,
         "ancho_radio": ancho_radio,
         "hondo": hondo,
+        "saliente": saliente,
         "alma": espesor - 2.0 * hondo,
     }
 
@@ -284,20 +324,30 @@ def disco(lb: float):
               if abs(e.radius - m["r_agujero"]) < 0.01]
     pieza = bd.chamfer(dentro, length=chaflan / 2.0)
 
-    # EL ALMA. El anillo entre cubo y llanta, menos la cruz si la lleva. Una
-    # barra es simétrica respecto del centro, así que dos barras hacen los
-    # cuatro radios.
-    zona = bd.Circle(m["r_llanta"]) - bd.Circle(m["r_cubo"])
+    # LO QUE SE VACÍA, EN DOS ALTURAS. El anillo entre cubo y llanta se parte en
+    # los CUARTELES —hasta el alma, lo más hondo— y los RADIOS —sólo hasta el
+    # escalón, para que la llanta los domine—. Una barra es simétrica respecto
+    # del centro, así que dos barras hacen los cuatro radios.
+    anillo = bd.Circle(m["r_llanta"]) - bd.Circle(m["r_cubo"])
+    barras = None
     for i in range(m["radios"] // 2):
         ang = 45.0 + 90.0 * i
-        zona -= bd.Rot(0.0, 0.0, ang - 90.0) * bd.Rectangle(m["ancho_radio"], 2.2 * r)
+        b = bd.Rot(0.0, 0.0, ang - 90.0) * bd.Rectangle(m["ancho_radio"], 2.2 * r)
+        barras = b if barras is None else barras + b
+    cuarteles = anillo - barras if barras is not None else anillo
+    radios_sk = anillo - cuarteles if barras is not None else None
 
     # Un vaciado por cara, cada uno sobresaliendo 10 mm por fuera del disco para
     # que la resta sea limpia y no deje caras coplanares.
     hondo = m["hondo"]
-    corte = bd.extrude(zona, amount=hondo + 10.0)
+    corte = bd.extrude(cuarteles, amount=hondo + 10.0)
     pieza -= bd.Pos(0.0, 0.0, t / 2.0 - hondo) * corte
     pieza -= bd.Pos(0.0, 0.0, -t / 2.0 - 10.0) * corte
+    if radios_sk is not None and m["saliente"] > 0.0:
+        sal = m["saliente"]
+        rebaje = bd.extrude(radios_sk, amount=sal + 10.0)
+        pieza -= bd.Pos(0.0, 0.0, t / 2.0 - sal) * rebaje
+        pieza -= bd.Pos(0.0, 0.0, -t / 2.0 - 10.0) * rebaje
 
     # EL ROTULADO, DENTRO DE LO VACIADO. Cambia con la cruz, como en la foto, y
     # en los dos casos se apoya en el FONDO —no en la llanta, que va limpia—.

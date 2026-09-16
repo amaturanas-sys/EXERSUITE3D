@@ -1,4 +1,4 @@
-// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.66).
+// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.68).
 //
 // Cinco discos de libras distintas, copiados de la foto del juego y de la ficha
 // «Olympic Weight Plate Specifications» del fabricante. Lo que se comprueba, y
@@ -24,12 +24,14 @@
 //      alguien dibujara el rebaje «a ojo» y ajustara la masa a mano, esto lo
 //      caza.
 //
-//   4. LA CRUZ DE CUATRO RADIOS, Y SÓLO EN LOS GRANDES. En el cartel los de 35
+//   4. LA CRUZ DE CUATRO RADIOS, Y EN SU PROPIO ESCALÓN. En el cartel los de 35
 //      y 45 lb llevan cuatro radios rectos separando cuatro cuarteles vaciados,
-//      y los de 5, 10 y 25 no: su alma es un anillo liso. Se mide
-//      sin mirar el dibujo, contando por dónde la pieza conserva su grueso
-//      entero: en un disco con cruz hay CUATRO tramos de ángulo a tope de
-//      espesor; en uno liso, ninguno.
+//      y los de 5, 10 y 25 no: su alma es un anillo liso. Además la LLANTA
+//      DOMINA a los radios —no están a ras—, así que un disco con cruz tiene
+//      TRES alturas: llanta, radios, cuarteles. Se comprueban las tres con un
+//      rayo: en un disco con cruz hay cuatro tramos de ángulo que paran más
+//      arriba que el resto, y en uno liso el anillo para a la misma altura en
+//      toda la vuelta.
 //
 //   5. QUE LAS LETRAS ESTÁN PINTADAS. Sobre hierro fundido —un gris casi
 //      negro— un relieve del mismo color no se lee: hace falta pintura, como en
@@ -137,7 +139,7 @@ const medido = await page.evaluate(async (fichas) => {
     o.mesh.position.set(0, 0, 0);
     o.mesh.rotation.set(0, 0, 0);
     o.mesh.updateMatrixWorld(true);
-    const lleno = new Array(BINS).fill(false);
+    const paradas = new Array(BINS).fill(0);
     for (let k = 0; k < BINS; k++) {
       const ang = ((k + 0.5) / BINS) * Math.PI * 2;
       desde.set(0, 0, 0);
@@ -146,13 +148,21 @@ const medido = await page.evaluate(async (fichas) => {
       desde.setComponent(iEje, semiEje + 5);
       rayo.set(desde, hacia);
       const golpes = rayo.intersectObject(o.mesh, false);
-      const alto = golpes.length ? Math.abs(golpes[0].point.getComponent(iEje)) : 0;
-      lleno[k] = alto > 0.9 * semiHierro;
+      paradas[k] = golpes.length ? Math.abs(golpes[0].point.getComponent(iEje)) : 0;
     }
-    // CUÁNTOS TRAMOS DE ÁNGULO conservan el grueso entero: cuatro si hay cruz,
-    // ninguno si el anillo está vaciado en toda la vuelta.
+    // DOS ALTURAS EN EL ANILLO: donde hay radio el rayo para antes, donde hay
+    // cuartel sigue hasta el fondo. El corte se pone a medio camino entre la
+    // más alta y la más baja, así la prueba no necesita saber ni el escalón ni
+    // la hondura: los lee de la pieza.
+    const arriba = Math.max(...paradas);
+    const abajo = Math.min(...paradas);
+    const corte = (arriba + abajo) / 2;
+    const lleno = paradas.map((v) => v > corte);
     let tramos = 0;
-    for (let k = 0; k < BINS; k++) if (lleno[k] && !lleno[(k + BINS - 1) % BINS]) tramos++;
+    // Con una sola altura no hay cruz que contar: el corte partiría el ruido.
+    if (arriba - abajo > 0.05) {
+      for (let k = 0; k < BINS; k++) if (lleno[k] && !lleno[(k + BINS - 1) % BINS]) tramos++;
+    }
 
     // EL VOLUMEN DE LA MALLA, por tetraedros con vértice en el origen.
     const idx = g.index;
@@ -208,6 +218,8 @@ const medido = await page.evaluate(async (fichas) => {
       vertices: pos.count,
       masa: o.physics?.massKg,
       tramos,
+      // La altura del radio y la del cuartel, en cm desde el plano medio.
+      niveles: [+arriba.toFixed(3), +abajo.toFixed(3)],
     };
   }
   return salida;
@@ -276,13 +288,28 @@ ok(
 // ── 5. LA CRUZ DE CUATRO RADIOS, SÓLO EN LOS GRANDES ─────────────────────
 for (const lb of LIBRAS) {
   const esperados = CON_CRUZ.includes(lb) ? 4 : 0;
-  const m = medido[lb];
+  const m = medido[lb], [arriba, abajo] = m.niveles;
   ok(
     m.tramos === esperados,
     CON_CRUZ.includes(lb)
-      ? `el de ${lb} lb lleva la cruz: ${m.tramos} tramos a tope de espesor entre los cuarteles`
-      : `el de ${lb} lb es liso, sin cruz: el anillo está rebajado en toda la vuelta`,
+      ? `el de ${lb} lb lleva la cruz: ${m.tramos} radios por encima del fondo de los cuarteles`
+      : `el de ${lb} lb es liso, sin cruz: el anillo para a la misma altura en toda la vuelta`,
     `tramos medidos: ${m.tramos}`,
+  );
+  if (!CON_CRUZ.includes(lb)) continue;
+  // LA LLANTA DOMINA A LOS RADIOS. Es lo que le da al disco su relieve, y es la
+  // cota que hay que vigilar: sin ella los radios quedan a ras y la cruz se ve
+  // como un dibujo, no como una pieza fundida.
+  const { canto } = segunLaFicha(lb);
+  const escalon = canto / 2 - arriba;
+  ok(
+    escalon > 0.5 && escalon <= 1.05,
+    `y la llanta los domina por ${escalon.toFixed(2)} cm (de la cara del hierro, a ${(canto / 2).toFixed(2)}, al lomo del radio)`,
+  );
+  // Y EL CUARTEL SIGUE SIENDO UN CUARTEL: el escalón no se lo puede comer.
+  ok(
+    arriba - abajo > 0.4,
+    `y el cuartel sigue hundido ${((arriba - abajo) * 10).toFixed(1)} mm por debajo del radio`,
   );
 }
 
