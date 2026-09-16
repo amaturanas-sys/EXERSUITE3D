@@ -5,6 +5,42 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.59] — 2026-09-16
+
+### Corregido
+
+**LA INTERFAZ EN INGLÉS SE QUEDABA A MEDIAS, Y NADIE LO MEDÍA.** Se auditó
+poniendo la app en inglés y recorriendo sus pantallas leyendo lo que de verdad
+se pinta —no lo que el código promete—, marcando todo texto que siguiera
+sonando a castellano.
+
+Lo que estaba mal y ya está arreglado:
+
+  · **17 de las 38 etiquetas visibles** de la paleta no tenían traducción y
+    salían en castellano: «Guía tubular», «Pasador», «Punto de anclaje», los dos
+    pivotes indexados, «Kettlebell», «Mancuerna hexagonal», «Atril de discos»,
+    «Brazo spotter»… Ahora las 38 traducen.
+  · **cuatro máquinas estándar** —Prensa de piernas, las dos torres de polea y
+    UpperMachine— tampoco.
+  · **los dos botones del catálogo** de modelos (descargar y cargar ZIP).
+  · y una cadena que **se saltaba el diccionario por la puerta de atrás**:
+    `el()` traduce los `title` que le llegan como atributo, pero el tooltip de
+    las cabeceras de la paleta se asignaba después con `cab.title = "…"` y por
+    ahí el diccionario no pasa. Se buscaron todas las asignaciones de ese estilo
+    en la interfaz: ésta era la única.
+
+Con eso, **el catálogo de modelos, el asistente de proyecto y el arranque del
+Builder quedan en cero cadenas sin traducir**, y los menús, la barra y el panel
+de Propiedades ya lo estaban.
+
+### Pendiente, y conviene decirlo claro
+
+Sigue **sin traducir la PROSA**, que es otra cosa y bastante más larga: las 46
+descripciones de piezas y máquinas —las que salen como tooltip de cada botón de
+la paleta y en la ficha del catálogo—, los 86 bloques del instructivo, y un
+párrafo del marketplace. La herramienta con la que se midió queda en
+`pruebas/_auditar-ingles.mjs` para poder volver a contarlas.
+
 ## [0.3.58] — 2026-09-16
 
 ### Cambiado

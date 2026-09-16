@@ -19,7 +19,7 @@ import {
 } from "./lineToolDialog";
 import { pasoMinimoDentada } from "../objects/placaDentada";
 import { calcularBrazoPilar } from "../objects/brazoPilar";
-import { tt } from "../core/i18n";
+import { t, tt } from "../core/i18n";
 import { clear, el } from "./dom";
 
 type RoldanaConfig = {
@@ -344,7 +344,10 @@ export class ComponentPalette {
     const cab = el("div", { class: "cat-label cat-plegable" }, [
       `${titulo} ${plegada ? "▸" : "▾"}`,
     ]);
-    cab.title = "Toca para plegar o desplegar la sección";
+    // POR `t()`, NO A PELO (v0.3.59). `el()` traduce los `title` que le llegan
+    // como atributo, pero un `.title = "..."` puesto después se salta el
+    // diccionario y se queda en castellano con la app en inglés.
+    cab.title = t("Toca para plegar o desplegar la sección");
     const cont = el("div", { class: `cat-cont${plegada ? " oculto" : ""}` });
     cab.addEventListener("click", () => {
       const p = cont.classList.toggle("oculto");

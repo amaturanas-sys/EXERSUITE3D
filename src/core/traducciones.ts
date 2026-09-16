@@ -543,4 +543,35 @@ export const TRADUCCIONES: Record<string, string> = {
   "Doblar: arrastra los nodos (curva suave); al acercar un nodo al de OTRA pieza se suelda (imán). + Nodo añade un punto a la trayectoria.":
     "Bend: drag the nodes (smooth curve); bringing a node close to ANOTHER piece's node welds them (magnet). + Node adds a point to the path.",
   "Dudas y soporte técnico: ": "Questions and technical support: ",
+
+  // ---- Piezas de la paleta que se habian quedado sin traducir (v0.3.59)
+  "Placa dentada (upright)": "Toothed plate (upright)",
+  "Atril de discos": "Plate horn shelf",
+  "Brazo spotter (voladizo)": "Cantilever spotter arm",
+  "Barra multi-agarre (dominadas)": "Multi-grip pull-up bar",
+  "Carro de doble roldana": "Double-sheave trolley",
+  "Anclaje de cadena": "Chain anchor",
+  "Guía tubular": "Tubular guide",
+  "Pasador": "Pin",
+  "Punto de anclaje": "Anchor point",
+  "Pivote indexado (silla)": "Indexed pivot (saddle)",
+  "Pivote indexado (soldar)": "Indexed pivot (weld-on)",
+  "Pasador con manija": "Pin with handle",
+  "Tope de guía": "Guide stop",
+  "Safety pin": "Safety pin",
+  "Kettlebell": "Kettlebell",
+  "Mancuerna hexagonal": "Hex dumbbell",
+  "Agarre doble (polea)": "Double cable handle",
+
+  // ---- Maquinas estandar
+  "Prensa de piernas": "Leg press",
+  "Torre polea de discos": "Plate-loaded pulley tower",
+  "Torre polea de pesos": "Weight-stack pulley tower",
+  "UpperMachine": "UpperMachine",
+
+  // ---- Cromo de la paleta y del catalogo
+  "Toca para plegar o desplegar la sección": "Tap to fold or unfold the section",
+  "Máquinas estándar ▾": "Standard machines ▾",
+  "Descargar todos los modelos en un ZIP": "Download every model as a ZIP",
+  "Cargar un ZIP de modelos y fusionar": "Load a model ZIP and merge",
 };
