@@ -1,4 +1,4 @@
-// PRUEBA: EL MOLETEADO DE UN TRAMO DE TUBO (v0.3.70).
+// PRUEBA: EL MOLETEADO DE UN TRAMO DE TUBO (v0.3.71).
 //
 // Un tubo es lo que se agarra cuando no hay barra —un multiagarre, un travesaño
 // de dominadas, el asa de una máquina—, y el moleteado no va de punta a punta:
@@ -17,10 +17,21 @@
 //      doble y el moleteado tiene que seguir cubriendo el mismo TROZO de la
 //      pieza, no los mismos centímetros: si fuera absoluto, al estirar se
 //      quedaría colgando a la mitad.
-//   4. QUE SE VE. Va en su propio material, como el de la barra.
-//   5. QUE SE QUITA. Desmarcarlo devuelve un tubo liso de un solo material —y
-//      esto vale doble, porque el material se pone al rehacer la malla y es muy
-//      fácil que se quede pegado de la vez anterior.
+//   4. QUE NO CAMBIA EL MATERIAL. El moleteado se ve por su RELIEVE —por cómo
+//      corta la luz—, no por ir pintado: un tubo moleteado sigue siendo el mismo
+//      tubo del mismo acero, y eso hay que vigilarlo porque la maquinaria de los
+//      dos materiales existe y es fácil que se cuele.
+//   5. QUE LAS ARISTAS DEL SURCO SON VIVAS. Es lo que separa un moleteado de una
+//      ondulación borrosa, y el torno de serie de three.js PROMEDIA las normales
+//      entre un tramo del perfil y el siguiente, que es justo lo que redondea la
+//      arista. Medirlo por el ángulo entre triángulos vecinos no sirve —un surco
+//      de 0.3 mm en 2 mm de flanco se inclina 8°, menos que el paso angular del
+//      propio tubo—, y tampoco por si la cara es plana: alrededor del tubo la
+//      normal gira a propósito, para que el cilindro no se vea como un prisma.
+//      Lo que de verdad distingue una arista viva de una redondeada es que en la
+//      arista UN MISMO PUNTO LLEVA DOS NORMALES, una por cada cara que llega a
+//      él. Promediadas, lleva una sola. Eso es lo que se cuenta.
+//   6. QUE SE QUITA. Desmarcarlo devuelve el tubo liso de siempre.
 import { chromium } from "playwright-core";
 
 let fallos = 0;
@@ -66,10 +77,36 @@ const medido = await page.evaluate(async (tramo) => {
       if (r < bajo[k]) bajo[k] = r;
     }
     const mats = Array.isArray(o.mesh.material) ? o.mesh.material : [o.mesh.material];
+    // PUNTOS CON DOS NORMALES en mitad de la banda: los que están en una arista
+    // viva. Con las normales promediadas —el torno de serie— no hay ninguno.
+    // Y de paso, cuánto se inclina la superficie a lo largo del eje, que es el
+    // relieve mismo.
+    const nor = g.attributes.normal;
+    const enPunto = new Map();
+    let inclina = 0;
+    if (nor) {
+      const q = (v) => Math.round(v * 1000);
+      for (let i = 0; i < pos.count; i++) {
+        const f = (c(i, iEje) - min) / largo;
+        if (f < 0.4 || f > 0.6) continue;     // en mitad de la banda
+        const clave = `${q(pos.getX(i))},${q(pos.getY(i))},${q(pos.getZ(i))}`;
+        const n = `${q(nor.getX(i))},${q(nor.getY(i))},${q(nor.getZ(i))}`;
+        let set = enPunto.get(clave);
+        if (!set) enPunto.set(clave, (set = new Set()));
+        set.add(n);
+        inclina = Math.max(inclina, Math.abs(
+          iEje === 0 ? nor.getX(i) : iEje === 1 ? nor.getY(i) : nor.getZ(i),
+        ));
+      }
+    }
+    let conArista = 0;
+    for (const set of enPunto.values()) if (set.size > 1) conArista++;
     return {
       onda: alto.map((v, k) => (bajo[k] > 1e8 ? 0 : v - bajo[k])),
       largo,
       grupos: g.groups.length,
+      aristas: enPunto.size ? conArista / enPunto.size : 0,
+      inclina,
       colores: mats.map((m) => m.color.getHex()),
     };
   };
@@ -135,28 +172,32 @@ ok(
   `dentro ${(dentroE * 10).toFixed(2)} mm · fuera ${(fueraE * 10).toFixed(2)} mm`,
 );
 
-// ── 4. SE VE ─────────────────────────────────────────────────────────────
-const luz = (hex) => {
-  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-};
+// ── 4. NO CAMBIA EL MATERIAL ─────────────────────────────────────────────
 ok(
-  medido.conMoleteado.colores.length === 2,
-  "el tubo moleteado lleva dos materiales",
-  `${medido.conMoleteado.colores.length}`,
+  medido.conMoleteado.colores.length === 1 &&
+    medido.conMoleteado.colores[0] === medido.liso.colores[0],
+  "el tubo moleteado sigue siendo del mismo acero, sin pintar",
+  medido.conMoleteado.colores.map((c) => "#" + c.toString(16)).join(" "),
 );
-if (medido.conMoleteado.colores.length === 2) {
-  ok(
-    Math.abs(luz(medido.conMoleteado.colores[0]) - luz(medido.conMoleteado.colores[1])) > 0.08,
-    "y el moleteado se distingue del tubo",
-    medido.conMoleteado.colores.map((c) => "#" + c.toString(16)).join(" "),
-  );
-}
 
-// ── 5. SE QUITA ──────────────────────────────────────────────────────────
+// ── 5. LAS ARISTAS DEL SURCO SON VIVAS ───────────────────────────────────
+ok(
+  medido.conMoleteado.aristas > 0.9,
+  `los surcos tienen arista viva: el ${(medido.conMoleteado.aristas * 100).toFixed(0)} % de los puntos de la banda lleva dos normales, una por cara`,
+);
+ok(
+  medido.conMoleteado.inclina > 0.1,
+  `y hay relieve de verdad: la superficie se inclina ${(Math.asin(medido.conMoleteado.inclina) * 180 / Math.PI).toFixed(0)}° a lo largo del eje`,
+);
+ok(
+  medido.liso.inclina < 0.01 && medido.liso.aristas < 0.01,
+  `mientras que el tubo liso no se inclina ni tiene aristas (${medido.liso.inclina.toFixed(3)} · ${(medido.liso.aristas * 100).toFixed(0)} %)`,
+);
+
+// ── 6. SE QUITA ──────────────────────────────────────────────────────────
 ok(
   onda(medido.quitado, 0.05, 0.95) < SURCO * 0.3 && medido.quitado.colores.length === 1,
-  "y quitarlo devuelve el tubo liso de un solo material",
+  "y quitarlo devuelve el tubo liso de siempre",
   `onda ${(onda(medido.quitado, 0.05, 0.95) * 10).toFixed(2)} mm · ${medido.quitado.colores.length} materiales`,
 );
 

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { separarBandas } from "../core/modelLoading";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { PrimitiveParams } from "./types";
 
@@ -233,36 +232,102 @@ function buildBeamSinRamas(
 }
 
 /**
- * MOLETEADO DE UN TRAMO DE TUBO (v0.3.70). El mismo de la barra y de las
- * mancuernas —surcos anulares—, pero aquí no viene de un modelo de CAD: el tubo
- * se dibuja en la app, así que el moleteado se dibuja con él.
+ * MOLETEADO DE UN TRAMO DE TUBO (v0.3.71). El mismo relieve que el mango de una
+ * mancuerna —surcos anulares de 4 mm de paso— pero dibujado aquí, porque el tubo
+ * lo dibuja la app y no el CAD.
  *
- * SE TORNEA, NO SE ESCULPE. En vez de restar surcos a un cilindro, se describe
- * el PERFIL de la pieza —una línea quebrada que va de una tapa a la otra y baja
- * al fondo del surco en cada diente— y se le da la vuelta al torno
- * (`LatheGeometry`). Sale la misma malla que un cilindro liso más dos vértices
- * por diente, y ni una operación booleana.
+ * SE TORNEA A MANO, Y ÉSA ES LA GRACIA. El torno de three.js (`LatheGeometry`)
+ * hace la forma bien pero PROMEDIA las normales entre un tramo del perfil y el
+ * siguiente, y en un diente de sierra eso redondea la arista: los surcos salen
+ * como una ondulación borrosa en vez de como surcos. Así que se montan los
+ * vértices aquí, con una regla que el torno no sabe hacer —
+ *
+ *     SUAVE ALREDEDOR DEL TUBO, DURO A LO LARGO DEL PERFIL.
+ *
+ * Cada tramo del perfil lleva SUS PROPIAS normales, así que la arista entre el
+ * fondo del surco y la cresta corta la luz de verdad; y alrededor del tubo la
+ * normal gira con el ángulo, así que el cilindro sigue viéndose redondo y no
+ * como un prisma de 24 caras. Es lo que hace el mallador del CAD con la
+ * mancuerna, y por eso las dos piezas se ven igual.
+ *
+ * EL TUBO NO CAMBIA DE MATERIAL. El moleteado se ve por su relieve —por cómo
+ * corta la luz—, no por ir pintado de otro color: un tubo moleteado sigue siendo
+ * el mismo tubo del mismo acero.
  *
  * El tramo llega en fracciones del largo, así que estirar el tubo mueve el
  * moleteado con él en vez de dejarlo colgando a la mitad.
  */
-const MOLETEADO_PASO = 0.6;   // cm entre dientes, como en la barra
+const MOLETEADO_PASO = 0.4;   // cm entre dientes, como el mango de la mancuerna
 const MOLETEADO_HONDO = 0.03; // cm que hunde cada surco
+const MOLETEADO_LADOS = 28;   // caras alrededor del tubo
 
-function tuboMoleteado(r: number, largo: number, banda: [number, number]): THREE.BufferGeometry {
+/** El perfil del tubo: pares (radio, altura) de una tapa a la otra. */
+function perfilMoleteado(r: number, largo: number, banda: [number, number]): [number, number][] {
   const y0 = -largo / 2;
   const a = y0 + Math.min(banda[0], banda[1]) * largo;
   const b = y0 + Math.max(banda[0], banda[1]) * largo;
-  const pts: THREE.Vector2[] = [new THREE.Vector2(0, y0), new THREE.Vector2(r, y0)];
+  const pts: [number, number][] = [[r, y0]];
   if (b - a >= MOLETEADO_PASO) {
-    pts.push(new THREE.Vector2(r, a));
+    pts.push([r, a]);
     for (let y = a; y < b - 1e-6; y += MOLETEADO_PASO) {
-      pts.push(new THREE.Vector2(r - MOLETEADO_HONDO, Math.min(y + MOLETEADO_PASO / 2, b)));
-      pts.push(new THREE.Vector2(r, Math.min(y + MOLETEADO_PASO, b)));
+      pts.push([r - MOLETEADO_HONDO, Math.min(y + MOLETEADO_PASO / 2, b)]);
+      pts.push([r, Math.min(y + MOLETEADO_PASO, b)]);
     }
   }
-  pts.push(new THREE.Vector2(r, -y0), new THREE.Vector2(0, -y0));
-  return new THREE.LatheGeometry(pts, 24);
+  pts.push([r, -y0]);
+  return pts;
+}
+
+function tuboMoleteado(r: number, largo: number, banda: [number, number]): THREE.BufferGeometry {
+  const perfil = perfilMoleteado(r, largo, banda);
+  const N = MOLETEADO_LADOS;
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const uv: number[] = [];
+
+  for (let s = 0; s + 1 < perfil.length; s++) {
+    const [r0, y0] = perfil[s];
+    const [r1, y1] = perfil[s + 1];
+    // La normal del tramo, en el plano (radio, altura): perpendicular a él y
+    // mirando hacia afuera. Es SUYA y no se promedia con la del vecino.
+    const dr = r1 - r0, dy = y1 - y0;
+    const len = Math.hypot(dr, dy) || 1;
+    const nr = dy / len, ny = -dr / len;
+    for (let i = 0; i < N; i++) {
+      const t0 = (i / N) * Math.PI * 2;
+      const t1 = ((i + 1) / N) * Math.PI * 2;
+      const esquina = (rr: number, yy: number, th: number) => {
+        pos.push(Math.cos(th) * rr, yy, Math.sin(th) * rr);
+        nor.push(Math.cos(th) * nr, ny, Math.sin(th) * nr);
+        uv.push(th / (Math.PI * 2), (yy + largo / 2) / largo);
+      };
+      esquina(r0, y0, t0); esquina(r1, y1, t0); esquina(r1, y1, t1);
+      esquina(r0, y0, t0); esquina(r1, y1, t1); esquina(r0, y0, t1);
+    }
+  }
+  // LAS DOS TAPAS, planas.
+  for (const [yy, sig] of [[-largo / 2, -1], [largo / 2, 1]] as [number, number][]) {
+    for (let i = 0; i < N; i++) {
+      const t0 = (i / N) * Math.PI * 2;
+      const t1 = ((i + 1) / N) * Math.PI * 2;
+      const trio = sig > 0
+        ? [[0, 0], [Math.cos(t0) * r, Math.sin(t0) * r], [Math.cos(t1) * r, Math.sin(t1) * r]]
+        : [[0, 0], [Math.cos(t1) * r, Math.sin(t1) * r], [Math.cos(t0) * r, Math.sin(t0) * r]];
+      for (const [x, z] of trio) {
+        pos.push(x, yy, z);
+        nor.push(0, sig, 0);
+        uv.push(0.5 + x / (2 * r), 0.5 + z / (2 * r));
+      }
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  geo.computeBoundingBox();
+  geo.computeBoundingSphere();
+  return geo;
 }
 
 /** Tubo de acero. Recto: cilindro con tapas. Doblado: circulo barrido. */
@@ -274,10 +339,7 @@ export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   // EL MOLETEADO, SÓLO EN TUBO RECTO. En un tubo doblado el perfil ya no basta
   // —habría que barrerlo por la curva— y además nadie agarra un codo.
   if (recto && p.moleteado && largo > 2 * r) {
-    const geo = tuboMoleteado(r, largo, p.moleteado).toNonIndexed();
-    if (separarBandas(geo, [p.moleteado])) geo.userData.rotulo = "plata";
-    geo.computeBoundingBox();
-    geo.computeBoundingSphere();
+    const geo = tuboMoleteado(r, largo, p.moleteado);
     return p.ramas?.length ? conRamas(geo, p, circuloDe(r)) : geo;
   }
   const tronco = recto

@@ -5,6 +5,46 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.71] — 2026-09-16
+
+### Cambiado
+
+**EL MOLETEADO DE LOS TUBOS: el relieve del mango de la mancuerna, y sin tocar
+el material.** El de v0.3.70 no convencía, y por dos razones distintas.
+
+**LA PRIMERA, EL MATERIAL.** Iba pintado de otro color, como el de la barra. Un
+tubo moleteado sigue siendo el mismo tubo del mismo acero: el moleteado se ve
+por su **relieve**, por cómo corta la luz, no por ir de otro color. Se quita la
+banda de material.
+
+**LA SEGUNDA, Y LA QUE DE VERDAD LO ESTROPEABA: LAS NORMALES.** El torno de
+three.js (`LatheGeometry`) hace la forma bien pero **promedia las normales**
+entre un tramo del perfil y el siguiente, y en un diente de sierra eso redondea
+la arista: los surcos salían como una ondulación borrosa en vez de como surcos.
+Ahora los vértices se montan a mano con la regla que el torno no sabe hacer —
+
+    SUAVE ALREDEDOR DEL TUBO, DURO A LO LARGO DEL PERFIL.
+
+Cada tramo del perfil lleva **sus propias** normales, así que la arista entre el
+fondo del surco y la cresta corta la luz de verdad; y alrededor del tubo la
+normal gira con el ángulo, así que el cilindro se sigue viendo redondo y no como
+un prisma de 28 caras. Es lo que hace el mallador del CAD con la mancuerna, y por
+eso ahora las dos piezas se ven igual.
+
+**Y el paso baja de 6 a 4 mm**, que es el del mango de la mancuerna.
+
+### Sobre cómo se comprueba
+
+La primera versión de la prueba medía la arista por **el ángulo entre triángulos
+vecinos** y pedía 30°. Está mal por dos motivos, y los dos enseñan algo: un surco
+de 0.3 mm sobre 2 mm de flanco se inclina **8°** —no 30—, y el paso angular del
+propio tubo son **13°**, o sea más que la arista que se busca. La segunda versión
+midió si la cara era plana; también está mal, porque alrededor del tubo la normal
+gira **a propósito**. Lo que de verdad distingue una arista viva de una
+redondeada es que en la arista **un mismo punto lleva dos normales**, una por
+cada cara que llega a él —promediadas, lleva una sola—, y eso es lo que se
+cuenta: el 100 % de los puntos de la banda.
+
 ## [0.3.70] — 2026-09-16
 
 ### Añadido
