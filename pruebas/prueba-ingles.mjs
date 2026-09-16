@@ -1,4 +1,9 @@
-// AUDITORÍA DEL INGLÉS — utilidad, no prueba.
+// PRUEBA: LA INTERFAZ EN INGLÉS (v0.3.61).
+//
+// Es el trinquete de la traducción. La app se puso en inglés y quedó en CERO
+// cadenas sin traducir; esta prueba mantiene ese cero: cualquier texto nuevo que
+// alguien añada en castellano y no traduzca sale aquí, con su pantalla y su
+// contenido, en vez de descubrirse meses después con un usuario delante.
 //
 // Pone la app en inglés, recorre sus pantallas y recoge TODO texto visible que
 // siga sonando a castellano. No adivina desde el código: mira lo que se pinta.
@@ -72,11 +77,15 @@ const barrer = async () =>
   });
 
 const informe = new Map();
+let fallos = 0;
 const mirar = async (pantalla) => {
   const textos = await barrer();
   const malos = textos.filter(sospechoso);
-  if (malos.length) informe.set(pantalla, malos);
-  console.log(`  ${pantalla.padEnd(30)} ${textos.length} textos · ${malos.length} en castellano`);
+  if (malos.length) { informe.set(pantalla, malos); fallos++; }
+  console.log(
+    `${malos.length ? "✗" : "✓"} ${pantalla.padEnd(26)} ${textos.length} textos · ` +
+    `${malos.length} sin traducir`,
+  );
 };
 
 console.log("RECORRIDO:");
@@ -134,5 +143,10 @@ for (const [pantalla, malos] of informe) {
   if (malos.length > 25) console.log(`   … y ${malos.length - 25} más`);
   total += malos.length;
 }
-console.log(`\nTOTAL: ${total} cadenas sin traducir en ${informe.size} pantallas`);
+console.log(
+  total === 0
+    ? "TODO OK — la interfaz en inglés no deja ni una cadena en castellano"
+    : `❌ ${total} cadena(s) sin traducir en ${informe.size} pantalla(s)`,
+);
 await browser.close();
+process.exit(fallos ? 1 : 0);

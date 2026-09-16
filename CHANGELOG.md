@@ -5,7 +5,25 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.3.60] — 2026-09-16
+## [0.3.61] — 2026-09-16
+
+### Añadido
+
+**EL INSTRUCTIVO ENTERO, EN INGLÉS.** Las 16 preguntas frecuentes y sus 129
+puntos: casi 7.000 palabras de guía —cómo se construye una máquina, cómo se
+calzan los accesorios en los pinholes, cómo trabaja el maniquí por zonas, cómo
+se monta el prototipo sobre una fotografía—. Estaban 46 traducidos de antes; se
+añadieron los 99 que faltaban.
+
+**Y UNA PRUEBA QUE MANTIENE EL CERO.** `prueba-ingles.mjs` entra en la batería:
+pone la app en inglés, recorre sus catorce pantallas y falla si encuentra una
+sola cadena en castellano, diciendo cuál y dónde. Así el hueco no vuelve a
+crecer en silencio, que es exactamente como había crecido.
+
+**La interfaz en inglés queda en CERO cadenas sin traducir**, de la portada al
+panel de Propiedades, instructivo incluido.
+
+
 
 ### Añadido
 
