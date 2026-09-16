@@ -5,6 +5,75 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.63] — 2026-09-16
+
+### Cambiado
+
+**LOS DISCOS, REHECHOS CONTRA LAS FOTOS DEL FABRICANTE.** Los de v0.3.62 no se
+parecían al disco de verdad. Con la foto del juego completo y la ficha
+«Olympic Weight Plate Specifications» delante, cambian las dos cosas que
+importan: **la forma** y **las cotas**.
+
+**LA FORMA: la cruz de cuatro radios, y sólo en los grandes.** Los de 35 y 45 lb
+llevan ahora **cuatro radios rectos en aspa** separando **cuatro cuarteles
+rebajados**, no tres radios con ventanas pasantes. Los de 10, 15 y 25 son
+**lisos**, con un anillo rebajado y el renglón de texto dando la vuelta entera a
+la llanta — que es exactamente lo que se ve en la foto: el de 10 kg no tiene
+cruz, el de 15 sí.
+
+**EL ROTULADO, COMO SALE DEL MOLDE.** «BARBELL» arriba y «STANDARD» abajo en la
+llanta, y las libras y los kilos en dos renglones rectos dentro de los cuarteles
+de los lados. **Todas las letras miran hacia afuera**, así que la de abajo se lee
+del revés: no es un error, es como está el disco de la foto. En los discos lisos
+las cuatro leyendas van curvadas y el texto rodea la pieza entera.
+
+**LAS COTAS SALEN DE LA TABLA, ENTRANDO POR LA MASA.** La ficha va en kilos y el
+juego va en libras, así que cada disco se sitúa en la tabla por lo que pesa y se
+interpola entre las dos filas que lo abrazan:
+
+| lb | kg | diámetro | canto |
+|---:|---:|---------:|------:|
+| 10 | 4.54 | 220.4 mm | 23.3 mm |
+| 15 | 6.80 | 241.2 mm | 26.8 mm |
+| 25 | 11.34 | 290.6 mm | 30.5 mm |
+| 35 | 15.88 | 364.2 mm | 32.5 mm |
+| 45 | 20.41 | **445 mm** | **35 mm** |
+
+**El de 45 lb cae justo en la fila de 20 kg de la ficha** —Ø445 × 35—, que es el
+disco que la propia ficha dibuja rotulado «45 LBS · 20.4 KGS»: la interpolación
+no se inventa ése, lo acierta.
+
+**CRECE A LO ANCHO, NO A LO GRUESO.** Del de 10 al de 45 el diámetro se
+multiplica por 2.02 y el canto sólo por 1.50. (Las cotas de v0.3.62 decían otra
+cosa —que el de 25 era más grueso que el de 35—; con la tabla del fabricante
+delante, eso no se sostiene y la prueba que lo comprobaba se ha cambiado por
+ésta.)
+
+**EL REBAJE SIGUE RESOLVIÉNDOSE DESDE EL PESO.** Macizo, el de 45 pesaría 38.7 kg
+en vez de 20.4. El modelo pide el peso de catálogo y despeja **cuánto hay que
+ahondar los cuarteles por cada cara**, y revienta si eso dejara un alma más fina
+de lo que se puede fundir. Los cinco caen a menos del 0.2 % de su masa.
+
+**El agujero no cambia: Ø5 cm en los cinco**, y la ficha lo repite en sus siete
+filas.
+
+### Corregido
+
+**EL RÓTULO IBA AL REVÉS, Y LA EXPLICACIÓN DE v0.3.62 ERA FALSA.** Allí se dijo
+que la exportación a Y-arriba «invierte la lectura» y por eso el renglón se
+autoraba espejado. No es así. Se midió con una probeta —el mismo renglón escrito
+de cuatro maneras a cuatro radios de un mismo disco, exportado y mirado en la
+app— y el veredicto fue claro: **las letras llegan bien; lo único torcido es el
+orden**. Es lo que tiene dibujar sobre un círculo — el ángulo crece hacia la
+izquierda, así que un renglón que se lee de izquierda a derecha por arriba va de
+ángulo mayor a menor, y escribirlo hacia ángulos crecientes, que es lo natural
+en un bucle, sale al revés. Ya no se espeja nada: se recorre el renglón hacia
+atrás y basta.
+
+**La cara de atrás sigue VOLTEÁNDOSE, no espejándose** —un giro de 180° sobre un
+eje del disco, como cuando se le da la vuelta a un disco de verdad—, así que al
+mirarlo por detrás las cifras cambian de lado y todo se lee igual de bien.
+
 ## [0.3.62] — 2026-09-16
 
 ### Añadido

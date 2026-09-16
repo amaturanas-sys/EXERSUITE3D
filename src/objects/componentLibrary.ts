@@ -1179,16 +1179,21 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     /**
-     * DISCO DE PESO (v0.3.62) — el disco olímpico, en cinco libras distintas.
-     * Mallas de `cad/src/disco_barbell.py`.
+     * DISCO DE PESO (v0.3.63) — el disco olímpico, en cinco libras distintas.
+     * Mallas de `cad/src/disco_barbell.py`, copiadas de la foto del juego y de
+     * la ficha «Olympic Weight Plate Specifications» del fabricante.
      *
      * COMO LAS MANCUERNAS Y LAS KETTLEBELLS: un botón que abre la burbuja de
      * pesos. El de este `def` no tiene malla propia; al tocarlo se coloca
      * siempre una variante.
      *
-     * EL AGUJERO NO CAMBIA: Ø5 cm en los cinco, el de la manga olímpica. Es la
-     * única cota que no se mueve, porque un disco que no enfila la barra no es
-     * un disco.
+     * EL AGUJERO NO CAMBIA: Ø5 cm en los cinco, el de la manga olímpica, y la
+     * ficha lo repite en sus siete filas. Es la única cota que no se mueve,
+     * porque un disco que no enfila la barra no es un disco.
+     *
+     * DOS FAMILIAS, COMO EN LA FOTO: los de 35 y 45 lb llevan la CRUZ de cuatro
+     * radios con sus cuatro cuarteles rebajados; los de 10, 15 y 25 son lisos,
+     * con un anillo rebajado y el renglón de texto dando la vuelta entera.
      *
      * SIN `orientacion`: el cuarto de vuelta va horneado en el modelo de CAD,
      * así que el GLB llega ya de pie y con los ejes locales sanos —el disco se
@@ -1203,7 +1208,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "peso",
     materialId: "hierro-fundido",
     // El bulto de reserva es el de 25 lb, el del medio.
-    defaults: { kind: "box", width: 28.1, height: 28.1, depth: 4 },
+    defaults: { kind: "box", width: 29.06, height: 29.06, depth: 3.55 },
     physics: { massKg: 11.34, fixed: false },
     variantes: [
       { id: "disco-barbell-10", etiqueta: "10 lb" },
@@ -1213,7 +1218,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
       { id: "disco-barbell-45", etiqueta: "45 lb" },
     ],
     description:
-      "Disco olimpico de hierro con las letras STANDARD BARBELL en relieve por las dos caras. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas; los de 35 y 45 llevan tres radios con sus ventanas.",
+      "Disco olimpico de hierro con BARBELL arriba y STANDARD abajo en relieve, por las dos caras, y las libras y los kilos a los lados. Al tocarlo se elige el peso: 10, 15, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles rebajados; los chicos son lisos.",
   },
   {
     id: "disco-barbell-10",
@@ -1221,10 +1226,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 10 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 23.1, height: 23.1, depth: 2.7 },
+    defaults: { kind: "box", width: 22.04, height: 22.04, depth: 2.83 },
     physics: { massKg: 4.54, fixed: false },
     description:
-      "Disco de 10 libras (4.5 kg): Ø23.1 cm por 2.2 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.",
+      "Disco de 10 libras (4.5 kg): O22 cm por 2.3 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
   },
   {
     id: "disco-barbell-15",
@@ -1232,10 +1237,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 15 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 25.4, height: 25.4, depth: 3.1 },
+    defaults: { kind: "box", width: 24.12, height: 24.12, depth: 3.18 },
     physics: { massKg: 6.8, fixed: false },
     description:
-      "Disco de 15 libras (6.8 kg): Ø25.4 cm por 2.6 de canto, alma rebajada por las dos caras y agujero olimpico de 5 cm.",
+      "Disco de 15 libras (6.8 kg): O24.1 cm por 2.7 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
   },
   {
     id: "disco-barbell-25",
@@ -1243,10 +1248,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 25 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 28.1, height: 28.1, depth: 4 },
+    defaults: { kind: "box", width: 29.06, height: 29.06, depth: 3.55 },
     physics: { massKg: 11.34, fixed: false },
     description:
-      "Disco de 25 libras (11.3 kg): Ø28.1 cm por 3.5 de canto, el mas grueso del juego, con alma rebajada y agujero olimpico de 5 cm.",
+      "Disco de 25 libras (11.3 kg): O29.1 cm por 3.1 de canto, liso, con el anillo rebajado por las dos caras y el texto dando la vuelta entera a la llanta.",
   },
   {
     id: "disco-barbell-35",
@@ -1254,10 +1259,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 35 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 37, height: 37, depth: 3.5 },
+    defaults: { kind: "box", width: 36.42, height: 36.42, depth: 3.75 },
     physics: { massKg: 15.88, fixed: false },
     description:
-      "Disco de 35 libras (15.9 kg): Ø37 cm por 3 de canto, con tres radios y sus ventanas pasantes, y agujero olimpico de 5 cm.",
+      "Disco de 35 libras (15.9 kg): O36.4 cm por 3.3 de canto, con la cruz de cuatro radios, cuatro cuarteles rebajados y las libras y los kilos a los lados.",
   },
   {
     id: "disco-barbell-45",
@@ -1265,10 +1270,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 45 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 45.2, height: 45.2, depth: 3.6 },
+    defaults: { kind: "box", width: 44.5, height: 44.5, depth: 4.0 },
     physics: { massKg: 20.41, fixed: false },
     description:
-      "Disco de 45 libras (20.4 kg): Ø45.2 cm por 3.1 de canto, el mayor del juego, con tres radios de ventanas anchas y agujero olimpico de 5 cm.",
+      "Disco de 45 libras (20.4 kg): O44.5 cm por 3.5 de canto, el mayor del juego, con la cruz de cuatro radios y los cuarteles rebajados casi hasta el alma.",
   },
   {
     id: "contrapeso",
