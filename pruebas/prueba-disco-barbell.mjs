@@ -1,4 +1,4 @@
-// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.64).
+// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.65).
 //
 // Cinco discos de libras distintas, copiados de la foto del juego y de la ficha
 // «Olympic Weight Plate Specifications» del fabricante. Lo que se comprueba, y
@@ -31,9 +31,20 @@
 //      entero: en un disco con cruz hay CUATRO tramos de ángulo a tope de
 //      espesor; en uno liso, ninguno.
 //
-// Y de propina, las letras: el relieve tiene que asomar por LAS DOS CARAS, que
-// es lo que pasa con un disco de verdad y lo que se nota en cuanto la cámara
-// pasa al otro lado.
+//   5. QUE LAS LETRAS ESTÁN PINTADAS. Sobre hierro fundido —un gris casi
+//      negro— un relieve del mismo color no se lee: hace falta pintura, como en
+//      la foto. Eso son DOS materiales sobre una misma malla, y la prueba mira
+//      las tres cosas que pueden salir mal: que haya dos, que el segundo sea
+//      claro de verdad frente al hierro, y —la que de veras cuesta— que lo
+//      PINTADO sea la letra y no la pieza. Esto último se mide por ÁREA: el
+//      rotulado de un disco es un puñado de trazos, nunca más de una décima
+//      parte de su superficie. En el camino, dos versiones de la regla pintaron
+//      el disco entero de blanco dejando las letras en hierro, y esta cuenta es
+//      lo único que las habría cazado sin mirar el dibujo.
+//
+// Y de propina: el relieve tiene que asomar por LAS DOS CARAS, que es lo que
+// pasa con un disco de verdad y lo que se nota en cuanto la cámara pasa al otro
+// lado.
 import { chromium } from "playwright-core";
 
 let fallos = 0;
@@ -164,7 +175,30 @@ const medido = await page.evaluate(async (fichas) => {
       vol += v.dot(w.clone().cross(u)) / 6;
     }
 
+    // LOS DOS MATERIALES Y EL REPARTO DE SUPERFICIE. El área se suma por
+    // grupos: es lo que distingue «unas letras pintadas» de «la pieza pintada
+    // con las letras sin pintar», que en número de triángulos se parecen
+    // muchísimo —una letra tiene mil triángulos diminutos y una cara, cuatro—.
+    const mats = Array.isArray(o.mesh.material) ? o.mesh.material : [o.mesh.material];
+    const areaGrupo = (g) => {
+      if (!g || !idxT) return 0;
+      const p = new T.Vector3(), q = new T.Vector3(), w = new T.Vector3();
+      const e1 = new T.Vector3(), e2 = new T.Vector3();
+      let s = 0;
+      for (let i = g.start; i < g.start + g.count; i += 3) {
+        p.fromBufferAttribute(pos, idxT.getX(i));
+        q.fromBufferAttribute(pos, idxT.getX(i + 1));
+        w.fromBufferAttribute(pos, idxT.getX(i + 2));
+        s += e1.subVectors(q, p).cross(e2.subVectors(w, p)).length() / 2;
+      }
+      return s;
+    };
+    const aCuerpo = areaGrupo(g.groups[0]);
+    const aRotulo = areaGrupo(g.groups[1]);
+
     salida[lb] = {
+      colores: mats.map((m) => m.color.getHex()),
+      areaRotulo: +(100 * aRotulo / Math.max(1e-9, aCuerpo + aRotulo)).toFixed(2),
       tam: [tam.x, tam.y, tam.z].map((x) => +x.toFixed(2)),
       diametro: +(rMax * 2).toFixed(2),
       canto: +(semiEje * 2).toFixed(2),
@@ -281,7 +315,30 @@ for (const lb of LIBRAS) {
   );
 }
 
-// ── 8. LA BURBUJA DE PESOS ───────────────────────────────────────────────
+// ── 8. LAS LETRAS, PINTADAS ──────────────────────────────────────────────
+// Luminancia perceptual, para comparar el gris del hierro con el de la pintura
+// sin que un tono cálido o frío engañe a la cuenta.
+const luz = (hex) => {
+  const r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+};
+for (const lb of LIBRAS) {
+  const c = medido[lb].colores;
+  ok(c.length === 2, `el de ${lb} lb lleva dos materiales: hierro y pintura`, `${c.length}`);
+  if (c.length !== 2) continue;
+  ok(
+    luz(c[1]) - luz(c[0]) > 0.5,
+    `y la pintura se ve sobre el hierro (luz ${luz(c[0]).toFixed(2)} → ${luz(c[1]).toFixed(2)})`,
+  );
+  // LO PINTADO ES LA LETRA, NO LA PIEZA. Un rótulo son trazos: mucha superficie
+  // pintada significaría que la regla se ha comido la pieza.
+  ok(
+    medido[lb].areaRotulo > 0.5 && medido[lb].areaRotulo < 12,
+    `y lo pintado es el rótulo, no el disco (${medido[lb].areaRotulo} % de la superficie)`,
+  );
+}
+
+// ── 9. LA BURBUJA DE PESOS ───────────────────────────────────────────────
 // En la paleta hay UN botón, no cinco: las cinco piezas están ocultas y se
 // llega a ellas eligiendo el peso, igual que en las mancuernas.
 const botones = await page.evaluate(() =>

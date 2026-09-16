@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.65] — 2026-09-16
+
+### Añadido
+
+**LAS LETRAS DE LOS DISCOS, PINTADAS.** Sobre hierro fundido —un gris casi
+negro— un relieve del mismo color no se lee, por mucho que esté ahí. En el
+disco de verdad las letras se ven blancas porque llevan **pintura**, y eso es lo
+que hacía falta aquí: «BARBELL», «STANDARD» y las cifras de libras y kilos salen
+ahora en blanco sobre el hierro, por las dos caras.
+
+**DOS MATERIALES SOBRE UNA MISMA MALLA.** La app fundía cada modelo en una sola
+geometría con un solo material —lo correcto para una pieza que se pinta del
+color del proyecto—, así que una pieza no podía tener dos colores. Ahora una
+malla puede traer su **rotulado en un grupo aparte**, con su propia pintura:
+
+  · **repintar la pieza cambia el hierro y deja las letras**, que es lo que pasa
+    con un disco de verdad;
+  · seleccionarla ilumina las dos cosas, y el modo «por categoría» tiñe las dos
+    y las devuelve a su sitio al volver al modo material.
+
+**CÓMO SE SABE QUÉ TRIÁNGULO ES LETRA, sin mirar el dibujo.** Un relieve es una
+costra levantada sobre una superficie plana de la pieza, así que se buscan esas
+superficies y luego lo que sobresale de ellas. Dos detalles son todo el asunto,
+y los dos costaron una versión fallida:
+
+  · **los planos se pesan por ÁREA, no por vértices.** El fondo de un cuartel es
+    enorme y tiene vértices sólo en sus cuatro esquinas: contando vértices no
+    aparece, y las cifras de los cuarteles se quedaban sin pintar.
+  · **un triángulo que descansa EN un plano dominante es cuerpo, no letra.** Sin
+    esa condición la cara del hierro «sobresale» del plano del chaflán que tiene
+    justo debajo, y el disco entero salía pintado de blanco con las letras en
+    hierro.
+
+La regla vive en `separarRotulo` y la declara cada pieza en la biblioteca
+(`rotulo: { materialId, asomaCm }`), así que sirve para cualquier pieza fundida
+y rotulada que venga después. Una pieza que no lo declara no cambia en nada.
+
+**La prueba lo mide por SUPERFICIE**, no por número de triángulos: el rotulado
+de un disco es un puñado de trazos y nunca pasa del 6 % de su superficie,
+mientras que una letra tiene mil triángulos diminutos y una cara sólo cuatro.
+Es la única cuenta que habría cazado las dos versiones fallidas sin mirar el
+dibujo.
+
 ## [0.3.64] — 2026-09-16
 
 ### Cambiado

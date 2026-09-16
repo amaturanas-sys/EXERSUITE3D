@@ -80,6 +80,115 @@ export function firstTexturedMaterial(root: THREE.Object3D): THREE.Material | nu
   return out;
 }
 
+/**
+ * SEPARA EL ROTULADO DEL HIERRO, para poder pintarlo de otro color (v0.3.65).
+ *
+ * Las letras de un disco son el MISMO hierro que el resto de la pieza; lo que
+ * las hace blancas en la foto es la pintura. Aquí eso son dos materiales sobre
+ * una misma malla, y dos materiales en three.js son dos GRUPOS sobre el índice.
+ *
+ * CÓMO SE SABE QUÉ TRIÁNGULO ES LETRA, sin mirar el dibujo. Un relieve es una
+ * costra de `asomaCm` levantada sobre una SUPERFICIE PLANA de la pieza. Así que
+ * primero se buscan esos planos y luego lo que sobresale de ellos:
+ *
+ *   1. LOS PLANOS SE PESAN POR ÁREA, NO POR VÉRTICES. Una cara plana grande
+ *      —el fondo de un cuartel, la cara del hierro— tiene vértices sólo en sus
+ *      esquinas: contando vértices no aparecería, y era justo el error que dejó
+ *      los números de los cuarteles sin pintar en el primer intento.
+ *   2. UN TRIÁNGULO ES LETRA si cabe entero en la franja que va de un plano
+ *      dominante a `asomaCm` por encima, SUPERA ese plano, y NO DESCANSA ÉL
+ *      MISMO EN OTRO PLANO DOMINANTE. Esa última condición es la que separa una
+ *      letra de una cara: la cara del hierro también «sobresale» del plano del
+ *      chaflán que tiene justo debajo, y sin ella el disco entero salía pintado
+ *      de blanco con las letras en hierro. Una superficie grande de la pieza es
+ *      siempre un plano dominante; una letra, nunca.
+ *
+ * Con eso se pinta tanto la marca de la llanta —levantada sobre la cara— como
+ * las cifras de los cuarteles —levantadas sobre su fondo, mucho más adentro—,
+ * sin que la app tenga que saber a qué hondura está cada cosa.
+ *
+ * El eje se busca —es la cota menor del bulto—, no se da por supuesto.
+ *
+ * Devuelve `false` y deja la geometría intacta si no encuentra relieve, que es
+ * lo que debe pasar con cualquier pieza que no lo lleve.
+ */
+export function separarRotulo(geo: THREE.BufferGeometry, asomaCm: number): boolean {
+  const pos = geo.getAttribute("position");
+  if (!pos || geo.index) return false; // se hornea sin índice; ver normalizeGeometry
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox!;
+  const size = new THREE.Vector3();
+  bb.getSize(size);
+  const centro = new THREE.Vector3();
+  bb.getCenter(centro);
+  const ejes = [size.x, size.y, size.z];
+  const iEje = ejes.indexOf(Math.min(...ejes));
+  if (asomaCm <= 0 || ejes[iEje] <= 2 * asomaCm) return false;
+  const c0 = centro.getComponent(iEje);
+  const eps = Math.max(1e-4, asomaCm * 0.05);
+  const hondoEje = (i: number) =>
+    Math.abs((iEje === 0 ? pos.getX(i) : iEje === 1 ? pos.getY(i) : pos.getZ(i)) - c0);
+
+  // ── 1. LOS PLANOS DOMINANTES, pesados por área ─────────────────────────
+  // EL PLANO SE GUARDA CON SU HONDURA REAL, no con la de su casilla. Redondear
+  // al centro de la casilla desplaza el plano hasta medio paso, y entonces la
+  // propia cara «sobresale» de sí misma: con eso, la primera versión de esto
+  // pintó de blanco el disco entero y dejó las letras en hierro.
+  const paso = asomaCm / 4;
+  const areaPorPlano = new Map<number, number>();
+  const hondoPorPlano = new Map<number, number>();
+  let areaTotal = 0;
+  const a = new THREE.Vector3();
+  const b = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  const u = new THREE.Vector3();
+  const v = new THREE.Vector3();
+  const hondos = new Float32Array(pos.count);
+  for (let i = 0; i < pos.count; i++) hondos[i] = hondoEje(i);
+  for (let i = 0; i + 2 < pos.count; i += 3) {
+    const d0 = hondos[i], d1 = hondos[i + 1], d2 = hondos[i + 2];
+    if (Math.max(d0, d1, d2) - Math.min(d0, d1, d2) > 1e-4) continue; // no es plano ⟂ al eje
+    a.fromBufferAttribute(pos, i);
+    b.fromBufferAttribute(pos, i + 1);
+    c.fromBufferAttribute(pos, i + 2);
+    const area = u.subVectors(b, a).cross(v.subVectors(c, a)).length() / 2;
+    const k = Math.round(d0 / paso);
+    areaPorPlano.set(k, (areaPorPlano.get(k) ?? 0) + area);
+    hondoPorPlano.set(k, (hondoPorPlano.get(k) ?? 0) + area * d0);
+    areaTotal += area;
+  }
+  if (areaTotal <= 0) return false;
+  const planos = [...areaPorPlano.entries()]
+    .filter(([, ar]) => ar >= 0.02 * areaTotal)
+    .map(([k, ar]) => hondoPorPlano.get(k)! / ar);
+  if (planos.length === 0) return false;
+
+  // ── 2. LO QUE SOBRESALE DE ELLOS ───────────────────────────────────────
+  const cuerpo: number[] = [];
+  const letras: number[] = [];
+  for (let i = 0; i + 2 < pos.count; i += 3) {
+    const lejos = Math.max(hondos[i], hondos[i + 1], hondos[i + 2]);
+    const cerca = Math.min(hondos[i], hondos[i + 1], hondos[i + 2]);
+    let esLetra = false;
+    if (!planos.some((q) => Math.abs(lejos - q) <= eps)) {
+      for (const p of planos) {
+        if (cerca >= p - eps && lejos <= p + asomaCm + eps && lejos > p + eps) {
+          esLetra = true;
+          break;
+        }
+      }
+    }
+    (esLetra ? letras : cuerpo).push(i, i + 1, i + 2);
+  }
+  if (letras.length === 0) return false;
+
+  geo.setIndex([...cuerpo, ...letras]);
+  geo.clearGroups();
+  geo.addGroup(0, cuerpo.length, 0);
+  geo.addGroup(cuerpo.length, letras.length, 1);
+  return true;
+}
+
 /** Fusiona todas las mallas de un modelo en una sola geometría (matrices aplicadas). */
 export function mergeRootGeometry(root: THREE.Object3D): THREE.BufferGeometry {
   root.updateMatrixWorld(true);

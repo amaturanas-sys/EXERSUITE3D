@@ -3,7 +3,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { getDefinition } from "../objects/componentLibrary";
 import { STANDARD_MACHINES } from "../objects/standardMachines";
 import { deleteModel, getAllModels, putModel } from "./modelStore";
-import { bakeComponentGeometry, loadModelRoot } from "./modelLoading";
+import { bakeComponentGeometry, loadModelRoot, separarRotulo } from "./modelLoading";
 
 /** Estado de un modelo entrante respecto al local, al importar un comprimido. */
 export type ImportStatus = "new" | "newer" | "older" | "unchanged" | "unknown";
@@ -76,8 +76,21 @@ class ComponentModelManager {
     }
   }
 
-  private async bake(bytes: ArrayBuffer, ext: string): Promise<THREE.BufferGeometry> {
-    return bakeComponentGeometry(await loadModelRoot(bytes, ext));
+  /**
+   * Hornea la malla y, si el componente declara ROTULADO PINTADO, separa el
+   * relieve en su propio grupo para que se pueda pintar aparte (v0.3.65). La
+   * marca viaja en la geometría —no en el objeto de escena— porque la misma
+   * malla horneada la comparten todas las copias de la pieza.
+   */
+  private async bake(
+    bytes: ArrayBuffer,
+    ext: string,
+    componentId: string,
+  ): Promise<THREE.BufferGeometry> {
+    const geo = bakeComponentGeometry(await loadModelRoot(bytes, ext));
+    const rot = getDefinition(componentId)?.rotulo;
+    if (rot && separarRotulo(geo, rot.asomaCm)) geo.userData.rotulo = rot.materialId;
+    return geo;
   }
 
   /** Hornea, activa y persiste un modelo de usuario con su marca de tiempo. */
@@ -88,7 +101,7 @@ class ComponentModelManager {
     bytes: ArrayBuffer,
     updatedAt: number,
   ): Promise<void> {
-    const geo = await this.bake(bytes, ext);
+    const geo = await this.bake(bytes, ext, componentId);
     this.setActive(componentId, geo, fileName, "user");
     await putModel({ componentId, fileName, ext, bytes, updatedAt });
   }
@@ -152,7 +165,7 @@ class ComponentModelManager {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const bytes = await res.arrayBuffer();
         const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-        const geo = await this.bake(bytes, ext);
+        const geo = await this.bake(bytes, ext, componentId);
         this.fileModels.set(componentId, { geo, fileName });
         if (this.info.get(componentId)?.source !== "user") {
           this.setActive(componentId, geo, fileName, "file");
@@ -173,7 +186,7 @@ class ComponentModelManager {
     }
     for (const m of stored) {
       try {
-        const geo = await this.bake(m.bytes, m.ext);
+        const geo = await this.bake(m.bytes, m.ext, m.componentId);
         this.setActive(m.componentId, geo, m.fileName, "user");
       } catch (e) {
         console.warn("Modelo de componente no válido:", m.componentId, e);

@@ -428,6 +428,16 @@ export interface ComponentDefinition {
    */
   orientacion?: [number, number, number];
   /**
+   * ROTULADO PINTADO (v0.3.65). Las letras de un disco son el mismo hierro que
+   * el resto de la pieza, pero van PINTADAS: por eso en la foto se leen blancas
+   * sobre el negro. Aquí eso son DOS MATERIALES en una misma malla.
+   *
+   * `asomaCm` es cuánto sobresale el relieve de la cara del hierro, y es lo que
+   * permite encontrar las letras sin mirar el dibujo: son lo único de la pieza
+   * que pasa de ese plano. `materialId` es la pintura.
+   */
+  rotulo?: { materialId: string; asomaCm: number };
+  /**
    * Paso de la grilla de agujeros de calce (cm) en postes verticales: las
    * jotas y brazos de seguridad suben/bajan por el poste AGUJERO POR AGUJERO
    * con este paso.

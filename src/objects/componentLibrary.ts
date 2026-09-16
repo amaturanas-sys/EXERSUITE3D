@@ -1229,6 +1229,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "disco-barbell-10",
     paleta: "oculta",
+    rotulo: { materialId: "blanco", asomaCm: 0.25 },
     label: "Disco 10 lb",
     category: "peso",
     materialId: "hierro-fundido",
@@ -1240,6 +1241,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "disco-barbell-5",
     paleta: "oculta",
+    rotulo: { materialId: "blanco", asomaCm: 0.25 },
     label: "Disco 5 lb",
     category: "peso",
     materialId: "hierro-fundido",
@@ -1251,6 +1253,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "disco-barbell-25",
     paleta: "oculta",
+    rotulo: { materialId: "blanco", asomaCm: 0.25 },
     label: "Disco 25 lb",
     category: "peso",
     materialId: "hierro-fundido",
@@ -1262,6 +1265,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "disco-barbell-35",
     paleta: "oculta",
+    rotulo: { materialId: "blanco", asomaCm: 0.25 },
     label: "Disco 35 lb",
     category: "peso",
     materialId: "hierro-fundido",
@@ -1273,6 +1277,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "disco-barbell-45",
     paleta: "oculta",
+    rotulo: { materialId: "blanco", asomaCm: 0.25 },
     label: "Disco 45 lb",
     category: "peso",
     materialId: "hierro-fundido",

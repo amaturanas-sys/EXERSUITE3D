@@ -5594,11 +5594,16 @@ export class Editor {
   }
 
   private setHighlight(obj: SceneObject, on: boolean): void {
-    const m = obj.mesh.material as THREE.MeshStandardMaterial;
-    if (!m || !m.emissive) return;
-    // El rojo de error (fuera del espacio editable) prevalece sobre la selección.
-    if (this.fueraIds.has(obj.id)) m.emissive.setHex(0x9c1c1c);
-    else m.emissive.setHex(on ? 0x14406a : 0x000000);
+    // Una pieza con rotulado pintado lleva DOS materiales; los dos se iluminan,
+    // o la selección dejaría las letras apagadas sobre el hierro encendido.
+    const mats = obj.mesh.material;
+    for (const x of Array.isArray(mats) ? mats : [mats]) {
+      const m = x as THREE.MeshStandardMaterial;
+      if (!m || !m.emissive) continue;
+      // El rojo de error (fuera del espacio editable) prevalece sobre la selección.
+      if (this.fueraIds.has(obj.id)) m.emissive.setHex(0x9c1c1c);
+      else m.emissive.setHex(on ? 0x14406a : 0x000000);
+    }
   }
 
   private clearMultiSel(): void {
@@ -15086,8 +15091,11 @@ export class Editor {
   /** Reaplica color de vista y aristas a todas las piezas. */
   private applyViewModes(): void {
     const tinte = (mesh: THREE.Mesh, catColor: number | null): void => {
-      const m = mesh.material as THREE.MeshStandardMaterial;
-      if (m && m.color && catColor !== null) m.color.setHex(catColor);
+      const mats = mesh.material;
+      for (const x of Array.isArray(mats) ? mats : [mats]) {
+        const m = x as THREE.MeshStandardMaterial;
+        if (m && m.color && catColor !== null) m.color.setHex(catColor);
+      }
     };
     for (const o of this.objects.values()) {
       // Color.

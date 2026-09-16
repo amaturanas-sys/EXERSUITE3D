@@ -73,8 +73,12 @@ export class SceneObject {
       ),
       true,
     );
-    const material = buildMaterial(this.materialId);
-    this.mesh = new THREE.Mesh(geometry, material);
+    // DOS MATERIALES SI LA MALLA TRAE ROTULADO PINTADO (v0.3.65). El horneado
+    // deja el relieve en un grupo aparte (ver `separarRotulo`); aquí se le pone
+    // su pintura. Repintar la pieza cambia el hierro y deja las letras, que es
+    // lo que pasa con un disco de verdad.
+    this.mesh = new THREE.Mesh(geometry, buildMaterial(this.materialId));
+    this.ajustarRotulo();
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
     this.mesh.userData.sceneObjectId = this.id;
@@ -230,6 +234,9 @@ export class SceneObject {
     // pegaba un salto y volvía a su tamaño de biblioteca al enhebrarla.
     if (!this.customModel) this.mesh.scale.set(1, 1, 1);
     this.customModel = true;
+    // La malla de biblioteca llega DESPUÉS del constructor, así que el rotulado
+    // pintado se decide aquí: es esta malla, no la primitiva, la que lo trae.
+    this.ajustarRotulo();
     // Las placas/varillas/pin de la pila se dimensionan con el bbox de la
     // geometria: hay que reconstruirlas con la nueva.
     if (this.stack) this.rebuildStackVisual();
@@ -267,7 +274,7 @@ export class SceneObject {
     }
     this.stackParts = [];
 
-    const env = this.mesh.material as THREE.MeshStandardMaterial;
+    const env = this.matCuerpo;
     env.transparent = true;
     env.opacity = 0;
     env.depthWrite = false;
@@ -473,8 +480,41 @@ export class SceneObject {
     }
   }
 
+  /**
+   * PONE O QUITA LA PINTURA DEL ROTULADO (v0.3.65).
+   *
+   * Una malla horneada con relieve rotulado trae dos grupos y el id de su
+   * pintura (ver `separarRotulo`). Si los trae, la pieza pasa a llevar dos
+   * materiales —hierro y pintura—; si no, vuelve a uno solo. Se llama al nacer
+   * y cada vez que se le cambia la malla, porque el modelo de biblioteca se
+   * aplica DESPUÉS del constructor.
+   */
+  private ajustarRotulo(): void {
+    const geo = this.mesh.geometry;
+    const rotulo = geo.userData?.rotulo as string | undefined;
+    const quiere = !!rotulo && geo.groups.length === 2;
+    const tiene = Array.isArray(this.mesh.material);
+    if (quiere === tiene) return;
+    const cuerpo = this.matCuerpo;
+    if (quiere) this.mesh.material = [cuerpo, buildMaterial(rotulo!)];
+    else {
+      for (const m of this.mesh.material as THREE.Material[]) if (m !== cuerpo) m.dispose();
+      this.mesh.material = cuerpo;
+    }
+  }
+
+  /**
+   * El material DEL CUERPO. Una pieza con rotulado pintado lleva dos —el
+   * hierro y la pintura— y el que manda, el que se repinta y el que da el
+   * color de la pieza, es siempre el primero.
+   */
+  private get matCuerpo(): THREE.MeshStandardMaterial {
+    const m = this.mesh.material;
+    return (Array.isArray(m) ? m[0] : m) as THREE.MeshStandardMaterial;
+  }
+
   get color(): number {
-    return (this.mesh.material as THREE.MeshStandardMaterial).color.getHex();
+    return this.matCuerpo.color.getHex();
   }
 
   /** Cambia el material PBR aplicando un preset por id. */
@@ -483,7 +523,15 @@ export class SceneObject {
     if (this.stack) {
       this.rebuildStackVisual(); // recolorea las placas
     } else {
-      applyMaterial(this.mesh.material as THREE.MeshStandardMaterial, id);
+      applyMaterial(this.matCuerpo, id);
+      // Y la pintura del rótulo vuelve a la suya: el modo «por categoría» tiñe
+      // los dos materiales, y sin esto las letras se quedarían del color de la
+      // categoría al volver al modo material.
+      const rot = this.mesh.geometry.userData?.rotulo as string | undefined;
+      const mats = this.mesh.material;
+      if (rot && Array.isArray(mats) && mats[1]) {
+        applyMaterial(mats[1] as THREE.MeshStandardMaterial, rot);
+      }
     }
   }
 
@@ -559,6 +607,8 @@ export class SceneObject {
     }
     this.mesh.geometry.dispose();
     this.geoOriginal?.dispose();
-    (this.mesh.material as THREE.Material).dispose();
+    for (const m of Array.isArray(this.mesh.material) ? this.mesh.material : [this.mesh.material]) {
+      (m as THREE.Material).dispose();
+    }
   }
 }
