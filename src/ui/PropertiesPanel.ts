@@ -4,7 +4,7 @@ import type { SceneObject } from "../objects/SceneObject";
 import type { PrimitiveParams } from "../objects/types";
 import { MATERIAL_PRESETS } from "../objects/materials";
 import { degToRad, radToDeg, roundTo } from "../core/units";
-import { tt } from "../core/i18n";
+import { t, tt } from "../core/i18n";
 import {
   DENTADA_BARRA_CM,
   pernosQueLleva,
@@ -1507,6 +1507,59 @@ export class PropertiesPanel {
     ]);
   }
 
+  /**
+   * MOLETEADO DE UN TRAMO DE TUBO (v0.3.70).
+   *
+   * Un tubo es lo que se agarra cuando no hay barra: un multiagarre, un
+   * travesaño de dominadas, el asa de una máquina. El moleteado no va de punta
+   * a punta —eso no lo hace nadie— sino en el tramo donde van las manos, así
+   * que se elige el tramo en PORCENTAJE del largo: estirar el tubo lo mueve con
+   * él en vez de dejarlo colgando a la mitad.
+   */
+  private moleteadoRow(obj: SceneObject): HTMLElement {
+    const puesto = !!obj.params.moleteado;
+    const tramo = obj.params.moleteado ?? [0.2, 0.8];
+    const aplicar = () => {
+      obj.rebuildGeometry();
+      this.editor.bus.emit("objectTransformed", { object: obj });
+    };
+    const chk = el("input", { type: "checkbox" }) as HTMLInputElement;
+    chk.checked = puesto;
+    chk.addEventListener("change", () => {
+      obj.params.moleteado = chk.checked ? [tramo[0], tramo[1]] : undefined;
+      aplicar();
+      this.show(obj);   // los campos del tramo se apagan o se encienden con él
+    });
+    const pct = (i: number, label: string) => {
+      const input = el("input", {
+        type: "number",
+        value: String(Math.round(tramo[i] * 100)),
+        step: "5",
+        min: "0",
+        max: "100",
+      }) as HTMLInputElement;
+      input.disabled = !puesto;
+      input.addEventListener("change", () => {
+        const v = Math.min(100, Math.max(0, parseFloat(input.value)));
+        if (!Number.isFinite(v)) return;
+        const t: [number, number] = [tramo[0], tramo[1]];
+        t[i] = v / 100;
+        // El tramo no puede darse la vuelta ni quedarse en nada: se le exige un
+        // décimo del tubo, que es lo que da para un diente y verlo.
+        if (t[1] - t[0] < 0.1) t[i] = i === 0 ? t[1] - 0.1 : t[0] + 0.1;
+        obj.params.moleteado = [Math.max(0, t[0]), Math.min(1, t[1])];
+        aplicar();
+        this.show(obj);
+      });
+      return el("div", { class: "sub" }, [el("label", {}, [label]), input]);
+    };
+    return el("div", { class: "row" }, [
+      el("div", { class: "sub" }, [el("label", {}, [t("Moleteado")]), chk]),
+      pct(0, t("Desde (%)")),
+      pct(1, t("Hasta (%)")),
+    ]);
+  }
+
   /** Sección de piezas de línea (pilar/travesaño/tubo): medidas y doblado. */
   private lineSection(obj: SceneObject): HTMLElement {
     const isTube = obj.params.kind === "tube";
@@ -1546,6 +1599,7 @@ export class PropertiesPanel {
     const rows: HTMLElement[] = [];
     if (isTube) {
       rows.push(el("div", { class: "row" }, [num("Radio (cm)", "radius", "0.1")]));
+      rows.push(this.moleteadoRow(obj));
     } else {
       rows.push(
         el("div", { class: "row" }, [num("Ancho (cm)", "width", "0.5"), num("Fondo (cm)", "depth", "0.5")]),

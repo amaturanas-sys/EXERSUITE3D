@@ -30,11 +30,19 @@ import math
 from cadgen import build123d as bd
 from cadgen import glb, step, stl
 
+from lib.moleteado import anillos
+
 # ── COTAS DE REFERENCIA (mm), las de la mancuerna de 35 lb ───────────────────
 REF_LIBRAS = 35.0
 REF_ENTRECARAS = 135.0      # 13,5 cm de cara a cara del hexágono
 REF_LARGO = 340.0           # 34 cm de punta a punta
 MANGO_LARGO = 130.0         # 13 cm de agarre — IGUAL para todas
+# EL MANGO VA MOLETEADO, como el de una mancuerna de verdad y con el mismo
+# moleteado que la barra olímpica (`lib/moleteado.py`). Paso de 4 mm, más fino
+# que los 6 de la barra: una mancuerna se mira de mucho más cerca.
+MOLETEADO_LARGO = 104.0     # el tramo moleteado, centrado en el mango
+MOLETEADO_PASO = 4.0
+MOLETEADO_HONDO = 0.3
 MANGO_R = 17.0              # Ø 34
 COLLAR_R = 21.0             # el ensanche donde el mango entra en la cabeza
 COLLAR_LARGO = 10.0
@@ -128,6 +136,17 @@ def mancuerna(libras: int):
     # EL MANGO, de cabeza a cabeza. Se mete un poco dentro de cada una para que
     # funda sin costura.
     pieza = eje * bd.Cylinder(radius=MANGO_R, height=MANGO_LARGO + 2.0 * COLLAR_LARGO)
+    # EL MOLETEADO DEL MANGO. Se labra alrededor de Z y se gira con el mismo
+    # `eje` que el mango: es una pieza de revolución y girarla no cuesta nada.
+    # Queda un dedo liso a cada punta, antes de los collares, como en la de
+    # verdad —el moleteado muere antes de llegar al ensanche—.
+    pieza -= eje * anillos(
+        MANGO_R,
+        -MOLETEADO_LARGO / 2.0,
+        MOLETEADO_LARGO / 2.0,
+        paso=MOLETEADO_PASO,
+        hondo=MOLETEADO_HONDO,
+    )
     for lado in (-1.0, 1.0):
         # EL COLLAR: el ensanche donde el mango entra en la cabeza. Sin él, un
         # cilindro de Ø34 clavado en un prisma de 135 se ve pegado con saliva.

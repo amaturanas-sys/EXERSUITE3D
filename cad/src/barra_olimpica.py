@@ -31,8 +31,8 @@ distancia a la que se mira una barra no se ve. Así que anillos —que además e
 moleteado real, el recto—, y el rombo queda descartado con su número al lado por
 si algún día compensa.
 
-Los anillos salen de UN SOLO revolucionado: el cortador es una corona con la
-cara interior en dientes de sierra, y al restarla deja los surcos de golpe.
+Los anillos los pone `lib/moleteado.py`, que es el moleteado de la casa y el
+mismo que llevan las mancuernas: un solo revolucionado por tramo.
 
 POR QUÉ 6 mm DE PASO Y NO 1, que es lo que mide un moleteado de verdad: la barra
 mide 2.2 m y en pantalla ocupa unos 800 píxeles, así que un diente de 1 mm no
@@ -48,6 +48,8 @@ sustituye, y nada de lo que ya estaba colocado se mueve.
 
 from cadgen import build123d as bd
 from cadgen import glb, step, stl
+
+from lib.moleteado import anillos
 
 # ── LA BARRA, EN MILÍMETROS ─────────────────────────────────────────────────
 LARGO = 2200.0
@@ -83,25 +85,6 @@ def bandas() -> list[tuple[float, float]]:
     return [(-d, -c), (-b, -a), (a, b), (c, d)]
 
 
-def _anillos(z0: float, z1: float):
-    """El cortador de los surcos anulares de un tramo, de un solo revolucionado.
-
-    Es una corona con la cara interior en dientes de sierra: donde el perfil
-    llega a `EJE_R` no muerde, y donde baja a `EJE_R - DIENTE_HONDO` abre el
-    surco. Restarla deja todos los anillos del tramo a la vez.
-    """
-    pts = []
-    z = z0
-    while z < z1 - 1e-9:
-        pts.append((EJE_R, 0.0, z))
-        pts.append((EJE_R - DIENTE_HONDO, 0.0, min(z + DIENTE_PASO / 2.0, z1)))
-        z += DIENTE_PASO
-    pts.append((EJE_R, 0.0, z1))
-    pts.append((EJE_R + 6.0, 0.0, z1))
-    pts.append((EJE_R + 6.0, 0.0, z0))
-    return bd.revolve(bd.make_face(bd.Polyline(*pts, close=True)), axis=bd.Axis.Z)
-
-
 @step(out="../STEP/barra_olimpica.step")
 @stl(out="../STL/barra_olimpica.stl")
 @glb(out="../GLB/barra_olimpica.glb")
@@ -132,7 +115,7 @@ def barra_olimpica():
 
     # EL MOLETEADO, tramo a tramo.
     for z0, z1 in bandas():
-        pieza -= _anillos(z0, z1)
+        pieza -= anillos(EJE_R, z0, z1, paso=DIENTE_PASO, hondo=DIENTE_HONDO)
 
     pieza.label = "barra_olimpica"
     return pieza

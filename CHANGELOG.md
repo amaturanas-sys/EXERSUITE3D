@@ -5,6 +5,39 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.70] — 2026-09-16
+
+### Añadido
+
+**EL MANGO DE LAS MANCUERNAS, MOLETEADO.** El mismo moleteado de la barra
+olímpica, con paso de 4 mm en vez de 6 —una mancuerna se mira de mucho más
+cerca— y en su propio material mate. Queda un dedo liso a cada punta antes de
+los collares, como en la de verdad: el moleteado muere antes de llegar al
+ensanche.
+
+**Y ES LITERALMENTE EL MISMO, no uno parecido.** Vive ahora en
+`cad/src/lib/moleteado.py` y lo importan las dos piezas. Un moleteado copiado en
+dos sitios se convierte en dos moleteados en cuanto alguien ajusta uno.
+
+**MOLETEADO A MEDIDA EN LOS TUBOS, DESDE PROPIEDADES.** Un tubo es lo que se
+agarra cuando no hay barra —un multiagarre, un travesaño de dominadas, el asa de
+una máquina—, así que la propiedad es suya: se marca **Moleteado** y se elige el
+**tramo en porcentaje del largo**, «Desde» y «Hasta».
+
+**EL TRAMO VA EN FRACCIONES Y NO EN CENTÍMETROS**, que es la decisión que
+importa: estirar el tubo mueve el moleteado con él en vez de dejarlo colgando a
+la mitad. Con el tramo en centímetros, alargar un travesaño de 1.2 a 2.4 m
+dejaría el agarre en el primer tercio.
+
+**SE TORNEA, NO SE ESCULPE.** El tubo lo dibuja la app, no el CAD, así que el
+moleteado se dibuja con él: en vez de restar surcos a un cilindro se describe el
+PERFIL de la pieza —una quebrada que baja al fondo del surco en cada diente— y
+se le da la vuelta al torno. Sale la misma malla que un cilindro liso más dos
+vértices por diente, y ni una operación booleana.
+
+Sólo en **tubo recto**: en uno doblado el perfil ya no basta, y además nadie
+agarra un codo. Un tubo sin la propiedad puesta no cambia en nada.
+
 ## [0.3.69] — 2026-09-16
 
 ### Añadido

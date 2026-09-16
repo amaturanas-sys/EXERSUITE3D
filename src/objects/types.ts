@@ -53,6 +53,15 @@ export interface PrimitiveParams {
    * curva suave (Catmull-Rom) pasa por todos ellos.
    */
   path?: [number, number, number][];
+  /**
+   * MOLETEADO DE UN TRAMO (v0.3.70), sólo en tubos rectos. `[desde, hasta]` en
+   * FRACCIONES del largo del tubo, no en centímetros: así el tramo moleteado
+   * sigue siendo el mismo trozo de la pieza cuando se estira o se acorta, que
+   * es lo que se espera de un agarre.
+   *
+   * Ausente = tubo liso, que es como nacen todos.
+   */
+  moleteado?: [number, number];
   /** Extremos del perfil: corte plano o diagonal (solo beam recto). */
   ends?: "plano" | "diagonal";
   /**

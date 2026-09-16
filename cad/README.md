@@ -130,6 +130,10 @@ orejas tienen que salvar hasta el eje.
 | Abrazadera | 54 (la viga) | 35 (cara → eje, cruzando) | 70 × 80 × 83 |
 
 `lib/` es código compartido, no modelos: nada de lo que hay ahí lleva `@step`.
+Ahí vive también **`lib/moleteado.py`**, el moleteado de la casa: uno solo para
+todo lo que se agarra —la barra olímpica y el mango de las mancuernas—, en vez
+de copiado en cada pieza. Cada una elige su paso: 6 mm la barra, 4 mm el mango,
+que se mira de más cerca.
 
 ### UNA CUERDA TORCIDA CUESTA LO QUE CUESTA
 

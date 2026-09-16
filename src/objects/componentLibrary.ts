@@ -1105,6 +1105,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "mancuerna-10",
     paleta: "oculta",
+    // EL MANGO VA MOLETEADO y en su propio material, como el de la barra. La
+    // banda son los 104 mm centrales del mango sobre el largo de ESTA
+    // mancuerna, que cambia con el peso: por eso cada una lleva la suya.
+    bandas: { materialId: "plata", tramos: [[0.3062, 0.6938]] },
     label: "Mancuerna 10 lb",
     category: "peso",
     materialId: "goma",
@@ -1120,6 +1124,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "mancuerna-20",
     paleta: "oculta",
+    // EL MANGO VA MOLETEADO y en su propio material, como el de la barra. La
+    // banda son los 104 mm centrales del mango sobre el largo de ESTA
+    // mancuerna, que cambia con el peso: por eso cada una lleva la suya.
+    bandas: { materialId: "plata", tramos: [[0.3291, 0.6709]] },
     label: "Mancuerna 20 lb",
     category: "peso",
     materialId: "goma",
@@ -1135,6 +1143,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "mancuerna-30",
     paleta: "oculta",
+    // EL MANGO VA MOLETEADO y en su propio material, como el de la barra. La
+    // banda son los 104 mm centrales del mango sobre el largo de ESTA
+    // mancuerna, que cambia con el peso: por eso cada una lleva la suya.
+    bandas: { materialId: "plata", tramos: [[0.3422, 0.6578]] },
     label: "Mancuerna 30 lb",
     category: "peso",
     materialId: "goma",
@@ -1150,6 +1162,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "mancuerna-40",
     paleta: "oculta",
+    // EL MANGO VA MOLETEADO y en su propio material, como el de la barra. La
+    // banda son los 104 mm centrales del mango sobre el largo de ESTA
+    // mancuerna, que cambia con el peso: por eso cada una lleva la suya.
+    bandas: { materialId: "plata", tramos: [[0.3512, 0.6488]] },
     label: "Mancuerna 40 lb",
     category: "peso",
     materialId: "goma",
@@ -1165,6 +1181,10 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "mancuerna-50",
     paleta: "oculta",
+    // EL MANGO VA MOLETEADO y en su propio material, como el de la barra. La
+    // banda son los 104 mm centrales del mango sobre el largo de ESTA
+    // mancuerna, que cambia con el peso: por eso cada una lleva la suya.
+    bandas: { materialId: "plata", tramos: [[0.3581, 0.6419]] },
     label: "Mancuerna 50 lb",
     category: "peso",
     materialId: "goma",

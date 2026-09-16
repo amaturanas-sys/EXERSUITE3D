@@ -159,6 +159,10 @@ export class SceneObject {
       true,
     );
     old.dispose();
+    // Una malla de la casa también puede traer bandas con material propio —el
+    // moleteado de un tubo—, y aquí se acaba de rehacer: hay que volver a
+    // ponérselo o la pieza sale de un solo color hasta que se recargue.
+    this.ajustarRotulo();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
   }
@@ -255,6 +259,10 @@ export class SceneObject {
       true,
     );
     old.dispose();
+    // Una malla de la casa también puede traer bandas con material propio —el
+    // moleteado de un tubo—, y aquí se acaba de rehacer: hay que volver a
+    // ponérselo o la pieza sale de un solo color hasta que se recargue.
+    this.ajustarRotulo();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
   }

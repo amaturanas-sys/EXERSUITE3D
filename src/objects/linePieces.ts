@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { separarBandas } from "../core/modelLoading";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { PrimitiveParams } from "./types";
 
@@ -231,16 +232,64 @@ function buildBeamSinRamas(
   return geo;
 }
 
+/**
+ * MOLETEADO DE UN TRAMO DE TUBO (v0.3.70). El mismo de la barra y de las
+ * mancuernas —surcos anulares—, pero aquí no viene de un modelo de CAD: el tubo
+ * se dibuja en la app, así que el moleteado se dibuja con él.
+ *
+ * SE TORNEA, NO SE ESCULPE. En vez de restar surcos a un cilindro, se describe
+ * el PERFIL de la pieza —una línea quebrada que va de una tapa a la otra y baja
+ * al fondo del surco en cada diente— y se le da la vuelta al torno
+ * (`LatheGeometry`). Sale la misma malla que un cilindro liso más dos vértices
+ * por diente, y ni una operación booleana.
+ *
+ * El tramo llega en fracciones del largo, así que estirar el tubo mueve el
+ * moleteado con él en vez de dejarlo colgando a la mitad.
+ */
+const MOLETEADO_PASO = 0.6;   // cm entre dientes, como en la barra
+const MOLETEADO_HONDO = 0.03; // cm que hunde cada surco
+
+function tuboMoleteado(r: number, largo: number, banda: [number, number]): THREE.BufferGeometry {
+  const y0 = -largo / 2;
+  const a = y0 + Math.min(banda[0], banda[1]) * largo;
+  const b = y0 + Math.max(banda[0], banda[1]) * largo;
+  const pts: THREE.Vector2[] = [new THREE.Vector2(0, y0), new THREE.Vector2(r, y0)];
+  if (b - a >= MOLETEADO_PASO) {
+    pts.push(new THREE.Vector2(r, a));
+    for (let y = a; y < b - 1e-6; y += MOLETEADO_PASO) {
+      pts.push(new THREE.Vector2(r - MOLETEADO_HONDO, Math.min(y + MOLETEADO_PASO / 2, b)));
+      pts.push(new THREE.Vector2(r, Math.min(y + MOLETEADO_PASO, b)));
+    }
+  }
+  pts.push(new THREE.Vector2(r, -y0), new THREE.Vector2(0, -y0));
+  return new THREE.LatheGeometry(pts, 24);
+}
+
 /** Tubo de acero. Recto: cilindro con tapas. Doblado: circulo barrido. */
 export function buildTubeGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const r = p.radius ?? 2.4;
   const path = p.path ?? straightPath(100);
+  const recto = pathIsStraight(path);
+  const largo = Math.max(pathLength(path), 1);
+  // EL MOLETEADO, SÓLO EN TUBO RECTO. En un tubo doblado el perfil ya no basta
+  // —habría que barrerlo por la curva— y además nadie agarra un codo.
+  if (recto && p.moleteado && largo > 2 * r) {
+    const geo = tuboMoleteado(r, largo, p.moleteado).toNonIndexed();
+    if (separarBandas(geo, [p.moleteado])) geo.userData.rotulo = "plata";
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    return p.ramas?.length ? conRamas(geo, p, circuloDe(r)) : geo;
+  }
+  const tronco = recto
+    ? new THREE.CylinderGeometry(r, r, largo, 24, 1)
+    : sweepProfile(circuloDe(r), path);
+  return p.ramas?.length ? conRamas(tronco, p, circuloDe(r)) : tronco;
+}
+
+function circuloDe(r: number): THREE.Shape {
   const circle = new THREE.Shape();
   circle.absarc(0, 0, r, 0, Math.PI * 2, false);
-  const tronco = pathIsStraight(path)
-    ? new THREE.CylinderGeometry(r, r, Math.max(pathLength(path), 1), 24, 1)
-    : sweepProfile(circle, path);
-  return p.ramas?.length ? conRamas(tronco, p, circle) : tronco;
+  return circle;
 }
 
 interface TramoPlano {
