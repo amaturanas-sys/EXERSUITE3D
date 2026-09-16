@@ -35,3 +35,9 @@ __pycache__/
 # rescataría nada.
 graphify-out/*
 !graphify-out/GRAPH_REPORT.md
+
+# Claves. `.env.grafo` lleva la del backend del grafo; las plantillas `.example`
+# sí se versionan porque no tienen secretos.
+.env
+.env.*
+!.env.*.example
