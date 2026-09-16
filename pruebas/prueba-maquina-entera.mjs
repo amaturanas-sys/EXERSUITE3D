@@ -50,6 +50,10 @@ await p.evaluate(async () => {
       p: o.mesh.position.toArray(), q: o.mesh.quaternion.toArray(),
     }]),
   );
+  // QUÉ PIEZAS ESTÁN ANCLADAS AL MUNDO. Son las que no pueden moverse por
+  // mucho que se simule, y por eso son la vara buena para «la máquina no se
+  // desarma»: lo demás se mueve porque tiene que moverse.
+  window.__fijas = () => ed.listObjects().filter((o) => o.physics?.fixed).map((o) => o.id);
   // Cuánto se ha movido la pieza que más se ha movido, entre dos retratos.
   window.__deriva = (a, b) => {
     let peor = 0, quien = null;
@@ -241,9 +245,21 @@ const s = await p.evaluate(async () => {
 // LA MÁQUINA NO SE DESARMA AL SIMULAR. Congelar la partida teletransporta unas
 // piezas y no otras: si el conjunto está soldado o unido, las que se quedan atrás
 // tiran de las que saltan y el montaje revienta.
-const dSim = await p.evaluate(([a, b]) => window.__deriva(a, b), [r.trasCongelar, s.enMarcha]);
-ok(dSim.peor < 40,
-  `simular no desarma la máquina (la pieza que más se va, ${dSim.peor} cm)`);
+//
+// SE MIDEN LAS PIEZAS ANCLADAS, NO LA QUE MÁS SE MUEVE. Medir el
+// desplazamiento mayor del conjunto era medir CUÁNTA FÍSICA CUPO en una espera
+// de reloj de 2,5 s: con la máquina ocupada la pila caía 15 cm y la prueba
+// pasaba; con la máquina libre caía 44 y la misma máquina sana fallaba. Lo que
+// no depende del reloj es que una pieza ANCLADA no se mueve nunca, por mucho
+// que se simule: si el montaje revienta, el bastidor salta con él.
+const fijas = await p.evaluate(() => window.__fijas());
+const dSim = await p.evaluate(([a, b, ids]) => {
+  const soloFijas = (x) => Object.fromEntries(ids.filter((i) => x[i]).map((i) => [i, x[i]]));
+  return window.__deriva(soloFijas(a), soloFijas(b));
+}, [r.trasCongelar, s.enMarcha, fijas]);
+ok(fijas.length > 0, `la máquina tiene piezas ancladas que vigilar (${fijas.length})`);
+ok(dSim.peor < 2,
+  `simular no desarma la máquina: ninguna pieza anclada se mueve (la peor, ${dSim.peor} cm)`);
 ok(s.avisos.length === 0, `sin avisos de armado (${s.avisos.join(" · ") || "ninguno"})`);
 
 // AL PARAR VUELVE A SU PARTIDA, no al plano: parar no es soltar la condición de
