@@ -20,11 +20,18 @@ LO QUE PONEN LAS FOTOS. En el cartel del juego, los de 45 y 35 lb llevan una
 CRUZ de cuatro radios rectos que parte el alma en cuatro cuarteles; los de 25,
 10 y 5 no la llevan, su alma es un anillo liso. Y el rotulado cambia con ello:
 
-    con cruz   «BARBELL» arriba y «STANDARD» abajo en la llanta, y las libras
-               y los kilos en dos renglones rectos dentro de los cuarteles de
-               los lados —«45 / LBS» a la izquierda, «20.4 / KGS» a la derecha—;
-    sin cruz   un solo renglón dando la vuelta: «STANDARD» arriba, las libras
-               abajo a la izquierda y los kilos abajo a la derecha.
+    con cruz   los CUATRO rótulos van DENTRO de los cuarteles, uno en cada uno:
+               «BARBELL» curvado en el de arriba, «STANDARD» curvado en el de
+               abajo, y las libras y los kilos en dos renglones rectos en los
+               de los lados —«45 / LBS» a la izquierda, «20.4 / KGS» a la
+               derecha—. La llanta va LIMPIA, sin una letra;
+    sin cruz   los tres rótulos dan la vuelta al anillo vaciado: «STANDARD»
+               arriba, las libras abajo a la izquierda y los kilos abajo a la
+               derecha. La llanta, otra vez limpia.
+
+EL ROTULADO VA EN EL FONDO DE LO VACIADO, NO EN LA LLANTA. Es lo que se ve en la
+foto y no es un detalle de estilo: la letra queda hundida y protegida, que es
+justo por lo que un disco se puede apilar y arrastrar sin comerse su marca.
 
 TODAS las letras miran hacia AFUERA, en los dos casos, así que las de abajo se
 leen del revés. No es un error: es como sale del molde y es como están en la
@@ -53,7 +60,8 @@ EL ALMA NO SE DIBUJA: SE RESUELVE. Macizo, el de 45 lb pesaría 38.7 kg en vez d
 
 `medidas()` hace ese despeje y revienta si la cuenta pidiera un alma más fina de
 lo que se puede fundir, en vez de exportar una pieza que miente sobre su peso.
-Que al de 45 le salgan 4.3 mm de alma no es casualidad: el OBJ original tiene 5.
+Que al de 45 le salgan 3.0 mm de alma —el 8.5 % de su canto— no es casualidad:
+el OBJ original tiene 5 sobre 61, que es el 8.2 %.
 
 SOBRE EL MATERIAL. Se cuenta con hierro fundido, 7.2 g/cm³, que es de lo que
 está hecho un disco de este tipo. Con la densidad del acero —7.85— habría que
@@ -89,12 +97,17 @@ AGUJERO = 50.0          # Ø olímpico. LA COTA QUE NO CAMBIA.
 DENSIDAD = 7.2e-3       # g/mm³, hierro fundido (ver la cabecera)
 CRUZ_DESDE_LB = 35      # de aquí arriba, la cruz de cuatro radios
 RADIOS = 4
-CUBO_FRAC = 0.20        # radio del cubo, en fracción del radio del disco
+# LAS PROPORCIONES SALEN DE LA FOTO, Y ADEMÁS SON LAS QUE ADELGAZAN EL ALMA.
+# Las dos cosas van juntas y conviene saber por qué: lo que hay que quitarle al
+# disco está FIJADO por su peso de catálogo, así que un alma más fina sólo se
+# consigue vaciando una superficie MENOR y más honda. Cubo grande y radios
+# anchos —que es lo que enseña la foto— es exactamente eso.
+CUBO_FRAC = 0.29        # radio del cubo, en fracción del radio del disco
 CUBO_PARED = 18.0       # …pero nunca menos que esta pared alrededor del agujero
-LLANTA_FRAC = 0.82      # radio interior de la llanta, ídem
-RADIO_FRAC = 0.13       # ancho de cada radio de la cruz, ídem
+LLANTA_FRAC = 0.84      # radio interior de la llanta, ídem
+RADIO_FRAC = 0.16       # ancho de cada radio de la cruz, ídem
 RADIO_MIN = 14.0
-ALMA_MIN = 4.0          # lo más fino que se puede dejar el alma
+ALMA_MIN = 2.5          # lo más fino que se puede dejar el alma
 CHAFLAN_FRAC = 0.09     # el canto de la llanta, matado, en fracción del grueso
 
 # ── EL GRABADO ──────────────────────────────────────────────────────────────
@@ -103,10 +116,17 @@ CHAFLAN_FRAC = 0.09     # el canto de la llanta, matado, en fracción del grueso
 # app no da sombra suficiente para leerse: el relieve de un disco se ve por el
 # borde iluminado, no por el color.
 RELIEVE = 2.5
-TEXTO_ALTO = 0.62       # alto de letra, en fracción del ancho de llanta
+# Los altos de letra van en fracción del ANCHO DE LO VACIADO —el cuartel o el
+# anillo—, que es donde viven ahora. En los discos con cruz la letra curva tiene
+# que caber además EN EL ARCO del cuartel: con 0.21 y el paso de abajo, la
+# palabra más larga —«STANDARD», ocho letras— ocupa unos 72° de los 78 que deja
+# el cuartel entre radio y radio. Subirlo la desborda.
+TEXTO_CUARTEL = 0.21    # alto de la marca curva, en fracción del ancho del cuartel
+TEXTO_ANILLO = 0.30     # ídem en los discos sin cruz, donde hay anillo entero
 PASO_LETRA = 1.20       # separación entre letras, en anchos de letra
-NUMERO_ALTO = 0.21      # alto del número, en fracción del ancho del cuartel
+NUMERO_ALTO = 0.24      # alto del número, en fracción del ancho del cuartel
 NUMERO_SEP = 1.25       # separación entre los dos renglones, en altos de letra
+TEXTO_MARGEN = 0.62     # cuánto se separa el renglón del borde, en altos de letra
 
 
 def cotas(lb: float) -> tuple[float, float, float]:
@@ -265,33 +285,34 @@ def disco(lb: float):
     pieza -= bd.Pos(0.0, 0.0, t / 2.0 - hondo) * corte
     pieza -= bd.Pos(0.0, 0.0, -t / 2.0 - 10.0) * corte
 
-    # EL ROTULADO. Cambia con la cruz, como en el cartel.
-    ancho_llanta = r - m["r_llanta"]
-    radio_texto = m["r_llanta"] + ancho_llanta / 2.0
-    alto = ancho_llanta * TEXTO_ALTO
+    # EL ROTULADO, DENTRO DE LO VACIADO. Cambia con la cruz, como en la foto, y
+    # en los dos casos se apoya en el FONDO —no en la llanta, que va limpia—.
+    ancho = m["r_llanta"] - m["r_cubo"]
     fondo = t / 2.0 - hondo
     kg = f"{m['kg']:.1f}"
-    lbs = f"{lb:g} LBS"
 
     if m["radios"]:
-        # CON CRUZ: la marca partida en dos —arriba y abajo— y las cifras
-        # rectas, en dos renglones, dentro de los cuarteles de los lados.
-        ancho_cuartel = m["r_llanta"] - m["r_cubo"]
+        # CON CRUZ: un rótulo por cuartel. Los de arriba y abajo, curvados
+        # siguiendo el cuartel; los de los lados, rectos en dos renglones.
+        alto = ancho * TEXTO_CUARTEL
+        radio_texto = m["r_llanta"] - TEXTO_MARGEN * alto
         medio = (m["r_llanta"] + m["r_cubo"]) / 2.0
-        alto_num = ancho_cuartel * NUMERO_ALTO
+        alto_num = ancho * NUMERO_ALTO
         textos = [
-            _texto_curvo("BARBELL", radio_texto, alto, 90.0, t / 2.0),
-            _texto_curvo("STANDARD", radio_texto, alto, 270.0, t / 2.0),
+            _texto_curvo("BARBELL", radio_texto, alto, 90.0, fondo),
+            _texto_curvo("STANDARD", radio_texto, alto, 270.0, fondo),
             _texto_recto([f"{lb:g}", "LBS"], -medio, fondo, alto_num),
             _texto_recto([kg, "KGS"], medio, fondo, alto_num),
         ]
     else:
-        # SIN CRUZ: los tres renglones dan la vuelta a la llanta, repartidos a
+        # SIN CRUZ: los tres rótulos dan la vuelta al anillo, repartidos a
         # tercios — «STANDARD» arriba, las libras y los kilos abajo.
+        alto = ancho * TEXTO_ANILLO
+        radio_texto = m["r_llanta"] - TEXTO_MARGEN * alto
         textos = [
-            _texto_curvo("STANDARD", radio_texto, alto, 90.0, t / 2.0),
-            _texto_curvo(lbs, radio_texto, alto, 210.0, t / 2.0),
-            _texto_curvo(f"{kg} KGS", radio_texto, alto, 330.0, t / 2.0),
+            _texto_curvo("STANDARD", radio_texto, alto, 90.0, fondo),
+            _texto_curvo(f"{lb:g} LBS", radio_texto, alto, 210.0, fondo),
+            _texto_curvo(f"{kg} KGS", radio_texto, alto, 330.0, fondo),
         ]
 
     # EL MISMO GRABADO POR DETRÁS. Un disco enfilado en la barra se ve por las

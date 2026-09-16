@@ -5,6 +5,58 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.66] — 2026-09-16
+
+### Cambiado
+
+**EL ROTULADO, DENTRO DE LOS CUARTELES.** En la foto del juego los cuatro
+rótulos del disco grande van **dentro de lo vaciado**, uno por cuartel:
+«BARBELL» curvado en el de arriba, «STANDARD» curvado en el de abajo, y las
+libras y los kilos en dos renglones rectos en los de los lados. **La llanta va
+limpia, sin una letra.** Estaban en la llanta y ahora están donde toca. En los
+discos sin cruz los tres rótulos dan la vuelta al anillo vaciado.
+
+No es sólo estética: la letra queda **hundida y protegida**, que es justo por lo
+que un disco se puede apilar y arrastrar sin comerse su marca. Y como ya nada
+sobresale, **el canto es el del cartel clavado** —1.4 pulgadas los tres grandes,
+sin los 5 mm de más que añadía el relieve.
+
+**EL ALMA, MÁS FINA: de 4.3 a 3.0 mm en el de 45 lb** —el 8.5 % de su canto,
+contra el 8.2 % del OBJ original—. Conviene saber por qué no es un número que se
+pueda bajar a voluntad: **lo que hay que quitarle al disco está fijado por su
+peso de catálogo**, así que un alma más fina sólo se consigue vaciando una
+superficie MENOR y más honda. Se ha conseguido con **cubo más grande (0.29 R) y
+radios más anchos (0.16 R)**, que es además lo que enseña la foto. Los discos
+chicos no adelgazan tanto y no es un descuido: al de 25 lb sólo le sobra el 25 %
+del material, así que por mucho que se ahonde nunca será una rueda hueca.
+
+### Corregido
+
+**DOS AGUJEROS EN LA REGLA QUE PINTA LAS LETRAS**, los dos destapados por este
+cambio y los dos por la misma cuenta de la prueba —cuánta SUPERFICIE queda
+pintada—:
+
+  · **el disco de 25 lb se quedó con las letras sin pintar** (0.56 % pintado).
+    Las tapas de sus letras suman el 2.1 % de la superficie plana y el umbral
+    estaba en el 2 %: por un pelo pasaron por «superficie de la pieza».
+  · **el disco de 5 lb salió pintado en un 39 %.** Al arreglar lo anterior por
+    altura —una tapa de relieve está exactamente `asomaCm` encima de otro
+    plano—, en una chapa fina como la de 5 lb la CARA cae por casualidad a 2.45
+    mm de las tapas de sus letras, se tomó por una tapa más y perdió su papel de
+    superficie.
+
+Hacen falta **las dos señales**, y cada una tapa el agujero de la otra: un plano
+es superficie de la pieza si es **grande**, o si **no está `asomaCm` encima de
+otro**. Una superficie de verdad es grande; una tapa de letra, nunca.
+
+**Y LA PRUEBA DE LA CRUZ, QUE FALLABA POR FRÁGIL.** Contaba por dónde el disco
+conserva su grueso mirando la malla, y la cara de un radio no es una isla de
+triángulos suyos: es un trozo de UNA SOLA cara que abarca cubo, radios y llanta,
+y su triangulación reparte los triángulos donde quiere. Primero se buscaron
+vértices y no había ninguno en la banda; luego centros de triángulo, y en el de
+45 uno de los cuatro radios se escapó. Ahora se lanza **un rayo** contra la pieza
+y se mira dónde para. Un rayo no se equivoca.
+
 ## [0.3.65] — 2026-09-16
 
 ### Añadido

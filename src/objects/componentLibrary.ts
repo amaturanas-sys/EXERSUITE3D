@@ -1214,7 +1214,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     category: "peso",
     materialId: "hierro-fundido",
     // El bulto de reserva es el de 25 lb, el del medio.
-    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 4.06 },
+    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 3.56 },
     physics: { massKg: 11.34, fixed: false },
     variantes: [
       { id: "disco-barbell-5", etiqueta: "5 lb" },
@@ -1233,7 +1233,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 10 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 23.5, height: 23.5, depth: 2.66 },
+    defaults: { kind: "box", width: 23.5, height: 23.5, depth: 2.16 },
     physics: { massKg: 4.54, fixed: false },
     description:
       "Disco de 10 libras (4.5 kg): O23.5 cm por 2.16 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 10 LBS y 4.5 KGS dando la vuelta a la llanta.",
@@ -1245,7 +1245,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 5 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 19.69, height: 19.69, depth: 2.15 },
+    defaults: { kind: "box", width: 19.69, height: 19.69, depth: 1.65 },
     physics: { massKg: 2.27, fixed: false },
     description:
       "Disco de 5 libras (2.3 kg): O19.7 cm por 1.65 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 5 LBS y 2.3 KGS dando la vuelta a la llanta.",
@@ -1257,7 +1257,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 25 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 4.06 },
+    defaults: { kind: "box", width: 27.94, height: 27.94, depth: 3.56 },
     physics: { massKg: 11.34, fixed: false },
     description:
       "Disco de 25 libras (11.3 kg): O27.9 cm por 3.56 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 25 LBS y 11.3 KGS dando la vuelta a la llanta.",
@@ -1269,7 +1269,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 35 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 34.93, height: 34.93, depth: 4.06 },
+    defaults: { kind: "box", width: 34.93, height: 34.93, depth: 3.56 },
     physics: { massKg: 15.88, fixed: false },
     description:
       "Disco de 35 libras (15.9 kg): O34.9 cm por 3.56 de canto, con la cruz de cuatro radios, BARBELL y STANDARD en la llanta y 35 LBS / 15.9 KGS en los cuarteles.",
@@ -1281,7 +1281,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
     label: "Disco 45 lb",
     category: "peso",
     materialId: "hierro-fundido",
-    defaults: { kind: "box", width: 44.13, height: 44.13, depth: 4.06 },
+    defaults: { kind: "box", width: 44.13, height: 44.13, depth: 3.56 },
     physics: { massKg: 20.41, fixed: false },
     description:
       "Disco de 45 libras (20.4 kg): O44.1 cm por 3.56 de canto, el mayor del juego, con la cruz de cuatro radios y el alma vaciada hasta dejarla en 4 mm.",

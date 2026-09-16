@@ -95,13 +95,22 @@ export function firstTexturedMaterial(root: THREE.Object3D): THREE.Material | nu
  *      —el fondo de un cuartel, la cara del hierro— tiene vértices sólo en sus
  *      esquinas: contando vértices no aparecería, y era justo el error que dejó
  *      los números de los cuarteles sin pintar en el primer intento.
- *   2. UN TRIÁNGULO ES LETRA si cabe entero en la franja que va de un plano
- *      dominante a `asomaCm` por encima, SUPERA ese plano, y NO DESCANSA ÉL
- *      MISMO EN OTRO PLANO DOMINANTE. Esa última condición es la que separa una
- *      letra de una cara: la cara del hierro también «sobresale» del plano del
- *      chaflán que tiene justo debajo, y sin ella el disco entero salía pintado
- *      de blanco con las letras en hierro. Una superficie grande de la pieza es
- *      siempre un plano dominante; una letra, nunca.
+ *   2. UN PLANO ES SOPORTE si es GRANDE, o si no es la TAPA de un relieve; y
+ *      una tapa se reconoce por estar exactamente `asomaCm` encima de otro
+ *      plano. Hacen falta las dos señales, y cada una tapa un agujero de la
+ *      otra: por área sola no valen —las tapas de las letras suman el 2.1 % de
+ *      la superficie plana en el disco de 25 lb y el 1.9 % en el de 45, así que
+ *      cualquier umbral las parte por la mitad, y con uno del 2 % el de 25 se
+ *      quedó sin pintar—; y por altura sola tampoco —en el de 5 lb, que es una
+ *      chapa fina, la CARA cae por casualidad a 2.45 mm de las tapas de sus
+ *      letras, se tomó por una tapa más y el disco salió pintado en un 39 %—.
+ *      Una superficie de verdad de la pieza es grande; una tapa, nunca.
+ *   3. UN TRIÁNGULO ES LETRA si cabe entero en la franja que va de un SOPORTE a
+ *      `asomaCm` por encima, lo supera, y no descansa él mismo en un soporte.
+ *      Lo último separa una letra de una cara: la cara del hierro también
+ *      «sobresale» del plano del chaflán que tiene justo debajo, y sin esa
+ *      condición el disco entero salía pintado de blanco con las letras en
+ *      hierro.
  *
  * Con eso se pinta tanto la marca de la llanta —levantada sobre la cara— como
  * las cifras de los cuarteles —levantadas sobre su fondo, mucho más adentro—,
@@ -158,10 +167,18 @@ export function separarRotulo(geo: THREE.BufferGeometry, asomaCm: number): boole
     areaTotal += area;
   }
   if (areaTotal <= 0) return false;
-  const planos = [...areaPorPlano.entries()]
-    .filter(([, ar]) => ar >= 0.02 * areaTotal)
-    .map(([k, ar]) => hondoPorPlano.get(k)! / ar);
-  if (planos.length === 0) return false;
+  const conArea = [...areaPorPlano.entries()]
+    .filter(([, ar]) => ar >= 0.005 * areaTotal)
+    .map(([k, ar]) => ({ hondo: hondoPorPlano.get(k)! / ar, parte: ar / areaTotal }));
+  const planos = conArea.map((x) => x.hondo);
+  const soportes = conArea
+    .filter(
+      (x) =>
+        x.parte >= 0.05 ||
+        !planos.some((q) => Math.abs(x.hondo - (q + asomaCm)) <= eps),
+    )
+    .map((x) => x.hondo);
+  if (soportes.length === 0) return false;
 
   // ── 2. LO QUE SOBRESALE DE ELLOS ───────────────────────────────────────
   const cuerpo: number[] = [];
@@ -170,8 +187,8 @@ export function separarRotulo(geo: THREE.BufferGeometry, asomaCm: number): boole
     const lejos = Math.max(hondos[i], hondos[i + 1], hondos[i + 2]);
     const cerca = Math.min(hondos[i], hondos[i + 1], hondos[i + 2]);
     let esLetra = false;
-    if (!planos.some((q) => Math.abs(lejos - q) <= eps)) {
-      for (const p of planos) {
+    if (!soportes.some((q) => Math.abs(lejos - q) <= eps)) {
+      for (const p of soportes) {
         if (cerca >= p - eps && lejos <= p + asomaCm + eps && lejos > p + eps) {
           esLetra = true;
           break;

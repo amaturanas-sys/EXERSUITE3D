@@ -1,4 +1,4 @@
-// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.65).
+// PRUEBA: LOS DISCOS «STANDARD BARBELL» (v0.3.66).
 //
 // Cinco discos de libras distintas, copiados de la foto del juego y de la ficha
 // «Olympic Weight Plate Specifications» del fabricante. Lo que se comprueba, y
@@ -67,7 +67,6 @@ const LIBRAS = [5, 10, 25, 35, 45];
 const CON_CRUZ = [35, 45];      // los que llevan los cuatro radios
 const AGUJERO_CM = 5.0;         // Ø olímpico, la cota que no cambia
 const DENSIDAD = 7.2;           // g/cm³, hierro fundido
-const RELIEVE_CM = 0.25;        // cuánto asoma la letra de la llanta
 
 // Las pulgadas del cartel, pasadas a centímetros aquí mismo.
 const segunLaFicha = (lb) => {
@@ -114,53 +113,44 @@ const medido = await page.evaluate(async (fichas) => {
 
     // EL AGUJERO: el radio menor alrededor del eje.
     let rMin = 1e9, rMax = 0;
-    let asomaMas = 0, asomaMenos = 0;     // relieve por cada cara
-    // EL PERFIL POR ÁNGULO: en el anillo de los cuarteles, hasta dónde llega la
-    // pieza en el eje. Donde hay radio, llega al grueso entero; donde hay
-    // cuartel rebajado, se queda en el fondo.
-    const BINS = 72;
-    const tope = new Array(BINS).fill(0);
     for (let i = 0; i < pos.count; i++) {
-      const a = comp(i, radial[0]), b = comp(i, radial[1]), e = comp(i, iEje);
+      const a = comp(i, radial[0]), b = comp(i, radial[1]);
       const r = Math.hypot(a, b);
       if (r < rMin) rMin = r;
       if (r > rMax) rMax = r;
-      if (e > 0) asomaMas = Math.max(asomaMas, e);
-      else asomaMenos = Math.max(asomaMenos, -e);
     }
-    // SE RECORREN TRIÁNGULOS, NO VÉRTICES. La cara de arriba de un radio es un
-    // plano: sus únicos vértices están en las esquinas, y ésas caen en el cubo
-    // y en la llanta, fuera de la banda. Mirando sólo vértices, un radio
-    // perfectamente dibujado no aparece por ninguna parte —así salió esta
-    // prueba en rojo la primera vez, con el modelo bien—. Se mira, por tanto,
-    // qué TRIÁNGULOS están en la cara del hierro con su centro dentro de la
-    // banda, y se marca el tramo de ángulo que abarcan.
+    // LA CRUZ SE BUSCA CON RAYOS, NO MIRANDO LA MALLA. Dos intentos anteriores
+    // fallaron por lo mismo: la cara de un radio no es una isla de triángulos
+    // suyos, es un trozo de UNA SOLA cara que abarca cubo, radios y llanta, y
+    // su triangulación reparte los triángulos donde quiere —primero se
+    // buscaron vértices y no había ninguno en la banda; luego centros de
+    // triángulo, y en el de 45 uno de los cuatro radios se escapó—. Un rayo no
+    // se equivoca: se lanza contra la pieza a media altura del vaciado y se
+    // mira DÓNDE PARA. Donde hay radio para en la cara; donde hay cuartel, en
+    // el fondo, mucho más adentro.
+    const BINS = 72;
     const idxT = g.index;
-    const nT = idxT ? idxT.count : pos.count;
-    const enBanda = (r) => r > 0.45 * rMax && r < 0.78 * rMax;
+    const rayo = new T.Raycaster();
+    const desde = new T.Vector3();
+    const hacia = new T.Vector3();
+    hacia.setComponent(iEje, -1);
+    o.mesh.position.set(0, 0, 0);
+    o.mesh.rotation.set(0, 0, 0);
+    o.mesh.updateMatrixWorld(true);
     const lleno = new Array(BINS).fill(false);
-    for (let i = 0; i < nT; i += 3) {
-      const tri = [0, 1, 2].map((k) => (idxT ? idxT.getX(i + k) : i + k));
-      // ¿Está en la cara del hierro? El semiespesor viene de fuera: el semieje
-      // del bulto incluye el relieve de las letras y no sirve de vara.
-      if (!tri.every((v) => Math.abs(Math.abs(comp(v, iEje)) - semiHierro) < 0.05)) continue;
-      const pol = tri.map((v) => {
-        const a = comp(v, radial[0]), b = comp(v, radial[1]);
-        let ang = (Math.atan2(b, a) * 180) / Math.PI;
-        if (ang < 0) ang += 360;
-        return { r: Math.hypot(a, b), ang };
-      });
-      const rc = (pol[0].r + pol[1].r + pol[2].r) / 3;
-      if (!enBanda(rc)) continue;           // llanta y cubo fuera
-      const a0 = Math.min(...pol.map((p) => p.ang)), a1 = Math.max(...pol.map((p) => p.ang));
-      if (a1 - a0 > 180) continue;          // el triángulo cruza el 0°: se deja
-      for (let k = 0; k < BINS; k++) {
-        const ang = ((k + 0.5) * 360) / BINS;
-        if (ang >= a0 && ang <= a1) lleno[k] = true;
-      }
+    for (let k = 0; k < BINS; k++) {
+      const ang = ((k + 0.5) / BINS) * Math.PI * 2;
+      desde.set(0, 0, 0);
+      desde.setComponent(radial[0], Math.cos(ang) * 0.6 * rMax);
+      desde.setComponent(radial[1], Math.sin(ang) * 0.6 * rMax);
+      desde.setComponent(iEje, semiEje + 5);
+      rayo.set(desde, hacia);
+      const golpes = rayo.intersectObject(o.mesh, false);
+      const alto = golpes.length ? Math.abs(golpes[0].point.getComponent(iEje)) : 0;
+      lleno[k] = alto > 0.9 * semiHierro;
     }
     // CUÁNTOS TRAMOS DE ÁNGULO conservan el grueso entero: cuatro si hay cruz,
-    // ninguno si el anillo está rebajado en toda la vuelta.
+    // ninguno si el anillo está vaciado en toda la vuelta.
     let tramos = 0;
     for (let k = 0; k < BINS; k++) if (lleno[k] && !lleno[(k + BINS - 1) % BINS]) tramos++;
 
@@ -195,9 +185,20 @@ const medido = await page.evaluate(async (fichas) => {
     };
     const aCuerpo = areaGrupo(g.groups[0]);
     const aRotulo = areaGrupo(g.groups[1]);
+    // El rótulo, repartido entre las dos caras por el signo de su centro.
+    let atras = 0, alante = 0;
+    const gr = g.groups[1];
+    if (gr && idxT) {
+      for (let i = gr.start; i < gr.start + gr.count; i += 3) {
+        let e = 0;
+        for (let k = 0; k < 3; k++) e += comp(idxT.getX(i + k), iEje);
+        if (e > 0) alante++; else atras++;
+      }
+    }
 
     salida[lb] = {
       colores: mats.map((m) => m.color.getHex()),
+      carasRotulo: [atras, alante],
       areaRotulo: +(100 * aRotulo / Math.max(1e-9, aCuerpo + aRotulo)).toFixed(2),
       tam: [tam.x, tam.y, tam.z].map((x) => +x.toFixed(2)),
       diametro: +(rMax * 2).toFixed(2),
@@ -206,7 +207,6 @@ const medido = await page.evaluate(async (fichas) => {
       volumen: +Math.abs(vol).toFixed(1),
       vertices: pos.count,
       masa: o.physics?.massKg,
-      asoma: [+asomaMenos.toFixed(2), +asomaMas.toFixed(2)],
       tramos,
     };
   }
@@ -244,11 +244,12 @@ for (const lb of LIBRAS) {
     Math.abs(m.diametro - f.diametro) < 0.15,
     `el de ${lb} lb mide Ø${m.diametro} cm; el cartel pide ${CARTEL[lb][0]}" = Ø${f.diametro.toFixed(1)}`,
   );
-  // EL CANTO INCLUYE EL RELIEVE de las dos caras: la ficha da el hierro, la
-  // malla da el hierro más las letras.
+  // EL CANTO ES EL DEL CARTEL, CLAVADO. El rótulo vive dentro de lo vaciado, así
+  // que NADA sobresale de las caras: un disco que midiera de más ya no apilaría
+  // igual ni cabría lo mismo en la manga.
   ok(
-    Math.abs(m.canto - (f.canto + 2 * RELIEVE_CM)) < 0.1,
-    `su canto es ${m.canto} cm: ${f.canto.toFixed(2)} de hierro y ${RELIEVE_CM} de letra por cara`,
+    Math.abs(m.canto - f.canto) < 0.06,
+    `su canto es ${m.canto} cm, el del cartel clavado (${f.canto.toFixed(2)}), sin que el rótulo sobresalga`,
   );
 }
 // ── 4. LOS TRES GRANDES, EL MISMO CANTO ──────────────────────────────────
@@ -307,11 +308,14 @@ for (const lb of [5, 45]) {
 }
 
 // ── 7. LAS LETRAS, POR LAS DOS CARAS ─────────────────────────────────────
+// Ya no se puede medir por lo que sobresale —no sobresale nada—, así que se
+// cuentan los triángulos del rótulo A CADA LADO del plano medio. Un disco
+// rotulado sólo por delante daría cero en uno de los dos.
 for (const lb of LIBRAS) {
-  const [menos, mas] = medido[lb].asoma, { canto } = segunLaFicha(lb);
+  const [atras, alante] = medido[lb].carasRotulo;
   ok(
-    menos > canto / 2 + RELIEVE_CM * 0.8 && mas > canto / 2 + RELIEVE_CM * 0.8,
-    `el de ${lb} lb lleva relieve por las dos caras (${menos} y ${mas} cm desde el centro, el hierro llega a ${(canto / 2).toFixed(2)})`,
+    atras > 100 && alante > 100 && Math.abs(atras - alante) / (atras + alante) < 0.1,
+    `el de ${lb} lb lleva rótulo por las dos caras (${atras} y ${alante} triángulos)`,
   );
 }
 
