@@ -1,0 +1,18 @@
+// Vuelca las descripciones TAL COMO EXISTEN EN EJECUCION (utilidad, no prueba).
+import { chromium } from "playwright-core";
+import { writeFileSync } from "node:fs";
+const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+  args:["--no-sandbox","--use-gl=angle","--use-angle=swiftshader","--enable-webgl"]});
+const page = await b.newPage({ viewport:{width:1280,height:900}});
+await page.goto("http://127.0.0.1:4174/"); await page.waitForTimeout(1200);
+await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
+await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
+const d = await page.evaluate(() =>
+  [...document.querySelectorAll(".comp-btn")]
+    .map((b) => ({ etiqueta: b.textContent.trim(), desc: b.getAttribute("title") || "" }))
+    .filter((x) => x.desc));
+writeFileSync(process.argv[2] ?? "/tmp/desc.json", JSON.stringify(d, null, 1));
+console.log(d.length, "descripciones volcadas");
+await b.close();

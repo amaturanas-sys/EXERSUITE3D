@@ -10,7 +10,7 @@ import { CATEGORY_COLORS, getDefinition } from "../objects/componentLibrary";
 import { aplicarCables, aplicarUniones, construirMaquina, construirPiezas, STANDARD_MACHINES, type CableSpec, type PiezaSpec, type UnionSpec } from "../objects/standardMachines";
 import { claveMaquina } from "./maquinasModelo";
 import { prefabsMaquina } from "./prefabsMaquina";
-import { tt } from "./i18n";
+import { t, tt } from "./i18n";
 import { esferaDe, formatearHora, lecturaDe, tramoDesdeHoras, vuelta } from "./reloj";
 import { PhysicsWorld, type RopeFisica } from "../physics/PhysicsWorld";
 import { Joint, type AxisName, type JointKind } from "../physics/joints";
@@ -2691,7 +2691,12 @@ export class Editor {
       (o) => o.componentId === componentId,
     ).length;
     const obj = new SceneObject({
-      name: count > 0 ? `${def.label} ${count + 1}` : def.label,
+      // EL NOMBRE DE LA PIEZA, EN EL IDIOMA DE QUIEN LA COLOCA (v0.3.60). La
+      // paleta traduce la etiqueta al pintarla, pero el objeto se quedaba con
+      // la cadena en castellano y así salía en la píldora de medidas y en el
+      // árbol. Es un dato, no un rótulo: se fija al insertar y viaja con el
+      // proyecto, igual que si lo hubiera escrito el usuario.
+      name: count > 0 ? `${t(def.label)} ${count + 1}` : t(def.label),
       componentId: def.id,
       category: def.category,
       // COPIA PROFUNDA (v0.2.20): los defaults se compartían POR REFERENCIA
@@ -11258,7 +11263,12 @@ export class Editor {
         ? { ...def.defaults, ...tpl, kind: "cylinder", height: L, path: undefined }
         : { ...tpl, path: straightPath(L) };
     const obj = new SceneObject({
-      name: count > 0 ? `${def.label} ${count + 1}` : def.label,
+      // EL NOMBRE DE LA PIEZA, EN EL IDIOMA DE QUIEN LA COLOCA (v0.3.60). La
+      // paleta traduce la etiqueta al pintarla, pero el objeto se quedaba con
+      // la cadena en castellano y así salía en la píldora de medidas y en el
+      // árbol. Es un dato, no un rótulo: se fija al insertar y viaja con el
+      // proyecto, igual que si lo hubiera escrito el usuario.
+      name: count > 0 ? `${t(def.label)} ${count + 1}` : t(def.label),
       componentId: def.id,
       category: def.category,
       params,

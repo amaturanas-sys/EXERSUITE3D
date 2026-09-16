@@ -515,9 +515,13 @@ export class ComponentPalette {
     swatch.style.background = `#${accent.toString(16).padStart(6, "0")}`;
     // Marca las piezas con modelo 3D propio (asignado en la biblioteca).
     const modeled = componentModels.has(def.id);
+    // CADA MITAD POR SU LADO (v0.3.60). La descripción se traduce por el
+    // diccionario y la coletilla por `tt()`: pegándolas antes, la cadena
+    // compuesta no casaba con NINGUNA clave y el tooltip entero se quedaba en
+    // castellano aunque la descripción sí estuviera traducida.
     const title = modeled
-      ? `${def.description} · con modelo 3D de la biblioteca`
-      : def.description;
+      ? `${t(def.description)} · ${tt("con modelo 3D de la biblioteca", "with a 3D model from the library")}`
+      : t(def.description);
     const children: (Node | string)[] = [swatch, def.label];
     if (modeled) children.push(el("span", { class: "comp-modeled", title: "Modelo 3D" }, []));
     const btn = el("button", { class: "comp-btn", title }, children);

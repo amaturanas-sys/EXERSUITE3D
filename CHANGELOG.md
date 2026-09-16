@@ -5,7 +5,37 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.3.59] — 2026-09-16
+## [0.3.60] — 2026-09-16
+
+### Añadido
+
+**LAS 46 DESCRIPCIONES DE PIEZAS Y MÁQUINAS, EN INGLÉS.** Son el tooltip de cada
+botón de la paleta y la ficha del catálogo de modelos: el texto que explica qué
+es cada cosa y cómo se usa. Estaban todas en castellano.
+
+### Corregido
+
+**TRES SITIOS DONDE SE COMPONÍA LA CADENA ANTES DE TRADUCIRLA**, que es la forma
+fina de que una traducción exista y aun así no salga:
+
+  · el tooltip de la paleta pegaba «· con modelo 3D de la biblioteca» a la
+    descripción y buscaba la frase entera en el diccionario, donde nunca iba a
+    estar. Ahora se traduce cada mitad por su lado;
+  · el ítem «🔩 Soldar» del menú buscaba su clave con el emoji incluido;
+  · y la píldora de medidas enseñaba el nombre del objeto, que se fijaba al
+    insertarlo con la etiqueta EN CASTELLANO aunque la paleta la pintara en
+    inglés. Ahora la pieza se nombra en el idioma de quien la coloca; es un dato
+    que viaja con el proyecto, igual que si lo hubiera escrito el usuario.
+
+Y la cabecera «Peso ▾» de la paleta, cuya clave estaba puesta sin la flecha.
+
+**La interfaz operable queda en CERO cadenas sin traducir**: portada,
+marketplace, catálogo, asistente, lienzo, los cinco menús, la barra y
+Propiedades. Medido con `pruebas/_auditar-ingles.mjs`, que lee lo que se pinta.
+
+Sigue pendiente el **instructivo**: 86 bloques de prosa.
+
+
 
 ### Corregido
 
