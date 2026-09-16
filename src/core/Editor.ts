@@ -2509,7 +2509,7 @@ export class Editor {
     }
     if (!anclaje || !puntoPivote) {
       return tt(
-        "No hay un «Anclaje de cadena POWERRACK» cerca de los extremos del brazo: coloca uno (calzado al pilar) junto al extremo que quieres articular.",
+        "No hay un «Anclaje de cadena» cerca de los extremos del brazo: coloca uno (calzado al pilar) junto al extremo que quieres articular.",
         "There is no POWERRACK chain anchor near the arm's ends: place one (latched to the post) next to the end you want to articulate.",
       );
     }

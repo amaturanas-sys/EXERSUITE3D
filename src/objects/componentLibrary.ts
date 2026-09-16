@@ -401,7 +401,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "puente-carro-ttp",
-    label: "Carro de doble roldana TTP",
+    label: "Carro de doble roldana",
     category: "transmision",
     materialId: "acero-negro",
     defaults: { kind: "box", width: 3.5, height: 20.4, depth: 7.2 },
@@ -492,7 +492,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-pr",
-    label: "Barra pullups POWERRACK (106)",
+    label: "Barra pullups (106)",
     category: "estructural",
     materialId: "acero-negro",
     // Auditoría de biblioteca: identidad corregida — la barra de dominadas
@@ -507,7 +507,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "jota-pr",
-    label: "Anclaje de cadena POWERRACK",
+    label: "Anclaje de cadena",
     category: "estructural",
     materialId: "acero-negro",
     // Auditoría de biblioteca: rótulo corregido — no es una jota, es el
@@ -528,7 +528,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "jota-rodillo-pr",
-    label: "Jota con rodillo POWERRACK",
+    label: "Jota con rodillo",
     category: "estructural",
     materialId: "acero-negro",
     // Auditoría: malla reorientada con el brazo a lo largo de Z, como j-hook.
@@ -735,7 +735,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "guia",
     paleta: "oculta",
-    label: "Guia",
+    label: "Guía",
     category: "movimiento",
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.5, radiusBottom: 1.5, height: 180 },
@@ -925,7 +925,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "liston-kevlar",
     paleta: "oculta",
-    label: "Liston de Kevlar",
+    label: "Listón de Kevlar",
     category: "transmision",
     materialId: "kevlar",
     defaults: { kind: "box", width: 3, height: 90, depth: 0.4 },
@@ -1201,7 +1201,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "barra-olimpica",
-    label: "Barra olimpica",
+    label: "Barra olímpica",
     category: "peso",
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.45, radiusBottom: 1.45, height: 220, radialSegments: 24 },
@@ -1307,7 +1307,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   },
   {
     id: "cuerda-triceps",
-    label: "Cuerda de triceps",
+    label: "Cuerda de tríceps",
     category: "ergonomico",
     materialId: "nylon",
     defaults: { kind: "box", width: 14.6, height: 32.75, depth: 5.6 },
@@ -1322,7 +1322,7 @@ export const COMPONENT_LIBRARY: ComponentDefinition[] = [
   {
     id: "barra-jalon",
     paleta: "retirada",
-    label: "Barra de jalon",
+    label: "Barra de jalón",
     category: "ergonomico",
     materialId: "cromo",
     defaults: { kind: "cylinder", radiusTop: 1.4, radiusBottom: 1.4, height: 120 },

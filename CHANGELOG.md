@@ -5,6 +5,44 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.58] — 2026-09-16
+
+### Cambiado
+
+**LOS NOMBRES DE LA PALETA, SIN FALTAS Y SIN JERGA DE DESPIECE.**
+
+Cinco etiquetas llevaban una palabra sin tilde: **Barra olímpica**, **Cuerda de
+tríceps**, **Listón de Kevlar**, **Barra de jalón** y **Guía**.
+
+Y cuatro de las que se ven arrastraban el código del despiece del que salieron
+—TTP, POWERRACK—, que no le dice nada a quien está montando una máquina:
+
+| Antes | Ahora |
+|---|---|
+| Carro de doble roldana TTP | Carro de doble roldana |
+| Barra pullups POWERRACK (106) | Barra pullups (106) |
+| Anclaje de cadena POWERRACK | Anclaje de cadena |
+| Jota con rodillo POWERRACK | Jota con rodillo |
+
+Ninguna de estas piezas cambia de `id`, así que **los proyectos guardados y los
+prefabs siguen resolviendo**: lo que cambia es el rótulo, no la identidad.
+
+Las 18 etiquetas de despiece que siguen llevando el código son las piezas
+internas de las máquinas, que no aparecen en la paleta y donde el código sí
+sirve para saber de qué despiece salió cada una.
+
+### Corregido
+
+**EL INGLÉS DE LA BARRA DE PULLUPS NO SALÍA.** Su clave de traducción decía
+`(70)` y la etiqueta `(106)`, así que no casaban y la pieza se quedaba en
+castellano. Estaba así desde antes de esta pasada; se vio al tocar la etiqueta.
+
+Se actualizaron con las etiquetas su traducción al inglés, los dos textos del
+instructivo que nombran la pieza, el aviso del editor cuando no encuentra un
+«Anclaje de cadena» cerca del brazo, y el inventario de `docs/`. Los nombres de
+las piezas dentro de los prefabs guardados **no se tocan**: son nombres de
+objeto en la escena, no etiquetas de la biblioteca.
+
 ## [0.3.57] — 2026-09-15
 
 ### Corregido

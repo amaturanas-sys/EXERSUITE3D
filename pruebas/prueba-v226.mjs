@@ -32,7 +32,7 @@ const C = await page.evaluate(() => {
     sinFulcro: !hay("Fulcro"),
     // v0.2.28: el carro vive en TRANSMISIÓN (la subpestaña de despiece se
     // eliminó) y ninguna cabecera de despiece queda en la paleta.
-    carro: hay("Carro de doble roldana TTP"),
+    carro: hay("Carro de doble roldana"),
     sinDespiece: ![...document.querySelectorAll(".cat-plegable")].some((h) =>
       /Despiece/i.test(h.textContent ?? "")),
   };

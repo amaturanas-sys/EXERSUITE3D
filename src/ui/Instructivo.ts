@@ -49,7 +49,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.",
       "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.",
       "Cuerdas (cadena/correa): toca los dos anclajes (cualquier cara de una pieza, pared o techumbre) y define la CAÍDA en cm — la catenaria con la que cuelga.",
-      "La paleta lista solo piezas que se usan sueltas; las internas de cada máquina real llegan con la máquina o con su prefab. El Carro de doble roldana TTP sí está a mano (Transmisión) y nace SIEMPRE con sus dos roldanas funcionales.",
+      "La paleta lista solo piezas que se usan sueltas; las internas de cada máquina real llegan con la máquina o con su prefab. El Carro de doble roldana sí está a mano (Transmisión) y nace SIEMPRE con sus dos roldanas funcionales.",
     ],
   },
   {
@@ -125,7 +125,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
     id: "brazos",
     pregunta: "¿Cómo creo brazos móviles (jammer arms)?",
     puntos: [
-      "Calza un Anclaje de cadena POWERRACK al pilar: su pin posterior entra en los pinholes y su cilindro perpendicular queda libre como PIVOTE.",
+      "Calza un Anclaje de cadena al pilar: su pin posterior entra en los pinholes y su cilindro perpendicular queda libre como PIVOTE.",
       "Selecciona una estructura tubular o tipo pilar, acércala al anclaje y pulsa Articular como brazo (sección Brazo móvil de Propiedades): la pieza se vuelve móvil y gira alrededor del cilindro, cayendo en el plano frontal del pilar como un jammer arm real.",
       "El brazo puede portar roldanas (soldador de nodos), cables/piolas, cuernos de carga con discos, o calzar piezas en sus propios pinholes — todo se mueve con él y expande la máquina.",
       "BRAZO COMPUESTO: si el brazo se prolonga con otra pieza, únelas con + Bisagra y deja la unión BLOQUEADA (o usa Lock switch): la simulación las funde en un solo cuerpo y el conjunto pivota entero desde su anclaje. Una pieza marcada como móvil sin masa declarada ya no queda estática en el aire — recibe una masa mínima de trabajo.",
