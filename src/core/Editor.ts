@@ -24,6 +24,7 @@ import {
   tramosCalce,
 } from "../objects/linePieces";
 import { espejoDe } from "../objects/espejar";
+import { detectarCaras, fichaDeCara, type CaraDetectada } from "../objects/chapa";
 import { medidasHorquilla } from "../objects/horquilla";
 import { largoDeFabrica, puntoTrasEstirar } from "../objects/estirar";
 import {
@@ -316,6 +317,11 @@ export type EditorEvents = {
   lineModeChanged: { active: boolean; kind: "beam" | "tube" | "guia" | null; count: number };
   /** Modo "doblado por nodos" (bending) activo/inactivo. */
   bendModeChanged: { active: boolean };
+  /**
+   * Herramienta de CHAPA (v0.3.72): si está activa, sobre qué pieza se está
+   * trabajando (null mientras se elige) y cuántas caras llevan marcadas.
+   */
+  chapaModeChanged: { active: boolean; pieza: string | null; caras: number };
   /** Guías tubulares en modo "administrar vinculación" (ids). */
   vinculacionChanged: { guias: string[] };
   /** Cuerda seleccionada (para editar tensión) o null. */
@@ -1197,6 +1203,9 @@ export class Editor {
       this.requestRender();
     }
     const moved = this.orbit.update();
+    // La burbuja de la chapa va pegada a las caras marcadas, así que sigue a
+    // la cámara: orbitar no la deja plantada en un rincón de la pantalla.
+    if (this.chapaBurbuja) this.chapaColocarBurbuja();
     // Resolución dinámica: menos píxeles mientras hay movimiento real
     // (cámara, arrastre sobre el lienzo o simulación); nítido en reposo.
     if (getPerf().dynamicResolution) {
@@ -2798,7 +2807,7 @@ export class Editor {
         params: { ...src.params },
         physics: { ...src.physics },
         materialId: src.materialId,
-        importedGeometry: src.mesh.geometry.clone(),
+        importedGeometry: src.mallaDeOrigen().clone(),
       });
       this.sceneManager.content.add(obj.mesh);
       this.objects.set(obj.id, obj);
@@ -3611,6 +3620,7 @@ export class Editor {
     this.cancelPlacaDentada();
     this.cancelColocarFigura();
     this.endBendNodes();
+    this.cancelChapa();
     // «✋ Agarrar» faltaba aquí, y su rama de onPointerDown hace `return`
     // INCONDICIONAL: con ella encendida el visor se quedaba sordo —ni
     // seleccionar, ni deseleccionar, ni ninguna otra herramienta— y no había
@@ -5429,7 +5439,7 @@ export class Editor {
         data: JSON.parse(JSON.stringify(data)) as ProjectData["objects"][number],
         category: o.category,
         importedGeometry:
-          o.imported || o.componentId.startsWith("ws-") ? o.mesh.geometry.clone() : null,
+          o.imported || o.componentId.startsWith("ws-") ? o.mallaDeOrigen().clone() : null,
       });
     }
   }
@@ -9940,6 +9950,354 @@ export class Editor {
 
   isFrenoMode(): boolean {
     return this.frenoMode;
+  }
+
+  // ------------------------------------------------------- CHAPA DE ACERO
+  /**
+   * HERRAMIENTA DE CHAPA (v0.3.72): convierte un macizo en una plancha doblada
+   * con su forma. Se elige una pieza —y a partir de ahí la herramienta NO MIRA
+   * NINGUNA OTRA: el trabajo queda circunscrito a ella—, se van tocando las
+   * caras que sobran y una burbuja sobre la selección pregunta por el grosor y
+   * confirma. Un cubo sin la cara de arriba sale como una cubeta.
+   *
+   * ORBITAR NO ROMPE NADA. El clic se resuelve al SOLTAR y solo si el puntero
+   * no se movió (el mismo criterio de la herramienta de línea): arrastrar gira
+   * la cámara y la selección de caras se queda donde estaba, que es justo lo
+   * que hace falta para llegar a la cara de atrás.
+   */
+  private chapaMode = false;
+  private chapaObjeto: SceneObject | null = null;
+  private chapaCaras: CaraDetectada[] = [];
+  private chapaSel = new Set<number>();
+  private chapaResalte: THREE.Mesh | null = null;
+  private chapaBurbuja: HTMLElement | null = null;
+  private chapaDown: { x: number; y: number } | null = null;
+  /** Último grosor usado (cm): lo que pida uno es lo que propone el siguiente. */
+  private chapaGrosorCm = 0.3;
+
+  beginChapa(): void {
+    if (this.simulating) return;
+    this.cancelarHerramientas();
+    this.chapaMode = true;
+    this.chapaObjeto = null;
+    this.chapaCaras = [];
+    this.chapaSel.clear();
+    // Si ya había UNA pieza seleccionada, esa es: pedir otro clic para repetir
+    // lo que el usuario acaba de decir sobra.
+    const ya = this.selected;
+    if (ya && this.multiSel.size === 0) this.chapaTomarPieza(ya);
+    else this.emitirChapa();
+    this.avisoTemporal(
+      this.chapaObjeto
+        ? tt("Chapa: toca las caras que sobran", "Sheet metal: tap the faces to remove")
+        : tt("Chapa: elige la pieza", "Sheet metal: pick the part"),
+    );
+  }
+
+  cancelChapa(): void {
+    if (!this.chapaMode) return;
+    this.chapaMode = false;
+    this.chapaDown = null;
+    this.chapaSel.clear();
+    this.chapaCaras = [];
+    this.chapaQuitarResalte();
+    this.chapaCerrarBurbuja();
+    this.chapaObjeto = null;
+    // Devuelve el gizmo a la pieza seleccionada: al salir de la herramienta se
+    // vuelve a poder mover lo que se estaba mirando.
+    if (this.selected) this.select(this.selected);
+    this.emitirChapa();
+    this.requestRender();
+  }
+
+  isChapaMode(): boolean {
+    return this.chapaMode;
+  }
+
+  /** Grosor de plancha que propone la herramienta (cm). */
+  getChapaGrosor(): number {
+    return this.chapaGrosorCm;
+  }
+
+  setChapaGrosor(cm: number): void {
+    this.chapaGrosorCm = Math.max(0.05, Math.min(20, cm));
+  }
+
+  private emitirChapa(): void {
+    this.bus.emit("chapaModeChanged", {
+      active: this.chapaMode,
+      pieza: this.chapaObjeto?.id ?? null,
+      caras: this.chapaSel.size,
+    });
+  }
+
+  /** Toma la pieza sobre la que se va a trabajar y le reconoce las caras. */
+  private chapaTomarPieza(obj: SceneObject): void {
+    this.chapaQuitarResalte();
+    this.chapaCerrarBurbuja();
+    this.chapaObjeto = obj;
+    this.chapaSel.clear();
+    this.chapaCaras = detectarCaras(obj.mesh.geometry);
+    this.select(obj);
+    // EL GIZMO ESTORBA AQUÍ. Sus flechas salen del centro de la pieza y
+    // atraviesan justo las caras que hay que señalar: la de arriba se toca
+    // exactamente donde apunta la flecha de la Y, y el clic se lo quedaba
+    // ella. Mientras se elige chapa no hay nada que mover.
+    this.gizmo.detach();
+    this.emitirChapa();
+  }
+
+  /**
+   * El clic de la herramienta, ya resuelto como clic (no como arrastre de
+   * órbita). Con pieza tomada solo se mira ESA pieza; sin pieza, se toma la
+   * que haya bajo el puntero.
+   */
+  private chapaClic(): void {
+    if (!this.chapaObjeto) {
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const id = hits[0]?.object.userData.sceneObjectId as string | undefined;
+      const obj = id ? this.objects.get(id) : undefined;
+      if (!obj) return;
+      this.chapaTomarPieza(obj);
+      this.avisoTemporal(
+        tt(`Chapa sobre "${obj.name}": toca las caras que sobran`, `Sheet metal on "${obj.name}": tap the faces to remove`),
+      );
+      return;
+    }
+    const hit = this.raycaster.intersectObject(this.chapaObjeto.mesh, false)[0];
+    if (!hit || hit.faceIndex === undefined || hit.faceIndex === null) {
+      // Fuera de la pieza: si aún no hay nada marcado, el clic cambia de pieza;
+      // con caras marcadas no se pierde el trabajo por apuntar mal.
+      if (this.chapaSel.size === 0) {
+        const otro = this.raycaster.intersectObjects(this.sceneManager.content.children, false)[0];
+        const id = otro?.object.userData.sceneObjectId as string | undefined;
+        const obj = id ? this.objects.get(id) : undefined;
+        if (obj && obj !== this.chapaObjeto) this.chapaTomarPieza(obj);
+      }
+      return;
+    }
+    const cara = this.chapaCaras.findIndex((c) => c.tris.includes(hit.faceIndex as number));
+    if (cara < 0) return;
+    if (this.chapaSel.has(cara)) this.chapaSel.delete(cara);
+    else this.chapaSel.add(cara);
+    this.chapaRefrescarResalte();
+    if (this.chapaSel.size > 0) this.chapaAbrirBurbuja();
+    else this.chapaCerrarBurbuja();
+    this.emitirChapa();
+    this.requestRender();
+  }
+
+  /** Pinta en naranja las caras marcadas, como una calca sobre la pieza. */
+  private chapaRefrescarResalte(): void {
+    this.chapaQuitarResalte();
+    const obj = this.chapaObjeto;
+    if (!obj || this.chapaSel.size === 0) return;
+    const geo = obj.mesh.geometry;
+    const pos = geo.attributes.position as THREE.BufferAttribute;
+    const idx = geo.index;
+    const vert = idx
+      ? (t: number, k: number): number => idx.getX(t * 3 + k)
+      : (t: number, k: number): number => t * 3 + k;
+    const puntos: number[] = [];
+    for (const ci of this.chapaSel) {
+      for (const t of this.chapaCaras[ci].tris) {
+        for (let k = 0; k < 3; k++) {
+          const i = vert(t, k);
+          puntos.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+        }
+      }
+    }
+    const marca = new THREE.BufferGeometry();
+    marca.setAttribute("position", new THREE.Float32BufferAttribute(puntos, 3));
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xff7a18,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+    const mesh = new THREE.Mesh(marca, mat);
+    mesh.userData.chapaAyuda = true;
+    mesh.renderOrder = 4;
+    obj.mesh.add(mesh);
+    this.chapaResalte = mesh;
+  }
+
+  private chapaQuitarResalte(): void {
+    if (!this.chapaResalte) return;
+    this.chapaResalte.removeFromParent();
+    this.chapaResalte.geometry.dispose();
+    (this.chapaResalte.material as THREE.Material).dispose();
+    this.chapaResalte = null;
+  }
+
+  /** Centro de las caras marcadas, en coordenadas del mundo. */
+  private chapaCentroMundo(): THREE.Vector3 | null {
+    const obj = this.chapaObjeto;
+    if (!obj || this.chapaSel.size === 0) return null;
+    const c = new THREE.Vector3();
+    let peso = 0;
+    for (const ci of this.chapaSel) {
+      const cara = this.chapaCaras[ci];
+      c.addScaledVector(cara.centro, cara.area);
+      peso += cara.area;
+    }
+    if (peso <= 0) return null;
+    c.multiplyScalar(1 / peso);
+    obj.mesh.updateMatrixWorld(true);
+    return c.applyMatrix4(obj.mesh.matrixWorld);
+  }
+
+  /** Pone la burbuja encima de las caras marcadas; la llama también el bucle. */
+  private chapaColocarBurbuja(): void {
+    const b = this.chapaBurbuja;
+    const c = this.chapaCentroMundo();
+    if (!b) return;
+    if (!c) {
+      b.style.display = "none";
+      return;
+    }
+    const p = c.clone().project(this.sceneManager.camera);
+    const rect = this.canvas.getBoundingClientRect();
+    if (p.z > 1) {
+      b.style.display = "none";
+      return;
+    }
+    // A PÍXEL ENTERO, y sólo si cambió. La burbuja se recoloca en cada
+    // fotograma para seguir a la cámara, y escribir un `left` con decimales
+    // distintos cada vez la deja temblando bajo el puntero: el botón se
+    // movía justo cuando se iba a pulsar.
+    b.style.display = "flex";
+    const x = `${Math.round(rect.left + ((p.x + 1) / 2) * rect.width)}px`;
+    const y = `${Math.round(rect.top + ((1 - p.y) / 2) * rect.height)}px`;
+    if (b.style.left !== x) b.style.left = x;
+    if (b.style.top !== y) b.style.top = y;
+  }
+
+  private chapaAbrirBurbuja(): void {
+    if (this.chapaBurbuja) {
+      const n = this.chapaBurbuja.querySelector(".chapa-cuenta");
+      if (n) {
+        n.textContent = tt(
+          `${this.chapaSel.size} cara${this.chapaSel.size === 1 ? "" : "s"}`,
+          `${this.chapaSel.size} face${this.chapaSel.size === 1 ? "" : "s"}`,
+        );
+      }
+      this.chapaColocarBurbuja();
+      return;
+    }
+    const burbuja = document.createElement("div");
+    burbuja.className = "chapa-burbuja";
+    burbuja.style.cssText =
+      "position:fixed;z-index:9999;transform:translate(-50%,-130%);display:flex;align-items:center;"
+      + "gap:8px;padding:7px 9px;border-radius:12px;background:#1f2937;color:#e5e7eb;font-size:12px;"
+      + "box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap;";
+    const cuenta = document.createElement("span");
+    cuenta.className = "chapa-cuenta";
+    cuenta.textContent = tt(
+      `${this.chapaSel.size} cara${this.chapaSel.size === 1 ? "" : "s"}`,
+      `${this.chapaSel.size} face${this.chapaSel.size === 1 ? "" : "s"}`,
+    );
+    const grosor = document.createElement("input");
+    grosor.className = "chapa-grosor";
+    grosor.type = "number";
+    grosor.min = "0.05";
+    grosor.step = "0.1";
+    grosor.value = String(this.chapaGrosorCm);
+    grosor.title = tt("Grosor de la plancha (cm)", "Sheet thickness (cm)");
+    grosor.style.cssText =
+      "width:58px;padding:2px 4px;border-radius:6px;border:1px solid #475569;background:#0f172a;color:inherit;";
+    grosor.addEventListener("change", () => this.setChapaGrosor(Number(grosor.value)));
+    grosor.addEventListener("pointerdown", (e) => e.stopPropagation());
+    const boton = (texto: string, titulo: string, alPulsar: () => void): HTMLElement => {
+      const b = document.createElement("button");
+      b.className = "tool";
+      b.textContent = texto;
+      b.title = titulo;
+      b.style.cssText = "font-size:14px;line-height:1;padding:4px 9px;";
+      b.addEventListener("pointerdown", (e) => e.stopPropagation());
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        alPulsar();
+      });
+      return b;
+    };
+    burbuja.append(
+      cuenta,
+      grosor,
+      document.createTextNode("cm"),
+      boton("✓", tt("Eliminar las caras y dejar la chapa", "Remove the faces and leave the sheet"), () => {
+        this.setChapaGrosor(Number(grosor.value));
+        this.aplicarChapa();
+      }),
+      boton("✕", tt("Desmarcar las caras", "Clear the marked faces"), () => {
+        this.chapaSel.clear();
+        this.chapaRefrescarResalte();
+        this.chapaCerrarBurbuja();
+        this.emitirChapa();
+        this.requestRender();
+      }),
+    );
+    document.body.append(burbuja);
+    this.chapaBurbuja = burbuja;
+    this.chapaColocarBurbuja();
+  }
+
+  private chapaCerrarBurbuja(): void {
+    this.chapaBurbuja?.remove();
+    this.chapaBurbuja = null;
+  }
+
+  /**
+   * CONFIRMADO: la pieza deja de ser un macizo. Las caras se guardan en los
+   * params —por lo que SON, no por su número— y la malla se rehace; así la
+   * chapa sobrevive a cambiar la medida de la pieza, a guardar el proyecto y
+   * a deshacer.
+   */
+  aplicarChapa(): void {
+    const obj = this.chapaObjeto;
+    if (!obj || this.chapaSel.size === 0) return;
+    const previas = obj.params.chapa?.caras ?? [];
+    const nuevas = [...this.chapaSel].map((i) => fichaDeCara(this.chapaCaras[i]));
+    obj.params.chapa = { grosorCm: this.chapaGrosorCm, caras: [...previas, ...nuevas] };
+    this.chapaQuitarResalte();
+    obj.rebuildGeometry();
+    const n = nuevas.length;
+    this.cancelChapa();
+    this.select(obj);
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
+    this.avisoTemporal(
+      tt(
+        `Chapa de ${formatCm(this.chapaGrosorCm)}: ${n} cara${n === 1 ? "" : "s"} eliminada${n === 1 ? "" : "s"}`,
+        `${formatCm(this.chapaGrosorCm)} sheet: ${n} face${n === 1 ? "" : "s"} removed`,
+      ),
+    );
+  }
+
+  /** Cambia el grosor de una pieza que YA es de chapa y rehace su malla. */
+  cambiarGrosorChapa(obj: SceneObject, cm: number): void {
+    if (!obj.params.chapa) return;
+    obj.params.chapa = { ...obj.params.chapa, grosorCm: Math.max(0.05, Math.min(20, cm)) };
+    this.chapaGrosorCm = obj.params.chapa.grosorCm;
+    obj.rebuildGeometry();
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
+  }
+
+  /** Devuelve la pieza al macizo del que salió. */
+  volverAMacizo(obj: SceneObject): void {
+    if (!obj.params.chapa) return;
+    obj.params.chapa = undefined;
+    obj.rebuildGeometry();
+    this.bus.emit("objectTransformed", { object: obj });
+    this.scheduleAutosave();
+    this.requestRender();
   }
 
   /**
@@ -15435,6 +15793,14 @@ export class Editor {
       return;
     }
 
+    // HERRAMIENTA DE CHAPA: igual que la de línea, el clic se resuelve al
+    // soltar. Así el arrastre queda libre para orbitar y se puede dar la
+    // vuelta a la pieza sin perder las caras ya marcadas.
+    if (this.chapaMode) {
+      this.chapaDown = event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
+      return;
+    }
+
     // Modo línea (pilar/travesaño/tubo): dos clics con aim assist. Con eje
     // bloqueado, el segundo punto sale de la recta del eje bajo el puntero
     // (no necesita tocar nada: el eje Y se traza apuntando al cielo).
@@ -15760,6 +16126,19 @@ export class Editor {
   }
 
   private onPointerUp = (ev: PointerEvent): void => {
+    // Herramienta de chapa: el clic marca cara; el arrastre era para orbitar.
+    if (this.chapaMode) {
+      const d = this.chapaDown;
+      this.chapaDown = null;
+      if (!d) return;
+      if (Math.hypot(ev.clientX - d.x, ev.clientY - d.y) > 6) return;
+      const rect = this.canvas.getBoundingClientRect();
+      this.pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      this.pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      this.raycaster.setFromCamera(this.pointer, this.sceneManager.camera);
+      this.chapaClic();
+      return;
+    }
     // Herramienta de línea: el clic fija punto; el arrastre era para orbitar.
     if (this.lineMode) {
       const d = this.lineDown;
@@ -15930,6 +16309,7 @@ export class Editor {
         this.cancelPlacaDentada();
         this.cancelAttachHand();
         this.endBendNodes();
+        this.cancelChapa();
         this.setGrabFigure(false);
         this.select(null);
         break;

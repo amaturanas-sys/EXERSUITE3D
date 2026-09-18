@@ -48,6 +48,7 @@ const FAQ: { id: string; pregunta: string; puntos: string[] }[] = [
       "Máquinas estándar (arriba de la paleta): rack de sentadillas, jaula de potencia, banco plano, rack con torre TTP, torre polea de discos, torre polea de pesos y árbol de discos — con medidas comerciales y armadas con las piezas REALES del despiece (montantes con agujeros de calce, ganchos J de pin+giro, rieles porta-discos, multi-agarre y patines). Cada una se inserta como GRUPO, lista para plantear la sala.",
       "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.",
       "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.",
+      "Chapa (🪣, barra de la derecha): convierte una pieza maciza en una plancha de acero con su misma forma. Elige la pieza, toca las caras que sobran —se puede orbitar sin perderlas— y confirma el grosor en la burbuja: un cubo sin la cara de arriba es una cubeta.",
       "Cuerdas (cadena/correa): toca los dos anclajes (cualquier cara de una pieza, pared o techumbre) y define la CAÍDA en cm — la catenaria con la que cuelga.",
       "La paleta lista solo piezas que se usan sueltas; las internas de cada máquina real llegan con la máquina o con su prefab. El Carro de doble roldana sí está a mano (Transmisión) y nace SIEMPRE con sus dos roldanas funcionales.",
     ],

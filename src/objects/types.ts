@@ -298,6 +298,14 @@ export interface PrimitiveParams {
    * dos lados—; positivo lo saca hacia el lado + del eje de los pinholes.
    */
   pinOffsetCm?: number;
+  /**
+   * CHAPA (v0.3.72): la pieza deja de ser un macizo y pasa a ser una PLANCHA
+   * doblada con su forma —una carcasa—, con las caras listadas quitadas. Un
+   * cubo sin la cara de arriba es una cubeta; un cilindro sin las dos tapas,
+   * un tubo. Viaja en los params, así que sobrevive a la reconstrucción de la
+   * malla, al guardado del proyecto y a los prefabs.
+   */
+  chapa?: ChapaParams;
 }
 
 /**
@@ -368,6 +376,31 @@ export interface CanalTubo {
    * el eje del propio pasador.
    */
   pivote?: boolean;
+}
+
+/**
+ * UNA CARA QUITADA por la herramienta de chapa (v0.3.72).
+ *
+ * NO se guarda el número de la cara: ese número depende de cómo salieron los
+ * triángulos de la malla, y la malla se rehace cada vez que la pieza cambia de
+ * medida. Se guarda lo que la cara ES —hacia dónde mira y dónde está—, y al
+ * reconstruir se vuelve a buscar la que mejor encaja. Por eso `c` va en
+ * coordenadas de la CAJA de la pieza (0..1 por eje): estirar la pieza no mueve
+ * el centro de su cara superior, que sigue estando «arriba, en medio».
+ */
+export interface CaraChapa {
+  /** Normal media de la cara, en coordenadas locales (unitaria). */
+  n: [number, number, number];
+  /** Centro de la cara en fracción de la caja envolvente (0..1 por eje). */
+  c: [number, number, number];
+}
+
+/** Estado de la herramienta de chapa en una pieza (v0.3.72). */
+export interface ChapaParams {
+  /** Grosor de la plancha (cm). */
+  grosorCm: number;
+  /** Caras eliminadas. Vacío = carcasa cerrada (hueca por dentro). */
+  caras: CaraChapa[];
 }
 
 /** Categorias funcionales de los componentes de una maquina de gimnasio. */

@@ -466,6 +466,7 @@ export class PropertiesPanel {
       this.body.append(this.deformSection(obj));
     }
     this.body.append(this.flipSection());
+    this.body.append(this.chapaSection(obj));
     if (obj.stack) this.body.append(this.stackSection(obj));
     if (obj.carga) this.body.append(this.cargaSection(obj));
     if (PIEZAS_CALCE.has(obj.componentId)) this.body.append(this.calceSection(obj));
@@ -1625,6 +1626,92 @@ export class PropertiesPanel {
       el("div", { class: "row" }, [bendBtn, addNodeBtn]),
       el("div", { class: "empty-hint", style: "padding:4px;" }, [
         "Doblar: arrastra los nodos (curva suave); al acercar un nodo al de OTRA pieza se suelda (imán). + Nodo añade un punto a la trayectoria.",
+      ]),
+    ]);
+  }
+
+  /**
+   * CHAPA DE ACERO (v0.3.72). Dos cosas distintas según la pieza:
+   *
+   *   · si todavía es un MACIZO, el botón arranca la herramienta con esta
+   *     pieza ya tomada —lo que queda es tocar las caras que sobran—;
+   *   · si YA es de chapa, aquí se le cambia el grosor de la plancha o se la
+   *     devuelve al macizo. El grosor es un número, no un gesto: pedirlo en el
+   *     visor con el ratón sería fingir precisión.
+   */
+  private chapaSection(obj: SceneObject): HTMLElement {
+    const chapa = obj.params.chapa;
+    const abrir = el(
+      "button",
+      {
+        class: "tool",
+        title: tt(
+          "Elige las caras que sobran en el visor y confirma en la burbuja",
+          "Pick the faces to remove in the viewport and confirm in the bubble",
+        ),
+      },
+      [tt("🪣 Quitar caras…", "🪣 Remove faces…")],
+    );
+    abrir.addEventListener("click", () => {
+      this.editor.select(obj);
+      this.editor.beginChapa();
+    });
+
+    if (!chapa) {
+      return el("div", { class: "field" }, [
+        el("label", {}, [tt("Chapa de acero", "Steel sheet")]),
+        el("div", { class: "row" }, [abrir]),
+        el("div", { class: "empty-hint", style: "padding:4px;" }, [
+          tt(
+            "Convierte el macizo en una plancha con su misma forma: un cubo sin la cara de arriba es una cubeta.",
+            "Turns the solid into a sheet of the same shape: a cube without its top face is a tray.",
+          ),
+        ]),
+      ]);
+    }
+
+    const grosor = el("input", {
+      type: "number",
+      value: String(roundTo(chapa.grosorCm, 2)),
+      step: "0.1",
+      min: "0.05",
+      max: "20",
+    }) as HTMLInputElement;
+    grosor.addEventListener("change", () => {
+      const v = parseFloat(grosor.value);
+      if (!Number.isFinite(v)) return;
+      this.editor.cambiarGrosorChapa(obj, v);
+      grosor.value = String(roundTo(obj.params.chapa?.grosorCm ?? v, 2));
+    });
+
+    const macizo = el(
+      "button",
+      { class: "tool", title: tt("Devuelve la pieza a como era", "Puts the part back as it was") },
+      [tt("Volver a macizo", "Back to solid")],
+    );
+    macizo.addEventListener("click", () => {
+      this.editor.volverAMacizo(obj);
+      this.show(obj);
+    });
+
+    const n = chapa.caras.length;
+    return el("div", { class: "field" }, [
+      el("label", {}, [tt("Chapa de acero", "Steel sheet")]),
+      el("div", { class: "row" }, [
+        el("div", { class: "sub" }, [
+          el("label", {}, [tt("Grosor (cm)", "Thickness (cm)")]),
+          grosor,
+        ]),
+        abrir,
+      ]),
+      el("div", { class: "row" }, [macizo]),
+      el("div", { class: "empty-hint", style: "padding:4px;" }, [
+        tt(
+          `Plancha doblada con la forma de la pieza, con ${n} cara${n === 1 ? "" : "s"} quitada${n === 1 ? "" : "s"}. `
+            + "Quitar caras otra vez añade a las que ya faltan.",
+          `Sheet folded to the part's shape, with ${n} face${n === 1 ? "" : "s"} removed. `
+            + "Removing faces again adds to the ones already missing.",
+        ),
       ]),
     ]);
   }

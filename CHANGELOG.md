@@ -5,6 +5,72 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.72] — 2026-09-18
+
+### Añadido
+
+**HERRAMIENTA DE CHAPA: una pieza maciza se vuelve una plancha de acero doblada
+con su forma.** Un cubo al que se le quita la cara de arriba deja de ser un
+cubo y pasa a ser **una cubeta**: la misma forma por fuera, hueca por dentro,
+con el grosor de chapa que se pida. Un cilindro sin sus dos tapas es un tubo;
+una carcasa, lo que queda de un bulto al que se le abre la cara de atrás.
+
+**Cómo se usa** (botón 🪣 en la **barra lateral derecha** del visor):
+
+  1. se enciende la herramienta y se **elige una pieza** con el cursor — a
+     partir de ahí el trabajo queda **circunscrito a ella**, y tocar cualquier
+     otra no se lleva por delante lo que ya se marcó;
+  2. se van **tocando las caras** que sobran (se pintan en naranja);
+  3. una **burbuja sobre la selección** dice cuántas caras hay, pide el
+     **grosor** de la plancha y pregunta si se eliminan.
+
+**SE PUEDE ORBITAR SIN PERDER LA SELECCIÓN**, que es lo que hace usable la
+herramienta: para llegar a la cara de atrás hay que dar la vuelta a la pieza. El
+clic se resuelve **al soltar** y sólo si el puntero no se movió —el mismo
+criterio de la herramienta de línea—, así que el arrastre queda entero para la
+cámara. Y mientras se eligen caras **el gizmo se aparta**: sus flechas salen del
+centro de la pieza y atraviesan justo las caras que hay que señalar; la de
+arriba se toca exactamente donde apunta la flecha de la Y, y el clic se lo
+quedaba ella.
+
+**Dos decisiones de fondo**, que son las que hacen que esto funcione de verdad:
+
+**LAS CARAS NO SON TRIÁNGULOS.** Una malla no tiene caras, tiene triángulos. Dos
+triángulos son de la misma cara si comparten arista y el ángulo entre ellos es
+pequeño; con el umbral en **28°** las seis caras de una caja siguen siendo seis
+y el costado de un cilindro de 16 o 32 gajos sale como **una** cara, que es la
+que cualquiera señalaría con el dedo.
+
+**Y NO SE GUARDA EL NÚMERO DE LA CARA, SINO LO QUE LA CARA ES**: hacia dónde
+mira y dónde está —en fracción de la caja de la pieza—. El número depende de
+cómo salieron los triángulos, y la malla se rehace cada vez que la pieza cambia
+de medida: estirar una cubeta al 180 % la dejaba con el agujero en otro sitio.
+Al reconstruir se vuelve a buscar la cara que mejor encaja, así que la chapa
+sobrevive a cambiar medidas, a guardar el proyecto, a copiar y pegar y a
+deshacer.
+
+**EL GROSOR SE MIDE DONDE SE PIDE.** Engordar hacia dentro no es meter cada
+punto una distancia igual al grosor: hay que meterlo `grosor / cos α` respecto
+de cada cara que se junta en él —el **inglete**—, o las dos paredes de un rincón
+dejan de tocarse y la cubeta sale con la esquina abierta. Y el inglete sale de
+las **caras** que concurren, no de cuántos triángulos trae cada una: pesando
+triángulos, la normal media se escoraba hacia la cara más partida y el fondo de
+una cubeta de 5 mm salía a 5,5.
+
+En **Propiedades** queda la sección «Chapa de acero»: cambiar el grosor de una
+pieza que ya es de chapa, volver a quitarle caras o **devolverla a macizo**.
+
+### Corregido
+
+**UNA PIEZA IMPORTADA YA SE PUEDE RECONSTRUIR.** Guardaba su malla de partida
+sólo si era un modelo de biblioteca; sin ella, `rebuildGeometry` no tenía de
+dónde partir y los params decían una cosa mientras la malla seguía siendo la de
+siempre. Ahora la guarda también la importada, que es lo que permite volver a
+calarla o convertirla en chapa. Y **duplicar** una pieza importada parte de esa
+malla de origen en vez de la de pantalla: copiar la de pantalla y volver a
+aplicarle los params le hacía el trabajo dos veces —y una chapa de una chapa es
+una plancha de una plancha, que ya no es la pieza—.
+
 ## [0.3.71] — 2026-09-16
 
 ### Cambiado

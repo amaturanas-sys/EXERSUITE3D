@@ -84,6 +84,28 @@ export function crearBotonesHerramientas(editor: Editor, clase = ""): HTMLElemen
   });
   editor.bus.on("bendModeChanged", ({ active }) => bBend.classList.toggle("activa", active));
   bar.appendChild(bBend);
+
+  // CHAPA DE ACERO (v0.3.72): octavo atajo — elige una pieza, se le tocan las
+  // caras que sobran y queda convertida en una plancha doblada con su forma
+  // (un cubo sin la tapa es una cubeta). Sale con otro toque o con Escape.
+  const bChapa = document.createElement("button");
+  bChapa.className = "tool tq-btn tq-chapa";
+  const tituloChapa = tt(
+    "Chapa: quitar caras y dejar la pieza como una plancha de acero",
+    "Sheet metal: remove faces and leave the part as a steel sheet",
+  );
+  bChapa.title = tituloChapa;
+  bChapa.setAttribute("aria-label", tituloChapa);
+  // Una caja abierta por arriba, vista en perspectiva: eso es la herramienta.
+  bChapa.innerHTML = SVG(
+    '<path d="M3.5 6.5l8.5-3.2 8.5 3.2-8.5 3.2z"/><path d="M3.5 6.5v9.4l8.5 4.6 8.5-4.6V6.5"/><path d="M12 9.7v10.8"/>',
+  );
+  bChapa.addEventListener("click", () => {
+    if (editor.isChapaMode()) editor.cancelChapa();
+    else editor.beginChapa();
+  });
+  editor.bus.on("chapaModeChanged", ({ active }) => bChapa.classList.toggle("activa", active));
+  bar.appendChild(bChapa);
   return bar;
 }
 

@@ -12,6 +12,7 @@ import { buildGeometry } from "./geometryFactory";
 import { getDefinition } from "./componentLibrary";
 import { estirarPorElCentro } from "./estirar";
 import { perforarGeometria } from "./perforar";
+import { chapaGeometria } from "./chapa";
 import { deltaEspejo, espejarGeometria, espejoDe } from "./espejar";
 import { applyMaterial, buildMaterial } from "./materials";
 
@@ -63,14 +64,13 @@ export class SceneObject {
     this.carga = opts.carga ? { ...opts.carga } : undefined;
 
     this.imported = !!opts.importedGeometry;
+    // LA MALLA IMPORTADA SE GUARDA ENTERA (v0.3.72), igual que la de un modelo
+    // de biblioteca. Sin eso, `rebuildGeometry` no tenía de dónde partir y una
+    // pieza importada no podía volver a calarse ni convertirse en chapa: los
+    // params decían una cosa y la malla seguía siendo la de siempre.
+    if (opts.importedGeometry) this.geoOriginal = opts.importedGeometry.clone();
     const geometry = this.hornearEspejo(
-      this.aLaMedida(
-        perforarGeometria(
-          opts.importedGeometry ?? buildGeometry(this.params),
-          this.params.ventanas,
-          this.params.canales,
-        ),
-      ),
+      this.moldear(opts.importedGeometry ?? buildGeometry(this.params)),
       true,
     );
     // DOS MATERIALES SI LA MALLA TRAE ROTULADO PINTADO (v0.3.65). El horneado
@@ -116,6 +116,17 @@ export class SceneObject {
     return geo;
   }
 
+  /**
+   * LA MALLA DE PARTIDA de la pieza: la de fábrica, sin huecos, sin largo a
+   * medida, sin chapa y sin espejar. Es lo que hay que clonar para DUPLICAR
+   * una pieza importada: copiar la malla de pantalla y volver a aplicarle los
+   * params le hacía el trabajo dos veces —y una chapa de una chapa es una
+   * plancha de una plancha, que ya no es la pieza—.
+   */
+  mallaDeOrigen(): THREE.BufferGeometry {
+    return this.geoOriginal ?? this.mesh.geometry;
+  }
+
   /** Ejes locales espejados de la pieza (copia). */
   espejoActual(): [boolean, boolean, boolean] {
     return espejoDe(this.params.espejo);
@@ -140,7 +151,7 @@ export class SceneObject {
       if (this.geoOriginal) {
         const old = this.mesh.geometry;
         this.mesh.geometry = this.hornearEspejo(
-          this.aLaMedida(perforarGeometria(this.geoOriginal.clone(), this.params.ventanas, this.params.canales)),
+          this.moldear(this.geoOriginal.clone()),
           true,
         );
         old.dispose();
@@ -155,7 +166,7 @@ export class SceneObject {
     }
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas, this.params.canales)),
+      this.moldear(buildGeometry(this.params)),
       true,
     );
     old.dispose();
@@ -165,6 +176,21 @@ export class SceneObject {
     this.ajustarRotulo();
     if (this.stack) this.rebuildStackVisual();
     if (this.carga) this.rebuildCargaVisual();
+  }
+
+  /**
+   * TODO LO QUE SE LE HACE A LA MALLA, y en este orden (v0.3.72): primero los
+   * huecos pasantes, luego el largo a medida y al final la CHAPA, que vacía lo
+   * que haya quedado. La chapa va la última a propósito: se ahueca la pieza tal
+   * y como se ve, con sus agujeros y su largo ya puestos, no la de fábrica.
+   */
+  private moldear(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+    const medida = this.aLaMedida(
+      perforarGeometria(geo, this.params.ventanas, this.params.canales),
+    );
+    const chapa = chapaGeometria(medida, this.params.chapa);
+    if (chapa !== medida && medida !== geo) medida.dispose();
+    return chapa;
   }
 
   /**
@@ -228,7 +254,7 @@ export class SceneObject {
     this.geoOriginal = geometry.clone();
     this.espejoHorneado = [false, false, false];
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(geometry, this.params.ventanas, this.params.canales)),
+      this.moldear(geometry),
       true,
     );
     old.dispose();
@@ -255,7 +281,7 @@ export class SceneObject {
     this.geoOriginal = null;
     const old = this.mesh.geometry;
     this.mesh.geometry = this.hornearEspejo(
-      this.aLaMedida(perforarGeometria(buildGeometry(this.params), this.params.ventanas, this.params.canales)),
+      this.moldear(buildGeometry(this.params)),
       true,
     );
     old.dispose();

@@ -322,6 +322,8 @@ export const TRADUCCIONES: Record<string, string> = {
     "Panels collapse by tapping their title (⯆/⯈), clearing the viewport on small screens.",
   "Pilar/travesaño (línea) y Tubo (línea): dos toques —origen y destino— con imán a extremos y puntos medios de otras piezas.":
     "Post/crossbar (line) and Tube (line): two taps — origin and destination — snapping to ends and midpoints of other parts.",
+  "Chapa (🪣, barra de la derecha): convierte una pieza maciza en una plancha de acero con su misma forma. Elige la pieza, toca las caras que sobran —se puede orbitar sin perderlas— y confirma el grosor en la burbuja: un cubo sin la cara de arriba es una cubeta.":
+    "Sheet metal (🪣, right-hand bar): turns a solid part into a steel sheet of the same shape. Pick the part, tap the faces to remove —you can orbit without losing them— and confirm the thickness in the bubble: a cube without its top face is a tray.",
   "Doblar (nodos): con una pieza de línea seleccionada, edita su trayectoria arrastrando los nodos como en las curvas de Photoshop.":
     "Bend (nodes): with a line part selected, edit its path by dragging nodes, like Photoshop curves.",
   "Cuerdas (cadena/correa): toca los dos extremos; quedan colgando con su catenaria.":
