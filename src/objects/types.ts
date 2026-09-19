@@ -393,6 +393,13 @@ export interface CaraChapa {
   n: [number, number, number];
   /** Centro de la cara en fracción de la caja envolvente (0..1 por eje). */
   c: [number, number, number];
+  /**
+   * Qué fracción de la superficie de la pieza era esta cara (v0.3.73). Es el
+   * tercer dato del emparejado: sin él, una ficha podía casar con una cara
+   * completamente distinta del mismo lado. Ausente en las fichas anteriores,
+   * que se emparejan como antes.
+   */
+  a?: number;
 }
 
 /** Estado de la herramienta de chapa en una pieza (v0.3.72). */

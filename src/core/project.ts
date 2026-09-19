@@ -21,6 +21,15 @@ export interface ObjData {
   scale: Vec3;
   /** Clave `maquina:<id>` si el objeto es una máquina estándar sustituida. */
   modeloMaquina?: string;
+  /**
+   * LA PIEZA NO SALE DE LA BIBLIOTECA: llegó dibujada (v0.3.73). No hay
+   * componente que la regenere, así que viaja con su malla —en `malla` si el
+   * proyecto se guarda en un archivo, o desde el registro de la sesión si es
+   * un guardado de trabajo (autoguardado, deshacer)—.
+   */
+  imported?: boolean;
+  /** Triángulos de la pieza dibujada, en centímetros y en su propio sistema. */
+  malla?: { pos: number[]; idx?: number[] };
 }
 
 export interface JointData {

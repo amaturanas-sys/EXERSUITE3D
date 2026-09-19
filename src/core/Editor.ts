@@ -3328,7 +3328,24 @@ export class Editor {
 
   // ---------------------------------------------------- guardar / cargar
   /** Serializa toda la escena a un objeto JSON. */
-  serialize(): ProjectData {
+  /**
+   * MALLAS DE LAS PIEZAS DIBUJADAS (v0.3.73), por el id que tenían al
+   * serializarlas. Una pieza importada no la regenera ningún componente, así
+   * que sin esto `loadProjectInner` no tenía con qué reconstruirla: el
+   * autoguardado y CADA DESHACER la borraban de la escena sin decir nada. Se
+   * guarda la referencia a la malla de origen, no una copia: no cuesta
+   * memoria y sobrevive al `clearScene` de la carga.
+   */
+  private mallasImportadas = new Map<string, THREE.BufferGeometry>();
+
+  /**
+   * `conMallas` embute los triángulos de las piezas dibujadas en el propio
+   * proyecto. Lo pide quien guarda EN UN ARCHIVO, que tiene que poder abrirse
+   * en otra sesión o en otra máquina; el autoguardado y el historial no lo
+   * piden, porque la malla la tienen a mano en el registro y embutirla sesenta
+   * veces llenaría el almacenamiento del navegador.
+   */
+  serialize(conMallas = false): ProjectData {
     // Lo que se guarde tiene que llevar las ediciones hechas con la partida a la
     // vista: son del plano, no del ensayo.
     this.reconciliarEdiciones();
@@ -3337,7 +3354,7 @@ export class Editor {
     return {
       version: PROJECT_VERSION,
       workspace: this.workspace ?? undefined,
-      objects: this.listObjects().filter((o) => !o.imported).map((o) => {
+      objects: this.listObjects().map((o) => {
         // Durante la simulación se serializa el estado de DISEÑO (guardado al
         // arrancar la física), no las posiciones simuladas del momento. Y con
         // el gesto parado, si se está VIENDO la partida, se guarda igualmente
@@ -3351,6 +3368,22 @@ export class Editor {
                 return d ? { position: d.p, quaternion: d.q, scale: o.mesh.scale } : undefined;
               })()
             : undefined;
+        // LA PIEZA DIBUJADA SE APUNTA EN EL REGISTRO al serializarla: es el
+        // momento en que se sabe con qué id viaja en este proyecto.
+        let malla: { pos: number[]; idx?: number[] } | undefined;
+        if (o.imported) {
+          const geo = o.mallaDeOrigen();
+          this.mallasImportadas.set(o.id, geo);
+          if (conMallas) {
+            const pos = geo.attributes.position as THREE.BufferAttribute;
+            const crudo: number[] = [];
+            for (let i = 0; i < pos.count * 3; i++) {
+              crudo.push(Math.round((pos.array[i] as number) * 10000) / 10000);
+            }
+            malla = { pos: crudo };
+            if (geo.index) malla.idx = Array.from(geo.index.array as ArrayLike<number>);
+          }
+        }
         return {
           id: o.id,
           name: o.name,
@@ -3363,6 +3396,8 @@ export class Editor {
           quaternion: q4(s?.quaternion ?? o.mesh.quaternion),
           scale: v3(s?.scale ?? o.mesh.scale),
           modeloMaquina: o.modeloMaquina ?? undefined,
+          imported: o.imported || undefined,
+          malla,
         };
       }),
       joints: this.listJoints().map((j) => ({
@@ -3570,6 +3605,11 @@ export class Editor {
     geo.computeVertexNormals();
     geo.computeBoundingBox();
     geo.computeBoundingSphere();
+    return this.agregarPiezaDeGeometria(geo, nombre);
+  }
+
+  /** La misma pieza dibujada, cuando la malla ya viene hecha (v0.3.73). */
+  agregarPiezaDeGeometria(geo: THREE.BufferGeometry, nombre: string): SceneObject {
     const obj = new SceneObject({
       name: nombre,
       componentId: "imported",
@@ -3779,8 +3819,24 @@ export class Editor {
       // debe abortar la carga del resto de la escena.
       try {
         // El techo del canvas completo regenera su geometría desde el workspace.
-        const obj =
-          od.componentId === "ws-techo" ? this.crearTechoBase() : this.addComponent(od.componentId);
+        // Y una PIEZA DIBUJADA no la regenera nadie: se reconstruye con su
+        // malla —la que trae el archivo o la que quedó apuntada en el registro
+        // de la sesión—. Sin malla se omite, como antes, pero avisando.
+        let obj: SceneObject;
+        if (od.imported || od.componentId === "imported") {
+          const guardada = od.malla?.pos?.length
+            ? null
+            : (this.mallasImportadas.get(od.id) ?? null);
+          if (!od.malla?.pos?.length && !guardada) {
+            throw new Error("pieza dibujada sin malla: no hay con qué reconstruirla");
+          }
+          obj = od.malla?.pos?.length
+            ? this.agregarPiezaDeMalla(od.malla, od.name)
+            : this.agregarPiezaDeGeometria(guardada!.clone(), od.name);
+          this.mallasImportadas.set(obj.id, obj.mallaDeOrigen());
+        } else {
+          obj = od.componentId === "ws-techo" ? this.crearTechoBase() : this.addComponent(od.componentId);
+        }
         obj.name = od.name;
         obj.mesh.name = od.name;
         obj.params = { ...od.params };
@@ -10177,15 +10233,26 @@ export class Editor {
     if (b.style.top !== y) b.style.top = y;
   }
 
+  /**
+   * LO QUE DICE LA BURBUJA: cuántas caras y —lo que de verdad importa— QUÉ
+   * PARTE DE LA PIEZA se van. En una malla densa una sola cara puede llevarse
+   * media superficie, y confirmar sin saberlo es confirmar a ciegas.
+   */
+  private chapaTextoCuenta(): string {
+    const n = this.chapaSel.size;
+    let parte = 0;
+    for (const i of this.chapaSel) parte += this.chapaCaras[i]?.fracArea ?? 0;
+    const pct = Math.round(parte * 100);
+    return tt(
+      `${n} cara${n === 1 ? "" : "s"} · ${pct} % de la superficie`,
+      `${n} face${n === 1 ? "" : "s"} · ${pct} % of the surface`,
+    );
+  }
+
   private chapaAbrirBurbuja(): void {
     if (this.chapaBurbuja) {
       const n = this.chapaBurbuja.querySelector(".chapa-cuenta");
-      if (n) {
-        n.textContent = tt(
-          `${this.chapaSel.size} cara${this.chapaSel.size === 1 ? "" : "s"}`,
-          `${this.chapaSel.size} face${this.chapaSel.size === 1 ? "" : "s"}`,
-        );
-      }
+      if (n) n.textContent = this.chapaTextoCuenta();
       this.chapaColocarBurbuja();
       return;
     }
@@ -10197,10 +10264,7 @@ export class Editor {
       + "box-shadow:0 8px 24px rgba(0,0,0,.5);white-space:nowrap;";
     const cuenta = document.createElement("span");
     cuenta.className = "chapa-cuenta";
-    cuenta.textContent = tt(
-      `${this.chapaSel.size} cara${this.chapaSel.size === 1 ? "" : "s"}`,
-      `${this.chapaSel.size} face${this.chapaSel.size === 1 ? "" : "s"}`,
-    );
+    cuenta.textContent = this.chapaTextoCuenta();
     const grosor = document.createElement("input");
     grosor.className = "chapa-grosor";
     grosor.type = "number";

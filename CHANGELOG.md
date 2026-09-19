@@ -5,6 +5,85 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.73] — 2026-09-19
+
+Auditoría de las herramientas añadidas desde v0.3.29 —las 44 versiones sin
+publicar—, midiendo cada una contra su prueba y, sobre todo, buscando lo que
+NINGUNA prueba miraba. Salieron cuatro defectos reales; los cuatro van
+arreglados y con prueba propia, que es lo que impide que vuelvan.
+
+### Corregido
+
+**UNA PIEZA DIBUJADA SE PERDÍA AL GUARDAR EL PROYECTO.** Es el más grave de
+los cuatro y el más viejo. Una pieza que llega con sus triángulos puestos —del
+CAD de `cad/`, o de «Importar modelo 3D…»— no la regenera ningún componente de
+la biblioteca, y `serialize()` la **descartaba a propósito** (`!o.imported`).
+Consecuencias, medidas: dos piezas en la escena salían **una** en el proyecto
+guardado; y como el historial pasa por el mismo serializador, **cada deshacer
+borraba la pieza dibujada** de la escena sin decir nada. El exportador de
+prefabs ya se apañaba leyendo la escena viva (v0.3.40); el proyecto, no.
+
+Ahora la pieza viaja, y por dos caminos según a dónde vaya el guardado:
+
+  · **al archivo** (Guardar proyecto), con sus triángulos DENTRO, porque ese
+    archivo se abrirá en otra sesión o en otra máquina;
+  · **al guardado de trabajo** —autoguardado y las sesenta instantáneas del
+    historial— por REFERENCIA a un registro de la sesión, porque embutir una
+    malla de 20.000 triángulos sesenta veces llenaría el almacenamiento del
+    navegador.
+
+**UNA CARA SE COMÍA LA PIEZA EN LAS MALLAS DENSAS.** El umbral de 28° entre
+triángulos vecinos encadena toda una superficie curva sin que ningún par llegue
+a doblarse lo suficiente: en la kettlebell —22.000 triángulos— tocar la base
+plana marcaba el **68,6 % de la pieza**, y confirmar se llevaba media
+kettlebell. Una cara es además un trozo que MIRA A UN SITIO: ahora se crece
+desde el triángulo más grande que quede suelto y ningún triángulo entra si se
+aparta más de 45° de esa semilla. La misma base plana pasa a ser una cara de
+368 triángulos y el **10,3 %** de la superficie, con la normal y el centro
+donde tienen que estar.
+
+**Y 495 «CARAS» ASTILLA.** La misma kettlebell daba 497 caras, y 495 eran
+tiras de triángulos casi degenerados con área ~0: tocarlas marcaba una astilla
+invisible y parecía que la herramienta no respondía. Ahora se absorben en la
+cara vecina con la que más arista comparten. La cuenta queda en **29 caras**,
+que es más o menos lo que cualquiera señalaría con el dedo.
+
+**LA CARCASA CRECÍA HACIA FUERA.** En una hendidura cerrada —el encuentro del
+asa con la bola— las dos paredes se meten una contra otra y el punto interior
+salía por el otro lado: **163 puntos** se escapaban hasta **3 mm** de la caja de
+la pieza, y eso se ve como una púa. Se acota el inglete a 2 (la esquina de un
+cubo pide 1,73) y se confina cada punto interior a la caja de la pieza. Medido
+después: **cero puntos fuera**. Queda dicho lo que esto NO arregla: en una
+hendidura muy cerrada las paredes interiores siguen pudiendo cruzarse entre
+ellas; por dentro es feo y por fuera no se ve.
+
+**Y EL EMPAREJADO MIRABA HACIA DÓNDE Y DÓNDE, PERO NUNCA CUÁNTO.** Una cara
+guardada se vuelve a buscar por su normal y su sitio al rehacer la malla; sin
+mirar el tamaño, una ficha podía casar con una cara completamente distinta del
+mismo lado. Ahora la ficha guarda también qué fracción de la superficie era, y
+un candidato que no esté en el mismo orden de tamaño no vale. Las fichas
+anteriores no lo traen y se emparejan como antes.
+
+### Cambiado
+
+**LA BURBUJA DE LA CHAPA DICE CUÁNTO SE LLEVA**, no sólo cuántas caras: «1 cara
+· 17 % de la superficie». En una malla densa una sola cara puede ser media
+pieza, y confirmar sin saberlo es confirmar a ciegas.
+
+### Pruebas
+
+Tres programas nuevos, 31 comprobaciones, todas sobre afirmaciones que estaban
+escritas y sin medir:
+
+  · `prueba-pieza-dibujada.mjs` — guardar, abrir, deshacer y el viaje a otra
+    sesión de una pieza que llegó con sus triángulos puestos;
+  · `prueba-chapa-integracion.mjs` — la chapa contra todo lo que rehace la
+    malla: guardar y abrir, deshacer, copiar y pegar, una pieza de biblioteca,
+    una ventana ya calada y el largo a medida;
+  · y la auditoría en sí: 37 herramientas corridas **en serie** una por una
+    (771 comprobaciones) más la batería entera, 113 programas, sin un rojo
+    real.
+
 ## [0.3.72] — 2026-09-18
 
 ### Añadido

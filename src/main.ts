@@ -423,7 +423,7 @@ async function goHome(): Promise<void> {
       if (choice === "save") {
         const name = window.prompt(tt("Nombre del proyecto:", "Project name:"), "exersuite3d-proyecto");
         if (name === null) return; // cancela la salida
-        const project = editor.serialize();
+        const project = editor.serialize(true);
         const clean = (name.trim() || "exersuite3d-proyecto");
         const file = clean.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
         await descargarArchivo(`${file}.json`, JSON.stringify(project, null, 2), "application/json");

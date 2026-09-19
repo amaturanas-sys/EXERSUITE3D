@@ -460,7 +460,9 @@ export class Toolbar {
     this.lastSaveName = name;
     const fileName = name.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
 
-    const project = this.editor.serialize();
+    // EL ARCHIVO LLEVA LAS MALLAS DIBUJADAS DENTRO (v0.3.73): se abrirá en
+    // otra sesión, donde el registro de esta no existe.
+    const project = this.editor.serialize(true);
     void descargarArchivo(`${fileName}.json`, JSON.stringify(project, null, 2), "application/json");
     this.editor.markClean();
     void addRecent(name, project, Date.now()).catch(() => {});
