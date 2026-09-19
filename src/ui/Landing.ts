@@ -16,24 +16,26 @@ import { getIdioma, setIdioma, t, tt } from "../core/i18n";
 import { SITIO_WEB, SITIO_WEB_VISIBLE, sitioWebConIdioma } from "../core/sitio";
 import { clear, el } from "./dom";
 
+/** Con qué se abre un proyecto: los tres modos de cada ficha (v0.3.77). */
+export type ModoApertura = "builder" | "viewer" | "simulator";
+
 export interface LandingActions {
   onNew: () => void;
-  onOpenFile: (file: File) => void;
-  onOpenRecent: (data: ProjectData, name: string) => void;
-  onContinue: () => void;
+  onOpenFile: (file: File, modo: ModoApertura) => void;
+  onOpenRecent: (data: ProjectData, name: string, modo: ModoApertura) => void;
+  onContinue: (modo: ModoApertura) => void;
+  onDeleteRecent: (id: string) => Promise<void>;
   onExploreLibrary: () => void;
   hasAutosave: boolean;
 }
 
-type Vista = "builder" | "simulator" | "instructivo" | "marketplace" | "settings";
+type Vista = "instructivo" | "proyectos" | "marketplace" | "settings";
 
 const LEYENDAS: Record<Vista, string> = {
-  builder:
-    "Builder: el taller completo — construye máquinas desde piezas, edita con precisión y guarda tus proyectos.",
-  simulator:
-    "Simulador: abre un proyecto solo para correr su física e interactuar con él, sin herramientas de edición.",
   instructivo:
     "Instructivo: recorrido por las herramientas, los modelos, las funciones y los tipos de archivo.",
+  proyectos:
+    "Proyectos: crea, abre o continúa. Cada proyecto se abre con BUILDER para construirlo, con VIEWER para mirarlo pieza a pieza o con SIMULAR para correr su física.",
   marketplace:
     "Marketplace (maqueta): hub de usuarios, makers y marcas — recién llegadas, estrenos, economía local, vitrina digital, foro maker, encargos e incorporación de marcas.",
   settings: "Ajustes: calidad gráfica y rendimiento; se aplican al abrir un proyecto.",
@@ -47,21 +49,20 @@ const LEYENDAS: Record<Vista, string> = {
  */
 export class Landing {
   readonly root: HTMLElement;
-  /** Modo de apertura del editor (lo consulta main.ts al abrir proyectos). */
-  mode: "builder" | "simulator" = "builder";
+  private vista: Vista = "instructivo";
 
   private contenido: HTMLElement;
   private leyenda: HTMLElement;
   private navBtns = new Map<Vista, HTMLButtonElement>();
-  private abrirProyecto: () => void;
+  private abrirProyecto: (modo?: ModoApertura) => void;
 
   constructor(private actions: LandingActions) {
     const base = import.meta.env.BASE_URL;
 
     // Búsqueda con el selector NATIVO del dispositivo (elige dónde buscar).
-    this.abrirProyecto = () => {
+    this.abrirProyecto = (modo: ModoApertura = "builder") => {
       void elegirArchivo(".json", "Proyecto EXERSUITE3D (.json)").then((f) => {
-        if (f) this.actions.onOpenFile(f);
+        if (f) this.actions.onOpenFile(f, modo);
       });
     };
 
@@ -78,10 +79,14 @@ export class Landing {
     const nav = el("nav", { class: "land-nav" });
     // El INSTRUCTIVO va primero (v0.2.3): es la puerta de entrada, en
     // formato de preguntas frecuentes.
+    // CUATRO ACCESOS, Y EL MODO SE ELIGE EN EL PROYECTO (v0.3.77). Antes
+    // BUILDER y SIMULADOR eran dos entradas de la Home, así que había que
+    // decidir CON QUÉ ibas a abrir antes de saber QUÉ ibas a abrir, y la misma
+    // lista de proyectos salía dos veces. Ahora se entra por PROYECTOS y cada
+    // ficha ofrece sus tres modos.
     const navDefs: [Vista, string][] = [
       ["instructivo", "📖 INSTRUCTIVO"],
-      ["builder", "🛠 BUILDER"],
-      ["simulator", "▶ SIMULADOR"],
+      ["proyectos", "📁 PROYECTOS"],
       ["marketplace", "🛒 MARKETPLACE"],
       ["settings", "⚙ SETTINGS"],
     ];
@@ -93,7 +98,7 @@ export class Landing {
     }
 
     this.contenido = el("div", { class: "land-content" });
-    this.leyenda = el("div", { class: "land-leyenda" }, [LEYENDAS.builder]);
+    this.leyenda = el("div", { class: "land-leyenda" }, [LEYENDAS.instructivo]);
 
     const dedication = el("div", { class: "land-dedication" }, ["…"]);
     void this.loadDedication(dedication, `${base}dedicatoria.txt`);
@@ -177,12 +182,11 @@ export class Landing {
   // ------------------------------------------------------------- navegación
 
   private setVista(v: Vista): void {
-    this.mode = v === "simulator" ? "simulator" : "builder";
+    this.vista = v;
     for (const [key, btn] of this.navBtns) btn.classList.toggle("active", key === v);
     this.leyenda.textContent = t(LEYENDAS[v]);
     clear(this.contenido);
-    if (v === "builder") this.renderBuilder();
-    else if (v === "simulator") this.renderSimulador();
+    if (v === "proyectos") this.renderProyectos();
     else if (v === "instructivo") this.renderInstructivoVista();
     else if (v === "marketplace") this.abrirHub();
     else this.renderSettings();
@@ -200,7 +204,7 @@ export class Landing {
     renderHub(capa, {
       salir: () => {
         capa.remove();
-        this.setVista("instructivo");
+        this.setVista(this.vista === "marketplace" ? "instructivo" : this.vista);
       },
       verBiblioteca: () => {
         capa.remove();
@@ -216,39 +220,61 @@ export class Landing {
     return b;
   }
 
-  // ----------------------------------------------------------- vista Builder
+  // --------------------------------------------------------- vista Proyectos
 
-  private renderBuilder(): void {
+  /**
+   * LA SECCIÓN DE PROYECTOS (v0.3.77), tal como la pidió el diagrama: arriba
+   * lo que se puede hacer —NUEVO, ABRIR, BIBLIOTECA y CONTINUAR— y debajo la
+   * lista de proyectos, uno por ficha. El MODO ya no se elige aquí arriba: lo
+   * elige cada ficha con sus tres botones, porque lo natural es decidir
+   * primero QUÉ se abre y después CON QUÉ.
+   */
+  private renderProyectos(): void {
     const acciones = el("div", { class: "land-actions" }, [
-      this.accion("✦  Crear nuevo proyecto", true, () => this.actions.onNew()),
-      this.accion("📂  Abrir archivo…", false, () => this.abrirProyecto()),
-      this.accion("🧩  Explorar biblioteca", false, () => this.actions.onExploreLibrary()),
+      this.accion("✦  NUEVO", true, () => this.actions.onNew()),
+      this.accion("📂  ABRIR…", false, () => this.abrirProyecto()),
+      this.accion("🧩  BIBLIOTECA", false, () => this.actions.onExploreLibrary()),
     ]);
     if (this.actions.hasAutosave) {
-      acciones.append(
-        this.accion("↻  Continuar sesión anterior", false, () => this.actions.onContinue()),
-      );
+      acciones.append(this.accion("↻  CONTINUAR", false, () => this.actions.onContinue("builder")));
     }
+    acciones.append(this.accion("🖼  Capturas", false, () => this.renderCapturas()));
     this.contenido.append(acciones, this.seccionRecientes());
   }
 
-  // --------------------------------------------------------- vista Simulador
-
-  private renderSimulador(): void {
-    const acciones = el("div", { class: "land-actions" }, [
-      this.accion("📂  Simular archivo…", true, () => this.abrirProyecto()),
-      this.accion("🖼  Capturas", false, () => this.renderCapturas()),
+  /**
+   * LA FICHA DE «ABRIR ARCHIVO» (v0.3.77), con los mismos tres modos que un
+   * proyecto de la lista. Un archivo suelto no tiene ficha propia —todavía no
+   * se ha elegido—, así que hasta ahora sólo podía abrirse en el taller: el
+   * botón de arriba lo abría SIEMPRE en BUILDER y no había forma de mirar un
+   * .json ajeno en el visor ni de simularlo sin pasar antes por el taller.
+   * Aquí se elige primero CON QUÉ y el selector de archivos viene después.
+   */
+  private fichaDeArchivo(): HTMLElement {
+    const modo = (texto: string, m: ModoApertura): HTMLElement => {
+      const b = el("button", { class: "land-modo" }, [texto]);
+      b.addEventListener("click", () => this.abrirProyecto(m));
+      return b;
+    };
+    return el("div", { class: "land-ficha archivo" }, [
+      el("div", { class: "land-ficha-cab" }, [
+        el("div", { class: "land-recent-name" }, [tt("📂 Abrir un archivo…", "📂 Open a file…")]),
+      ]),
+      el("div", { class: "land-recent-date" }, [
+        tt("Un proyecto .json guardado en este dispositivo", "A .json project saved on this device"),
+      ]),
+      el("div", { class: "land-ficha-modos" }, [
+        modo("BUILDER", "builder"),
+        modo("VIEWER", "viewer"),
+        modo("SIMULAR", "simulator"),
+      ]),
     ]);
-    if (this.actions.hasAutosave) {
-      acciones.append(this.accion("↻  Sesión anterior", false, () => this.actions.onContinue()));
-    }
-    this.contenido.append(acciones, this.seccionRecientes());
   }
 
   /** Galería de capturas tomadas en el Simulador (📷). */
   private renderCapturas(): void {
     clear(this.contenido);
-    const volver = this.accion("← Volver", false, () => this.setVista("simulator"));
+    const volver = this.accion("← Volver", false, () => this.setVista("proyectos"));
     const titulo = el("div", { class: "land-aside-title" }, ["Capturas del Simulador"]);
     const grid = el("div", { class: "land-caps" }, [
       el("div", { class: "land-empty" }, ["Cargando…"]),
@@ -396,7 +422,7 @@ export class Landing {
     ]);
     void this.loadRecent(lista);
     return el("div", { class: "land-recientes" }, [
-      el("div", { class: "land-aside-title" }, ["Proyectos recientes"]),
+      el("div", { class: "land-aside-title" }, ["Proyectos"]),
       lista,
     ]);
   }
@@ -409,7 +435,13 @@ export class Landing {
       recents = [];
     }
     clear(destino);
-    if (!recents.length) {
+    // LA SESIÓN ANTERIOR ES UN PROYECTO MÁS (v0.3.77), y va la primera: lo que
+    // quedó a medio guardar también se puede abrir con los tres modos. El
+    // botón CONTINUAR de arriba abre en el taller, que es lo que se quiere
+    // nueve de cada diez veces; para mirarla o simularla, está su ficha.
+    if (this.actions.hasAutosave) destino.append(this.fichaDeSesion());
+    destino.append(this.fichaDeArchivo());
+    if (!recents.length && !this.actions.hasAutosave) {
       destino.append(
         el("div", { class: "land-empty" }, [
           "Aún no hay proyectos. Crea uno nuevo o abre un archivo.",
@@ -418,16 +450,80 @@ export class Landing {
       return;
     }
     for (const r of recents) {
-      const item = el("button", { class: "land-recent" }, [
-        el("div", { class: "land-recent-name" }, [r.name]),
-        el("div", { class: "land-recent-date" }, [formatDate(r.savedAt)]),
-      ]);
-      item.addEventListener("click", async () => {
-        const data = await getRecent(r.id);
-        if (data) this.actions.onOpenRecent(data, r.name);
-      });
-      destino.append(item);
+      destino.append(this.fichaDeProyecto(r, destino));
     }
+  }
+
+  /** La sesión sin guardar, con los mismos tres modos que un proyecto. */
+  private fichaDeSesion(): HTMLElement {
+    const modo = (texto: string, m: ModoApertura): HTMLElement => {
+      const b = el("button", { class: "land-modo" }, [texto]);
+      b.addEventListener("click", () => this.actions.onContinue(m));
+      return b;
+    };
+    return el("div", { class: "land-ficha sesion" }, [
+      el("div", { class: "land-ficha-cab" }, [
+        el("div", { class: "land-recent-name" }, [tt("↻ Sesión anterior", "↻ Last session")]),
+      ]),
+      el("div", { class: "land-recent-date" }, [
+        tt("Lo último que hubo abierto, sin guardar", "Whatever was last open, unsaved"),
+      ]),
+      el("div", { class: "land-ficha-modos" }, [
+        modo("BUILDER", "builder"),
+        modo("VIEWER", "viewer"),
+        modo("SIMULAR", "simulator"),
+      ]),
+    ]);
+  }
+
+  /**
+   * LA FICHA DE UN PROYECTO (v0.3.77): su nombre, su fecha, la X para
+   * eliminarlo y sus TRES MODOS.
+   *
+   * Los tres abren el MISMO archivo y se diferencian en lo que dejan hacer:
+   *
+   *   · BUILDER — el taller entero, con sus herramientas;
+   *   · VIEWER  — mirar y orbitar, con el despiece de la máquina pieza a
+   *               pieza y las medidas del conjunto;
+   *   · SIMULAR — correr la física, sin herramientas de edición.
+   */
+  private fichaDeProyecto(r: RecentMeta, lista: HTMLElement): HTMLElement {
+    const abrir = (modo: ModoApertura) => async (): Promise<void> => {
+      const data = await getRecent(r.id);
+      if (data) this.actions.onOpenRecent(data, r.name, modo);
+    };
+    const modo = (texto: string, titulo: string, m: ModoApertura): HTMLElement => {
+      const b = el("button", { class: "land-modo", title: titulo }, [texto]);
+      b.addEventListener("click", () => void abrir(m)());
+      return b;
+    };
+    // LA X BORRA, PERO NO A LA PRIMERA. Un proyecto es trabajo de horas y la
+    // X está al lado de los botones que lo abren: se pregunta antes.
+    const borrar = el("button", {
+      class: "land-borrar",
+      title: tt("Eliminar este proyecto", "Delete this project"),
+    }, ["✕"]);
+    borrar.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const seguro = window.confirm(
+        tt(`¿Eliminar «${r.name}»? No se puede deshacer.`, `Delete "${r.name}"? This cannot be undone.`),
+      );
+      if (!seguro) return;
+      void this.actions.onDeleteRecent(r.id).then(() => void this.loadRecent(lista));
+    });
+
+    return el("div", { class: "land-ficha" }, [
+      el("div", { class: "land-ficha-cab" }, [
+        el("div", { class: "land-recent-name" }, [r.name]),
+        borrar,
+      ]),
+      el("div", { class: "land-recent-date" }, [formatDate(r.savedAt)]),
+      el("div", { class: "land-ficha-modos" }, [
+        modo("BUILDER", tt("Abrir en el taller, con todas las herramientas", "Open in the workshop, with every tool"), "builder"),
+        modo("VIEWER", tt("Mirar la máquina y su despiece, pieza a pieza", "Look at the machine and its parts, one by one"), "viewer"),
+        modo("SIMULAR", tt("Correr la física del proyecto", "Run the project's physics"), "simulator"),
+      ]),
+    ]);
   }
 
   private async loadDedication(box: HTMLElement, url: string): Promise<void> {

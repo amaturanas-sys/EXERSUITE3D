@@ -5672,6 +5672,82 @@ export class Editor {
     }
   }
 
+  // ------------------------------------------------- VISOR DE DESPIECE (α)
+  //
+  // Lo que el visor de piezas necesita del editor y no tenía: señalar UNA
+  // pieza en la maqueta y poder mirarla sola. Son dos gestos de mirar, no de
+  // editar: no tocan los params, ni el historial, ni la selección.
+
+  /** Pieza señalada en rojo (la del inventario bajo el cursor), o ninguna. */
+  private piezaSenalada: string | null = null;
+
+  /**
+   * Pinta de ROJO la pieza indicada y apaga la anterior. El rojo es el del
+   * aviso de «fuera del espacio», que es el que ya significa «mira aquí».
+   */
+  senalarPieza(id: string | null): void {
+    if (this.piezaSenalada === id) return;
+    const apagar = this.piezaSenalada ? this.objects.get(this.piezaSenalada) : null;
+    if (apagar) this.pintarSenal(apagar, false);
+    this.piezaSenalada = id;
+    const encender = id ? this.objects.get(id) : null;
+    if (encender) this.pintarSenal(encender, true);
+    this.requestRender();
+  }
+
+  private pintarSenal(obj: SceneObject, on: boolean): void {
+    const mats = obj.mesh.material;
+    for (const x of Array.isArray(mats) ? mats : [mats]) {
+      const m = x as THREE.MeshStandardMaterial;
+      if (!m || !m.emissive) continue;
+      m.emissive.setHex(on ? 0xb01717 : 0x000000);
+    }
+  }
+
+  /**
+   * DEJA A LA VISTA UNA SOLA PIEZA (o todas, con `null`). Se esconde el resto
+   * de la escena —piezas, cables, cuerdas y maniquí— para que la viñeta enseñe
+   * la pieza elegida y nada más.
+   */
+  aislarPieza(id: string | null): void {
+    for (const o of this.objects.values()) o.mesh.visible = id === null || o.id === id;
+    this.cableVisuals.visible = id === null;
+    this.ropeVisuals.visible = id === null;
+    if (this.humanFigure) this.humanFigure.visible = id === null;
+    this.requestRender();
+  }
+
+  /**
+   * ENCUADRA UN PUNTO CON SU RADIO, sin cambiar de ángulo: lo usa el visor al
+   * pasar de la máquina entera a una pieza sola. Girar la cámara además de
+   * acercarla haría perder el sitio desde el que se estaba mirando.
+   */
+  encuadrarEn(centro: THREE.Vector3, radio: number): void {
+    const cam = this.sceneManager.camera;
+    const dir = cam.position.clone().sub(this.orbit.target);
+    if (dir.lengthSq() < 1e-6) dir.set(1, 0.75, 1);
+    const dist = Math.max(radio / Math.tan((cam.fov * Math.PI) / 360) * 1.35, radio * 1.5);
+    cam.position.copy(centro).add(dir.normalize().multiplyScalar(dist));
+    this.orbit.target.copy(centro);
+    this.orbit.update();
+    this.requestRender();
+  }
+
+  /** La caja que ocupa todo el proyecto, en cm (para las reglas del visor). */
+  cajaDelProyecto(): THREE.Box3 {
+    const caja = new THREE.Box3();
+    let hay = false;
+    for (const o of this.objects.values()) {
+      if (!o.mesh.visible) continue;
+      o.mesh.updateMatrixWorld(true);
+      const suya = new THREE.Box3().setFromObject(o.mesh);
+      if (!isFinite(suya.min.x)) continue;
+      caja.union(suya);
+      hay = true;
+    }
+    return hay ? caja : new THREE.Box3(new THREE.Vector3(), new THREE.Vector3());
+  }
+
   private clearMultiSel(): void {
     for (const id of this.multiSel) {
       const o = this.objects.get(id);

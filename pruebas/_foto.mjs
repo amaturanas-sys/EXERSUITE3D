@@ -16,8 +16,8 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
 await page.goto("http://127.0.0.1:4174/");
 await page.waitForTimeout(1000);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
 await page.evaluate(async (id) => {

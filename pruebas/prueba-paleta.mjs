@@ -50,8 +50,8 @@ const LIB = await page.evaluate(() => {
 console.log("biblioteca de modelos:", JSON.stringify(LIB));
 
 await page.goto("http://127.0.0.1:4174/"); await page.waitForTimeout(800);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(400);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(400);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2500);
 
@@ -100,8 +100,8 @@ console.log("maquinas:", JSON.stringify(M));
 
 // Modo sencillo intacto (10 piezas básicas).
 await page.goto("http://127.0.0.1:4174/"); await page.waitForTimeout(800);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Sencillo')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2000);
 const S = await page.evaluate(() => ({

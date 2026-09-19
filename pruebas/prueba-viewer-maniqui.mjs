@@ -42,8 +42,8 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
 console.log("\n── En el Builder: se posa y se guarda ──────────────────────");
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1000);
-await p.click("text=🛠 BUILDER"); await p.waitForTimeout(300);
-await p.click("text=Crear nuevo proyecto"); await p.waitForTimeout(300);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2200);
 
@@ -76,11 +76,11 @@ fs.writeFileSync(archivo, guardado.texto);
 console.log("\n── En el Viewer: se abre el archivo ────────────────────────");
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1200);
-await p.click("text=SIMULADOR"); await p.waitForTimeout(800);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(800);
 // El selector de fichero es NATIVO y se crea al vuelo: se atiende su evento.
 const [chooser] = await Promise.all([
   p.waitForEvent("filechooser"),
-  p.click("text=Simular archivo"),
+  p.click(".land-ficha.archivo .land-modo:has-text('SIMULAR')"),
 ]);
 await chooser.setFiles(archivo);
 await p.waitForTimeout(5000);

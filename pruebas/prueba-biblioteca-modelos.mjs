@@ -98,8 +98,8 @@ for (const nombre of ["Kettlebell · 20 kg", "Mancuerna hexagonal · 30 lb", "Di
 // ESA, no la caja de reserva de sus `defaults`.
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
 await page.waitForTimeout(1000);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
 
@@ -197,8 +197,8 @@ for (const nombre of sinBoton) {
 // siendo su trazo, pase lo que pase con la biblioteca.
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
 await page.waitForTimeout(1000);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
 const pilar = await page.evaluate(async () => {

@@ -14,8 +14,8 @@ const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
 await page.waitForTimeout(1000);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2500);
 await page.evaluate(() => {

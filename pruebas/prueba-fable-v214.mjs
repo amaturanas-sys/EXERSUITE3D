@@ -49,8 +49,8 @@ console.log("mk:", JSON.stringify({ ...MK1, ...MK2 }));
 
 // Builder
 await page.goto("http://localhost:4174/"); await page.waitForTimeout(800);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2500);
 

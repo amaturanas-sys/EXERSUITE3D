@@ -73,8 +73,8 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
 
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1000);
-await p.click("text=🛠 BUILDER"); await p.waitForTimeout(300);
-await p.click("text=Crear nuevo proyecto"); await p.waitForTimeout(300);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2200);
 
@@ -281,8 +281,8 @@ ok(Math.abs(fisica.y2.suelta - fisica.y0.suelta) < 0.5,
 console.log("\n── La ventana de Biblioteca de modelos ─────────────────────");
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1000);
-await p.click("text=🛠 BUILDER"); await p.waitForTimeout(400);
-await p.click("text=Explorar biblioteca"); await p.waitForTimeout(2000);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(400);
+await p.click(".land-actions button:has-text('BIBLIOTECA')"); await p.waitForTimeout(2000);
 
 // LA MISMA SELECCIÓN, CON LAS FAMILIAS DE PESO ABIERTAS (v0.3.75). Hasta aquí
 // se exigía la lista IDÉNTICA a la paleta, y eso dejaba en la Biblioteca tres
@@ -321,8 +321,8 @@ ok(biblio.pesos === 17,
 console.log("\n── El modelo de cada máquina es la máquina ─────────────────");
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1000);
-await p.click("text=🛠 BUILDER"); await p.waitForTimeout(300);
-await p.click("text=Crear nuevo proyecto"); await p.waitForTimeout(300);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2200);
 

@@ -12,8 +12,8 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 await page.goto("http://localhost:4174/");
 await page.waitForTimeout(900);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2500);
 await page.evaluate(() => {

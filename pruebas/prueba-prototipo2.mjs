@@ -15,8 +15,8 @@ const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
 await page.waitForTimeout(900);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
-await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(2500);
 
@@ -55,8 +55,8 @@ await page.click("#toolbar button:has-text('Home')"); await page.waitForTimeout(
 // aparece y en otras no, así que se atiende si está y se sigue si no.
 const avisoSalida = page.locator("button:has-text('Salir sin guardar')");
 if (await avisoSalida.count()) { await avisoSalida.first().click(); await page.waitForTimeout(800); }
-await page.click("text=▶ SIMULADOR"); await page.waitForTimeout(500);
-await page.click("text=↻  Sesión anterior"); await page.waitForTimeout(4000);
+await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(500);
+await page.click(".land-ficha.sesion .land-modo:has-text('SIMULAR')"); await page.waitForTimeout(4000);
 await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(600);
 await page.waitForTimeout(300);
 const inputFoto = await page.$("#proto-viewer input[type=file]");

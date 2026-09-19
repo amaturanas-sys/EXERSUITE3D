@@ -5,6 +5,58 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.77] — 2026-09-19
+
+Reestructuración de la aplicación desde su partida de inicio, siguiendo el
+diagrama, y un **visor de despiece** que enseña el proyecto pieza a pieza.
+
+### Añadido
+
+- **Home de cuatro accesos: INSTRUCTIVO, PROYECTOS, MARKETPLACE y SETTINGS.**
+  Antes la portada ofrecía BUILDER y SIMULADOR, es decir, obligaba a decidir
+  **con qué** ibas a abrir antes de saber **qué** ibas a abrir, y la misma
+  lista de proyectos salía dos veces, una por entrada. Ahora se entra por
+  PROYECTOS y **el modo lo elige cada proyecto**.
+- **Las dos mitades de la portada guardan la misma proporción**: los botones y
+  lo que sale al pulsarlos ocupan la misma caja (`.land-col-nav` y
+  `.land-col-content`, `1fr 1fr` y `align-items: stretch`).
+- **Cada proyecto es una ficha** con su nombre, su fecha, su ✕ —que pregunta
+  antes de borrar— y sus **tres modos**: BUILDER para construirlo, VIEWER para
+  mirarlo pieza a pieza y SIMULAR para correr su física. La sesión sin guardar
+  es una ficha más, la primera, con los mismos tres modos.
+- **VISOR DE DESPIECE (el modo VIEWER).** La pantalla se parte en dos: arriba
+  la maqueta armada —sólo mirar y orbitar— con **reglas en el enmarcado
+  vertical y horizontal** y el rótulo de la medida del conjunto, para
+  dimensionar el tamaño absoluto del proyecto; abajo, un **inventario de
+  cuatro columnas** con una casilla por pieza, **ordenadas de menor a mayor**
+  por la diagonal de su caja, cada una con su miniatura, su nombre y su
+  medida.
+- **El cursor sobre una casilla pinta esa pieza de rojo en la maqueta**, que
+  es la respuesta a «¿y ésta dónde va?»; **el clic la deja sola** en la
+  viñeta, encuadrada, y «Modelo completo» devuelve la máquina entera.
+
+### Corregido
+
+- **Un archivo suelto sólo podía abrirse en el taller.** Un `.json` elegido
+  del disco no tiene ficha —todavía no se ha elegido—, así que `ABRIR…` lo
+  abría **siempre** en BUILDER: no había manera de mirar un proyecto ajeno en
+  el visor ni de simularlo sin pasar antes por el taller. Ahora «Abrir un
+  archivo…» es una ficha más, con sus tres modos, y el selector de archivos
+  viene después de elegir con qué.
+- **Traducciones que faltaban en la portada nueva**: los cuatro accesos, las
+  cuatro acciones de PROYECTOS y la leyenda de la sección. La auditoría de
+  inglés las señaló en cuanto dejó de tropezar con el acceso renombrado.
+
+### Pruebas
+
+- `prueba-home-visor.mjs` (nueva, 12 comprobaciones): los cuatro accesos, las
+  dos mitades medidas en píxeles, la ficha con sus tres modos, el reparto de
+  la pantalla del visor, las cuatro columnas, el orden de menor a mayor, las
+  reglas, el rojo del cursor, el aislamiento del clic y que en el visor el
+  puntero **sólo** mueve la cámara.
+- Las 115 pruebas de la batería se adaptaron a la nueva entrada, y
+  `prueba-ingles.mjs` navega ahora por posición para no depender del idioma.
+
 ## [0.3.76] — 2026-09-19
 
 Repaso del resto de la Biblioteca buscando más cajas, después de las dos de

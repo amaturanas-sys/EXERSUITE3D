@@ -18,7 +18,8 @@ import { MeasurementHUD } from "./ui/MeasurementHUD";
 import { PerformancePanel } from "./ui/PerformancePanel";
 import { SimulatorBar } from "./ui/SimulatorBar";
 import { PreciseDrag } from "./ui/PreciseDrag";
-import { Landing } from "./ui/Landing";
+import { Landing, type ModoApertura } from "./ui/Landing";
+import { VisorPiezas } from "./ui/VisorPiezas";
 import { LibraryView } from "./ui/LibraryView";
 import { confirmUnsavedChanges } from "./ui/confirmDialog";
 import { componentModels } from "./core/componentModels";
@@ -39,7 +40,7 @@ import {
 } from "./objects/componentLibrary";
 import { STANDARD_MACHINES, piezasDeMaquina } from "./objects/standardMachines";
 import { APOYO_RACK, EJERCICIOS_BARRA } from "./objects/barraManiqui";
-import { addRecent } from "./core/recentStore";
+import { addRecent, deleteRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
 import { tt } from "./core/i18n";
@@ -90,13 +91,14 @@ let editorNodes: HTMLElement[] = [];
 let editorDisposables: Array<() => void> = [];
 let landing: Landing | null = null;
 let libraryView: LibraryView | null = null;
+let visor: VisorPiezas | null = null;
 
 /**
  * Construye el editor 3D y su interfaz. Se difiere hasta que el usuario elige
  * una acción, y se destruye por completo al volver a la Home (para trabajar en
  * varios proyectos de forma secuencial sin acumular recursos).
  */
-function bootEditor(opts: { simulator?: boolean } = {}): Editor {
+function bootEditor(opts: { simulator?: boolean; visor?: boolean } = {}): Editor {
   const canvas = document.createElement("canvas");
   canvas.id = "viewport";
   app.append(canvas);
@@ -137,6 +139,11 @@ function bootEditor(opts: { simulator?: boolean } = {}): Editor {
     editorNodes = [canvas, prototipo.overlay, prototipo.root, articPanel.root, simBar.root];
     editorDisposables = [() => prototipo.dispose()];
     app.append(prototipo.overlay, prototipo.root, articPanel.root, simBar.root);
+    // EL VISOR DE DESPIECE tiene su propia barra y su propia mitad de
+    // pantalla: las herramientas del simulador estorban ahí.
+    if (opts.visor) {
+      for (const n of [prototipo.root, articPanel.root, simBar.root]) n.style.display = "none";
+    }
     ed.start();
     (window as unknown as { exersuite: { editor: Editor; THREE: typeof THREE } }).exersuite = {
       editor: ed,
@@ -415,6 +422,13 @@ async function startContinue(): Promise<void> {
 }
 
 /** Vuelve a la Home, sugiriendo guardar si hay cambios. */
+/** Sale del visor de despiece y vuelve a la Home. */
+function volverAHome(): void {
+  visor?.dispose();
+  visor = null;
+  void goHome();
+}
+
 async function goHome(): Promise<void> {
   if (editor) {
     if (editor.isDirty()) {
@@ -473,6 +487,37 @@ async function startSimulator(data: ProjectData, name: string): Promise<void> {
   ed.setViewPreset("isometrica");
 }
 
+/**
+ * ABRE UN PROYECTO CON EL MODO QUE PIDIÓ SU FICHA (v0.3.77). Los tres cargan
+ * el MISMO archivo; lo que cambia es con qué se queda uno delante:
+ *
+ *   · builder   — el taller entero;
+ *   · viewer    — mirar y orbitar, con el despiece pieza a pieza;
+ *   · simulator — la física, sin herramientas de edición.
+ */
+async function abrirConModo(data: ProjectData, name: string, modo: ModoApertura): Promise<void> {
+  if (modo === "builder") return startWithProject(data, name);
+  if (modo === "simulator") return startSimulator(data, name);
+  return startVisor(data, name);
+}
+
+/** Abre un proyecto en el VISOR DE DESPIECE: la máquina y sus piezas. */
+async function startVisor(data: ProjectData, name: string): Promise<void> {
+  const ed = bootEditor({ simulator: true, visor: true });
+  await ensureModels();
+  await ed.loadProject(data);
+  try {
+    await addRecent(name, data, Date.now());
+  } catch {
+    /* sin recientes */
+  }
+  ed.setViewPreset("isometrica");
+  // Aquí no se construye: el puntero sólo mueve la cámara.
+  ed.setHerramienta("orbitar");
+  visor = new VisorPiezas(ed, name, () => volverAHome());
+  app.append(visor.root);
+}
+
 /** Abre la biblioteca de repertorio como vista de Home (sin escena de diseño). */
 async function startLibrary(): Promise<void> {
   await ensureModels();
@@ -502,41 +547,44 @@ function showLanding(): void {
         void startNew(ws);
       });
     },
-    onOpenFile: async (file) => {
-      const sim = landing?.mode === "simulator";
+    onOpenFile: async (file, modo) => {
       try {
         const data = JSON.parse(await file.text()) as ProjectData;
         landing?.hide();
         const name = file.name.replace(/\.[^.]+$/, "");
-        await (sim ? startSimulator(data, name) : startWithProject(data, name));
+        await abrirConModo(data, name, modo);
       } catch (err) {
         console.error("No se pudo abrir el archivo:", err);
         window.alert(tt("Archivo de proyecto no válido.", "Invalid project file."));
       }
     },
-    onOpenRecent: (data, name) => {
-      const sim = landing?.mode === "simulator";
+    onOpenRecent: (data, name, modo) => {
       landing?.hide();
-      (sim ? startSimulator(data, name) : startWithProject(data, name)).catch((err) => {
+      abrirConModo(data, name, modo).catch((err) => {
         console.error("No se pudo abrir el proyecto reciente:", err);
         window.alert("No se pudo abrir el proyecto reciente.");
       });
     },
-    onContinue: () => {
-      const sim = landing?.mode === "simulator";
+    onDeleteRecent: (id) => deleteRecent(id),
+    onContinue: (modo) => {
       landing?.hide();
-      if (sim) {
-        void (async () => {
-          const ed = bootEditor({ simulator: true });
-          await ensureModels();
-          await ed.restoreAutosave();
-          // Igual que al abrir un archivo: se muestra el proyecto tal cual,
-          // con su maniquí posado, y la física la arranca el ▶ de la barra.
-          ed.setViewPreset("isometrica");
-        })();
-      } else {
+      if (modo === "builder") {
         void startContinue();
+        return;
       }
+      void (async () => {
+        const ed = bootEditor({ simulator: true, visor: modo === "viewer" });
+        await ensureModels();
+        await ed.restoreAutosave();
+        // Igual que al abrir un archivo: se muestra el proyecto tal cual,
+        // con su maniquí posado, y la física la arranca el ▶ de la barra.
+        ed.setViewPreset("isometrica");
+        if (modo === "viewer") {
+          ed.setHerramienta("orbitar");
+          visor = new VisorPiezas(ed, tt("Sesión anterior", "Last session"), () => volverAHome());
+          app.append(visor.root);
+        }
+      })();
     },
     onExploreLibrary: () => {
       landing?.hide();

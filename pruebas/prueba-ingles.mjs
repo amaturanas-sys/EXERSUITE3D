@@ -93,21 +93,21 @@ await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
 await page.waitForTimeout(1500);
 await mirar("Portada");
 
-await page.click("text=📖 GUIDE").catch(() => page.click("text=📖 INSTRUCTIVO"));
+await page.click(".land-nav-item:nth-child(1)");
 await page.waitForTimeout(1200); await mirar("Instructivo");
 await page.goBack().catch(() => {}); await page.waitForTimeout(800);
 
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/"); await page.waitForTimeout(1200);
-await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1500);
+await page.click(".land-nav-item:nth-child(3)"); await page.waitForTimeout(1500);
 await mirar("Marketplace (hub)");
 await page.evaluate(() => [...document.querySelectorAll(".hub-btn-card")]
   .find((b) => /Ver en 3D|View in 3D/.test(b.textContent))?.click());
 await page.waitForTimeout(2500); await mirar("Biblioteca de modelos");
 
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/"); await page.waitForTimeout(1200);
-await page.click("text=🛠 BUILDER"); await page.waitForTimeout(600);
+await page.click(".land-nav-item:nth-child(2)"); await page.waitForTimeout(600);
 await mirar("Builder (inicio)");
-await page.click("text=Create new project").catch(() => page.click("text=Crear nuevo proyecto"));
+await page.click(".land-actions button:nth-child(1)");
 await page.waitForTimeout(800); await mirar("Asistente de proyecto");
 await page.click(".wizard-carta:has-text('Profesional'), .wizard-carta:has-text('Professional')");
 await page.waitForTimeout(600);

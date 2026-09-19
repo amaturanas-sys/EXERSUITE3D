@@ -18,8 +18,8 @@ p.on("pageerror", (e) => errs.push("PAGEERROR: " + e.message));
 
 await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(800);
-await p.click("text=🛠 BUILDER"); await p.waitForTimeout(300);
-await p.click("text=Crear nuevo proyecto"); await p.waitForTimeout(300);
+await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2500);
 

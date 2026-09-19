@@ -43,8 +43,8 @@ const abrirCon = async (guardada, huella) => {
   }, [CLAVE, CLAVE_HUELLA, guardada, huella]);
   await p.goto("http://127.0.0.1:4174/");
   await p.waitForTimeout(1200);
-  await p.click("text=🛠 BUILDER"); await p.waitForTimeout(300);
-  await p.click("text=Crear nuevo proyecto"); await p.waitForTimeout(300);
+  await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
+  await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
   await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
   await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2000);
   const r = await p.evaluate(async () => {
