@@ -1,4 +1,4 @@
-// PRUEBA: LA BIBLIOTECA ENSEÑA LA PIEZA, NO UNA CAJA (v0.3.75).
+// PRUEBA: LA BIBLIOTECA ENSEÑA LA PIEZA, NO UNA CAJA (v0.3.75 y v0.3.76).
 //
 // La Biblioteca de modelos existe para dos cosas: MIRAR cada pieza y
 // SUSTITUIRLA por un modelo propio. Las dos se rompían en las familias que se
@@ -20,6 +20,13 @@
 //   4. QUE LO QUE SE VE ES LO QUE SE INSERTA: la malla de la ficha y la de la
 //      pieza puesta en la escena son la misma.
 import { chromium } from "playwright-core";
+import { readFileSync } from "fs";
+
+// La MISMA lista que enseña la Biblioteca, leída del catálogo: el vigente con
+// las familias de peso abiertas en sus variantes.
+const CATALOGO = JSON.parse(readFileSync(new URL("../godot/data/components.json", import.meta.url), "utf8"));
+const IDS = CATALOGO.components.flatMap((c) =>
+  c.paleta ? [] : (c.variantes?.length ? c.variantes.map((v) => v.id) : [c.id]));
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -118,7 +125,105 @@ for (const [id, d] of Object.entries(puestas)) {
   );
 }
 
-// ── 5. Y EN INGLÉS, EN INGLÉS ────────────────────────────────────────────
+// ── 5. NI UNA CAJA MÁS QUE LAS QUE SON CAJAS ─────────────────────────────
+// Un barrido por TODO el catálogo: se inserta cada pieza y se mira su malla.
+// Salir como un prisma de ocho triángulos con los vértices en las esquinas de
+// su propia caja sólo vale para lo que ES una caja —la primitiva, la base de
+// soporte, el asiento y el respaldo son planchas—; cualquier otra que salga
+// así es una pieza sin modelo enseñando su bulto de reserva.
+const SON_CAJA = ["prim-box", "base-soporte", "asiento", "respaldo",
+  "correa-seguridad", "pilar-linea"];
+const barrido = await page.evaluate(async ({ permitidas, ids }) => {
+  const ed = window.exersuite.editor;
+  const cajas = [];
+  for (const id of ids) {
+    for (const o of [...ed.objects.values()]) ed.removeObject(o);
+    let o;
+    try { o = ed.addComponent(id); } catch { continue; }
+    await new Promise((r) => setTimeout(r, 700));
+    const g = o.mesh.geometry;
+    g.computeBoundingBox();
+    const pos = g.attributes.position;
+    if (pos.count > 24) continue;                       // demasiados vértices para ser una caja
+    let enEsquinas = true;
+    for (let i = 0; i < pos.count && enEsquinas; i++) {
+      const v = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+      const mn = [g.boundingBox.min.x, g.boundingBox.min.y, g.boundingBox.min.z];
+      const mx = [g.boundingBox.max.x, g.boundingBox.max.y, g.boundingBox.max.z];
+      for (let k = 0; k < 3; k++) {
+        if (Math.abs(v[k] - mn[k]) > 1e-3 && Math.abs(v[k] - mx[k]) > 1e-3) { enEsquinas = false; break; }
+      }
+    }
+    if (enEsquinas && !permitidas.includes(id)) cajas.push(id);
+  }
+  return cajas;
+}, { permitidas: SON_CAJA, ids: IDS });
+ok(barrido.length === 0, "ninguna pieza del catálogo sale como una caja sin serlo", barrido.join(", "));
+
+// ── 6. Y NADIE OFRECE LO QUE NO PUEDE CUMPLIR ────────────────────────────
+// Una pieza que se TRAZA entre dos puntos no puede venir de una malla fija:
+// medido, asignarle un modelo a un pilar de 5 × 200 × 5 cm lo dejaba en un
+// cubo de 100 × 100 × 100 y alargarlo después ya no lo movía. Y una cuerda ni
+// siquiera es una pieza de la escena. En esas filas no hay botón: hay nota.
+const sinBoton = ["Pilar / travesaño (línea)", "Tubo de acero (línea)",
+  "Guía tubular", "Cadena de seguridad", "Correa de seguridad"];
+await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
+await page.waitForTimeout(1000);
+await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1200);
+await page.evaluate(() => [...document.querySelectorAll("button")]
+  .find((b) => /Ver en 3D|View in 3D/.test(b.textContent)).click());
+await page.waitForTimeout(2500);
+for (const nombre of sinBoton) {
+  const d = await page.evaluate(async (n) => {
+    const fila = [...document.querySelectorAll(".lib-row")]
+      .find((r) => r.querySelector(".lib-name")?.textContent === n);
+    if (!fila) return null;
+    fila.click();
+    await new Promise((r) => setTimeout(r, 500));
+    return {
+      nota: (document.querySelector(".lib-nota")?.textContent ?? "").slice(0, 60),
+      boton: [...document.querySelectorAll(".lib-detail-actions button")]
+        .some((b) => /Sustituir|Cambiar modelo|Replace|Change model/.test(b.textContent)),
+    };
+  }, nombre);
+  ok(
+    d !== null && d.nota.length > 10 && !d.boton,
+    `«${nombre}» explica por qué no se sustituye, en vez de ofrecer un botón que la rompe`,
+    d === null ? "no está en la lista" : JSON.stringify(d),
+  );
+}
+
+// Y el daño que ese botón hacía, medido: un pilar trazado tiene que seguir
+// siendo su trazo, pase lo que pase con la biblioteca.
+await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
+await page.waitForTimeout(1000);
+await page.click("text=🛠 BUILDER"); await page.waitForTimeout(300);
+await page.click("text=Crear nuevo proyecto"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
+const pilar = await page.evaluate(async () => {
+  const ed = window.exersuite.editor, T = window.exersuite.THREE;
+  for (const o of [...ed.objects.values()]) ed.removeObject(o);
+  const p = ed.addComponent("pilar-linea");
+  p.params.path = [[0, -100, 0], [0, -50, 0], [0, 0, 0], [0, 50, 0], [0, 100, 0]];
+  p.rebuildGeometry();
+  const alto = () => {
+    p.mesh.geometry.computeBoundingBox();
+    const s = p.mesh.geometry.boundingBox.getSize(new T.Vector3());
+    return +s.y.toFixed(1);
+  };
+  const antes = alto();
+  p.params.path = [[0, -200, 0], [0, -100, 0], [0, 0, 0], [0, 100, 0], [0, 200, 0]];
+  p.rebuildGeometry();
+  return { antes, trasAlargar: alto() };
+});
+ok(
+  pilar.antes === 200 && pilar.trasAlargar === 400,
+  `un pilar trazado obedece a su trazo: ${pilar.antes} cm y ${pilar.trasAlargar} al alargarlo`,
+  JSON.stringify(pilar),
+);
+
+// ── 7. Y EN INGLÉS, EN INGLÉS ────────────────────────────────────────────
 // Las diecisiete fichas de peso no se habían visto nunca —la Biblioteca
 // listaba la cabecera—, así que nunca se habían traducido. Ahora se ven.
 const page2 = await browser.newPage({ viewport: { width: 1400, height: 950 } });

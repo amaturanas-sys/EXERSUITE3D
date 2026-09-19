@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.76] — 2026-09-19
+
+Repaso del resto de la Biblioteca buscando más cajas, después de las dos de
+v0.3.75. Se insertó **cada una de las 52 piezas** del catálogo y se midió su
+malla en vez de mirarlas de una en una. Aparecieron seis cajas y **un fallo
+peor que las cajas**.
+
+### Corregido
+
+**UN BOTÓN QUE ROMPÍA LA PIEZA EN LUGAR DE SUSTITUIRLA.** «Sustituir por
+modelo…» se ofrecía también en las piezas que se TRAZAN entre dos puntos —el
+pilar/travesaño, el tubo, la guía tubular— y en las que se CUELGAN —la cadena y
+la correa—. En las trazadas no es que no sirviera: es que **las estropeaba**.
+Medido: un pilar trazado de **5 × 200 × 5 cm** al que se le asignaba un modelo
+se quedaba en un **cubo de 100 × 100 × 100**, y alargarlo después ya no lo
+movía —seguía en 100 con su trazado diciendo 400—. Una malla fija no puede
+seguir un trazo ni doblarse por nodos. Y en las que se cuelgan el botón era un
+callejón sin salida como el de v0.3.75: la cuerda no es una pieza de la escena,
+así que no cambiaba nada en ningún sitio.
+
+Esas cinco filas **ya no ofrecen el botón: explican por qué**. Se siguen
+pudiendo mirar —que es la otra mitad de para qué está la Biblioteca—, y si
+alguien les dejó un modelo asignado de antes, ahí sigue «Restablecer» para
+deshacerlo.
+
+### Revisado, y está bien
+
+De las 52 filas, **seis salen como un prisma, y cuatro lo son**: la primitiva
+«Caja», la base de soporte, el asiento y el respaldo son planchas, y así las
+dibuja la app. Las otras dos —el pilar y la correa— son el bulto de reserva de
+piezas que no se insertan, y ahora lo dicen.
+
+Las otras dos pestañas están sanas: **Máquinas** arma la máquina de verdad con
+sus piezas (el árbol de discos enseña sus seis cuernos y su base en cruz) y
+**Maniquí** tiene sus dieciséis segmentos con su `.glb`.
+
+### Pruebas
+
+`prueba-biblioteca-modelos.mjs` pasa de 12 a **19 comprobaciones**, con dos
+barridos nuevos que cierran la puerta a que esto vuelva:
+
+  · se inserta **cada pieza del catálogo** y se mira si su malla es un prisma
+    con los vértices en las esquinas de su propia caja; sólo valen las cuatro
+    que de verdad lo son;
+  · ninguna de las cinco piezas trazadas o colgadas ofrece el botón, y todas
+    traen su nota;
+  · y un pilar trazado sigue obedeciendo a su trazo: **200 cm, y 400 al
+    alargarlo**.
+
 ## [0.3.75] — 2026-09-19
 
 ### Corregido

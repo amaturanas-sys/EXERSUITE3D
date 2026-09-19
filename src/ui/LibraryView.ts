@@ -49,6 +49,16 @@ interface LibrarySource {
   /** Acciones adicionales del detalle (p. ej. exportar la máquina a OBJ/STL). */
   extraActions?(id: string): HTMLElement[];
   /**
+   * POR QUÉ ESTA PIEZA NO SE PUEDE SUSTITUIR, si es el caso (v0.3.76).
+   *
+   * No todo lo que se lista tiene una malla propia que cambiar: hay piezas que
+   * se TRAZAN entre dos puntos —su forma la decide el trazo— y otras que se
+   * CUELGAN y toman su catenaria de la física. Ofrecerles el botón era ofrecer
+   * algo que no funciona: medido, asignarle un modelo a un pilar de 200 cm lo
+   * dejaba en un cubo de 100 y sordo a su propia trayectoria.
+   */
+  motivoSinModelo?(id: string): string | null;
+  /**
    * Ensamblaje 3D completo del ítem, cuando la fuente sabe armarlo con sus
    * materiales reales (las máquinas). Devuelve también cómo soltarlo. Si no
    * hay, se cae a `previewGeometry` + `previewMaterial`.
@@ -112,6 +122,35 @@ const componentSource: LibrarySource = {
   clearUserModel: (id) => componentModels.clearUserModel(id),
   onChanged: (fn) => componentModels.onChanged(fn),
   supportsZip: true,
+  motivoSinModelo: (id) => {
+    const def = compById.get(id);
+    if (!def) return null;
+    // SE TRAZA ENTRE DOS PUNTOS. El pilar, el tubo y la guía nacen de un trazo
+    // y se doblan por nodos: su largo es el del trazo y su recorrido, el que
+    // se le dé. Una malla fija no puede seguir ni lo uno ni lo otro — se midió:
+    // un pilar de 5 × 200 × 5 cm se quedaba en un cubo de 100 × 100 × 100 y
+    // alargarlo después no lo movía.
+    if (def.placement === "beam" || def.placement === "tube" || id === "guia-tubular") {
+      return tt(
+        "Esta pieza se TRAZA entre dos puntos y se dobla por nodos: su forma sale del trazo, "
+          + "no de una malla fija. Sus medidas se ajustan al trazarla y en Propiedades.",
+        "This part is DRAWN between two points and bent by nodes: its shape comes from the stroke, "
+          + "not from a fixed mesh. Its dimensions are set as you draw it and in Properties.",
+      );
+    }
+    // SE CUELGA. La cadena y la correa no son piezas de la escena: cuelgan
+    // entre dos anclajes y su forma la da la catenaria (y la física, al
+    // simular). No hay malla de biblioteca que sustituir.
+    if (def.placement === "rope-chain" || def.placement === "rope-strap") {
+      return tt(
+        "La cadena y la correa se CUELGAN entre dos anclajes: su forma es la catenaria que dan "
+          + "su caída y la física, no una malla de biblioteca.",
+        "Chains and straps HANG between two anchors: their shape is the catenary their sag and the "
+          + "physics give them, not a library mesh.",
+      );
+    }
+    return null;
+  },
 };
 
 // ---- Máquinas estándar del modo Sencillo: exportables (STL/OBJ) y
@@ -437,9 +476,16 @@ export class LibraryView {
         : `Modelo personalizado: ${fileName}`
       : "Forma por defecto";
 
-    const replace = el("button", { class: "tool" }, [has ? "Cambiar modelo…" : "Sustituir por modelo…"]);
-    replace.addEventListener("click", () => void this.sustituirModelo(it.id));
-    const actions = el("div", { class: "lib-detail-actions" }, [replace]);
+    // UNA PIEZA QUE NO SE PUEDE SUSTITUIR NO OFRECE EL BOTÓN (v0.3.76): dice
+    // por qué. Ofrecerlo era prometer algo que no funciona, y el usuario se
+    // quedaba mirando una pieza que no cambiaba —o peor, que se rompía—.
+    const motivo = this.src.motivoSinModelo?.(it.id) ?? null;
+    const actions = el("div", { class: "lib-detail-actions" }, []);
+    if (!motivo) {
+      const replace = el("button", { class: "tool" }, [has ? "Cambiar modelo…" : "Sustituir por modelo…"]);
+      replace.addEventListener("click", () => void this.sustituirModelo(it.id));
+      actions.append(replace);
+    }
     if (has && this.src.isUser(it.id)) {
       const reset = el("button", { class: "tool danger" }, ["Restablecer"]);
       reset.addEventListener("click", () => void this.src.clearUserModel(it.id));
@@ -451,6 +497,7 @@ export class LibraryView {
       el("div", { class: "lib-detail-name" }, [it.label]),
       el("div", { class: has ? "lib-status on" : "lib-status" }, [statusText]),
       it.description ? el("div", { class: "lib-desc" }, [it.description]) : el("span"),
+      motivo ? el("div", { class: "lib-nota" }, [motivo]) : el("span"),
       actions,
     );
   }

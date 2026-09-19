@@ -1085,6 +1085,18 @@ select.select:focus {
   color: var(--text-dim);
   line-height: 1.5;
 }
+/* LA NOTA de una pieza que no se puede sustituir (v0.3.76): no es un error
+   —la pieza está bien—, es la razón de que aquí no haya botón. Se marca con
+   una barra lateral para que se lea como una advertencia y no como más
+   descripción. */
+.lib-nota {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 3px solid var(--accent-2, #b58900);
+  padding: 4px 0 4px 10px;
+  opacity: 0.92;
+}
 .lib-status {
   font-size: 12px;
   color: var(--text-dim);
