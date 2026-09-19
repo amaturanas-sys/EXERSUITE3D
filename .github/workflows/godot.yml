@@ -58,6 +58,9 @@ jobs:
       - name: Chapa (mismas invariantes que prueba-chapa.mjs de la web)
         run: ./godot-bin --headless --path godot -s res://tests/chapa.gd
 
+      - name: Perforado (ventanas y canales pasantes)
+        run: ./godot-bin --headless --path godot -s res://tests/perforar.gd
+
   capturas:
     name: Capturas de la interfaz (revisión visual)
     needs: validar

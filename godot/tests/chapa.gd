@@ -118,6 +118,41 @@ func _init() -> void:
 		"mayor: %.2f" % mayor,
 	)
 
+	# ── 7. SOBRE UNA PIEZA DE BIBLIOTECA ─────────────────────────────────
+	# La kettlebell enseña su .glb y la primitiva queda escondida: vaciar la
+	# primitiva no se notaría. La chapa tiene que hacérsele a lo que SE VE.
+	var d := ComponentLibrary.get_definition("kettlebell-20")
+	var od := {
+		"componentId": "kettlebell-20", "name": "k",
+		"params": d.get("defaults", {}).duplicate(true),
+		"physics": d.get("physics", {}), "materialId": d.get("materialId", "acero"),
+	}
+	var maciza := Piece.create(od)
+	var visible_antes := maciza.nodo_visible()
+	var tris_antes: int = visible_antes.mesh.get_faces().size() / 3
+	var caja_antes: AABB = visible_antes.mesh.get_aabb()
+	var es_modelo := visible_antes != maciza.mesh_instance
+	od["params"] = d.get("defaults", {}).duplicate(true)
+	od["params"]["chapa"] = {"grosorCm": GROSOR_CM, "caras": [{"n": [0, -1, 0], "c": [0.5, 0.0, 0.5]}]}
+	var hueca := Piece.create(od)
+	var visible: MeshInstance3D = hueca.nodo_visible()
+	var tris_despues: int = visible.mesh.get_faces().size() / 3
+	var caja_despues: AABB = visible.mesh.get_aabb()
+	_ok(
+		es_modelo and tris_despues > tris_antes,
+		"una pieza de biblioteca se ahueca por su MALLA, no por la primitiva escondida (%d → %d triángulos)" % [
+			tris_antes, tris_despues],
+		"modelo propio: %s" % str(es_modelo),
+	)
+	_ok(
+		caja_antes.size.distance_to(caja_despues.size) < 0.004,
+		"y por fuera sigue midiendo lo mismo (%.3f × %.3f × %.3f m)" % [
+			caja_despues.size.x, caja_despues.size.y, caja_despues.size.z],
+		"%v contra %v" % [caja_antes.size, caja_despues.size],
+	)
+	maciza.free()
+	hueca.free()
+
 	print("")
 	print("TODO OK" if fallos == 0 else ("%d FALLOS" % fallos))
 	quit(0 if fallos == 0 else 1)

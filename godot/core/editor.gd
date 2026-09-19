@@ -6,6 +6,9 @@ extends Node3D
 
 signal selection_changed(piece)
 signal status(msg: String)
+## Herramienta de chapa: cuántas caras van marcadas, qué parte de la
+## superficie se llevan y dónde cae su centro (para poner la burbuja encima).
+signal chapa_changed(caras: int, frac: float, centro: Vector3, activa: bool)
 
 var world: World
 var cam: OrbitCamera
@@ -33,6 +36,14 @@ var _hand_active := false
 var _bend_handles: Array = []       # StaticBody3D capa 4
 var _bend_index := -1
 
+# ---- herramienta de CHAPA (paridad con la web v0.3.72)
+var _chapa_piece: Piece = null
+var _chapa_caras: Array = []        # Array[Chapa.Cara] de la malla actual
+var _chapa_sel: Dictionary = {}     # índice de cara -> true
+var _chapa_marca: MeshInstance3D = null
+var _chapa_down := Vector2.ZERO     # dónde se pulsó: clic o arrastre de órbita
+var chapa_grosor_cm := 0.3          # lo que pida uno es lo que propone el siguiente
+
 
 func setup(w: World, c: OrbitCamera) -> void:
 	world = w
@@ -45,6 +56,8 @@ func setup(w: World, c: OrbitCamera) -> void:
 
 func set_mode(m: String, arg := "") -> void:
 	_clear_bend()
+	if m != "chapa":
+		_chapa_limpiar()
 	mode = m
 	_line_a = null
 	_rope_a = null
@@ -65,6 +78,15 @@ func set_mode(m: String, arg := "") -> void:
 			status.emit("Cable: clic en cada pieza (extremo → poleas → extremo), luego Finalizar")
 		"bend":
 			_start_bend()
+		"chapa":
+			# Si ya había UNA pieza elegida, esa es: pedir otro clic sería
+			# repetir lo que el usuario acaba de decir.
+			if selected != null:
+				_chapa_tomar(selected)
+				status.emit("Chapa: toca las caras que sobran")
+			else:
+				status.emit("Chapa: elige la pieza")
+			_chapa_emitir()
 		_:
 			status.emit("")
 
@@ -213,7 +235,7 @@ func _input(event: InputEvent) -> void:
 			if _on_press(event.position):
 				get_viewport().set_input_as_handled()
 		else:
-			_on_release()
+			_on_release(event.position)
 	elif event is InputEventMouseMotion:
 		if _on_motion(event.position):
 			get_viewport().set_input_as_handled()
@@ -227,6 +249,14 @@ func _on_press(pos: Vector2) -> bool:
 	if world.simulating:
 		_hand_active = world.try_grab(from, dir)
 		return _hand_active
+
+	# HERRAMIENTA DE CHAPA: el clic se resuelve AL SOLTAR, y sólo si el
+	# puntero no se movió. Así el arrastre queda entero para la cámara: sin
+	# eso no hay manera de dar la vuelta a la pieza para llegar a la cara de
+	# atrás sin perder lo ya marcado.
+	if mode == "chapa":
+		_chapa_down = pos
+		return false
 
 	# Arrastre de un asa de doblado (capa 4).
 	if mode == "bend":
@@ -398,7 +428,10 @@ func _on_motion(pos: Vector2) -> bool:
 	return false
 
 
-func _on_release() -> void:
+func _on_release(pos := Vector2.INF) -> void:
+	if mode == "chapa" and pos.is_finite() and pos.distance_to(_chapa_down) <= 6.0:
+		_chapa_clic(pos)
+		return
 	if _hand_active:
 		world.release_drag()
 		_hand_active = false
@@ -463,3 +496,190 @@ func _clear_bend() -> void:
 		h.queue_free()
 	_bend_handles = []
 	_bend_index = -1
+
+
+# --------------------------------------------------------- herramienta CHAPA
+#
+# Misma mecánica que en la web: se elige UNA pieza —y a partir de ahí la
+# herramienta no mira ninguna otra—, se van tocando las caras que sobran y una
+# burbuja sobre la selección pide el grosor y confirma. Orbitar no pierde nada
+# porque el clic se resuelve al soltar (ver `_on_press`).
+
+## Toma la pieza sobre la que se va a trabajar y le reconoce las caras.
+func _chapa_tomar(p: Piece) -> void:
+	_chapa_borrar_marca()
+	_chapa_piece = p
+	_chapa_sel = {}
+	_chapa_caras = Chapa.detectar_caras(p.nodo_visible().mesh.get_faces())
+	select_piece(p)
+	gizmo.visible = false   # sus flechas atraviesan justo las caras a señalar
+
+
+## El clic, ya resuelto como clic. Con pieza tomada sólo se mira ESA pieza.
+func _chapa_clic(pos: Vector2) -> void:
+	var from := cam.project_ray_origin(pos)
+	var dir := cam.project_ray_normal(pos)
+	if _chapa_piece == null:
+		var hit := _ray(pos)
+		if hit.is_empty():
+			return
+		if not (hit["collider"] is Piece):
+			return
+		var p: Piece = hit["collider"]
+		_chapa_tomar(p)
+		status.emit("Chapa sobre «%s»: toca las caras que sobran" % p.display_name)
+		_chapa_emitir()
+		return
+	var t := _chapa_triangulo(from, dir)
+	if t < 0:
+		# Fuera de la pieza: si aún no hay nada marcado, el clic cambia de
+		# pieza; con caras marcadas no se pierde el trabajo por apuntar mal.
+		if _chapa_sel.is_empty():
+			var hit := _ray(pos)
+			if not hit.is_empty() and hit["collider"] is Piece:
+				var p: Piece = hit["collider"]
+				if p != _chapa_piece:
+					_chapa_tomar(p)
+					_chapa_emitir()
+		return
+	for i in _chapa_caras.size():
+		if (_chapa_caras[i] as Chapa.Cara).tris.has(t):
+			if _chapa_sel.has(i):
+				_chapa_sel.erase(i)
+			else:
+				_chapa_sel[i] = true
+			break
+	_chapa_pintar_marca()
+	_chapa_emitir()
+
+
+## Triángulo de la pieza bajo el rayo (el más cercano), o −1.
+func _chapa_triangulo(from: Vector3, dir: Vector3) -> int:
+	if _chapa_piece == null:
+		return -1
+	var mi := _chapa_piece.nodo_visible()
+	var inv := mi.global_transform.affine_inverse()
+	var a := inv * from
+	var b := inv * (from + dir * 1000.0)
+	var tris: PackedVector3Array = mi.mesh.get_faces()
+	var mejor := -1
+	var corta := INF
+	for i in range(0, tris.size(), 3):
+		var p = Geometry3D.segment_intersects_triangle(a, b, tris[i], tris[i + 1], tris[i + 2])
+		if p == null:
+			continue
+		var d: float = (p - a).length_squared()
+		if d < corta:
+			corta = d
+			mejor = i / 3
+	return mejor
+
+
+## Las caras marcadas, en naranja, como una calca sobre la pieza.
+func _chapa_pintar_marca() -> void:
+	_chapa_borrar_marca()
+	if _chapa_piece == null or _chapa_sel.is_empty():
+		return
+	var visible := _chapa_piece.nodo_visible()
+	var tris: PackedVector3Array = visible.mesh.get_faces()
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in _chapa_sel.keys():
+		for t in (_chapa_caras[i] as Chapa.Cara).tris:
+			for k in 3:
+				st.add_vertex(tris[t * 3 + k])
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.478, 0.094, 0.55)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.no_depth_test = false
+	_chapa_marca = MeshInstance3D.new()
+	_chapa_marca.mesh = st.commit()
+	_chapa_marca.material_override = mat
+	_chapa_marca.sorting_offset = 1.0
+	visible.add_child(_chapa_marca)
+
+
+func _chapa_borrar_marca() -> void:
+	if _chapa_marca != null:
+		_chapa_marca.queue_free()
+		_chapa_marca = null
+
+
+## Centro de las caras marcadas, en el mundo (ahí va la burbuja).
+func chapa_centro() -> Vector3:
+	if _chapa_piece == null or _chapa_sel.is_empty():
+		return Vector3.INF
+	var c := Vector3.ZERO
+	var peso := 0.0
+	for i in _chapa_sel.keys():
+		var cara := _chapa_caras[i] as Chapa.Cara
+		c += cara.centro * cara.area
+		peso += cara.area
+	if peso <= 0.0:
+		return Vector3.INF
+	return _chapa_piece.nodo_visible().global_transform * (c / peso)
+
+
+## Qué parte de la superficie se llevan las caras marcadas (0..1).
+func chapa_fraccion() -> float:
+	var f := 0.0
+	for i in _chapa_sel.keys():
+		f += (_chapa_caras[i] as Chapa.Cara).frac_area
+	return f
+
+
+func _chapa_emitir() -> void:
+	chapa_changed.emit(_chapa_sel.size(), chapa_fraccion(), chapa_centro(), mode == "chapa")
+
+
+## CONFIRMADO: la pieza deja de ser un macizo. Las caras se guardan en los
+## params —por lo que SON, no por su número—, así que la chapa sobrevive a
+## cambiar la medida de la pieza, a guardar el proyecto y a abrirlo en la web.
+func chapa_aplicar() -> void:
+	if _chapa_piece == null or _chapa_sel.is_empty():
+		return
+	var p := _chapa_piece
+	var previas: Array = []
+	var ya = p.params.get("chapa")
+	if ya is Dictionary:
+		previas = ya.get("caras", [])
+	var nuevas: Array = previas.duplicate()
+	for i in _chapa_sel.keys():
+		nuevas.append(Chapa.ficha_de(_chapa_caras[i] as Chapa.Cara))
+	p.params["chapa"] = {"grosorCm": chapa_grosor_cm, "caras": nuevas}
+	_chapa_borrar_marca()
+	p.rebuild_geometry()
+	var n := _chapa_sel.size()
+	_chapa_limpiar()
+	set_mode("select")
+	select_piece(p)
+	status.emit("Chapa de %.2f cm: %d cara%s eliminada%s" % [
+		chapa_grosor_cm, n, "" if n == 1 else "s", "" if n == 1 else "s"])
+
+
+## Desmarca las caras sin tocar la pieza.
+func chapa_desmarcar() -> void:
+	_chapa_sel = {}
+	_chapa_pintar_marca()
+	_chapa_emitir()
+
+
+## Devuelve la pieza al macizo del que salió.
+func chapa_volver_a_macizo(p: Piece) -> void:
+	if not (p.params.get("chapa") is Dictionary):
+		return
+	p.params.erase("chapa")
+	p.rebuild_geometry()
+	status.emit("«%s» vuelve a ser maciza" % p.display_name)
+
+
+func _chapa_limpiar() -> void:
+	_chapa_borrar_marca()
+	_chapa_piece = null
+	_chapa_caras = []
+	_chapa_sel = {}
+	if gizmo != null:
+		gizmo.visible = true
+	_chapa_emitir()

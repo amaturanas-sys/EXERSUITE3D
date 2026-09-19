@@ -86,6 +86,7 @@ func refresh_visual() -> void:
 			override_visual = inst
 			add_child(inst)
 			mesh_instance.visible = false
+			_chapa_sobre_el_modelo(inst)
 			return
 
 	if String(params.get("kind", "")) == "beam" and float(params.get("holeDiameter", 0)) > 0.05:
@@ -100,6 +101,59 @@ func refresh_visual() -> void:
 				_bake_pinholes.call_deferred(csg)
 			else:
 				tree_entered.connect(_bake_pinholes.bind(csg), CONNECT_ONE_SHOT)
+
+
+## LA CHAPA SE LE HACE A LO QUE SE VE (v0.3.74).
+##
+## Una pieza de biblioteca enseña su `.glb`, no la primitiva —que queda
+## escondida—, así que vaciar la primitiva no se notaba: la kettlebell seguía
+## viéndose maciza por mucho que la chapa estuviera puesta en sus params. Aquí
+## se le aplica a cada malla del modelo, en el espacio de esa malla: el grosor
+## se divide por la escala con la que el modelo entró, o 5 mm de plancha
+## saldrían de cualquier otro grueso.
+func _chapa_sobre_el_modelo(inst: Node3D) -> void:
+	var chapa = params.get("chapa")
+	if not (chapa is Dictionary) or float(chapa.get("grosorCm", 0)) <= 0.0:
+		return
+	var pila: Array[Node] = [inst]
+	while not pila.is_empty():
+		var n: Node = pila.pop_back()
+		for c in n.get_children():
+			pila.append(c)
+		if not (n is MeshInstance3D):
+			continue
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var escala := 1.0
+		var nodo: Node = mi
+		while nodo != null and nodo != self:
+			if nodo is Node3D:
+				var s := (nodo as Node3D).scale
+				escala *= (absf(s.x) + absf(s.y) + absf(s.z)) / 3.0
+			nodo = nodo.get_parent()
+		if escala <= 0.0001:
+			continue
+		var tris := Chapa.aplicar(
+			mi.mesh.get_faces(),
+			chapa.get("caras", []),
+			Units.cm(float(chapa.get("grosorCm", 0))) / escala,
+		)
+		mi.mesh = GeometryFactory.malla_de_triangulos(tris)
+
+
+## La malla que el usuario VE: la del modelo de biblioteca si lo hay, y si no
+## la primitiva. Es sobre ésta sobre la que se señalan las caras.
+func nodo_visible() -> MeshInstance3D:
+	if override_visual != null:
+		var pila: Array[Node] = [override_visual]
+		while not pila.is_empty():
+			var n: Node = pila.pop_back()
+			if n is MeshInstance3D and (n as MeshInstance3D).mesh != null:
+				return n
+			for c in n.get_children():
+				pila.append(c)
+	return mesh_instance
 
 
 ## Sustituye el CSG de pinholes por su malla horneada (misma geometría).

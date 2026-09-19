@@ -147,62 +147,130 @@ La sustitución de modelos está **integrada en la app** (`model_store.gd` +
 
 ---
 
-## 7. Paridad con la app web y hoja de ruta para completar el editor
+## 7. Paridad con la app web y hoja de ruta
 
-Ya funciona en el kit (✔) / pendiente de portar (⏳), con el archivo TS de
-referencia donde está TODA la lógica a portar:
+**Lee esto antes de ponerte**: el kit estuvo congelado en la web **v0.1.9** y la
+app va por **v0.3.74**. Lo que sigue es el estado REAL medido con el motor
+(Godot 4.4.1 headless, `tests/`), no una lista de intenciones.
 
-| Función | Estado | Referencia web | Dónde encajarlo en Godot |
-|---|---|---|---|
-| Cargar proyectos `.json` (piezas, materiales, escala) | ✔ | `Editor.loadProjectInner` | `world.gd` |
-| Bisagra/corredera con límites y motor | ✔ | `PhysicsWorld.addJoint` | `world.gd::_create_joints` |
-| Cables inextensibles + poleas 2:1 emergente | ✔ | `PhysicsWorld.solveCable*` | `world.gd::_solve_cable` |
-| Cuerdas (cadena/correa) en catenaria | ✔ | `Rope.ts` | `world.gd::_update_ropes` |
-| Perfiles/tubos por línea, rectos y doblados | ✔ | `linePieces.ts` | `geometry_factory.gd` |
-| Maniquí a escala con pose | ✔ (simplificado) | `humanFigure.ts` | `mannequin.gd` |
-| Mano interactiva (resorte) | ✔ | `PhysicsWorld.applyDrag` | `world.gd::_physics_process` |
-| Cámara orbital + táctil + vistas | ✔ | `OrbitControls`/`setViewPreset` | `orbit_camera.gd` |
-| Suelo fijo + entorno | ✔ | `SceneManager.ts` | `main.gd` |
-| **Editor**: seleccionar y mover con gizmo 3 ejes | ✔ | `Editor.ts` | `editor.gd` + `gizmo.gd` |
-| Paleta de piezas y añadir componentes | ✔ | `ComponentPalette.ts` | `editor_ui.gd` (paleta) + `world.add_component` |
-| Guardar `.json` (mismo formato) | ✔ | `Editor.serialize` | `serializer.gd` (incluye grupos y pose/manos del maniquí) |
-| Trazado por línea con aim assist | ✔ | `Editor.pickLinePlacePoint` | `editor.gd::_pick_line_point` (imán en píxeles de pantalla) |
-| Bending por nodos | ✔ | `Editor.beginBendNodes` | `editor.gd` (asas capa 4, arrastre en plano de cámara) |
-| Crear cuerdas / bisagras / correderas / cables | ✔ | `Editor.ts` | `editor.gd` (modos) + `world.add_*` |
-| Gizmo de rotación libre continua (anillos) | ✔ | `TransformControls` | `gizmo.gd` (anillos torus por eje) + `editor.gd::_ring_angle` |
-| Grupos (subensamblajes) + multiselección | ✔ | `Editor.ts` (groups) | `editor.gd` (Shift/Ctrl+clic, Agrupar/Desagrupar, arrastre en bloque) |
-| Pinholes reales en perfiles | ✔ | `linePieces.ts` (ExtrudeGeometry con holes) | `piece.gd::_beam_with_pinholes` (CSGBox3D − CSGCylinder3D) |
-| IK de manos en agarres | ✔ | `armIK.ts` | `mannequin.gd::solve_hand_ik` + `world.gd::_update_hands` |
-| Sustitución de modelos .glb (biblioteca + maniquí) | ✔ | `componentModels.ts`, `modelStore.ts` | `model_store.gd` + `library_ui.gd` (`user://`) |
-| Autosave + proyectos recientes | ✔ | `recentStore.ts` | `main.gd` (Timer 20 s) + `landing_ui.gd` (`user://recents`) |
-| Pantalla de inicio Builder/Simulador | ✔ | `main.ts` (landing) | `landing_ui.gd` + `main.gd` |
-| Identidad visual (icono, splash, tema) | ✔ | `public/brand`, `styles.css` | `project.godot` + `ui_theme.gd` |
-| Escala libre continua con gizmo | ⏳ | `TransformControls` | edita dimensiones en el inspector (equivalente funcional) |
+### Ya funciona (✔)
 
-**El ciclo completo ya está cerrado**: puedes diseñar en Godot, guardar, abrir
-en la web (y al revés) — los dos mundos comparten archivo de proyecto, así que
-la migración puede ser gradual sin perder ningún diseño.
+| Función | Referencia web | Dónde está en Godot |
+|---|---|---|
+| Cargar y GUARDAR los `.json` de la web (piezas, materiales, escala, grupos, maniquí) | `Editor.loadProjectInner`, `Editor.serialize` | `world.gd`, `serializer.gd` |
+| **Catálogo completo: 104 componentes y 20 materiales** | `componentLibrary.ts`, `materials.ts` | `data/components.json` (generado; ver §8) |
+| **Paleta con las 38 piezas que se ofrecen** y burbuja de pesos en las que se venden por peso | `ComponentPalette.ts` | `component_library.gd::palette_components`, `editor_ui.gd` |
+| **Las 54 piezas con malla propia** (26 `.glb` + 28 `.obj`) | `public/models/components` | `models/` + `model_store.gd` |
+| **Herramienta de chapa** (elegir pieza → caras → burbuja → grosor), incluso sobre mallas de biblioteca | `chapa.ts`, `Editor.beginChapa` | `chapa.gd`, `editor.gd`, carril derecho de `editor_ui.gd` |
+| **Huecos pasantes**: ventanas rectangulares y canales de guía, con paredes | `perforar.ts` | `perforar.gd` |
+| Bisagra/corredera con límites y motor · cables con poleas · cuerdas en catenaria | `PhysicsWorld.ts`, `cables.ts`, `Rope.ts` | `world.gd` |
+| Perfiles/tubos por línea, rectos y doblados · doblado por nodos | `linePieces.ts` | `geometry_factory.gd`, `editor.gd` |
+| Pinholes reales en perfiles (CSG horneado) | `linePieces.ts` | `piece.gd::_beam_with_pinholes` |
+| Gizmo mover/rotar · multiselección · grupos · duplicar/eliminar | `Editor.ts`, `TransformControls` | `editor.gd`, `gizmo.gd` |
+| Maniquí a escala con pose e IK de manos · mano interactiva | `humanFigure.ts`, `armIK.ts` | `mannequin.gd`, `world.gd` |
+| Sustituir modelos `.glb` por componente y por segmento | `componentModels.ts`, `modelStore.ts` | `model_store.gd`, `library_ui.gd` |
+| Cámara orbital + táctil + vistas · autosave · recientes · landing | `OrbitControls`, `main.ts` | `orbit_camera.gd`, `main.gd`, `landing_ui.gd` |
+
+### Lo que falta, por orden de lo que más se nota (⏳)
+
+Cada línea dice DÓNDE está la lógica en la web y DÓNDE encajaría aquí. Son
+piezas independientes: se pueden ir haciendo de una en una.
+
+1. **Dos tipos de pieza paramétrica**: `dentada` (placa con ganchos) y
+   `horquilla` (punto de anclaje). Web: `placaDentada.ts`, `horquilla.ts` →
+   Godot: `geometry_factory.gd::_build_base`, un caso por tipo.
+2. **Largo a medida** (`params.largoCm`): estirar la malla POR EL CENTRO sin
+   deformar los remates. Web: `estirar.ts` → `geometry_factory.gd`, antes de
+   la chapa en `build_mesh`.
+3. **Espejado** (`params.espejo`): voltear la malla por ejes locales. Web:
+   `espejar.ts` → mismo sitio.
+4. **Moleteado** de barras y tubos (`params.moleteado`). Web: `linePieces.ts`
+   (torno a mano con normales duras) → `geometry_factory.gd::_build_tube`.
+5. **Dos materiales en una malla** (rótulo pintado de los discos, bandas del
+   moleteado). Web: `modelLoading.ts::separarRotulo/separarBandas` →
+   `piece.gd`, con dos `surface_override_material`.
+6. **Herramientas de colocación que faltan**: roldana interna, placa dentada,
+   freno de cable, pasador y pivote indexados, calce por pinholes. Web:
+   `Editor.ts` (modos) → `editor.gd` (modos nuevos + `world.gd`).
+7. **Recorridos en HORAS del reloj** para bisagras y pasadores. Web:
+   `reloj.ts`, `recorridoReloj.ts` → panel de conexiones de `editor_ui.gd`.
+8. **Interfaz en inglés**. Web: `i18n.ts` + `traducciones.ts` (cero cadenas
+   sin traducir) → haría falta un `i18n.gd` y pasar los literales por él.
+9. **Instructivo, prototipo sobre foto, mercado y hub**: son pantallas
+   enteras de la web (`Instructivo.ts`, `PrototipoFoto.ts`, `marketplace/`)
+   y no tienen equivalente aquí.
+
+### Cómo comprobar que no rompes nada
+
+```bash
+godot --headless --path godot --import                    # registra clases
+for f in $(find godot -name '*.gd' | sed 's|^godot/||'); do \
+  godot --headless --path godot --check-only -s "res://$f"; done
+godot --headless --path godot -s res://tests/smoke.gd     # física real
+godot --headless --path godot -s res://tests/catalogo.gd  # catálogo y mallas
+godot --headless --path godot -s res://tests/chapa.gd     # chapa, número a número
+godot --headless --path godot -s res://tests/perforar.gd  # huecos pasantes
+```
+
+Las cuatro pruebas corren en el CI (`.github/workflows/godot.yml`) en cada
+push que toque `godot/`, y además se suben capturas de la interfaz.
+
+### Una trampa entre motores que conviene saber antes de tocar geometría
+
+**three.js tiene por frente el giro ANTIHORARIO y Godot el HORARIO.** El
+producto vectorial que en la web apunta hacia fuera, aquí apunta hacia DENTRO.
+Todo `chapa.gd` pasa por `_cruz()` por esa razón: con la fórmula de la web, la
+cara de arriba de un cubo salía mirando hacia abajo y la chapa dejaba la pieza
+hueca y cerrada en vez de abrirla.
 
 ---
 
 ## 8. Regenerar `data/components.json` si cambias la biblioteca web
 
+El catálogo de Godot NO se escribe a mano: sale del TypeScript de la app, así
+que los componentes y los materiales son exactamente los mismos. Cada vez que
+toques `componentLibrary.ts` o `materials.ts`, vuelve a generarlo:
+
 ```bash
 # Desde la raíz del repo:
+DUMP=/tmp/exersuite-dump && rm -rf $DUMP
 npx tsc src/objects/componentLibrary.ts src/objects/types.ts src/objects/materials.ts \
-  --outDir /tmp/exersuite-dump --module esnext --target es2022 \
+  --outDir $DUMP --module esnext --target es2022 \
   --moduleResolution bundler --skipLibCheck
-cd /tmp/exersuite-dump && ln -sf "$OLDPWD/node_modules" node_modules
+
+# `tsc` emite los imports relativos SIN extensión y Node los rechaza: se les
+# añade `.js` antes de importar nada (esto faltaba y la receta no funcionaba).
+python3 - <<'EOF'
+import re, pathlib, os
+D = pathlib.Path(os.environ.get("DUMP", "/tmp/exersuite-dump"))
+for f in D.rglob("*.js"):
+    s = f.read_text()
+    s2 = re.sub(r'(from\s+")(\.[^"]*?)(")',
+                lambda m: m.group(1) + m.group(2) + ("" if m.group(2).endswith(".js") else ".js") + m.group(3), s)
+    if s2 != s: f.write_text(s2)
+EOF
+
+cd $DUMP && ln -sf "$OLDPWD/node_modules" node_modules
 node --input-type=module -e "
-const { COMPONENT_LIBRARY, PRIMITIVE_DEFS, CATEGORY_LABELS } = await import('./componentLibrary.js');
-const { MATERIAL_PRESETS } = await import('./materials.js');
+const { COMPONENT_LIBRARY, PRIMITIVE_DEFS, CATEGORY_LABELS } = await import('./objects/componentLibrary.js');
+const { MATERIAL_PRESETS } = await import('./objects/materials.js');
 const out = { categories: CATEGORY_LABELS,
   materials: MATERIAL_PRESETS.map(p => ({id:p.id,label:p.label,color:p.color,metalness:p.metalness,roughness:p.roughness})),
   components: [...PRIMITIVE_DEFS, ...COMPONENT_LIBRARY] };
 (await import('fs')).writeFileSync('$OLDPWD/godot/data/components.json', JSON.stringify(out, null, 1));
-console.log('OK', out.components.length, 'componentes');
+console.log('OK', out.components.length, 'componentes,', out.materials.length, 'materiales');
 "
 ```
+
+Y si añades o cambias mallas de biblioteca, cópialas también al proyecto Godot
+(es la misma carpeta y el mismo manifiesto que usa la web):
+
+```bash
+cp public/models/components/* godot/models/
+```
+
+`tests/catalogo.gd` comprueba justo esto: que el catálogo, los materiales, la
+paleta, las variantes y las mallas son los de la web y que todas cargan.
 
 ## 9. Problemas típicos y su solución
 

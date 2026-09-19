@@ -19,7 +19,14 @@ var status_label: Label
 var sim_btn: Button
 var figura_btn: Button
 var height_spin: SpinBox
+var chapa_btn: Button
+var chapa_bubble: PanelContainer
+var chapa_count: Label
+var chapa_thick: SpinBox
 var _theme_res: Theme
+
+## Ancho del carril derecho de herramientas (el `--rail-w` de la web).
+const RAIL_W := 68
 
 
 func setup(w: World, c: OrbitCamera, e: EditorController) -> void:
@@ -133,6 +140,63 @@ func _build() -> void:
 	autosave_lbl.add_theme_font_size_override("font_size", 13)
 	bar.add_child(autosave_lbl)
 
+	# ----------------------------------------------- carril derecho (herramientas)
+	# El mismo sitio que en la web: la barra flotante pegada al borde derecho
+	# del visor, donde viven las herramientas que capturan el clic.
+	var rail := VBoxContainer.new()
+	rail.theme = _theme_res
+	rail.name = "ToolRail"
+	rail.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	rail.offset_right = -10
+	rail.offset_left = -RAIL_W + 2
+	rail.add_theme_constant_override("separation", 6)
+	add_child(rail)
+	chapa_btn = Button.new()
+	chapa_btn.toggle_mode = true
+	chapa_btn.text = "Chapa"
+	chapa_btn.tooltip_text = "Chapa: quitar caras y dejar la pieza como una plancha de acero"
+	chapa_btn.custom_minimum_size = Vector2(RAIL_W - 10, 40)
+	chapa_btn.toggled.connect(func(on: bool):
+		ed.set_mode("chapa" if on else "select"))
+	rail.add_child(chapa_btn)
+
+	# La burbuja de la chapa: sale SOBRE la selección, dice cuánto se lleva,
+	# pide el grosor y sólo al aceptar cambia la pieza.
+	chapa_bubble = PanelContainer.new()
+	chapa_bubble.theme = _theme_res
+	chapa_bubble.name = "ChapaBubble"
+	chapa_bubble.visible = false
+	chapa_bubble.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(chapa_bubble)
+	var bb := HBoxContainer.new()
+	bb.add_theme_constant_override("separation", 8)
+	chapa_bubble.add_child(bb)
+	chapa_count = Label.new()
+	bb.add_child(chapa_count)
+	chapa_thick = SpinBox.new()
+	chapa_thick.min_value = 0.05
+	chapa_thick.max_value = 20.0
+	chapa_thick.step = 0.1
+	chapa_thick.value = ed.chapa_grosor_cm
+	chapa_thick.suffix = "cm"
+	chapa_thick.value_changed.connect(func(v: float): ed.chapa_grosor_cm = v)
+	bb.add_child(chapa_thick)
+	var ok_btn := Button.new()
+	ok_btn.text = "Aplicar"
+	ok_btn.theme_type_variation = "GreenButton"
+	ok_btn.tooltip_text = "Eliminar las caras y dejar la chapa"
+	ok_btn.pressed.connect(func():
+		ed.chapa_grosor_cm = chapa_thick.value
+		ed.chapa_aplicar()
+		chapa_btn.button_pressed = false)
+	bb.add_child(ok_btn)
+	var no_btn := Button.new()
+	no_btn.text = "Quitar marca"
+	no_btn.tooltip_text = "Desmarcar las caras"
+	no_btn.pressed.connect(func(): ed.chapa_desmarcar())
+	bb.add_child(no_btn)
+	ed.chapa_changed.connect(_on_chapa_changed)
+
 	# ------------------------------------------------------- paleta (izquierda)
 	var pp := PanelContainer.new()
 	pp.theme = _theme_res
@@ -185,11 +249,27 @@ func _build() -> void:
 	plist.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	plist.add_theme_constant_override("separation", 6)
 	pscroll.add_child(plist)
-	var last_cat := ""
 	# SÓLO LO QUE SE OFRECE. La biblioteca trae también las piezas internas de
 	# cada máquina, las variantes de peso y las retiradas: listarlas todas
 	# llenaba la paleta de cosas que nadie debe insertar sueltas.
+	#
+	# Y SE AGRUPA DE VERDAD POR CATEGORÍA. Rotular cada vez que cambia la
+	# categoría RESPECTO DE LA ANTERIOR sólo funciona si la biblioteca viene
+	# ordenada, y no lo viene: «ESTRUCTURAL» salía tres veces en la misma
+	# paleta, con dos piezas cada vez.
+	var por_categoria: Dictionary = {}
+	var orden: Array = []
 	for c in ComponentLibrary.palette_components():
+		var cat := String(c.get("category", ""))
+		if not por_categoria.has(cat):
+			por_categoria[cat] = []
+			orden.append(cat)
+		por_categoria[cat].append(c)
+	var ordenadas: Array = []
+	for cat in orden:
+		ordenadas.append_array(por_categoria[cat])
+	var last_cat := ""
+	for c in ordenadas:
 		var cat := String(c.get("category", ""))
 		if cat != last_cat:
 			last_cat = cat
@@ -214,8 +294,11 @@ func _build() -> void:
 	ip.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	ip.offset_top = 58
 	ip.offset_bottom = -8
-	ip.offset_left = -288
-	ip.offset_right = -8
+	# EL CARRIL DERECHO MANDA en su franja: la ventana se aparta su ancho, igual
+	# que en la web (`--rail-w`). Sin esto el botón de la herramienta quedaba
+	# DEBAJO del inspector y no había manera de pulsarlo.
+	ip.offset_left = -288 - RAIL_W
+	ip.offset_right = -8 - RAIL_W
 	ip.add_theme_constant_override("separation", 8)
 	add_child(ip)
 
@@ -322,10 +405,51 @@ func _pick_component(id: String) -> void:
 			ed.set_mode("place", id)
 
 
+## LA BURBUJA VA PEGADA A LAS CARAS MARCADAS, así que sigue a la cámara: se
+## coloca proyectando su centro del mundo a la pantalla en cada fotograma
+## (`_process`), y se esconde cuando no hay nada marcado o queda detrás.
+func _on_chapa_changed(caras: int, frac: float, centro: Vector3, activa: bool) -> void:
+	chapa_btn.set_pressed_no_signal(activa)
+	_chapa_centro = centro
+	if caras <= 0 or not activa:
+		chapa_bubble.visible = false
+		return
+	chapa_count.text = "%d cara%s · %d %% de la superficie" % [
+		caras, "" if caras == 1 else "s", roundi(frac * 100.0)]
+	chapa_thick.set_value_no_signal(ed.chapa_grosor_cm)
+	chapa_bubble.visible = true
+	_colocar_burbuja()
+
+
+var _chapa_centro := Vector3.INF
+
+
+func _process(_dt: float) -> void:
+	if chapa_bubble != null and chapa_bubble.visible:
+		_colocar_burbuja()
+
+
+func _colocar_burbuja() -> void:
+	if not _chapa_centro.is_finite() or cam == null:
+		chapa_bubble.visible = false
+		return
+	if cam.is_position_behind(_chapa_centro):
+		chapa_bubble.visible = false
+		return
+	var p := cam.unproject_position(_chapa_centro)
+	var tam := chapa_bubble.size
+	# A píxel entero: escribir decimales distintos cada fotograma deja la
+	# burbuja temblando justo bajo el puntero.
+	chapa_bubble.position = Vector2(roundi(p.x - tam.x * 0.5), roundi(p.y - tam.y - 18.0))
+
+
 func _on_sim_changed(running: bool) -> void:
 	sim_btn.text = "Detener" if running else "Simular"
 	get_node("PalettePanel").visible = not running
 	get_node("InspectorPanel").visible = not running
+	get_node("ToolRail").visible = not running
+	if running:
+		chapa_bubble.visible = false
 	status_label.text = (
 		"Arrastra piezas móviles con la mano · Espacio detiene" if running else "")
 
@@ -395,6 +519,30 @@ func _refresh_inspector() -> void:
 		rot.add_child(b)
 	inspector.add_child(rot)
 
+	# CHAPA DE ACERO: si ya lo es, se le cambia el grosor o se devuelve al
+	# macizo; si no, el botón arranca la herramienta con ESTA pieza tomada.
+	var chapa = p.params.get("chapa")
+	if chapa is Dictionary:
+		var fila := HBoxContainer.new()
+		var lbl := Label.new()
+		lbl.text = "Chapa (cm)"
+		fila.add_child(lbl)
+		var sp := SpinBox.new()
+		sp.min_value = 0.05
+		sp.max_value = 20.0
+		sp.step = 0.1
+		sp.value = float(chapa.get("grosorCm", 0.3))
+		sp.value_changed.connect(func(v: float):
+			p.params["chapa"] = {"grosorCm": v, "caras": chapa.get("caras", [])}
+			p.rebuild_geometry())
+		fila.add_child(sp)
+		inspector.add_child(fila)
+		_ibtn("Volver a macizo", func():
+			ed.chapa_volver_a_macizo(p)
+			_refresh_inspector())
+	_ibtn("Chapa: quitar caras…", func():
+		ed.select_piece(p)
+		ed.set_mode("chapa"))
 	if p.params.has("path"):
 		_ibtn("Doblar (nodos)", func(): ed.set_mode("bend"))
 	_ibtn("Duplicar", func(): ed.duplicate_selected())

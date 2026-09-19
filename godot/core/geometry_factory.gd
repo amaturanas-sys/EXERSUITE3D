@@ -14,20 +14,26 @@ class_name GeometryFactory
 static func build_mesh(params: Dictionary) -> Mesh:
 	var base := _build_base(params)
 	var chapa = params.get("chapa")
-	if chapa is Dictionary and float(chapa.get("grosorCm", 0)) > 0.0:
-		var tris := Chapa.aplicar(
-			base.get_faces(),
-			chapa.get("caras", []),
-			Units.cm(float(chapa.get("grosorCm", 0))),
-		)
-		return _malla_de_triangulos(tris)
-	return base
+	var hay_chapa: bool = chapa is Dictionary and float(chapa.get("grosorCm", 0)) > 0.0
+	var tris := base.get_faces()
+	var tocada := false
+	# 1) LOS HUECOS PASANTES: ventanas rectangulares y canales de guía.
+	var perforada := Perforar.aplicar(tris, params)
+	if perforada.size() != tris.size():
+		tris = perforada
+		tocada = true
+	# 2) Y LA CHAPA, que vacía lo que haya quedado —con sus agujeros ya
+	#    abiertos, no la pieza de fábrica—.
+	if hay_chapa:
+		tris = Chapa.aplicar(tris, chapa.get("caras", []), Units.cm(float(chapa.get("grosorCm", 0))))
+		tocada = true
+	return malla_de_triangulos(tris) if tocada else base
 
 
 ## Una malla plana a partir de la sopa de triángulos, con las normales por
 ## cara: la chapa se ve por cómo corta la luz en sus cantos, y promediarlas
 ## redondearía justo la arista que hay que ver.
-static func _malla_de_triangulos(tris: PackedVector3Array) -> Mesh:
+static func malla_de_triangulos(tris: PackedVector3Array) -> Mesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for i in range(0, tris.size(), 3):

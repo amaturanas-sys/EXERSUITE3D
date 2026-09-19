@@ -47,13 +47,47 @@ fórmula de la web, la cara de arriba de un cubo salía mirando hacia abajo,
 ninguna ficha emparejaba y la chapa dejaba la pieza hueca y cerrada en vez de
 abrirla.
 
+**LOS HUECOS PASANTES, TAMBIÉN.** `core/perforar.gd` abre ventanas
+rectangulares y canales de guía de verdad, con sus paredes interiores: es lo
+que enhebra el carro de una prensa en sus dos guías y lo que deja pasar el
+cable bajo una roldana interna. Sin ellos la misma máquina se veía maciza.
+
+**Y LA HERRAMIENTA DE CHAPA SE MANEJA IGUAL QUE EN LA WEB**: botón en un
+**carril derecho** nuevo —el mismo sitio que la barra flotante de la web—, se
+elige una pieza, se tocan las caras y una **burbuja sobre la selección** dice
+cuánto se lleva («2 caras · 31 % de la superficie»), pide el grosor y
+confirma. El clic se resuelve al soltar, así que **orbitar no pierde la
+selección**, y el gizmo se aparta mientras se eligen caras. En Propiedades
+queda el grosor y «Volver a macizo».
+
+**LA CHAPA SE LE HACE A LO QUE SE VE.** Una pieza de biblioteca enseña su
+`.glb` y la primitiva queda escondida: vaciar la primitiva no se notaba —la
+kettlebell seguía viéndose maciza con la chapa puesta—. Ahora la herramienta
+señala, marca y vacía sobre la malla visible.
+
+Dos arreglos de interfaz que sólo se ven mirando la aplicación de verdad (y por
+eso se miró): el botón del carril quedaba **debajo del inspector** —ahora la
+ventana se aparta su ancho, como en la web—, y la paleta repetía «ESTRUCTURAL»
+tres veces porque rotulaba al cambiar de categoría respecto de la anterior y la
+biblioteca no viene ordenada.
+
+### Documentación
+
+`docs/MIGRACION-GODOT.md` §7 se reescribe con el estado **real** medido con el
+motor: qué está portado, **qué falta** —nueve frentes, cada uno con su lógica
+de referencia en la web y el archivo de Godot donde encaja— y cómo comprobar
+que un cambio no rompe nada. Y §8 arregla la receta para regenerar el catálogo.
+
 ### Pruebas
 
-Dos programas nuevos de Godot, que corren en el CI junto a la prueba de humo:
+Tres programas nuevos de Godot, que corren en el CI junto a la prueba de humo:
 
   · `tests/catalogo.gd` — que el catálogo, los materiales, la paleta, las
     variantes y las 54 mallas son los de la web y cargan;
-  · `tests/chapa.gd` — las invariantes de `prueba-chapa.mjs`, número a número.
+  · `tests/chapa.gd` — las invariantes de `prueba-chapa.mjs`, número a número,
+    incluida la chapa sobre una malla de biblioteca;
+  · `tests/perforar.gd` — que un hueco está donde se pidió, tiene paredes, deja
+    pasar la guía de su radio y sigue calado después de vaciar la pieza.
 
 Y la caché de importación de Godot (`godot/.godot/`) deja de viajar en el
 repositorio: se regenera sola al abrir el proyecto.
