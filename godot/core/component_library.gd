@@ -62,6 +62,31 @@ static func variants_of(id: String) -> Array:
 	return get_definition(id).get("variantes", [])
 
 
+## LO QUE SE REVISA EN LA BIBLIOTECA: lo mismo que ofrece la paleta, pero con
+## las familias de peso ABIERTAS en sus variantes.
+##
+## El botón «Kettlebell» no es una pieza: es la cabecera de una familia, y lo
+## que se inserta es siempre `kettlebell-20` o la que se elija. Listando la
+## cabecera, la vista previa no tenía modelo que enseñar —salía la caja de
+## reserva— y sustituirlo no habría servido de nada, porque ninguna pieza de la
+## escena se llama así. Se listan los pesos, que son las piezas de verdad.
+static func library_components() -> Array:
+	var out: Array = []
+	for c in palette_components():
+		var vs: Array = c.get("variantes", [])
+		if vs.is_empty():
+			out.append(c)
+			continue
+		for v in vs:
+			var d := get_definition(String(v["id"]))
+			if d.is_empty():
+				continue
+			var copia: Dictionary = d.duplicate()
+			copia["label"] = "%s · %s" % [c.get("label", c["id"]), v.get("etiqueta", v["id"])]
+			out.append(copia)
+	return out
+
+
 static func category_label(cat: String) -> String:
 	_ensure_loaded()
 	return _data.get("categories", {}).get(cat, cat)

@@ -284,17 +284,32 @@ await p.waitForTimeout(1000);
 await p.click("text=🛠 BUILDER"); await p.waitForTimeout(400);
 await p.click("text=Explorar biblioteca"); await p.waitForTimeout(2000);
 
+// LA MISMA SELECCIÓN, CON LAS FAMILIAS DE PESO ABIERTAS (v0.3.75). Hasta aquí
+// se exigía la lista IDÉNTICA a la paleta, y eso dejaba en la Biblioteca tres
+// filas —«Kettlebell», «Mancuerna hexagonal», «Disco de peso»— que no son
+// piezas sino CABECERAS de familia: su vista previa salía como la caja de
+// reserva y sustituirles el modelo no cambiaba nada, porque lo que se inserta
+// se llama `kettlebell-20`. Ahora la Biblioteca abre cada familia en sus
+// pesos, que son las piezas que de verdad se pueden revisar y sustituir. Lo
+// que sigue sin poder pasar es que se cuele nada de fuera de la selección.
 const biblio = await p.evaluate((esperadas) => {
   const nombres = [...document.querySelectorAll(".lib-list .lib-name")].map((n) => n.textContent.trim());
+  const familia = (t) => (t.includes(" · ") ? t.slice(0, t.lastIndexOf(" · ")) : t);
   return {
     nombres,
-    sobran: nombres.filter((t) => !esperadas.includes(t)),
-    faltan: esperadas.filter((t) => !nombres.includes(t)),
+    // De cada fila, la familia a la que pertenece: tiene que estar en la paleta.
+    sobran: [...new Set(nombres.map(familia))].filter((t) => !esperadas.includes(t)),
+    // Y de la paleta, ninguna puede faltar (ni entera ni abierta en pesos).
+    faltan: esperadas.filter((t) => !nombres.some((n) => familia(n) === t)),
+    pesos: nombres.filter((t) => t.includes(" · ")).length,
   };
 }, paleta.vigentes);
 ok(biblio.sobran.length === 0 && biblio.faltan.length === 0,
-  `la pestaña «Componentes» lista EXACTAMENTE las mismas ${paleta.vigentes.length} piezas `
-  + `que la paleta (sobran: ${biblio.sobran.join(", ") || "0"} · faltan: ${biblio.faltan.join(", ") || "0"})`);
+  `la pestaña «Componentes» enseña la misma selección que la paleta, con las familias `
+  + `de peso abiertas en sus ${biblio.pesos} pesos `
+  + `(sobran: ${biblio.sobran.join(", ") || "0"} · faltan: ${biblio.faltan.join(", ") || "0"})`);
+ok(biblio.pesos === 17,
+  `y son los diecisiete pesos: siete kettlebells, cinco mancuernas y cinco discos (${biblio.pesos})`);
 
 // ── 6. LA PESTAÑA «MÁQUINAS» ENSEÑA LA MÁQUINA DE VERDAD ───────────────────
 //

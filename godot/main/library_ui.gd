@@ -170,7 +170,10 @@ func _process(delta: float) -> void:
 func _refresh_lists() -> void:
 	comp_list.clear()
 	_comp_ids = []
-	for c in ComponentLibrary.all_components():
+	# La biblioteca enseña lo que se puede revisar y sustituir: el catálogo
+	# vigente con las familias de peso abiertas en sus variantes. Listaba las
+	# 104 definiciones, despiece y piezas retiradas incluidos.
+	for c in ComponentLibrary.library_components():
 		var id := String(c["id"])
 		var mark := "  •" if ModelStore.has_component_override(id) else ""
 		comp_list.add_item("%s%s" % [String(c.get("label", id)), mark])

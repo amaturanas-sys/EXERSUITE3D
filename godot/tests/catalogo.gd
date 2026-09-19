@@ -103,6 +103,29 @@ func _init() -> void:
 		"rotas: " + ", ".join(variantes_rotas.slice(0, 6)),
 	)
 
+	# ── 6. LA BIBLIOTECA LISTA PIEZAS, NO CABECERAS ──────────────────────
+	# El botón «Kettlebell» no es una pieza: es la cabecera de una familia, y
+	# lo que se inserta es `kettlebell-20`. Listando la cabecera, la vista
+	# previa no tiene modelo que enseñar y sustituirlo no sirve de nada.
+	var biblio := ComponentLibrary.library_components()
+	var cabeceras := 0
+	var pesos := 0
+	var sin_malla: Array[String] = []
+	for c in biblio:
+		if not (c.get("variantes", []) as Array).is_empty():
+			cabeceras += 1
+		if String(c["id"]).begins_with("kettlebell-") or String(c["id"]).begins_with("mancuerna-") \
+				or String(c["id"]).begins_with("disco-barbell-"):
+			pesos += 1
+			if ModelStore.component_override_path(String(c["id"])) == "":
+				sin_malla.append(String(c["id"]))
+	_ok(
+		cabeceras == 0 and pesos == 17,
+		"la biblioteca lista los 17 pesos uno a uno y ninguna cabecera de familia (%d filas)" % biblio.size(),
+		"cabeceras: %d · pesos: %d" % [cabeceras, pesos],
+	)
+	_ok(sin_malla.is_empty(), "y cada peso encuentra su malla", ", ".join(sin_malla))
+
 	print("")
 	print("TODO OK" if fallos == 0 else ("%d FALLOS" % fallos))
 	quit(0 if fallos == 0 else 1)

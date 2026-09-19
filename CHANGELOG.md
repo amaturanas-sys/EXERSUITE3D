@@ -5,6 +5,53 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.75] — 2026-09-19
+
+### Corregido
+
+**LA BIBLIOTECA ENSEÑABA UNA CAJA EN LUGAR DE LA PIEZA.** En «Kettlebell» y en
+«Mancuerna hexagonal» la vista previa era un prisma negro. No era un fallo del
+visor: es que esas dos filas **no son piezas**. Son la CABECERA de una familia
+—la que en la paleta abre la burbuja de pesos—, y lo que se inserta en la
+escena es siempre una variante: `kettlebell-20`, `mancuerna-30`,
+`disco-barbell-45`. La cabecera no tiene malla propia, así que la vista previa
+caía en la caja de reserva de sus medidas.
+
+Y había algo peor, que no se veía: **sustituirle el modelo no hacía nada**. Se
+podía elegir un `.glb`, la ficha decía que quedaba asignado y en la escena no
+cambiaba ni una pieza, porque ninguna se llama así. Un callejón sin salida sin
+un solo aviso.
+
+Ahora la Biblioteca **abre cada familia en sus pesos**: siete kettlebells,
+cinco mancuernas y cinco discos. Cada fila es una pieza de verdad, con su
+malla —se ve— y con su sustitución —funciona—. La lista pasa de 38 filas a 52.
+
+**Y LAS DIECISIETE FICHAS, EN INGLÉS.** Nunca se habían visto —la Biblioteca
+listaba la cabecera—, así que nunca se habían traducido. Se traducen las doce
+que faltaban (las cinco de los discos ya estaban), y el nombre de cada fila se
+compone **con las partes ya traducidas**: `el()` pasa cada texto por el
+diccionario y el diccionario busca la cadena ENTERA, así que componer
+«Mancuerna hexagonal · 30 lb» y traducir después no encuentra nada y deja media
+interfaz en español. Es la misma trampa que se cazó en v0.3.61 en otros tres
+sitios.
+
+**La misma corrección va al kit de Godot**, que además listaba las 104
+definiciones completas —despiece de máquinas y piezas retiradas incluidos— en
+vez de la selección vigente.
+
+### Pruebas
+
+`prueba-biblioteca-modelos.mjs`, nueva y con 12 comprobaciones: que no queda
+ninguna cabecera en la lista, que están los diecisiete pesos, que cada uno sale
+de su archivo, que **lo que se ve es lo que se inserta** —la pieza puesta en la
+escena trae esa misma malla— y que en inglés la ficha está en inglés.
+
+`prueba-piezas-retiradas.mjs` exigía que la Biblioteca listara EXACTAMENTE las
+mismas 38 filas que la paleta, y era justo esa exigencia la que dejaba las tres
+cabeceras dentro. Ahora comprueba lo que de verdad importa: que no se cuele
+nada de fuera de la selección vigente y que cada familia esté, abierta en sus
+pesos. Y `tests/catalogo.gd` mide lo mismo del lado de Godot.
+
 ## [0.3.74] — 2026-09-19
 
 ### Cambiado

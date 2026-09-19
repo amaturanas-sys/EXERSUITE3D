@@ -24,7 +24,7 @@ import { clear, el } from "./dom";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { parsearPrefab, prefabDeFabrica } from "../core/prefabIO";
 import { prefabsMaquina } from "../core/prefabsMaquina";
-import { tt } from "../core/i18n";
+import { t, tt } from "../core/i18n";
 
 interface LibItem {
   id: string;
@@ -66,13 +66,41 @@ const componentSource: LibrarySource = {
   // CURADURÍA (v0.3.2): la biblioteca listaba las 74 definiciones, incluidas
   // las plantillas internas y el despiece de las máquinas. Ahora enseña las
   // mismas piezas que la paleta —ni una más—, leídas de la misma lista.
+  // LAS QUE SE VENDEN POR PESO SE LISTAN UNA A UNA (v0.3.75). El botón de la
+  // paleta —«Kettlebell», «Mancuerna hexagonal», «Disco de peso»— NO ES UNA
+  // PIEZA: es la cabecera de una familia, y lo que se inserta es siempre una
+  // variante (`kettlebell-20`, `mancuerna-30`, `disco-barbell-45`). Listando la
+  // cabecera pasaban dos cosas, las dos malas:
+  //
+  //   · la vista previa no tenía modelo que enseñar y salía la CAJA de reserva
+  //     —que es lo que se veía en Kettlebell y en Mancuerna hexagonal—;
+  //   · y sustituir su modelo NO HACÍA NADA, porque ninguna pieza de la escena
+  //     se llama así. Se podía cargar un `.glb` y no cambiaba nada en ningún
+  //     sitio, sin un aviso.
+  //
+  // Ahora se lista cada peso, que es lo que de verdad se puede revisar y
+  // sustituir: siete kettlebells, cinco mancuernas y cinco discos.
   items: () =>
-    catalogoVigente().map((d) => ({
-      id: d.id,
-      label: d.label,
-      category: CATEGORY_LABELS[d.category] ?? d.category,
-      description: d.description,
-    })),
+    catalogoVigente().flatMap((d) => {
+      const cat = CATEGORY_LABELS[d.category] ?? d.category;
+      if (!d.variantes?.length) {
+        return [{ id: d.id, label: d.label, category: cat, description: d.description }];
+      }
+      return d.variantes.map((v) => {
+        const def = compById.get(v.id);
+        return {
+          id: v.id,
+          // EL NOMBRE SE COMPONE CON LAS PARTES YA TRADUCIDAS. `el()` pasa cada
+          // texto por el diccionario, y el diccionario busca la cadena ENTERA:
+          // componer «Mancuerna hexagonal · 30 lb» y traducir después no
+          // encuentra nada y deja media interfaz en español. Es la misma trampa
+          // que se cazó en v0.3.61 en otros tres sitios.
+          label: `${t(d.label)} · ${v.etiqueta}`,
+          category: cat,
+          description: def?.description ?? d.description,
+        };
+      });
+    }),
   has: (id) => componentModels.has(id),
   fileName: (id) => componentModels.fileName(id),
   isUser: (id) => componentModels.source(id) === "user",

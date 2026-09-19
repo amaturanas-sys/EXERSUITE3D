@@ -573,6 +573,33 @@ export const TRADUCCIONES: Record<string, string> = {
   "Mancuerna hexagonal": "Hex dumbbell",
   "Agarre doble (polea)": "Double cable handle",
 
+  // ---- Las piezas que se eligen por peso: la Biblioteca las lista una a
+  // una desde v0.3.75, asi que sus fichas se ven y hay que traducirlas.
+  "Kettlebell de 10 kg: bola de Ø13.2 cm con la base rebajada y el peso grabado en el costado.":
+    "10 kg kettlebell: Ø13.2 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 15 kg: bola de Ø15.4 cm con la base rebajada y el peso grabado en el costado.":
+    "15 kg kettlebell: Ø15.4 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 20 kg: bola de Ø17.2 cm con la base rebajada y el peso grabado en el costado.":
+    "20 kg kettlebell: Ø17.2 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 25 kg: bola de Ø18.7 cm con la base rebajada y el peso grabado en el costado.":
+    "25 kg kettlebell: Ø18.7 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 35 kg: bola de Ø21.2 cm con la base rebajada y el peso grabado en el costado.":
+    "35 kg kettlebell: Ø21.2 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 45 kg: bola de Ø23.2 cm con la base rebajada y el peso grabado en el costado.":
+    "45 kg kettlebell: Ø23.2 cm ball with a flattened base and the weight cast on its side.",
+  "Kettlebell de 55 kg: bola de Ø24.9 cm con la base rebajada y el peso grabado en el costado.":
+    "55 kg kettlebell: Ø24.9 cm ball with a flattened base and the weight cast on its side.",
+  "Mancuerna hexagonal de 10 libras (4.5 kg): cabezas de goma con el peso grabado y mango cromado.":
+    "10 lb hex dumbbell: rubber heads with the weight cast in and a chromed handle.",
+  "Mancuerna hexagonal de 20 libras (9.1 kg): cabezas de goma con el peso grabado y mango cromado.":
+    "20 lb hex dumbbell: rubber heads with the weight cast in and a chromed handle.",
+  "Mancuerna hexagonal de 30 libras (13.6 kg): cabezas de goma con el peso grabado y mango cromado.":
+    "30 lb hex dumbbell: rubber heads with the weight cast in and a chromed handle.",
+  "Mancuerna hexagonal de 40 libras (18.1 kg): cabezas de goma con el peso grabado y mango cromado.":
+    "40 lb hex dumbbell: rubber heads with the weight cast in and a chromed handle.",
+  "Mancuerna hexagonal de 50 libras (22.7 kg): cabezas de goma con el peso grabado y mango cromado.":
+    "50 lb hex dumbbell: rubber heads with the weight cast in and a chromed handle.",
+
   // ---- Maquinas estandar
   "Prensa de piernas": "Leg press",
   "Torre polea de discos": "Plate-loaded pulley tower",
