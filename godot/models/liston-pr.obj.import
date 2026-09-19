@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://oawmp72p3xei"
+path="res://.godot/imported/liston-pr.obj-2f70fd3d22dc17806fd918445e8891aa.mesh"
+
+[deps]
+
+files=["res://.godot/imported/liston-pr.obj-2f70fd3d22dc17806fd918445e8891aa.mesh"]
+
+source_file="res://models/liston-pr.obj"
+dest_files=["res://.godot/imported/liston-pr.obj-2f70fd3d22dc17806fd918445e8891aa.mesh", "res://.godot/imported/liston-pr.obj-2f70fd3d22dc17806fd918445e8891aa.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

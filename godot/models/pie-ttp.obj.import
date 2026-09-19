@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bv0agx3sum7mh"
+path="res://.godot/imported/pie-ttp.obj-5e3092ae88662c45584d5e3b0e3c86bd.mesh"
+
+[deps]
+
+files=["res://.godot/imported/pie-ttp.obj-5e3092ae88662c45584d5e3b0e3c86bd.mesh"]
+
+source_file="res://models/pie-ttp.obj"
+dest_files=["res://.godot/imported/pie-ttp.obj-5e3092ae88662c45584d5e3b0e3c86bd.mesh", "res://.godot/imported/pie-ttp.obj-5e3092ae88662c45584d5e3b0e3c86bd.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

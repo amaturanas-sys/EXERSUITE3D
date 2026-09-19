@@ -7,7 +7,38 @@ class_name GeometryFactory
 ##    y dobladas se barren a lo largo de una curva Catmull-Rom.
 
 
+## TODO LO QUE SE LE HACE A LA MALLA, y en este orden (igual que `moldear()`
+## en la web): primero la forma de la pieza y después la CHAPA, que vacía lo
+## que haya quedado. Es el único sitio por el que pasa una malla, así que es
+## el único sitio donde hay que enchufar un modificador nuevo.
 static func build_mesh(params: Dictionary) -> Mesh:
+	var base := _build_base(params)
+	var chapa = params.get("chapa")
+	if chapa is Dictionary and float(chapa.get("grosorCm", 0)) > 0.0:
+		var tris := Chapa.aplicar(
+			base.get_faces(),
+			chapa.get("caras", []),
+			Units.cm(float(chapa.get("grosorCm", 0))),
+		)
+		return _malla_de_triangulos(tris)
+	return base
+
+
+## Una malla plana a partir de la sopa de triángulos, con las normales por
+## cara: la chapa se ve por cómo corta la luz en sus cantos, y promediarlas
+## redondearía justo la arista que hay que ver.
+static func _malla_de_triangulos(tris: PackedVector3Array) -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in range(0, tris.size(), 3):
+		var n := (tris[i + 1] - tris[i]).cross(tris[i + 2] - tris[i]).normalized()
+		for k in 3:
+			st.set_normal(n)
+			st.add_vertex(tris[i + k])
+	return st.commit()
+
+
+static func _build_base(params: Dictionary) -> Mesh:
 	var kind := String(params.get("kind", "box"))
 	match kind:
 		"box":

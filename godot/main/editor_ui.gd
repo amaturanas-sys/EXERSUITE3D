@@ -186,19 +186,25 @@ func _build() -> void:
 	plist.add_theme_constant_override("separation", 6)
 	pscroll.add_child(plist)
 	var last_cat := ""
-	for c in ComponentLibrary.all_components():
+	# SÓLO LO QUE SE OFRECE. La biblioteca trae también las piezas internas de
+	# cada máquina, las variantes de peso y las retiradas: listarlas todas
+	# llenaba la paleta de cosas que nadie debe insertar sueltas.
+	for c in ComponentLibrary.palette_components():
 		var cat := String(c.get("category", ""))
 		if cat != last_cat:
 			last_cat = cat
 			plist.add_child(UiTheme.section_label(ComponentLibrary.category_label(cat)))
 		var b := Button.new()
 		b.theme_type_variation = "CardButton"
+		var variantes: Array = c.get("variantes", [])
 		b.text = String(c.get("label", c["id"]))
+		if not variantes.is_empty():
+			b.text += "  ▾"   # abre burbuja de pesos, como en la web
 		b.icon = UiTheme.cat_icon(cat)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var id := String(c["id"])
-		b.pressed.connect(func(): _pick_component(id))
+		b.pressed.connect(func(): _on_palette_pressed(id, b))
 		plist.add_child(b)
 
 	# ---------------------------------------------------- inspector (derecha)
@@ -278,6 +284,28 @@ func _build() -> void:
 	status_label.add_theme_color_override("font_color", Color("31353d"))
 	add_child(status_label)
 	_refresh_inspector()
+
+
+## UNA PIEZA QUE SE VENDE POR PESOS NO SE INSERTA DE UN TOQUE: abre una burbuja
+## junto al botón y se elige cuál (los cinco discos, las siete kettlebells, las
+## cinco mancuernas). Es el mismo gesto que en la web, y evita meter en la
+## escena un disco de 45 lb cuando se quería uno de 5.
+func _on_palette_pressed(id: String, boton: Button) -> void:
+	var variantes: Array = ComponentLibrary.variants_of(id)
+	if variantes.is_empty():
+		_pick_component(id)
+		return
+	var menu := PopupMenu.new()
+	menu.theme = _theme_res
+	add_child(menu)
+	for i in variantes.size():
+		menu.add_item(String(variantes[i].get("etiqueta", variantes[i]["id"])), i)
+	menu.id_pressed.connect(func(i: int):
+		_pick_component(String(variantes[i]["id"]))
+		menu.queue_free())
+	menu.popup_hide.connect(func(): menu.queue_free())
+	var r := boton.get_global_rect()
+	menu.popup(Rect2i(Vector2i(int(r.position.x + r.size.x), int(r.position.y)), Vector2i(150, 0)))
 
 
 func _pick_component(id: String) -> void:

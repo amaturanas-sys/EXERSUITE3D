@@ -41,3 +41,6 @@ graphify-out/*
 .env
 .env.*
 !.env.*.example
+
+# Godot: caché de importación (se regenera sola al abrir el proyecto)
+godot/.godot/

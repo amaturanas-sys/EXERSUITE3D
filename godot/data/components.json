@@ -201,6 +201,7 @@
   },
   {
    "id": "pilar",
+   "paleta": "retirada",
    "label": "Pilar estructural",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -214,6 +215,8 @@
     "massKg": 0,
     "fixed": true
    },
+   "holeStepCm": 10,
+   "holeDiameterCm": 2.6,
    "description": "Columna vertical de soporte de carga."
   },
   {
@@ -323,6 +326,7 @@
   },
   {
    "id": "base-apoyo",
+   "paleta": "oculta",
    "label": "Base de apoyo",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -340,6 +344,7 @@
   },
   {
    "id": "soporte-peso",
+   "paleta": "retirada",
    "label": "Soporte de peso",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -353,27 +358,56 @@
     "massKg": 0,
     "fixed": true
    },
-   "description": "Brazo o repisa que sostiene la pila de pesos."
+   "cargaDiscos": {
+    "lados": 1,
+    "diamCm": 44,
+    "grosorCm": 3,
+    "masaKg": 20
+   },
+   "description": "Atril/repisa de discos: los discos se ensamblan por su orificio central y quedan suspendidos."
   },
   {
-   "id": "j-hook",
-   "label": "Gancho J / soporte barra",
+   "id": "placa-dentada",
+   "label": "Placa dentada (upright)",
    "category": "estructural",
-   "materialId": "acero-negro",
+   "materialId": "cromo",
    "defaults": {
-    "kind": "box",
-    "width": 6,
-    "height": 10,
-    "depth": 14
+    "kind": "dentada",
+    "dientes": 6,
+    "dienteEspaciado": 12.5
    },
    "physics": {
     "massKg": 0,
     "fixed": true
    },
+   "description": "Plancha de acero con ganchos recortados en el canto, atornillada al costado de un pilar: hace de fila de jotas con mucho menos material. Se coloca tocando la cara del pilar y trazando principio y final."
+  },
+  {
+   "id": "j-hook",
+   "paleta": "oculta",
+   "label": "Gancho J / soporte barra",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 9,
+    "height": 24,
+    "depth": 26
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "calceLocal": [
+    0,
+    -9.7
+   ],
+   "asientoBarra": true,
    "description": "Gancho de seguridad que sostiene la barra en el rack (núcleo UHMW)."
   },
   {
    "id": "montante-rack",
+   "paleta": "oculta",
    "label": "Montante de rack",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -387,6 +421,9 @@
     "massKg": 0,
     "fixed": true
    },
+   "holeStepCm": 5,
+   "holeDiameterCm": 2.6,
+   "ejeCalce": "x",
    "description": "Columna perforada de power rack (3x3\", grilla de pin)."
   },
   {
@@ -396,15 +433,536 @@
    "materialId": "acero-negro",
    "defaults": {
     "kind": "box",
-    "width": 8,
-    "height": 8,
-    "depth": 55
+    "width": 9,
+    "height": 24,
+    "depth": 106
    },
    "physics": {
     "massKg": 0,
     "fixed": true
    },
-   "description": "Spotter arm que detiene la barra a una altura dada."
+   "calceLocal": [
+    0,
+    -49.3
+   ],
+   "asientoBarra": true,
+   "postesCalce": 2,
+   "largoAjustable": {
+    "eje": "z",
+    "extremosCm": 29,
+    "minCm": 60,
+    "maxCm": 240
+   },
+   "description": "Brazo/spotter de seguridad real: detiene la barra a una altura dada. Su largo se ajusta a la separación entre pilares."
+  },
+  {
+   "id": "atril-discos",
+   "label": "Atril de discos",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7,
+    "height": 20.6,
+    "depth": 28.2
+   },
+   "physics": {
+    "massKg": 4.2,
+    "fixed": true
+   },
+   "cargaDiscos": {
+    "lados": 1,
+    "diamCm": 45,
+    "grosorCm": 3,
+    "masaKg": 20,
+    "mangaCm": 4.6
+   },
+   "description": "Atril de discos: se cuelga por su lengüeta en el pinhole de cualquier viga y guarda los discos ensartados en su cuerno. El seguro de abajo impide que se salte del agujero."
+  },
+  {
+   "id": "brazo-spotter",
+   "label": "Brazo spotter (voladizo)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 13.2,
+    "height": 26,
+    "depth": 82.8
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "calceLocal": [
+    0,
+    -37.2
+   ],
+   "asientoBarra": true,
+   "largoAjustable": {
+    "eje": "z",
+    "extremosCm": 24.8,
+    "minCm": 65,
+    "maxCm": 180,
+    "nucleoCm": [
+     24.8,
+     42.8
+    ]
+   },
+   "description": "Brazo de seguridad en voladizo: se calza por su espiga en el pinhole de un montante y sube o baja de nivel como una jota. El largo del brazo se cambia en Propiedades sin deformar ni el anclaje ni la pestaña distal."
+  },
+  {
+   "id": "montante-ttp",
+   "paleta": "retirada",
+   "label": "Pilar vertical TTP (5×7×204)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 5,
+    "height": 204,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "holeStepCm": 5,
+   "holeDiameterCm": 2.6,
+   "calceFilas": 30,
+   "ejeCalce": "x",
+   "calceFase": -1.13,
+   "description": "Montante real del rack TTP001L con agujeros de calce (el gancho J entra con pin y giro)."
+  },
+  {
+   "id": "multiagarre-ttp",
+   "label": "Barra multi-agarre (dominadas)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 32,
+    "height": 9.6,
+    "depth": 106.5
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "largoAjustable": {
+    "eje": "z",
+    "extremosCm": 45,
+    "minCm": 92,
+    "maxCm": 240
+   },
+   "description": "Barra multi-agarre de dominadas: abanico arqueado con placas de montaje en ambos extremos y agarres neutros, prono y ancho. Su largo se ajusta a la separación entre pilares."
+  },
+  {
+   "id": "pie-ttp",
+   "paleta": "despiece",
+   "label": "Travesaño TTP (104)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 15,
+    "height": 5,
+    "depth": 104
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Travesaño real del TTP001L (104 cm) que cruza el marco a lo ancho: superior (corona trasera) e inferior (al suelo)."
+  },
+  {
+   "id": "columna-sup-ttp",
+   "paleta": "despiece",
+   "label": "Columna horizontal superior TTP",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 94,
+    "height": 20,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Columna horizontal superior real del TTP001L (94 cm): corona los pilares de cada lado, con placas de encuadre."
+  },
+  {
+   "id": "tubo-guia-ttp",
+   "paleta": "despiece",
+   "label": "Tubo guía de poleas TTP",
+   "category": "estructural",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "box",
+    "width": 4,
+    "height": 214,
+    "depth": 4
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Tubo de guía vertical real del TTP001L (4×4×214): por él corre el carro del sistema de poleas."
+  },
+  {
+   "id": "riel-base-ttp",
+   "paleta": "despiece",
+   "label": "Columna horizontal inferior TTP",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 141,
+    "height": 20,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Columna horizontal inferior real del TTP001L (141 cm), con placas de encuadre: la base de cada lado del marco."
+  },
+  {
+   "id": "barra-lat-ttp",
+   "paleta": "despiece",
+   "label": "Remo de polea alta TTP",
+   "category": "transmision",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "box",
+    "width": 75,
+    "height": 7,
+    "depth": 2
+   },
+   "physics": {
+    "massKg": 4,
+    "fixed": false
+   },
+   "description": "Remo tubular real del TTP001L para la polea alta (jalón/remo), cuelga del cable."
+  },
+  {
+   "id": "travesano-frontal-ttp",
+   "paleta": "despiece",
+   "label": "Travesaño frontal TTP (118)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 118,
+    "height": 20,
+    "depth": 5.2
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Travesaño frontal real del TTP001L (118 cm) que corona el marco a lo ancho."
+  },
+  {
+   "id": "soporte-polea-ttp",
+   "paleta": "despiece",
+   "label": "Soporte de polea baja TTP",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 19,
+    "height": 13.3,
+    "depth": 7.2
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Puente real que sostiene la polea baja del TTP001L."
+  },
+  {
+   "id": "placa-polea-ttp",
+   "paleta": "despiece",
+   "label": "Placa de polea baja TTP",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 19,
+    "height": 7,
+    "depth": 26
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Placa base real del soporte de polea baja del TTP001L (19×26)."
+  },
+  {
+   "id": "bastidor-sup-ttp",
+   "paleta": "despiece",
+   "label": "Bastidor superior TTP",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 32,
+    "height": 15,
+    "depth": 92.3
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Bastidor superior real del TTP001L: viga con T que corona la torre y puente del sistema de polea alta."
+  },
+  {
+   "id": "pletina-ttp",
+   "paleta": "despiece",
+   "label": "Pletina TTP (45)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 45,
+    "height": 5,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Pletina de unión real del kit TTP001L (45 cm)."
+  },
+  {
+   "id": "puente-carro-ttp",
+   "label": "Carro de doble roldana",
+   "category": "transmision",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 3.5,
+    "height": 20.4,
+    "depth": 7.2
+   },
+   "physics": {
+    "massKg": 0.2,
+    "fixed": false
+   },
+   "description": "Carro de poleas real del TTP001L: puente movil que SIEMPRE conserva sus dos roldanas (sup./inf.) — transmite la fuerza entre dos tramos de cable, como en el TTP con torre."
+  },
+  {
+   "id": "portadiscos-ttp",
+   "paleta": "despiece",
+   "label": "Portadiscos de polea TTP",
+   "category": "peso",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 6.1,
+    "height": 8.1,
+    "depth": 88
+   },
+   "physics": {
+    "massKg": 8,
+    "fixed": false
+   },
+   "cargaDiscos": {
+    "lados": 2,
+    "diamCm": 34,
+    "grosorCm": 3,
+    "masaKg": 10,
+    "mangaCm": 14
+   },
+   "description": "Portadiscos real del TTP001L: barra deslizante que soporta los discos A CADA LADO (se ensamblan por el orificio central) y corre guiada por los rieles; el cable la eleva."
+  },
+  {
+   "id": "manguito-guia-ttp",
+   "paleta": "despiece",
+   "label": "Manguito de guía TTP (54)",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "box",
+    "width": 6,
+    "height": 54,
+    "depth": 6
+   },
+   "physics": {
+    "massKg": 2,
+    "fixed": false
+   },
+   "description": "Manguito real del carro del TTP001L: se desliza por el tubo de guía del sistema de poleas."
+  },
+  {
+   "id": "montante-pr",
+   "paleta": "retirada",
+   "label": "Media columna POWERRACK (110)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7,
+    "height": 110,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "holeStepCm": 5.5,
+   "holeDiameterCm": 2.6,
+   "calceFilas": 10,
+   "ejeCalce": "x",
+   "calceFase": 1.13,
+   "description": "Tramo real de columna perforada del POWERRACK (7×7×110): dos apilados forman cada poste de 220."
+  },
+  {
+   "id": "travesano-pr",
+   "paleta": "despiece",
+   "label": "Travesaño POWERRACK (70)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 70,
+    "height": 7,
+    "depth": 7
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Travesaño superior real del POWERRACK (70 cm): cruza el marco a lo ancho."
+  },
+  {
+   "id": "larguero-pr",
+   "paleta": "despiece",
+   "label": "Larguero POWERRACK (106)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7,
+    "height": 7,
+    "depth": 106
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Larguero lateral real del POWERRACK (106 cm) que une los postes por la base."
+  },
+  {
+   "id": "liston-pr",
+   "paleta": "despiece",
+   "label": "Listón POWERRACK (106)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7,
+    "height": 5,
+    "depth": 106
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Listón plano real del POWERRACK (106 cm)."
+  },
+  {
+   "id": "barra-pr",
+   "label": "Barra pullups (106)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7,
+    "height": 12,
+    "depth": 106
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "largoAjustable": {
+    "eje": "z",
+    "extremosCm": 10,
+    "minCm": 40,
+    "maxCm": 240
+   },
+   "description": "Barra de pullups real del POWERRACK (106 cm) con placas de montaje en ambos extremos. Su largo se ajusta a la separación entre pilares."
+  },
+  {
+   "id": "jota-pr",
+   "label": "Anclaje de cadena",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 13.2,
+    "height": 13,
+    "depth": 7.4
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "calceLocal": [
+    -2.3,
+    0
+   ],
+   "frenteCalce": "x",
+   "pivoteLocal": [
+    4,
+    0
+   ],
+   "ejePivote": "z",
+   "description": "Anclaje real del POWERRACK: su pin posterior entra en los pinholes de la columna y el cilindro perpendicular es el pivote de cadenas y brazos móviles."
+  },
+  {
+   "id": "jota-rodillo-pr",
+   "label": "Jota con rodillo",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 7.4,
+    "height": 13,
+    "depth": 15.4
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "calceLocal": [
+    0,
+    4
+   ],
+   "asientoBarra": true,
+   "description": "Jota con rodillo real del POWERRACK: el cilindro es el pin de acople a los orificios del pilar, las placas laterales lo abrazan y la superficie posterior con tope recibe la barra."
+  },
+  {
+   "id": "riel-base-pr",
+   "paleta": "despiece",
+   "label": "Riel de base POWERRACK (118)",
+   "category": "estructural",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 118,
+    "height": 5,
+    "depth": 11
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Riel de base real del POWERRACK (118 cm) que arriostra los postes al suelo."
   },
   {
    "id": "correa-seguridad",
@@ -414,8 +972,8 @@
    "defaults": {
     "kind": "box",
     "width": 120,
-    "height": 4,
-    "depth": 0.6
+    "height": 0.6,
+    "depth": 4
    },
    "physics": {
     "massKg": 0.3,
@@ -426,6 +984,7 @@
   },
   {
    "id": "barra-dominadas",
+   "paleta": "oculta",
    "label": "Barra de dominadas",
    "category": "estructural",
    "materialId": "cromo",
@@ -439,10 +998,16 @@
     "massKg": 0,
     "fixed": true
    },
+   "orientacion": [
+    0,
+    0,
+    1.5707963267948966
+   ],
    "description": "Barra superior de pull-ups (gruesa/fina)."
   },
   {
    "id": "barra-fondos",
+   "paleta": "retirada",
    "label": "Barra de fondos",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -456,10 +1021,16 @@
     "massKg": 0,
     "fixed": true
    },
+   "orientacion": [
+    0,
+    0,
+    1.5707963267948966
+   ],
    "description": "Agarre paralelo para fondos (dips)."
   },
   {
    "id": "landmine",
+   "paleta": "retirada",
    "label": "Landmine",
    "category": "estructural",
    "materialId": "acero-negro",
@@ -476,8 +1047,178 @@
    "description": "Manguito pivotante para un extremo de barra."
   },
   {
+   "id": "guia-tubular",
+   "label": "Guía tubular",
+   "category": "movimiento",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.5,
+    "radiusBottom": 1.5,
+    "height": 160,
+    "radialSegments": 24
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Barra guía cromada: se tiende entre dos anclajes y por ella corre el carro. Lo que va enhebrado en ella queda circunscrito a su recta."
+  },
+  {
+   "id": "pasador",
+   "label": "Pasador",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.25,
+    "radiusBottom": 1.25,
+    "height": 20,
+    "radialSegments": 20
+   },
+   "physics": {
+    "massKg": 0.3,
+    "fixed": false
+   },
+   "orientacion": [
+    0,
+    0,
+    1.5707963267948966
+   ],
+   "description": "Eje cilíndrico que hace de pivote: en Propiedades se le dicen qué piezas lo anclan y cuáles giran sobre él, con el recorrido en HORAS DEL RELOJ y el freno. Perfora lo que atraviesa, como una guía."
+  },
+  {
+   "id": "punto-anclaje",
+   "label": "Punto de anclaje",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "horquilla",
+    "horquillaAlto": 8,
+    "horquillaEspesor": 0.8,
+    "horquillaGarganta": 4.2,
+    "horquillaVuelo": 4,
+    "horquillaAgujero": 1.3
+   },
+   "physics": {
+    "massKg": 0.5,
+    "fixed": false
+   },
+   "description": "Horquilla soldable que sostiene un pasador por los dos lados: el alma va contra la cara de la viga y el brazo entra entre las orejas, cuya punta redonda le deja completar el recorrido. La coloca sola la herramienta de pasador."
+  },
+  {
+   "id": "pivote-indexado",
+   "label": "Pivote indexado (silla)",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8.4,
+    "height": 13.2,
+    "depth": 16.4
+   },
+   "physics": {
+    "massKg": 2.8,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Pivote que se clava por tramos: un disco con 7 agujeros —una hora de paso— y una silla que abraza el montante y se calza en su pinhole con la espiga y la maneta. Se sube o se baja de nivel sin herramienta."
+  },
+  {
+   "id": "pivote-indexado-soldar",
+   "label": "Pivote indexado (soldar)",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8.4,
+    "height": 13.2,
+    "depth": 10.6
+   },
+   "physics": {
+    "massKg": 2.2,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "El mismo pivote de 7 tramos, con una cara plana en vez de la silla: para pegarlo donde no hay pinhole al que calzarse. El eje cae en el mismo sitio respecto de la cara de montaje."
+  },
+  {
+   "id": "pasador-manija",
+   "label": "Pasador con manija",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.25,
+    "radiusBottom": 1.25,
+    "height": 21.6,
+    "radialSegments": 20
+   },
+   "physics": {
+    "massKg": 0.8,
+    "fixed": false
+   },
+   "description": "El eje del pivote indexado, que además se agarra: sobresale por fuera del brazo lo bastante para que una mano lo saque, suba o baje de pinhole y lo vuelva a calzar. Lleva cabeza de tope por dentro y taladro de clip por fuera."
+  },
+  {
+   "id": "tope-guia",
+   "label": "Tope de guía",
+   "category": "movimiento",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 3.2,
+    "radiusBottom": 3.2,
+    "height": 6,
+    "radialSegments": 20
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "topeGuia": true,
+   "description": "Espaciador de goma que se monta sobre una guía tubular y detiene ahí el carro. Su largo y su diámetro se ajustan en Propiedades."
+  },
+  {
+   "id": "safety-pin",
+   "label": "Safety pin",
+   "category": "movimiento",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 1.25,
+    "radiusBottom": 1.25,
+    "height": 24,
+    "radialSegments": 20
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "orientacion": [
+    0,
+    0,
+    1.5707963267948966
+   ],
+   "calceLocal": [
+    0,
+    0
+   ],
+   "ejePasante": "y",
+   "description": "Pasador cromado que ATRAVIESA un pinhole del pilar y hace de tope de seguridad o de gancho. Calza agujero a agujero; su largo, su diámetro y el sobrante a cada lado se ajustan en Propiedades."
+  },
+  {
    "id": "guia",
-   "label": "Guia",
+   "paleta": "oculta",
+   "label": "Guía",
    "category": "movimiento",
    "materialId": "cromo",
    "defaults": {
@@ -494,6 +1235,7 @@
   },
   {
    "id": "riel",
+   "paleta": "oculta",
    "label": "Riel",
    "category": "movimiento",
    "materialId": "acero-pulido",
@@ -511,6 +1253,7 @@
   },
   {
    "id": "fulcro",
+   "paleta": "oculta",
    "label": "Fulcro",
    "category": "movimiento",
    "materialId": "turquesa",
@@ -528,6 +1271,7 @@
   },
   {
    "id": "pivote",
+   "paleta": "retirada",
    "label": "Pivote",
    "category": "movimiento",
    "materialId": "turquesa",
@@ -545,6 +1289,7 @@
   },
   {
    "id": "pop-pin",
+   "paleta": "retirada",
    "label": "Pasador (pop-pin)",
    "category": "movimiento",
    "materialId": "acero-pulido",
@@ -562,6 +1307,7 @@
   },
   {
    "id": "carro-cable",
+   "paleta": "retirada",
    "label": "Carro de cable",
    "category": "movimiento",
    "materialId": "acero-negro",
@@ -579,6 +1325,7 @@
   },
   {
    "id": "brazo-ajustable",
+   "paleta": "retirada",
    "label": "Brazo ajustable",
    "category": "movimiento",
    "materialId": "acero-negro",
@@ -595,23 +1342,6 @@
    "description": "Brazo-palanca pivotante con posiciones de detencion (jalon/remo)."
   },
   {
-   "id": "polea",
-   "label": "Polea",
-   "category": "transmision",
-   "materialId": "nylon",
-   "defaults": {
-    "kind": "cylinder",
-    "radiusTop": 6,
-    "radiusBottom": 6,
-    "height": 3
-   },
-   "physics": {
-    "massKg": 0.5,
-    "fixed": false
-   },
-   "description": "Rueda acanalada que redirige un cable."
-  },
-  {
    "id": "roldana",
    "label": "Roldana",
    "category": "transmision",
@@ -626,27 +1356,117 @@
     "massKg": 0.3,
     "fixed": false
    },
-   "description": "Polea pequena de reenvio de cable."
+   "description": "Polea pequena de reenvio que se coloca SOBRE una estructura: toca la pieza anfitriona, elige el punto de su eje azul y precisa tipo (interna/externa) y direccion."
   },
   {
-   "id": "bloque-poleas",
-   "label": "Bloque de poleas",
+   "id": "soporte-roldana",
+   "paleta": "oculta",
+   "label": "Soporte de roldana",
    "category": "transmision",
    "materialId": "acero-negro",
    "defaults": {
-    "kind": "cylinder",
-    "radiusTop": 5,
-    "radiusBottom": 5,
-    "height": 7
+    "kind": "box",
+    "width": 5,
+    "height": 1,
+    "depth": 5
    },
    "physics": {
-    "massKg": 0.8,
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Placa/mejilla de montaje que fija una roldana EXTERNA a su estructura (la produce la herramienta de roldana: nada queda flotando)."
+  },
+  {
+   "id": "eje-roldana",
+   "paleta": "oculta",
+   "label": "Eje de roldana",
+   "category": "transmision",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.9,
+    "radiusBottom": 0.9,
+    "height": 10
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Eje pasante que sostiene una roldana INTERNA: apoya en las DOS paredes laterales de la viga y la rueda gira sobre el (lo produce la herramienta de roldana)."
+  },
+  {
+   "id": "apertura-cable",
+   "paleta": "oculta",
+   "label": "Apertura de cable",
+   "category": "transmision",
+   "materialId": "caucho",
+   "defaults": {
+    "kind": "box",
+    "width": 10,
+    "height": 0.5,
+    "depth": 3.5
+   },
+   "physics": {
+    "massKg": 0,
+    "fixed": true
+   },
+   "description": "Orificio rectangular en la cara del perfil por donde transita el cable de una roldana INTERNA (lo produce la herramienta de roldana, como en la viga superior del jalón alto TTP)."
+  },
+  {
+   "id": "placa-bisagra",
+   "paleta": "oculta",
+   "label": "Placa de bisagra",
+   "category": "movimiento",
+   "materialId": "acero-negro",
+   "defaults": {
+    "kind": "box",
+    "width": 8,
+    "height": 0.8,
+    "depth": 6
+   },
+   "physics": {
+    "massKg": 0.4,
     "fixed": false
    },
-   "description": "Bloque de doble polea de reenvio (swivel) atornillado al montante."
+   "description": "Pala plana de una bisagra REAL: va soldada a una de las dos piezas y gira con ella alrededor del pasador (la produce la herramienta de bisagra)."
+  },
+  {
+   "id": "pasador-bisagra",
+   "paleta": "oculta",
+   "label": "Pasador de bisagra",
+   "category": "movimiento",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "cylinder",
+    "radiusTop": 0.9,
+    "radiusBottom": 0.9,
+    "height": 8
+   },
+   "physics": {
+    "massKg": 0.2,
+    "fixed": false
+   },
+   "description": "Cilindro que hace de articulacion entre las dos placas de una bisagra REAL: marca el eje de giro (la produce la herramienta de bisagra)."
+  },
+  {
+   "id": "terminal-cable",
+   "label": "Terminal de cable",
+   "category": "transmision",
+   "materialId": "acero-pulido",
+   "defaults": {
+    "kind": "torus",
+    "radius": 2.2,
+    "tubeRadius": 0.7
+   },
+   "physics": {
+    "massKg": 0.1,
+    "fixed": true
+   },
+   "description": "Ojal terminal: punto de anclaje de cable colocable sobre cualquier cara de una pieza."
   },
   {
    "id": "engranaje",
+   "paleta": "retirada",
    "label": "Engranaje",
    "category": "transmision",
    "materialId": "acero",
@@ -664,6 +1484,7 @@
   },
   {
    "id": "cable",
+   "paleta": "oculta",
    "label": "Cable",
    "category": "transmision",
    "materialId": "cromo",
@@ -681,6 +1502,7 @@
   },
   {
    "id": "cadena-eslabones",
+   "paleta": "oculta",
    "label": "Cadena de eslabones",
    "category": "transmision",
    "materialId": "acero",
@@ -716,7 +1538,8 @@
   },
   {
    "id": "liston-kevlar",
-   "label": "Liston de Kevlar",
+   "paleta": "oculta",
+   "label": "Listón de Kevlar",
    "category": "transmision",
    "materialId": "kevlar",
    "defaults": {
@@ -733,6 +1556,7 @@
   },
   {
    "id": "resorte",
+   "paleta": "retirada",
    "label": "Resorte",
    "category": "transmision",
    "materialId": "acero",
@@ -749,24 +1573,8 @@
    "description": "Muelle elastico que almacena energia."
   },
   {
-   "id": "leva",
-   "label": "Leva (cam)",
-   "category": "transmision",
-   "materialId": "acero",
-   "defaults": {
-    "kind": "cylinder",
-    "radiusTop": 8,
-    "radiusBottom": 8,
-    "height": 2.5
-   },
-   "physics": {
-    "massKg": 0.7,
-    "fixed": false
-   },
-   "description": "Leva de resistencia variable: el radio efectivo r(θ) modela la curva de fuerza."
-  },
-  {
    "id": "bloque-peso",
+   "paleta": "retirada",
    "label": "Bloque de peso",
    "category": "peso",
    "materialId": "hierro-fundido",
@@ -774,13 +1582,387 @@
     "kind": "box",
     "width": 30,
     "height": 4,
-    "depth": 18
+    "depth": 18,
+    "holeDiameter": 6,
+    "holeSpacing": 13.3
    },
    "physics": {
     "massKg": 5,
     "fixed": false
    },
-   "description": "Placa de la pila de pesos seleccionable."
+   "description": "Placa de la pila de pesos seleccionable, con dos orificios verticales que abrazan los tubos guía (se desliza por ellos como el carrier del TTP)."
+  },
+  {
+   "id": "kettlebell",
+   "label": "Kettlebell",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 22.79,
+    "height": 26.14,
+    "depth": 17.19
+   },
+   "physics": {
+    "massKg": 20,
+    "fixed": false
+   },
+   "variantes": [
+    {
+     "id": "kettlebell-10",
+     "etiqueta": "10 kg"
+    },
+    {
+     "id": "kettlebell-15",
+     "etiqueta": "15 kg"
+    },
+    {
+     "id": "kettlebell-20",
+     "etiqueta": "20 kg"
+    },
+    {
+     "id": "kettlebell-25",
+     "etiqueta": "25 kg"
+    },
+    {
+     "id": "kettlebell-35",
+     "etiqueta": "35 kg"
+    },
+    {
+     "id": "kettlebell-45",
+     "etiqueta": "45 kg"
+    },
+    {
+     "id": "kettlebell-55",
+     "etiqueta": "55 kg"
+    }
+   ],
+   "description": "Pesa rusa de hierro con el peso grabado en el costado. Al tocarla se elige el peso: 10, 15, 20, 25, 35, 45 o 55 kg. El asa deja de crecer al llegar a su techo ergonómico y de ahí en adelante sólo engorda la bola."
+  },
+  {
+   "id": "kettlebell-10",
+   "paleta": "oculta",
+   "label": "Kettlebell 10 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 21.28,
+    "height": 21.86,
+    "depth": 13.19
+   },
+   "physics": {
+    "massKg": 10,
+    "fixed": false
+   },
+   "description": "Kettlebell de 10 kg: bola de Ø13.2 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-15",
+   "paleta": "oculta",
+   "label": "Kettlebell 15 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 22.12,
+    "height": 24.24,
+    "depth": 15.42
+   },
+   "physics": {
+    "massKg": 15,
+    "fixed": false
+   },
+   "description": "Kettlebell de 15 kg: bola de Ø15.4 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-20",
+   "paleta": "oculta",
+   "label": "Kettlebell 20 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 22.79,
+    "height": 26.14,
+    "depth": 17.19
+   },
+   "physics": {
+    "massKg": 20,
+    "fixed": false
+   },
+   "description": "Kettlebell de 20 kg: bola de Ø17.2 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-25",
+   "paleta": "oculta",
+   "label": "Kettlebell 25 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 22.87,
+    "height": 27.59,
+    "depth": 18.68
+   },
+   "physics": {
+    "massKg": 25,
+    "fixed": false
+   },
+   "description": "Kettlebell de 25 kg: bola de Ø18.7 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-35",
+   "paleta": "oculta",
+   "label": "Kettlebell 35 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 22.99,
+    "height": 29.99,
+    "depth": 21.16
+   },
+   "physics": {
+    "massKg": 35,
+    "fixed": false
+   },
+   "description": "Kettlebell de 35 kg: bola de Ø21.2 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-45",
+   "paleta": "oculta",
+   "label": "Kettlebell 45 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 23.19,
+    "height": 31.96,
+    "depth": 23.19
+   },
+   "physics": {
+    "massKg": 45,
+    "fixed": false
+   },
+   "description": "Kettlebell de 45 kg: bola de Ø23.2 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "kettlebell-55",
+   "paleta": "oculta",
+   "label": "Kettlebell 55 kg",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 24.95,
+    "height": 33.66,
+    "depth": 24.95
+   },
+   "physics": {
+    "massKg": 55,
+    "fixed": false
+   },
+   "description": "Kettlebell de 55 kg: bola de Ø24.9 cm con la base rebajada y el peso grabado en el costado."
+  },
+  {
+   "id": "mancuerna-hex",
+   "label": "Mancuerna hexagonal",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 32.95,
+    "height": 12.82,
+    "depth": 14.81
+   },
+   "physics": {
+    "massKg": 13.61,
+    "fixed": false
+   },
+   "variantes": [
+    {
+     "id": "mancuerna-10",
+     "etiqueta": "10 lb"
+    },
+    {
+     "id": "mancuerna-20",
+     "etiqueta": "20 lb"
+    },
+    {
+     "id": "mancuerna-30",
+     "etiqueta": "30 lb"
+    },
+    {
+     "id": "mancuerna-40",
+     "etiqueta": "40 lb"
+    },
+    {
+     "id": "mancuerna-50",
+     "etiqueta": "50 lb"
+    }
+   ],
+   "description": "Mancuerna hexagonal de goma con el peso grabado en la cara. Al tocarla se elige el peso: 10, 20, 30, 40 o 50 libras. Cada uno es una pieza distinta —otras cotas y otra masa—, no la misma estirada."
+  },
+  {
+   "id": "mancuerna-10",
+   "paleta": "oculta",
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.3062,
+      0.6938
+     ]
+    ]
+   },
+   "label": "Mancuerna 10 lb",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 26.83,
+    "height": 8.89,
+    "depth": 10.27
+   },
+   "physics": {
+    "massKg": 4.54,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Mancuerna hexagonal de 10 libras (4.5 kg): cabezas de goma con el peso grabado y mango cromado."
+  },
+  {
+   "id": "mancuerna-20",
+   "paleta": "oculta",
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.3291,
+      0.6709
+     ]
+    ]
+   },
+   "label": "Mancuerna 20 lb",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 30.43,
+    "height": 11.2,
+    "depth": 12.94
+   },
+   "physics": {
+    "massKg": 9.07,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Mancuerna hexagonal de 20 libras (9.1 kg): cabezas de goma con el peso grabado y mango cromado."
+  },
+  {
+   "id": "mancuerna-30",
+   "paleta": "oculta",
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.3422,
+      0.6578
+     ]
+    ]
+   },
+   "label": "Mancuerna 30 lb",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 32.95,
+    "height": 12.82,
+    "depth": 14.81
+   },
+   "physics": {
+    "massKg": 13.61,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Mancuerna hexagonal de 30 libras (13.6 kg): cabezas de goma con el peso grabado y mango cromado."
+  },
+  {
+   "id": "mancuerna-40",
+   "paleta": "oculta",
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.3512,
+      0.6488
+     ]
+    ]
+   },
+   "label": "Mancuerna 40 lb",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 34.96,
+    "height": 14.11,
+    "depth": 16.3
+   },
+   "physics": {
+    "massKg": 18.14,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Mancuerna hexagonal de 40 libras (18.1 kg): cabezas de goma con el peso grabado y mango cromado."
+  },
+  {
+   "id": "mancuerna-50",
+   "paleta": "oculta",
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.3581,
+      0.6419
+     ]
+    ]
+   },
+   "label": "Mancuerna 50 lb",
+   "category": "peso",
+   "materialId": "goma",
+   "defaults": {
+    "kind": "box",
+    "width": 36.65,
+    "height": 15.2,
+    "depth": 17.56
+   },
+   "physics": {
+    "massKg": 22.68,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Mancuerna hexagonal de 50 libras (22.7 kg): cabezas de goma con el peso grabado y mango cromado."
   },
   {
    "id": "disco-peso",
@@ -788,19 +1970,152 @@
    "category": "peso",
    "materialId": "hierro-fundido",
    "defaults": {
-    "kind": "cylinder",
-    "radiusTop": 22,
-    "radiusBottom": 22,
-    "height": 3
+    "kind": "box",
+    "width": 27.94,
+    "height": 27.94,
+    "depth": 3.56
    },
    "physics": {
-    "massKg": 20,
+    "massKg": 11.34,
     "fixed": false
    },
-   "description": "Disco olimpico para barras o ejes."
+   "variantes": [
+    {
+     "id": "disco-barbell-5",
+     "etiqueta": "5 lb"
+    },
+    {
+     "id": "disco-barbell-10",
+     "etiqueta": "10 lb"
+    },
+    {
+     "id": "disco-barbell-25",
+     "etiqueta": "25 lb"
+    },
+    {
+     "id": "disco-barbell-35",
+     "etiqueta": "35 lb"
+    },
+    {
+     "id": "disco-barbell-45",
+     "etiqueta": "45 lb"
+    }
+   ],
+   "description": "Disco olimpico de hierro fundido con las letras STANDARD BARBELL en relieve por las dos caras y el peso en libras y en kilos. Al tocarlo se elige el peso: 5, 10, 25, 35 o 45 libras. El agujero mide siempre 5 cm para enfilar mangas olimpicas. Los de 35 y 45 llevan la cruz de cuatro radios con sus cuarteles vaciados; los de 5, 10 y 25 son lisos y llevan el rotulo dando la vuelta a la llanta."
+  },
+  {
+   "id": "disco-barbell-10",
+   "paleta": "oculta",
+   "rotulo": {
+    "materialId": "blanco",
+    "asomaCm": 0.25
+   },
+   "label": "Disco 10 lb",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 23.5,
+    "height": 23.5,
+    "depth": 2.16
+   },
+   "physics": {
+    "massKg": 4.54,
+    "fixed": false
+   },
+   "description": "Disco de 10 libras (4.5 kg): O23.5 cm por 2.16 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 10 LBS y 4.5 KGS dando la vuelta a la llanta."
+  },
+  {
+   "id": "disco-barbell-5",
+   "paleta": "oculta",
+   "rotulo": {
+    "materialId": "blanco",
+    "asomaCm": 0.25
+   },
+   "label": "Disco 5 lb",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 19.69,
+    "height": 19.69,
+    "depth": 1.65
+   },
+   "physics": {
+    "massKg": 2.27,
+    "fixed": false
+   },
+   "description": "Disco de 5 libras (2.3 kg): O19.7 cm por 1.65 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 5 LBS y 2.3 KGS dando la vuelta a la llanta."
+  },
+  {
+   "id": "disco-barbell-25",
+   "paleta": "oculta",
+   "rotulo": {
+    "materialId": "blanco",
+    "asomaCm": 0.25
+   },
+   "label": "Disco 25 lb",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 27.94,
+    "height": 27.94,
+    "depth": 3.56
+   },
+   "physics": {
+    "massKg": 11.34,
+    "fixed": false
+   },
+   "description": "Disco de 25 libras (11.3 kg): O27.9 cm por 3.56 de canto, sin cruz, con el alma vaciada por las dos caras y STANDARD, 25 LBS y 11.3 KGS dando la vuelta a la llanta."
+  },
+  {
+   "id": "disco-barbell-35",
+   "paleta": "oculta",
+   "rotulo": {
+    "materialId": "blanco",
+    "asomaCm": 0.25
+   },
+   "label": "Disco 35 lb",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 34.93,
+    "height": 34.93,
+    "depth": 3.56
+   },
+   "physics": {
+    "massKg": 15.88,
+    "fixed": false
+   },
+   "description": "Disco de 35 libras (15.9 kg): O34.9 cm por 3.56 de canto, con la cruz de cuatro radios, BARBELL y STANDARD en la llanta y 35 LBS / 15.9 KGS en los cuarteles."
+  },
+  {
+   "id": "disco-barbell-45",
+   "paleta": "oculta",
+   "rotulo": {
+    "materialId": "blanco",
+    "asomaCm": 0.25
+   },
+   "label": "Disco 45 lb",
+   "category": "peso",
+   "materialId": "hierro-fundido",
+   "defaults": {
+    "kind": "box",
+    "width": 44.13,
+    "height": 44.13,
+    "depth": 3.56
+   },
+   "physics": {
+    "massKg": 20.41,
+    "fixed": false
+   },
+   "description": "Disco de 45 libras (20.4 kg): O44.1 cm por 3.56 de canto, el mayor del juego, con la cruz de cuatro radios y el alma vaciada hasta dejarla en 4 mm."
   },
   {
    "id": "contrapeso",
+   "paleta": "retirada",
    "label": "Contrapeso",
    "category": "peso",
    "materialId": "hierro-fundido",
@@ -818,13 +2133,13 @@
   },
   {
    "id": "barra-olimpica",
-   "label": "Barra olimpica",
+   "label": "Barra olímpica",
    "category": "peso",
    "materialId": "cromo",
    "defaults": {
     "kind": "cylinder",
-    "radiusTop": 1.45,
-    "radiusBottom": 1.45,
+    "radiusTop": 1.4,
+    "radiusBottom": 1.4,
     "height": 220,
     "radialSegments": 24
    },
@@ -832,7 +2147,35 @@
     "massKg": 20,
     "fixed": false
    },
-   "description": "Barra olimpica de 2.2 m (barbell)."
+   "cargaDiscos": {
+    "lados": 2,
+    "diamCm": 44.13,
+    "grosorCm": 3.56,
+    "masaKg": 20.41,
+    "mangaCm": 43.3
+   },
+   "bandas": {
+    "materialId": "plata",
+    "tramos": [
+     [
+      0.2273,
+      0.3141
+     ],
+     [
+      0.3177,
+      0.4409
+     ],
+     [
+      0.5591,
+      0.6823
+     ],
+     [
+      0.6859,
+      0.7727
+     ]
+    ]
+   },
+   "description": "Barra olimpica de 2.2 m y 20 kg: mangas de O5 cm para los discos, collares de tope y eje de O2.8 cm con moleteado en las zonas de agarre, marca de agarre y tramos lisos en el centro y junto a los collares."
   },
   {
    "id": "pila-pesos",
@@ -843,7 +2186,9 @@
     "kind": "box",
     "width": 25,
     "height": 90,
-    "depth": 18
+    "depth": 18,
+    "holeDiameter": 6,
+    "holeSpacing": 13.3
    },
    "physics": {
     "massKg": 102,
@@ -854,7 +2199,7 @@
     "plateMassKg": 6.8,
     "selected": 5
    },
-   "description": "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba."
+   "description": "Stack selectorizado: el tubo selector arrastra las placas del pin hacia arriba. Cada placa lleva los dos orificios verticales que abrazan los tubos guía del sistema de poleas."
   },
   {
    "id": "cuerno-carga",
@@ -871,10 +2216,17 @@
     "massKg": 0.5,
     "fixed": false
    },
-   "description": "Manguito olimpico donde se cargan los discos (plate-loaded)."
+   "cargaDiscos": {
+    "lados": 1,
+    "diamCm": 44,
+    "grosorCm": 3,
+    "masaKg": 20
+   },
+   "description": "Manguito olimpico donde se cargan los discos (plate-loaded): se ensamblan por el orificio central."
   },
   {
    "id": "micro-disco",
+   "paleta": "retirada",
    "label": "Micro-disco",
    "category": "peso",
    "materialId": "hierro-fundido",
@@ -892,6 +2244,7 @@
   },
   {
    "id": "agarradera",
+   "paleta": "retirada",
    "label": "Agarradera",
    "category": "ergonomico",
    "materialId": "goma",
@@ -941,41 +2294,75 @@
    "description": "Soporte para la espalda."
   },
   {
+   "id": "agarre-doble",
+   "label": "Agarre doble (polea)",
+   "category": "ergonomico",
+   "materialId": "cromo",
+   "defaults": {
+    "kind": "box",
+    "width": 23,
+    "height": 20,
+    "depth": 12.5
+   },
+   "physics": {
+    "massKg": 1.4,
+    "fixed": false
+   },
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Agarre de dos mangos para cable: oreja arriba para el mosqueton y dos punos enfrentados. Para remo neutro y jalon al pecho."
+  },
+  {
    "id": "agarre-d",
    "label": "Agarradera en D",
    "category": "ergonomico",
-   "materialId": "goma",
+   "materialId": "cromo",
    "defaults": {
-    "kind": "torus",
-    "radius": 6,
-    "tubeRadius": 1.2
+    "kind": "box",
+    "width": 15.6,
+    "height": 18.3,
+    "depth": 3
    },
    "physics": {
-    "massKg": 0.3,
+    "massKg": 0.5,
     "fixed": false
    },
-   "description": "Mango en D para cable (single handle)."
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Estribo en D de una mano: oreja arriba para el mosqueton, funda de goma con sus dos collares abajo. Para polea alta o baja a un brazo."
   },
   {
    "id": "cuerda-triceps",
-   "label": "Cuerda de triceps",
+   "label": "Cuerda de tríceps",
    "category": "ergonomico",
    "materialId": "nylon",
    "defaults": {
-    "kind": "cylinder",
-    "radiusTop": 1.2,
-    "radiusBottom": 1.2,
-    "height": 60
+    "kind": "box",
+    "width": 14.6,
+    "height": 32.75,
+    "depth": 5.6
    },
    "physics": {
-    "massKg": 0.3,
+    "massKg": 0.6,
     "fixed": false
    },
-   "description": "Cuerda doble para pushdowns y face pulls."
+   "orientacion": [
+    1.5707963267948966,
+    0,
+    0
+   ],
+   "description": "Cuerda de tres cabos torcidos para polea: abrazadera con oreja arriba y casquillo en cada punta. Para extensiones de triceps y face pulls."
   },
   {
    "id": "barra-jalon",
-   "label": "Barra de jalon",
+   "paleta": "retirada",
+   "label": "Barra de jalón",
    "category": "ergonomico",
    "materialId": "cromo",
    "defaults": {
@@ -992,6 +2379,7 @@
   },
   {
    "id": "correa-tobillo",
+   "paleta": "retirada",
    "label": "Correa de tobillo",
    "category": "ergonomico",
    "materialId": "nylon",

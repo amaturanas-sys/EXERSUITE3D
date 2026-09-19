@@ -1,7 +1,20 @@
 class_name ComponentLibrary
 ## Biblioteca de componentes y materiales, cargada desde data/components.json
 ## (generado automáticamente desde el código TypeScript de la app web, así que
-## los 47 componentes y 20 materiales son EXACTAMENTE los mismos).
+## los 104 componentes y 20 materiales son EXACTAMENTE los mismos).
+##
+## NO TODO LO QUE ESTÁ EN LA BIBLIOTECA VA A LA PALETA, y confundirlo llena la
+## barra de piezas que nadie debe insertar sueltas:
+##
+##   · `paleta: "oculta"`    — pieza interna de una máquina o VARIANTE de otra
+##                             (los cinco discos, las siete kettlebells…);
+##                             llega con su máquina o desde la burbuja de pesos;
+##   · `paleta: "despiece"`  — pieza del despiece de una máquina real;
+##   · `paleta: "retirada"`  — pieza que ya no se ofrece, pero que hay que
+##                             seguir sabiendo cargar en proyectos viejos.
+##
+## `palette_components()` devuelve sólo lo que de verdad se ofrece, en el orden
+## de la biblioteca; `variants_of()` da los pesos de las que abren burbuja.
 
 static var _data: Dictionary = {}
 static var _by_id: Dictionary = {}
@@ -31,6 +44,22 @@ static func get_definition(id: String) -> Dictionary:
 static func all_components() -> Array:
 	_ensure_loaded()
 	return _data.get("components", [])
+
+
+## Lo que se ofrece en la paleta: sin ocultas, sin despiece y sin retiradas.
+static func palette_components() -> Array:
+	_ensure_loaded()
+	var out: Array = []
+	for c in _data.get("components", []):
+		if String(c.get("paleta", "")) == "":
+			out.append(c)
+	return out
+
+
+## Variantes de una pieza que se elige por peso (disco, kettlebell, mancuerna).
+## Vacío si la pieza se inserta directamente.
+static func variants_of(id: String) -> Array:
+	return get_definition(id).get("variantes", [])
 
 
 static func category_label(cat: String) -> String:

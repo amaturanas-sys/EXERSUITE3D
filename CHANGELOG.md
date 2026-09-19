@@ -5,6 +5,59 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.74] — 2026-09-19
+
+### Cambiado
+
+**EL KIT DE GODOT SE PONE AL DÍA.** Estaba congelado en la web **v0.1.9** —164
+versiones atrás—, así que abría los proyectos nuevos pero con la mitad de la
+aplicación por dentro. Primera tanda de puesta al día, toda medida con el motor
+de verdad (Godot 4.4.1 headless), no a ojo:
+
+**EL CATÁLOGO ES OTRA VEZ EL MISMO: de 47 componentes a 104.** `components.json`
+se regenera desde el TypeScript de la biblioteca, así que entran de golpe los
+discos, las kettlebells, las mancuernas hexagonales, la barra olímpica, el
+atril, el brazo spotter, el pivote indexado, los agarres y la cuerda de
+tríceps. (La receta de regeneración del manual estaba obsoleta —`tsc` emite los
+imports relativos sin extensión y Node los rechaza—; queda arreglada.)
+
+**Y LA PALETA VUELVE A OFRECER LO QUE SE OFRECE.** La biblioteca trae también
+las piezas internas de cada máquina, las variantes de peso y las retiradas:
+listarlas todas habría llenado la barra de cosas que nadie debe insertar
+sueltas. Se ofrecen **38**, y las que se venden por peso —disco, kettlebell,
+mancuerna— abren su **burbuja de pesos** como en la web.
+
+**LAS PIEZAS TIENEN SU MALLA DE VERDAD.** Las **54** piezas con modelo propio
+—26 `.glb` y 28 `.obj`— viajan ahora dentro del proyecto Godot. Un `.glb` entra
+como escena y un `.obj` como malla suelta, que son dos caminos distintos del
+importador: tratarlos igual devolvía nulo y la pieza se quedaba en su caja
+gris.
+
+**LA HERRAMIENTA DE CHAPA, PORTADA Y CUADRADA AL MILÍMETRO.** `core/chapa.gd`
+hace el mismo trabajo que `chapa.ts`, con los cuatro arreglos de la auditoría
+de v0.3.73 incluidos. Medido contra las mismas invariantes que la prueba de la
+web, con el mismo cubo de 20 cm y el mismo grosor de 5 mm: el suelo de la
+cubeta cae en **−0,095 m** (los 0,5 cm de plancha), el canto queda arriba del
+todo, la caja no cambia y salen los **mismos 28 triángulos**.
+
+**Y UNA TRAMPA ENTRE MOTORES, DOCUMENTADA DONDE TOCA**: three.js considera de
+frente el giro **antihorario** y Godot el **horario**, así que el producto
+vectorial que en la web apunta hacia fuera aquí apunta hacia DENTRO. Con la
+fórmula de la web, la cara de arriba de un cubo salía mirando hacia abajo,
+ninguna ficha emparejaba y la chapa dejaba la pieza hueca y cerrada en vez de
+abrirla.
+
+### Pruebas
+
+Dos programas nuevos de Godot, que corren en el CI junto a la prueba de humo:
+
+  · `tests/catalogo.gd` — que el catálogo, los materiales, la paleta, las
+    variantes y las 54 mallas son los de la web y cargan;
+  · `tests/chapa.gd` — las invariantes de `prueba-chapa.mjs`, número a número.
+
+Y la caché de importación de Godot (`godot/.godot/`) deja de viajar en el
+repositorio: se regenera sola al abrir el proyecto.
+
 ## [0.3.73] — 2026-09-19
 
 Auditoría de las herramientas añadidas desde v0.3.29 —las 44 versiones sin

@@ -16,10 +16,35 @@ static func _ensure_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(USER_MANNEQUIN)
 
 
+## EL MANIFIESTO DE LA BIBLIOTECA (el mismo archivo que usa la web): dice qué
+## malla le toca a cada componente. No es `<id>.glb` — varias piezas comparten
+## archivo y hay mallas en `.obj`, que Godot también importa. Sin esto, las 54
+## piezas con modelo real —discos, kettlebells, barra olímpica, mancuernas,
+## agarres, cuerda de tríceps, atril, pivote…— salían como cajas grises.
+static var _manifest: Dictionary = {}
+
+
+static func _ensure_manifest() -> void:
+	if not _manifest.is_empty():
+		return
+	var f := FileAccess.open("res://models/manifest.json", FileAccess.READ)
+	if f == null:
+		_manifest = {"__vacio": true}
+		return
+	var d = JSON.parse_string(f.get_as_text())
+	_manifest = d if d is Dictionary else {"__vacio": true}
+
+
 static func component_override_path(id: String) -> String:
 	var user_path := "%s/%s.glb" % [USER_COMPONENTS, id]
 	if FileAccess.file_exists(user_path):
 		return user_path
+	_ensure_manifest()
+	var archivo := String(_manifest.get(id, ""))
+	if archivo != "":
+		var del_manifiesto := "res://models/%s" % archivo
+		if ResourceLoader.exists(del_manifiesto):
+			return del_manifiesto
 	var packed := "res://models/%s.glb" % id
 	if ResourceLoader.exists(packed):
 		return packed
@@ -64,10 +89,19 @@ static func instantiate_fitted(path: String, target: AABB) -> Node3D:
 			return null
 		inst = doc.generate_scene(state)
 	else:
-		var scene: PackedScene = load(path)
-		if scene == null:
+		# UN .glb ENTRA COMO ESCENA Y UN .obj COMO MALLA, que Godot importa por
+		# caminos distintos. La mitad de la biblioteca de la web son `.obj`
+		# —todo el despiece de las máquinas reales—, y tratarlos como escena
+		# devolvía null: la pieza se quedaba en su caja gris.
+		var recurso := load(path)
+		if recurso is PackedScene:
+			inst = (recurso as PackedScene).instantiate()
+		elif recurso is Mesh:
+			var mi := MeshInstance3D.new()
+			mi.mesh = recurso
+			inst = mi
+		else:
 			return null
-		inst = scene.instantiate()
 	if inst == null:
 		return null
 	var src := scene_aabb(inst)

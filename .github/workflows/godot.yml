@@ -52,6 +52,12 @@ jobs:
       - name: Prueba de humo (carga el ejemplo + 2 s de física real)
         run: ./godot-bin --headless --path godot -s res://tests/smoke.gd
 
+      - name: Catalogo (mismos componentes, materiales y mallas que la web)
+        run: ./godot-bin --headless --path godot -s res://tests/catalogo.gd
+
+      - name: Chapa (mismas invariantes que prueba-chapa.mjs de la web)
+        run: ./godot-bin --headless --path godot -s res://tests/chapa.gd
+
   capturas:
     name: Capturas de la interfaz (revisión visual)
     needs: validar

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dmth0mkx8iatu"
+path="res://.godot/imported/jota-rodillo-pr.obj-b962b83714eaf41e6542d81f9a92d1c9.mesh"
+
+[deps]
+
+files=["res://.godot/imported/jota-rodillo-pr.obj-b962b83714eaf41e6542d81f9a92d1c9.mesh"]
+
+source_file="res://models/jota-rodillo-pr.obj"
+dest_files=["res://.godot/imported/jota-rodillo-pr.obj-b962b83714eaf41e6542d81f9a92d1c9.mesh", "res://.godot/imported/jota-rodillo-pr.obj-b962b83714eaf41e6542d81f9a92d1c9.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
