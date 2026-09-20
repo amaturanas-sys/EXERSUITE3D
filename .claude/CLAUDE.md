@@ -15,5 +15,19 @@ son la vía barata para revisar mucho código:
 - `build-error-resolver`, `e2e-runner`.
 
 Y tres skills que tapan huecos del stack: `vite-patterns`, `e2e-testing` y
-`frontend-a11y`. El porqué de la selección —y de lo que se dejó fuera— está en
+`frontend-a11y`.
+
+# Skills de superpowers
+
+Cuatro de [superpowers](https://github.com/obra/superpowers) (MIT), de método:
+
+- `systematic-debugging` — la causa raíz antes que el arreglo.
+- `verification-before-completion` — no se dice «verde» sin haberlo corrido.
+  Aquí eso significa: **en paralelo hay rojos falsos; el veredicto bueno es la
+  corrida en serie.**
+- `dispatching-parallel-agents`, `subagent-driven-development` — cómo repartir
+  trabajo entre los revisores de `.claude/agents/`.
+
+El porqué de cada selección —y de lo que se dejó fuera, incluidos tres
+repositorios enteros que no se enganchan en este entorno— está en
 `.claude/vendor/README.md`.

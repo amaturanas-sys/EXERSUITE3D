@@ -1,3 +1,36 @@
+# Capacidades traídas de fuera
+
+Dos orígenes, las dos licencias MIT y las dos copiadas aquí:
+[ECC](https://github.com/affaan-m/ECC) (`LICENSE-ECC`) y
+[superpowers](https://github.com/obra/superpowers) (`LICENSE-SUPERPOWERS`).
+
+---
+
+# Skills de superpowers
+
+Cuatro de las quince, las que tapan un hueco sin pelearse con lo que ya hay:
+
+- **`systematic-debugging`** — la causa raíz antes que el arreglo. Es la
+  disciplina que hizo falta para encontrar que `el()` convertía `aria-label`
+  en una propiedad inerte: el síntoma era «el botón no se anuncia», y parchear
+  el botón no habría servido de nada.
+- **`verification-before-completion`** — no se dice «verde» sin haberlo
+  corrido en este mismo mensaje. Refuerza la regla de esta casa: en paralelo
+  hay rojos falsos, **el veredicto bueno es el de la corrida en serie**.
+- **`dispatching-parallel-agents`** y **`subagent-driven-development`** — cómo
+  repartir trabajo entre los ocho revisores de `.claude/agents/` sin que el
+  contexto del coordinador se llene.
+
+Lo que se dejó fuera: `test-driven-development` (aquí las pruebas se escriben
+contra el build, después, no antes), `using-git-worktrees` y
+`finishing-a-development-branch` (chocan con el ritual de rama y versionado),
+`requesting-` / `receiving-code-review` (ya vienen con el harness), y las
+meta-skills del propio framework. **Tampoco se instalaron sus `hooks/`**: su
+hook de arranque inyecta instrucciones para usar sus skills, y se pelearía con
+el de graphify y con `CLAUDE.md`.
+
+---
+
 # Capacidades traídas de ECC
 
 Origen: [affaan-m/ECC](https://github.com/affaan-m/ECC) v2.2.2, licencia MIT
@@ -49,6 +82,30 @@ Sólo tres, y las tres tapan un hueco real del stack:
 - **Las otras ~280 skills** — de otros lenguajes y otros dominios (Laravel,
   Django, Kotlin, redes, salud, trading). Están a un `git clone` de distancia
   si algún día hace falta una.
+
+## Lo que se miró y NO entró
+
+Tres repositorios más se clonaron, se leyeron y se descartaron, no por
+calidad sino porque **no se enganchan donde corre esta sesión**:
+
+- **[headroom](https://github.com/headroomlabs-ai/headroom)** — capa de
+  compresión de contexto. Funciona como PROXY LOCAL (`headroom proxy`,
+  `headroom wrap claude`): se mete entre el agente y la API del modelo. Aquí
+  el endpoint lo fija el entorno remoto y la política de red no se toca.
+  Su otra vía es un servidor MCP, que tampoco se añade desde dentro de la
+  sesión. **Sitio correcto: el Claude Code local de Alberto.**
+- **[claude-mem](https://github.com/thedotmack/claude-mem)** — memoria entre
+  sesiones. Necesita un WORKER PERSISTENTE y un inicio de sesión por enlace
+  mágico en el navegador. Este contenedor es efímero —el worker muere con él—
+  y no hay navegador. Además su proveedor por defecto es alojado: mandaría las
+  transcripciones de EXERSUITE3D a un tercero. **Sitio correcto: el local, y
+  eligiendo proveedor a conciencia.**
+- **[awesome-freellm-apis](https://github.com/open-free-llm-api/awesome-freellm-apis)**
+  — directorio de APIs gratuitas. No amplía cuota: `ANTHROPIC_BASE_URL`
+  cambia de MODELO, no de presupuesto, y enviaría el código a terceros.
+
+La regla que sale de los tres: **lo que vive en `.claude/` funciona aquí; lo
+que intercepta la llamada al modelo o necesita un proceso vivo, no.**
 
 ## Para traer alguna más
 
