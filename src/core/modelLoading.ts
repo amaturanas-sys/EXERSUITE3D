@@ -1,8 +1,5 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
-import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import type { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
 /**
@@ -11,12 +8,23 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
  * editor como en la biblioteca autónoma.
  */
 
+// LOS CARGADORES SE TRAEN AL USARLOS (v0.3.79).
+//
+// GLTFLoader, DRACOLoader, OBJLoader y STLLoader sumaban 93 kB del paquete de
+// arranque y no se tocan hasta que alguien importa un archivo. La ruta que los
+// necesita ya era asincrona —lee un File—, asi que diferirlos no cambia
+// ninguna firma.
+//
 // Un unico DRACOLoader compartido: cada instancia crea workers y un modulo
 // WASM propios que nunca se liberan si se instancian por carga.
 let sharedGltfLoader: GLTFLoader | null = null;
 
-function gltfLoader(): GLTFLoader {
+async function gltfLoader(): Promise<GLTFLoader> {
   if (!sharedGltfLoader) {
+    const [{ GLTFLoader }, { DRACOLoader }] = await Promise.all([
+      import("three/examples/jsm/loaders/GLTFLoader.js"),
+      import("three/examples/jsm/loaders/DRACOLoader.js"),
+    ]);
     const draco = new DRACOLoader();
     draco.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
     sharedGltfLoader = new GLTFLoader();
@@ -29,14 +37,18 @@ function gltfLoader(): GLTFLoader {
 export async function loadModelRoot(bytes: ArrayBuffer, ext: string): Promise<THREE.Object3D> {
   if (ext === "stl") {
     // STL: geometría pura (sin materiales); parse directo desde los bytes.
+    const { STLLoader } = await import("three/examples/jsm/loaders/STLLoader.js");
     const grupo = new THREE.Group();
     grupo.add(new THREE.Mesh(new STLLoader().parse(bytes)));
     return grupo;
   }
   const url = URL.createObjectURL(new Blob([bytes]));
   try {
-    if (ext === "obj") return await new OBJLoader().loadAsync(url);
-    return (await gltfLoader().loadAsync(url)).scene;
+    if (ext === "obj") {
+      const { OBJLoader } = await import("three/examples/jsm/loaders/OBJLoader.js");
+      return await new OBJLoader().loadAsync(url);
+    }
+    return (await (await gltfLoader()).loadAsync(url)).scene;
   } finally {
     URL.revokeObjectURL(url);
   }

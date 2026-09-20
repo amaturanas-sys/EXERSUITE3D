@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls.js";
-import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { SceneManager } from "../scene/SceneManager";
 import { getPerf } from "./performance";
 import { formatCm } from "./units";
@@ -3530,14 +3529,21 @@ export class Editor {
     };
   }
 
-  /** Exporta el prototipo (las piezas) como GLB binario para otras apps. */
-  exportGLB(): Promise<ArrayBuffer> {
+  /**
+   * Exporta el prototipo (las piezas) como GLB binario para otras apps.
+   *
+   * EL EXPORTADOR SE TRAE AL EXPORTAR (v0.3.79): son 33 kB del paquete de
+   * arranque que sólo usa quien pulsa «Exportar prototipo». El método ya
+   * devolvía una promesa, así que su firma no cambia.
+   */
+  async exportGLB(): Promise<ArrayBuffer> {
     // Las aristas del modo Ver son ayudas visuales: fuera del GLB.
     const teniaAristas = this.edgesOn;
     if (teniaAristas) {
       this.edgesOn = false;
       this.applyViewModes();
     }
+    const { GLTFExporter } = await import("three/examples/jsm/exporters/GLTFExporter.js");
     const exporter = new GLTFExporter();
     return new Promise<ArrayBuffer>((resolve, reject) => {
       exporter.parse(

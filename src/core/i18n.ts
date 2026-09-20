@@ -1,5 +1,3 @@
-import { TRADUCCIONES } from "./traducciones";
-
 /**
  * Internacionalización ES/EN (v0.2.1). El idioma se fija por carga de página
  * (cambiarlo recarga la app): así toda la UI, que se construye una única vez,
@@ -32,10 +30,33 @@ export function setIdioma(idioma: Idioma): void {
   window.location.reload();
 }
 
+/**
+ * EL DICCIONARIO NO VIAJA SI NO SE USA (v0.3.79).
+ *
+ * `TRADUCCIONES` pesa 120 kB del paquete de arranque —el 11 % del total— y
+ * `t()` sólo lo lee cuando el idioma es inglés: en español no se consultaba
+ * ni una vez, pero se descargaba entero igual. Ahora se carga aparte, y sólo
+ * si hace falta.
+ *
+ * Se puede hacer porque el idioma está DECIDIDO ANTES de construir nada:
+ * se lee de localStorage al cargar el módulo y cambiarlo recarga la página
+ * (`setIdioma`). `cargarIdioma()` se espera en el arranque, antes de la
+ * primera pantalla, así que para cuando alguien llama a `t()` el diccionario
+ * ya está. Si algún día se llamara antes, `t()` devuelve el texto en español
+ * en vez de romper — degrada, no falla.
+ */
+let dicc: Record<string, string> = {};
+
+/** Trae el diccionario si el idioma lo necesita. Se espera en el arranque. */
+export async function cargarIdioma(): Promise<void> {
+  if (actual !== "en") return;
+  dicc = (await import("./traducciones")).TRADUCCIONES;
+}
+
 /** Traduce una cadena del diccionario (identidad en español o sin entrada). */
 export function t(texto: string): string {
   if (actual === "es") return texto;
-  return TRADUCCIONES[texto] ?? texto;
+  return dicc[texto] ?? texto;
 }
 
 /** Texto bilingüe directo (para cadenas dinámicas o con parámetros). */

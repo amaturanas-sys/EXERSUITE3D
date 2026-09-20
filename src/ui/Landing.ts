@@ -1,7 +1,5 @@
 import type { ProjectData } from "../core/project";
 import { version as VERSION_APP } from "../../package.json";
-import { renderInstructivo } from "./Instructivo";
-import { renderHub } from "./marketplace/hub";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { getRecent, listRecent, type RecentMeta } from "../core/recentStore";
 import { borrarCaptura, listarCapturas } from "../core/capturas";
@@ -200,24 +198,32 @@ export class Landing {
    * cabecera propia y no lleva la navegación lateral, así que se monta sobre
    * toda la ventana y se sale con un botón fijo que devuelve a la Home.
    */
+  /**
+   * EL MARKETPLACE TAMBIÉN SE TRAE AL ABRIRLO (v0.3.79): 67 kB del paquete
+   * inicial —su catálogo, sus láminas, sus paneles— que sólo ve quien pulsa 🛒.
+   */
   private abrirHub(): void {
     const capa = el("div", { class: "hub" });
-    // El hub devuelve con qué soltarlo (v0.3.78): quitar la capa del DOM no
-    // desconecta sus observadores, y cada visita dejaba uno reteniendo el
-    // carrusel entero.
-    const soltar = renderHub(capa, {
-      salir: () => {
-        soltar();
-        capa.remove();
-        this.setVista(this.vista === "marketplace" ? "instructivo" : this.vista);
-      },
-      verBiblioteca: () => {
-        soltar();
-        capa.remove();
-        this.actions.onExploreLibrary();
-      },
-    });
     document.body.append(capa);
+    void import("./marketplace/hub").then(({ renderHub }) => {
+      // Si se salió del Marketplace mientras se traía, no se monta nada.
+      if (!capa.isConnected) return;
+      // El hub devuelve con qué soltarlo (v0.3.78): quitar la capa del DOM no
+      // desconecta sus observadores, y cada visita dejaba uno reteniendo el
+      // carrusel entero.
+      const soltar = renderHub(capa, {
+        salir: () => {
+          soltar();
+          capa.remove();
+          this.setVista(this.vista === "marketplace" ? "instructivo" : this.vista);
+        },
+        verBiblioteca: () => {
+          soltar();
+          capa.remove();
+          this.actions.onExploreLibrary();
+        },
+      });
+    });
   }
 
   private accion(texto: string, primary: boolean, fn: () => void): HTMLElement {
@@ -337,10 +343,18 @@ export class Landing {
 
   // ------------------------------------------------------- vista Instructivo
 
+  /**
+   * EL INSTRUCTIVO SE TRAE AL ABRIRLO (v0.3.79), no al arrancar la app. Son
+   * 39 kB del paquete inicial que sólo mira quien pulsa 📖, y esto es una
+   * pantalla completa: el retardo de traerla no se nota.
+   */
   private renderInstructivoVista(): void {
     const cuerpo = el("div", { class: "instr-cuerpo land-instr-embed" });
-    renderInstructivo(cuerpo);
     this.contenido.append(cuerpo);
+    void import("./Instructivo").then(({ renderInstructivo }) => {
+      // Si mientras se traía se cambió de sección, no se pinta encima.
+      if (this.vista === "instructivo") renderInstructivo(cuerpo);
+    });
   }
 
   // ---------------------------------------------------------- vista Settings

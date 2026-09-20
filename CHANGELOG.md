@@ -5,6 +5,45 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.79] — 2026-09-20
+
+El paquete de arranque adelgaza **un tercio**. Nada de esto cambia lo que hace
+la aplicación: cambia **cuándo** se descarga cada cosa.
+
+| | antes | después | |
+|---|---|---|---|
+| Paquete inicial | 1 070,40 kB | **742,55 kB** | −327,85 kB (−30,6 %) |
+| Comprimido (gzip) | 338,24 kB | **221,89 kB** | −116,35 kB (−34,4 %) |
+
+En Android y en una conexión lenta eso es un tercio menos de espera antes de
+ver la portada.
+
+### Cambiado
+
+- **El diccionario de traducciones ya no viaja si no se usa** (123 kB, 48 kB
+  comprimido). `t()` sólo lo consulta cuando el idioma es inglés: en español no
+  se leía ni una vez, pero se descargaba entero igual. Ahora se trae aparte, y
+  sólo si hace falta. Se puede porque el idioma está decidido **antes** de
+  construir nada —se lee al cargar y cambiarlo recarga la página—, así que el
+  arranque lo espera antes de la primera pantalla.
+- **El Instructivo (41 kB) y el Marketplace (69 kB) se traen al abrirlos.** Son
+  dos pantallas completas que sólo ve quien pulsa 📖 o 🛒; el retardo de
+  traerlas no se nota, y ambas comprueban que no se ha cambiado de sección
+  mientras llegaban.
+- **Los cargadores y el exportador 3D se traen al usarlos** (GLTFLoader 45 kB,
+  GLTFExporter 35 kB, OBJLoader 9 kB, STLLoader 3 kB, más DRACOLoader): no se
+  tocan hasta que alguien importa un archivo o exporta el prototipo, y esas
+  rutas ya eran asíncronas, así que ninguna firma cambia.
+
+La física (Rapier, 2,2 MB) ya se cargaba aparte desde antes; `three` sigue
+precargado porque el lienzo lo necesita desde el primer fotograma.
+
+### Pruebas
+
+- 113 de 115 en verde. Los dos rojos —`dos-bisagras` y `paleta`— **no son de
+  este cambio**: se reproducen igual en v0.3.78 con estos cambios retirados.
+  Ver las notas al final.
+
 ## [0.3.78] — 2026-09-20
 
 Tres revisores traídos de [ECC](https://github.com/affaan-m/ECC) (MIT) pasaron

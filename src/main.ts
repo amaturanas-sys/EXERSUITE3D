@@ -43,7 +43,7 @@ import { APOYO_RACK, EJERCICIOS_BARRA } from "./objects/barraManiqui";
 import { addRecent, deleteRecent } from "./core/recentStore";
 import { elegirWorkspace } from "./ui/WizardNuevo";
 import type { ProjectData, WorkspaceData } from "./core/project";
-import { tt } from "./core/i18n";
+import { cargarIdioma, tt } from "./core/i18n";
 import { medidasHorquilla } from "./objects/horquilla";
 import {
   formatearAmplitud,
@@ -647,4 +647,11 @@ function showLanding(): void {
   prefabsMaquina,
 };
 
+// EL DICCIONARIO, ANTES DE LA PRIMERA PANTALLA (v0.3.79).
+//
+// En español `cargarIdioma` vuelve en seguida sin descargar nada; en inglés
+// espera a que el diccionario esté antes de construir una interfaz que lo va
+// a consultar en CADA texto. Va aquí, en el punto de entrada del módulo —no
+// en `goHome`, que es una vuelta atrás y llega tardísimo.
+await cargarIdioma();
 showLanding();
