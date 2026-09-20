@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.80] — 2026-09-20
+
+### Corregido
+
+- **El modo Sencillo enseñaba la paleta del Profesional.** `bootEditor()` monta
+  el editor entero y lo **enseña**; el modo de trabajo se aplicaba después de
+  `await ensureModels()`. Entre una cosa y otra el usuario tenía delante un
+  editor completo con la paleta equivocada —las 38 piezas del Profesional en
+  vez de las nueve básicas— y nada decía que aquello siguiera cargando.
+
+  La espera no es constante: recién abierta la aplicación dura un parpadeo,
+  pero **después de pasar por la Biblioteca** hay modelos guardados que cargar
+  y se alarga hasta segundos. Por eso el fallo iba y venía, y por eso
+  `prueba-paleta` sólo lo cazaba cuando el recorrido venía de la Biblioteca.
+
+  El modo y el espacio son **metadatos**: no necesitan ni una malla. Ahora se
+  aplican de inmediato, y las piezas de entorno —que sí necesitan modelos— se
+  crean después, como antes.
+
+### Nota abierta
+
+La causa de fondo sigue ahí: **el editor se muestra y acepta clics antes de que
+los modelos estén cargados.** Esto arregla el síntoma visible —la paleta— pero
+no el hueco. Cuatro pruebas fallan de forma intermitente con la misma firma
+(`Cannot read properties of undefined (reading 'mesh')`), que es una pieza
+pedida antes de que su malla exista: `auditoria`, `banca-indexada`,
+`placa-dentada` y `dos-bisagras`. Se verificó que las cuatro fallan igual en
+v0.3.79, así que no son de este cambio. La solución de verdad es no dar el
+editor por usable hasta que `ensureModels()` termine.
+
 ## [0.3.79] — 2026-09-20
 
 El paquete de arranque adelgaza **un tercio**. Nada de esto cambia lo que hace

@@ -388,6 +388,22 @@ function ensureModels(): Promise<void> {
 
 async function startNew(ws?: WorkspaceData): Promise<void> {
   const ed = bootEditor();
+  // EL MODO DE TRABAJO SE APLICA ANTES DE ESPERAR A LOS MODELOS (v0.3.80).
+  //
+  // `bootEditor()` monta el editor entero y lo ENSEÑA; el workspace se
+  // aplicaba después de `await ensureModels()`. Entre una cosa y otra el
+  // usuario tenía delante un editor completo con la paleta EQUIVOCADA: en modo
+  // Sencillo salían las 38 piezas del Profesional en vez de las nueve básicas,
+  // y nada decía que aquello siguiera cargando.
+  //
+  // La espera no es constante: recién abierta la aplicación dura un parpadeo,
+  // pero después de pasar por la Biblioteca hay modelos guardados que cargar y
+  // se alarga hasta segundos. Por eso el fallo iba y venía — `prueba-paleta`
+  // lo cazaba sólo cuando venía de la Biblioteca.
+  //
+  // El modo y el espacio son METADATOS: no necesitan ni una malla. Se aplican
+  // ya, y las piezas de entorno —que sí necesitan modelos— se crean después.
+  if (ws) ed.setWorkspace(ws);
   await ensureModels();
   ed.clearScene();
   if (ws) {
