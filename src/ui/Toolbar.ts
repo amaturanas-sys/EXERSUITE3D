@@ -113,6 +113,17 @@ export class Toolbar {
       const mm = String(d.getMinutes()).padStart(2, "0");
       autosaveTag.textContent = `${tt("Guardado", "Saved")} ✓ ${hh}:${mm}`;
     });
+    // Y CUANDO DEJA DE FUNCIONAR, TAMBIÉN (v0.3.78). Un aviso permanente, no
+    // un mensaje que se va: lo que hay que hacer —guardar a archivo— sigue
+    // pendiente hasta que se haga.
+    this.editor.bus.on("autosaveFailed", () => {
+      autosaveTag.textContent = tt("⚠ Autoguardado detenido", "⚠ Autosave stopped");
+      autosaveTag.classList.add("autosave-roto");
+      autosaveTag.title = tt(
+        "El almacenamiento del navegador está lleno: guarda el proyecto a un archivo.",
+        "Browser storage is full: save the project to a file.",
+      );
+    });
 
     const editGroups = [
       el("div", { class: "tool-group edit-only" }, [
@@ -307,7 +318,20 @@ export class Toolbar {
       const { archivo, advertencias } = parsearPrefab(await file.text());
       const fidelidad = this.editor.insertarPrefab(archivo);
       const avisos = [...advertencias, ...fidelidad];
-      if (avisos.length > 0) console.warn("Prefab importado con avisos:", avisos);
+      // LO QUE SE QUEDÓ FUERA, A LA CARA (v0.3.78). El trabajo de recolectar
+      // las pérdidas ya estaba hecho —«N pieza(s) con componente desconocido
+      // quedaron fuera», «un cable tocaba una pieza excluida»— y se tiraba a
+      // la consola. La máquina parecía completa y el hueco se descubría al
+      // simular, o al fabricar.
+      if (avisos.length > 0) {
+        console.warn("Prefab importado con avisos:", avisos);
+        window.alert(
+          tt(
+            `El prefab se ha insertado INCOMPLETO:\n\n· ${avisos.join("\n· ")}`,
+            `The prefab was inserted INCOMPLETE:\n\n· ${avisos.join("\n· ")}`,
+          ),
+        );
+      }
     } catch (err) {
       console.error("Prefab no válido:", err);
       window.alert(
@@ -463,9 +487,36 @@ export class Toolbar {
     // EL ARCHIVO LLEVA LAS MALLAS DIBUJADAS DENTRO (v0.3.73): se abrirá en
     // otra sesión, donde el registro de esta no existe.
     const project = this.editor.serialize(true);
-    void descargarArchivo(`${fileName}.json`, JSON.stringify(project, null, 2), "application/json");
-    this.editor.markClean();
-    void addRecent(name, project, Date.now()).catch(() => {});
+    // NO SE MARCA LIMPIO HASTA SABER QUE SE GUARDÓ (v0.3.78). Antes se hacía
+    // aquí mismo, sin esperar: cancelar el diálogo del sistema dejaba el
+    // proyecto «limpio» sin archivo detrás, y al volver a la Home ya no se
+    // preguntaba nada. El trabajo se perdía en silencio.
+    void (async () => {
+      let resultado;
+      try {
+        resultado = await descargarArchivo(
+          `${fileName}.json`,
+          JSON.stringify(project, null, 2),
+          "application/json",
+        );
+      } catch (err) {
+        console.error("No se pudo guardar el proyecto:", err);
+        window.alert(
+          tt(
+            `No se pudo guardar el proyecto:\n${String(err)}\n\nEl proyecto sigue sin guardar.`,
+            `Could not save the project:\n${String(err)}\n\nThe project is still unsaved.`,
+          ),
+        );
+        return;
+      }
+      if (resultado === "cancelado") return; // sigue sucio, como debe
+      this.editor.markClean();
+      try {
+        await addRecent(name, project, Date.now());
+      } catch (err) {
+        console.warn("No se pudo anotar en proyectos recientes:", err);
+      }
+    })();
   }
 
   private async cargarProyecto(): Promise<void> {
@@ -494,7 +545,15 @@ export class Toolbar {
       const buffer = await this.editor.exportGLB();
       await descargarArchivo("exersuite3d-prototipo.glb", new Uint8Array(buffer), "model/gltf-binary");
     } catch (err) {
+      // NO SE EXPORTA Y SE DICE (v0.3.78). Antes el botón «Exportar prototipo
+      // (.glb)» no producía archivo, ni error, ni nada: el usuario lo pulsaba
+      // tres veces y asumía que estaba roto, mientras la causa real —una
+      // geometría sin índice, un material que el exportador rechaza— quedaba
+      // enterrada en una consola que nadie abre.
       console.error("No se pudo exportar:", err);
+      window.alert(
+        tt(`No se pudo exportar el prototipo:\n${String(err)}`, `Could not export the prototype:\n${String(err)}`),
+      );
     }
   }
 

@@ -33,6 +33,9 @@ export class SimulatorBar {
           setTimeout(() => b.replaceChildren(...conEmojisSilueta(tt("📷 Captura", "📷 Capture"))), 1600);
         } catch (err) {
           console.error("No se pudo capturar:", err);
+          window.alert(
+            tt(`No se pudo guardar la captura:\n${String(err)}`, `Could not save the screenshot:\n${String(err)}`),
+          );
         }
       })();
     });

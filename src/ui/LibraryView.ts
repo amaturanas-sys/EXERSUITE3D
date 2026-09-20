@@ -20,7 +20,7 @@ import {
   origenDeMaquina,
 } from "../core/maquinasModelo";
 import { ComponentPreview } from "./ComponentPreview";
-import { clear, el } from "./dom";
+import { clear, el, prepararModal } from "./dom";
 import { descargarArchivo, elegirArchivo } from "../core/descargas";
 import { parsearPrefab, prefabDeFabrica } from "../core/prefabIO";
 import { prefabsMaquina } from "../core/prefabsMaquina";
@@ -535,8 +535,18 @@ export class LibraryView {
     try {
       entries = await componentModels.analyzeImport(await file.arrayBuffer());
     } catch (err) {
-      console.error("Comprimido no válido:", err);
-      window.alert("El archivo no es un ZIP de biblioteca válido.");
+      // Dos causas distintas, dos mensajes distintos (v0.3.78): el ZIP puede
+      // estar mal, o puede fallar la lectura de TU biblioteca — y en ese caso
+      // no se importa nada, porque sin saber qué tienes no se puede avisar de
+      // lo que se va a sobrescribir.
+      console.error("No se pudo analizar la importación:", err);
+      window.alert(
+        `${String(err)}`.includes("ZIP") || `${String(err)}`.includes("zip")
+          ? "El archivo no es un ZIP de biblioteca válido."
+          : "No se ha podido leer tu biblioteca local, así que no se importa nada " +
+            "(no se puede saber qué modelos tuyos se sobrescribirían).\n\n" +
+            "Cierra otras pestañas de EXERSUITE3D y vuelve a intentarlo.",
+      );
       return;
     }
     if (!entries.length) {
@@ -569,12 +579,19 @@ export class LibraryView {
     applyBtn.addEventListener("click", () => {
       const selected = entries.filter((e) => checks.get(e)?.checked);
       overlay.remove();
-      void componentModels.applyImport(selected);
+      void componentModels.applyImport(selected).then((fallidos) => {
+        if (fallidos.length === 0) return;
+        window.alert(
+          `${fallidos.length} de ${selected.length} modelo(s) no se han podido importar:\n\n` +
+            fallidos.join(", "),
+        );
+      });
     });
     const cancelBtn = el("button", { class: "land-btn ghost" }, ["Cancelar"]);
     cancelBtn.addEventListener("click", () => overlay.remove());
+    const titulo = el("div", { class: "confirm-title" }, ["Importar biblioteca de modelos"]);
     const dialog = el("div", { class: "confirm-dialog merge-dialog" }, [
-      el("div", { class: "confirm-title" }, ["Importar biblioteca de modelos"]),
+      titulo,
       el("div", { class: "merge-summary" }, [
         "Por defecto se aplican los nuevos y los más recientes; los más antiguos " +
           "y los sin cambios quedan sin marcar para no sobrescribir tus ediciones.",
@@ -583,10 +600,18 @@ export class LibraryView {
       el("div", { class: "confirm-actions" }, [applyBtn, cancelBtn]),
     ]);
     const overlay = el("div", { class: "confirm-overlay" }, [dialog]);
+    let soltarFoco: (() => void) | null = null;
+    const cerrar = (): void => {
+      overlay.remove();
+      soltarFoco?.();
+    };
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) overlay.remove();
+      if (e.target === overlay) cerrar();
     });
+    cancelBtn.addEventListener("click", cerrar);
     this.root.append(overlay);
+    // El foco arranca en «Cancelar»: el otro botón sobrescribe modelos.
+    soltarFoco = prepararModal(dialog, titulo, cancelBtn, cerrar);
   }
 }
 

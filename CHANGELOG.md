@@ -5,6 +5,88 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.78] — 2026-09-20
+
+Tres revisores traídos de [ECC](https://github.com/affaan-m/ECC) (MIT) pasaron
+por `src/`: uno a cazar fallos silenciosos, otro accesibilidad y otro
+rendimiento. Esto es lo que encontraron y se arregló.
+
+### Corregido — trabajo que se perdía sin decir nada
+
+- **Guardar un proyecto no comprobaba si se había guardado.** `descargarArchivo`
+  devolvía `void`: cancelar el diálogo del sistema y escribir el archivo se
+  veían **exactamente igual** desde fuera. Quien pulsaba Esc porque se había
+  equivocado de carpeta se quedaba sin archivo, con el proyecto marcado como
+  **limpio** —así que al volver a la Home ya no se preguntaba nada— y el editor
+  se destruía. Ahora devuelve `"guardado" | "cancelado" | "quizas"`, y sólo se
+  marca limpio con `"guardado"`.
+- **«Guardar y salir» destruía el editor aunque se cancelara el guardado.** El
+  mismo contrato roto, con la consecuencia inmediata: se caía recto hasta
+  `editor.dispose()`. Cancelar ahora cancela la salida.
+- **«↻ Sesión anterior» podía abrir la máquina sin las piezas dibujadas, y
+  luego machacar la sesión buena.** El guardado de trabajo deja los triángulos
+  apuntados en un registro que vive en el Editor, y al recargar la página hay
+  un Editor nuevo con el registro vacío: las piezas dibujadas se omitían una a
+  una con un `console.warn`, y el primer cambio disparaba el autoguardado
+  **encima** de la sesión completa. Irreversible. Ahora una carga incompleta se
+  dice, marca el proyecto sucio y **detiene el autoguardado**.
+- **El autoguardado moría en silencio al llenarse la cuota.** El único
+  indicador escuchaba el evento de éxito, que ya no llegaba: se quedaba
+  congelado con una hora vieja mientras el usuario seguía diseñando horas
+  creyéndose a salvo. Ahora hay un aviso permanente en la barra.
+- **Una segunda pestaña dejaba la base de datos envenenada toda la sesión.** La
+  promesa de apertura se cacheaba **también cuando fallaba**, así que un
+  bloqueo momentáneo bastaba para que la Home dijera «Aún no hay proyectos»
+  con doce dentro. Ahora un fallo suelta la caché y el siguiente intento vale.
+- **Importar una biblioteca podía sobrescribir tus modelos sin advertirlo.** Si
+  fallaba leer la biblioteca local, la pantalla de conflictos clasificaba
+  **todo** como nuevo y dejaba de avisar de las sustituciones. Ahora no se
+  importa nada, y se explica por qué.
+- **Avisos que sólo llegaban a la consola:** las piezas, uniones y cables que un
+  prefab deja fuera; los modelos que no entran en una importación; y los fallos
+  de «Exportar prototipo (.glb)» y de «📷 Captura», donde el botón simplemente
+  no hacía nada.
+
+### Corregido — accesibilidad
+
+- **`el()` convertía `aria-label` en una propiedad JS inerte**, no en un
+  atributo: cualquier intento de nombrar un botón no hacía nada. Los atributos
+  con guion y `role` van ahora por `setAttribute`.
+- **Los tres diálogos modales no recibían el foco**, no se anunciaban como
+  diálogo y no se cerraban con Escape. En el de cambios sin guardar —que decide
+  entre guardar y descartar— había que tabular a ciegas por toda la aplicación.
+- **El foco desaparecía en las casillas de verificación**: tres reglas apagaban
+  el indicador del navegador y lo sustituían por un borde, que en un checkbox
+  no pinta nada. Afectaba a los siete interruptores de calidad gráfica y a
+  todos los del marketplace.
+- **Botones sin nombre**: las ✕ de la paleta y del asistente, los ±1 de discos,
+  y las capturas, que se anunciaban las diez igual («captura») con botones
+  idénticos: no había forma de saber cuál se borraba.
+- **En el visor, el resaltado en rojo sólo respondía al ratón**: la mecánica
+  central colgaba de `pointerenter`, que el teclado no dispara nunca.
+- `aria-pressed`, `aria-current` y `prefers-reduced-motion`.
+
+### Rendimiento
+
+- **El visor recalculaba la caja de todo el proyecto 60 veces por segundo**,
+  con un `updateMatrixWorld` forzado y recursivo por pieza: ~2 800 objetos por
+  segundo con 22 piezas, ~25 000 con 200, en la vista donde lo único que se
+  hace es mirar. Ahora se cachea y se invalida al reencuadrar.
+- **Las dos texturas del modo Calce no se liberaban** (~6 MB de VRAM): el
+  `dispose` recorre la escena, y al salir del calce ya no colgaban de ningún
+  material.
+- **Un `ResizeObserver` del carrusel del hub no se desconectaba nunca** — era el
+  único listener de todo `src/` sin recibo.
+
+### Herramientas
+
+- Ocho agentes revisores y tres skills de ECC en `.claude/`, con el criterio de
+  selección en `.claude/vendor/README.md`.
+
+### Pruebas
+
+- 115 de 115 en verde (veredicto en serie).
+
 ## [0.3.77] — 2026-09-19
 
 Reestructuración de la aplicación desde su partida de inicio, siguiendo el

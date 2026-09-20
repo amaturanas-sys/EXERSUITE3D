@@ -1,4 +1,4 @@
-import { el } from "./dom";
+import { el, prepararModal } from "./dom";
 
 export type SaveChoice = "save" | "discard" | "cancel";
 
@@ -9,10 +9,12 @@ export type SaveChoice = "save" | "discard" | "cancel";
 export function confirmUnsavedChanges(): Promise<SaveChoice> {
   return new Promise((resolve) => {
     let done = false;
+    let soltarFoco: (() => void) | null = null;
     const finish = (choice: SaveChoice) => {
       if (done) return;
       done = true;
       overlay.remove();
+      soltarFoco?.();
       resolve(choice);
     };
 
@@ -23,8 +25,9 @@ export function confirmUnsavedChanges(): Promise<SaveChoice> {
     const cancelBtn = el("button", { class: "land-btn ghost" }, ["Cancelar"]);
     cancelBtn.addEventListener("click", () => finish("cancel"));
 
+    const titulo = el("div", { class: "confirm-title" }, ["Cambios sin guardar"]);
     const dialog = el("div", { class: "confirm-dialog" }, [
-      el("div", { class: "confirm-title" }, ["Cambios sin guardar"]),
+      titulo,
       el("div", { class: "confirm-text" }, [
         "Tienes cambios en el proyecto actual. ¿Quieres guardarlos antes de volver a la pantalla de inicio?",
       ]),
@@ -35,5 +38,8 @@ export function confirmUnsavedChanges(): Promise<SaveChoice> {
       if (e.target === overlay) finish("cancel");
     });
     document.getElementById("app")?.append(overlay);
+    // El foco arranca en «Cancelar»: de las tres, es la que no hace nada
+    // irreversible si se pulsa Intro por inercia.
+    soltarFoco = prepararModal(dialog, titulo, cancelBtn, () => finish("cancel"));
   });
 }

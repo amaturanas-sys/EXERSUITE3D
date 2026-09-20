@@ -1,6 +1,6 @@
 import type { PrimitiveParams } from "../objects/types";
 import { BEAM_NOMINALS_MM, TUBE_NOMINALS_MM } from "../objects/linePieces";
-import { el } from "./dom";
+import { el, prepararModal } from "./dom";
 
 // Diálogos de configuración de las herramientas de línea: pilar/travesaño
 // (perfil 1:1/1:2/1:3, medida nominal, extremos, pinholes) y tubo (diámetro
@@ -13,10 +13,12 @@ function dialog(
 ): Promise<PrimitiveParams | null> {
   return new Promise((resolve) => {
     let done = false;
+    let soltarFoco: (() => void) | null = null;
     const finish = (value: PrimitiveParams | null) => {
       if (done) return;
       done = true;
       overlay.remove();
+      soltarFoco?.();
       resolve(value);
     };
     const ok = el("button", { class: "land-btn primary" }, ["Colocar"]);
@@ -24,8 +26,9 @@ function dialog(
     const cancel = el("button", { class: "land-btn ghost" }, ["Cancelar"]);
     cancel.addEventListener("click", () => finish(null));
 
+    const titulo = el("div", { class: "confirm-title" }, [title]);
     const box = el("div", { class: "confirm-dialog" }, [
-      el("div", { class: "confirm-title" }, [title]),
+      titulo,
       ...fields,
       el("div", { class: "confirm-actions" }, [ok, cancel]),
     ]);
@@ -34,6 +37,11 @@ function dialog(
       if (e.target === overlay) finish(null);
     });
     document.getElementById("app")?.append(overlay);
+    // Aquí el foco va al primer campo, no a un botón: lo que se viene a hacer
+    // es elegir el perfil o la medida. Cubre de una vez `configureBeam`,
+    // `configurarDentada`, `configureTube` y `configureGuiaTubular`.
+    const primero = box.querySelector("select, input") as HTMLElement | null;
+    soltarFoco = prepararModal(box, titulo, primero ?? cancel, () => finish(null));
   });
 }
 

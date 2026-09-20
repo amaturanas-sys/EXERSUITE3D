@@ -833,9 +833,15 @@ export class PropertiesPanel {
       const v = parseFloat(cuenta.value);
       if (Number.isFinite(v)) aplicar(v);
     });
-    const menos = el("button", { class: "tool" }, ["− 1"]);
+    const menos = el("button", {
+      class: "tool",
+      "aria-label": tt("Un disco menos", "One plate fewer"),
+    }, ["− 1"]);
     menos.addEventListener("click", () => aplicar(obj.discosMontados() - 1));
-    const mas = el("button", { class: "tool" }, ["+ 1"]);
+    const mas = el("button", {
+      class: "tool",
+      "aria-label": tt("Un disco más", "One plate more"),
+    }, ["+ 1"]);
     mas.addEventListener("click", () => aplicar(obj.discosMontados() + 1));
     aplicar(obj.discosMontados());
     return el("div", { class: "field" }, [

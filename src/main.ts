@@ -130,7 +130,7 @@ function bootEditor(opts: { simulator?: boolean; visor?: boolean } = {}): Editor
     ed.panelArticulaciones = articPanel;
     const simBar = new SimulatorBar(ed, {
       standalone: true,
-      onHome: () => void goHome(),
+      onHome: () => irAlInicio(),
       onPrototipo: () => prototipo.activar(),
     });
     ed.bus.on("simulationChanged", ({ running }) => {
@@ -156,7 +156,7 @@ function bootEditor(opts: { simulator?: boolean; visor?: boolean } = {}): Editor
   const perfPanel = new PerformancePanel(ed);
   const precise = new PreciseDrag(ed);
   const toolbar = new Toolbar(ed, {
-    onHome: () => void goHome(),
+    onHome: () => irAlInicio(),
     onPerformance: () => perfPanel.toggle(),
     onPreciseToggle: () => precise.toggle(),
     isPreciseOn: () => precise.isActiva(),
@@ -426,7 +426,24 @@ async function startContinue(): Promise<void> {
 function volverAHome(): void {
   visor?.dispose();
   visor = null;
-  void goHome();
+  irAlInicio();
+}
+
+/**
+ * VOLVER AL INICIO, CON EL FALLO A LA VISTA (v0.3.78).
+ *
+ * `goHome` es `async` y puede rechazar —guardar falla, el diálogo revienta—.
+ * Se llamaba como `void goHome()` desde tres sitios, así que el rechazo no lo
+ * recogía nadie: la Home no se abría, el editor se quedaba vivo, y no se decía
+ * absolutamente nada. Ahora el fallo se ve.
+ */
+function irAlInicio(): void {
+  goHome().catch((err: unknown) => {
+    console.error("No se pudo volver al inicio:", err);
+    window.alert(
+      tt(`No se pudo volver al inicio:\n${String(err)}`, `Could not return home:\n${String(err)}`),
+    );
+  });
 }
 
 async function goHome(): Promise<void> {
@@ -440,7 +457,28 @@ async function goHome(): Promise<void> {
         const project = editor.serialize(true);
         const clean = (name.trim() || "exersuite3d-proyecto");
         const file = clean.replace(/[^a-z0-9._-]+/gi, "_").replace(/^_+|_+$/g, "") || "proyecto";
-        await descargarArchivo(`${file}.json`, JSON.stringify(project, null, 2), "application/json");
+        // CANCELAR EL DIÁLOGO CANCELA LA SALIDA (v0.3.78). Antes se seguía
+        // recto hasta `editor.dispose()`: quien cancelaba para elegir otra
+        // carpeta perdía la escena igual que si hubiera dicho «salir sin
+        // guardar».
+        let resultado;
+        try {
+          resultado = await descargarArchivo(
+            `${file}.json`,
+            JSON.stringify(project, null, 2),
+            "application/json",
+          );
+        } catch (err) {
+          console.error("No se pudo guardar el proyecto:", err);
+          window.alert(
+            tt(
+              `No se pudo guardar el proyecto:\n${String(err)}\n\nNo se sale del editor.`,
+              `Could not save the project:\n${String(err)}\n\nStaying in the editor.`,
+            ),
+          );
+          return;
+        }
+        if (resultado === "cancelado") return;
         try {
           await addRecent(clean, project, Date.now());
         } catch {

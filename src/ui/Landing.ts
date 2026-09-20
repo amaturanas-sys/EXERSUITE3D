@@ -14,7 +14,7 @@ import {
 } from "../core/performance";
 import { getIdioma, setIdioma, t, tt } from "../core/i18n";
 import { SITIO_WEB, SITIO_WEB_VISIBLE, sitioWebConIdioma } from "../core/sitio";
-import { clear, el } from "./dom";
+import { clear, el, marcarActual } from "./dom";
 
 /** Con qué se abre un proyecto: los tres modos de cada ficha (v0.3.77). */
 export type ModoApertura = "builder" | "viewer" | "simulator";
@@ -183,7 +183,8 @@ export class Landing {
 
   private setVista(v: Vista): void {
     this.vista = v;
-    for (const [key, btn] of this.navBtns) btn.classList.toggle("active", key === v);
+    // El «aquí estás» no puede ser sólo color (v0.3.78).
+    for (const [key, btn] of this.navBtns) marcarActual(btn, key === v);
     this.leyenda.textContent = t(LEYENDAS[v]);
     clear(this.contenido);
     if (v === "proyectos") this.renderProyectos();
@@ -201,12 +202,17 @@ export class Landing {
    */
   private abrirHub(): void {
     const capa = el("div", { class: "hub" });
-    renderHub(capa, {
+    // El hub devuelve con qué soltarlo (v0.3.78): quitar la capa del DOM no
+    // desconecta sus observadores, y cada visita dejaba uno reteniendo el
+    // carrusel entero.
+    const soltar = renderHub(capa, {
       salir: () => {
+        soltar();
         capa.remove();
         this.setVista(this.vista === "marketplace" ? "instructivo" : this.vista);
       },
       verBiblioteca: () => {
+        soltar();
         capa.remove();
         this.actions.onExploreLibrary();
       },
@@ -293,8 +299,20 @@ export class Landing {
         return;
       }
       for (const cap of caps) {
-        const img = el("img", { src: cap.dataUrl, alt: "captura" });
-        const dl = el("button", { class: "tool", title: "Descargar" }, ["⬇"]);
+        // CADA CAPTURA SE DISTINGUE DE LA DE AL LADO (v0.3.78). Antes las diez
+        // se anunciaban «captura», y sus botones ⬇ y ✕ eran idénticos entre sí:
+        // no había forma de saber cuál se estaba borrando. La fecha ya estaba a
+        // mano, se usaba dos líneas más abajo para el nombre del archivo.
+        const cuando = new Date(cap.tomadaEn).toLocaleString();
+        const img = el("img", {
+          src: cap.dataUrl,
+          alt: tt(`Captura del ${cuando}`, `Screenshot from ${cuando}`),
+        });
+        const dl = el("button", {
+          class: "tool",
+          title: tt(`Descargar la captura del ${cuando}`, `Download the screenshot from ${cuando}`),
+          "aria-label": tt(`Descargar la captura del ${cuando}`, `Download the screenshot from ${cuando}`),
+        }, ["⬇"]);
         dl.addEventListener("click", () => {
           const b64 = cap.dataUrl.split(",")[1];
           const bin = atob(b64);
@@ -302,7 +320,11 @@ export class Landing {
           for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
           void descargarArchivo(`exersuite3d-captura-${cap.tomadaEn}.png`, bytes, "image/png");
         });
-        const del = el("button", { class: "tool danger", title: "Borrar" }, ["✕"]);
+        const del = el("button", {
+          class: "tool danger",
+          title: tt(`Borrar la captura del ${cuando}`, `Delete the screenshot from ${cuando}`),
+          "aria-label": tt(`Borrar la captura del ${cuando}`, `Delete the screenshot from ${cuando}`),
+        }, ["✕"]);
         del.addEventListener("click", () => {
           void borrarCaptura(cap.id).then(() => this.renderCapturas());
         });

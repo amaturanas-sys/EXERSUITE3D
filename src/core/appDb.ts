@@ -75,5 +75,17 @@ export function openAppDb(): Promise<IDBDatabase> {
     req.onblocked = () =>
       reject(new Error("Base de datos bloqueada por otra pestana abierta"));
   });
+  // UN FALLO NO ENVENENA LA SESION ENTERA (v0.3.78).
+  //
+  // La promesa se cacheaba TAMBIEN cuando rechazaba. El caso normal es el de
+  // `onblocked`: dos pestanas abiertas tras una actualizacion. La primera
+  // apertura fallaba y, aunque la otra pestana se cerrara un segundo despues,
+  // `openAppDb()` seguia devolviendo aquel rechazo el resto de la sesion. Los
+  // de arriba lo traducen a lista vacia, asi que la Home decia "Aun no hay
+  // proyectos" con doce proyectos dentro. Al soltar la cache, el siguiente
+  // intento puede prosperar.
+  dbPromise.catch(() => {
+    dbPromise = null;
+  });
   return dbPromise;
 }

@@ -578,6 +578,12 @@ export class SceneManager {
   dispose(): void {
     (this.scene.background as THREE.Texture | null)?.dispose?.();
     this.envTex?.dispose();
+    // LAS TEXTURAS DEL MODO CALCE, A MANO (v0.3.78). Abajo se liberan las
+    // texturas RECORRIENDO LA ESCENA, y al salir del calce estas dos dejan de
+    // colgar de ningún material: se saltaban la limpieza y se quedaban ~6 MB
+    // de VRAM vivos hasta que el contexto moría.
+    this.texCaucho?.dispose();
+    this.texCauchoTile?.dispose();
     this.scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       mesh.geometry?.dispose?.();

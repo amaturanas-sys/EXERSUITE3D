@@ -364,6 +364,10 @@ export type EditorEvents = {
   };
   /** El proyecto se acaba de autoguardar en el navegador. */
   autosaved: { at: number };
+  /** El autoguardado dejó de funcionar (cuota llena, storage bloqueado). */
+  autosaveFailed: { err: unknown };
+  /** El proyecto se abrió sin algunas piezas: no se pudieron reconstruir. */
+  cargaIncompleta: { piezas: string[] };
   /** Cambió el conjunto de componentes con modelo 3D personalizado. */
   componentModelsChanged: { ids: string[] };
   /** Historial de deshacer/rehacer: disponibilidad actual. */
@@ -954,7 +958,16 @@ export class Editor {
       localStorage.setItem(Editor.AUTOSAVE_KEY, JSON.stringify(this.serialize()));
       this.bus.emit("autosaved", { at: Date.now() });
     } catch (err) {
+      // EL AUTOGUARDADO MUERTO SE TIENE QUE VER (v0.3.78).
+      //
+      // Este catch no es el caso benigno de «navegador sin storage»: el caso
+      // real es QuotaExceededError, y llega cuando el proyecto crece. A partir
+      // de ahí fallan TODOS los autoguardados y el único indicador —el rótulo
+      // de la barra— escuchaba «autosaved», que ya no se emite: se quedaba
+      // congelado con una hora vieja que nadie mira. El usuario seguía
+      // diseñando tres horas creyéndose a salvo.
       console.warn("No se pudo autoguardar:", err);
+      this.bus.emit("autosaveFailed", { err });
     }
   }
 
@@ -3813,6 +3826,8 @@ export class Editor {
     // Las piezas de entorno (techo/paredes) ya vienen en data.objects.
     this.setWorkspace(data.workspace ?? null);
     const idMap = new Map<string, string>();
+    // LO QUE NO LLEGÓ, ANOTADO (v0.3.78). Ver el aviso al final del método.
+    const omitidas: string[] = [];
 
     for (const od of data.objects) {
       // Un componente desconocido (proyecto de otra versión, JSON editado) no
@@ -3853,7 +3868,38 @@ export class Editor {
         idMap.set(od.id, obj.id);
       } catch (err) {
         console.warn(`Se omite la pieza "${od.name}" (${od.componentId}):`, err);
+        omitidas.push(od.name || od.componentId);
       }
+    }
+
+    // UNA ESCENA INCOMPLETA NO SE AUTOGUARDA ENCIMA DE LA BUENA (v0.3.78).
+    //
+    // `serialize()` de trabajo no embute los triángulos de las piezas
+    // dibujadas: las deja apuntadas en `mallasImportadas`, que es campo de
+    // instancia. Al recargar la página hay un Editor NUEVO con el registro
+    // vacío, así que «↻ Sesión anterior» reconstruye la máquina entera MENOS
+    // las piezas dibujadas — y el primer cambio disparaba el autoguardado, que
+    // machacaba la sesión buena con la mutilada. Irreversible, y sin un solo
+    // aviso.
+    //
+    // El arreglo de fondo es llevar el autoguardado a IndexedDB con las mallas
+    // dentro. Mientras tanto, esta es la red: si algo se quedó fuera, se dice,
+    // se marca sucio y NO se autoguarda hasta que el usuario guarde a archivo.
+    if (omitidas.length > 0) {
+      this.autosaveSuspended = true;
+      this.dirty = true;
+      const lista = omitidas.slice(0, 8).join(", ") + (omitidas.length > 8 ? "…" : "");
+      this.bus.emit("cargaIncompleta", { piezas: omitidas });
+      window.alert(
+        tt(
+          `Este proyecto se ha abierto INCOMPLETO: ${omitidas.length} pieza(s) no se han podido reconstruir (${lista}).\n\n` +
+            "El autoguardado queda detenido para no sobrescribir la sesión buena. " +
+            "Si tienes el archivo .json original, ábrelo: lleva las piezas dibujadas dentro.",
+          `This project opened INCOMPLETE: ${omitidas.length} piece(s) could not be rebuilt (${lista}).\n\n` +
+            "Autosave is paused so the good session is not overwritten. " +
+            "If you still have the original .json file, open that one: it carries the drawn pieces inside.",
+        ),
+      );
     }
 
     // ANCLAJES DE LAS GUÍAS (v0.3.3): viajan en los params con el id de la

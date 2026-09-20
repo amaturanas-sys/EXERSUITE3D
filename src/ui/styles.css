@@ -3717,3 +3717,46 @@ body.visor-abierto #viewport {
 @media (max-width: 820px) {
   .visor-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL FOCO SE TIENE QUE VER (v0.3.78)
+
+   Por el fichero hay tres reglas que apagan el indicador del navegador y lo
+   sustituyen por un borde de color: `input:focus`, `input.tool-input:focus` y
+   `select.select:focus`. En una caja de texto el borde compensa. En una
+   CASILLA DE VERIFICACIÓN no: ahí el marco lo pinta el widget nativo y
+   `border-color` no hace nada, así que al tabular el foco DESAPARECE. Eso deja
+   a ciegas a los siete interruptores de calidad gráfica, al de los pinholes,
+   al del maniquí y a los del marketplace.
+
+   Ya se había visto —el comentario de `.od-check:focus-visible` lo describe
+   entero— pero se repuso sólo para el hub. Esto lo generaliza. Va al final a
+   propósito: `:focus-visible` empata en especificidad con `:focus` y gana por
+   orden de aparición.
+
+   Y `:focus-visible`, no `:focus`, para que el anillo salga al navegar con
+   teclado y no cada vez que se pincha un botón con el ratón.
+   ═══════════════════════════════════════════════════════════════════════════ */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent, #2f81f7);
+  outline-offset: 2px;
+}
+
+/* QUIEN PIDE MENOS MOVIMIENTO, QUE NO LO TENGA. No hay animaciones en bucle,
+   pero los paneles laterales entran en móvil con un translate de pantalla
+   completa, y eso marea a quien tiene sensibilidad vestibular. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

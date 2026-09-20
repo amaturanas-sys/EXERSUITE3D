@@ -331,8 +331,10 @@ function campoHub(etiqueta: string, tipo: "text" | "email" | "tel" | "area"): HT
 /** Las de siempre más la salida del hub, que vive en la cabecera. */
 export type HubAcciones = MarketplaceAcciones & { salir?: () => void };
 
-export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
+export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): () => void {
   const carrito = new Carrito();
+  /** Observadores que hay que desconectar al cerrar el hub. */
+  const observadores: ResizeObserver[] = [];
 
   // El símbolo del disco, una vez y antes que nada: los 160 `<use>` de la
   // rejilla lo buscan por identificador.
@@ -584,10 +586,18 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
   });
 
   // Al cambiar el ancho, la diapositiva a la vista se queda a medio camino.
-  new ResizeObserver(() => {
+  //
+  // CON RECIBO (v0.3.78): antes esto no se guardaba en ninguna variable, o sea
+  // que nadie podia desconectarlo. Un ResizeObserver vivo retiene su objetivo
+  // con referencia fuerte, asi que quitar la pista del DOM no lo soltaba: cada
+  // entrada al Marketplace dejaba otro reteniendo el subarbol del carrusel y
+  // su clausura. Era el unico listener de todo src/ sin recibo.
+  const obsCarrusel = new ResizeObserver(() => {
     if (pista.classList.contains("arrastrando")) return;
     pista.scrollLeft = diapos[vista].offsetLeft;
-  }).observe(pista);
+  });
+  obsCarrusel.observe(pista);
+  observadores.push(obsCarrusel);
 
   for (const m of MARCAS) {
     carril.append(
@@ -704,4 +714,10 @@ export function renderHub(cont: HTMLElement, acciones: HubAcciones = {}): void {
   filtrar();
   // El país guardado sigue mandando en el orden del carril de historias.
   void paisUsuario();
+
+  /** Suelta lo que el hub retiene. Lo llama quien lo montó, al cerrarlo. */
+  return () => {
+    for (const o of observadores) o.disconnect();
+    observadores.length = 0;
+  };
 }

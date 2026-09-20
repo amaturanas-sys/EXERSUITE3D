@@ -78,13 +78,25 @@ type SaveFilePicker = (opts: {
 
 /**
  * Guarda un archivo dejando que el USUARIO ELIJA EL DESTINO con el diálogo
- * nativo de la plataforma. Devuelve sin hacer nada si lo cancela.
+ * nativo de la plataforma, y DICE QUÉ PASÓ (v0.3.78).
+ *
+ * Hasta v0.3.77 esto devolvía `void`: cancelar el diálogo del sistema y
+ * guardar de verdad se veían EXACTAMENTE IGUAL desde fuera. Quien llamaba daba
+ * por hecho que el archivo estaba escrito, marcaba el proyecto como limpio y
+ * —en «Guardar y salir»— destruía el editor. Pulsar Esc en el diálogo nativo
+ * porque te habías equivocado de carpeta borraba el trabajo sin un solo aviso.
+ *
+ * `"quizas"` es el ancla clásica: se le entrega el blob al navegador y él se
+ * encarga: no hay forma de saber si el archivo llegó al disco. Es distinto de
+ * `"guardado"` a propósito — mentir ahí sería volver al bug de antes.
  */
+export type ResultadoGuardado = "guardado" | "cancelado" | "quizas";
+
 export async function descargarArchivo(
   nombre: string,
   contenido: Uint8Array | string,
   mime: string,
-): Promise<void> {
+): Promise<ResultadoGuardado> {
   const datos =
     typeof contenido === "string" ? new TextEncoder().encode(contenido) : contenido;
 
@@ -94,14 +106,14 @@ export async function descargarArchivo(
       try {
         const res = await plugin.guardar({ nombre, mime, datos: aBase64(datos) });
         window.alert(tt(`✓ Guardado: ${res.nombre ?? nombre}`, `✓ Saved: ${res.nombre ?? nombre}`));
-        return;
+        return "guardado";
       } catch (err) {
-        if (esCancelacion(err)) return;
+        if (esCancelacion(err)) return "cancelado";
         console.warn("Guardar como… nativo falló, se usa el flujo clásico:", err);
       }
     }
     await guardarAndroidClasico(nombre, datos);
-    return;
+    return "quizas";
   }
 
   // Web / Windows: diálogo "Guardar como" del sistema si el WebView lo trae.
@@ -116,9 +128,9 @@ export async function descargarArchivo(
       const flujo = await handle.createWritable();
       await flujo.write(new Blob([datos as unknown as BlobPart], { type: mime }));
       await flujo.close();
-      return;
+      return "guardado";
     } catch (err) {
-      if (esCancelacion(err)) return;
+      if (esCancelacion(err)) return "cancelado";
       console.warn("showSaveFilePicker no disponible, se usa el ancla clásica:", err);
     }
   }
@@ -130,6 +142,7 @@ export async function descargarArchivo(
   a.download = nombre;
   a.click();
   URL.revokeObjectURL(url);
+  return "quizas";
 }
 
 /**

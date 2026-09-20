@@ -235,7 +235,15 @@ class ComponentModelManager {
       models: Record<string, { fileName: string; ext: string; updatedAt: number; path: string }>;
     };
 
-    const localList = await getAllModels().catch(() => []);
+    // SI NO SE PUEDE LEER LA BIBLIOTECA LOCAL, NO SE IMPORTA (v0.3.78).
+    //
+    // Esto era `.catch(() => [])`. Con la lista vacía, `analyzeImport` clasifica
+    // TODO como "new" y la pantalla de conflictos deja de advertir de que la
+    // importación va a REEMPLAZAR modelos propios — que es justo para lo que
+    // existe. Quien lleva meses afinando sus .glb aceptaba todo sin ver una
+    // sola advertencia y los perdía. Mejor no importar nada que sobrescribir
+    // a ciegas.
+    const localList = await getAllModels();
     const local = new Map(localList.map((m) => [m.componentId, m]));
 
     const entries: ImportEntry[] = [];
@@ -272,16 +280,22 @@ class ComponentModelManager {
   }
 
   /** Aplica los modelos seleccionados de un análisis previo (conserva su fecha). */
-  async applyImport(selected: ImportEntry[]): Promise<void> {
+  async applyImport(selected: ImportEntry[]): Promise<string[]> {
+    // DEVUELVE LO QUE NO ENTRÓ (v0.3.78). Antes cada fallo se quedaba en un
+    // `console.warn` y la importación «terminaba bien» siempre: el usuario
+    // aceptaba doce modelos, entraban nueve, y no se enteraba de los tres.
+    const fallidos: string[] = [];
     for (const e of selected) {
       if (e.status === "unknown") continue;
       try {
         await this.store(e.componentId, e.fileName, e.ext, e.bytes.slice().buffer, e.updatedAt);
       } catch (err) {
         console.warn(`No se pudo importar el modelo de "${e.componentId}":`, err);
+        fallidos.push(e.label || e.componentId);
       }
     }
     if (selected.length) this.emit();
+    return fallidos;
   }
 }
 

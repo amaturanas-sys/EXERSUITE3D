@@ -407,7 +407,10 @@ export function elegirWorkspace(): Promise<WorkspaceData | null> {
       );
     };
 
-    const cerrarBtn = el("button", { class: "tool" }, ["✕"]);
+    const cerrarBtn = el("button", {
+      class: "tool",
+      "aria-label": tt("Cerrar el asistente", "Close the wizard"),
+    }, ["✕"]);
     cerrarBtn.addEventListener("click", () => terminar(null));
     const panel = el("div", { class: "perf-panel wizard-panel" }, [
       el("div", { class: "lib-header" }, [

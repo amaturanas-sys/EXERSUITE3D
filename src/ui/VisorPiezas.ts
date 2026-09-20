@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { Editor } from "../core/Editor";
 import type { SceneObject } from "../objects/SceneObject";
-import { clear, el } from "./dom";
+import { clear, el, marcar } from "./dom";
 import { formatCm } from "../core/units";
 import { tt } from "../core/i18n";
 
@@ -47,6 +47,9 @@ export class VisorPiezas {
   private casillas: Casilla[] = [];
   private aislada: string | null = null;
   private vivo = true;
+  /** Vectores de trabajo de las reglas: se rellenan, no se crean por fotograma. */
+  private readonly vTam = new THREE.Vector3();
+  private readonly vCentro = new THREE.Vector3();
   private retratista: Retratista | null = null;
 
   constructor(
@@ -134,8 +137,15 @@ export class VisorPiezas {
       );
       c.celda.title = `${c.obj.name} · ${medidas}`;
       // EL CURSOR PREGUNTA «¿DÓNDE VA?» y la maqueta contesta en rojo.
+      //
+      // Y EL TECLADO TAMBIÉN (v0.3.78): la casilla ya era un <button>, así que
+      // se tabula hasta ella — pero la mecánica central del visor colgaba sólo
+      // de `pointerenter`, que el teclado no dispara nunca. Quien no usa ratón
+      // se quedaba sin la respuesta.
       c.celda.addEventListener("pointerenter", () => this.editor.senalarPieza(c.obj.id));
       c.celda.addEventListener("pointerleave", () => this.editor.senalarPieza(null));
+      c.celda.addEventListener("focus", () => this.editor.senalarPieza(c.obj.id));
+      c.celda.addEventListener("blur", () => this.editor.senalarPieza(null));
       c.celda.addEventListener("click", () => this.aislar(c));
       this.grid.append(c.celda);
     }
@@ -173,7 +183,8 @@ export class VisorPiezas {
     const yaEstaba = this.aislada === c.obj.id;
     this.aislada = yaEstaba ? null : c.obj.id;
     for (const otra of this.casillas) {
-      otra.celda.classList.toggle("aislada", otra.obj.id === this.aislada);
+      // `aislada` era sólo borde y sombra: color puro. `aria-pressed` lo dice.
+      marcar(otra.celda, otra.obj.id === this.aislada, "aislada");
     }
     this.editor.aislarPieza(this.aislada);
     this.encuadrar();
@@ -188,7 +199,9 @@ export class VisorPiezas {
 
   /** Encuadra lo que esté a la vista (la máquina entera o la pieza sola). */
   private encuadrar(): void {
-    const caja = this.editor.cajaDelProyecto();
+    // Lo que se ve acaba de cambiar: la caja que usan las reglas ya no vale.
+    this.invalidarCaja();
+    const caja = (this.cajaCache = this.editor.cajaDelProyecto());
     const centro = caja.getCenter(new THREE.Vector3());
     const radio = Math.max(caja.getSize(new THREE.Vector3()).length() / 2, 5);
     this.editor.encuadrarEn(centro, radio);
@@ -212,12 +225,36 @@ export class VisorPiezas {
     requestAnimationFrame(paso);
   }
 
+  /**
+   * LA CAJA DEL PROYECTO NO SE RECALCULA A 60 Hz (v0.3.78).
+   *
+   * `dibujarReglas` cuelga de un rAF incondicional, y empezaba llamando a
+   * `cajaDelProyecto()`, que recorre TODAS las piezas haciendo
+   * `updateMatrixWorld(true)` —recursivo y forzado— más un `Box3` por pieza.
+   * Con 22 piezas son ~2 800 objetos por segundo; con una sala de 200, unos
+   * 25 000, en la vista donde lo único que hace el usuario es mirar. El
+   * guardia de `firma` de más abajo evitaba el trabajo de DOM, pero llegaba
+   * tarde: lo caro ya había pasado.
+   *
+   * La caja sólo cambia al aislar una pieza o volver al modelo completo, y
+   * ambas cosas pasan por `encuadrar()`. Así que se cachea y se invalida ahí.
+   */
+  private cajaCache: THREE.Box3 | null = null;
+  private marcoCache: HTMLElement | null = null;
+
+  /** Olvida la caja cacheada: lo que se ve ha cambiado. */
+  private invalidarCaja(): void {
+    this.cajaCache = null;
+  }
+
   private dibujarReglas(): void {
     const cam = this.editor.sceneManager.camera as THREE.PerspectiveCamera;
-    const caja = this.editor.cajaDelProyecto();
-    const tam = caja.getSize(new THREE.Vector3());
-    const centro = caja.getCenter(new THREE.Vector3());
-    const marco = this.root.querySelector(".visor-modelo") as HTMLElement | null;
+    const caja = (this.cajaCache ??= this.editor.cajaDelProyecto());
+    const tam = caja.getSize(this.vTam);
+    const centro = caja.getCenter(this.vCentro);
+    const marco = (this.marcoCache ??= this.root.querySelector(
+      ".visor-modelo",
+    ) as HTMLElement | null);
     if (!marco || !cam.isPerspectiveCamera) return;
     const anchoPx = marco.clientWidth;
     const altoPx = marco.clientHeight;

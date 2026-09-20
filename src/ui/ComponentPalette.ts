@@ -302,7 +302,7 @@ export class ComponentPalette {
     }
 
     const crear = el("button", { class: "tool sim" }, [tt("Insertar", "Insert")]);
-    const cerrar = el("button", { class: "rold-cerrar" }, ["✕"]);
+    const cerrar = el("button", { class: "rold-cerrar", "aria-label": tt("Cerrar", "Close") }, ["✕"]);
     const panel = el("aside", { id: "rold-panel" }, [
       el("div", { class: "rold-head" }, [
         el("span", { class: "rold-titulo" }, [tt("Brazo con pilar", "Arm with strut")]),
