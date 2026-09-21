@@ -46,7 +46,12 @@ const abrirCon = async (guardada, huella) => {
   await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
   await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
   await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
-  await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2000);
+  await p.click(".wizard-carta:has-text('Canvas libre')");
+// SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
+// se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
+// hacia parpadear a estas pruebas.
+await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
+await p.waitForTimeout(2000);
   const r = await p.evaluate(async () => {
     const ed = window.exersuite.editor;
     for (let i = 0; i < 20 && !ed.humanFigure; i++) {

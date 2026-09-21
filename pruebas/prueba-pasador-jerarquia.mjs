@@ -35,7 +35,12 @@ await page.waitForTimeout(1000);
 await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
 await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
 await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Canvas libre')"); await page.waitForTimeout(3000);
+await page.click(".wizard-carta:has-text('Canvas libre')");
+// SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
+// se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
+// hacia parpadear a estas pruebas.
+await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
+await page.waitForTimeout(3000);
 
 // EL BANCO DE PRUEBAS: un poste y un brazo unidos por un pasador. `fija` dice
 // si el poste está clavado al mundo; `lado`, dónde va el herraje.

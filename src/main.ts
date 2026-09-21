@@ -6,7 +6,7 @@ import {
   hayDialogoDerecha,
 } from "./ui/dialogoDerecha";
 import { descargarArchivo } from "./core/descargas";
-import { el } from "./ui/dom";
+import { clear, el } from "./ui/dom";
 import * as THREE from "three";
 import { Editor } from "./core/Editor";
 import { ComponentPalette } from "./ui/ComponentPalette";
@@ -102,6 +102,9 @@ function bootEditor(opts: { simulator?: boolean; visor?: boolean } = {}): Editor
   const canvas = document.createElement("canvas");
   canvas.id = "viewport";
   app.append(canvas);
+  // Se tapa YA, antes de que exista nada con lo que interactuar. La quita
+  // `ensureModels()`, que todas las puertas del editor llaman justo después.
+  mostrarCargando();
 
   const ed = new Editor(canvas);
   editor = ed;
@@ -378,12 +381,75 @@ function bootEditor(opts: { simulator?: boolean; visor?: boolean } = {}): Editor
   return ed;
 }
 
+/**
+ * EL EDITOR NO SE TOCA HASTA QUE ESTÁ (v0.3.81).
+ *
+ * `bootEditor()` monta el editor y lo ENSEÑA de inmediato, pero las mallas
+ * llegan después: `ensureModels()` puede tardar un parpadeo o varios segundos,
+ * según lo que haya guardado en la biblioteca. En ese hueco había un editor de
+ * aspecto normal donde pinchar producía piezas sin malla —el `undefined.mesh`
+ * que salía de vez en cuando en cuatro pruebas— y la paleta enseñaba el
+ * repertorio equivocado (eso se tapó en v0.3.80; esto cierra el hueco entero).
+ *
+ * La capa cubre el editor y se come los clics mientras tanto. Y si la carga
+ * REVIENTA, se queda diciéndolo con una salida, en vez de dejar un velo
+ * eterno sin explicación.
+ */
+let capaCargando: HTMLElement | null = null;
+
+function mostrarCargando(): void {
+  if (capaCargando) return;
+  capaCargando = el("div", { class: "cargando-capa", role: "status", "aria-live": "polite" }, [
+    el("div", { class: "cargando-caja" }, [
+      el("div", { class: "cargando-rueda" }),
+      el("div", { class: "cargando-texto" }, [tt("Cargando modelos…", "Loading models…")]),
+    ]),
+  ]);
+  app.append(capaCargando);
+}
+
+function quitarCargando(): void {
+  capaCargando?.remove();
+  capaCargando = null;
+}
+
+/** La carga falló: se dice, y se ofrece la única salida que queda. */
+function cargaFallida(err: unknown): void {
+  if (!capaCargando) return;
+  clear(capaCargando);
+  const volver = el("button", { class: "land-btn primary" }, [
+    tt("← Volver al inicio", "← Back to Home"),
+  ]);
+  volver.addEventListener("click", () => {
+    quitarCargando();
+    irAlInicio();
+  });
+  capaCargando.append(
+    el("div", { class: "cargando-caja" }, [
+      el("div", { class: "cargando-texto" }, [
+        tt("No se han podido cargar los modelos.", "Could not load the models."),
+      ]),
+      el("div", { class: "cargando-detalle" }, [String(err).slice(0, 200)]),
+      volver,
+    ]),
+  );
+}
+
 function ensureModels(): Promise<void> {
   return Promise.all([
     componentModels.ensureLoaded(),
     figureSegments.ensureLoaded(),
     prefabsMaquina.init(),
-  ]).then(() => undefined);
+  ]).then(
+    () => {
+      quitarCargando();
+    },
+    (err: unknown) => {
+      console.error("No se pudieron cargar los modelos:", err);
+      cargaFallida(err);
+      throw err;
+    },
+  );
 }
 
 async function startNew(ws?: WorkspaceData): Promise<void> {
@@ -504,6 +570,8 @@ async function goHome(): Promise<void> {
     }
     editor.dispose();
     editor = null;
+    // Si se sale a mitad de carga, la capa se va con el editor.
+    quitarCargando();
     for (const d of editorDisposables) d();
     editorDisposables = [];
     for (const n of editorNodes) n.remove();

@@ -25,7 +25,12 @@ await p.waitForTimeout(900);
 await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
 await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
 await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(2500);
+await p.click(".wizard-carta:has-text('Canvas libre')");
+// SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
+// se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
+// hacia parpadear a estas pruebas.
+await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
+await p.waitForTimeout(2500);
 
 // NADA de cargar modelos: tiene que estar ya puesto.
 const serie = await p.evaluate((ids) => ({

@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.81] — 2026-09-21
+
+Se cierra el hueco que v0.3.80 dejó abierto: **el editor ya no se puede tocar
+antes de estar listo.**
+
+### Corregido
+
+- **El editor se mostraba y aceptaba clics mientras sus mallas seguían
+  cargando.** `bootEditor()` monta la interfaz y la enseña de inmediato, pero
+  `ensureModels()` tarda: **medido, 4,9 s** la primera vez que se entra. En ese
+  hueco había un editor de aspecto normal donde pinchar creaba piezas sin
+  malla — el `Cannot read properties of undefined (reading 'mesh')` que salía
+  de vez en cuando— y la paleta enseñaba el repertorio equivocado (el síntoma
+  que se tapó en v0.3.80).
+
+  Ahora una capa cubre el editor y se come los clics hasta que está listo. La
+  barrera vive en `bootEditor()` y `ensureModels()`, que son las dos funciones
+  por las que pasan **las seis** puertas de entrada al editor: ninguna puede
+  olvidarla.
+
+- **Y si la carga revienta, lo dice.** Antes `ensureModels()` podía rechazar
+  dentro de un `void startNew(ws)` y el editor se quedaba a medias en silencio.
+  Ahora la capa se queda con el error escrito y un botón para volver al inicio.
+
+### Pruebas
+
+- **Las 122 pruebas que entran al editor esperaban al reloj, no a la
+  aplicación.** Daban 2-3 s por buenos y pinchaban; cuando la carga se alargaba
+  —al venir de la Biblioteca, por ejemplo— pinchaban sobre un editor a medio
+  hacer. Ahora esperan a que la capa de carga se vaya, que es la señal de que
+  está listo. Es la misma lección que ya estaba escrita en `prueba-paleta`
+  desde v0.3.54: «se espera al contenido, no al reloj».
+
+- El efecto se ve en la corrida en paralelo, que es la que sufre la
+  contención: **de 61 rojos a 10.** Y el veredicto en serie sube de 111 a
+  **114 de 115**: `auditoria`, `banca-indexada` y `placa-dentada` eran víctimas
+  de este hueco y ahora pasan.
+
+### Sigue abierto
+
+`dos-bisagras` pide que el respaldo se incline **más de 3°** al frenar una
+bisagra, y el movimiento real es de 2,5°. No es carga ni parpadeo: es una
+medida de física contra un umbral, y hay que decidir si el umbral está mal o
+si el mecanismo cede menos de lo que debería. Se deja en rojo a propósito.
+
 ## [0.3.80] — 2026-09-20
 
 ### Corregido
