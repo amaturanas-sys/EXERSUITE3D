@@ -129,6 +129,20 @@ export interface PrimitiveParams {
   dienteLado?: "derecha" | "izquierda";
   dienteBoca?: "arriba" | "abajo";
   /**
+   * PERFIL DEL DIENTE (v0.3.86). Dos trabajos distintos, dos formas:
+   *
+   *   · `"gancho"` (por omisión) — la jota de toda la vida. Vuela por delante
+   *     del canto y abre la boca a un lado, porque la barra SE POSA desde
+   *     arriba y lo único que hay que impedir es que ruede.
+   *   · `"muesca"` — el carril de una banca ajustable. Aquí no se posa nada:
+   *     un puntal EMPUJA su pasador contra el diente, y el empuje cambia de
+   *     sentido con el ángulo del respaldo. Una boca abierta a un lado deja
+   *     que el pasador se salga por ella en cuanto el empuje apunta hacia
+   *     allá — medido: el respaldo se deslizaba de 23° a 38°. La muesca está
+   *     cerrada por los DOS lados y no tiene por dónde escaparse.
+   */
+  dientePerfil?: "gancho" | "muesca";
+  /**
    * PLACA DOBLE (v0.3.25): id de la placa gemela montada en la cara opuesta
    * de la misma viga. Las dos se editan como una —medidas, sentido, posición
    * y giro— y borrar una borra la otra.

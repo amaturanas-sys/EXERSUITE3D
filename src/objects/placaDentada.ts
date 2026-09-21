@@ -440,6 +440,69 @@ function voltearCaras(g: THREE.BufferGeometry): void {
  * `y`. Empieza dentro de la plancha (por eso el solape) para que al fundir las
  * dos partes no quede una costura.
  */
+/** ¿Esta placa lleva muescas cerradas en vez de ganchos? (v0.3.86) */
+export function esMuesca(p: PrimitiveParams): boolean {
+  return p.dientePerfil === "muesca";
+}
+
+/**
+ * RADIO DE LA MUESCA.
+ *
+ * Lo manda lo que tiene que entrar, igual que en el gancho, pero con MENOS
+ * holgura: el gancho necesita que la barra baje por su boca, y la muesca sólo
+ * tiene que recibir un pasador que ya viene empujado contra ella. Holgura de
+ * sobra sería un pasador que baila dentro del diente.
+ */
+function radioMuesca(p: PrimitiveParams): number {
+  return agarreDentada(p) / 2 + DENTADA_PROPORCIONES.holguraBarra / 2;
+}
+
+/**
+ * FONDO DE LA RANURA: el doble de su radio, para que lo que entra quede
+ * DENTRO y no a medio meter. Con menos, el flanco no llega a la altura del
+ * pasador y no retiene nada.
+ */
+function fondoMuesca(r: number): number {
+  return 2 * r;
+}
+
+/**
+ * EL CANTO DE LA PLANCHA, MORDIDO (v0.3.86).
+ *
+ * El gancho se dibuja como una pieza aparte que se suelda al canto. La muesca
+ * es lo contrario: no se añade nada, se quita. Así que en vez de una plancha
+ * lisa más N dientes, aquí se dibuja UNA sola silueta cuyo canto exterior baja
+ * en semicírculo a cada asiento y vuelve a subir.
+ *
+ * El acero que queda ENTRE dos muescas es el diente, y es el que sujeta: al
+ * pasador le cierran el paso sus dos flancos, venga el empuje de donde venga.
+ */
+function contornoMuescas(m: MedidasDentada, r: number): THREE.Shape {
+  const xIn = -m.ancho / 2;
+  const xOut = m.ancho / 2;
+  const s = new THREE.Shape();
+  s.moveTo(xIn, -m.largo / 2);
+  s.lineTo(xOut, -m.largo / 2);
+  // Canto exterior de abajo arriba, mordido en cada asiento.
+  const fondo = fondoMuesca(r);
+  for (let i = 0; i < m.dientes; i++) {
+    const y = m.asiento(i);
+    s.lineTo(xOut, y - r);
+    // UNA RANURA, NO UN MORDISCO. Un semicírculo tiene de fondo su propio
+    // radio, así que el pasador se queda a medio meter y con medio cuerpo
+    // fuera no hay flanco que lo detenga —medido: derivaba igual que el
+    // gancho—. La ranura baja recta hasta `fondo` y redondea abajo, que es
+    // como se ve en el carril de una banca de verdad.
+    s.lineTo(xOut - fondo + r, y - r);
+    s.absarc(xOut - fondo + r, y, r, -Math.PI / 2, Math.PI / 2, true);
+    s.lineTo(xOut, y + r);
+  }
+  s.lineTo(xOut, m.largo / 2);
+  s.lineTo(xIn, m.largo / 2);
+  s.closePath();
+  return s;
+}
+
 function contornoDiente(m: MedidasDentada, y: number): THREE.Shape {
   const xEsp = m.cantoEspina;
   const xOut = m.ancho / 2;
@@ -510,6 +573,7 @@ export function pernosQueLleva(p: PrimitiveParams): number {
  */
 export function buildDentadaGeometry(p: PrimitiveParams): THREE.BufferGeometry {
   const m = medidasDentada(p);
+  const muesca = esMuesca(p);
   const extruir = (forma: THREE.Shape): THREE.BufferGeometry => {
     const g = new THREE.ExtrudeGeometry(forma, {
       depth: m.grosor,
@@ -523,16 +587,24 @@ export function buildDentadaGeometry(p: PrimitiveParams): THREE.BufferGeometry {
 
   // PARTE 1 — LA PLANCHA. Un rectángulo liso del ancho de la cara del pilar:
   // se estira, se estrecha y se engorda sin tocar los ganchos.
-  const plancha = new THREE.Shape();
-  plancha.moveTo(-m.ancho / 2, -m.largo / 2);
-  plancha.lineTo(m.cantoEspina, -m.largo / 2);
-  plancha.lineTo(m.cantoEspina, m.largo / 2);
-  plancha.lineTo(-m.ancho / 2, m.largo / 2);
-  plancha.closePath();
-  const partes: THREE.BufferGeometry[] = [extruir(plancha)];
+  const partes: THREE.BufferGeometry[] = [];
+  if (muesca) {
+    // PERFIL DE MUESCA: una sola silueta, con el canto ya mordido. No hay
+    // dientes que soldar porque el diente es el acero que queda entre dos
+    // mordiscos.
+    partes.push(extruir(contornoMuescas(m, radioMuesca(p))));
+  } else {
+    const plancha = new THREE.Shape();
+    plancha.moveTo(-m.ancho / 2, -m.largo / 2);
+    plancha.lineTo(m.cantoEspina, -m.largo / 2);
+    plancha.lineTo(m.cantoEspina, m.largo / 2);
+    plancha.lineTo(-m.ancho / 2, m.largo / 2);
+    plancha.closePath();
+    partes.push(extruir(plancha));
 
-  // PARTE 2 — LOS DIENTES, uno por asiento, mordiendo el canto de la plancha.
-  for (let i = 0; i < m.dientes; i++) partes.push(extruir(contornoDiente(m, m.asiento(i))));
+    // PARTE 2 — LOS DIENTES, uno por asiento, mordiendo el canto de la plancha.
+    for (let i = 0; i < m.dientes; i++) partes.push(extruir(contornoDiente(m, m.asiento(i))));
+  }
 
   // Los pernos son detalle, no estructura, pero sin ellos la placa parece
   // pegada al poste con saliva.
@@ -586,6 +658,40 @@ export function cajasDentada(p: PrimitiveParams): CajaDentada[] {
   const m = medidasDentada(p);
   const [sx, sy] = espejoDentada(p);
   const out: CajaDentada[] = [];
+
+  // MUESCA: LA PLANCHA ENTERA, MENOS LOS MORDISCOS (v0.3.86).
+  //
+  // El gancho declara un bloque bajo la cuna y un dedo por fuera, y entre los
+  // dos dejan una boca abierta a un lado. Aquí eso es justo lo que no se
+  // quiere: el cuerpo va de canto a canto MENOS la franja mordida, y esa
+  // franja se rellena sólo ENTRE muesca y muesca. Lo que queda es un pasillo
+  // de bolsillos con flanco a los dos lados, que es lo que retiene un pasador
+  // empujado venga el empuje de donde venga.
+  if (esMuesca(p)) {
+    const r = radioMuesca(p);
+    const fondo = fondoMuesca(r);
+    // El cuerpo: de la espina hasta el fondo de las ranuras, sin interrupción.
+    out.push({
+      centro: [(-m.ancho / 2 + (m.ancho / 2 - fondo)) / 2, 0, 0],
+      tam: [m.ancho - fondo, m.largo, m.grosor],
+    });
+    // Y los flancos: el acero de la franja mordida que sobrevive entre dos
+    // muescas. Cada uno es una pared del bolsillo de sus dos vecinas.
+    const bordes = [-m.largo / 2, ...Array.from({ length: m.dientes }, (_, i) => m.asiento(i)), m.largo / 2];
+    for (let i = 0; i < bordes.length - 1; i++) {
+      const de = bordes[i] + (i === 0 ? 0 : r);
+      const a = bordes[i + 1] - (i === bordes.length - 2 ? 0 : r);
+      if (a - de <= 0.05) continue;
+      out.push({
+        centro: [m.ancho / 2 - fondo / 2, (de + a) / 2, 0],
+        tam: [fondo, a - de, m.grosor],
+      });
+    }
+    if (sx < 0 || sy < 0) {
+      for (const c of out) c.centro = [c.centro[0] * sx, c.centro[1] * sy, c.centro[2]];
+    }
+    return out;
+  }
 
   // La espina, de punta a punta: respaldo de la placa y pared interior de
   // todas las cunas.

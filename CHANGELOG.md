@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.86] — 2026-09-21
+
+### Añadido — perfil de diente en MUESCA para `placa-dentada`
+
+La placa dentada nació como una fila de jotas: el diente **vuela** por delante
+del canto y abre la boca a un lado, porque una barra **se posa** desde arriba y
+lo único que hay que impedir es que ruede. Ahora acepta un segundo perfil,
+`dientePerfil: "muesca"`: una ranura **cerrada por los dos lados**, cortada en
+el canto de la plancha, para carriles donde algo **empuja** contra el diente en
+vez de posarse.
+
+Es opt-in y el gancho es el de siempre por omisión. Las ocho pruebas que tocan
+la pieza —`placa-dentada`, `rack-barra`, `torre-pesos`, `maquina-entera`,
+`auditoria`, `brazo-pilar`, `largo-a-medida`, `nodos-ramas`— siguen en verde.
+
+### Pero NO arregla la banca, y esto es lo importante
+
+Se construyó para que el respaldo dejara de ceder al recostarlo. **No lo hace.**
+Cinco intervenciones, todas medidas, todas sin efecto:
+
+| Se probó | Deriva del respaldo |
+|---|---|
+| Original (gancho) | 11,7° |
+| Pasador Ø2 / Ø4 / Ø6 | 10,4° / 12,7° / 10,9° |
+| Gancho a escala 2 / 3 / 4 cm | 11,9° / 10,1° / 7,4° |
+| Carril movido para meter el pasador en el bolsillo | 9,9° |
+| Muesca cerrada | 13,1° |
+| Ranura profunda | 9,2° |
+
+La medida que cierra el caso: mientras el respaldo cede, **la distancia del
+pasador al pivote del puntal crece de 63,87 a 66,19 cm**. El pasador está
+SOLDADO al puntal y el puntal pivota en ese punto: esa distancia es rígida y no
+puede cambiar. **Las uniones se estiran 2,3 cm bajo carga.**
+
+El deslizamiento nunca estuvo en el diente. Está en las articulaciones —las
+«soldaduras» son uniones de revolución con límites, y un límite no es un
+empotramiento: cede, y en cadena la cesión se suma. Encaja con todo lo demás
+que se vio por el camino: el puntal desprendiéndose en las capturas de v0.3.81,
+los ángulos de bisagra saltando de −149° a +15°, y la viga de masa 0 que en
+v0.3.82 mejoró el síntoma sin curarlo.
+
+El arreglo está en `PhysicsWorld`, no en `placaDentada`. Queda planteado.
+
 ## [0.3.85] — 2026-09-21
 
 ### Pruebas — `prueba-dos-bisagras` hace ahora el gesto de la máquina
