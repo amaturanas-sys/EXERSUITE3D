@@ -61,7 +61,10 @@ const cargado = await page.evaluate(async (data) => {
   };
 }, proyecto);
 console.log("CARGADO:", JSON.stringify(cargado));
-ok(cargado.piezas === 17 && cargado.uniones >= 15, "el proyecto del diseñador entra entero",
+// 18 piezas desde v0.3.82: la banca gana el PASADOR TRANSVERSAL de la punta
+// del puntal, que es lo que descansa en el diente de la viga. Sin él el
+// puntal se colaba entre las dos placas y el respaldo se caía solo.
+ok(cargado.piezas === 18 && cargado.uniones >= 16, "el proyecto del diseñador entra entero",
   `${cargado.piezas} piezas, ${cargado.uniones} uniones`);
 ok(cargado.bisagras === 2, "trae sus DOS bisagras", cargado.bisagras);
 ok(

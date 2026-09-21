@@ -342,7 +342,7 @@
       "position": [
         7.86733399397261,
         24.522495703198466,
-        2.5
+        3.6712154388427733
       ],
       "quaternion": [
         -0.5000000000000001,
@@ -392,7 +392,7 @@
       "position": [
         7.86733399397261,
         24.522495703198466,
-        -2.8
+        -3.9878376960754394
       ],
       "quaternion": [
         -0.5000000000000001,
@@ -751,6 +751,38 @@
         0.7071067811865475,
         0,
         0.7071067811865476
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_99",
+      "name": "Pasador de apoyo",
+      "componentId": "pasador-bisagra",
+      "materialId": "acero-pulido",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 1.0,
+        "radiusBottom": 1.0,
+        "height": 11.0
+      },
+      "physics": {
+        "massKg": 0.3,
+        "fixed": false
+      },
+      "position": [
+        2.99,
+        33.46,
+        -0.5
+      ],
+      "quaternion": [
+        0.7071067811865475,
+        0,
+        0,
+        0.7071067811865475
       ],
       "scale": [
         1,
@@ -1118,6 +1150,30 @@
         -30.5,
         125.91553171001476,
         -0.5000000000000002
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura del pasador",
+      "kind": "revolute",
+      "bodyAId": "obj_93",
+      "bodyBId": "obj_99",
+      "anchor": [
+        2.99,
+        33.46,
+        -0.5
       ],
       "axis": "z",
       "axisVec": null,

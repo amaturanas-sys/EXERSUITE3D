@@ -5,6 +5,37 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.83] — 2026-09-21
+
+### Cambiado — el apaño de v0.3.82 se sustituye por la pieza de verdad
+
+v0.3.82 hacía que el respaldo aguantara acercando las dos placas dentadas
+hasta que el puntal apoyara en ellas de canto. Funcionaba, pero no era lo que
+hace la máquina real: en las fotografías el puntal **termina en un pasador
+transversal** más ancho que el hueco, y es ese pasador el que descansa en el
+diente.
+
+- **Nueva pieza: «Pasador de apoyo»** (cilindro de Ø2 × 11 cm, acero pulido),
+  soldado a la punta del puntal y atravesándolo de lado a lado. Con las placas
+  ocupando z 3,03..4,31 y −4,63..−3,35, el pasador asoma **1 cm por fuera de
+  cada una**: descansa sobre las dos, como el de la foto.
+- **Las dos placas dentadas vuelven a su sitio original** (z 3,67 y −3,99). La
+  banca recupera su ancho de diseño.
+
+El respaldo se mantiene entre **0,7° y 2,6°** durante treinta segundos, sin
+derivar: el pasador se mece un poco dentro del diente, que es lo que hace el
+de verdad.
+
+### Pruebas
+
+- `prueba-dos-bisagras` cuenta ahora **18 piezas y 16 uniones**: la banca tiene
+  una pieza más.
+- Ojo, y queda anotado: **la banca ahora se resiste a que le muevan el puntal**,
+  porque el pasador está encajado en su diente — igual que la real, donde hay
+  que levantar el respaldo para liberarlo. La prueba lo gira sin levantarlo
+  antes, y en 1 de cada 8 corridas no consigue vencer el diente. No se ha
+  tocado el umbral para taparlo.
+
 ## [0.3.82] — 2026-09-21
 
 ### Corregido — la banca ajustable no se sostenía
