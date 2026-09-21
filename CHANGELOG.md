@@ -5,6 +5,40 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.85] — 2026-09-21
+
+### Pruebas — `prueba-dos-bisagras` hace ahora el gesto de la máquina
+
+Su paso 4 agarraba **el puntal** y lo giraba sin levantar antes el respaldo.
+Eso funcionaba mientras el mecanismo estuvo roto —el puntal flotaba libre—, y
+lo que medía en realidad no era el mecanismo sino **cuánto se había caído** el
+respaldo mientras tanto. Arreglada la banca, el puntal ya no se deja girar con
+el pasador encajado, y la prueba pedía un imposible.
+
+Ahora hace lo que se hace con una banca: **recuesta el respaldo** y comprueba
+las tres cosas que importan — que el pasador salta de diente y la banca se
+ajusta, que **se queda donde se la deja**, y que el pasador sigue apoyado en
+la viga dentada. Insiste hasta que el agarre prende, para que un fallo sea
+siempre del mecanismo y nunca de la manipulación.
+
+### Y lo que ha encontrado — corrige lo dicho en v0.3.84
+
+La nota de v0.3.84 decía que la banca «se queda en cada posición». **Eso era
+verdad sólo en la primera.** Con la prueba nueva, medido:
+
+- **Vertical (≈3°): agarra perfecto.** Cero deriva en treinta segundos.
+- **Recostada (≈23°): cede.** Se desliza hasta ≈38° —hasta 14° de deriva en
+  diez segundos— y ahí se para.
+
+La fotografía de cerca lo explica: recostado, el pasador **no cae dentro de la
+garganta del gancho**, se queda sobre su lomo y resbala. Los dientes están
+orientados para el ángulo casi vertical y no para los demás.
+
+La prueba queda **en rojo (pasa 1 de cada 3)** a propósito, como ya se hizo en
+v0.3.79: señala un defecto real que sigue ahí. Arreglarlo es rehacer la
+geometría de los dientes —o el largo del puntal—, y eso es una decisión de
+diseño sobre la máquina.
+
 ## [0.3.84] — 2026-09-21
 
 ### Añadido — las tres soldaduras que faltaban

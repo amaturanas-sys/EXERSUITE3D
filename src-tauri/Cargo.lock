@@ -840,7 +840,7 @@ dependencies = [
 
 [[package]]
 name = "exersuite3d"
-version = "0.3.84"
+version = "0.3.85"
 dependencies = [
  "log",
  "serde",
