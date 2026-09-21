@@ -1188,6 +1188,78 @@
       "locked": true,
       "soldada": true,
       "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de la viga dentada",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_87",
+      "anchor": [
+        7.9,
+        24.5,
+        3.03
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura de la viga dentada 2",
+      "kind": "revolute",
+      "bodyAId": "obj_82",
+      "bodyBId": "obj_88",
+      "anchor": [
+        7.9,
+        24.5,
+        -3.35
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
+    },
+    {
+      "name": "Soldadura del asiento",
+      "kind": "revolute",
+      "bodyAId": "obj_85",
+      "bodyBId": "obj_92",
+      "anchor": [
+        -44.0,
+        43.0,
+        0.0
+      ],
+      "axis": "z",
+      "axisVec": null,
+      "limitsEnabled": true,
+      "min": -90,
+      "max": 0,
+      "motor": {
+        "enabled": false,
+        "targetVel": 45,
+        "factor": 2
+      },
+      "locked": true,
+      "soldada": true,
+      "sensibilidad": 9
     }
   ],
   "cables": [],

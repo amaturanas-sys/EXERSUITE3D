@@ -5,6 +5,43 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.84] — 2026-09-21
+
+### Añadido — las tres soldaduras que faltaban
+
+Tres piezas de la banca ajustable no colgaban de nada: se sostenían sólo por
+su `fixed`, así que si el bastidor se hubiera movido se habrían quedado
+flotando en el aire. Ahora están soldadas como el resto del bastidor:
+
+- **las dos placas dentadas**, contra el flanco de la viga principal;
+- **el asiento**, sobre la columna delantera, que es donde apoya.
+
+Con ellas el proyecto queda **sin una sola pieza suelta**: 18 piezas, 19
+uniones. Y el conjunto gana rigidez — el respaldo pasa de mecerse entre 0,7° y
+2,6° a clavarse en **3,1°** de principio a fin de la simulación.
+
+### El mecanismo, demostrado
+
+Recostando el respaldo, el pasador salta de diente y la banca se queda en cada
+posición: **3,2° → 21,7° → 30,4° → 31,2°**, sosteniéndose en todas. Es el
+gesto de la máquina real, y es la primera vez que este proyecto lo hace.
+
+### Atención — `prueba-dos-bisagras` falla 3 de cada 5
+
+Y esta vez no se deja pasar en silencio. El paso 4 de esa prueba **agarra el
+puntal y lo gira sin levantar antes el respaldo**. Mientras el mecanismo
+estuvo roto eso funcionaba, porque el puntal flotaba libre. Ahora que el
+pasador asienta en su diente y el bastidor es rígido, el puntal **se resiste**
+— exactamente como el de la foto, donde hay que levantar el respaldo para
+liberarlo.
+
+Medido: 2 de 5 corridas pasan (antes de soldar era 7 de 8). No se ha tocado
+el umbral ni se ha aflojado nada: la prueba manipula la máquina de una forma
+que la máquina, ahora que funciona, no permite. Queda **pendiente de decidir**
+si se reescribe ese paso para que haga el gesto bueno —recostar el respaldo y
+comprobar que cada posición aguanta, que es lo que hace la demostración de
+arriba.
+
 ## [0.3.83] — 2026-09-21
 
 ### Cambiado — el apaño de v0.3.82 se sustituye por la pieza de verdad
