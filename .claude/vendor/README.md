@@ -6,6 +6,63 @@ Dos orígenes, las dos licencias MIT y las dos copiadas aquí:
 
 ---
 
+# Skills y agentes de la tercera tanda
+
+Tres orígenes más, los tres MIT (`LICENSE-UI-UX-PRO-MAX`,
+`LICENSE-PROMTS-SKILLS`, `LICENSE-AWESOME-SUBAGENTS`).
+
+## De [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+
+- **`ui-ux-pro-max`** — catálogo de reglas de UI/UX con la accesibilidad como
+  prioridad 1. Sus anti-patrones son, literalmente, los defectos que la
+  auditoría encontró aquí en v0.3.78: *«quitar los anillos de foco»* y
+  *«botones de icono sin etiqueta»*. Tiene mucho React, pero el núcleo —
+  contraste, foco, navegación por teclado, jerarquía, espaciado— no depende de
+  framework, y esta app monta el DOM a mano.
+
+  Se instala **entera, con sus 3,1 MB de datos** (catálogos de iconos y de
+  fuentes de Google) aunque aquí no sirvan: sus scripts los consultan, y una
+  skill a medio copiar es peor que ninguna.
+
+  Las otras seis del repo se quedan fuera: `ui-styling` va atada a shadcn/ui,
+  y `brand`, `banner-design`, `slides` y `design` son de trabajo gráfico y de
+  marca, que no es lo que se hace aquí.
+
+## De [Claude-Code-Promts-Skills](https://github.com/Rtur2003/Claude-Code-Promts-Skills)
+
+- **`changelog-from-commits`** — arma la entrada del CHANGELOG desde los
+  commits en vez de releerse el diff.
+- **`deterministic-checks`** — marcadores de conflicto, credenciales con
+  pinta de reales, restos de depuración y ficheros enormes, antes de
+  commitear. Es verificación mecánica: complementa a
+  `verification-before-completion`, que es la disciplina.
+- **`skill-audit`** — con catorce skills de cinco orígenes, comprobar
+  colisiones de nombre dejó de ser teórico. Se corrió al instalar: **ninguna
+  colisión**.
+
+Fuera: `doc-link-audit` y `find-prompt`, que no tapan ningún hueco de aquí.
+
+## De [awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents)
+
+De sus 171 agentes entra **uno**: **`game-developer`**, el único que cubre
+three.js, WebGL y optimización de render — el hueco de dominio que más se ha
+notado. Los demás o pisan a los ocho de ECC (`qa-expert`, `ui-ux-tester`,
+`accessibility-tester`, `test-automator`) o son de otros mundos.
+
+## Lo que NO entró, y por qué
+
+- **[Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor)**
+  — panel de terminal que lee los JSONL de `~/.claude` y `~/.claude-monitor`.
+  Es una herramienta **para la persona**, no una capacidad del agente, y este
+  contenedor es efímero: no hay historial que leer. Va en la máquina local.
+- **[three-js-mcp](https://github.com/locchung/three-js-mcp)** — servidor MCP.
+  Los MCP se configuran del lado del servidor, no desde dentro de la sesión; y
+  su propio README dice «only basic function». El dominio interesa, el
+  enganche no existe aquí.
+- **`modelcontextprotocol/servers/src/figma`** — **esa ruta no existe**. Ese
+  repo sólo trae `everything, fetch, filesystem, git, memory,
+  sequentialthinking, time`. El servidor de Figma no está ahí.
+
 # Skills de superpowers
 
 Cuatro de las quince, las que tapan un hueco sin pelearse con lo que ya hay:

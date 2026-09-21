@@ -28,6 +28,13 @@ Cuatro de [superpowers](https://github.com/obra/superpowers) (MIT), de método:
 - `dispatching-parallel-agents`, `subagent-driven-development` — cómo repartir
   trabajo entre los revisores de `.claude/agents/`.
 
+# Skills y agentes de la tercera tanda
+
+- `ui-ux-pro-max` — reglas de UI/UX con accesibilidad como prioridad 1.
+- `changelog-from-commits`, `deterministic-checks`, `skill-audit`.
+- `game-developer` (agente) — three.js, WebGL y optimización de render, que es
+  el dominio de esta aplicación y no lo cubría ningún otro.
+
 El porqué de cada selección —y de lo que se dejó fuera, incluidos tres
 repositorios enteros que no se enganchan en este entorno— está en
 `.claude/vendor/README.md`.
