@@ -5,6 +5,47 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.87] — 2026-09-21
+
+### Añadido — `prueba-bisagra-rigida`, el caso mínimo
+
+Dos cuerpos y una bisagra. Sin contactos, sin topes, sin nadie tocando nada:
+sólo un brazo colgado de un ancla y la gravedad. Se mide lo único que una
+bisagra promete —que sus dos anclas son **el mismo punto**— siguiendo cada una
+en el marco de su cuerpo, con tres cargas y en dos regímenes.
+
+| carga | pico (golpe del primer balanceo) | reposo |
+|---|---|---|
+| 1 kg | 0,001 cm | 0 cm |
+| 5 kg | 0,001 cm | 0 cm |
+| 20 kg | 0,001 cm | 0 cm |
+
+**La bisagra no cede.** Ni en reposo, ni bajo el golpe, ni más con más carga.
+
+### Corrige a v0.3.86
+
+La nota de v0.3.86 afirmaba que «las uniones se estiran 2,3 cm bajo carga» y
+que el arreglo estaba en `PhysicsWorld`. **Las dos cosas son falsas**, y así
+se llegó a ellas:
+
+- Aquella medida tomaba la distancia del pasador a un **punto fijo del
+  mundo** — pero ese punto es el pivote del puntal, que **viaja con el
+  respaldo** al recostarse. Cambiaba la referencia, no la pieza.
+- Y las soldaduras no son uniones: el motor las **funde**. En la banca, 18
+  piezas son **4 cuerpos** y 19 uniones son **2**. Un cuerpo fundido no tiene
+  nada que ceder; medido, dos puntos del mismo cuerpo se mantienen a 29,17 cm
+  constantes hasta el segundo decimal durante toda la simulación.
+
+Así que no había nada que convertir a uniones fijas: ya eran mejor que eso.
+
+### Dónde queda la banca
+
+Con el motor exonerado y la geometría del diente descartada en seis formas
+distintas, lo que queda es el **modelo**: cómo la banca aplica la carga, o qué
+sujeta de verdad al respaldo cuando está vertical. Sigue abierto, y ahora con
+una herramienta que faltaba: un caso mínimo al que volver cada vez que se
+sospeche de la física.
+
 ## [0.3.86] — 2026-09-21
 
 ### Añadido — perfil de diente en MUESCA para `placa-dentada`
