@@ -5,6 +5,46 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.82] — 2026-09-21
+
+### Corregido — la banca ajustable no se sostenía
+
+`pruebas/datos/bancoajustable.json` es el modelo real del diseñador, y su
+respaldo **se caía solo**: 0° → 83,6° en treinta segundos de simulación, sin
+que nadie lo tocara. Comparado con fotografías de la máquina real, el
+mecanismo tenía tres cosas mal, y hacían falta las tres:
+
+1. **El puntal de apoyo nacía horizontal**, apuntando hacia atrás en vez de
+   colgar hacia abajo y adelante. Nunca se acercaba a la viga dentada: su pie
+   se quedaba en y≈63 y la cima de los dientes está en y=46,2. Se ha girado
+   **68°** sobre su bisagra, hasta apoyar en los dientes.
+2. **El puntal se colaba entre las dos placas dentadas.** El hueco medía
+   6,38 cm y el puntal 6,00: pasaba entre medias sin tocar nada. (En la
+   máquina real el puntal termina en un pasador transversal más ancho que el
+   hueco; aquí se han acercado las dos placas hasta que el puntal apoye.)
+3. **La viga del respaldo era un cuerpo dinámico con masa 0.** Era la única
+   pieza móvil sin masa del proyecto —la otra viga dinámica tiene 1 kg— y con
+   ella las uniones se separaban: el puntal llegaba a **desprenderse del
+   respaldo** y quedarse flotando en el aire.
+
+Ahora el respaldo aguanta en **0,3°** durante treinta segundos. La geometría
+sale del proyecto; el motor de física no se ha tocado.
+
+### Pruebas
+
+- `prueba-dos-bisagras` pasa a verde. Llevaba roja desde v0.3.79 y se dejó
+  así a propósito: pedía que el respaldo se moviera más de 3° al frenar una
+  bisagra, y lo que medía en realidad era **cuánto se había caído** mientras
+  tanto. Aflojar el umbral la habría puesto verde sin arreglar la máquina.
+- `banca-indexada`, `bisagra-caras`, `bisagra-fisica`, `bisagra-mano` y
+  `bisagra-ui` siguen en verde.
+
+### Pendiente
+
+La viga dentada y el asiento no están unidos al bastidor: se sostienen sólo
+por `fixed`. Hoy no molesta porque el bastidor no se mueve, pero si se moviera
+se quedarían flotando.
+
 ## [0.3.81] — 2026-09-21
 
 Se cierra el hueco que v0.3.80 dejó abierto: **el editor ya no se puede tocar
