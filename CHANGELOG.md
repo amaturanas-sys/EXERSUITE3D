@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.93] — 2026-09-22
+
+### Separar el herraje no gana recorrido, y v0.3.92 se pasó de conclusión
+
+Se apartó el herraje de la bisagra —`Placa de bisagra A`, `Pasador de bisagra`
+y `Placa de bisagra B`— en z, que es como va en una banca de verdad (dos orejas
+a los lados de la viga, no metidas dentro), de 1 a 8 cm, con el mecanismo
+quitado. **No gana nada: cero grados en todo el barrido.**
+
+| herraje separado | dónde acaba el respaldo |
+|---|---|
+| 0 cm | 25,0 |
+| 1 cm | −4,2 |
+| 2 cm | 30,3 |
+| 3 cm | −4,0 |
+| 4 cm | 25,0 |
+| 6 cm | 25,0 |
+| 8 cm | −5,1 |
+
+No hay tendencia con la separación. Lo que hay es un reposo **bimodal** —o
+~25° o ~−4°— que se decide en el rebote: el respaldo suelto cae desde 45°,
+**baja hasta −5° pasando de largo la vertical** y vuelve a subir.
+
+**Lo que esto corrige de v0.3.92.** Allí se dijo que el tope de 25° *es* la
+bisagra, y de ahí que los topes calculados no fueran alcanzables. El contacto
+medido es real —la espina `obj_86` penetra 1,45 cm en la placa `obj_89`, y es
+el contacto más profundo de la máquina— y sigue siendo un defecto del modelo
+que conviene arreglar. **Pero no es lo que limita el recorrido**: si lo fuera,
+apartarlo 8 cm habría cambiado algo, y no cambia nada. El 25° es una posición
+de reposo del respaldo suelto, no un choque.
+
+Queda en pie de v0.3.92 lo que se midió, no lo que se dedujo: quitar carril,
+pasador de apoyo y puntal no mueve dónde acaba el respaldo, así que **el tope
+no es el mecanismo**. Qué es, sigue sin saberse.
+
+### Método — el mínimo de la ida no es el techo
+
+Dos métricas mal elegidas en esta misma tanda, anotadas para no repetirlas: el
+**mínimo** de la serie coge el rebote de la ida (−5°) y no el reposo, y daba
+ruido sin tendencia; y un **máximo** tomado desde la muestra 4 coge todavía la
+cola del descenso (40°). Lo que vale es el valor final de la serie, y sólo
+después de comprobar que la serie se ha estabilizado.
+
 ## [0.3.92] — 2026-09-22
 
 ### El tope de 25° es LA BISAGRA DEL RESPALDO, y con eso se cae la investigación entera
