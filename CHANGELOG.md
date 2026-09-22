@@ -5,6 +5,61 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.92] — 2026-09-22
+
+### El tope de 25° es LA BISAGRA DEL RESPALDO, y con eso se cae la investigación entera
+
+Desde v0.3.90 la banca acababa siempre en ~25°, tirase de donde se tirase: los
+topes 4 y 5 con muesca, los tres topes de v0.3.91, todos. Ya está localizado, y
+no es nada del mecanismo.
+
+**Por ablación.** Quitando piezas y mirando dónde para el respaldo:
+
+| variante | acaba en |
+|---|---|
+| la banca entera | 24,7° |
+| sin el carril dentado | 25,2° |
+| sin carril ni pasador de apoyo | 27,2° |
+| **sin carril, pasador NI PUNTAL** | **25,0°** |
+
+Sin carril, sin pasador y sin puntal el respaldo se sigue parando en 25°. El
+tope no es el mecanismo.
+
+**Por contacto.** Preguntándole a la fase estrecha de Rapier —manifiestos con
+puntos en penetración, no vecindad de cajas— en el reposo hay **tres** contactos
+en toda la máquina, y los tres son la bisagra de abajo:
+
+| penetra | par |
+|---|---|
+| 1,45 cm | `Pilar / travesaño (línea) 5` (espina del respaldo, `obj_86`) ↔ `Placa de bisagra A` (`obj_89`) |
+| 0,50 cm | `Pasador de bisagra` (`obj_91`) ↔ la espina del respaldo |
+| 0,07 cm | `Placa de bisagra A` ↔ `Placa de bisagra B` |
+
+**La viga del respaldo choca contra la placa de bisagra y el pasador**, que van
+soldados al bastidor. El respaldo no puede pasar de ~25° por construcción.
+
+**Lo que esto invalida.** Los cinco topes de v0.3.90 caen entre 31,4° y 74,9°,
+y los tres de v0.3.91 entre 28,6° y 51,8°. **Ninguno es alcanzable.** El
+mecanismo no falló nunca: se le pedía sujetar el respaldo en ángulos a los que
+la bisagra no le deja llegar, y todo lo medido desde v0.3.89 —el largo del
+puntal, el perfil del diente, la inclinación de la viga— son respuestas
+correctas a una pregunta mal planteada.
+
+Lo que hay que arreglar está **antes** que la viga dentada: la bisagra
+`obj_89`/`obj_91` y la espina `obj_86` se estorban. Hasta que el respaldo tenga
+recorrido, ningún carril puede sujetarlo.
+
+### Método — tres formas de medir contactos, dos malas
+
+Anotado porque costó tres rondas: `contactPairsWith` devuelve pares de la
+**fase ancha** (cajas que se solapan) y daba 143 «contactos» entre 18 piezas;
+las cajas AABB de vigas largas y giradas se solapan aunque las piezas no se
+toquen y daban hueco 0,00 en todo; y el nombre del cuerpo no sirve para
+identificar la pieza porque **el motor funde las soldadas** —18 piezas son 3
+cuerpos— y todos los colisionadores de un grupo heredan el nombre del último.
+Lo que funciona: `contactPair` con el manifiesto filtrado por penetración, y
+los colisionadores situados por posición.
+
 ## [0.3.91] — 2026-09-22
 
 ### Corregido — la prueba de los topes daba VERDES FALSOS
