@@ -5,6 +5,63 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.94] — 2026-09-22
+
+### La banca NO alcanza equilibrio: vibra siempre
+
+Instrumentada la bisagra por dentro —ángulo, velocidad angular y estado del
+cuerpo del respaldo, fotograma a fotograma— en vez de inferir desde fuera, que
+es lo que venía fallando. El respaldo **parece** quieto en ~25° y no lo está:
+
+```
+  angulo:  24.7 24.6 25 25.3 24.4 24.2 25.2 25 21.9 23.9 24.9 24.3 ...
+  vel.ang: 3.35 0.31 6.12 0.63 4.96 1.06 2.46 17.72 6.62 14.94 0.53 0.81 30 ...
+```
+
+Su velocidad angular **no se amortigua nunca**: media de 5 a 9 rad/s, picos
+clavados en 30 —que es un tope del motor— y 3 a 4° de temblor, indefinidamente.
+No está dormido (`isSleeping` = no en todo momento).
+
+**El ~25° es la media de una vibración, no una posición de reposo.** Eso
+explica hacia atrás por qué ningún cambio geométrico movía nada: desde v0.3.89
+se venía midiendo el promedio de una inestabilidad.
+
+Y no depende de nada de lo que se ha tocado. Apartando el herraje de la
+bisagra:
+
+| herraje separado | ω media | ω máxima | en el tope | temblor |
+|---|---|---|---|---|
+| 0 cm | 6,28 | 30,0 | 2/60 | 4,0° |
+| 2 cm | 8,81 | 30,0 | 9/60 | 3,7° |
+| 4 cm | 5,57 | 30,0 | 5/60 | 3,0° |
+| 6 cm | 7,79 | 30,0 | 5/60 | 4,4° |
+| 10 cm | 4,81 | 30,0 | 4/60 | 3,1° |
+
+Sin tendencia. La penetración de 1,45 cm de la placa de bisagra en la espina
+—lo único sólido que quedaba de v0.3.92— **no es la causa**. Tampoco lo son el
+carril, el pasador ni el puntal (ablación de v0.3.92), ni el perfil ni el fondo
+del diente (v0.3.90). **La causa sigue sin saberse**, y hasta que se sepa, la
+geometría de esta banca no se puede medir.
+
+### Falsa alarma — las masas están bien
+
+Se leyó `mass() = 0,0032 kg` en el cuerpo del respaldo, cuyas piezas suman 3,8,
+y pareció que la fusión de soldadas perdía la masa. **No la pierde.** El mapa
+de cuerpos aparece ANTES que sus colisionadores, y la lectura llegaba pronto.
+Control, con las masas ya puestas:
+
+| | declara | el motor dice |
+|---|---|---|
+| Brazo suelto | 5 kg | 5,00144 |
+| Brazo suelto | 20 kg | 20,00144 |
+| Respaldo (grupo fundido) | 3,8 kg | 3,80324 |
+| Pasador de apoyo (grupo fundido) | 1,9 kg | 1,90110 |
+
+La delata la primera carga de la tanda —`1 kg → 0,00144`— frente a las
+siguientes, ya calientes, que dan el valor exacto. **Antes de leer nada del
+mundo de física hay que esperar a que la masa sea plausible**, no sólo a que el
+mapa de cuerpos exista.
+
 ## [0.3.93] — 2026-09-22
 
 ### Separar el herraje no gana recorrido, y v0.3.92 se pasó de conclusión
