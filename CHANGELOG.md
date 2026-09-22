@@ -5,6 +5,41 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.96] — 2026-09-22
+
+### La velocidad fantasma, acotada: la junta sujeta la POSICIÓN pero no limpia la VELOCIDAD
+
+Perseguida la ω de 2,66 rad/s que el caso E de `prueba-vibra-minima` declara
+sin moverse. **Cuatro hipótesis propias, las cuatro refutadas con medidas:**
+
+- **¿Un cuerpo huérfano de antes de fundir las soldadas?** No. `fundirSoldadas`
+  remapea el id de la pieza al cuerpo del anfitrión
+  (`this.bodies.set(id, { body: host.body, obj: host.obj })`), y medido, el
+  cuerpo sigue a su malla a **0,0 cm**. (De paso explica por qué `e.obj` daba
+  nombres cruzados en las sondas: es el objeto del anfitrión, no el de la
+  pieza.)
+- **¿El colisionador de la pieza soldada mal colocado, con penetración
+  permanente?** Al revés: el caso tranquilo penetra **0,160 cm** y el del
+  fantasma **0,017**. El que menos penetra es el que vibra.
+- **¿El cuerpo dormido, con su última velocidad congelada?** No:
+  `isSleeping` = false en los dos.
+- **¿El lazo cerrado?** Ya refutado en v0.3.95: con bisagra libre da ω cero
+  exacta.
+
+**Lo que sí queda establecido.** El fantasma necesita **fusión Y contacto de
+apoyo**, las dos: con el puntal de bisagra libre y apoyado, ω = 0,00; soldado y
+apoyado, ω = 2,66. Y el cuerpo está despierto, con la masa correcta (6,001 kg),
+sin penetrar y sin moverse.
+
+La contradicción, que es el enunciado útil del defecto: **la ω está entera en
+el eje X** (2,56 / 0,04 / 0,07) y la unión con el anclaje es una **revoluta en
+Z, que prohíbe girar en X** — pero el cuerpo **no gira**: su ladeo fuera del
+plano se queda clavado en −0,2°. La junta lo sujeta en posición y no le limpia
+la velocidad, que es exactamente energía que entra y se corrige en cada paso.
+
+Con eso el sondeo desde fuera se agota: lo que falta es leer el paso del solver
+para esa junta, no medir más desde la sesión.
+
 ## [0.3.95] — 2026-09-22
 
 ### Añadido — `prueba-vibra-minima`, el caso mínimo de la vibración
