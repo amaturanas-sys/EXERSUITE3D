@@ -5,6 +5,76 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.90] — 2026-09-22
+
+### Cambiado — el puntal de la banca: 42 cm y la unión de arriba libre
+
+La unión puntal↔respaldo de `bancoajustable.json` estaba **soldada**, y con eso
+no era un puntal: respaldo, puntal y pasador eran un solo cuerpo rígido girando
+sobre la bisagra de abajo, `(-24.75, 42.15)`. El pasador quedaba a 25,08 cm de
+ese giro y los cinco asientos a 62,09 / 49,60 / 37,11 / 24,64 / 12,20 — uno
+solo a su alcance, que es lo que v0.3.89 midió con el pivote equivocado y
+contó igual de mal.
+
+Ahora la unión de arriba es **bisagra libre**, como en las fotos de la máquina
+real, y el puntal se acorta de 58,34 a **42,00 cm**. El pivote del puntal está
+a 42,63 cm del giro del respaldo, así que un asiento de radio r se alcanza si
+`|r − 42,63| ≤ L ≤ r + 42,63`; cruzando los cinco sale **L ∈ [30,4 · 54,8]**, y
+42 reparte los escalones casi iguales:
+
+| tope | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| respaldo, desde la vertical | 74,9° | 63,5° | 53,3° | 43,2° | 31,4° |
+| escalón | — | 11,4° | 10,2° | 10,1° | 11,8° |
+
+### Añadido — `prueba-banco-cinco-topes`, y **está en rojo a propósito**
+
+Carga la banca posada en cada tope y la deja andar 12 s. Las cinco poses
+arrancan exactas —**0,00 mm** de error contra la geometría—, pero sólo el tope
+5 aguanta. Los otros cuatro se van, y esto es lo que se ha medido para saber
+por qué:
+
+- **El pasador no se corre por el carril: se sale de lado.** En el tope 3
+  arranca en `x = −0,81` (dentro de la cuna) y acaba en `x = −8,3`, con el
+  semiancho de la placa en 6,43. **Se sale por la boca abierta del gancho.**
+- **La profundidad del diente da igual.** Con `dienteAgarreCm` a 1, 2 y 4 el
+  tope 3 se corre 8,19 · 8,19 · 8,17 cm. Una boca abierta no se tapa con
+  fondo.
+- **La muesca cerrada de v0.3.86 tampoco basta.** Topes 1–3 siguen corriéndose
+  (14,73 · 9,13 · 9,33 cm): el pasador salta de bolsillo en bolsillo. Topes 4
+  y 5 sí retienen y quedan clavados. No se ha aplicado a la banca, porque no
+  la arregla.
+- **La placa del banco retiene bien contra la gravedad**: pasador sentado,
+  0,04 cm a 0° y a 30°, con los tres agarres. Lo que la vence es el empuje del
+  puntal, que `prueba-diente-retiene` no tenía.
+
+Y el dato que lo explica, monótono y sin excepciones — el ángulo del puntal
+respecto a la **normal del carril**:
+
+| tope | ángulo | empuje a lo largo / contra | se corrió |
+|---|---|---|---|
+| 1 | 47,6° | 1,10 | 14,1 cm |
+| 2 | 36,7° | 0,74 | 12,1 |
+| 3 | 27,3° | 0,52 | 8,2 |
+| 4 | 19,3° | 0,35 | 5,6 |
+| 5 | 13,9° | 0,25 | **0,06** |
+
+**El diente retiene mientras el puntal empuje a menos de ~15° de la normal del
+carril.** Eso no se arregla ni con más fondo ni con otro perfil: es la
+inclinación de la viga dentada frente a la línea del puntal, y por tanto una
+proporción del diseño. La banca se guarda posada en el tope 5, que es el que
+aguanta.
+
+### Corregido — dos trampas de medida, las dos propias
+
+- Medir el ángulo del respaldo **contra el mundo** mezcla el mecanismo con el
+  viaje de la máquina entera. La prueba lo mide relativo al bastidor, y el
+  pasador, en el marco del carril.
+- `toggleSimulation()` al apagar **devuelve las piezas a su sitio original**,
+  así que toda lectura posterior es el punto de partida disfrazado de
+  resultado. (`prueba-diente-retiene` ya leía dentro de la simulación: sus
+  resultados de v0.3.88 y el asiento de v0.3.89 no están afectados.)
+
 ## [0.3.89] — 2026-09-22
 
 ### Cambiado — el pasador de la banca, sentado en el asiento medido
