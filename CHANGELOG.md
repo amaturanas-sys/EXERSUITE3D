@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.88] — 2026-09-22
+
+### Añadido — `prueba-diente-retiene`, el caso mínimo del contacto
+
+Un carril y un pasador de Ø4, sin bisagras, sin puntal y sin respaldo. Se
+inclina el carril, el pasador arranca sentado en un diente y se mide **cuánto
+se corre a lo largo del carril**, que es la única forma de salirse de un
+diente.
+
+| inclinación | gancho | muesca |
+|---|---|---|
+| 0° | 0 cm | 0 cm |
+| 15° | 0 cm | 0 cm |
+| 30° | 0,02 cm | 0 cm |
+| 45° | 0,04 cm | 0 cm |
+| 60° | 0,03 cm | 0 cm |
+
+**El diente retiene a todas las inclinaciones, con los dos perfiles.** El de
+muesca de v0.3.86 es medible mejor —cero exacto frente a hasta 0,04— pero el
+gancho tampoco falla.
+
+Con esto se cierra positivamente la línea del diente: no es que se hayan
+agotado seis formas sin dar con la buena, es que **la forma nunca fue el
+problema**. El carril de la banca va a unos 35°, muy dentro del rango donde
+esto retiene sin despeinarse.
+
+### Dos trampas de medida que documenta la propia prueba
+
+Se dejan escritas porque costaron dos vueltas y son fáciles de repetir:
+
+- **Colocar el pasador «a ojo» sobre el diente da ruido, no datos.** El primer
+  intento lo soltaba 6 cm por encima del centro de la caja de la cuna —que
+  está POR DEBAJO del asiento, no en él— y salían resultados imposibles: 60°
+  aguantaba y 45° no. Ahora el asiento **se mide**: se deja caer el pasador
+  con el carril vertical, donde no hay duda, y se anota dónde acaba en el
+  marco de la placa.
+- **El desplazamiento total no mide retención.** Un pasador con holgura se
+  acomoda dentro de su cuna hasta 1 cm y eso no es escaparse. Lo que cuenta es
+  la componente **a lo largo del carril**.
+
+### Dónde queda la banca
+
+Motor exonerado (`prueba-bisagra-rigida`), soldaduras exoneradas (se funden),
+diente exonerado (esta prueba). Lo que queda es que en la banca **el pasador
+nunca llega a sentarse en un bolsillo**: medido en v0.3.86 estaba en x local
+−5,3, sobre el lomo del dedo, cuando el bolsillo va de −3,9 a +0,4. Ahí es
+donde hay que mirar ahora, y ya hay con qué comparar: el asiento que esta
+prueba mide.
+
 ## [0.3.87] — 2026-09-21
 
 ### Añadido — `prueba-bisagra-rigida`, el caso mínimo
