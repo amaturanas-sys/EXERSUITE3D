@@ -8,6 +8,7 @@ import type { SceneObject } from "../objects/SceneObject";
 import { cuerdasColision, pathIsStraight } from "../objects/linePieces";
 import { getDefinition } from "../objects/componentLibrary";
 import { cajasDentada } from "../objects/placaDentada";
+import { cajasHorquilla } from "../objects/horquilla";
 import { espejoDe } from "../objects/espejar";
 import { axisVector, type Joint } from "./joints";
 import type { Cable } from "./cables";
@@ -2051,6 +2052,14 @@ export class PhysicsWorld {
       const cajas = this.collidersDentada(obj);
       if (cajas.length) return cajas;
     }
+    // LA HORQUILLA TAMBIÉN DECLARA LAS SUYAS (v0.3.97): su garganta es un
+    // HUECO —es la pieza entera del asunto—, y el cuboide genérico la cerraba.
+    // Con ella cerrada, el brazo que entra por la boca penetra hasta el fondo
+    // del vuelo y la unión no deja girar lo que la malla sí deja.
+    if (p.kind === "horquilla") {
+      const cajas = this.collidersHorquilla(obj);
+      if (cajas.length) return cajas;
+    }
     // Jotas y brazos de seguridad: el asiento CÓNCAVO real de la malla
     // (v0.2.15) — la caja lisa dejaba resbalar la barra fuera del gancho.
     if (getDefinition(obj.componentId)?.asientoBarra) {
@@ -2152,6 +2161,24 @@ export class PhysicsWorld {
         c.centro[2] * sg[2] * esc.z * S,
       );
       // Acero contra acero moleteado: agarra y no rebota.
+      cd.setRestitution(0.02).setFriction(0.9);
+      out.push(cd);
+    }
+    return out;
+  }
+
+  /** Las tres cajas de una horquilla: el alma y las dos orejas, con el hueco
+   *  de la garganta entre ellas. */
+  private collidersHorquilla(obj: SceneObject): R.ColliderDesc[] {
+    const esc = obj.mesh.scale;
+    const out: R.ColliderDesc[] = [];
+    for (const c of cajasHorquilla(obj.params)) {
+      const cd = RAPIER.ColliderDesc.cuboid(
+        Math.max((c.tam[0] / 2) * Math.abs(esc.x) * S, 0.002),
+        Math.max((c.tam[1] / 2) * Math.abs(esc.y) * S, 0.002),
+        Math.max((c.tam[2] / 2) * Math.abs(esc.z) * S, 0.002),
+      );
+      cd.setTranslation(c.centro[0] * esc.x * S, c.centro[1] * esc.y * S, c.centro[2] * esc.z * S);
       cd.setRestitution(0.02).setFriction(0.9);
       out.push(cd);
     }

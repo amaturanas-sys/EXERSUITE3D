@@ -291,115 +291,15 @@
         "fixed": false
       },
       "position": [
-        -3.706067827793735,
-        82.90582085481418,
+        -26.559914213940893,
+        90.13932707537396,
         -0.5
       ],
       "quaternion": [
         0.0,
         0.0,
-        -0.27036782284095223,
-        0.9627571035168961
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_87",
-      "name": "Placa dentada (upright)",
-      "componentId": "placa-dentada",
-      "materialId": "cromo",
-      "params": {
-        "kind": "dentada",
-        "dientes": 5,
-        "dienteEspaciado": 12.5,
-        "dienteCaraCm": 6,
-        "width": 12.850000000000001,
-        "height": 50.40596110691564,
-        "dienteLado": "izquierda",
-        "dienteAgarreCm": 1.0,
-        "dentadaGemela": "obj_52",
-        "dentadaEspejo": {
-          "host": "obj_43",
-          "n": [
-            0,
-            0,
-            -1
-          ],
-          "c": [
-            -2.6964414119720423,
-            17.939001083374023,
-            -0.158311128616333
-          ]
-        }
-      },
-      "physics": {
-        "massKg": 0,
-        "fixed": true
-      },
-      "position": [
-        7.86733399397261,
-        24.522495703198466,
-        3.6712154388427733
-      ],
-      "quaternion": [
-        -0.5000000000000001,
-        0.8660254037844386,
-        5.302876193624534e-17,
-        3.0616169978683836e-17
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_88",
-      "name": "Placa dentada (upright) (gemela)",
-      "componentId": "placa-dentada",
-      "materialId": "cromo",
-      "params": {
-        "kind": "dentada",
-        "dientes": 5,
-        "dienteEspaciado": 12.5,
-        "dienteCaraCm": 6,
-        "width": 12.850000000000001,
-        "height": 50.40596110691564,
-        "dienteLado": "izquierda",
-        "dienteAgarreCm": 1.0,
-        "dentadaGemela": "obj_51",
-        "dentadaEspejo": {
-          "host": "obj_43",
-          "n": [
-            0,
-            0,
-            -1
-          ],
-          "c": [
-            -2.6964414119720423,
-            17.939001083374023,
-            -0.158311128616333
-          ]
-        }
-      },
-      "physics": {
-        "massKg": 0,
-        "fixed": true
-      },
-      "position": [
-        7.86733399397261,
-        24.522495703198466,
-        -3.9878376960754394
-      ],
-      "quaternion": [
-        -0.5000000000000001,
-        0.8660254037844386,
-        -5.302876193624534e-17,
-        -3.0616169978683836e-17
+        0.00024163002982169335,
+        0.999999970807464
       ],
       "scale": [
         1,
@@ -473,99 +373,6 @@
       ]
     },
     {
-      "id": "obj_93",
-      "name": "Pilar / travesaño (línea) 6",
-      "componentId": "pilar-linea",
-      "materialId": "acero-negro",
-      "params": {
-        "kind": "beam",
-        "depth": 6,
-        "width": 6,
-        "ends": "plano",
-        "holeDiameter": 4,
-        "holeSpacing": 9,
-        "path": [
-          [
-            0,
-            -19.900902687949717,
-            0
-          ],
-          [
-            0,
-            -9.950451343974859,
-            0
-          ],
-          [
-            0,
-            0.0,
-            0
-          ],
-          [
-            0,
-            9.950451343974859,
-            0
-          ],
-          [
-            0,
-            19.900902687949717,
-            0
-          ]
-        ]
-      },
-      "physics": {
-        "massKg": 1,
-        "fixed": false
-      },
-      "position": [
-        -8.37127944764607,
-        58.364822110213396,
-        -0.5
-      ],
-      "quaternion": [
-        0.0,
-        0.0,
-        -0.2161619735508979,
-        0.9763574625451382
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_94",
-      "name": "Placa de bisagra A",
-      "componentId": "placa-bisagra",
-      "materialId": "acero-negro",
-      "params": {
-        "kind": "box",
-        "width": 5,
-        "height": 0.5,
-        "depth": 3.75
-      },
-      "physics": {
-        "massKg": 0.4,
-        "fixed": false
-      },
-      "position": [
-        -3.9725919085390267,
-        75.51140939595292,
-        -0.2160462557178704
-      ],
-      "quaternion": [
-        0.5375398257137385,
-        -0.8432391468810279,
-        0.0,
-        0.0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
       "id": "obj_95",
       "name": "Placa de bisagra B",
       "componentId": "placa-bisagra",
@@ -581,47 +388,15 @@
         "fixed": false
       },
       "position": [
-        -4.3018665683100785,
-        75.68585255656524,
+        -23.306785678952938,
+        83.66630049565349,
         -0.2160462557178704
       ],
       "quaternion": [
         0.0,
         0.0,
-        -0.8719509974777966,
-        0.48959315558683575
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_96",
-      "name": "Pasador de bisagra",
-      "componentId": "pasador-bisagra",
-      "materialId": "acero-pulido",
-      "params": {
-        "kind": "cylinder",
-        "radiusTop": 0.5,
-        "radiusBottom": 0.5,
-        "height": 4.75
-      },
-      "physics": {
-        "massKg": 0.2,
-        "fixed": false
-      },
-      "position": [
-        -2.5581100892524917,
-        78.54626978910147,
-        -0.2160462557178704
-      ],
-      "quaternion": [
-        0.6619213688282614,
-        -0.24871691033888438,
-        -0.24871691033888438,
-        0.6619213688282614
+        -0.7069359023116821,
+        0.7072776187769325
       ],
       "scale": [
         1,
@@ -646,15 +421,15 @@
         "fixed": false
       },
       "position": [
-        -10.057468567536365,
-        82.09359635186149,
+        -31.55798058990804,
+        86.13691124222687,
         -0.5000000000000007
       ],
       "quaternion": [
-        0.19117892094548045,
-        0.6807720765323161,
-        -0.19117892094548047,
-        0.6807720765323162
+        -0.00017085823262519284,
+        0.7071067605443073,
+        0.0001708582326252206,
+        0.7071067605443074
       ],
       "scale": [
         1,
@@ -679,47 +454,15 @@
         "fixed": false
       },
       "position": [
-        13.369400212690834,
-        120.51470798536339,
+        -31.579727291957155,
+        131.13690598757046,
         -0.5000000000000007
       ],
       "quaternion": [
-        0.19117892094548045,
-        0.6807720765323161,
-        -0.19117892094548047,
-        0.6807720765323162
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_99",
-      "name": "Pasador de apoyo",
-      "componentId": "pasador-bisagra",
-      "materialId": "acero-pulido",
-      "params": {
-        "kind": "cylinder",
-        "radiusTop": 1.0,
-        "radiusBottom": 1.0,
-        "height": 11.0
-      },
-      "physics": {
-        "massKg": 0.3,
-        "fixed": false
-      },
-      "position": [
-        -14.183704718567927,
-        38.18897630660998,
-        -0.5
-      ],
-      "quaternion": [
-        0.6485392443501755,
-        -0.28177325846805135,
-        -0.28177325846805135,
-        0.6485392443501755
+        -0.00017085823262519284,
+        0.7071067605443073,
+        0.0001708582326252206,
+        0.7071067605443074
       ],
       "scale": [
         1,
@@ -886,35 +629,11 @@
     {
       "name": "Soldadura de bisagra",
       "kind": "revolute",
-      "bodyAId": "obj_93",
-      "bodyBId": "obj_94",
-      "anchor": [
-        -0.03703544919866687,
-        76.34021388335532,
-        -0.2160462557178704
-      ],
-      "axis": "z",
-      "axisVec": null,
-      "limitsEnabled": true,
-      "min": -90,
-      "max": 0,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": true,
-      "soldada": true,
-      "sensibilidad": 9
-    },
-    {
-      "name": "Soldadura de bisagra",
-      "kind": "revolute",
       "bodyAId": "obj_86",
       "bodyBId": "obj_95",
       "anchor": [
-        -4.3018665683100785,
-        75.68585255656524,
+        -23.306785678952938,
+        83.66630049565349,
         -0.2160462557178704
       ],
       "axis": "z",
@@ -930,61 +649,6 @@
       "locked": true,
       "soldada": true,
       "sensibilidad": 9
-    },
-    {
-      "name": "Soldadura de bisagra",
-      "kind": "revolute",
-      "bodyAId": "obj_94",
-      "bodyBId": "obj_96",
-      "anchor": [
-        -2.5581100892524917,
-        78.54626978910147,
-        -0.2160462557178704
-      ],
-      "axis": "z",
-      "axisVec": null,
-      "limitsEnabled": true,
-      "min": -90,
-      "max": 0,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": true,
-      "soldada": true,
-      "sensibilidad": 9
-    },
-    {
-      "name": "Bisagra",
-      "kind": "revolute",
-      "bodyAId": "obj_94",
-      "bodyBId": "obj_95",
-      "anchor": [
-        -2.5569463088647595,
-        78.54759975413748,
-        -0.2160462557178704
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": false,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": true
     },
     {
       "name": "Soldadura 14",
@@ -992,8 +656,8 @@
       "bodyAId": "obj_86",
       "bodyBId": "obj_97",
       "anchor": [
-        -5.840574029654952,
-        84.2073135648268,
+        -29.059913922015536,
+        90.13811892526013,
         -0.5000000000000002
       ],
       "axis": "z",
@@ -1016,81 +680,9 @@
       "bodyAId": "obj_98",
       "bodyBId": "obj_86",
       "anchor": [
-        13.948727284085347,
-        116.66265200792061,
+        -29.07828394164843,
+        128.1508155210575,
         -0.5000000000000002
-      ],
-      "axis": "z",
-      "axisVec": null,
-      "limitsEnabled": true,
-      "min": -90,
-      "max": 0,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": true,
-      "soldada": true,
-      "sensibilidad": 9
-    },
-    {
-      "name": "Soldadura del pasador",
-      "kind": "revolute",
-      "bodyAId": "obj_93",
-      "bodyBId": "obj_99",
-      "anchor": [
-        -8.520171492369059,
-        36.598643236994874,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": null,
-      "limitsEnabled": true,
-      "min": -90,
-      "max": 0,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": true,
-      "soldada": true,
-      "sensibilidad": 9
-    },
-    {
-      "name": "Soldadura de la viga dentada",
-      "kind": "revolute",
-      "bodyAId": "obj_82",
-      "bodyBId": "obj_87",
-      "anchor": [
-        7.9,
-        24.5,
-        3.03
-      ],
-      "axis": "z",
-      "axisVec": null,
-      "limitsEnabled": true,
-      "min": -90,
-      "max": 0,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": true,
-      "soldada": true,
-      "sensibilidad": 9
-    },
-    {
-      "name": "Soldadura de la viga dentada 2",
-      "kind": "revolute",
-      "bodyAId": "obj_82",
-      "bodyBId": "obj_88",
-      "anchor": [
-        7.9,
-        24.5,
-        -3.35
       ],
       "axis": "z",
       "axisVec": null,

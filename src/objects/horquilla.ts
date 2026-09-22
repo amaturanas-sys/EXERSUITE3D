@@ -218,3 +218,43 @@ export function buildHorquillaGeometry(p: PrimitiveParams): THREE.BufferGeometry
   geo.computeBoundingSphere();
   return geo;
 }
+
+/** Una caja de colisión de la horquilla, en su sistema local. */
+export interface CajaHorquilla {
+  centro: [number, number, number];
+  tam: [number, number, number];
+}
+
+/**
+ * LAS CAJAS DE LA HORQUILLA (v0.3.97).
+ *
+ * LA GARGANTA ES UN HUECO, Y ESTO ES LO QUE LO DICE.
+ *
+ * Sin estas cajas la pieza caía al camino genérico de `colliderDescs`, que le
+ * da UN cuboide de su envolvente: una horquilla MACIZA. El brazo que entra por
+ * la boca —que es lo único que esta pieza existe para permitir— aparecía
+ * entonces penetrando hasta el fondo del vuelo, y el recorrido lo frenaba una
+ * colisión que no está en la malla ni en la máquina.
+ *
+ * Medido en la banca ajustable al montarle la horquilla: de 4 a 5 cm de
+ * penetración de la espina del respaldo, y **los mismos en los siete ángulos
+ * de 0° a 90°**. Un solape que no depende del ángulo no es un tope de
+ * recorrido; es una pieza que la física ve rellena.
+ *
+ * Son tres cajas y ninguna es una aproximación grosera: el alma —la placa que
+ * se suelda, al fondo— y las dos orejas, una a cada lado de la garganta. La
+ * punta redonda de la oreja sí se aproxima por su caja, y da igual: la oreja
+ * es FIJA y queda fuera del plano por el que barre el brazo, así que su
+ * esquina no llega a tocar nada.
+ */
+export function cajasHorquilla(p: PrimitiveParams): CajaHorquilla[] {
+  const m = medidasHorquilla(p);
+  // La oreja va del frente del alma a la punta del semicírculo, que está un
+  // radio más allá del eje.
+  const largo = m.vuelo + m.radio;
+  return [
+    { centro: [0, 0, -m.vuelo - m.esp / 2], tam: [m.ancho, m.alto, m.esp] },
+    { centro: [-(m.garganta + m.esp) / 2, 0, (m.radio - m.vuelo) / 2], tam: [m.esp, m.alto, largo] },
+    { centro: [(m.garganta + m.esp) / 2, 0, (m.radio - m.vuelo) / 2], tam: [m.esp, m.alto, largo] },
+  ];
+}

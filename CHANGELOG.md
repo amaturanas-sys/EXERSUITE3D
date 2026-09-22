@@ -5,6 +5,74 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.97] — 2026-09-22
+
+### Corregido — LA HORQUILLA NO TENÍA GARGANTA PARA LA FÍSICA
+
+`colliderDescs` tenía caso para la placa dentada —«la placa dentada DECLARA sus
+cajas»— pero **no para la horquilla**: caía al camino genérico, que le da un
+solo cuboide de su envolvente. Para el motor la horquilla era **un bloque
+macizo**. La pieza cuyo único propósito es recibir un brazo por la boca tenía
+la boca tapada, y cualquier brazo metido en ella aparecía penetrando hasta el
+fondo del vuelo.
+
+Ahora declara sus tres cajas —el alma y las dos orejas, con el hueco entre
+ellas—, igual que la dentada. `cajasHorquilla()` vive en `horquilla.ts`, que es
+donde está la geometría, y `PhysicsWorld` la consume.
+
+La firma del defecto, anotada porque tardó en leerse: **4 a 5 cm de penetración
+iguales en los siete ángulos de 0° a 90°**. Un solape que no depende del ángulo
+no es un tope de recorrido; es una pieza que la física ve rellena.
+
+### Cambiado — la banca ajustable pivota con HORQUILLA Y PASADOR
+
+Fuera la bisagra de placas (`obj_89`, `obj_90`), que era la que limitaba el
+recorrido por colisión. Dentro la horquilla de v0.3.32, que nadie había montado
+aquí y está hecha justo para esto: sus orejas acaban en semicírculo **centrado
+en el eje** —«la única forma que no choca»— y pide que el extremo del brazo
+también sea redondo, que es lo que ahora lleva la espina (`extremoRedondo`).
+
+- Garganta **6,6 cm**, para tragar la espina de 6 con holgura; orejas de 8 de
+  alto, cuyo radio de 4 supera los 3 que barre el extremo del brazo.
+- Pasador de **Ø2,5** en vez del de Ø1: es lo que pide el taladro de la
+  horquilla y lo que se ve en las fotos de la máquina.
+- **El eje se mueve a `(−28 · 45,87)`.** Las placas que se quitan eran las que
+  salvaban el desfase entre el eje viejo (`x = −24,75`) y la espina
+  (`x = −28`); una horquilla en el eje viejo la atraviesa por el costado. El
+  código de `extremoRedondo` dice dónde va: «el centro del arco queda a W/2 de
+  la punta, que es donde va el taladro del pasador».
+- `contactos: false` en la unión, que es el valor por omisión de la aplicación
+  para una unión pasador. La bisagra vieja los traía **encendidos**, y de ahí
+  salían los 1,45 cm de penetración de la placa medidos en v0.3.92.
+
+### Añadido — `prueba-banco-horquilla`, el recorrido de 0° a 90°
+
+Posa el respaldo en cada ángulo —**0° horizontal, 90° vertical**, el convenio
+de la máquina— y pregunta por la fase estrecha si alguna pieza del respaldo
+penetra en el resto. El mecanismo se quita a propósito: no se juzga si la banca
+**se sostiene**, sino si la unión la deja **llegar**.
+
+| | con bisagra de placas | con horquilla |
+|---|---|---|
+| 30° a 90° | — | **0 cm** |
+| 0° y 15° | — | 0,60 y 0,63 cm |
+
+**Queda en rojo por 6 mm en los dos extremos horizontales**, y son
+interferencia real: a diferencia del resto, aparecen sólo al final del
+recorrido y desaparecen a partir de 30°. No es el alma —subir el vuelo de 4 a
+5,5 cm no los mueve— sino el alto de las orejas contra la viga tumbada.
+
+### Método — tres formas de medir mal una colisión, todas propias
+
+- Tomar **la peor penetración de toda la máquina** en vez de la del cuerpo que
+  se juzga: daba 5 cm constantes que eran solapes de diseño (almohadillas
+  embutidas en vigas) sin relación con la unión.
+- Contar **el pasador**: atraviesa el brazo por un taladro que ningún
+  colisionador modela, así que su solape es la pieza haciendo su trabajo. Se
+  reconoce porque no depende del ángulo —1,48 a 1,78 cm, el radio del pasador—.
+- Creer que **`contactos: false` lo quita**: eso impide RESOLVER el contacto,
+  no que exista el manifiesto, que es lo que una sonda lee.
+
 ## [0.3.96] — 2026-09-22
 
 ### La velocidad fantasma, acotada: la junta sujeta la POSICIÓN pero no limpia la VELOCIDAD
