@@ -5,6 +5,55 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.89] — 2026-09-22
+
+### Cambiado — el pasador de la banca, sentado en el asiento medido
+
+`prueba-diente-retiene` no sólo dijo que el diente retiene: dejó **medido**
+dónde se sienta un pasador en esa placa dentada, en coordenadas locales de la
+placa: `[-0.81, 25.93, -3.48]`. En `bancoajustable.json` el pasador estaba a
+ojo, unos 3,6 cm fuera de ahí.
+
+Se ha girado el puntal —`obj_93`, `obj_94` y `obj_99`, que van soldados— los
+**−5,78°** que hacen falta alrededor de su pivote `(-24.75, 84.78)` para que
+el pasador caiga en el asiento. Queda en x local **−0,6** frente a los −0,81
+medidos.
+
+La deriva del respaldo al recostarlo mejora, pero no se va:
+
+| | vertical | tras | deriva |
+|---|---|---|---|
+| antes | 3,2° (x −5,51) | 22° (x −5,3) | **11,7°** |
+| sentado | 2,5° (x −0,6) | 26,4° (x −0,45) | **8,0°** |
+
+### La razón, y por qué no es un fallo del programa
+
+Con el pasador ya en su sitio se puede medir lo único que quedaba: si el
+puntal **alcanza** los cinco asientos. No los alcanza. Su radio —del pivote al
+pasador— es de **58,34 cm**, y los radios de los cinco asientos de la viga
+son:
+
+| asiento (y) | radio |
+|---|---|
+| −25 | 90,45 |
+| −12,5 | 79,08 |
+| 0 | 68,10 |
+| **12,5** | **57,74** |
+| 25 | 48,41 |
+
+**Sólo uno cae cerca de 58,34.** Recostada en cualquier otro ángulo, la banca
+no tiene diente al que agarrarse y resbala hasta el único que alcanza. Ahí se
+queda quieta: puesta a 38°, baja a **36,3°** y aguanta con **0,3° de deriva en
+12 s** (serie 36,3 · 36,3 · 36,3 · 36,3 · 36,5 · 36,4).
+
+Con esto se cierra la investigación del banco. Se han descartado, cada uno con
+números propios: el motor de física (`prueba-bisagra-rigida`, 0,001 cm), las
+soldaduras (el motor las funde: 18 piezas → 4 cuerpos), el perfil del diente
+(`prueba-diente-retiene`, retiene de 0° a 60°), el diámetro del pasador, la
+escala del gancho y el asiento. **Lo que queda es una proporción del diseño**
+—largo del puntal, paso de los dientes o sitio del pivote—, y eso es una
+decisión del modelo, no del programa.
+
 ## [0.3.88] — 2026-09-22
 
 ### Añadido — `prueba-diente-retiene`, el caso mínimo del contacto

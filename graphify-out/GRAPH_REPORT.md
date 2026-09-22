@@ -1,17 +1,17 @@
 # Graph Report - EXERSUITE3D  (2026-09-22)
 
 ## Corpus Check
-- 413 files · ~1,543,012 words
+- 413 files · ~1,543,387 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 221 file(s) not represented in the graph (top: .import 64, .csv 37, .obj 29)
 
 ## Summary
-- 4719 nodes · 9309 edges · 425 communities (331 shown, 79 thin omitted)
+- 4722 nodes · 9312 edges · 425 communities (326 shown, 84 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 430 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `8659fe3f`
+- Built from commit: `c088ac1c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -26,46 +26,45 @@
 - standardMachines.ts
 - validate_data.py
 - .moverPrimitiva
-- ondemand.ts
+- .aplicarChapa
 - Rope
 - LibraryView
-- datos.ts
 - indexada.py
 - main.ts
 - tt
 - SceneManager
 - .scheduleAutosave
-- hub.ts
+- datos.ts
 - recentStore.ts
 - agarre_doble
 - mancuerna_hex.py
 - linePieces.ts
-- Cable
+- .avisoTemporal
 - Subagent-Driven Development
 - Mannequin Test Scripts
 - Landing.ts
 - build123d modeling patterns
 - prueba-gesto-barra.mjs
 - project.ts
-- PropertiesPanel.ts
+- placaDentada.ts
 - Frontend Accessibility Patterns
 - kettlebell.py
 - What You Must Do When Invoked
-- FigureSegmentManager
+- humanFigure.ts
 - Creation Log: Systematic Debugging Skill
-- .loadProjectInner
+- .listObjects
 - Root Cause Tracing
 - core.py
 - LibraryView.ts
 - search_stack
-- DesignSystemGenerator
+- test_data_contracts.py
 - Editor.ts
 - disco_barbell.py
 - tauri.conf.json
 - Performance Optimizer
 - Systematic Debugging
 - Landing.js
-- test_core_data_quality.py
+- DesignSystemGenerator
 - compilerOptions
 - horquilla
 - Positioning logic, joints, and mating
@@ -241,7 +240,7 @@
 - prueba-vinculacion-pines.mjs
 - prueba-visor-proto.mjs
 - _verificar-faq.mjs
-- SnapManager
+- Joint
 - [0.1.1] — 2026-06-30
 - [0.1.2] — 2026-06-30
 - [0.1.3] — 2026-06-30
@@ -252,7 +251,7 @@
 - BM25
 - [0.2.14] — 2026-08-02
 - [0.2.25] — 2026-08-05
-- ComponentModelManager
+- componentModels.ts
 - reloj.ts
 - PrototipoFoto
 - prueba-garaje2.mjs
@@ -263,15 +262,16 @@
 - Build Error Resolver
 - [0.3.53] — 2026-09-14
 - prueba-brazo-plano.mjs
+- .setHighlight
 - [0.3.85] — 2026-09-21
-- chapa.ts
+- SceneObject.ts
 - [0.2.45] — 2026-08-11
 - prueba-diente-retiene.mjs
-- prueba-home-visor.mjs
 - [0.3.66] — 2026-09-16
 - [0.2.19] — 2026-08-05
 - geometryFactory.ts
-- arte.ts
+- materials.ts
+- PhysicsWorld.ts
 - [0.2.20] — 2026-08-05
 - E2E Test Runner
 - Pressure Test 1: Emergency Production Fix
@@ -279,20 +279,20 @@
 - Pressure Test 2: Sunk Cost + Exhaustion
 - [0.2.83] — 2026-08-18
 - [0.3.81] — 2026-09-21
-- armIK.ts
+- prefabsMaquina
 - Pressure Test 3: Authority + Social Pressure
 - [0.2.90] — 2026-08-18
 - _normalize
 - [0.2.94] — 2026-08-19
 - VisorPiezas
 - [0.2.96] — 2026-08-19
-- prueba-codos.mjs
+- .rebuildRope
 - [0.2.98] — 2026-08-20
 - Hunt Targets
 - UI/UX Pro Max - Design Intelligence
-- humanFigure.ts
+- brazoPilar.ts
 - EventBus
-- [0.3.15] — 2026-08-27
+- PerformancePanel
 - [0.3.16] — 2026-08-27
 - [0.3.17] — 2026-08-27
 - [0.3.11] — 2026-08-26
@@ -300,7 +300,7 @@
 - [0.2.33] — 2026-08-09
 - [0.2.41] — 2026-08-10
 - Code Simplifier Agent
-- Toolbar
+- [0.2.0] — 2026-07-20
 - CatalogRefreshTest
 - [0.3.31] — 2026-09-03
 - [0.2.92] — 2026-08-19
@@ -329,16 +329,16 @@
 - preparar-fotos-recortes2.py
 - preparar-hub-sitio.py
 - Evaluation Criteria
-- [0.3.79] — 2026-09-20
+- [0.2.52] — 2026-08-13
 - prueba-asiento-tope.mjs
 - prueba-brazo-pilar.mjs
 - prueba-dos-bisagras.mjs
-- prueba-enlace-app.mjs
+- [0.3.26] — 2026-08-31
 - [0.2.97] — 2026-08-20
 - prueba-garaje.mjs
 - prueba-bisagra-rigida.mjs
 - [0.3.18] — 2026-08-27
-- SceneObject.ts
+- three
 - [0.3.21] — 2026-08-27
 - [0.2.55] — 2026-08-13
 - [0.2.68] — 2026-08-16
@@ -365,7 +365,7 @@
 - Capacidades traídas de ECC
 - [0.1.5] — 2026-07-03
 - task-brief
-- test_data_contracts.py
+- parse_decision_rules
 - [0.2.31] — 2026-08-07
 - [0.2.82] — 2026-08-18
 - .generate
@@ -383,17 +383,17 @@
 - Pre-Delivery Checklist (canonical — the only one)
 - [0.3.87] — 2026-09-21
 - Quick Reference
-- modelLoading.ts
-- bootEditor
+- [0.3.75] — 2026-09-19
+- PreciseDrag
 - prueba-rotgrupo.mjs
-- figureSegments.ts
+- [0.3.80] — 2026-09-20
 - _style_is_dark_primary
 - prueba-bisagra-ui.mjs
 - test_text_layout_resilience.py
 - .constructor
 - search.py
 - [0.3.84] — 2026-09-21
-- [0.3.29] — 2026-09-02
+- [0.3.89] — 2026-09-22
 - [0.2.72] — 2026-08-16
 - [0.2.87] — 2026-08-18
 - [0.3.32] — 2026-09-09
@@ -410,26 +410,26 @@
 - Skill Audit
 - TestStackFlagWithDesignSystem
 - test_skill_script_paths.py
-- [0.2.29] — 2026-08-07
+- prueba-ergonomia-v256.mjs
 - audit.py
 - [0.2.35] — 2026-08-09
 - scan.sh
 - [0.2.26] — 2026-08-06
 - [0.2.65] — 2026-08-16
-- [0.2.89] — 2026-08-18
+- prueba-torre-pesos.mjs
 - [0.3.69] — 2026-09-16
 - [0.2.75] — 2026-08-17
 - [0.3.86] — 2026-09-21
 - generate.sh
 - [0.2.86] — 2026-08-18
 - [0.2.8] — 2026-07-25
-- prueba-carga-grupo.mjs
+- prueba-v226.mjs
 - prueba-prototipo2.mjs
 - prueba-sitio.mjs
 
 ## God Nodes (most connected - your core abstractions)
 1. `Editor` - 568 edges
-2. `Changelog` - 198 edges
+2. `Changelog` - 199 edges
 3. `SceneObject` - 182 edges
 4. `tt()` - 168 edges
 5. `el()` - 164 edges
@@ -440,6 +440,8 @@
 10. `clear()` - 36 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `TestReasoningContract` --uses--> `DesignSystemGenerator`  [INFERRED]
+  .claude/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py → .claude/skills/ui-ux-pro-max/scripts/design_system.py
 - `TestEndToEndCoherence` --uses--> `DesignSystemGenerator`  [INFERRED]
   .claude/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py → .claude/skills/ui-ux-pro-max/scripts/design_system.py
 - `CandidatoPoste` --references--> `SceneObject`  [EXTRACTED]
@@ -448,37 +450,27 @@
   src/main.ts → src/core/maquinasModelo.ts
 - `bootEditor()` --indirect_call--> `serializarPrefab()`  [INFERRED]
   src/main.ts → src/core/prefabIO.ts
-- `bootEditor()` --indirect_call--> `parsearPrefab()`  [INFERRED]
-  src/main.ts → src/core/prefabIO.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (425 total, 79 thin omitted)
+## Communities (425 total, 84 thin omitted)
 
 ### Community 0 - "Changelog"
 Cohesion: 0.02
-Nodes (125): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.2.0] — 2026-07-20, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04 (+117 more)
-
-### Community 1 - "Editor"
-Cohesion: 0.03
-Nodes (4): Editor, RopeEnd, RopeKind, aplicarCuerdas()
+Nodes (125): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04, [0.2.22] — 2026-08-05 (+117 more)
 
 ### Community 2 - "playwright-core"
 Cohesion: 0.02
-Nodes (28): BANCA, K, PESO, errores, errores, errores, errs, errores (+20 more)
+Nodes (28): BANCA, K, PESO, errores, errs, errores, fallos, errores (+20 more)
 
 ### Community 3 - "el"
-Cohesion: 0.17
-Nodes (6): roundTo(), el(), FAQ, mostrarInstructivo(), renderInstructivo(), PropertiesPanel
+Cohesion: 0.11
+Nodes (13): formatearAmplitud(), Recta, roundTo(), largoDeFabrica(), dientesQueCaben(), el(), DimField, dimFields() (+5 more)
 
 ### Community 4 - "manifest.json"
 Cohesion: 0.02
 Nodes (91): agarradera, agarre-d, agarre-doble, asiento, atril-discos, barra-dominadas, barra-fondos, barra-jalon (+83 more)
-
-### Community 5 - "PhysicsWorld"
-Cohesion: 0.05
-Nodes (3): axisVector(), Joint, PhysicsWorld
 
 ### Community 6 - "Examples"
 Cohesion: 0.05
@@ -486,31 +478,19 @@ Nodes (39): Anti-Patterns, Authoring Custom Plugins, Avoid Barrel Files, Basic C
 
 ### Community 7 - "standardMachines.ts"
 Cohesion: 0.08
-Nodes (33): parsearPrefab(), prefabDeFabrica(), ReportePrefab, serializarPrefab(), LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES (+25 more)
+Nodes (33): version, parsearPrefab(), prefabDeFabrica(), ReportePrefab, LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES (+25 more)
 
 ### Community 9 - "validate_data.py"
-Cohesion: 0.12
-Nodes (36): _catalog_date(), _check_app_interface_contract(), _check_catalog_contract(), _check_catalog_summary(), _check_color_contract(), _check_core_data_contract(), _check_file(), _check_font_catalog() (+28 more)
+Cohesion: 0.07
+Nodes (48): Semantic quality contracts for the core UI/UX datasets., read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, _catalog_date(), _check_app_interface_contract() (+40 more)
 
 ### Community 10 - ".moverPrimitiva"
-Cohesion: 0.08
-Nodes (5): degToRad(), radToDeg(), disposeHumanFigure(), SentidoMov, PoseDef
-
-### Community 11 - "ondemand.ts"
-Cohesion: 0.16
-Nodes (15): Deseo, DESEOS, ESTADOS_DESEO, Personaliza, PERSONALIZABLES, armazon(), banco(), COLORES (+7 more)
-
-### Community 12 - "Rope"
-Cohesion: 0.21
-Nodes (7): applyMaterial(), buildMaterial(), BY_ID, getMaterialPreset(), MaterialPreset, fitToLength(), Rope
+Cohesion: 0.09
+Nodes (4): degToRad(), radToDeg(), SentidoMov, PoseDef
 
 ### Community 13 - "LibraryView"
-Cohesion: 0.11
-Nodes (3): ComponentPreview, LibrarySource, LibraryView
-
-### Community 14 - "datos.ts"
 Cohesion: 0.10
-Nodes (32): avatar(), cabeceraMarca(), chipsSeleccion(), encabezado(), MarketplaceAcciones, OpcionesFicha, Categoria, CATEGORIAS (+24 more)
+Nodes (3): ComponentPreview, LibrarySource, LibraryView
 
 ### Community 15 - "indexada.py"
 Cohesion: 0.06
@@ -518,27 +498,27 @@ Nodes (32): disco_indexado(), glb, step, stl, DISCO INDEXADO — el seguro que c
 
 ### Community 16 - "main.ts"
 Cohesion: 0.12
-Nodes (27): ProjectData, WorkspaceData, RecentRecord, abrirConModo(), cargaFallida(), editorDisposables, editorNodes, ensureModels() (+19 more)
+Nodes (29): HerramientaRapida, abrirConModo(), bootEditor(), cargaFallida(), editorDisposables, editorNodes, ensureModels(), goHome() (+21 more)
 
 ### Community 17 - "tt"
-Cohesion: 0.11
-Nodes (38): cargarIdioma(), dicc, Idioma, tt(), TRADUCCIONES, conEmojisSilueta(), ElProps, marcar() (+30 more)
+Cohesion: 0.09
+Nodes (57): tt(), barraCarrito(), botonDemo(), cabeceraMarca(), campo(), Carrito, fichaProducto(), MarketplaceAcciones (+49 more)
 
 ### Community 18 - "SceneManager"
-Cohesion: 0.09
-Nodes (6): CM, formatKg(), METER, gradientTexture(), pintarCaucho(), SceneManager
+Cohesion: 0.11
+Nodes (3): gradientTexture(), pintarCaucho(), SceneManager
 
 ### Community 19 - ".scheduleAutosave"
-Cohesion: 0.06
-Nodes (3): EjercicioBarra, poseNames(), ArticulacionesPanel
+Cohesion: 0.05
+Nodes (4): EjercicioBarra, disposeHumanFigure(), poseNames(), ArticulacionesPanel
 
-### Community 20 - "hub.ts"
-Cohesion: 0.09
-Nodes (29): arrastrable(), suavidad(), barraCarrito(), Carrito, catalogoOnDemand(), precio$(), Producto, productosNuevos() (+21 more)
+### Community 20 - "datos.ts"
+Cohesion: 0.05
+Nodes (56): ARTE, C, D, F, G, LOGOS, R, arrastrable() (+48 more)
 
 ### Community 21 - "recentStore.ts"
-Cohesion: 0.12
-Nodes (25): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_PREFABS, STORE_RECENT, STORE_RECENT_META (+17 more)
+Cohesion: 0.15
+Nodes (23): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_RECENT, STORE_RECENT_META, borrarCaptura() (+15 more)
 
 ### Community 22 - "agarre_doble"
 Cohesion: 0.09
@@ -549,8 +529,8 @@ Cohesion: 0.11
 Nodes (29): bandas(), barra_olimpica(), _mangas(), glb, step, stl, BARRA OLÍMPICA — la de 20 kg, con su moleteado de verdad. Copiada de la ficha…, Largo de cada manga para que la barra mida LARGO de punta a punta. (+21 more)
 
 ### Community 24 - "linePieces.ts"
-Cohesion: 0.13
-Nodes (29): @dimforge/rapier3d-compat, buildBeamGeometry(), buildBeamSinRamas(), buildBentBeam(), buildTubeGeometry(), circuloDe(), conRamas(), cuerdasColision() (+21 more)
+Cohesion: 0.14
+Nodes (26): BEAM_NOMINALS_MM, buildBeamGeometry(), buildBeamSinRamas(), buildBentBeam(), buildTubeGeometry(), circuloDe(), conRamas(), cuerdasColision() (+18 more)
 
 ### Community 27 - "Subagent-Driven Development"
 Cohesion: 0.09
@@ -561,8 +541,8 @@ Cohesion: 0.09
 Nodes (19): AYUDANTES(), errores, fallos, errores, fallos, medidas, errores, fallos (+11 more)
 
 ### Community 29 - "Landing.ts"
-Cohesion: 0.15
-Nodes (16): getIdioma(), setIdioma(), applyPreset(), defaults(), getPerf(), PERF_PRESETS, PerfPreset, PerfSettings (+8 more)
+Cohesion: 0.09
+Nodes (29): cargarIdioma(), dicc, getIdioma(), Idioma, setIdioma(), applyPreset(), defaults(), getPerf() (+21 more)
 
 ### Community 30 - "build123d modeling patterns"
 Cohesion: 0.07
@@ -576,9 +556,9 @@ Nodes (24): aleja, atras, bloqueo, carril, carrilB, columnaEn(), conMarca, d3() 
 Cohesion: 0.21
 Nodes (12): CableData, GroupData, HumanData, JointData, PartidaData, PROJECT_VERSION, Quat, RopeData (+4 more)
 
-### Community 33 - "PropertiesPanel.ts"
-Cohesion: 0.12
-Nodes (31): largoDeFabrica(), MATERIAL_PRESETS, agarreDentada(), altoLabio(), buildDentadaGeometry(), CajaDentada, cajasDentada(), contornoDiente() (+23 more)
+### Community 33 - "placaDentada.ts"
+Cohesion: 0.16
+Nodes (24): agarreDentada(), altoLabio(), buildDentadaGeometry(), CajaDentada, cajasDentada(), contornoDiente(), contornoMuescas(), DENTADA_BARRA_CM (+16 more)
 
 ### Community 34 - "Frontend Accessibility Patterns"
 Cohesion: 0.09
@@ -592,13 +572,13 @@ Nodes (23): _asa(), _comprueba(), _grabado(), kettlebell(), kettlebell_10kg(), k
 Cohesion: 0.08
 Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
 
+### Community 37 - "humanFigure.ts"
+Cohesion: 0.06
+Nodes (34): FigureSegmentManager, figureSegments, Fuente, Piel, VALID, deleteSegment(), getAllSegments(), putSegment() (+26 more)
+
 ### Community 38 - "Creation Log: Systematic Debugging Skill"
 Cohesion: 0.10
 Nodes (19): Bulletproofing Elements, Creation Log: Systematic Debugging Skill, Enhancement 1: TDD Reference, Extraction Decisions, Final Outcome, Initial Version, Iterations, Key Insight (+11 more)
-
-### Community 39 - ".loadProjectInner"
-Cohesion: 0.07
-Nodes (6): aplicarModeloMaquina(), huecoEntreCajas(), aplicarCables(), aplicarUniones(), construirMaquina(), construirPiezas()
 
 ### Community 40 - "Root Cause Tracing"
 Cohesion: 0.12
@@ -609,20 +589,20 @@ Cohesion: 0.11
 Nodes (28): _contains_phrase(), _domain_keywords(), _exact_stack_identifier(), _file_signature(), _get_bm25(), _load_csv(), _load_csv_snapshot(), _load_product_keywords() (+20 more)
 
 ### Community 42 - "LibraryView.ts"
-Cohesion: 0.10
-Nodes (30): three, componentModels, hashU8(), ImportEntry, ImportStatus, figureSegments, armarMaquina(), claveMaquina() (+22 more)
+Cohesion: 0.14
+Nodes (19): ImportEntry, ImportStatus, claveMaquina(), geometriaAOBJ(), geometriaASTL(), hornearMaquina(), MAQUINA_PREFIX, origenDeMaquina() (+11 more)
 
 ### Community 43 - "search_stack"
 Cohesion: 0.10
 Nodes (8): Search stack-specific guidelines, search_stack(), Freshness and migration contracts for native, desktop, and 3D stacks., _rows(), TestNativeDesktopStackFreshness, Freshness and generation-isolation contracts for web stack guidance., _rows(), TestWebStackFreshness
 
-### Community 44 - "DesignSystemGenerator"
-Cohesion: 0.10
-Nodes (8): DesignSystemGenerator, Generates design system recommendations from aggregated searches., Load reasoning rules from CSV., Select best matching result based on priority keywords., TestReasoningMatch, read_rows(), TestGeneratedCatalogContract, TestReasoningContract
+### Community 44 - "test_data_contracts.py"
+Cohesion: 0.11
+Nodes (8): Cross-file semantic contracts for curated design data., read_rows(), split_values(), style_identities(), TestGeneratedCatalogContract, TestLandingAndStackContract, TestReasoningContract, TestStyleIdentityContract
 
 ### Community 45 - "Editor.ts"
 Cohesion: 0.04
-Nodes (55): Arco, CajaOr, CandidatoPoste, ColorMode, DIRECCIONES_ROLDANA, DireccionRoldana, EditorEvents, HandSide (+47 more)
+Nodes (55): Arco, CajaOr, CandidatoPoste, ColorMode, ConfigBisagra, DIRECCIONES_ROLDANA, DireccionRoldana, EditorEvents (+47 more)
 
 ### Community 46 - "disco_barbell.py"
 Cohesion: 0.20
@@ -644,9 +624,9 @@ Nodes (15): Common Rationalizations, Overview, Phase 1: Root Cause Investigation
 Cohesion: 0.18
 Nodes (13): react, Hub(), TEXTOS, BotonComprar(), FormNewsletter(), Idiomas(), Landing(), normalizarImagen() (+5 more)
 
-### Community 51 - "test_core_data_quality.py"
-Cohesion: 0.15
-Nodes (12): Semantic quality contracts for the core UI/UX datasets., read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, _check_chart_contract(), _check_typography_contract() (+4 more)
+### Community 51 - "DesignSystemGenerator"
+Cohesion: 0.18
+Nodes (5): DesignSystemGenerator, Generates design system recommendations from aggregated searches., Load reasoning rules from CSV., Select best matching result based on priority keywords., TestReasoningMatch
 
 ### Community 52 - "compilerOptions"
 Cohesion: 0.11
@@ -718,7 +698,7 @@ Nodes (14): A model, CAD generation, inspection, and validation, Composition, fr
 
 ### Community 69 - "package.json"
 Cohesion: 0.04
-Nodes (46): config, dependencies, @capacitor/filesystem, @capacitor/share, @dimforge/rapier3d-compat, fflate, @fontsource/dm-sans, three (+38 more)
+Nodes (45): config, dependencies, @capacitor/filesystem, @capacitor/share, @dimforge/rapier3d-compat, fflate, @fontsource/dm-sans, three (+37 more)
 
 ### Community 70 - "prueba-barra-olimpica.mjs"
 Cohesion: 0.14
@@ -749,8 +729,8 @@ Cohesion: 0.18
 Nodes (8): cabeceras, CATALOGO, coladas, IDS, pesos, sinBoton, sinModelo, SON_CAJA
 
 ### Community 77 - "Landing"
-Cohesion: 0.19
-Nodes (4): RecentMeta, marcarActual(), formatDate(), Landing
+Cohesion: 0.15
+Nodes (7): RecentMeta, marcarActual(), FAQ, mostrarInstructivo(), renderInstructivo(), formatDate(), Landing
 
 ### Community 78 - "AI_CONTEXT.md — EXERSUITE3D"
 Cohesion: 0.17
@@ -793,8 +773,8 @@ Cohesion: 0.35
 Nodes (9): ANCHO_DISENO, FUENTES, Lienzo(), nuevaImagen(), nuevoId(), nuevoTexto(), elegirArchivo(), elegirYSubir() (+1 more)
 
 ### Community 89 - "SceneObject"
-Cohesion: 0.06
-Nodes (4): localSnapPoints(), getDefinition(), SceneObject, EspejoDentada
+Cohesion: 0.05
+Nodes (11): aplicarModeloMaquina(), armarMaquina(), normalizarEspejo(), localSnapPoints(), getDefinition(), SceneObject, aplicarCables(), aplicarUniones() (+3 more)
 
 ### Community 90 - "search"
 Cohesion: 0.11
@@ -830,7 +810,7 @@ Nodes (6): agujeros, CARTEL, CON_CRUZ, diams, gordos, LIBRAS
 
 ### Community 99 - "ComponentPalette.ts"
 Cohesion: 0.10
-Nodes (26): anguloEnTope(), calcularBrazoPilar(), CfgBrazoPilar, cumpleElRecorrido(), resolver(), SolucionBrazoPilar, TopeBrazoPilar, BY_ID (+18 more)
+Nodes (22): BY_ID, catalogoVigente(), CATEGORY_COLORS, CATEGORY_LABELS, COMPONENT_LIBRARY, COMPONENTES_RETIRADOS, esDelCatalogo(), PRIMITIVE_DEFS (+14 more)
 
 ### Community 100 - "Defense-in-Depth Validation"
 Cohesion: 0.17
@@ -1241,8 +1221,8 @@ Cohesion: 0.67
 Nodes (3): [0.1.9] — 2026-07-17, Añadido, Corregido
 
 ### Community 235 - "descargas.ts"
-Cohesion: 0.15
-Nodes (18): @capacitor/filesystem, @capacitor/share, aBase64(), abrirConInput(), acceptSeguro(), capacitor(), CapacitorGlobal, deBase64() (+10 more)
+Cohesion: 0.08
+Nodes (22): @capacitor/filesystem, @capacitor/share, aBase64(), abrirConInput(), acceptSeguro(), capacitor(), CapacitorGlobal, deBase64() (+14 more)
 
 ### Community 236 - "[0.2.11] — 2026-07-26"
 Cohesion: 0.67
@@ -1260,13 +1240,13 @@ Nodes (3): [0.2.14] — 2026-08-02, Añadido, Corregido
 Cohesion: 0.67
 Nodes (3): [0.2.25] — 2026-08-05, Corregido, Eliminado
 
-### Community 241 - "reloj.ts"
+### Community 240 - "componentModels.ts"
 Cohesion: 0.14
-Nodes (24): ConfigBisagra, Esfera, esferaDe(), formatearAmplitud(), formatearHora(), GRADOS_POR_HORA, GRADOS_POR_MINUTO, gradosDesdeHora() (+16 more)
+Nodes (10): ComponentModelManager, componentModels, hashU8(), separarBandas(), separarRotulo(), deleteModel(), getAllModels(), putModel() (+2 more)
 
-### Community 242 - "PrototipoFoto"
-Cohesion: 0.11
-Nodes (7): HerramientaRapida, cargarImagen(), PrototipoFoto, crearBarraHerramientas(), crearBotonesHerramientas(), ICONOS, SVG()
+### Community 241 - "reloj.ts"
+Cohesion: 0.18
+Nodes (14): Esfera, esferaDe(), formatearHora(), GRADOS_POR_HORA, GRADOS_POR_MINUTO, gradosDesdeHora(), Hora, horaDesdeGrados() (+6 more)
 
 ### Community 244 - "[0.3.51] — 2026-09-12"
 Cohesion: 0.67
@@ -1300,9 +1280,9 @@ Nodes (6): derivaX, fallos, giro, maxRoll, maxTors, maxYaw
 Cohesion: 0.67
 Nodes (3): [0.3.85] — 2026-09-21, Pruebas — `prueba-dos-bisagras` hace ahora el gesto de la máquina, Y lo que ha encontrado — corrige lo dicho en v0.3.84
 
-### Community 253 - "chapa.ts"
-Cohesion: 0.24
-Nodes (11): CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara(), lectura() (+3 more)
+### Community 253 - "SceneObject.ts"
+Cohesion: 0.15
+Nodes (20): ObjData, CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara() (+12 more)
 
 ### Community 254 - "[0.2.45] — 2026-08-11"
 Cohesion: 0.67
@@ -1324,9 +1304,13 @@ Nodes (3): [0.2.19] — 2026-08-05, Cambiado, Corregido
 Cohesion: 0.30
 Nodes (9): applyBend(), applyTwist(), baseGeometry(), buildGeometry(), segFor(), buildHorquillaGeometry(), medidasHorquilla(), perfilDisco() (+1 more)
 
-### Community 261 - "arte.ts"
-Cohesion: 0.20
-Nodes (7): ARTE, C, D, F, G, LOGOS, R
+### Community 260 - "materials.ts"
+Cohesion: 0.27
+Nodes (6): applyMaterial(), buildMaterial(), BY_ID, getMaterialPreset(), MATERIAL_PRESETS, MaterialPreset
+
+### Community 261 - "PhysicsWorld.ts"
+Cohesion: 0.19
+Nodes (10): @dimforge/rapier3d-compat, deltaEspejo(), espejarGeometria(), espejoDe(), invertirCaras(), CableEntry, GRAVITY, norm() (+2 more)
 
 ### Community 262 - "[0.2.20] — 2026-08-05"
 Cohesion: 0.67
@@ -1356,9 +1340,9 @@ Nodes (3): [0.2.83] — 2026-08-18, Corregido, Pruebas
 Cohesion: 0.50
 Nodes (4): [0.3.81] — 2026-09-21, Corregido, Pruebas, Sigue abierto
 
-### Community 270 - "armIK.ts"
-Cohesion: 0.50
-Nodes (4): POLE, REST, setBoneWorldDir(), solveTwoBoneIK()
+### Community 270 - "prefabsMaquina"
+Cohesion: 0.26
+Nodes (4): STORE_PREFABS, PrefabArchivo, prefabsMaquina, Registro
 
 ### Community 271 - "Pressure Test 3: Authority + Social Pressure"
 Cohesion: 0.40
@@ -1377,12 +1361,16 @@ Cohesion: 0.67
 Nodes (3): [0.2.94] — 2026-08-19, Corregido, Verificación
 
 ### Community 276 - "VisorPiezas"
-Cohesion: 0.16
+Cohesion: 0.15
 Nodes (4): formatCm(), MeasurementHUD, Retratista, VisorPiezas
 
 ### Community 277 - "[0.2.96] — 2026-08-19"
 Cohesion: 0.67
 Nodes (3): [0.2.96] — 2026-08-19, Corregido, Verificación
+
+### Community 278 - ".rebuildRope"
+Cohesion: 0.24
+Nodes (3): RopeEnd, RopeKind, aplicarCuerdas()
 
 ### Community 279 - "[0.2.98] — 2026-08-20"
 Cohesion: 0.67
@@ -1396,13 +1384,9 @@ Nodes (9): 1. Empty Catch Blocks, 2. Inadequate Logging, 3. Dangerous Fallbacks,
 Cohesion: 0.11
 Nodes (17): Before Delivering App UI, Example Workflow, If a search returns 0 results, Output Formats, Query Contract, Rule Categories by Priority, Running the search tool, Step 1: Analyze User Requirements (+9 more)
 
-### Community 282 - "humanFigure.ts"
-Cohesion: 0.16
-Nodes (17): applySegmentOverrides(), AxisLimits, buildHumanFigure(), colocarCuerpoEntero(), DEFAULT_HUMAN_HEIGHT, defaultSegmentGeometry(), fitSegmentGeometry(), JOINT_DOF (+9 more)
-
-### Community 284 - "[0.3.15] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.15] — 2026-08-27, Arreglado, Cambiado
+### Community 282 - "brazoPilar.ts"
+Cohesion: 0.36
+Nodes (7): anguloEnTope(), calcularBrazoPilar(), CfgBrazoPilar, cumpleElRecorrido(), resolver(), SolucionBrazoPilar, TopeBrazoPilar
 
 ### Community 285 - "[0.3.16] — 2026-08-27"
 Cohesion: 0.67
@@ -1431,6 +1415,10 @@ Nodes (3): [0.2.41] — 2026-08-10, Añadido, Corregido
 ### Community 291 - "Code Simplifier Agent"
 Cohesion: 0.22
 Nodes (8): Approach, Code Simplifier Agent, Principles, Prompt Defense Baseline, Quality, Readability, Simplification Targets, Structure
+
+### Community 292 - "[0.2.0] — 2026-07-20"
+Cohesion: 0.67
+Nodes (3): [0.2.0] — 2026-07-20, Añadido, Corregido
 
 ### Community 294 - "[0.3.31] — 2026-09-03"
 Cohesion: 0.67
@@ -1516,9 +1504,13 @@ Nodes (4): [0.3.74] — 2026-09-19, Cambiado, Documentación, Pruebas
 Cohesion: 0.22
 Nodes (8): 1. Encapsulation, 2. Invariant Expression, 3. Invariant Usefulness, 4. Enforcement, Evaluation Criteria, Output Format, Prompt Defense Baseline, Type Design Analyzer Agent
 
-### Community 321 - "[0.3.79] — 2026-09-20"
+### Community 321 - "[0.2.52] — 2026-08-13"
 Cohesion: 0.67
-Nodes (3): [0.3.79] — 2026-09-20, Cambiado, Pruebas
+Nodes (3): [0.2.52] — 2026-08-13, Añadido, Corregido
+
+### Community 326 - "[0.3.26] — 2026-08-31"
+Cohesion: 0.67
+Nodes (3): [0.3.26] — 2026-08-31, Cambiado, Corregido
 
 ### Community 327 - "[0.2.97] — 2026-08-20"
 Cohesion: 0.67
@@ -1528,9 +1520,9 @@ Nodes (3): [0.2.97] — 2026-08-20, Añadido, Corregido
 Cohesion: 0.67
 Nodes (3): [0.3.18] — 2026-08-27, Arreglado, Pendiente
 
-### Community 331 - "SceneObject.ts"
-Cohesion: 0.14
-Nodes (18): ObjData, deltaEspejo(), espejarGeometria(), espejoDe(), invertirCaras(), bandaDe(), estirarPorElCentro(), puntoEnBanda() (+10 more)
+### Community 331 - "three"
+Cohesion: 0.13
+Nodes (11): three, POLE, REST, setBoneWorldDir(), solveTwoBoneIK(), SnapManager, SnapResult, bandaDe() (+3 more)
 
 ### Community 332 - "[0.3.21] — 2026-08-27"
 Cohesion: 0.67
@@ -1584,9 +1576,9 @@ Nodes (13): Agentes (`.claude/agents/`), Capacidades traídas de ECC, Capacidade
 Cohesion: 0.40
 Nodes (5): [0.1.5] — 2026-07-03, Añadido, Cambiado, Corregido, Rendimiento
 
-### Community 363 - "test_data_contracts.py"
-Cohesion: 0.10
-Nodes (14): Find matching reasoning rule for a category., Apply reasoning rules to search results., apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), Return deterministic mutations and an audit trail; never execute data., Closed, non-executable grammar for design-system decision rules., Parse the canonical condition -> action-array representation. (+6 more)
+### Community 363 - "parse_decision_rules"
+Cohesion: 0.17
+Nodes (9): Find matching reasoning rule for a category., Apply reasoning rules to search results., apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), Return deterministic mutations and an audit trail; never execute data., Closed, non-executable grammar for design-system decision rules., Parse the canonical condition -> action-array representation. (+1 more)
 
 ### Community 364 - "[0.2.31] — 2026-08-07"
 Cohesion: 0.67
@@ -1648,17 +1640,13 @@ Nodes (4): [0.3.87] — 2026-09-21, Añadido — `prueba-bisagra-rigida`, el cas
 Cohesion: 0.15
 Nodes (12): 10. Charts & Data (LOW), 1. Accessibility (CRITICAL), 2. Touch & Interaction (CRITICAL), 3. Performance (HIGH), 4. Style Selection (HIGH), 5. Layout & Responsive (HIGH), 6. Typography & Color (MEDIUM), 7. Animation (MEDIUM) (+4 more)
 
-### Community 381 - "modelLoading.ts"
-Cohesion: 0.21
-Nodes (8): bakeComponentGeometry(), firstTexturedMaterial(), gltfLoader(), loadModelRoot(), mergeRootGeometry(), normalizeGeometry(), separarBandas(), separarRotulo()
+### Community 381 - "[0.3.75] — 2026-09-19"
+Cohesion: 0.67
+Nodes (3): [0.3.75] — 2026-09-19, Corregido, Pruebas
 
-### Community 382 - "bootEditor"
-Cohesion: 0.15
-Nodes (6): bootEditor(), hacerPlegable(), mostrarCargando(), ComponentPalette, PreciseDrag, SimulatorBar
-
-### Community 384 - "figureSegments.ts"
-Cohesion: 0.26
-Nodes (9): Fuente, Piel, VALID, deleteSegment(), getAllSegments(), putSegment(), StoredSegment, tx() (+1 more)
+### Community 384 - "[0.3.80] — 2026-09-20"
+Cohesion: 0.67
+Nodes (3): [0.3.80] — 2026-09-20, Corregido, Nota abierta
 
 ### Community 385 - "_style_is_dark_primary"
 Cohesion: 0.21
@@ -1676,9 +1664,9 @@ Nodes (3): format_output(), UI/UX Pro Max Search - BM25 search engine for UI/UX 
 Cohesion: 0.50
 Nodes (4): [0.3.84] — 2026-09-21, Atención — `prueba-dos-bisagras` falla 3 de cada 5, Añadido — las tres soldaduras que faltaban, El mecanismo, demostrado
 
-### Community 391 - "[0.3.29] — 2026-09-02"
+### Community 391 - "[0.3.89] — 2026-09-22"
 Cohesion: 0.67
-Nodes (3): [0.3.29] — 2026-09-02, Añadido, Corregido
+Nodes (3): [0.3.89] — 2026-09-22, Cambiado — el pasador de la banca, sentado en el asiento medido, La razón, y por qué no es un fallo del programa
 
 ### Community 392 - "[0.2.72] — 2026-08-16"
 Cohesion: 0.67
@@ -1732,10 +1720,6 @@ Nodes (6): Overview, Remember, Skill Audit, Usage, What it checks, What it does 
 Cohesion: 0.38
 Nodes (5): Every script invocation in the shipped skill markdown resolves from the skill…, Return (target, None) for a skill-relative path, or (None, reason)., resolve(), shipped_invocations(), SkillScriptPathsTest
 
-### Community 408 - "[0.2.29] — 2026-08-07"
-Cohesion: 0.67
-Nodes (3): [0.2.29] — 2026-08-07, Añadido, Corregido
-
 ### Community 409 - "audit.py"
 Cohesion: 0.53
 Nodes (5): check_description_quality(), find_skill_dirs(), main(), parse_frontmatter(), Deterministic audit of a Claude Code skills directory: frontmatter validity,…
@@ -1755,10 +1739,6 @@ Nodes (3): [0.2.26] — 2026-08-06, Añadido, Cambiado
 ### Community 413 - "[0.2.65] — 2026-08-16"
 Cohesion: 0.67
 Nodes (3): [0.2.65] — 2026-08-16, Añadido, Corregido
-
-### Community 414 - "[0.2.89] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.89] — 2026-08-18, Cambiado, Corregido
 
 ### Community 415 - "[0.3.69] — 2026-09-16"
 Cohesion: 0.67
@@ -1781,24 +1761,24 @@ Cohesion: 0.67
 Nodes (3): [0.2.8] — 2026-07-25, Cambiado, Corregido
 
 ## Knowledge Gaps
-- **1671 isolated node(s):** `generate.sh script`, `find-polluter.sh script`, `config`, `pilar`, `base-soporte` (+1666 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2263 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **79 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1673 isolated node(s):** `generate.sh script`, `find-polluter.sh script`, `config`, `pilar`, `base-soporte` (+1668 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2265 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **84 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Editor` connect `Editor` to `el`, `.constructor`, `PhysicsWorld`, `.colocarFiguraEn`, `.onPointerDown`, `standardMachines.ts`, `.moverPrimitiva`, `main.ts`, `tt`, `SceneManager`, `.scheduleAutosave`, `VisorPiezas`, `Cable`, `.requestRender`, `Landing.ts`, `project.ts`, `PropertiesPanel.ts`, `Toolbar`, `.loadProjectInner`, `Editor.ts`, `SceneObject.ts`, `SceneObject`, `ComponentPalette.ts`, `SnapManager`, `reloj.ts`, `PrototipoFoto`, `.dispose`, `chapa.ts`, `bootEditor`?**
+- **Why does `Editor` connect `Editor` to `el`, `.constructor`, `PhysicsWorld`, `.colocarFiguraEn`, `.onPointerDown`, `standardMachines.ts`, `.moverPrimitiva`, `.aplicarChapa`, `main.ts`, `SceneManager`, `.scheduleAutosave`, `VisorPiezas`, `recentStore.ts`, `.rebuildRope`, `.avisoTemporal`, `.requestRender`, `PerformancePanel`, `Landing.ts`, `project.ts`, `.listObjects`, `Editor.ts`, `three`, `SceneObject`, `ComponentPalette.ts`, `Joint`, `descargas.ts`, `reloj.ts`, `PrototipoFoto`, `.setHighlight`, `SceneObject.ts`, `PreciseDrag`?**
   _High betweenness centrality (0.116) - this node is a cross-community bridge._
-- **Why does `playwright-core` connect `playwright-core` to `Mannequin Test Scripts`, `prueba-gesto-barra.mjs`, `package.json`, `prueba-barra-olimpica.mjs`, `prueba-biblioteca-modelos.mjs`, `prueba-hub.mjs`, `prueba-barra-maniqui.mjs`, `prueba-disco-barbell.mjs`, `prueba-moleteado-tubo.mjs`, `prueba-piezas-retiradas.mjs`, `prueba-uppermachine.mjs`, `prueba-biblioteca-posturas.mjs`, `prueba-prefab-cad.mjs`, `prueba-banca-indexada.mjs`, `prueba-largo-a-medida.mjs`, `prueba-mano-brazo.mjs`, `prueba-pie-anclado.mjs`, `_auditar-ingles.mjs`, `prueba-apoyos.mjs`, `prueba-bisagra-fisica.mjs`, `prueba-brazo-spotter.mjs`, `prueba-freno.mjs`, `prueba-ingles.mjs`, `prueba-kettlebell.mjs`, `prueba-mancuerna-hex.mjs`, `prueba-placa-dentada.mjs`, `prueba-v232.mjs`, `prueba-atraviesa.mjs`, `prueba-atril-discos.mjs`, `prueba-auditoria.mjs`, `prueba-auditoria2.mjs`, `prueba-bisagra-caras.mjs`, `prueba-cable-oculto.mjs`, `prueba-chapa.mjs`, `prueba-levantamiento.mjs`, `prueba-maniqui-usa.mjs`, `prueba-menus-v257.mjs`, `prueba-pasador-indexado.mjs`, `prueba-prensa-maniqui.mjs`, `prueba-v245.mjs`, `prueba-v246.mjs`, `prueba-v251.mjs`, `prueba-viewer-maniqui.mjs`, `prueba-800-debug.mjs`, `prueba-800-debug2.mjs`, `prueba-800-debug3.mjs`, `prueba-bisagra-mano.mjs`, `prueba-discos.mjs`, `prueba-freno-estructura.mjs`, `prueba-guia-tubular.mjs`, `prueba-manip-artic.mjs`, `prueba-maniqui-serie.mjs`, `prueba-maquina-entera.mjs`, `prueba-partida-plano.mjs`, `prueba-posar-apoyar.mjs`, `prueba-solape-ui.mjs`, `prueba-soldar.mjs`, `prueba-soldar-forma.mjs`, `prueba-uppermachine-lib.mjs`, `prueba-vinculacion-pines.mjs`, `prueba-visor-proto.mjs`, `_verificar-faq.mjs`, `prueba-garaje2.mjs`, `prueba-brazo-plano.mjs`, `prueba-diente-retiene.mjs`, `prueba-home-visor.mjs`, `prueba-codos.mjs`, `prueba-asiento-tope.mjs`, `prueba-brazo-pilar.mjs`, `prueba-chapa-integracion.mjs`, `prueba-dos-bisagras.mjs`, `prueba-enlace-app.mjs`, `prueba-garaje.mjs`, `prueba-bisagra-rigida.mjs`, `prueba-pieza-dibujada.mjs`, `prueba-rotgrupo.mjs`, `prueba-bisagra-ui.mjs`, `prueba-cuerda-flex.mjs`, `prueba-prototipo.mjs`, `prueba-carga-grupo.mjs`, `prueba-pasador.mjs`, `prueba-prototipo2.mjs`, `prueba-sitio.mjs`?**
+- **Why does `playwright-core` connect `playwright-core` to `Mannequin Test Scripts`, `prueba-gesto-barra.mjs`, `package.json`, `prueba-barra-olimpica.mjs`, `prueba-biblioteca-modelos.mjs`, `prueba-hub.mjs`, `prueba-barra-maniqui.mjs`, `prueba-disco-barbell.mjs`, `prueba-moleteado-tubo.mjs`, `prueba-piezas-retiradas.mjs`, `prueba-uppermachine.mjs`, `prueba-biblioteca-posturas.mjs`, `prueba-prefab-cad.mjs`, `prueba-banca-indexada.mjs`, `prueba-largo-a-medida.mjs`, `prueba-mano-brazo.mjs`, `prueba-pie-anclado.mjs`, `_auditar-ingles.mjs`, `prueba-apoyos.mjs`, `prueba-bisagra-fisica.mjs`, `prueba-brazo-spotter.mjs`, `prueba-freno.mjs`, `prueba-ingles.mjs`, `prueba-kettlebell.mjs`, `prueba-mancuerna-hex.mjs`, `prueba-placa-dentada.mjs`, `prueba-v232.mjs`, `prueba-atraviesa.mjs`, `prueba-atril-discos.mjs`, `prueba-auditoria.mjs`, `prueba-auditoria2.mjs`, `prueba-bisagra-caras.mjs`, `prueba-cable-oculto.mjs`, `prueba-chapa.mjs`, `prueba-levantamiento.mjs`, `prueba-maniqui-usa.mjs`, `prueba-menus-v257.mjs`, `prueba-pasador-indexado.mjs`, `prueba-prensa-maniqui.mjs`, `prueba-v245.mjs`, `prueba-v246.mjs`, `prueba-v251.mjs`, `prueba-viewer-maniqui.mjs`, `prueba-800-debug.mjs`, `prueba-800-debug2.mjs`, `prueba-800-debug3.mjs`, `prueba-bisagra-mano.mjs`, `prueba-discos.mjs`, `prueba-freno-estructura.mjs`, `prueba-guia-tubular.mjs`, `prueba-manip-artic.mjs`, `prueba-maniqui-serie.mjs`, `prueba-maquina-entera.mjs`, `prueba-partida-plano.mjs`, `prueba-posar-apoyar.mjs`, `prueba-solape-ui.mjs`, `prueba-soldar.mjs`, `prueba-soldar-forma.mjs`, `prueba-uppermachine-lib.mjs`, `prueba-vinculacion-pines.mjs`, `prueba-visor-proto.mjs`, `_verificar-faq.mjs`, `prueba-garaje2.mjs`, `prueba-brazo-plano.mjs`, `prueba-diente-retiene.mjs`, `prueba-asiento-tope.mjs`, `prueba-brazo-pilar.mjs`, `prueba-chapa-integracion.mjs`, `prueba-dos-bisagras.mjs`, `prueba-garaje.mjs`, `prueba-bisagra-rigida.mjs`, `prueba-pieza-dibujada.mjs`, `prueba-rotgrupo.mjs`, `prueba-bisagra-ui.mjs`, `prueba-cuerda-flex.mjs`, `prueba-prototipo.mjs`, `prueba-ergonomia-v256.mjs`, `prueba-torre-pesos.mjs`, `prueba-v226.mjs`, `prueba-pasador.mjs`, `prueba-prototipo2.mjs`, `prueba-sitio.mjs`?**
   _High betweenness centrality (0.099) - this node is a cross-community bridge._
-- **Why does `three` connect `LibraryView.ts` to `figureSegments.ts`, `geometryFactory.ts`, `standardMachines.ts`, `Rope`, `armIK.ts`, `main.ts`, `tt`, `SceneManager`, `linePieces.ts`, `humanFigure.ts`, `project.ts`, `PropertiesPanel.ts`, `Editor.ts`, `package.json`, `SceneObject.ts`, `SnapManager`, `reloj.ts`, `modelLoading.ts`, `perforar.ts`, `chapa.ts`?**
+- **Why does `three` connect `three` to `geometryFactory.ts`, `materials.ts`, `PhysicsWorld.ts`, `el`, `standardMachines.ts`, `Rope`, `LibraryView`, `main.ts`, `linePieces.ts`, `Landing.ts`, `project.ts`, `placaDentada.ts`, `humanFigure.ts`, `LibraryView.ts`, `Editor.ts`, `package.json`, `componentModels.ts`, `reloj.ts`, `perforar.ts`, `SceneObject.ts`?**
   _High betweenness centrality (0.029) - this node is a cross-community bridge._
 - **What connects `generate.sh script`, `find-polluter.sh script`, `config` to the rest of the system?**
-  _1671 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1673 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Changelog` be split into smaller, more focused modules?**
   _Cohesion score 0.016 - nodes in this community are weakly interconnected._
 - **Should `Editor` be split into smaller, more focused modules?**
-  _Cohesion score 0.03425742574257426 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03650615901455767 - nodes in this community are weakly interconnected._
 - **Should `playwright-core` be split into smaller, more focused modules?**
-  _Cohesion score 0.023255813953488372 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.022222222222222223 - nodes in this community are weakly interconnected._
