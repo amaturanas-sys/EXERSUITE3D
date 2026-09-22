@@ -5,6 +5,50 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.95] — 2026-09-22
+
+### Añadido — `prueba-vibra-minima`, el caso mínimo de la vibración
+
+Cinco escenas que parten de lo que ya se sabe estable y añaden **un solo
+ingrediente cada vez**: las cuatro diferencias entre `prueba-bisagra-rigida` y
+la banca. Todas apoyadas, porque un brazo colgado al aire es un péndulo sin
+rozamiento y su velocidad angular no baja nunca — eso no es vibración, es
+física, y la primera versión de esta prueba lo midió como si lo fuera (161° de
+«temblor» en tres casos).
+
+| caso | masa | ω media | ω máx | temblor | ω por eje | ladeo |
+|---|---|---|---|---|---|---|
+| A simple, apoyado en un tope | 5,001 | **0** | 0 | 0,01° | 0/0/0 | 0° → 0° |
+| B FUNDIDO de 4 piezas | 5 | **0** | 0 | 0,01° | 0/0/0 | 0° → 0° |
+| C fundido y SOLAPADO 1,45 cm | 5 | **0** | 0 | 0° | 0/0/0 | 0° → 0° |
+| D LAZO CERRADO, bisagra libre | 5,001 | **0** | 0 | 0° | 0/0/0 | 0° → 0° |
+| E el mismo lazo, puntal SOLDADO | 6,001 | 2,56 | 2,7 | 0° | 2,56/0,04/0,07 | −0,2° → −0,2° |
+
+**Ninguno reproduce la vibración de la banca.** Ni la fusión de soldadas, ni el
+solape de 1,45 cm, ni el contacto, ni el lazo cerrado —que era el último
+sospechoso y el único de la banca que no se había montado aparte—. Los cuatro
+llegan al reposo con velocidad angular **cero exacta**.
+
+### Lo que sí aparece — VELOCIDAD FANTASMA en el lazo soldado
+
+El caso E declara **2,56 rad/s sostenidos, todos en el eje X**, y a la vez
+**no se mueve**: su ángulo en el plano no varía (0°) y su ladeo fuera del plano
+se queda clavado en −0,2°. La velocidad se reporta y nunca se convierte en
+movimiento — el solver le mete energía y se la quita en el mismo paso.
+
+La única diferencia entre D (ω = 0) y E es que en E el puntal va **soldado**,
+o sea que brazo y puntal son un cuerpo fundido. El ladeo confirma además que la
+revoluta no pierde su eje en ninguno de los cinco casos, que era la otra
+sospecha.
+
+**Esto matiza v0.3.94.** Parte de los 5 a 9 rad/s que allí se midieron en el
+respaldo pueden ser fantasma igual. Lo que en la banca sí es movimiento real
+son los 3 a 4° de temblor del ángulo, así que la inestabilidad existe; la
+magnitud que se le atribuyó por ω estaba inflada.
+
+`prueba-vibra-minima` queda **en rojo por E**, que es un hallazgo y no un
+defecto de la prueba.
+
 ## [0.3.94] — 2026-09-22
 
 ### La banca NO alcanza equilibrio: vibra siempre
