@@ -5,6 +5,48 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.91] — 2026-09-22
+
+### Corregido — la prueba de los topes daba VERDES FALSOS
+
+`prueba-banco-cinco-topes` medía cuánto se corre el pasador **sólo a lo largo
+del carril**, y el modo de fallo real —medido en v0.3.90— es que **se sale de
+lado**. En el tope 1 de la banca de tres, la métrica vieja decía 5,03 cm y
+pasaba; la buena dice **24,62, de los cuales 24,11 son laterales**. Las dos
+pruebas registran ahora las dos componentes y juzgan por la distancia completa.
+
+### Añadido — la banca de tres topes, y por qué tampoco vale
+
+Del cálculo de la inclinación de la viga: con viga **recta** no hay manera de
+que el puntal empuje a menos de 15° de la normal del carril en cinco topes —el
+techo es 26,9°, porque el pivote del puntal **viaja 22 cm** entre el primer
+tope y el último y ninguna recta se queda perpendicular a una línea que se
+mueve—. En tres sí: viga girada **−7,50°** (37,5° sobre la horizontal), movida
+`(−22,5 · +20,5)` y puntal de **33 cm** dan un peor ángulo de **12,7°**.
+
+Montado y medido, no vale. Las tres poses arrancan exactas (0,00 mm) y:
+
+| tope | respaldo | se corrió | de lado | acaba |
+|---|---|---|---|---|
+| 1 | 51,8° | 24,62 cm | 24,11 | 33,0° |
+| 2 | 46,7° | dentro del diente | — | 24,7° |
+| 3 | 28,6° | 11,73 cm | 2,08 | 25,3° |
+
+El tope 1 repta de lado medio centímetro por segundo durante 10 s y suelta de
+golpe (x: −6,4 → −21,5). Y el tope 2 destapa **un error de planteamiento mío**:
+el pasador no se mueve y el respaldo cae 22° igual. Eso sólo puede pasar porque
+`|H(θ) − S| = L` tiene **dos raíces** —dos ángulos del respaldo dejan el
+pasador en el mismo diente— y todo el cálculo desde v0.3.90 se queda con la más
+recostada (`max(v)`). La máquina se va a la otra.
+
+Los tres topes acaban en 24,7 · 25,3 · 33,0, y ese **~25° es un tope mecánico
+de la banca**: es donde cayeron también los topes 4 y 5 de la tanda con muesca
+de v0.3.90. La predicción de 12,7° era correcta para el problema planteado; el
+problema estaba mal planteado.
+
+Queda `prueba-banco-tres-topes` en rojo, con los datos en `banco3-tope-*.json`
+y sus ángulos en `banco3-topes.json`, que la prueba lee en vez de recalcular.
+
 ## [0.3.90] — 2026-09-22
 
 ### Cambiado — el puntal de la banca: 42 cm y la unión de arriba libre
