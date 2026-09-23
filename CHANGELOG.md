@@ -5,6 +5,58 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.0] — 2026-09-23
+
+### Cambiado — el VISOR se parte a lo ancho, con la raya desplazable
+
+Estaba partido arriba y abajo: la maqueta perdía altura —que es justo la
+dimensión en la que crece una máquina de gimnasio— y el inventario ganaba un
+ancho que no necesitaba. Ahora va **izquierda y derecha**, y entre las dos hay
+una raya que se arrastra.
+
+**Se imanta a las relaciones redondas.** Soltar donde caiga daría repartos como
+47:53, que no son ninguna decisión; las cinco que importan —**3:1, 2:1, 1:1,
+1:2 y 1:3**— se cogen solas cuando el puntero pasa cerca. Con el teclado se
+salta de una a la siguiente, que es la única forma de usarla sin ratón.
+
+Dos detalles que el cambio obligaba: las casillas del inventario ya no van
+clavadas a cuatro por fila —en 1:3 quedaban ilegibles— sino que se reparten
+solas; y al mover la raya se avisa al lienzo a mano, porque cambiarle el ancho
+por CSS no dispara `resize` y el renderizador se quedaba con el tamaño viejo.
+
+### Cambiado — la pantalla de inicio: sin duplicados, y con la foto de cada proyecto
+
+«Sesión anterior» y «Abrir un archivo» tenían cada uno un BOTÓN arriba **y
+además una FICHA** en la lista: la misma acción dos veces en la misma pantalla.
+Se quitan las fichas.
+
+Pero eran el único sitio desde donde esas dos cosas podían abrirse en **VIEWER**
+o en **SIMULAR** —nueve pruebas navegaban por ellas, así que no eran adorno—, y
+sin ellas mirar un `.json` ajeno obligaba a pasar antes por el taller, que es
+justo lo que v0.3.77 vino a arreglar. Así que el botón conserva su clic de
+siempre (el taller, que es lo que se quiere nueve de cada diez veces) y al lado
+lleva una **flecha que despliega los tres modos**. Una sola entrada por acción,
+y ninguna capacidad perdida.
+
+Los botones de arriba ya no se recortan: cada uno pide el ancho de su texto y
+la fila salta de línea cuando hace falta. «BIBLIOTECA» y «CONTINUAR» se cortaban
+en pantallas estrechas.
+
+**Y cada proyecto lleva su foto**, como en el esquema: una ficha se reconoce por
+la forma de la máquina mucho antes que por su nombre. La toma el editor al
+guardar y al abrir, en JPEG de 320 px —un PNG del lienzo pesa cerca de un mega,
+y doce recientes serían doce megas en IndexedDB para adornar una lista—. La
+foto **no se pierde al reabrir**: abrir un archivo también lo registra como
+reciente y ahí no hay lienzo que fotografiar, así que se conserva la anterior.
+Un proyecto viejo sin foto muestra su inicial, no una imagen rota.
+
+### Pruebas
+
+`prueba-home-visor` comprobaba que las dos mitades se repartían **la altura**;
+ahora comprueba el ancho, que exista la raya, y que sus relaciones salgan:
+2:1, 3:1 y 1:2 con el teclado. Las otras nueve navegaban por las fichas
+retiradas y pasan por el desplegable. Las diez, en verde.
+
 ## [0.3.99] — 2026-09-23
 
 ### La batería entera, en serie: 115 de 121

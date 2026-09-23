@@ -83,9 +83,12 @@ await p.goto("http://127.0.0.1:4174/");
 await p.waitForTimeout(1200);
 await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(800);
 // El selector de fichero es NATIVO y se crea al vuelo: se atiende su evento.
+// El desplegable se abre ANTES del Promise.all: el selector de archivos lo
+// dispara el botón de modo, no la flecha.
+await p.click(".land-desplegar.archivo");
 const [chooser] = await Promise.all([
   p.waitForEvent("filechooser"),
-  p.click(".land-ficha.archivo .land-modo:has-text('SIMULAR')"),
+  p.click(".land-modos-inline.archivo .land-modo:has-text('SIMULAR')"),
 ]);
 await chooser.setFiles(archivo);
 await p.waitForTimeout(5000);

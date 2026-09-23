@@ -125,8 +125,11 @@ const visor = await page.evaluate(() => {
   const medida = (t) => parseFloat((t ?? "").replace(",", "."));
   return {
     hay: !!marco && !!inv,
+    anchoMarco: marco ? Math.round(marco.getBoundingClientRect().width) : 0,
+    anchoInv: inv ? Math.round(inv.getBoundingClientRect().width) : 0,
     altoMarco: marco ? Math.round(marco.getBoundingClientRect().height) : 0,
     altoInv: inv ? Math.round(inv.getBoundingClientRect().height) : 0,
+    hayRaya: !!document.querySelector(".visor-divisor"),
     columnas: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
     celdas: celdas.length,
     tallas: celdas.map((c) => medida(c.querySelector(".visor-celda-medidas")?.textContent)),
@@ -134,12 +137,43 @@ const visor = await page.evaluate(() => {
     marcas: document.querySelectorAll(".visor-marca").length,
   };
 });
-ok(visor.hay && visor.columnas === 4, `el inventario va de cuatro en cuatro (${visor.columnas} columnas)`);
+ok(visor.hay && visor.columnas >= 1, `el inventario reparte sus casillas (${visor.columnas} columnas)`);
+// LA PANTALLA SE PARTE A LO ANCHO (v0.4.0), no a lo alto. Partirla arriba y
+// abajo le robaba altura a la maqueta, que es la dimensión en la que crece una
+// máquina de gimnasio.
 ok(
-  Math.abs(visor.altoMarco + 46 - visor.altoInv) <= 4,
-  `la maqueta y el inventario se reparten la pantalla por mitades (${visor.altoMarco + 46} y ${visor.altoInv} px)`,
+  Math.abs(visor.anchoMarco - visor.anchoInv) <= 4,
+  `la maqueta y el inventario se reparten la pantalla por mitades, IZQUIERDA y DERECHA (${visor.anchoMarco} y ${visor.anchoInv} px)`,
   JSON.stringify({ marco: visor.altoMarco, inv: visor.altoInv }),
 );
+ok(visor.hayRaya, "y entre las dos hay una raya para moverla");
+
+// LA RAYA SE IMANTA A LAS RELACIONES REDONDAS. Soltar donde caiga daría
+// repartos como 47:53, que no son ninguna decisión; las que importan —3:1,
+// 2:1, 1:1 y las inversas— se cogen solas. Con el teclado se salta de una a la
+// siguiente, que es la única forma de usarla sin ratón.
+const reparto = async () =>
+  page.evaluate(() => {
+    const m = document.querySelector(".visor-modelo")?.getBoundingClientRect();
+    const i = document.querySelector(".visor-inventario")?.getBoundingClientRect();
+    return m && i ? +(m.width / (m.width + i.width)).toFixed(2) : 0;
+  });
+await page.focus(".visor-divisor");
+await page.keyboard.press("ArrowRight");
+await page.waitForTimeout(250);
+const masAncha = await reparto();
+ok(Math.abs(masAncha - 2 / 3) < 0.03, `una flecha a la derecha da 2:1 (${masAncha})`);
+await page.keyboard.press("ArrowRight");
+await page.waitForTimeout(250);
+const tresAuno = await reparto();
+ok(Math.abs(tresAuno - 0.75) < 0.03, `y otra, 3:1 (${tresAuno})`);
+await page.keyboard.press("ArrowLeft");
+await page.keyboard.press("ArrowLeft");
+await page.keyboard.press("ArrowLeft");
+await page.waitForTimeout(250);
+const inversa = await reparto();
+ok(Math.abs(inversa - 1 / 3) < 0.03, `y hacia el otro lado, 1:2 (${inversa})`);
+
 ok(visor.celdas === 5, `hay una casilla por pieza (${visor.celdas})`);
 const ordenado = visor.tallas.every((v, i, a) => i === 0 || a[i - 1] <= v + 0.01);
 ok(ordenado, `y van de menor a mayor (${visor.tallas.join(" → ")})`);

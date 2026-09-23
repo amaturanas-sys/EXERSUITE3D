@@ -594,11 +594,29 @@ select.select:focus {
   text-transform: uppercase;
   color: var(--text-dim);
 }
+/* LOS BOTONES CABEN ENTEROS (v0.4.0). Con `flex-wrap` y sin ancho mínimo,
+   «BIBLIOTECA» y «CONTINUAR» se recortaban en pantallas estrechas; ahora cada
+   uno pide el ancho de su texto y la fila salta de línea cuando hace falta. */
 .land-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: stretch;
 }
+.land-actions > button, .land-accion-doble { flex: 0 0 auto; white-space: nowrap; }
+/* El botón y su flecha, pegados como una sola pieza; los tres modos, debajo. */
+.land-accion-doble { display: flex; flex-direction: column; gap: 6px; }
+.land-accion-fila { display: flex; align-items: stretch; gap: 0; }
+.land-accion-fila > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.land-desplegar {
+  border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: 0;
+  padding: 0 9px; cursor: pointer; font-size: 12px;
+  background: var(--panel-2, #262a33); color: var(--text, #e6e8ec);
+  border: 1px solid var(--border, #333845);
+}
+.land-desplegar:hover { background: var(--panel, #1e2128); }
+.land-modos-inline { display: flex; gap: 6px; }
+.land-modos-inline[hidden] { display: none; }
 /* Selector Builder / Simulador de la pantalla de inicio. */
 .land-mode-row {
   display: inline-flex;
@@ -1346,6 +1364,17 @@ body.dialogo-derecha #articulaciones {
   display: flex; flex-direction: column; gap: 6px;
   padding: 10px 12px; border-radius: 10px;
   background: var(--panel, #1e2128); border: 1px solid var(--border, #333845);
+}
+/* LA FOTO DE LA FICHA: ancho completo y proporción fija, para que la lista no
+   baile según lo que mida cada captura. */
+.land-foto {
+  width: 100%; aspect-ratio: 16 / 9; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border, #333845);
+  background: var(--bg, #14161a); display: block;
+}
+.land-foto.vacia {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim, #98a0ae); font-size: 28px; font-weight: 700;
 }
 .land-ficha-cab { display: flex; align-items: center; gap: 8px; }
 .land-ficha-cab .land-recent-name { flex: 1 1 auto; }
@@ -3658,14 +3687,37 @@ body.modo-prototipo #simbar {
    Media pantalla para la maqueta y media para el inventario, como el diagrama.
    El lienzo del editor vive fuera de este árbol —lo monta `bootEditor`—, así
    que se le da su mitad desde aquí y el marco con las reglas se dibuja encima. */
+/* DOS MITADES, IZQUIERDA Y DERECHA (v0.4.0), con la raya desplazable. Antes
+   eran arriba y abajo: la maqueta perdia altura, que es justo la dimension en
+   la que crece una maquina de gimnasio, y el inventario ganaba un ancho que no
+   le hacia falta. El reparto vive en una sola variable, `--visor-split`, que
+   leen el lienzo (que esta FUERA de este arbol) y la rejilla. */
 body.visor-abierto #viewport {
-  position: fixed; left: 0; top: 46px; width: 100vw; height: calc(50dvh - 46px);
+  position: fixed; left: 0; top: 46px;
+  width: var(--visor-split, 50vw); height: calc(100dvh - 46px);
 }
 .visor {
   position: fixed; inset: 0; z-index: 30;
-  display: grid; grid-template-rows: 46px calc(50dvh - 46px) 50dvh;
+  display: grid;
+  grid-template-columns: var(--visor-split, 50vw) 1fr;
+  grid-template-rows: 46px 1fr;
   pointer-events: none;
 }
+.visor-barra { grid-column: 1 / -1; }
+/* LA RAYA. Ancha de sobra para el dedo, fina a la vista. */
+.visor-divisor {
+  position: fixed; top: 46px; bottom: 0; width: 14px; z-index: 31;
+  left: var(--visor-split, 50vw); transform: translateX(-7px);
+  cursor: col-resize; background: transparent; border: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.visor-divisor::before {
+  content: ""; width: 2px; height: 100%;
+  background: var(--border, #333845);
+}
+.visor-divisor:hover::before, .visor-divisor:focus-visible::before,
+.visor-divisor.arrastrando::before { background: var(--acento, #6ea8fe); width: 3px; }
+.visor-divisor:focus-visible { outline: 2px solid var(--acento, #6ea8fe); outline-offset: -2px; }
 .visor > * { pointer-events: auto; }
 .visor-barra {
   display: flex; align-items: center; gap: 12px; padding: 0 12px;
@@ -3690,7 +3742,7 @@ body.visor-abierto #viewport {
   border: 1px solid var(--border, #333845);
 }
 .visor-inventario {
-  background: var(--bg, #14161a); border-top: 2px solid var(--border, #333845);
+  background: var(--bg, #14161a); border-left: 2px solid var(--border, #333845);
   overflow-y: auto; padding: 10px 12px 18px;
 }
 .visor-titulo {
@@ -3698,7 +3750,9 @@ body.visor-abierto #viewport {
   margin-bottom: 8px; text-transform: uppercase;
 }
 /* CUATRO POR FILA Y LAS QUE HAGAN FALTA HACIA ABAJO. */
-.visor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+/* LAS CASILLAS SE REPARTEN SOLAS. Con la raya desplazable el inventario ya no
+   tiene un ancho fijo: cuatro columnas clavadas lo dejaban ilegible en 1:3. */
+.visor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
 .visor-celda {
   display: flex; flex-direction: column; gap: 4px; padding: 8px; cursor: pointer;
   background: var(--panel, #1e2128); border: 1px solid var(--border, #333845);

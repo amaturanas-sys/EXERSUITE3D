@@ -8,14 +8,20 @@ import { tt } from "../core/i18n";
 /**
  * VISOR DE DESPIECE (v0.3.77) — la máquina, y sus piezas una a una.
  *
- * La pantalla se parte en dos mitades del mismo tamaño, como en el diagrama:
+ * La pantalla se parte en dos, IZQUIERDA Y DERECHA (v0.4.0), con la raya
+ * desplazable:
  *
- *   · arriba, EL MODELO ARMADO. Sólo se mira y se orbita —aquí no se
+ *   · a la izquierda, EL MODELO ARMADO. Sólo se mira y se orbita —aquí no se
  *     construye—, y su marco lleva reglas horizontal y vertical para
  *     dimensionar el proyecto de un vistazo.
- *   · abajo, EL INVENTARIO: una casilla por pieza, cuatro por fila y las que
- *     hagan falta hacia abajo, ORDENADAS DE MENOR A MAYOR. Es el despiece de
- *     la máquina, como las piezas sobre la mesa antes de montarla.
+ *   · a la derecha, EL INVENTARIO: una casilla por pieza, las que quepan por
+ *     fila y las que hagan falta hacia abajo, ORDENADAS DE MENOR A MAYOR. Es
+ *     el despiece de la máquina, como las piezas sobre la mesa antes de
+ *     montarla.
+ *
+ * Partirla arriba y abajo —como estaba— le robaba altura a la maqueta, que es
+ * justo la dimensión en la que crece una máquina de gimnasio, y le daba al
+ * inventario un ancho que no necesitaba.
  *
  * Y las dos mitades se hablan:
  *
@@ -51,6 +57,8 @@ export class VisorPiezas {
   private readonly vTam = new THREE.Vector3();
   private readonly vCentro = new THREE.Vector3();
   private retratista: Retratista | null = null;
+  private divisor: HTMLElement;
+  private soltarArrastre: (() => void) | null = null;
 
   constructor(
     private editor: Editor,
@@ -61,6 +69,7 @@ export class VisorPiezas {
     this.reglaH = el("div", { class: "visor-regla-h" });
     this.reglaV = el("div", { class: "visor-regla-v" });
     this.rotulo = el("div", { class: "visor-rotulo" }, ["…"]);
+    this.divisor = this.construirDivisor();
 
     const volver = el("button", { class: "tool" }, [tt("← Volver a Home", "← Back to Home")]);
     volver.addEventListener("click", () => this.alSalir());
@@ -81,6 +90,7 @@ export class VisorPiezas {
         ]),
         this.grid,
       ]),
+      this.divisor,
     ]);
 
     document.body.classList.add("visor-abierto");
@@ -93,8 +103,90 @@ export class VisorPiezas {
     requestAnimationFrame(() => this.encuadrar());
   }
 
+  // ------------------------------------------------------------- la raya
+
+  /** Las relaciones a las que la raya se imanta, de la maqueta al inventario. */
+  private static readonly RELACIONES = [
+    { r: 0.25, nombre: "1:3" },
+    { r: 1 / 3, nombre: "1:2" },
+    { r: 0.5, nombre: "1:1" },
+    { r: 2 / 3, nombre: "2:1" },
+    { r: 0.75, nombre: "3:1" },
+  ];
+
+  private reparto = 0.5;
+
+  /**
+   * LA RAYA SE IMANTA A LAS RELACIONES REDONDAS. Arrastrar libre y soltar
+   * donde caiga deja repartos como 47:53, que no son ninguna decisión; las
+   * cinco que importan —3:1, 2:1, 1:1 y las inversas— se cogen solas cuando el
+   * puntero pasa cerca. Con el teclado se salta de una a la siguiente, que es
+   * la única manera de usarla sin ratón.
+   */
+  private construirDivisor(): HTMLElement {
+    const d = el("button", {
+      class: "visor-divisor",
+      type: "button",
+      "aria-label": tt("Repartir la pantalla entre maqueta e inventario",
+        "Split the screen between model and inventory"),
+      "aria-orientation": "vertical",
+      role: "separator",
+    });
+    this.aplicarReparto(0.5);
+
+    const mover = (x: number): void => {
+      const libre = Math.max(1, window.innerWidth);
+      const crudo = Math.min(0.85, Math.max(0.15, x / libre));
+      let mejor = crudo;
+      for (const { r } of VisorPiezas.RELACIONES) {
+        if (Math.abs(crudo - r) < 0.035) mejor = r;
+      }
+      this.aplicarReparto(mejor);
+    };
+    d.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      d.classList.add("arrastrando");
+      d.setPointerCapture(ev.pointerId);
+      const onMove = (e: PointerEvent): void => mover(e.clientX);
+      const onUp = (): void => {
+        d.classList.remove("arrastrando");
+        d.removeEventListener("pointermove", onMove);
+        d.removeEventListener("pointerup", onUp);
+        this.soltarArrastre = null;
+        this.encuadrar();
+      };
+      d.addEventListener("pointermove", onMove);
+      d.addEventListener("pointerup", onUp);
+      this.soltarArrastre = onUp;
+    });
+    d.addEventListener("keydown", (ev) => {
+      const paso = ev.key === "ArrowLeft" ? -1 : ev.key === "ArrowRight" ? 1 : 0;
+      if (!paso) return;
+      ev.preventDefault();
+      const rs = VisorPiezas.RELACIONES;
+      let i = rs.findIndex((x) => Math.abs(x.r - this.reparto) < 0.01);
+      if (i < 0) i = 2;
+      this.aplicarReparto(rs[Math.min(rs.length - 1, Math.max(0, i + paso))].r);
+      this.encuadrar();
+    });
+    return d;
+  }
+
+  private aplicarReparto(r: number): void {
+    this.reparto = r;
+    document.documentElement.style.setProperty("--visor-split", `${(r * 100).toFixed(2)}vw`);
+    const nombre = VisorPiezas.RELACIONES.find((x) => Math.abs(x.r - r) < 0.01)?.nombre;
+    this.divisor?.setAttribute("aria-valuetext", nombre ?? `${Math.round(r * 100)}%`);
+    // EL LIENZO NO SE ENTERA SOLO: cambiarle el ancho por CSS no dispara
+    // `resize`, y el renderizador se queda con el tamaño viejo —la maqueta
+    // sale estirada—. Se le avisa a mano.
+    window.dispatchEvent(new Event("resize"));
+  }
+
   dispose(): void {
     this.vivo = false;
+    this.soltarArrastre?.();
+    document.documentElement.style.removeProperty("--visor-split");
     document.body.classList.remove("visor-abierto");
     this.editor.senalarPieza(null);
     this.editor.aislarPieza(null);

@@ -486,7 +486,7 @@ async function startWithProject(data: ProjectData, name: string): Promise<void> 
   await ensureModels();
   await ed.loadProject(data);
   try {
-    await addRecent(name, data, Date.now());
+    await addRecent(name, data, Date.now(), ed.miniaturaProyecto());
   } catch {
     /* sin recientes */
   }
@@ -597,7 +597,7 @@ async function startSimulator(data: ProjectData, name: string): Promise<void> {
   await ensureModels();
   await ed.loadProject(data);
   try {
-    await addRecent(name, data, Date.now());
+    await addRecent(name, data, Date.now(), ed.miniaturaProyecto());
   } catch {
     /* sin recientes */
   }
@@ -629,7 +629,7 @@ async function startVisor(data: ProjectData, name: string): Promise<void> {
   await ensureModels();
   await ed.loadProject(data);
   try {
-    await addRecent(name, data, Date.now());
+    await addRecent(name, data, Date.now(), ed.miniaturaProyecto());
   } catch {
     /* sin recientes */
   }

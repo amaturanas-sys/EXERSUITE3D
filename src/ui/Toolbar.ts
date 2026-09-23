@@ -512,7 +512,9 @@ export class Toolbar {
       if (resultado === "cancelado") return; // sigue sucio, como debe
       this.editor.markClean();
       try {
-        await addRecent(name, project, Date.now());
+        // LA FOTO SE TOMA AL GUARDAR, que es cuando la máquina está en
+        // pantalla y es la que el usuario reconocerá en su ficha.
+        await addRecent(name, project, Date.now(), this.editor.miniaturaProyecto());
       } catch (err) {
         console.warn("No se pudo anotar en proyectos recientes:", err);
       }

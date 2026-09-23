@@ -50,7 +50,8 @@ const salir = page.locator("button:has-text('Salir sin guardar')");
 if (await salir.count()) await salir.click();
 await page.waitForTimeout(800);
 await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(500);
-await page.click(".land-ficha.sesion .land-modo:has-text('SIMULAR')"); await page.waitForTimeout(4000);
+await page.click(".land-desplegar.sesion");
+await page.click(".land-modos-inline.sesion .land-modo:has-text('SIMULAR')"); await page.waitForTimeout(4000);
 await page.click("#simbar button:has-text('Prototipo')");
 await page.waitForTimeout(500);
 const oculto = (id) => {

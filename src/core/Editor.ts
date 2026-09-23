@@ -1043,6 +1043,31 @@ export class Editor {
   }
 
   /**
+   * LA MINIATURA DE UN PROYECTO (v0.4.0), para su ficha en la pantalla de
+   * inicio. Es la foto del visor reducida y en JPEG: un PNG del lienzo entero
+   * pesa cerca de un mega, y con doce recientes eso son doce megas en
+   * IndexedDB para adornar una lista. A 320 px de ancho se reconoce la máquina
+   * de sobra, que es lo único que la ficha tiene que conseguir.
+   */
+  miniaturaProyecto(ancho = 320): string | null {
+    try {
+      this.sceneManager.render();
+      const src = this.sceneManager.renderer.domElement;
+      if (!src.width || !src.height) return null;
+      const cv = document.createElement("canvas");
+      cv.width = ancho;
+      cv.height = Math.max(1, Math.round((ancho * src.height) / src.width));
+      const ctx = cv.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(src, 0, 0, cv.width, cv.height);
+      return cv.toDataURL("image/jpeg", 0.72);
+    } catch {
+      // Un lienzo sin contexto o un contexto perdido no deben impedir guardar.
+      return null;
+    }
+  }
+
+  /**
    * PANTALLA VERDE del visor (v0.2.15 · prototipo con foto): fondo croma y
    * suelo ocultos para recortar los modelos sobre una foto del lugar real.
    */

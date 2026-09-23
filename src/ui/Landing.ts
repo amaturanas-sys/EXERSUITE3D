@@ -244,42 +244,62 @@ export class Landing {
   private renderProyectos(): void {
     const acciones = el("div", { class: "land-actions" }, [
       this.accion("✦  NUEVO", true, () => this.actions.onNew()),
-      this.accion("📂  ABRIR…", false, () => this.abrirProyecto()),
+      this.conModos("📂  ABRIR…", "archivo", (m) => void this.abrirProyecto(m)),
       this.accion("🧩  BIBLIOTECA", false, () => this.actions.onExploreLibrary()),
     ]);
     if (this.actions.hasAutosave) {
-      acciones.append(this.accion("↻  CONTINUAR", false, () => this.actions.onContinue("builder")));
+      acciones.append(
+        this.conModos("↻  CONTINUAR", "sesion", (m) => this.actions.onContinue(m)),
+      );
     }
     acciones.append(this.accion("🖼  Capturas", false, () => this.renderCapturas()));
     this.contenido.append(acciones, this.seccionRecientes());
   }
 
   /**
-   * LA FICHA DE «ABRIR ARCHIVO» (v0.3.77), con los mismos tres modos que un
-   * proyecto de la lista. Un archivo suelto no tiene ficha propia —todavía no
-   * se ha elegido—, así que hasta ahora sólo podía abrirse en el taller: el
-   * botón de arriba lo abría SIEMPRE en BUILDER y no había forma de mirar un
-   * .json ajeno en el visor ni de simularlo sin pasar antes por el taller.
-   * Aquí se elige primero CON QUÉ y el selector de archivos viene después.
+   * UN BOTÓN CON SUS TRES MODOS (v0.4.0).
+   *
+   * «Sesión anterior» y «Abrir un archivo» tenían cada uno un BOTÓN arriba y
+   * además una FICHA en la lista: la misma acción dos veces en la misma
+   * pantalla. Se quitan las fichas —eran la copia— pero no lo que aportaban,
+   * que no era poco: eran el único sitio desde donde esas dos cosas podían
+   * abrirse en VIEWER o en SIMULAR. Sin ellas, mirar un .json ajeno obligaba a
+   * pasar antes por el taller, que es justo lo que v0.3.77 vino a arreglar.
+   *
+   * Así que el botón se queda con su clic de siempre —el modo taller, que es
+   * lo que se quiere nueve de cada diez veces— y al lado lleva una flecha que
+   * despliega los tres. Una sola entrada por acción, y ninguna capacidad
+   * perdida.
    */
-  private fichaDeArchivo(): HTMLElement {
-    const modo = (texto: string, m: ModoApertura): HTMLElement => {
-      const b = el("button", { class: "land-modo" }, [texto]);
-      b.addEventListener("click", () => this.abrirProyecto(m));
-      return b;
-    };
-    return el("div", { class: "land-ficha archivo" }, [
-      el("div", { class: "land-ficha-cab" }, [
-        el("div", { class: "land-recent-name" }, [tt("📂 Abrir un archivo…", "📂 Open a file…")]),
-      ]),
-      el("div", { class: "land-recent-date" }, [
-        tt("Un proyecto .json guardado en este dispositivo", "A .json project saved on this device"),
-      ]),
-      el("div", { class: "land-ficha-modos" }, [
-        modo("BUILDER", "builder"),
-        modo("VIEWER", "viewer"),
-        modo("SIMULAR", "simulator"),
-      ]),
+  private conModos(
+    texto: string,
+    marca: "sesion" | "archivo",
+    abrir: (m: ModoApertura) => void,
+  ): HTMLElement {
+    const principal = this.accion(texto, false, () => abrir("builder"));
+    const modos = el("div", { class: `land-modos-inline ${marca}`, hidden: true }, [
+      ...(["builder", "viewer", "simulator"] as ModoApertura[]).map((m) => {
+        const b = el("button", { class: "land-modo" }, [
+          m === "builder" ? "BUILDER" : m === "viewer" ? "VIEWER" : "SIMULAR",
+        ]);
+        b.addEventListener("click", () => abrir(m));
+        return b;
+      }),
+    ]);
+    const flecha = el("button", {
+      class: `land-desplegar ${marca}`,
+      type: "button",
+      "aria-expanded": "false",
+      "aria-label": tt(`Elegir con qué abrir: ${texto.trim()}`, `Choose how to open: ${texto.trim()}`),
+    }, ["▾"]);
+    flecha.addEventListener("click", () => {
+      const abierto = flecha.getAttribute("aria-expanded") === "true";
+      flecha.setAttribute("aria-expanded", String(!abierto));
+      modos.hidden = abierto;
+    });
+    return el("div", { class: "land-accion-doble" }, [
+      el("div", { class: "land-accion-fila" }, [principal, flecha]),
+      modos,
     ]);
   }
 
@@ -471,13 +491,11 @@ export class Landing {
       recents = [];
     }
     clear(destino);
-    // LA SESIÓN ANTERIOR ES UN PROYECTO MÁS (v0.3.77), y va la primera: lo que
-    // quedó a medio guardar también se puede abrir con los tres modos. El
-    // botón CONTINUAR de arriba abre en el taller, que es lo que se quiere
-    // nueve de cada diez veces; para mirarla o simularla, está su ficha.
-    if (this.actions.hasAutosave) destino.append(this.fichaDeSesion());
-    destino.append(this.fichaDeArchivo());
-    if (!recents.length && !this.actions.hasAutosave) {
+    // LA LISTA ES SÓLO DE PROYECTOS (v0.4.0). «Sesión anterior» y «Abrir un
+    // archivo» tenían aquí una ficha CADA UNA además de su botón arriba, así
+    // que las dos acciones salían por duplicado en la misma pantalla. Se
+    // quedan los botones de arriba, que es donde el ojo los busca.
+    if (!recents.length) {
       destino.append(
         el("div", { class: "land-empty" }, [
           "Aún no hay proyectos. Crea uno nuevo o abre un archivo.",
@@ -488,28 +506,6 @@ export class Landing {
     for (const r of recents) {
       destino.append(this.fichaDeProyecto(r, destino));
     }
-  }
-
-  /** La sesión sin guardar, con los mismos tres modos que un proyecto. */
-  private fichaDeSesion(): HTMLElement {
-    const modo = (texto: string, m: ModoApertura): HTMLElement => {
-      const b = el("button", { class: "land-modo" }, [texto]);
-      b.addEventListener("click", () => this.actions.onContinue(m));
-      return b;
-    };
-    return el("div", { class: "land-ficha sesion" }, [
-      el("div", { class: "land-ficha-cab" }, [
-        el("div", { class: "land-recent-name" }, [tt("↻ Sesión anterior", "↻ Last session")]),
-      ]),
-      el("div", { class: "land-recent-date" }, [
-        tt("Lo último que hubo abierto, sin guardar", "Whatever was last open, unsaved"),
-      ]),
-      el("div", { class: "land-ficha-modos" }, [
-        modo("BUILDER", "builder"),
-        modo("VIEWER", "viewer"),
-        modo("SIMULAR", "simulator"),
-      ]),
-    ]);
   }
 
   /**
@@ -548,7 +544,24 @@ export class Landing {
       void this.actions.onDeleteRecent(r.id).then(() => void this.loadRecent(lista));
     });
 
+    // LA FOTO DEL PROYECTO (v0.4.0), como en el esquema: la ficha de una
+    // máquina se reconoce por su forma mucho antes que por su nombre. La toma
+    // el editor al guardar; si un proyecto es viejo y no tiene, queda un hueco
+    // con su inicial en vez de una imagen rota.
+    const foto = r.foto
+      ? el("img", {
+          class: "land-foto",
+          src: r.foto,
+          alt: tt(`Vista del proyecto ${r.name}`, `View of project ${r.name}`),
+          loading: "lazy",
+          decoding: "async",
+        })
+      : el("div", { class: "land-foto vacia", "aria-hidden": "true" }, [
+          (r.name || "?").trim().charAt(0).toUpperCase(),
+        ]);
+
     return el("div", { class: "land-ficha" }, [
+      foto,
       el("div", { class: "land-ficha-cab" }, [
         el("div", { class: "land-recent-name" }, [r.name]),
         borrar,

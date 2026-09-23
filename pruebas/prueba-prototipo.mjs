@@ -59,7 +59,8 @@ await page.click("#toolbar button:has-text('Home')"); await page.waitForTimeout(
 const avisoSalida = page.locator("button:has-text('Salir sin guardar')");
 if (await avisoSalida.count()) { await avisoSalida.first().click(); await page.waitForTimeout(800); }
 await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(500);
-await page.click(".land-ficha.sesion .land-modo:has-text('SIMULAR')"); await page.waitForTimeout(4000);
+await page.click(".land-desplegar.sesion");
+await page.click(".land-modos-inline.sesion .land-modo:has-text('SIMULAR')"); await page.waitForTimeout(4000);
 await page.click("#simbar button:has-text('Prototipo')"); await page.waitForTimeout(600);
 await page.waitForTimeout(300);
 const inputFoto = await page.$("#proto-viewer input[type=file]");

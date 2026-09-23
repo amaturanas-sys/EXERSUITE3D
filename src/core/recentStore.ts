@@ -14,12 +14,15 @@ export interface RecentRecord {
   name: string;
   savedAt: number;
   data: ProjectData;
+  /** Miniatura JPEG del visor al guardar (data URL). Puede no haberla. */
+  foto?: string;
 }
 
 export interface RecentMeta {
   id: string;
   name: string;
   savedAt: number;
+  foto?: string;
 }
 
 const MAX_RECENT = 12;
@@ -42,17 +45,41 @@ function idFor(name: string): string {
 }
 
 /** Registra/actualiza un proyecto reciente. `now` debe ser Date.now(). */
-export async function addRecent(name: string, data: ProjectData, now: number): Promise<void> {
+export async function addRecent(
+  name: string,
+  data: ProjectData,
+  now: number,
+  foto?: string | null,
+): Promise<void> {
+  const id = idFor(name || "proyecto");
+  // LA FOTO NO SE PIERDE AL REABRIR (v0.4.0). Abrir un archivo también lo
+  // registra como reciente, y ahí no hay lienzo que fotografiar: sin esto, la
+  // ficha perdía su miniatura cada vez que el proyecto se volvía a abrir.
+  let previa: string | undefined;
+  if (!foto) {
+    try {
+      const tx0 = await both("readonly");
+      const m = await request<RecentMeta | undefined>(
+        tx0.objectStore(STORE_RECENT_META).get(id) as IDBRequest<RecentMeta | undefined>,
+      );
+      previa = m?.foto;
+    } catch {
+      previa = undefined;
+    }
+  }
   const rec: RecentRecord = {
-    id: idFor(name || "proyecto"),
+    id,
     name: name || "Proyecto",
     savedAt: now,
     data,
+    foto: foto ?? previa,
   };
   const tx = await both("readwrite");
   await Promise.all([
     request(tx.objectStore(STORE_RECENT).put(rec)),
-    request(tx.objectStore(STORE_RECENT_META).put({ id: rec.id, name: rec.name, savedAt: rec.savedAt })),
+    request(tx.objectStore(STORE_RECENT_META).put({
+      id: rec.id, name: rec.name, savedAt: rec.savedAt, foto: rec.foto,
+    })),
   ]);
   await prune();
 }
