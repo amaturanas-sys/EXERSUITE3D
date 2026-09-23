@@ -926,7 +926,8 @@ export class PropertiesPanel {
     const aplicar = (): void => {
       const r = this.editor.aplicarPasador(obj);
       pintarCaras();
-    pintarChapa();
+      pintarChapa();
+      pintarMedidas();
       clear(resumen);
       resumen.append(
         tt(
@@ -1036,6 +1037,125 @@ export class PropertiesPanel {
       aplicar();
       pintarChapa();
     });
+
+    // ── LAS COTAS DE LA HORQUILLA, DICHAS DESDE AQUÍ (v0.4.2) ───────────────
+    //
+    // El herraje se rehace entero en cada pasada del pasador, así que lo que se
+    // le toque a la pieza puesta se pierde en cuanto el eje se mueve. Sus cotas
+    // tienen que vivir en quien la monta. VACÍO = la cuenta de siempre: el alto
+    // es el ancho del brazo que gira, la garganta lo que pasa entre las orejas
+    // y el vuelo la distancia real de la cara al eje.
+    const cota = (
+      leer: () => number | undefined,
+      escribir: (v: number | undefined) => void,
+      min: string,
+      ayuda: string,
+    ): HTMLInputElement => {
+      const inp = el("input", {
+        type: "number", step: "0.1", min,
+        value: leer() != null ? String(roundTo(leer()!, 2)) : "",
+        placeholder: tt("auto", "auto"),
+        title: ayuda,
+      }) as HTMLInputElement;
+      inp.addEventListener("change", () => {
+        const n = parseFloat(inp.value);
+        escribir(Number.isFinite(n) && n > 0 ? n : undefined);
+        aplicar();
+        pintarMedidas();
+      });
+      return inp;
+    };
+    const medidasLee = el("div", { class: "empty-hint", style: "padding:4px;" }, []);
+    const pintarMedidas = (): void => {
+      const h = this.editor.horquillaDelPasador(obj.id);
+      medidasLee.textContent = h
+        ? tt(
+          `Horquilla: ${roundTo(h.alto, 1)} de alto, garganta ${roundTo(h.garganta, 1)}, `
+            + `vuelo ${roundTo(h.vuelo, 1)}, chapa ${roundTo(h.esp, 1)} — seguro Ø `
+            + `${roundTo(h.seguro * 2, 2)} y disco Ø ${roundTo(h.discoR * 2, 1)} cm.`,
+          `Fork: ${roundTo(h.alto, 1)} tall, throat ${roundTo(h.garganta, 1)}, `
+            + `overhang ${roundTo(h.vuelo, 1)}, plate ${roundTo(h.esp, 1)} — safety pin Ø `
+            + `${roundTo(h.seguro * 2, 2)} and disc Ø ${roundTo(h.discoR * 2, 1)} cm.`,
+        )
+        : tt("Sin herraje puesto todavía.", "No hardware mounted yet.");
+    };
+    const hAlto = cota(
+      () => p.pasadorHorquillaAlto,
+      (v) => (p.pasadorHorquillaAlto = v),
+      "0.4",
+      tt(
+        "Alto de la horquilla a lo largo de la viga. Vacío = el ancho del brazo "
+          + "que gira, para que la punta de la oreja y la del brazo sean la misma "
+          + "circunferencia.",
+        "Fork height along the beam. Empty = the width of the turning arm, so the "
+          + "ear's tip and the arm's are the same circle.",
+      ),
+    );
+    const hGarganta = cota(
+      () => p.pasadorHorquillaGarganta,
+      (v) => (p.pasadorHorquillaGarganta = v),
+      "0.2",
+      tt(
+        "Separación entre orejas. Vacío = lo que mide la pieza que pasa entre "
+          + "ellas, más 4 mm de holgura.",
+        "Gap between ears. Empty = the part that goes between them, plus 4 mm of "
+          + "clearance.",
+      ),
+    );
+    const hVuelo = cota(
+      () => p.pasadorHorquillaVuelo,
+      (v) => (p.pasadorHorquillaVuelo = v),
+      "0.2",
+      tt(
+        "Cuánto vuela el eje por delante del alma soldada. Vacío = la distancia "
+          + "real de la cara al eje, que es la que hace que el alma toque.",
+        "How far the axle sits ahead of the welded web. Empty = the real distance "
+          + "from face to axle, the one that makes the web touch.",
+      ),
+    );
+    const hEspesor = cota(
+      () => p.pasadorHorquillaEspesor,
+      (v) => (p.pasadorHorquillaEspesor = v),
+      "0.1",
+      tt("Espesor de la chapa de las orejas y del alma.", "Plate thickness of ears and web."),
+    );
+    const hSeguro = cota(
+      () => (p.pasadorSeguro != null ? p.pasadorSeguro * 2 : undefined),
+      (v) => (p.pasadorSeguro = v != null ? v / 2 : undefined),
+      "0.2",
+      tt(
+        "Diámetro del pin de seguro que entra en los agujeros del disco. De él "
+          + "salen los radios de la corona: un seguro más gordo pide más acero "
+          + "alrededor de cada agujero, y el disco crece.",
+        "Diameter of the safety pin that drops into the disc's holes. The ring's "
+          + "radii come from it: a fatter pin needs more steel around each hole, "
+          + "so the disc grows.",
+      ),
+    );
+
+    // CUÁNTO GIRA POR GESTO (v0.4.2), el mando de la bisagra traído al pasador:
+    // un eje monta VARIAS uniones y todas se manejan con el mismo gesto, así
+    // que el ajuste es del eje y no de cada una.
+    const sens = el("input", {
+      type: "range", min: "1", max: "45", step: "1",
+      value: String(p.pasadorSensibilidad ?? 9),
+    }) as HTMLInputElement;
+    const sensLee = el("span", { class: "empty-hint" }, []);
+    const pintarSens = (): void => {
+      const v = p.pasadorSensibilidad ?? 9;
+      sensLee.textContent = tt(
+        `${v}° por cada 100 px de scroll`,
+        `${v}° per 100 px of scroll`,
+      );
+    };
+    sens.addEventListener("input", () => {
+      const v = parseFloat(sens.value);
+      if (!Number.isFinite(v)) return;
+      p.pasadorSensibilidad = Math.min(45, Math.max(1, v));
+      pintarSens();
+      aplicar();
+    });
+    pintarSens();
 
     const libre = el("input", { type: "checkbox" }) as HTMLInputElement;
     libre.checked = p.pasadorLibre !== false;
@@ -1164,6 +1284,7 @@ export class PropertiesPanel {
     });
 
     pintarCaras();
+    pintarMedidas();
 
     return el("div", { class: "field" }, [
       el("label", {}, [tt("Pasador", "Pin")]),
@@ -1223,6 +1344,24 @@ export class PropertiesPanel {
         chapaIn,
       ]),
       chapaLee,
+      el("label", { class: "row" }, [
+        el("span", {}, [tt("Seguro Ø (cm)", "Safety pin Ø (cm)")]),
+        hSeguro,
+      ]),
+      el("div", { class: "sub" }, [
+        tt(
+          "Medidas de la horquilla (vacío = a la cuenta):",
+          "Fork dimensions (empty = computed):",
+        ),
+      ]),
+      el("label", { class: "row" }, [el("span", {}, [tt("Alto", "Height")]), hAlto]),
+      el("label", { class: "row" }, [el("span", {}, [tt("Garganta", "Throat")]), hGarganta]),
+      el("label", { class: "row" }, [el("span", {}, [tt("Vuelo", "Overhang")]), hVuelo]),
+      el("label", { class: "row" }, [el("span", {}, [tt("Espesor", "Thickness")]), hEspesor]),
+      medidasLee,
+      el("label", {}, [tt("Sensibilidad del gesto", "Gesture sensitivity")]),
+      sens,
+      sensLee,
       resumen,
     ]);
   }

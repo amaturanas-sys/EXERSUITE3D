@@ -70,8 +70,10 @@ export function medidasHorquilla(p: PrimitiveParams): {
   // los agujeros se comerían el canto por el que gira el brazo.
   const tramos = Math.max(0, Math.round(p.horquillaTramos ?? 0));
   const arco = Math.min(360, Math.max(1, p.horquillaArco ?? 180));
-  // El seguro es más fino que el pasador: es un pin de retén, no un eje.
-  const seguro = Math.max(agujero * 0.5, 0.2);
+  // El seguro es más fino que el pasador: es un pin de retén, no un eje. Se
+  // puede pedir a medida (v0.4.2) —es una pieza de catálogo, como el eje—, y
+  // de él salen los radios de la corona, así que subirlo ENGORDA EL DISCO.
+  const seguro = Math.min(Math.max(p.horquillaSeguro ?? agujero * 0.5, 0.2), radio);
   const vueltaEntera = arco >= 359.9;
   const paso = tramos >= 2 ? arco / (vueltaEntera ? tramos : tramos - 1) : 0;
   const minimo = paso > 0

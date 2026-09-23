@@ -13431,6 +13431,12 @@ export class Editor {
       if (!j) continue;
       j.name = `${marca}: pivote de ${m.name}`;
       j.axisVec = eje.clone();
+      // CUÁNTO GIRA POR GESTO (v0.4.2). Vive en el pasador, no en cada unión:
+      // un eje monta varias y todas se manejan con el mismo gesto. Sin pedir,
+      // el de fábrica de la bisagra.
+      if (typeof obj.params.pasadorSensibilidad === "number") {
+        j.sensibilidad = Math.min(45, Math.max(1, obj.params.pasadorSensibilidad));
+      }
       j.soldada = false;
       // FRENADO = el candado de la bisagra: se sostiene donde lo dejes, pero
       // cede a la mano. Libre = cae con la gravedad.
@@ -13614,6 +13620,16 @@ export class Editor {
       alto = Math.max(alto, radioEje * 4);
     }
 
+    // LAS COTAS A MEDIDA MANDAN (v0.4.2). Lo de arriba es la cuenta: el alto
+    // sale del ancho del brazo y la garganta de lo que pasa entre las orejas.
+    // Quien no quiera esa cuenta la dice en Propiedades, y entonces manda ella.
+    const pedido = (v: number | undefined, min: number): number | null =>
+      typeof v === "number" && Number.isFinite(v) && v >= min ? v : null;
+    alto = pedido(obj.params.pasadorHorquillaAlto, 0.4) ?? alto;
+    garganta = pedido(obj.params.pasadorHorquillaGarganta, 0.2) ?? garganta;
+    const espesor = pedido(obj.params.pasadorHorquillaEspesor, 0.1) ?? 0.8;
+    const vueloPedido = pedido(obj.params.pasadorHorquillaVuelo, 0.2);
+
     let puestas = 0;
     for (const a of portadores) {
       a.mesh.updateMatrixWorld(true);
@@ -13626,7 +13642,10 @@ export class Editor {
       // Las orejas de la abrazadera van HACIA DENTRO: cruzan la viga desde la
       // cara en la que se suelda el alma hasta el eje, que queda al otro lado.
       const haciaEje = abraza ? cara.normal.clone().negate() : cara.normal;
-      const vuelo = cara.vuelo;
+      // El vuelo por omisión es LA DISTANCIA REAL de la cara al eje: es lo que
+      // hace que el alma toque la viga. A medida ya no se calza —el herraje
+      // queda separado o metido a propósito, que es cosa de quien lo pide—.
+      const vuelo = vueloPedido ?? cara.vuelo;
       if (vuelo < 0.2) continue; // el eje cae dentro del ancla: sobra herraje
       // Y la garganta tiene que dejar pasar la viga que cruza, no sólo el brazo.
       const gargantaAqui = abraza
@@ -13639,10 +13658,13 @@ export class Editor {
       h.params = {
         kind: "horquilla",
         horquillaAlto: alto,
-        horquillaEspesor: 0.8,
+        horquillaEspesor: espesor,
         horquillaGarganta: gargantaAqui,
         horquillaVuelo: vuelo,
         horquillaAgujero: radioEje + 0.05,
+        ...(typeof obj.params.pasadorSeguro === "number" && obj.params.pasadorSeguro > 0
+          ? { horquillaSeguro: obj.params.pasadorSeguro }
+          : {}),
         ...this.tramosDeLaHorquilla(obj),
       };
       h.rebuildGeometry();

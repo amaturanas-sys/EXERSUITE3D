@@ -5,6 +5,32 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.2] — 2026-09-23
+
+### Añadido — las MEDIDAS de la horquilla y el MANDO del eje, dichos en el pasador
+
+El herraje se rehace entero en cada pasada del pasador —es lo que impide que
+se acumule—, así que lo que se le tocaba a la horquilla puesta se perdía en
+cuanto el eje se movía: el gizmo dispara una pasada. Sus cotas tenían que vivir
+en quien la monta, y ahora viven ahí:
+
+* **Alto, garganta, vuelo y espesor** de la horquilla, en Propiedades del
+  pasador. **Vacío = la cuenta de siempre**: el alto es el ancho del brazo que
+  gira —para que la punta de la oreja y la del brazo sean la misma
+  circunferencia—, la garganta es lo que pasa entre las orejas más 4 mm, y el
+  vuelo es la distancia real de la cara al eje, la que hace que el alma toque.
+* **El seguro se pide en diámetro**, y de él salen los radios de la corona: un
+  retén más gordo pide más acero alrededor de cada agujero, así que **el disco
+  crece con él**. Los agujeros y el arco de la chapa ya se pedían.
+* **Sensibilidad del gesto** en el propio eje, junto al recorrido en horas. Un
+  pasador monta VARIAS uniones y todas se manejan con el mismo gesto, así que
+  el ajuste es del eje y no de cada una — hasta ahora había que buscarlo unión
+  por unión, en la pieza que cuelga.
+
+Y una lectura debajo de los campos dice cómo quedó el herraje resuelto —alto,
+garganta, vuelo, chapa, Ø del seguro y Ø del disco—, que es lo que no se puede
+deducir mirando los huecos vacíos.
+
 ## [0.4.1] — 2026-09-23
 
 ### Añadido — el PASADOR se pone TOCANDO LA CARA, como la roldana

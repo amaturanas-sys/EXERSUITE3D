@@ -218,6 +218,27 @@ export interface PrimitiveParams {
    * no vale porque la pieza se giró— manda la que más mira al pasador.
    */
   pasadorCaras?: Record<string, string>;
+  /**
+   * LAS MEDIDAS DE LA HORQUILLA, DICHAS DESDE EL PASADOR (v0.4.2).
+   *
+   * El herraje se REHACE ENTERO en cada pasada —es lo que impide que se
+   * acumule—, así que lo que se le toque a la pieza puesta se pierde en el
+   * siguiente movimiento del eje. Por eso sus cotas viven aquí, en quien la
+   * monta: vacías, cada una sale de la cuenta de siempre (el alto del brazo, la
+   * garganta de lo que pasa entre las orejas); puestas, mandan ellas.
+   */
+  pasadorHorquillaAlto?: number;
+  pasadorHorquillaEspesor?: number;
+  pasadorHorquillaGarganta?: number;
+  pasadorHorquillaVuelo?: number;
+  /** Radio del pin de seguro del disco (cm); de él salen los radios de la corona. */
+  pasadorSeguro?: number;
+  /**
+   * CUÁNTO GIRA POR GESTO lo que cuelga del pasador (grados por 100 px), igual
+   * que en la bisagra. Vive en el pasador y no en cada unión porque un eje
+   * monta VARIAS y todas se manejan con el mismo gesto.
+   */
+  pasadorSensibilidad?: number;
 
   // ── PUNTO DE ANCLAJE (horquilla, v0.3.32) ────────────────────────────────
   /** Alto de la horquilla, a lo largo de la viga a la que se suelda (cm). */
@@ -245,6 +266,13 @@ export interface PrimitiveParams {
    * Ausente = lo justo para la corona que lleve.
    */
   horquillaDiscoArco?: number;
+  /**
+   * RADIO DEL PIN DE SEGURO (v0.4.2), en cm. Es el retén que entra en los
+   * agujeros de la corona, y de él salen los radios del disco: cuanto más
+   * gordo es el seguro, más acero pide alrededor de cada agujero y mayor es la
+   * corona. Ausente = la mitad del taladro del eje, que es lo que traía.
+   */
+  horquillaSeguro?: number;
 
   /**
    * EXTREMO REDONDO (v0.3.32): la punta de una viga, rematada en semicilindro
