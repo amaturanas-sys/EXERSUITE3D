@@ -1963,7 +1963,7 @@ export class PhysicsWorld {
     // Ver `repartirMasaSoldada()`: sin esto el conjunto pesa lo que debe pero
     // toda su masa está donde el anfitrión, y un puntal soldado un palmo por
     // debajo no mueve el centro de masas ni un milímetro.
-    const trozos = new Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3 }[]>();
+    const trozos = new Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3; q: THREE.Quaternion }[]>();
     const semiejes = (o: SceneObject): THREE.Vector3 => {
       const geo = o.mesh.geometry;
       if (!geo.boundingBox) geo.computeBoundingBox();
@@ -2013,12 +2013,14 @@ export class PhysicsWorld {
           m: Math.max(0, host.obj.effectiveMassKg()),
           p: new THREE.Vector3(0, 0, 0),
           h: semiejes(host.obj),
+          q: new THREE.Quaternion(),
         }]);
       }
       trozos.get(anfId)!.push({
         m: Math.max(0, obj.effectiveMassKg()),
         p: new THREE.Vector3(relPos.x, relPos.y, relPos.z),
         h: semiejes(obj),
+        q: relQ.clone(),
       });
     }
     this.repartirMasaSoldada(trozos);
@@ -2042,15 +2044,14 @@ export class PhysicsWorld {
    *
    * Aquí se calcula lo que el conjunto pesa de verdad y DÓNDE, y se le pasa al
    * motor con `setAdditionalMassProperties`, que sí admite centro de masas e
-   * inercia. Cada trozo aporta la suya de caja más el término de Steiner por
-   * su distancia al centro común. Se desprecian los productos de inercia (la
-   * matriz se da diagonal en los ejes del anfitrión) y el giro propio de cada
-   * trozo: para piezas separadas manda el término de Steiner, que sí se cuenta
-   * entero, y cualquiera de las dos aproximaciones es infinitamente mejor que
-   * fingir que la pieza soldada no está.
+   * inercia. Cada trozo aporta la suya de caja —GIRADA a los ejes del
+   * anfitrión, que es lo que la primera versión se saltaba— más el término de
+   * Steiner por su distancia al centro común. Sólo se desprecian los productos
+   * de inercia: la matriz se entrega diagonal, porque es lo que
+   * `setAdditionalMassProperties` admite sin un marco propio.
    */
   private repartirMasaSoldada(
-    trozos: Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3 }[]>,
+    trozos: Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3; q: THREE.Quaternion }[]>,
   ): void {
     for (const [anfId, piezas] of trozos) {
       const host = this.bodies.get(anfId);
@@ -2060,12 +2061,30 @@ export class PhysicsWorld {
       const com = new THREE.Vector3();
       for (const t of piezas) com.addScaledVector(t.p, t.m / M);
       const I = new THREE.Vector3();
+      const R = new THREE.Matrix3();
       for (const t of piezas) {
         const d = t.p.clone().sub(com);
-        // Caja propia: m·(a²+b²)/3 con semiejes, más Steiner m·d².
-        I.x += (t.m * (t.h.y * t.h.y + t.h.z * t.h.z)) / 3 + t.m * (d.y * d.y + d.z * d.z);
-        I.y += (t.m * (t.h.x * t.h.x + t.h.z * t.h.z)) / 3 + t.m * (d.x * d.x + d.z * d.z);
-        I.z += (t.m * (t.h.x * t.h.x + t.h.y * t.h.y)) / 3 + t.m * (d.x * d.x + d.y * d.y);
+        // La caja propia, en los ejes DEL TROZO: m·(a²+b²)/3 con semiejes.
+        const D = new THREE.Vector3(
+          (t.m * (t.h.y * t.h.y + t.h.z * t.h.z)) / 3,
+          (t.m * (t.h.x * t.h.x + t.h.z * t.h.z)) / 3,
+          (t.m * (t.h.x * t.h.x + t.h.y * t.h.y)) / 3,
+        );
+        // Girada a los ejes del anfitrión: la diagonal de R·D·Rᵀ, que para una
+        // matriz diagonal es Σ_k R[i][k]²·D[k]. Sin esto, una pieza soldada de
+        // canto aportaba su inercia por los ejes equivocados.
+        R.setFromMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(t.q));
+        const e = R.elements; // columna-mayor: e[c*3+f]
+        for (let i = 0; i < 3; i++) {
+          const v = e[0 * 3 + i] * e[0 * 3 + i] * D.x
+            + e[1 * 3 + i] * e[1 * 3 + i] * D.y
+            + e[2 * 3 + i] * e[2 * 3 + i] * D.z;
+          if (i === 0) I.x += v; else if (i === 1) I.y += v; else I.z += v;
+        }
+        // Y Steiner, que no depende del giro.
+        I.x += t.m * (d.y * d.y + d.z * d.z);
+        I.y += t.m * (d.x * d.x + d.z * d.z);
+        I.z += t.m * (d.x * d.x + d.y * d.y);
       }
       host.body.setAdditionalMassProperties(
         M,

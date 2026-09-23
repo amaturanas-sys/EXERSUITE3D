@@ -5,6 +5,61 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.99] — 2026-09-23
+
+### La batería entera, en serie: 115 de 121
+
+Corrida completa contra el build de v0.3.98, una sola pasada, cada prueba con
+su tope de tiempo.
+
+| | |
+|---|---|
+| **115 OK** | de 121 |
+| rojos deliberados | `banco-cinco-topes`, `banco-tres-topes`, `banco-horquilla`, `dos-bisagras` |
+| rojo de entorno | `prueba-sitio` — necesita Next.js en el 3100 |
+| **regresión** | `prueba-atraviesa` |
+
+### El reparto de masa MATÓ la velocidad fantasma
+
+`prueba-vibra-minima` estaba en rojo desde v0.3.95 por su caso E, que declaraba
+**2,66 rad/s sostenidos sin moverse**. En v0.3.96 se dejó «acotada, sin causa»
+tras refutar cuatro hipótesis. Ahora está **verde entera**, sin tocarla: la
+causa era la inercia mal repartida —un cuerpo fundido con la inercia de una
+sola pieza, empujado por una restricción que le pedía otra cosa—, y el arreglo
+de v0.3.98 la quitó de camino. Es la validación más fuerte que podía tener
+`repartirMasaSoldada()`, y llegó por una prueba que no apuntaba ahí.
+
+### Regresión conocida — `prueba-atraviesa`, intermitente
+
+El reparto de masa **desestabiliza** la rama SIN guardarraíl de esa prueba.
+Medido, con recompilación entre versiones:
+
+| | corridas | rojas | jalón |
+|---|---|---|---|
+| v0.3.97, sin el reparto | 9 | **0** | 0 a 0,3 — pegados |
+| v0.3.98, con el reparto | 11 | **5** | 0,1 a 22,7 — bimodal |
+
+La aserción que cae es `sin.jalon < 5`: la rama de CONTROL, la que documenta el
+defecto que el guardarraíl arregla y que la propia prueba declara «no es
+referencia: la pila se dispara». La rama del producto —con guardarraíl— pasa.
+
+**No se deshace el arreglo**, porque es correcto y está verificado por dos vías
+independientes (el centro de masas cuadra con la cuenta a mano, y el fantasma
+del caso E desapareció). Lo que queda sin saber es por qué esa escena se vuelve
+errática, y esa es la decisión que hay que tomar: si la aserción de control
+sigue teniendo sentido sobre una configuración deliberadamente rota.
+
+### Corregido — la inercia de cada trozo, girada a los ejes del anfitrión
+
+La primera versión de `repartirMasaSoldada()` calculaba la inercia de caja de
+cada trozo en SUS ejes y la sumaba como si fueran los del anfitrión: una pieza
+soldada de canto aportaba su inercia por los ejes equivocados. Ahora se gira
+—la diagonal de R·D·Rᵀ— y sólo se desprecian los productos de inercia, porque
+es lo que `setAdditionalMassProperties` admite sin un marco propio.
+
+Es correcto por sí mismo, pero **hay que decir que no arregló la regresión**:
+4 rojas de 6 con el giro puesto. La causa de la inestabilidad es otra.
+
 ## [0.3.98] — 2026-09-23
 
 ### Corregido — UN CONJUNTO SOLDADO PESABA TODO EN SU ANFITRIÓN
