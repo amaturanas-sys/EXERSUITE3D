@@ -1,4 +1,4 @@
-import type { Editor } from "../core/Editor";
+import type { ConfigPasador, Editor } from "../core/Editor";
 import { abrirDialogoDerecha, cerrarDialogoDerecha } from "./dialogoDerecha";
 import {
   CATEGORY_COLORS,
@@ -149,6 +149,94 @@ function elegirConfigRoldana(): Promise<RoldanaConfig | null> {
 }
 
 /**
+ * Cómo se monta el pasador en la cara tocada (herramienta en dos pasos,
+ * v0.4.1). Son las dos formas que hay de sujetar un eje a una pieza, y no se
+ * pueden deducir de la geometría porque las dos caben en la misma cara:
+ *
+ *   · ATRAVIESA — el eje cruza la pieza perpendicular a la cara y abre su
+ *     taladro. Es el eje de una bisagra de puerta.
+ *   · HORQUILLA — el eje va por delante de la cara, cogido por las dos orejas
+ *     de una horquilla soldada a ella. Es el pivote del respaldo de la banca,
+ *     y es el que deja pasar el brazo sin que choque con la estructura.
+ *
+ * Mismo carril derecho que la roldana, y por lo mismo: sin velo, para poder
+ * orbitar mientras se decide.
+ */
+function elegirConfigPasador(): Promise<ConfigPasador | null> {
+  return new Promise((resolve) => {
+    let resuelto = false;
+    const terminar = (v: ConfigPasador | null): void => {
+      if (resuelto) return;
+      resuelto = true;
+      window.removeEventListener("keydown", alTeclado);
+      panel.remove();
+      resolve(v);
+    };
+    const cerrarYResolver = (v: ConfigPasador | null): void => {
+      terminar(v);
+      cerrarDialogoDerecha();
+    };
+    const alTeclado = (ev: KeyboardEvent): void => {
+      if (ev.key === "Escape") cerrarYResolver(null);
+    };
+    window.addEventListener("keydown", alTeclado);
+
+    const opc = (
+      modo: ConfigPasador["modo"],
+      icono: string,
+      titulo: string,
+      ayuda: string,
+    ): HTMLElement => {
+      const b = el("button", { class: "rold-opt", title: ayuda }, [
+        el("span", { class: "rold-icono" }, [icono]),
+        el("span", {}, [titulo]),
+      ]);
+      b.addEventListener("click", () => cerrarYResolver({ modo }));
+      return b;
+    };
+
+    const cerrar = el("button", { class: "tool rold-cerrar", title: "Cancelar" }, ["✕"]);
+    cerrar.addEventListener("click", () => cerrarYResolver(null));
+
+    const panel = el("aside", { id: "rold-panel", class: "pas-panel" }, [
+      el("div", { class: "rold-head" }, [
+        el("span", { class: "rold-titulo" }, [tt("Pasador", "Pin")]),
+        cerrar,
+      ]),
+      el("div", { class: "rold-seccion" }, [tt("Montaje en la cara", "Mounting on the face")]),
+      el("div", { class: "rold-tipos" }, [
+        opc(
+          "atraviesa",
+          "⊕",
+          tt("Atraviesa", "Through"),
+          tt(
+            "El eje cruza la pieza perpendicular a la cara y abre su taladro.",
+            "The axle crosses the part perpendicular to the face and opens its hole.",
+          ),
+        ),
+        opc(
+          "horquilla",
+          "⊔",
+          tt("Horquilla", "Fork"),
+          tt(
+            "Horquilla soldada a la cara: el eje queda por delante, entre sus dos orejas.",
+            "Fork welded to the face: the axle sits ahead of it, between its two ears.",
+          ),
+        ),
+      ]),
+      el("div", { class: "rold-pie" }, [
+        tt(
+          "Las piezas que giran se añaden después, en Propiedades.",
+          "The turning parts are added afterwards, in Properties.",
+        ),
+      ]),
+    ]);
+    document.body.append(panel);
+    abrirDialogoDerecha(() => terminar(null));
+  });
+}
+
+/**
  * Piezas visibles en el modo Sencillo (v0.2.3): SOLO lo rudimentario — es lo
  * que lo distingue del modo Profesional del Builder. Máquinas estándar
  * completas + primitivas + un puñado de piezas básicas.
@@ -181,6 +269,8 @@ export class ComponentPalette {
   constructor(private editor: Editor) {
     // La herramienta de roldana pide tipo + dirección al elegir el punto.
     this.editor.elegirRoldana = elegirConfigRoldana;
+    // Y la del pasador, cómo se monta en la cara que se toque.
+    this.editor.elegirPasador = elegirConfigPasador;
     this.body = el("div", { class: "panel-body" });
     this.renderGroups(this.body);
     this.root = el("aside", { class: "panel", id: "palette" }, [
@@ -547,6 +637,10 @@ export class ComponentPalette {
         // Herramienta en dos pasos (v0.2.26): estructura → punto del eje
         // azul → tipo + dirección (el diálogo aparece al elegir el punto).
         this.editor.beginRoldana();
+      } else if (def.id === "pasador") {
+        // Herramienta en dos pasos (v0.4.1): cara de la pieza que lo sostiene
+        // → atraviesa u horquilla (el diálogo aparece al tocar la cara).
+        this.editor.beginPasador();
       } else if (def.id === "placa-dentada") {
         // Herramienta en tres toques (v0.2.73): cara del pilar → principio →
         // final. Solo se pregunta el INTERVALO entre ganchos: el ancho lo copia

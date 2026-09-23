@@ -5,6 +5,48 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.1] — 2026-09-23
+
+### Añadido — el PASADOR se pone TOCANDO LA CARA, como la roldana
+
+Hasta ahora el eje se soltaba como una pieza suelta en medio del canvas y
+había que armarlo entero a mano desde Propiedades: decirle quién lo ancla,
+quién gira, y moverlo a ojo hasta donde tenía que estar. El gesto que faltaba
+es el de la roldana —herramienta encendida, se orbita libremente, y UN TOQUE
+elige pieza y cara a la vez—, y es el que ahora tiene.
+
+Al tocar la cara se pregunta lo único que la geometría no puede saber, porque
+las dos formas caben en la misma cara:
+
+* **ATRAVIESA** — el eje sale perpendicular a la cara, cruza la pieza y asoma
+  2 cm por cada lado. Es el eje de una bisagra de puerta, y abre su taladro
+  donde pasa.
+* **HORQUILLA** — el eje va PARALELO a la cara y por delante de ella, cogido
+  por las dos orejas de una horquilla soldada a esa misma cara. Es el pivote
+  del respaldo de la banca, el que deja pasar el brazo sin que choque con la
+  estructura.
+
+En los dos casos la pieza tocada queda de ANCLA —el eje no flota, va soldado a
+lo que lo sostiene— y las piezas que giran se añaden después en Propiedades,
+que es donde estaban ya el recorrido en horas del reloj, el freno y el disco
+de tramos.
+
+Detalles de la colocación:
+
+* La normal del triángulo que devuelve el rayo se calza al **eje local
+  dominante** de la pieza: se monta sobre una CARA, nunca sobre una arista.
+* Las medidas salen de la **sección en el punto tocado**, no de la caja de la
+  pieza entera: en una viga doblada el centro ni siquiera cae sobre ella.
+* El eje de la horquilla es perpendicular a la cara **y al largo** de la
+  pieza, que es como gira un brazo colgado de un poste.
+* La herramienta **sigue encendida** para poner varios; Esc la termina.
+
+### Corregido
+
+* El gizmo de la pieza recién creada se comía el toque siguiente: `addComponent`
+  la deja seleccionada, y `onPointerDown` se retira mientras el gizmo está en
+  marcha. La herramienta suelta la selección al terminar cada eje.
+
 ## [0.4.0] — 2026-09-23
 
 ### Cambiado — el VISOR se parte a lo ancho, con la raya desplazable

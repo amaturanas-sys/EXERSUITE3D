@@ -310,6 +310,8 @@ export type EditorEvents = {
   ropeModeChanged: { active: boolean; kind: RopeKind | null; count: number };
   /** Modo "colocar roldana" (interna/externa) sobre la cara de una pieza. */
   roldanaModeChanged: { active: boolean };
+  /** Modo "colocar pasador": cara de la pieza + atraviesa u horquilla. */
+  pasadorModeChanged: { active: boolean };
   /** Modo "colocar placa dentada": cara del pilar + dos puntos de trayectoria. */
   dentadaModeChanged: { active: boolean };
   /** Modo "trazar pieza de línea" (pilar/travesaño/tubo): nº de puntos fijados. */
@@ -414,6 +416,19 @@ export type HerramientaRapida =
   | "escalar"
   | "orbitar";
 
+/**
+ * CÓMO SE MONTA UN PASADOR SOBRE LA CARA QUE SE TOCÓ (v0.4.1).
+ *
+ *   · `atraviesa` — el pasador entra PERPENDICULAR a la cara y sale por el
+ *     otro lado, abriendo su taladro a su paso. Es el eje desnudo.
+ *   · `horquilla` — se suelda una HORQUILLA a esa cara y el pasador va cogido
+ *     por sus dos orejas. Es como va en la máquina real: un eje no se sostiene
+ *     en el aire.
+ */
+export interface ConfigPasador {
+  modo: "atraviesa" | "horquilla";
+}
+
 /** Modo de color del visor: materiales reales, por categoría o neutro. */
 export type ColorMode = "material" | "categoria" | "neutro";
 
@@ -503,6 +518,9 @@ export class Editor {
    * asoma por la apertura); externa = montada fuera de la cara.
    */
   private roldanaMode = false;
+  /** Herramienta de pasador activa, y su diálogo abierto. */
+  private pasadorMode = false;
+  private pasadorPidiendo = false;
   /** Panel de configuración de la roldana abierto (se puede orbitar detrás). */
   private roldanaPidiendo = false;
   /** Estructura elegida para alojar la roldana (fase 2 de la herramienta). */
@@ -546,6 +564,11 @@ export class Editor {
   elegirRoldana:
     | (() => Promise<{ tipo: "interna" | "externa"; dir: DireccionRoldana } | null>)
     | null = null;
+  /**
+   * Diálogo de la HERRAMIENTA DE PASADOR (v0.4.1, lo inyecta la UI): cómo se
+   * monta sobre la cara tocada. Si no hay diálogo, atraviesa.
+   */
+  elegirPasador: (() => Promise<ConfigPasador | null>) | null = null;
   /**
    * Diálogo de la BISAGRA REAL (v0.2.32, lo inyecta la UI): eje de giro en los
    * ejes globales (o automático) y tamaño de las placas. Si no hay diálogo, se
@@ -1334,6 +1357,7 @@ export class Editor {
     // ya no está quieta: la roldana con su línea guía azul encendida y la
     // placa dentada apuntando a una cara que se está moviendo.
     this.cancelRoldana();
+    this.cancelPasador();
     this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
@@ -3701,6 +3725,7 @@ export class Editor {
     this.cancelConnect();
     if (!conservarApoyo) this.cancelAttachHand();
     this.cancelRoldana();
+    this.cancelPasador();
     this.cancelPlacaDentada();
     this.cancelColocarFigura();
     this.endBendNodes();
@@ -4306,6 +4331,7 @@ export class Editor {
     this.cancelRope();
     this.cancelConnect();
     this.cancelRoldana();
+    this.cancelPasador();
     this.cancelPlacaDentada();
     this.endBendNodes();
     // Y con ellos el panel de configuración: cancelar el modo por dentro
@@ -7392,6 +7418,7 @@ export class Editor {
     // ya no está quieta: la roldana con su línea guía azul encendida y la
     // placa dentada apuntando a una cara que se está moviendo.
     this.cancelRoldana();
+    this.cancelPasador();
     this.cancelPlacaDentada();
     this.endBendNodes();
     this.physics = new PhysicsWorld();
@@ -11065,6 +11092,44 @@ export class Editor {
     });
   }
 
+  /**
+   * HERRAMIENTA DE PASADOR (v0.4.1) — un toque sobre la CARA donde va el eje.
+   *
+   * Es el gesto de la roldana: se enciende la herramienta, se orbita libremente
+   * hasta ver la cara buena, y el toque elige pieza y cara a la vez. Entonces
+   * se pregunta cómo se monta —atravesando, o con horquilla soldada a esa
+   * cara— y el pasador queda puesto con sus uniones y sus taladros.
+   *
+   * La herramienta SIGUE ENCENDIDA para poner varios; Esc sale.
+   */
+  beginPasador(): void {
+    if (this.simulating) return;
+    this.cancelCable();
+    this.cancelRope();
+    this.cancelLine();
+    this.cancelConnect();
+    this.cancelAttachHand();
+    this.cancelPlacaDentada();
+    this.cancelRoldana();
+    this.select(null);
+    this.pasadorMode = true;
+    this.bus.emit("pasadorModeChanged", { active: true });
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        "Pasador: toca la CARA donde va el eje — puedes orbitar para verla mejor (Esc termina)",
+        "Pin: tap the FACE where the axle goes — orbit freely to see it better (Esc ends)",
+      ),
+    });
+  }
+
+  cancelPasador(): void {
+    if (!this.pasadorMode) return;
+    this.pasadorMode = false;
+    this.pasadorPidiendo = false;
+    this.bus.emit("pasadorModeChanged", { active: false });
+    this.bus.emit("dragMeasure", { text: null });
+  }
+
   cancelRoldana(): void {
     if (!this.roldanaMode && !this.terminalMode) return;
     this.roldanaMode = false;
@@ -11486,6 +11551,125 @@ export class Editor {
   }
 
   /**
+   * PONE EL PASADOR EN LA CARA QUE SE TOCÓ (v0.4.1).
+   *
+   * El toque da un punto de la superficie y la normal del triángulo; lo que
+   * hace falta es una CARA, así que la normal se calza al eje local dominante
+   * de la pieza —el mismo gesto que la roldana— y de ahí salen las dos formas
+   * de montar que ofrece la herramienta:
+   *
+   *   · ATRAVIESA: el eje es la propia normal, el pasador cruza la pieza de
+   *     lado a lado y asoma 2 cm por cada cara. La perforación la abre solo
+   *     `aplicarPasador`, que es quien sabe dónde pasa.
+   *   · HORQUILLA: el eje va PARALELO a la cara —perpendicular al largo de la
+   *     pieza, que es como gira un brazo— y el pasador queda por delante, a la
+   *     distancia del vuelo. El herraje no se dibuja aquí: se pide con
+   *     `pasadorAnclaje`, y `montarAnclajes` lo arma contra esta misma cara.
+   *
+   * En los dos casos la pieza tocada queda de ANCLA: el pasador no flota, va
+   * soldado a lo que lo sostiene. Las piezas que giran se añaden después desde
+   * Propiedades, y el gizmo puede seguir moviendo el eje —cada movimiento
+   * rehace uniones y taladros por el bus.
+   */
+  private colocarPasadorEnCara(
+    host: SceneObject,
+    punto: THREE.Vector3,
+    normal: THREE.Vector3,
+    cfg: ConfigPasador,
+  ): void {
+    // El diálogo se resuelve tarde: entre medias se puede haber arrancado la
+    // simulación o borrado la pieza.
+    if (this.simulating || !this.objects.has(host.id)) return;
+    host.mesh.updateMatrixWorld(true);
+    const q = host.mesh.getWorldQuaternion(new THREE.Quaternion());
+
+    // CARA, NO ARISTA: la normal del triángulo se calza al eje local dominante.
+    const nLocal = normal.clone().applyQuaternion(q.clone().invert());
+    const ax = Math.abs(nLocal.x);
+    const ay = Math.abs(nLocal.y);
+    const az = Math.abs(nLocal.z);
+    let iCara: 0 | 1 | 2;
+    if (ax >= ay && ax >= az) {
+      iCara = 0;
+      nLocal.set(Math.sign(nLocal.x) || 1, 0, 0);
+    } else if (ay >= az) {
+      iCara = 1;
+      nLocal.set(0, Math.sign(nLocal.y) || 1, 0);
+    } else {
+      iCara = 2;
+      nLocal.set(0, 0, Math.sign(nLocal.z) || 1);
+    }
+    const signo = nLocal.x + nLocal.y + nLocal.z >= 0 ? 1 : -1;
+    const clave = `${signo > 0 ? "+" : "-"}${["x", "y", "z"][iCara]}`;
+    const n = nLocal.clone().applyQuaternion(q).normalize();
+
+    // LA SECCIÓN EN EL PUNTO TOCADO, no la caja de la pieza entera: en una viga
+    // doblada el centro ni siquiera cae sobre ella (ver `seccionDeAncla`).
+    const s = this.seccionDeAncla(host, punto);
+    const semi = s.semi[iCara];
+    // El toque cae en la superficie; el eje se quiere en el PLANO MEDIO, a la
+    // altura de lo que se tocó.
+    const medio = punto.clone().addScaledVector(n, -punto.clone().sub(s.origen).dot(n));
+
+    const pin = this.addComponent("pasador");
+    const previos = [...this.objects.values()].filter(
+      (o) => o !== pin && o.componentId === "pasador",
+    ).length;
+    pin.name = previos > 0 ? `Pasador ${previos + 1}` : "Pasador";
+    pin.mesh.name = pin.name;
+
+    let eje: THREE.Vector3;
+    if (cfg.modo === "atraviesa") {
+      eje = n.clone();
+      // Que asome 2 cm por cada cara: un eje a ras no se coge con nada.
+      pin.params = { ...pin.params, height: Math.max(6, 2 * semi + 4) };
+      pin.rebuildGeometry();
+      pin.mesh.position.copy(medio);
+      pin.params.pasadorAnclaje = false;
+    } else {
+      // El eje de la horquilla es perpendicular a la cara Y AL LARGO de la
+      // pieza: un brazo colgado de un poste gira en el plano del poste, no
+      // alrededor de él. Si la cara tocada ES la tapa del extremo, los dos que
+      // quedan son de la sección y manda el más horizontal.
+      const bases = [
+        new THREE.Vector3(1, 0, 0),
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(0, 0, 1),
+      ];
+      const libres = [0, 1, 2].filter((i) => i !== iCara);
+      const cruzados = libres.filter((i) => i !== s.iLargo);
+      const candidatos = (cruzados.length ? cruzados : libres).map((i) =>
+        bases[i].applyQuaternion(q).normalize(),
+      );
+      candidatos.sort((a, b) => Math.abs(a.y) - Math.abs(b.y));
+      eje = candidatos[0];
+      const vuelo = 4; // el vuelo de fábrica de la horquilla (`medidasHorquilla`)
+      pin.mesh.position.copy(medio).addScaledVector(n, semi + vuelo);
+      pin.params.pasadorAnclaje = true;
+      pin.params.pasadorCaras = { [host.id]: clave };
+    }
+    pin.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), eje);
+    pin.params.pasadorAnclas = [host.id];
+    pin.params.pasadorMoviles = [];
+    this.bus.emit("objectTransformed", { object: pin });
+
+    const r = this.aplicarPasador(pin);
+    // Y SE SUELTA LA SELECCIÓN. `addComponent` deja seleccionada la pieza
+    // nueva, así que el gizmo del eje recién puesto se planta sobre la cara y
+    // SE COME EL TOQUE SIGUIENTE —`onPointerDown` se retira mientras el gizmo
+    // está en marcha—, que es justo lo que la herramienta espera para poner el
+    // segundo. Para mover el eje se sale con Esc y se toca, que es el gesto de
+    // cualquier otra pieza.
+    this.select(null);
+    this.bus.emit("dragMeasure", {
+      text: tt(
+        `${pin.name} en ${host.name}: ${cfg.modo === "atraviesa" ? "atraviesa la cara" : `horquilla soldada (${r.anclajes})`} — en Propiedades se le dicen las piezas que giran`,
+        `${pin.name} on ${host.name}: ${cfg.modo === "atraviesa" ? "crosses the face" : `welded fork (${r.anclajes})`} — Properties is where the turning parts are named`,
+      ),
+    });
+  }
+
+  /**
    * Coloca la roldana en un punto del EJE MAYOR de la estructura, según el
    * tipo (interna: embutida en el eje central, la rueda asoma por la
    * apertura; externa: montada fuera de la cara hacia la dirección elegida)
@@ -11706,6 +11890,7 @@ export class Editor {
     this.cancelConnect();
     this.cancelAttachHand();
     this.cancelRoldana();
+    this.cancelPasador();
     this.cancelPlacaDentada();
     this.select(null);
     this.ropeMode = kind;
@@ -16133,6 +16318,31 @@ export class Editor {
       return;
     }
 
+    // HERRAMIENTA DE PASADOR: pieza y CARA en un solo toque.
+    if (this.pasadorMode) {
+      // Con el diálogo abierto se puede orbitar: el clic no abre otro.
+      if (this.pasadorPidiendo) return;
+      const hits = this.raycaster.intersectObjects(this.sceneManager.content.children, false);
+      const hit = hits[0];
+      const hid = hit?.object.userData.sceneObjectId as string | undefined;
+      const host = hid ? this.objects.get(hid) : undefined;
+      // Un toque al vacío NO cancela: se está orbitando para encontrar la cara.
+      if (!host || !hit?.face) return;
+      const normal = hit.face.normal
+        .clone()
+        .transformDirection(hit.object.matrixWorld)
+        .normalize();
+      const punto = hit.point.clone();
+      const pedir = this.elegirPasador ?? (async (): Promise<ConfigPasador> => ({ modo: "atraviesa" }));
+      this.pasadorPidiendo = true;
+      void pedir().then((cfg) => {
+        this.pasadorPidiendo = false;
+        if (!cfg || !this.pasadorMode) return;
+        this.colocarPasadorEnCara(host, punto, normal, cfg);
+      });
+      return;
+    }
+
     // Modo "colocar roldana" en dos pasos: estructura → punto del eje azul.
     if (this.roldanaMode) {
       // Con el panel de configuración abierto se puede ORBITAR en vivo: los
@@ -16523,6 +16733,7 @@ export class Editor {
         this.cancelRope();
         this.cancelLine();
         this.cancelRoldana();
+        this.cancelPasador();
         this.cancelPlacaDentada();
         this.cancelAttachHand();
         this.endBendNodes();
