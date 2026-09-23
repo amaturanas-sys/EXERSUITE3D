@@ -247,7 +247,10 @@ export interface PrimitiveParams {
   horquillaEspesor?: number;
   /** Separación entre orejas: lo que cabe dentro de la horquilla (cm). */
   horquillaGarganta?: number;
-  /** Cuánto vuela el eje por delante del alma soldada (cm). */
+  /**
+   * Cuánto vuela el eje por delante del alma soldada (cm), medido DESDE LA CARA
+   * QUE SE SUELDA — el dorso de la placa, que es el plano que toca la viga—.
+   */
   horquillaVuelo?: number;
   /** Radio del taladro por el que pasa el pasador (cm). */
   horquillaAgujero?: number;

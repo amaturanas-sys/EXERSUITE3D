@@ -54,7 +54,13 @@ export function medidasHorquilla(p: PrimitiveParams): {
   const alto = Math.max(p.horquillaAlto ?? 8, 0.4);
   const esp = Math.max(p.horquillaEspesor ?? 0.8, 0.1);
   const garganta = Math.max(p.horquillaGarganta ?? 4.2, 0.2);
-  const vuelo = Math.max(p.horquillaVuelo ?? 4, 0.1);
+  // EL VUELO SE MIDE DESDE LA CARA QUE SE SUELDA (v0.4.3), o sea desde el
+  // DORSO del alma, que es el plano que toca la viga. Medido desde la cara de
+  // delante —como estaba— la placa entera quedaba ENTERRADA en la viga: en la
+  // banca ajustable, 0,57 cm de penetración contra el pilar en todos los
+  // ángulos, que es justo el espesor de la chapa menos el pelo del perfil.
+  // Nunca menos que la propia chapa: el alma no puede pasarse del eje.
+  const vuelo = Math.max(p.horquillaVuelo ?? 4, esp + 0.1);
   const radio = alto / 2;
   // El taladro nunca se come la oreja: como mucho, la mitad del semicírculo.
   const agujero = Math.min(Math.max(p.horquillaAgujero ?? 1.3, 0.05), radio * 0.75);
@@ -160,9 +166,10 @@ function perfilDisco(m: ReturnType<typeof medidasHorquilla>): THREE.Shape {
  */
 function perfilOreja(m: ReturnType<typeof medidasHorquilla>): THREE.Shape {
   const s = new THREE.Shape();
-  // El alma queda detrás del eje: la oreja arranca en z = −vuelo (contra la
-  // cara de la viga) y termina redondeada un radio por delante del taladro.
-  const z0 = -m.vuelo;
+  // El alma queda detrás del eje: la oreja arranca donde acaba el alma —o sea
+  // un espesor por delante de la cara soldada— y termina redondeada un radio
+  // por delante del taladro.
+  const z0 = -m.vuelo + m.esp;
   const r = m.radio;
   s.moveTo(z0, -r);
   s.lineTo(0, -r);
@@ -208,9 +215,10 @@ export function buildHorquillaGeometry(p: PrimitiveParams): THREE.BufferGeometry
   disco?.dispose();
 
   // EL ALMA: la placa que cierra la horquilla por detrás y que es la que se
-  // suelda. Va contra la cara de la viga, al fondo del vuelo.
+  // suelda. Su DORSO se apoya en la cara de la viga, al fondo del vuelo — y se
+  // apoya, no se entierra: ahí está el medio centímetro que se comía.
   const alma = new THREE.BoxGeometry(m.ancho, m.alto, m.esp);
-  alma.translate(0, 0, -m.vuelo - m.esp / 2);
+  alma.translate(0, 0, -m.vuelo + m.esp / 2);
   partes.push(alma.toNonIndexed());
 
   const geo = mergeGeometries(partes, false) ?? partes[0];
@@ -253,10 +261,11 @@ export function cajasHorquilla(p: PrimitiveParams): CajaHorquilla[] {
   const m = medidasHorquilla(p);
   // La oreja va del frente del alma a la punta del semicírculo, que está un
   // radio más allá del eje.
-  const largo = m.vuelo + m.radio;
+  const largo = m.vuelo + m.radio - m.esp;
+  const zOreja = (m.radio - m.vuelo + m.esp) / 2;
   return [
-    { centro: [0, 0, -m.vuelo - m.esp / 2], tam: [m.ancho, m.alto, m.esp] },
-    { centro: [-(m.garganta + m.esp) / 2, 0, (m.radio - m.vuelo) / 2], tam: [m.esp, m.alto, largo] },
-    { centro: [(m.garganta + m.esp) / 2, 0, (m.radio - m.vuelo) / 2], tam: [m.esp, m.alto, largo] },
+    { centro: [0, 0, -m.vuelo + m.esp / 2], tam: [m.ancho, m.alto, m.esp] },
+    { centro: [-(m.garganta + m.esp) / 2, 0, zOreja], tam: [m.esp, m.alto, largo] },
+    { centro: [(m.garganta + m.esp) / 2, 0, zOreja], tam: [m.esp, m.alto, largo] },
   ];
 }

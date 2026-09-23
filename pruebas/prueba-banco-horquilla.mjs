@@ -59,12 +59,34 @@ const medir = (data) =>
     const base = [...ed.objects.values()].find((o) => o.name === "Asiento");
     if (!resp || !base) return { error: "falta pieza de referencia" };
     ed.toggleSimulation();
+    // SIN GRAVEDAD, Y ÉSA ES LA MEDIDA (v0.4.3). Aquí se pregunta por la
+    // GEOMETRÍA de la pose —¿entra el respaldo en el hueco que la horquilla le
+    // deja?—, no por si la banca se sostiene sola: el mecanismo se ha quitado a
+    // propósito, así que el respaldo cuelga de un solo pasador y se desploma.
+    // Mientras la unión estuvo AGARROTADA eso no se notaba —el propio choque lo
+    // sujetaba—, y al dejarla girar libre el respaldo aparecía tumbado en todos
+    // los ángulos. Con la gravedad a cero y las velocidades a cero la pose se
+    // queda donde se la puso y los contactos se siguen calculando, que es justo
+    // lo que hay que leer.
+    //
     // EL MAPA DE CUERPOS SE REUSA MIENTRAS SE RECONSTRUYE EL MUNDO: entre
     // escena y escena devuelve cuerpos ya destruidos, y llamar a mass() sobre
     // uno revienta el WASM con «null pointer passed to rust». Se sondea con red.
     let bodies = null, listo = false;
-    for (let k = 0; k < 60 && !listo; k++) {
-      await new Promise((r) => setTimeout(r, 100));
+    const quieto = () => {
+      const w = ed.physics?.world;
+      if (!w) return;
+      w.gravity.x = 0; w.gravity.y = 0; w.gravity.z = 0;
+      for (const e of (ed.physics?.bodies ?? new Map()).values()) {
+        try {
+          e.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          e.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        } catch { /* cuerpo viejo */ }
+      }
+    };
+    for (let k = 0; k < 300 && !listo; k++) {
+      await new Promise((r) => setTimeout(r, 20));
+      quieto();
       bodies = ed.physics?.bodies;
       if (!bodies) continue;
       const id = [...ed.objects].find(([, o]) => o.name === "Respaldo")?.[0];
@@ -72,6 +94,7 @@ const medir = (data) =>
       if (!c) continue;
       try { if (c.mass() > 0.5) listo = true; } catch { /* cuerpo viejo */ }
     }
+    quieto();
     const world = ed.physics?.world;
     if (!world || !listo) { ed.toggleSimulation(); return { error: "el mundo no se montó" }; }
 
@@ -83,18 +106,16 @@ const medir = (data) =>
         .applyQuaternion(base.mesh.getWorldQuaternion(q2).invert());
       return +(Math.atan2(v.x, v.y) * 180 / Math.PI).toFixed(1);
     };
-    // Cada colisionador se adjudica a la pieza cuyo centro tiene más cerca: el
-    // motor FUNDE las soldadas, así que el nombre del cuerpo no sirve para
-    // saber qué pieza es.
-    const piezas = [...ed.objects.values()].map((o) => {
-      o.mesh.updateMatrixWorld(true);
-      return { n: o.name, c: new T.Box3().setFromObject(o.mesh).getCenter(new T.Vector3()) };
-    });
+    // CADA COLISIONADOR DICE DE QUIÉN ES (v0.4.3). Lo apunta el motor al
+    // crearlo. Antes se adivinaba adjudicándoselo a la pieza con el centro más
+    // cerca, y esa cuenta se equivocaba justo donde importa: el pasador vive
+    // DENTRO de la horquilla y los dos centros están a milímetros, así que el
+    // contacto del eje con el brazo —el que hay que descontar— salía firmado
+    // por la horquilla y se colaba como si fuera un choque.
+    const dueno = ed.physics.duenoDeColisionador;
     const situa = (col) => {
-      const t = col.translation(); const v = new T.Vector3(t.x * 100, t.y * 100, t.z * 100);
-      let m = null, dm = 1e9;
-      for (const p of piezas) { const d = p.c.distanceTo(v); if (d < dm) { dm = d; m = p; } }
-      return m.n;
+      const id = dueno.get(col.handle);
+      return (id && ed.objects.get(id)?.name) || "¿?";
     };
     // LA FASE ESTRECHA, no la ancha. `contactPairsWith` sólo dice qué cajas se
     // solapan —daba 143 «contactos» entre 18 piezas—; lo que dice si dos piezas
@@ -121,7 +142,7 @@ const medir = (data) =>
         // llega a él. Apagar `contactos` en la unión no lo quita: eso impide
         // RESOLVER el contacto, no que exista el manifiesto, que es lo que
         // aquí se lee.
-        if (situa(otro).startsWith("Pasador")) return;
+        if (/^Pasador|^Eje/.test(situa(otro))) return;
         world.contactPair(c, otro, (man) => {
           for (let k = 0; k < man.numContacts(); k++) {
             const dist = man.contactDist(k);

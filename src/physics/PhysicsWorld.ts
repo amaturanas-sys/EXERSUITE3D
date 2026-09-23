@@ -68,6 +68,17 @@ export class PhysicsWorld {
   private static ready: Promise<void> | null = null;
   private world: R.World | null = null;
   private bodies = new Map<string, { body: R.RigidBody; obj: SceneObject }>();
+  /**
+   * DE QUÉ PIEZA ES CADA COLISIONADOR (v0.4.3).
+   *
+   * El motor FUNDE las soldadas en un solo cuerpo, así que el nombre del cuerpo
+   * no dice de qué pieza es el colisionador con el que algo choca. Sin esto,
+   * quien mide un contacto tiene que ADIVINARLO —adjudicándoselo a la pieza que
+   * tenga el centro más cerca—, y esa cuenta se equivoca justo donde importa:
+   * en un pasador metido dentro de una horquilla, los dos centros están a
+   * milímetros. Aquí se apunta al crearlo, que es cuando se sabe sin adivinar.
+   */
+  readonly duenoDeColisionador = new Map<number, string>();
   private cables: CableEntry[] = [];
   /**
    * ROLDANAS EMPOTRADAS (v0.2.8): una roldana adosada a una pieza forma un
@@ -205,6 +216,7 @@ export class PhysicsWorld {
     // primero cierra esa ventana; guardar una referencia a un cuerpo DE UN
     // build a otro sigue siendo cosa de quien la guarda.
     this.bodies.clear();
+    this.duenoDeColisionador.clear();
     this.world?.free();
     this.elegidas.clear();
     this.frenos.clear();
@@ -622,7 +634,7 @@ export class PhysicsWorld {
         cd.setTranslation(pos.x, pos.y, pos.z);
         cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
         cd.setDensity(0);
-        this.world.createCollider(cd, mejor.body);
+        this.duenoDeColisionador.set(this.world.createCollider(cd, mejor.body).handle, e.obj.id);
       }
       const entrada = {
         obj: e.obj,
@@ -1995,7 +2007,7 @@ export class PhysicsWorld {
         cd.setTranslation(pos.x, pos.y, pos.z);
         cd.setRotation({ x: rq.x, y: rq.y, z: rq.z, w: rq.w });
         cd.setDensity(0); // la masa del conjunto ya la puso el anfitrión
-        this.world.createCollider(cd, host.body);
+        this.duenoDeColisionador.set(this.world.createCollider(cd, host.body).handle, obj.id);
       }
       const entrada = {
         obj,
@@ -2123,7 +2135,9 @@ export class PhysicsWorld {
     }
 
     const body = this.world.createRigidBody(desc);
-    for (const cd of this.colliderDescs(obj)) this.world.createCollider(cd, body);
+    for (const cd of this.colliderDescs(obj)) {
+      this.duenoDeColisionador.set(this.world.createCollider(cd, body).handle, obj.id);
+    }
     // DISCOS MONTADOS sólidos (v0.2.10): cada disco de la carga recibe su
     // collider cilíndrico en el cuerpo de la pieza — un disco no cae por
     // debajo del suelo ni atraviesa superficies. Densidad 0: su masa ya la
@@ -2178,10 +2192,90 @@ export class PhysicsWorld {
       const asiento = this.collidersAsiento(obj);
       if (asiento.length >= 3) return asiento;
     }
+    // EL EXTREMO REDONDO, TAMBIÉN PARA LA FÍSICA (v0.4.3). Estaba SÓLO EN LA
+    // MALLA: el colisionador seguía siendo el cuboide de la envolvente, y la
+    // esquina de ese cuboide barre W/2·√2 al girar —4,24 cm en un perfil de
+    // 6— cuando el semicírculo dibujado barre 3. O sea justo lo que el
+    // redondeo existe para evitar, intacto donde se decide el recorrido.
+    if (p.kind === "beam" && p.extremoRedondo) {
+      const redondo = this.collidersVigaRedonda(obj);
+      if (redondo.length) return redondo;
+    }
     if ((p.kind === "beam" || p.kind === "tube") && p.path && !pathIsStraight(p.path)) {
       return this.collidersDoblado(obj);
     }
     return [this.colliderDesc(obj)];
+  }
+
+  /**
+   * LA VIGA CON LA PUNTA REDONDA, EN COLISIONADORES (v0.4.3).
+   *
+   * Medido en la banca ajustable: el alma de la horquilla y la punta del
+   * respaldo se penetraban 0,57 cm en todos los ángulos de 0° a 45°, y el
+   * culpable no era la horquilla sino ESTA caja. Un solape que no depende del
+   * ángulo no es un tope de recorrido.
+   *
+   * Son el prisma RECORTADO hasta el centro del arco, y un cilindro por cada
+   * punta redonda con el eje en la Z local —el eje del giro, porque el perfil
+   * se extruye por ahí—. La mitad trasera del cilindro queda dentro del prisma
+   * y no estorba: solapar dos colisionadores del MISMO cuerpo no genera
+   * contacto.
+   *
+   * Sólo para vigas RECTAS: la doblada tiene su propio camino, y ahí el
+   * redondeo no se dibuja.
+   */
+  private collidersVigaRedonda(obj: SceneObject): R.ColliderDesc[] {
+    const p = obj.params;
+    if (p.kind !== "beam" || !p.extremoRedondo) return [];
+    if (p.path && !pathIsStraight(p.path)) return [];
+    const geo = obj.mesh.geometry;
+    if (!geo.boundingBox) geo.computeBoundingBox();
+    const bb = geo.boundingBox!;
+    // Tras `rotateZ(π/2)` la viga recta tiene el LARGO en Y, el ancho del
+    // perfil en X —que es el plano donde se dibuja el arco— y el fondo en Z.
+    const W = bb.max.x - bb.min.x;
+    const L = bb.max.y - bb.min.y;
+    const D = bb.max.z - bb.min.z;
+    const r = W / 2;
+    const re = p.extremoRedondo;
+    const rIni = re === "inicio" || re === "ambos" ? r : 0;
+    const rFin = re === "fin" || re === "ambos" ? r : 0;
+    // Si la pieza no da ni para los dos arcos, el recorte no significa nada y
+    // vale más la caja de siempre.
+    if (r < 0.05 || D < 0.05 || L - rIni - rFin < 0.05) return [];
+    const esc = obj.mesh.scale;
+    const cx = (bb.min.x + bb.max.x) / 2;
+    const cz = (bb.min.z + bb.max.z) / 2;
+    const y0 = bb.min.y + rIni;
+    const y1 = bb.max.y - rFin;
+    const out: R.ColliderDesc[] = [];
+    const caja = RAPIER.ColliderDesc.cuboid(
+      Math.max((W / 2) * Math.abs(esc.x) * S, 0.002),
+      Math.max(((y1 - y0) / 2) * Math.abs(esc.y) * S, 0.002),
+      Math.max((D / 2) * Math.abs(esc.z) * S, 0.002),
+    );
+    caja.setTranslation(cx * esc.x * S, ((y0 + y1) / 2) * esc.y * S, cz * esc.z * S);
+    caja.setRestitution(0.05).setFriction(0.8);
+    out.push(caja);
+    // Un cilindro no admite semiejes distintos, así que con escala no uniforme
+    // el radio se toma promediado — como en la viga doblada.
+    const sT = (Math.abs(esc.x) + Math.abs(esc.y)) / 2;
+    const giro = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, 0, 1),
+    );
+    for (const [hay, y] of [[rIni > 0, y0], [rFin > 0, y1]] as [boolean, number][]) {
+      if (!hay) continue;
+      const cil = RAPIER.ColliderDesc.cylinder(
+        Math.max((D / 2) * Math.abs(esc.z) * S, 0.002),
+        Math.max(r * sT * S, 0.002),
+      );
+      cil.setTranslation(cx * esc.x * S, y * esc.y * S, cz * esc.z * S);
+      cil.setRotation({ x: giro.x, y: giro.y, z: giro.z, w: giro.w });
+      cil.setRestitution(0.05).setFriction(0.8);
+      out.push(cil);
+    }
+    return out;
   }
 
   /**
@@ -3338,6 +3432,7 @@ export class PhysicsWorld {
     // las dos lineas contendria cuerpos de un mundo liberado, y preguntarle
     // algo a uno revienta el WASM en vez de lanzar un error de JS.
     this.bodies.clear();
+    this.duenoDeColisionador.clear();
     this.world?.free();
     this.world = null;
     this.elegidas.clear();

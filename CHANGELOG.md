@@ -5,6 +5,68 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.3] — 2026-09-23
+
+### Corregido — el EXTREMO REDONDO estaba sólo en la malla
+
+Un brazo que pivota lleva la punta redonda para poder girar sin comerse la
+horquilla: «la esquina de un corte recto barre W/2·√2 al girar», dice el código
+que la dibuja, «y el semicírculo barre exactamente su radio». Pero eso pasaba
+sólo en la MALLA. El colisionador seguía siendo el cuboide de la envolvente, o
+sea la esquina en escuadra, **justo donde se decide el recorrido**: en un perfil
+de 6 cm, 4,24 cm de barrido donde la pieza dibujada barre 3.
+
+Ahora una viga recta con `extremoRedondo` declara sus colisionadores: el prisma
+RECORTADO hasta el centro del arco y un cilindro por cada punta, con el eje en
+la Z local —el del giro—. La mitad trasera del cilindro queda dentro del prisma
+y no estorba: dos colisionadores del mismo cuerpo no generan contacto.
+
+### Corregido — la horquilla se apoyaba en la cara, no; se enterraba en ella
+
+El vuelo se medía hasta la cara DE DELANTE del alma, así que la placa soldada
+—8 mm— quedaba entera dentro de la viga. Como el herraje va soldado a lo que
+toca, los dos van al mismo cuerpo y el motor no genera ese contacto: acero
+dentro de acero, invisible. Ahora el vuelo se mide **desde la cara que se
+suelda**, que es el plano que toca la viga y es también lo que calcula la
+herramienta al elegir la cara.
+
+Tiene un precio que conviene saber: la garganta que queda para el brazo es el
+vuelo MENOS el espesor de la chapa. Un pasador a 4 cm de la cara deja 3,2 para
+un brazo de 6 de ancho — 2 mm de holgura. Si hace falta más, se sube el vuelo
+en Propiedades del pasador, que desde v0.4.2 es una cota que se pide.
+
+### Añadido — cada colisionador dice de qué pieza es
+
+El motor funde las soldadas en un solo cuerpo, así que el nombre del cuerpo no
+decía de qué pieza era el colisionador con el que algo choca, y quien medía un
+contacto tenía que ADIVINARLO adjudicándoselo a la pieza con el centro más
+cerca. Esa cuenta falla justo donde importa: un pasador vive DENTRO de su
+horquilla y los dos centros están a milímetros, de modo que el contacto del eje
+con el brazo —el que hay que descontar, porque un taladro no existe en un
+colisionador macizo— salía firmado por la horquilla y se colaba como un choque.
+`PhysicsWorld.duenoDeColisionador` lo apunta al crearlo.
+
+### Cambiado — la prueba de la horquilla mide SIN GRAVEDAD
+
+Pregunta por la geometría de la pose —¿cabe el respaldo en el hueco que la
+horquilla le deja?—, no por si la banca se sostiene: el mecanismo se quita a
+propósito, así que el respaldo cuelga de un solo pasador. Mientras la unión
+estuvo agarrotada eso no se notaba —el propio choque lo sujetaba—; al dejarla
+girar, el respaldo aparecía tumbado en todos los ángulos. Con la gravedad y las
+velocidades a cero la pose se queda donde se la puso y los contactos se siguen
+calculando.
+
+### Pendiente, ya con número
+
+La banca ajustable sigue chocando a 0°, 15° y 30° (1,09 · 0,57 · 0,20 cm), y
+ahora se sabe por qué y no es la unión: **el centro del arco de la punta del
+respaldo está a 2,68 cm del eje del pasador**. Un brazo que pivota tiene el
+agujero EN el centro de su arco; con 2,68 de desvío barre 5,68 alrededor del
+pivote cuando la garganta da 3,2. Corregirlo no es mover el eje: probado, al
+hacer el conjunto concéntrico la almohadilla del respaldo se mete en la
+horquilla. Ese rincón de la banca hay que rediseñarlo, y eso ya no es un
+arreglo del motor.
+
 ## [0.4.2] — 2026-09-23
 
 ### Añadido — las MEDIDAS de la horquilla y el MANDO del eje, dichos en el pasador
