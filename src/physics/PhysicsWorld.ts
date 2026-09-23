@@ -195,8 +195,17 @@ export class PhysicsWorld {
   ): void {
     // Libera un mundo anterior si build() se reutiliza (si no, fuga WASM y los
     // cables quedarian apuntando a cuerpos de un mundo liberado).
-    this.world?.free();
+    //
+    // EL MAPA SE VACIA ANTES DE LIBERAR (v0.3.98). Al reves, entre las dos
+    // lineas `bodies` contiene cuerpos de un mundo ya liberado, y preguntarle
+    // a uno cualquier cosa —`mass()`, por ejemplo— no lanza un error de JS:
+    // revienta el modulo WASM con «null pointer passed to rust». El bucle de
+    // la propia simulacion relee el mapa en cada paso y no lo pisa nunca, pero
+    // basta con que algo de fuera lo consulte mientras se reconstruye. Vaciarlo
+    // primero cierra esa ventana; guardar una referencia a un cuerpo DE UN
+    // build a otro sigue siendo cosa de quien la guarda.
     this.bodies.clear();
+    this.world?.free();
     this.elegidas.clear();
     this.frenos.clear();
     this.cables = [];
@@ -1950,6 +1959,22 @@ export class PhysicsWorld {
   ): void {
     if (!this.world || soldadas.anfitrionDe.size === 0) return;
     const porId = new Map(objects.map((o) => [o.id, o]));
+    // LOS TROZOS DE CADA CONJUNTO, para repartirle bien la masa al final.
+    // Ver `repartirMasaSoldada()`: sin esto el conjunto pesa lo que debe pero
+    // toda su masa está donde el anfitrión, y un puntal soldado un palmo por
+    // debajo no mueve el centro de masas ni un milímetro.
+    const trozos = new Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3 }[]>();
+    const semiejes = (o: SceneObject): THREE.Vector3 => {
+      const geo = o.mesh.geometry;
+      if (!geo.boundingBox) geo.computeBoundingBox();
+      const bb = geo.boundingBox!;
+      const e = o.mesh.scale;
+      return new THREE.Vector3(
+        (Math.abs(bb.max.x - bb.min.x) / 2) * Math.abs(e.x) * S,
+        (Math.abs(bb.max.y - bb.min.y) / 2) * Math.abs(e.y) * S,
+        (Math.abs(bb.max.z - bb.min.z) / 2) * Math.abs(e.z) * S,
+      );
+    };
     for (const [id, anfId] of soldadas.anfitrionDe) {
       if (id === anfId) continue;
       const obj = porId.get(id);
@@ -1982,6 +2007,74 @@ export class PhysicsWorld {
       this.empotradaPorId.set(id, entrada);
       // Juntas y cables que referencien la pieza resuelven al compuesto.
       this.bodies.set(id, { body: host.body, obj: host.obj });
+
+      if (!trozos.has(anfId)) {
+        trozos.set(anfId, [{
+          m: Math.max(0, host.obj.effectiveMassKg()),
+          p: new THREE.Vector3(0, 0, 0),
+          h: semiejes(host.obj),
+        }]);
+      }
+      trozos.get(anfId)!.push({
+        m: Math.max(0, obj.effectiveMassKg()),
+        p: new THREE.Vector3(relPos.x, relPos.y, relPos.z),
+        h: semiejes(obj),
+      });
+    }
+    this.repartirMasaSoldada(trozos);
+  }
+
+  /**
+   * LA MASA DE UN CONJUNTO SOLDADO, REPARTIDA DONDE ESTÁ (v0.3.98).
+   *
+   * Los colliders se crean con densidad ~1 kg/m³ —una nada— y la masa de
+   * verdad la ponía `setAdditionalMass()`, que añade kilos SIN TOCAR el centro
+   * de masas ni la inercia; los de las piezas soldadas entran además con
+   * densidad 0, porque «la masa del conjunto ya la puso el anfitrión». El
+   * resultado medido: un brazo de 5 kg con un puntal de 1 kg soldado 18 cm por
+   * debajo daba **exactamente** el mismo centro de masas y la misma inercia que
+   * el brazo solo de 6 kg. El total salía bien y la DISTRIBUCIÓN se tiraba
+   * entera.
+   *
+   * No es cosmético: el par de la gravedad sobre una bisagra se calcula desde
+   * el centro de masas, así que todo conjunto soldado estaba mal equilibrado
+   * —y en la banca ajustable 18 piezas son 3 cuerpos—.
+   *
+   * Aquí se calcula lo que el conjunto pesa de verdad y DÓNDE, y se le pasa al
+   * motor con `setAdditionalMassProperties`, que sí admite centro de masas e
+   * inercia. Cada trozo aporta la suya de caja más el término de Steiner por
+   * su distancia al centro común. Se desprecian los productos de inercia (la
+   * matriz se da diagonal en los ejes del anfitrión) y el giro propio de cada
+   * trozo: para piezas separadas manda el término de Steiner, que sí se cuenta
+   * entero, y cualquiera de las dos aproximaciones es infinitamente mejor que
+   * fingir que la pieza soldada no está.
+   */
+  private repartirMasaSoldada(
+    trozos: Map<string, { m: number; p: THREE.Vector3; h: THREE.Vector3 }[]>,
+  ): void {
+    for (const [anfId, piezas] of trozos) {
+      const host = this.bodies.get(anfId);
+      if (!host || !host.body.isDynamic()) continue;
+      const M = piezas.reduce((a, t) => a + t.m, 0);
+      if (M <= 0) continue;
+      const com = new THREE.Vector3();
+      for (const t of piezas) com.addScaledVector(t.p, t.m / M);
+      const I = new THREE.Vector3();
+      for (const t of piezas) {
+        const d = t.p.clone().sub(com);
+        // Caja propia: m·(a²+b²)/3 con semiejes, más Steiner m·d².
+        I.x += (t.m * (t.h.y * t.h.y + t.h.z * t.h.z)) / 3 + t.m * (d.y * d.y + d.z * d.z);
+        I.y += (t.m * (t.h.x * t.h.x + t.h.z * t.h.z)) / 3 + t.m * (d.x * d.x + d.z * d.z);
+        I.z += (t.m * (t.h.x * t.h.x + t.h.y * t.h.y)) / 3 + t.m * (d.x * d.x + d.y * d.y);
+      }
+      host.body.setAdditionalMassProperties(
+        M,
+        { x: com.x, y: com.y, z: com.z },
+        { x: Math.max(I.x, 1e-9), y: Math.max(I.y, 1e-9), z: Math.max(I.z, 1e-9) },
+        { x: 0, y: 0, z: 0, w: 1 },
+        true,
+      );
+      this.masaExtra.set(host.body, M);
     }
   }
 
@@ -3222,9 +3315,12 @@ export class PhysicsWorld {
   }
 
   dispose(): void {
+    // El mapa se vacia ANTES de liberar, por lo mismo que en `build()`: entre
+    // las dos lineas contendria cuerpos de un mundo liberado, y preguntarle
+    // algo a uno revienta el WASM en vez de lanzar un error de JS.
+    this.bodies.clear();
     this.world?.free();
     this.world = null;
-    this.bodies.clear();
     this.elegidas.clear();
     this.frenos.clear();
     this.cables = [];

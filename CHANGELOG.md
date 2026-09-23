@@ -5,6 +5,77 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.3.98] — 2026-09-23
+
+### Corregido — UN CONJUNTO SOLDADO PESABA TODO EN SU ANFITRIÓN
+
+Los colliders se crean con densidad ~1 kg/m³ —una nada, de ahí el «+0,00144»
+que aparecía en todas las lecturas de masa— y los kilos de verdad los ponía
+`setAdditionalMass()`, que añade masa **sin tocar el centro de masas ni la
+inercia**. Los de las piezas soldadas entran además con densidad 0, porque «la
+masa del conjunto ya la puso el anfitrión». Medido:
+
+| | masa | centro de masas | inercia |
+|---|---|---|---|
+| brazo SOLO de 6 kg | 6,001 | (0, 0, 0) | (0,0036 · 0,0818 · 0,0818) |
+| brazo 5 + puntal 1 SOLDADO 18 cm abajo | 6,001 | **(0, 0, 0)** | **(0,0036 · 0,0818 · 0,0818)** |
+
+Idénticos hasta el último decimal: **un puntal de 1 kg colgando un palmo por
+debajo no movía el centro de masas ni un milímetro.** El total salía bien y la
+distribución se tiraba entera.
+
+No es cosmético: el par de la gravedad sobre una bisagra se calcula desde el
+centro de masas, así que **todo conjunto soldado estaba mal equilibrado** — y en
+la banca ajustable 18 piezas son 3 cuerpos.
+
+`repartirMasaSoldada()` calcula ahora lo que el conjunto pesa **y dónde**
+—centro de masas ponderado, más inercia de caja propia y término de Steiner por
+trozo— y se lo pasa al motor con `setAdditionalMassProperties`. Comprobado
+contra la cuenta a mano: el puntal está a `(0,10 · −0,15)` m del brazo y 1/6 de
+eso es exactamente el `(0,017 · −0,025)` que ahora devuelve el motor.
+
+Se desprecian los productos de inercia (la matriz va diagonal en los ejes del
+anfitrión) y el giro propio de cada trozo. Para piezas separadas manda el
+término de Steiner, que sí se cuenta entero.
+
+### Corregido — consultar el mapa de cuerpos durante la reconstrucción reventaba el WASM
+
+`build()` y `dispose()` liberaban el mundo **antes** de vaciar `bodies`, así que
+entre las dos líneas el mapa contenía cuerpos de un mundo ya liberado.
+Preguntarle a uno cualquier cosa —`mass()`, por ejemplo— no lanza un error de
+JavaScript: revienta el módulo con «null pointer passed to rust». Ahora se
+vacía primero.
+
+El bucle de la propia simulación relee el mapa en cada paso y nunca lo pisaba,
+así que **no era un fallo de la aplicación**; era una ventana abierta para
+quien lo consulte desde fuera. Guardar una referencia a un cuerpo de un build a
+otro sigue siendo cosa de quien la guarda.
+
+### La cinemática del puntal sobrevive al eje nuevo
+
+Con el eje del respaldo en `(−28 · 45,87)` el radio del puntal baja de 42,63 a
+**39,05 cm** y los asientos se alejan (15,8 · 28,3 · 40,8 · 53,3 · 65,8). La
+ventana que alcanza los cinco es **[26,8 · 54,9]** y el óptimo cae en **41,5
+cm**: los **42 que ya lleva siguen valiendo**.
+
+| tope | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| respaldo (0° = horizontal) | 7,5° | 21,6° | 33,8° | 45,8° | 60,4° |
+
+### Los 6 mm del extremo horizontal: acotados, no resueltos
+
+`prueba-banco-horquilla` sigue en rojo por **0,57 y 0,58 cm a 0° y 15°**, cero
+de 30° a 90°. Cuatro hipótesis probadas y las cuatro caídas: la posición del
+eje, el alma del vuelo (subirlo de 4 a 5,5 no lo mueve), el radio de la oreja
+(subir `horquillaAlto` de 8 a 9,4 lo empeora — aparece contacto a 30°) y, antes
+de todo eso, la métrica.
+
+**El rastro que sigue apuntando bien**: `extremoRedondo` redondea la MALLA pero
+no el COLISIONADOR, así que la física conserva la esquina viva, que barre
+`W/2·√2` = 4,24 cm en una viga de 6. Es el mismo patrón que la horquilla maciza
+de v0.3.97 —un collider que no se parece a la malla justo donde la forma es todo
+el asunto— y pide su caso en `colliderDescs`, no un parche de parámetro.
+
 ## [0.3.97] — 2026-09-22
 
 ### Corregido — LA HORQUILLA NO TENÍA GARGANTA PARA LA FÍSICA
