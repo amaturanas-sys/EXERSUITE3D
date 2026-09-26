@@ -7,6 +7,31 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.4.4] — 2026-09-26
 
+### La batería entera, en serie: 118 de 123
+
+Corrida completa contra el build que se publica, una sola pasada, cada prueba
+con su tope de tiempo. Es el mejor resultado hasta ahora: el v0.3.99 cerró con
+115 de 121, o sea seis rojos.
+
+| | |
+|---|---|
+| **118 OK** | de 123 |
+| rojos deliberados | `banco-cinco-topes` (9) · `banco-tres-topes` (5) · `banco-horquilla` (3) · `dos-bisagras` (3) |
+| regresión conocida | `prueba-atraviesa` (1) |
+| ya no rojos | `prueba-sitio` —con Next en el 3100—, `asiento-tope`, `home-visor`, `ingles`, `biblioteca-modelos` y `punto-anclaje` |
+
+Los cuatro rojos de la banca son **el mismo asunto y está acotado con número**:
+el centro del arco de la punta del respaldo está a 2,68 cm del eje de su
+pasador, así que barre 5,68 alrededor del pivote cuando la garganta de la
+horquilla da 3,2. No es la unión: es el diseño de ese rincón de la banca, y
+hacerlo concéntrico mete la almohadilla dentro de la horquilla —probado—. En
+`banco-horquilla` eso se lee a 0°, 15° y 30° (1,09 · 0,57 · 0,07 cm); los otros
+tres son la misma pieza vista desde el mecanismo.
+
+De `prueba-atraviesa` falla su propia rama de control —«sin el guardarraíl el
+jalón estaba muerto»—, no la funcionalidad que vigila.
+
+
 ### En esta entrega (de v0.3.99 a v0.4.4)
 
 El tag anterior publicado fue el **v0.3.99**, así que esta release trae cuatro
