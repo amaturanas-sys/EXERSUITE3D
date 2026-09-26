@@ -109,9 +109,12 @@ console.log("FORMA:", JSON.stringify(forma));
 ok(Math.abs(forma.ancho - 5.8) < 0.05, "la horquilla mide garganta + dos orejas de ancho", forma.ancho);
 ok(Math.abs(forma.alto - 8) < 0.05, "y el alto que se le pide", forma.alto);
 // La punta redonda llega a un radio (alto/2 = 4) por delante del eje, que está
-// en el origen; el alma queda al fondo del vuelo (−4) más su espesor.
+// en el origen; y el alma cierra por detrás con su DORSO justo en el fondo del
+// vuelo (−4), no un espesor más allá: desde v0.4.3 el vuelo se mide desde la
+// cara que se suelda, que es el plano que toca la viga. Antes la placa entera
+// quedaba pasado ese plano, o sea enterrada en el acero de la viga.
 ok(Math.abs(forma.zmax - 4) < 0.05, "la punta redondea a un radio POR DELANTE del eje", forma.zmax);
-ok(Math.abs(forma.zmin - -4.8) < 0.05, "y el alma cierra al fondo del vuelo", forma.zmin);
+ok(Math.abs(forma.zmin - -4) < 0.05, "y el alma cierra con su dorso en el fondo del vuelo", forma.zmin);
 ok(forma.enGarganta === 0, "entre las orejas no hay material: la garganta está libre", forma.enGarganta);
 ok(Math.abs(forma.radioMin - 1.3) < 0.05, "y las orejas están taladradas sobre el eje", forma.radioMin);
 

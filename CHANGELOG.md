@@ -5,6 +5,53 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.4] — 2026-09-26
+
+### En esta entrega (de v0.3.99 a v0.4.4)
+
+El tag anterior publicado fue el **v0.3.99**, así que esta release trae cuatro
+versiones de trabajo:
+
+* **v0.4.0** — el **VISOR se parte a lo ancho**, con una raya desplazable y
+  relaciones con nombre (1:3 … 3:1); y la **Home** deja de mezclar sesión y
+  archivo: cada proyecto es una ficha con su foto, su fecha y sus tres modos
+  (BUILDER · VIEWER · SIMULAR).
+* **v0.4.1** — la **herramienta de PASADOR**: se enciende en la paleta, se
+  orbita libre y **un toque elige pieza y cara**; entonces se pregunta si el eje
+  ATRAVIESA esa cara o si va sobre una HORQUILLA soldada a ella.
+* **v0.4.2** — las **medidas de la horquilla y el mando del eje**, dichos desde
+  el pasador: alto, garganta, vuelo, espesor, diámetro del seguro y sensibilidad
+  del gesto. El herraje se rehace en cada pasada, así que sus cotas tienen que
+  vivir en quien lo monta.
+* **v0.4.3** — dos defectos del motor: el **extremo redondo estaba sólo en la
+  malla** (el colisionador seguía siendo la esquina en escuadra, justo donde se
+  decide el recorrido) y la **horquilla se enterraba en la cara** en vez de
+  apoyarse en ella. Y cada colisionador apunta ya de qué pieza es.
+
+### Corregido — los cuatro botones de la Home, en castellano duro
+
+En inglés se leía **«Choose how to open: 📂 ABRIR…»**: la mitad de la frase en
+cada idioma. Llevaban así desde que existen; lo que lo destapó fue el
+desplegable de modos de v0.4.0, que metió el botón dentro de un grupo con
+etiqueta y lo puso al alcance del barrido de `prueba-ingles`. NUEVO, ABRIR,
+BIBLIOTECA, CONTINUAR y Capturas pasan por `tt()`.
+
+### Cambiado — tres pruebas que medían el reloj, no la app
+
+Salieron al correr la batería entera para la release, y ninguna era un fallo del
+programa:
+
+* `punto-anclaje` esperaba el alma de la horquilla un espesor más allá del fondo
+  del vuelo, que es justo lo que v0.4.3 corrigió: ahora se le pide el DORSO en
+  el fondo del vuelo, y se dice por qué.
+* `home-visor` medía el visor tras **siete segundos fijos**: con la máquina
+  cargada lo pillaba a medio montar —columnas 0, casillas 0, marco vacío—
+  mientras las comprobaciones de más abajo veían el visor entero. Ahora espera a
+  que el inventario esté.
+* `biblioteca-modelos` daba 2,5 s a la lista en inglés **con otra página abierta
+  con su WebGL**; las tres fichas «no existían» aunque estuvieran bien puestas.
+  Ahora espera a que estén.
+
 ## [0.4.3] — 2026-09-23
 
 ### Corregido — el EXTREMO REDONDO estaba sólo en la malla

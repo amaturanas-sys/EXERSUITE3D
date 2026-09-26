@@ -242,17 +242,24 @@ export class Landing {
    * primero QUÉ se abre y después CON QUÉ.
    */
   private renderProyectos(): void {
+    // LOS CUATRO BOTONES, TRADUCIDOS (v0.4.4). Estaban en castellano duro desde
+    // que existen; lo que lo destapó fue el desplegable de modos de v0.4.0, que
+    // metió el botón dentro de un grupo con etiqueta y lo puso al alcance del
+    // barrido de `prueba-ingles`. En inglés se leía «Choose how to open: 📂
+    // ABRIR…», o sea la mitad de la frase en cada idioma.
     const acciones = el("div", { class: "land-actions" }, [
-      this.accion("✦  NUEVO", true, () => this.actions.onNew()),
-      this.conModos("📂  ABRIR…", "archivo", (m) => void this.abrirProyecto(m)),
-      this.accion("🧩  BIBLIOTECA", false, () => this.actions.onExploreLibrary()),
+      this.accion(tt("✦  NUEVO", "✦  NEW"), true, () => this.actions.onNew()),
+      this.conModos(tt("📂  ABRIR…", "📂  OPEN…"), "archivo", (m) => void this.abrirProyecto(m)),
+      this.accion(tt("🧩  BIBLIOTECA", "🧩  LIBRARY"), false, () => this.actions.onExploreLibrary()),
     ]);
     if (this.actions.hasAutosave) {
       acciones.append(
-        this.conModos("↻  CONTINUAR", "sesion", (m) => this.actions.onContinue(m)),
+        this.conModos(tt("↻  CONTINUAR", "↻  CONTINUE"), "sesion", (m) => this.actions.onContinue(m)),
       );
     }
-    acciones.append(this.accion("🖼  Capturas", false, () => this.renderCapturas()));
+    acciones.append(
+      this.accion(tt("🖼  Capturas", "🖼  Screenshots"), false, () => this.renderCapturas()),
+    );
     this.contenido.append(acciones, this.seccionRecientes());
   }
 

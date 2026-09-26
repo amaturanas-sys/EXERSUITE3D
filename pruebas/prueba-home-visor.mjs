@@ -116,7 +116,17 @@ ok(
 
 // ── 4. EL VISOR ──────────────────────────────────────────────────────────
 await page.click(".land-ficha:has-text('Prueba visor') .land-modo:has-text('VIEWER')");
-await page.waitForTimeout(7000);
+// SE ESPERA A QUE EL INVENTARIO ESTÉ, NO AL RELOJ. Con siete segundos fijos la
+// prueba medía un visor a medio montar cuando la máquina iba cargada —columnas
+// 0, casillas 0, marco vacío— mientras las comprobaciones de más abajo, que
+// llegan después, veían el visor entero. Un fallo que sólo dice que el reloj
+// iba justo.
+await page.waitForFunction(
+  () => document.querySelectorAll(".visor-celda").length > 0,
+  null,
+  { timeout: 60000 },
+);
+await page.waitForTimeout(1200);
 const visor = await page.evaluate(() => {
   const marco = document.querySelector(".visor-modelo");
   const inv = document.querySelector(".visor-inventario");

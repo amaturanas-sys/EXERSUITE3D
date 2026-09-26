@@ -246,7 +246,15 @@ await page2.click("text=🛒 MARKETPLACE");
 await page2.waitForTimeout(1200);
 await page2.evaluate(() => [...document.querySelectorAll("button")]
   .find((b) => /Ver en 3D|View in 3D/.test(b.textContent)).click());
-await page2.waitForTimeout(2500);
+// SE ESPERA A QUE LAS FICHAS ESTÉN. Los 2,5 s fijos bastaban con la máquina en
+// reposo, pero aquí hay OTRA página abierta con su WebGL, y entonces la lista
+// llegaba tarde: las tres fichas «no existían» aunque estuvieran bien puestas.
+await page2.waitForFunction(
+  () => [...document.querySelectorAll(".lib-row")].some((r) => /Kettlebell/.test(r.textContent ?? "")),
+  null,
+  { timeout: 60000 },
+);
+await page2.waitForTimeout(600);
 const CASTELLANO = /\b(bola|costado|cabezas|goma|mango|cromado|grabado|libras|canto|alma|vaciad|llanta|cuarteles)\b/i;
 for (const nombre of ["Kettlebell · 20 kg", "Hex dumbbell · 30 lb", "Weight plate · 45 lb"]) {
   const d = await page2.evaluate((n) => {
