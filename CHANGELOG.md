@@ -60,6 +60,16 @@ modelo.
   queda **quieta seis segundos** (v ≈ 0, 1 mm de apoyo en cada una de las dos
   vigas dentadas). Antes de estos arreglos era un conjunto colgando de uniones
   libres con una pieza fantasma cayéndose dentro.
+* **La prueba de la horquilla mide ahora en MODO POSE**, que es la respuesta que
+  el propio programa ya tenía a la pregunta que hace: monta el mundo sin
+  gravedad y con amortiguación alta, lo asienta y entrega el control quieto.
+  Apagar la gravedad DESPUÉS de arrancar llegaba tarde —a 45° el respaldo ya se
+  había ido a 71°— y sólo pasaba desapercibido mientras la horquilla estuvo mal
+  soldada, porque entonces el conjunto estaba agarrotado. Medir bien destapó un
+  resto más: el pivote de la horquilla llevaba un **tope numérico de 15° a 120°**
+  de la época de la bisagra de placas, o sea justo lo contrario de lo que la
+  prueba exige. Fuera el tope, la geometría es el tope. Siete poses exactas y 0
+  cm de penetración.
 * **`dos-bisagras`, de cuatro rojos a uno**, y el que queda ya no es del
   fichero: **el gesto de recostar echa el mecanismo fuera del carril**. Medido
   con 24° de tirón: el pasador de apoyo viaja 84 cm, sale del carril y el

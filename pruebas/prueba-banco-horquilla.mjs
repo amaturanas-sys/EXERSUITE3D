@@ -58,35 +58,30 @@ const medir = (data) =>
     const resp = [...ed.objects.values()].find((o) => o.name === "Respaldo");
     const base = [...ed.objects.values()].find((o) => o.name === "Asiento");
     if (!resp || !base) return { error: "falta pieza de referencia" };
-    ed.toggleSimulation();
-    // SIN GRAVEDAD, Y ÉSA ES LA MEDIDA (v0.4.3). Aquí se pregunta por la
-    // GEOMETRÍA de la pose —¿entra el respaldo en el hueco que la horquilla le
-    // deja?—, no por si la banca se sostiene sola: el mecanismo se ha quitado a
-    // propósito, así que el respaldo cuelga de un solo pasador y se desploma.
-    // Mientras la unión estuvo AGARROTADA eso no se notaba —el propio choque lo
-    // sujetaba—, y al dejarla girar libre el respaldo aparecía tumbado en todos
-    // los ángulos. Con la gravedad a cero y las velocidades a cero la pose se
-    // queda donde se la puso y los contactos se siguen calculando, que es justo
-    // lo que hay que leer.
+    // SE PREGUNTA EN MODO POSE, QUE ES LO QUE MIDE ESTO (v0.4.5).
     //
-    // EL MAPA DE CUERPOS SE REUSA MIENTRAS SE RECONSTRUYE EL MUNDO: entre
-    // escena y escena devuelve cuerpos ya destruidos, y llamar a mass() sobre
-    // uno revienta el WASM con «null pointer passed to rust». Se sondea con red.
+    // Aquí se pregunta por la GEOMETRÍA de la pose —¿cabe el respaldo en el
+    // hueco que la horquilla le deja?—, no por si la banca se sostiene: el
+    // mecanismo se quita a propósito, así que el respaldo cuelga de un solo
+    // pasador. Arrancar la simulación y APAGAR LUEGO la gravedad llegaba tarde:
+    // entre el primer paso y el apagado el respaldo ya había girado —a 45° se
+    // midió 71°—, y mientras la horquilla estuvo mal soldada eso no se veía
+    // porque el conjunto estaba agarrotado.
+    //
+    // El modo POSE de la máquina es justo esto y lo hace el propio programa:
+    // monta el mundo sin gravedad y con amortiguación alta, lo asienta 150
+    // pasos y entrega el control quieto. Los contactos se siguen calculando,
+    // que es lo que hay que leer.
+    // El modo pose es PARA ALGUIEN: sin maniquí delante, el programa se niega
+    // —y con razón: la partida que saliera de ahí no se aplicaría a nadie—. Se
+    // trae uno, que no entra al motor y por tanto no estorba a la medida.
+    ed.humanMode = "mannequin";
+    await ed.addHumanFigure(175);
+    await new Promise((r) => setTimeout(r, 400));
+    await ed.iniciarPoseMaquina();
     let bodies = null, listo = false;
-    const quieto = () => {
-      const w = ed.physics?.world;
-      if (!w) return;
-      w.gravity.x = 0; w.gravity.y = 0; w.gravity.z = 0;
-      for (const e of (ed.physics?.bodies ?? new Map()).values()) {
-        try {
-          e.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-          e.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-        } catch { /* cuerpo viejo */ }
-      }
-    };
-    for (let k = 0; k < 300 && !listo; k++) {
-      await new Promise((r) => setTimeout(r, 20));
-      quieto();
+    for (let k = 0; k < 120 && !listo; k++) {
+      await new Promise((r) => setTimeout(r, 50));
       bodies = ed.physics?.bodies;
       if (!bodies) continue;
       const id = [...ed.objects].find(([, o]) => o.name === "Respaldo")?.[0];
@@ -94,9 +89,8 @@ const medir = (data) =>
       if (!c) continue;
       try { if (c.mass() > 0.5) listo = true; } catch { /* cuerpo viejo */ }
     }
-    quieto();
     const world = ed.physics?.world;
-    if (!world || !listo) { ed.toggleSimulation(); return { error: "el mundo no se montó" }; }
+    if (!world || !listo) { ed.terminarPoseMaquina(); return { error: "el mundo no se montó" }; }
 
     const q = new T.Quaternion(), q2 = new T.Quaternion();
     const ang = () => {
@@ -128,7 +122,7 @@ const medir = (data) =>
     // respaldo choca al girar, así que se mira su cuerpo y nadie más.
     const idResp = [...ed.objects].find(([, o]) => o.name === "Respaldo")?.[0];
     const cuerpoResp = idResp ? bodies.get(idResp)?.body : null;
-    if (!cuerpoResp) { ed.toggleSimulation(); return { error: "sin cuerpo del respaldo" }; }
+    if (!cuerpoResp) { ed.terminarPoseMaquina(); return { error: "sin cuerpo del respaldo" }; }
     let peor = 0, culpable = "";
     for (let i = 0; i < cuerpoResp.numColliders(); i++) {
       const c = cuerpoResp.collider(i);
@@ -152,7 +146,7 @@ const medir = (data) =>
       });
     }
     const medido = ang();
-    ed.toggleSimulation();
+    ed.terminarPoseMaquina();
     await new Promise((r) => setTimeout(r, 200));
     return { medido, penetra: +(Math.abs(peor) * 100).toFixed(2), culpable };
   }, data);

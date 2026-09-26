@@ -1206,9 +1206,9 @@
         0,
         -1
       ],
-      "limitsEnabled": true,
-      "min": 15,
-      "max": 120,
+      "limitsEnabled": false,
+      "min": 0,
+      "max": 360,
       "motor": {
         "enabled": false,
         "targetVel": 45,
