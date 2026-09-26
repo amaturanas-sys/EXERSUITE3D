@@ -291,8 +291,8 @@
         "fixed": false
       },
       "position": [
-        -26.559914213940893,
-        90.13932707537396,
+        -28.02030919729476,
+        87.89539628686488,
         -0.5
       ],
       "quaternion": [
@@ -388,8 +388,8 @@
         "fixed": false
       },
       "position": [
-        -23.306785678952938,
-        83.66630049565349,
+        -24.767180662306806,
+        81.42236970714441,
         -0.2160462557178704
       ],
       "quaternion": [
@@ -397,6 +397,38 @@
         0.0,
         -0.7069359023116821,
         0.7072776187769325
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "obj_96",
+      "name": "Pasador de bisagra",
+      "componentId": "pasador-bisagra",
+      "materialId": "acero-pulido",
+      "params": {
+        "kind": "cylinder",
+        "radiusTop": 0.5,
+        "radiusBottom": 0.5,
+        "height": 4.75
+      },
+      "physics": {
+        "massKg": 0.2,
+        "fixed": false
+      },
+      "position": [
+        -2.5581100892524917,
+        78.54626978910147,
+        -0.2160462557178704
+      ],
+      "quaternion": [
+        0.6619213688282614,
+        -0.24871691033888438,
+        -0.24871691033888438,
+        0.6619213688282614
       ],
       "scale": [
         1,
@@ -421,8 +453,8 @@
         "fixed": false
       },
       "position": [
-        -31.55798058990804,
-        86.13691124222687,
+        -33.01837557326191,
+        83.89298045371778,
         -0.5000000000000007
       ],
       "quaternion": [
@@ -454,8 +486,8 @@
         "fixed": false
       },
       "position": [
-        -31.579727291957155,
-        131.13690598757046,
+        -33.040122275311,
+        128.89297519906134,
         -0.5000000000000007
       ],
       "quaternion": [
@@ -463,40 +495,6 @@
         0.7071067605443073,
         0.0001708582326252206,
         0.7071067605443074
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_100",
-      "name": "Horquilla del respaldo",
-      "componentId": "punto-anclaje",
-      "materialId": "acero-negro",
-      "params": {
-        "kind": "horquilla",
-        "horquillaAlto": 8.0,
-        "horquillaEspesor": 0.8,
-        "horquillaGarganta": 6.6,
-        "horquillaVuelo": 4.0,
-        "horquillaAgujero": 1.3
-      },
-      "physics": {
-        "massKg": 0.5,
-        "fixed": false
-      },
-      "position": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "quaternion": [
-        -0.5,
-        -0.5,
-        -0.5,
-        0.5
       ],
       "scale": [
         1,
@@ -666,8 +664,8 @@
       "bodyAId": "obj_86",
       "bodyBId": "obj_95",
       "anchor": [
-        -23.306785678952938,
-        83.66630049565349,
+        -24.767180662306806,
+        81.42236970714441,
         -0.2160462557178704
       ],
       "axis": "z",
@@ -690,8 +688,8 @@
       "bodyAId": "obj_86",
       "bodyBId": "obj_97",
       "anchor": [
-        -29.059913922015536,
-        90.13811892526013,
+        -30.520308905369397,
+        87.89418813675104,
         -0.5000000000000002
       ],
       "axis": "z",
@@ -714,8 +712,8 @@
       "bodyAId": "obj_98",
       "bodyBId": "obj_86",
       "anchor": [
-        -29.07828394164843,
-        128.1508155210575,
+        -30.538678925002287,
+        125.9068847325484,
         -0.5000000000000002
       ],
       "axis": "z",
@@ -781,7 +779,6 @@
         "factor": 2
       },
       "locked": false,
-      "apertura0": 109.99999999999999,
       "sentidoApertura": -1,
       "sensibilidad": 9,
       "contactos": true,
@@ -812,7 +809,6 @@
         "factor": 2
       },
       "locked": false,
-      "apertura0": 109.99999999999999,
       "sentidoApertura": -1,
       "sensibilidad": 9,
       "contactos": true,
@@ -848,99 +844,6 @@
       "sensibilidad": 9,
       "contactos": false,
       "soldada": false
-    },
-    {
-      "name": "Soldadura de la horquilla",
-      "kind": "revolute",
-      "bodyAId": "obj_85",
-      "bodyBId": "obj_100",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": true,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": true
-    },
-    {
-      "name": "Soldadura del pasador de la horquilla",
-      "kind": "revolute",
-      "bodyAId": "obj_100",
-      "bodyBId": "obj_91",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": true,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": true
-    },
-    {
-      "name": "Horquilla del respaldo",
-      "kind": "revolute",
-      "bodyAId": "obj_100",
-      "bodyBId": "obj_86",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": false,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": false
     }
   ],
   "cables": [],

@@ -5,6 +5,68 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.5] — 2026-09-26
+
+### Corregido — tres defectos del cargador que llevaban la banca rota por dentro
+
+Los cuatro rojos de la banca no eran cuatro problemas: eran **el mismo fichero
+mal leído**, y el modelo es el banco de pruebas de las herramientas, así que lo
+que se arregla aquí es el motor.
+
+**1. Dos piezas con el mismo id, en silencio.** `bancoajustable.json` traía dos
+horquillas con el id `obj_100`. El cargador se quedaba con la SEGUNDA para atar
+las uniones, así que la primera entraba en la escena **sin una sola unión** —una
+horquilla suelta cayéndose con la gravedad— y la segunda cargaba **seis
+constraints donde hay tres**, con el solver peleándose consigo mismo. Ahora
+manda la primera, la repetida entra igual y **se dice**.
+
+**2. La misma unión, dos veces.** El fichero repetía las tres uniones de la
+horquilla (rastro de lo anterior). Dos constraints sobre el mismo par tirando del
+mismo punto no sujetan mejor: se resuelven una contra otra. Se reconocen por par,
+tipo y punto de anclaje —a 1 mm ya son la misma— y se monta una.
+
+**3. La reparación de v0.3.19 desarmaba herraje legítimo.** «Una articulación no
+es una soldadura, diga lo que diga el fichero» nació para proyectos guardados
+cuando `soldada` no se escribía, y allí `apertura0` era el único testigo de que
+algo era un pivote. Pero se aplicaba TAMBIÉN a los ficheros que sí lo dicen: en
+la banca **desoldaba la horquilla de su pilar y el eje de su horquilla** —las dos
+uniones decían `soldada: true`— porque el script que montó la banca copió un
+`apertura0` en las tres. El conjunto entero colgaba de revolutes libres. Ahora la
+reparación se limita a lo que vino a reparar: ficheros que no dicen nada.
+
+### Corregido — el pasador no reconocía su propio herraje tras abrir el proyecto
+
+El herraje se identificaba por un nombre con **el id de la pieza dentro**
+(«Pasador obj_91: pivote de…»), y al abrir un proyecto cada pieza nace con un id
+nuevo: el eje no veía lo suyo, no lo barría, y montaba otro juego encima. Cada
+abrir-y-guardar **doblaba** las uniones del pasador y sus horquillas — que es de
+donde salió el id repetido del punto 1. Ahora se barre por **implicación**: las
+uniones del eje son las que llegan a él, y eso no cambia de id. Los pasadores se
+rearman además al abrir, así que lo que se ve es lo que dicen sus params.
+
+### Cambiado — la banca, concéntrica con su pasador
+
+El centro del arco de la punta del respaldo estaba a 2,68 cm del eje. Un brazo
+que pivota tiene el agujero EN el centro de su arco; con ese desvío barría 5,68
+alrededor del pivote cuando la garganta de la horquilla da 3,2. Corregido en el
+modelo.
+
+### Medido
+
+* **`banco-horquilla` verde**: 0 cm de penetración en los siete ángulos de 0° a
+  90°. El requisito con el que nació —que la horquilla deje el recorrido
+  entero— se cumple.
+* **La banca aguanta**: desde su pose guardada se asienta en medio segundo y se
+  queda **quieta seis segundos** (v ≈ 0, 1 mm de apoyo en cada una de las dos
+  vigas dentadas). Antes de estos arreglos era un conjunto colgando de uniones
+  libres con una pieza fantasma cayéndose dentro.
+* **`dos-bisagras`, de cuatro rojos a uno**, y el que queda ya no es del
+  fichero: **el gesto de recostar echa el mecanismo fuera del carril**. Medido
+  con 24° de tirón: el pasador de apoyo viaja 84 cm, sale del carril y el
+  respaldo acaba en −80°. `girarBisagra` gira el cuerpo sin llevarse el
+  mecanismo que cuelga de él, y ningún diente lo recoge al bajar. Ése es el
+  siguiente hilo, y es de herramienta, no de modelo.
+
 ## [0.4.4] — 2026-09-26
 
 ### La batería entera, en serie: 118 de 123

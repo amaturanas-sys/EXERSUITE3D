@@ -3884,6 +3884,8 @@ export class Editor {
     const idMap = new Map<string, string>();
     // LO QUE NO LLEGÓ, ANOTADO (v0.3.78). Ver el aviso al final del método.
     const omitidas: string[] = [];
+    /** Ids que el fichero repite: se avisan al final (v0.4.5). */
+    const duplicadas: string[] = [];
 
     for (const od of data.objects) {
       // Un componente desconocido (proyecto de otra versión, JSON editado) no
@@ -3921,7 +3923,20 @@ export class Editor {
         obj.mesh.quaternion.fromArray(od.quaternion);
         obj.mesh.scale.fromArray(od.scale);
         this.normalizarEspejo(obj);
-        idMap.set(od.id, obj.id);
+        // DOS PIEZAS CON EL MISMO ID (v0.4.5). Un fichero editado a mano puede
+        // traerlo, y hasta aquí se tragaba en silencio con el peor de los dos
+        // resultados posibles: la SEGUNDA se quedaba el id, así que TODAS las
+        // uniones del fichero se ataban a ella —duplicadas, porque el fichero
+        // también las repetía— y la PRIMERA quedaba flotando sin una sola
+        // unión. Medido en `bancoajustable.json`: de las dos horquillas del
+        // respaldo, una caía libre con la gravedad y la otra cargaba seis
+        // constraints donde había tres, con el solver peleándose consigo mismo.
+        //
+        // No hay forma de adivinar a cuál de las dos apuntaba cada unión, así
+        // que la regla es la única defendible: manda la PRIMERA, la pieza
+        // repetida entra igual —es una pieza de la máquina— y se DICE.
+        if (idMap.has(od.id)) duplicadas.push(od.id);
+        else idMap.set(od.id, obj.id);
       } catch (err) {
         console.warn(`Se omite la pieza "${od.name}" (${od.componentId}):`, err);
         omitidas.push(od.name || od.componentId);
@@ -3956,6 +3971,18 @@ export class Editor {
             "If you still have the original .json file, open that one: it carries the drawn pieces inside.",
         ),
       );
+    }
+
+    // LOS PASADORES SE REARMAN AL ABRIR (v0.4.5). Sus uniones y su herraje se
+    // deducen de los params —quién ancla, quién gira, qué cotas—, así que
+    // rehacerlos aquí es lo que garantiza que lo que se ve es lo que dicen los
+    // params, y no la suma de lo guardado más lo que se monte después. Es
+    // también lo que limpia de un golpe los proyectos que venían doblados.
+    for (const o of this.listObjects()) {
+      if (o.componentId !== "pasador") continue;
+      const p = o.params;
+      if (!(p.pasadorAnclas?.length || p.pasadorMoviles?.length)) continue;
+      this.aplicarPasador(o);
     }
 
     // ANCLAJES DE LAS GUÍAS (v0.3.3): viajan en los params con el id de la
@@ -3995,12 +4022,28 @@ export class Editor {
     }
 
     const contactosExplicitos = new Set<string>();
+    // LA MISMA UNIÓN DOS VECES NO SUJETA MEJOR (v0.4.5): son dos constraints
+    // sobre el mismo par tirando del mismo punto, y el solver las resuelve una
+    // contra otra. El fichero de la banca traía seis donde había tres —rastro
+    // del id duplicado— y de ahí salía parte del temblor. Se reconocen por par,
+    // tipo y punto de anclaje; a 1 mm ya son la misma.
+    const puestas: { a: string; b: string; kind: string; p: THREE.Vector3 }[] = [];
+    let repetidas = 0;
     for (const jd of data.joints) {
       const a = idMap.get(jd.bodyAId);
       const b = idMap.get(jd.bodyBId);
       if (!a || !b) continue;
-      const j = this.connect(a, b, jd.kind, new THREE.Vector3().fromArray(jd.anchor));
+      const punto = new THREE.Vector3().fromArray(jd.anchor);
+      const yaEsta = puestas.some(
+        (v) =>
+          v.kind === jd.kind &&
+          ((v.a === a && v.b === b) || (v.a === b && v.b === a)) &&
+          v.p.distanceTo(punto) < 0.1,
+      );
+      if (yaEsta) { repetidas++; continue; }
+      const j = this.connect(a, b, jd.kind, punto.clone());
       if (!j) continue;
+      puestas.push({ a, b, kind: jd.kind, p: punto.clone() });
       if (jd.contactos !== undefined) contactosExplicitos.add(j.id);
       j.name = jd.name;
       j.axis = jd.axis;
@@ -4016,22 +4059,52 @@ export class Editor {
       // adelante distinguen soldadura de bisagra frenada.
       j.soldada = jd.soldada ?? jd.locked ?? false;
       j.apertura0 = jd.apertura0 ?? null;
-      // UNA ARTICULACIÓN NO ES UNA SOLDADURA, DIGA LO QUE DIGA EL FICHERO.
-      // `apertura0` sólo lo lleva la unión libre de una bisagra —las soldaduras
-      // del herraje no lo tienen—, así que es el testigo fiable de que esto es
-      // un pivote. Repara los proyectos guardados mientras `soldada` no se
-      // escribía en falso, donde cada bisagra frenada volvía soldada y sólo
-      // respondía una de las dos de la máquina.
-      // (No hay camino legítimo para soldar una articulación: el interruptor
-      // del candado sólo pone `locked`, que es el freno. Un `soldada: true`
-      // ahí dentro es siempre rastro de aquella migración.)
-      if (j.apertura0 != null) j.soldada = false;
+      // UNA ARTICULACIÓN NO ES UNA SOLDADURA, DIGA LO QUE DIGA EL FICHERO…
+      // PERO SÓLO SI EL FICHERO NO LO DICE (v0.4.5).
+      //
+      // La regla nació para reparar proyectos guardados mientras `soldada` no
+      // se escribía: allí `apertura0` era el único testigo de que aquello era un
+      // pivote, y sin ella cada bisagra frenada resucitaba soldada. Pero
+      // aplicada TAMBIÉN a los ficheros que sí dicen `soldada: true` desarma
+      // herraje legítimo: en `bancoajustable.json` desoldaba la horquilla de su
+      // pilar y el eje de su horquilla —las dos uniones lo decían— porque el
+      // script que montó la banca copió un `apertura0` en las tres. El conjunto
+      // entero quedaba colgando de revolutes libres.
+      //
+      // Así que la reparación se limita a lo que vino a reparar: ficheros que no
+      // dicen nada de `soldada`. Si lo dicen, manda el fichero.
+      if (jd.soldada === undefined && j.apertura0 != null) j.soldada = false;
       j.sentidoApertura = jd.sentidoApertura ?? 1;
       j.sensibilidad = jd.sensibilidad ?? 9;
       j.indexPaso = jd.indexPaso ?? 0;
       j.contactos = jd.contactos ?? false;
     }
     this.migrarContactosBisagra(contactosExplicitos);
+
+    // EL FICHERO VENÍA MAL FORMADO, Y SE DICE (v0.4.5). No se aborta la carga
+    // —la máquina se abre y se puede trabajar— pero callarlo es lo que dejó una
+    // horquilla flotando en la banca durante siete versiones.
+    if (duplicadas.length > 0 || repetidas > 0) {
+      const partes = [];
+      if (duplicadas.length > 0) {
+        partes.push(
+          tt(
+            `${duplicadas.length} pieza(s) repiten el id de otra (${[...new Set(duplicadas)].slice(0, 6).join(", ")}): sus uniones se han atado a la PRIMERA`,
+            `${duplicadas.length} piece(s) reuse another's id (${[...new Set(duplicadas)].slice(0, 6).join(", ")}): their joints went to the FIRST one`,
+          ),
+        );
+      }
+      if (repetidas > 0) {
+        partes.push(
+          tt(
+            `${repetidas} unión(es) venían repetidas y se han montado una sola vez`,
+            `${repetidas} joint(s) came duplicated and were mounted once`,
+          ),
+        );
+      }
+      console.warn(`[proyecto mal formado] ${partes.join(" · ")}`);
+      this.avisoTemporal(`⚠ ${partes.join(" · ")}`);
+    }
 
     for (const cd of data.cables) {
       const nodes = cd.nodes
@@ -13396,8 +13469,23 @@ export class Editor {
 
   aplicarPasador(obj: SceneObject): { anclas: number; moviles: number; taladros: number; anclajes: number } {
     const marca = `Pasador ${obj.id}`;
+    // BARRIDO POR IMPLICACIÓN, NO POR NOMBRE (v0.4.5).
+    //
+    // El herraje se reconocía por un nombre que lleva EL ID DE LA PIEZA dentro
+    // («Pasador obj_91: pivote de…»), y al abrir un proyecto cada pieza nace con
+    // un id NUEVO: el pasador ya no reconocía lo suyo, así que no lo barría y
+    // montaba otro juego encima. Cada abrir-y-guardar DOBLABA las uniones del
+    // eje y sus horquillas. Medido en `bancoajustable.json`: cuatro pivotes
+    // donde la máquina tiene dos, y dos horquillas superpuestas en el mismo
+    // sitio —una de ellas, por el id repetido que eso mismo dejó en el fichero,
+    // flotando sin una sola unión—.
+    //
+    // Lo que no cambia de id es QUÉ TOCA CADA UNIÓN: las del eje son las que
+    // llegan a él. Eso es lo que se barre, y de paso limpia los proyectos que
+    // ya venían doblados.
     for (const j of this.listJoints()) {
-      if (j.name.startsWith(marca)) this.removeJoint(j);
+      const mia = j.bodyAId === obj.id || j.bodyBId === obj.id;
+      if (j.name.startsWith(marca) || (mia && j.name.startsWith("Pasador "))) this.removeJoint(j);
     }
     obj.mesh.updateMatrixWorld(true);
     const centro = obj.mesh.getWorldPosition(new THREE.Vector3());
@@ -13411,6 +13499,8 @@ export class Editor {
     };
     const anclas = (obj.params.pasadorAnclas ?? []).map(vivo).filter(Boolean) as SceneObject[];
     const moviles = (obj.params.pasadorMoviles ?? []).map(vivo).filter(Boolean) as SceneObject[];
+    // El herraje heredado de un proyecto guardado, fuera antes de montar.
+    this.barrerHorquillasAjenas(obj, `${marca}: horquilla`);
 
     // ANCLAS: soldadas. El pasador y su soporte son un solo cuerpo, igual que
     // el pasador de una bisagra va soldado a su pala.
@@ -13589,6 +13679,25 @@ export class Editor {
     }
   }
 
+  /**
+   * LAS HORQUILLAS QUE ESTE EJE PUSO EN OTRA VIDA (v0.4.5).
+   *
+   * Un proyecto guardado trae el herraje con el nombre que tenía —con el id
+   * viejo dentro—, así que el barrido por nombre no lo ve y el eje monta otro
+   * juego encima. Éstas se reconocen por lo único que no cambia: están unidas
+   * AL PROPIO EJE. Se barren antes de la primera pasada, no en cada lado, para
+   * no llevarse las que el mismo `aplicarPasador` acaba de poner.
+   */
+  private barrerHorquillasAjenas(obj: SceneObject, marcaViva: string): void {
+    for (const j of this.listJoints()) {
+      if (j.bodyAId !== obj.id && j.bodyBId !== obj.id) continue;
+      const otro = this.objects.get(j.bodyAId === obj.id ? j.bodyBId : j.bodyAId);
+      if (!otro || otro.componentId !== "punto-anclaje") continue;
+      if (otro.name.startsWith(marcaViva)) continue; // es de esta misma pasada
+      this.removeObject(otro);
+    }
+  }
+
   private montarAnclajes(
     obj: SceneObject,
     marca: string,
@@ -13698,9 +13807,20 @@ export class Editor {
    */
   horquillaDelPasador(objectId: string): ReturnType<typeof medidasHorquilla> | null {
     const marca = `Pasador ${objectId}: horquilla`;
-    const h = this.listObjects().find(
-      (o) => o.componentId === "punto-anclaje" && o.name.startsWith(marca),
-    );
+    const h =
+      this.listObjects().find(
+        (o) => o.componentId === "punto-anclaje" && o.name.startsWith(marca),
+      ) ??
+      // Y si el nombre es de otra vida —proyecto abierto, ids nuevos—, la que
+      // esté unida a este eje (v0.4.5).
+      (() => {
+        for (const j of this.listJoints()) {
+          if (j.bodyAId !== objectId && j.bodyBId !== objectId) continue;
+          const otro = this.objects.get(j.bodyAId === objectId ? j.bodyBId : j.bodyAId);
+          if (otro?.componentId === "punto-anclaje") return otro;
+        }
+        return undefined;
+      })();
     return h ? medidasHorquilla(h.params) : null;
   }
 

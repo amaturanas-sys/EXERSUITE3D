@@ -65,7 +65,10 @@ console.log("CARGADO:", JSON.stringify(cargado));
 // 18 piezas desde v0.3.82: la banca gana el PASADOR TRANSVERSAL de la punta
 // del puntal, que es lo que descansa en el diente de la viga. Sin él el
 // puntal se colaba entre las dos placas y el respaldo se caía solo.
-ok(cargado.piezas === 18 && cargado.uniones >= 16, "el proyecto del diseñador entra entero",
+// DIECISIETE, NO DIECIOCHO (v0.4.5): la decimoctava era una horquilla FANTASMA
+// —el fichero repetía un id, así que el cargador le ataba las uniones a la
+// segunda copia y la primera flotaba libre— y se ha quitado del modelo.
+ok(cargado.piezas === 17 && cargado.uniones >= 16, "el proyecto del diseñador entra entero",
   `${cargado.piezas} piezas, ${cargado.uniones} uniones`);
 ok(cargado.bisagras === 2, "trae sus DOS bisagras", cargado.bisagras);
 ok(

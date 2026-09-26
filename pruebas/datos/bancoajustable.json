@@ -291,8 +291,8 @@
         "fixed": false
       },
       "position": [
-        -3.706067827793735,
-        82.90582085481418,
+        -6.121698684169168,
+        81.75139179387062,
         -0.5
       ],
       "quaternion": [
@@ -581,8 +581,8 @@
         "fixed": false
       },
       "position": [
-        -4.3018665683100785,
-        75.68585255656524,
+        -6.7174974246855115,
+        74.53142349562168,
         -0.2160462557178704
       ],
       "quaternion": [
@@ -646,8 +646,8 @@
         "fixed": false
       },
       "position": [
-        -10.057468567536365,
-        82.09359635186149,
+        -12.473099423911798,
+        80.93916729091794,
         -0.5000000000000007
       ],
       "quaternion": [
@@ -679,8 +679,8 @@
         "fixed": false
       },
       "position": [
-        13.369400212690834,
-        120.51470798536339,
+        10.953769356315401,
+        119.36027892441982,
         -0.5000000000000007
       ],
       "quaternion": [
@@ -720,40 +720,6 @@
         -0.28177325846805135,
         -0.28177325846805135,
         0.6485392443501755
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "obj_100",
-      "name": "Horquilla del respaldo",
-      "componentId": "punto-anclaje",
-      "materialId": "acero-negro",
-      "params": {
-        "kind": "horquilla",
-        "horquillaAlto": 8.0,
-        "horquillaEspesor": 0.8,
-        "horquillaGarganta": 6.6,
-        "horquillaVuelo": 4.0,
-        "horquillaAgujero": 1.3
-      },
-      "physics": {
-        "massKg": 0.5,
-        "fixed": false
-      },
-      "position": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "quaternion": [
-        -0.5,
-        -0.5,
-        -0.5,
-        0.5
       ],
       "scale": [
         1,
@@ -947,8 +913,8 @@
       "bodyAId": "obj_86",
       "bodyBId": "obj_95",
       "anchor": [
-        -4.3018665683100785,
-        75.68585255656524,
+        -6.7174974246855115,
+        74.53142349562168,
         -0.2160462557178704
       ],
       "axis": "z",
@@ -1026,8 +992,8 @@
       "bodyAId": "obj_86",
       "bodyBId": "obj_97",
       "anchor": [
-        -5.840574029654952,
-        84.2073135648268,
+        -8.256204886030385,
+        83.05288450388323,
         -0.5000000000000002
       ],
       "axis": "z",
@@ -1050,8 +1016,8 @@
       "bodyAId": "obj_98",
       "bodyBId": "obj_86",
       "anchor": [
-        13.948727284085347,
-        116.66265200792061,
+        11.533096427709914,
+        115.50822294697704,
         -0.5000000000000002
       ],
       "axis": "z",
@@ -1189,7 +1155,6 @@
         "factor": 2
       },
       "locked": false,
-      "apertura0": 109.99999999999999,
       "sentidoApertura": -1,
       "sensibilidad": 9,
       "contactos": true,
@@ -1220,7 +1185,6 @@
         "factor": 2
       },
       "locked": false,
-      "apertura0": 109.99999999999999,
       "sentidoApertura": -1,
       "sensibilidad": 9,
       "contactos": true,
@@ -1256,99 +1220,6 @@
       "sensibilidad": 9,
       "contactos": false,
       "soldada": false
-    },
-    {
-      "name": "Soldadura de la horquilla",
-      "kind": "revolute",
-      "bodyAId": "obj_85",
-      "bodyBId": "obj_100",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": true,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": true
-    },
-    {
-      "name": "Soldadura del pasador de la horquilla",
-      "kind": "revolute",
-      "bodyAId": "obj_100",
-      "bodyBId": "obj_91",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": true,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": true
-    },
-    {
-      "name": "Horquilla del respaldo",
-      "kind": "revolute",
-      "bodyAId": "obj_100",
-      "bodyBId": "obj_86",
-      "anchor": [
-        -28.0,
-        45.87,
-        -0.5
-      ],
-      "axis": "z",
-      "axisVec": [
-        0,
-        0,
-        1
-      ],
-      "limitsEnabled": true,
-      "min": 0,
-      "max": 180,
-      "motor": {
-        "enabled": false,
-        "targetVel": 45,
-        "factor": 2
-      },
-      "locked": false,
-      "soldada": false,
-      "apertura0": 89.99999999999999,
-      "sentidoApertura": -1,
-      "sensibilidad": 9,
-      "contactos": false
     }
   ],
   "cables": [],
