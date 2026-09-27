@@ -25,9 +25,18 @@ fallos que parecían tres cosas distintas:
   paraba en seco al agarrar —«una mano sujeta al instante»—; soltar es su
   simétrico y no lo hacía.
 * **El mando acumulaba intención contra un mecanismo que no cede** (hasta una
-  ventana de 15°) y cuando cedía, salía de golpe. Ahora **el tope persigue al
-  pedido a 1,5° por paso de física**, que son 90°/s: lo que mueve una mano. El
-  gesto entrega lo mismo, pero como movimiento.
+  ventana de 15°) y cuando cedía, salía de golpe. Ahora, **mientras una bisagra
+  está siendo operada, los dos cuerpos que une no giran más rápido que una
+  mano** (2,5 rad/s).
+
+  Y aquí hubo un camino falso que vale la pena dejar escrito: lo primero que
+  probé fue **suavizar el tope**, haciéndolo perseguir al ángulo pedido a 1,5°
+  por paso en vez de saltar a él. Quitaba el latigazo, sí, pero **le quitaba al
+  mando toda su fuerza**: un pasador metido en su diente y un brazo contra su
+  disco dejaban de dejarse mover en absoluto —`banca-indexada` pedía cuatro
+  tirones de 30° y el brazo no se movía un grado—. Es que la fuerza del gesto
+  SALE de la diferencia entre el tope y la pieza: sin diferencia no hay con qué
+  empujar. Lo que sobraba no era la fuerza, era la velocidad.
 
 Medido en la banca ajustable, con la pose fuera de su propio rango, que es el
 caso que reventaba:

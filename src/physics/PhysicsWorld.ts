@@ -2900,8 +2900,8 @@ export class PhysicsWorld {
   private static readonly PASO_MAX = 8;
   /** Cuánto puede adelantarse el mando a la pieza (rad) antes de esperarla. */
   private static readonly VENTANA_MANDO = 15 * DEG2RAD;
-  /** Lo que el tope avanza por paso de física: 1,5° a 60 Hz son 90°/s. */
-  private static readonly VEL_MANDO = 1.5 * DEG2RAD;
+  /** Lo más rápido que una mano gira lo que agarra: 2,5 rad/s son ~145°/s. */
+  private static readonly VEL_MANO = 2.5;
 
   /** ¿Esta pieza se opera girando (está colgada de una bisagra)? */
   esBisagra(objectId: string): boolean {
@@ -3064,37 +3064,51 @@ export class PhysicsWorld {
       : actual < f.rango[0]
         ? actual + recupera
         : actual - recupera;
-    // El tope NO se pone aquí: lo persigue `perseguirTopes()` en cada paso, a
-    // velocidad acotada. Poner el tope en el ángulo pedido es lo que convertía
-    // el gesto en un latigazo.
-    if (f.limite == null) f.limite = actual;
+    // EL TOPE SE PONE AQUÍ, Y ESO ES A PROPÓSITO. Probé a que lo persiguiera a
+    // 1,5° por paso para suavizarlo, y el mando se quedó SIN FUERZA: un pasador
+    // metido en su diente y un brazo contra su disco ya no se dejaban mover en
+    // absoluto —`banca-indexada` medía cuatro tirones de 30° y el brazo no se
+    // movía un grado—. Es que la fuerza del gesto SALE de la diferencia entre el
+    // tope y la pieza: sin diferencia no hay con qué empujar. Lo que sobraba no
+    // era la fuerza sino la VELOCIDAD, y eso se acota aparte (`frenarMando`).
+    f.limite = f.objetivo;
+    {
+      const t = PhysicsWorld.tope(f.base, f.objetivo);
+      f.handle.setLimits(t, t);
+    }
     f.a.wakeUp();
     f.b.wakeUp();
     return f.objetivo * RAD2DEG;
   }
 
   /**
-   * EL TOPE PERSIGUE AL PEDIDO, A UNA VELOCIDAD DE MANO (v0.4.6).
+   * LO QUE SE MUEVE BAJO LA MANO NO PASA DE VELOCIDAD DE MANO (v0.4.6).
    *
-   * Una bisagra se opera clavando sus topes en un ángulo: el solver lleva la
-   * pieza hasta ahí. Si el tope SALTA al ángulo pedido, esa corrección se hace
-   * en un paso y el impulso es proporcional al salto — y el mando acumula hasta
-   * una ventana de intención mientras el mecanismo no cede, así que en cuanto
-   * cede sale de golpe. Persiguiéndolo a 1,5° por paso (90°/s, que es lo que
-   * mueve una mano) el gesto entrega lo mismo y no lanza nada.
+   * Operar una bisagra es clavarle los topes en el ángulo pedido: el solver
+   * lleva la pieza hasta ahí, y la FUERZA sale precisamente de esa diferencia
+   * —por eso el gesto puede sacar un pasador de su diente—. Lo que no sale de
+   * ninguna parte es la velocidad con la que llega: el mando acumula hasta una
+   * ventana de intención mientras el mecanismo no cede y, en cuanto cede, el
+   * conjunto sale disparado. Medido en la banca ajustable: 30 rad/s, o sea
+   * 1.700°/s, con el pasador de apoyo 84 cm fuera del carril.
+   *
+   * Así que se acota lo que sobra y sólo eso: mientras una bisagra esté siendo
+   * operada, los dos cuerpos que une no giran más rápido que una mano. El tope
+   * sigue mandando, el mecanismo sigue cediendo cuando tiene que ceder, y nada
+   * sale volando.
    */
-  private perseguirTopes(): void {
+  private frenarMando(): void {
     for (const lista of this.frenos.values()) {
       for (const f of lista) {
-        if (f.objetivo == null || f.limite == null) continue;
-        const d = f.objetivo - f.limite;
-        if (Math.abs(d) < 1e-4) continue;
-        const paso = PhysicsWorld.VEL_MANDO;
-        f.limite += Math.abs(d) <= paso ? d : Math.sign(d) * paso;
-        const t = PhysicsWorld.tope(f.base, f.limite);
-        f.handle.setLimits(t, t);
-        f.a.wakeUp();
-        f.b.wakeUp();
+        if (f.objetivo == null) continue;
+        for (const b of [f.a, f.b]) {
+          if (!b.isDynamic()) continue;
+          const w = b.angvel();
+          const m = Math.hypot(w.x, w.y, w.z);
+          if (m <= PhysicsWorld.VEL_MANO) continue;
+          const k = PhysicsWorld.VEL_MANO / m;
+          b.setAngvel({ x: w.x * k, y: w.y * k, z: w.z * k }, true);
+        }
       }
     }
   }
@@ -3305,12 +3319,12 @@ export class PhysicsWorld {
         if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
       }
       this.applyDrag(PhysicsWorld.FIXED_DT);
-      this.perseguirTopes();
       // El maniquí manda su postura al motor ANTES del paso: sus segmentos
       // son cinemáticos, así que llegan como destino y el motor calcula con
       // qué velocidad barren lo que tengan delante.
       this.sincronizarFigura();
       this.world.step();
+      this.frenarMando();
       this.aplicarGuias();
       // Cable: primero corrige velocidades, luego proyecta posiciones para
       // conservar la longitud de forma dura (cable inextensible).
