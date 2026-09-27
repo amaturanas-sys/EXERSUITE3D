@@ -314,6 +314,83 @@ for (const r of recogidas) {
   );
 }
 
+// ── ¿Y A EMPUJONES? ─────────────────────────────────────────────────────────
+//
+// Lo de arriba mide el peso: el pasador sentado, la gravedad tirando. Falta el
+// empujón, que es lo que la banca recibe cuando alguien la mueve. Se le da al
+// pasador un impulso A LO LARGO del carril y se mira DOS cosas: hasta dónde
+// sube (el pico) y dónde acaba.
+//
+// Las dos, porque medir sólo una engaña en las dos direcciones: con el final se
+// pierde el salto —el pasador sube, no llega al diente de al lado y vuelve a
+// caer en el suyo, así que parece que no se ha movido— y con el pico se pierde
+// si se quedó fuera. Es la misma trampa que la de «retener» contra «recoger»,
+// dos secciones más arriba.
+//
+// Y EL LABIO NO ES EL QUE MANDA. Con el pasador de la banca (Ø2 en cuna de 2) se
+// probó subirlo de 3,76 cm —el de fábrica, 0,301 del paso— a 6,5, y el pico no
+// se movió: 5,0 contra 4,8 cm, y con impulsos de 6 a 16 N·s siempre los mismos
+// 4,6-5,1. Lo que para al pasador no es la altura del labio sino el FALDÓN DEL
+// DIENTE DE ARRIBA, que le sale al encuentro y lo devuelve. (Aquí, con el Ø4 de
+// esta prueba, el pico es 2,9: un pasador más gordo trepa menos.) Por eso un carril
+// así no se desajusta empujándolo por su propio plano: para cambiar de diente
+// hay que sacar el pasador FUERA del plano del carril, que es justo lo que hace
+// la mano en la máquina de verdad.
+//
+// (El motor recorta la velocidad a 8 m/s y 30 rad/s —`limitarDesbocados`—, así
+// que por encima de 16 N·s sobre 2 kg no hay más empujón que dar.)
+console.log("\nY a empujones por el carril: hasta dónde sube y dónde acaba (cm)");
+const empujon = (data, impulso) =>
+  page.evaluate(async ({ proyecto, impulso }) => {
+    const ed = window.exersuite.editor;
+    const T = window.exersuite.THREE;
+    await ed.loadProject(proyecto);
+    await new Promise((r) => setTimeout(r, 600));
+    const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
+    const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
+    const enPlaca = () => {
+      pl.mesh.updateMatrixWorld(true);
+      pa.mesh.updateMatrixWorld(true);
+      return pl.mesh.worldToLocal(pa.mesh.getWorldPosition(new T.Vector3())).y;
+    };
+    ed.toggleSimulation();
+    let listo = false;
+    for (let k = 0; k < 100 && !listo; k++) {
+      await new Promise((r) => setTimeout(r, 50));
+      const id = [...ed.objects].find(([, o]) => o.name === "Pasador")?.[0];
+      const c = id ? ed.physics?.bodies?.get(id)?.body : null;
+      try { if (c && c.mass() > 1) listo = true; } catch { /* cuerpo viejo */ }
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+    const y0 = enPlaca();
+    const id = [...ed.objects].find(([, o]) => o.name === "Pasador")[0];
+    const cuerpo = ed.physics.bodies.get(id).body;
+    const u = new T.Vector3(0, 1, 0)
+      .applyQuaternion(pl.mesh.getWorldQuaternion(new T.Quaternion()));
+    cuerpo.applyImpulse({ x: u.x * impulso, y: u.y * impulso, z: u.z * impulso }, true);
+    let pico = 0;
+    for (let k = 0; k < 20; k++) {
+      await new Promise((r) => setTimeout(r, 100));
+      const dy = enPlaca() - y0;
+      if (Math.abs(dy) > Math.abs(pico)) pico = dy;
+    }
+    const fin = enPlaca() - y0;
+    ed.toggleSimulation();
+    await new Promise((r) => setTimeout(r, 300));
+    return { pico: +pico.toFixed(2), fin: +fin.toFixed(2) };
+  }, { proyecto: data, impulso });
+
+const puntoGancho = await asientoEnElMundo(escenaCarril(35, null), asiento.gancho);
+for (const imp of [6, 16]) {
+  const r = await empujon(escenaConPasador(35, null, puntoGancho), imp);
+  console.log(`  ${String(imp).padStart(2)} N·s (v hasta ${imp / 2} m/s): sube ${r.pico} y acaba en ${r.fin}`);
+  ok(
+    Math.abs(r.fin) < 0.6,
+    `tras un empujón de ${imp} N·s el pasador VUELVE a su diente`,
+    `acabó a ${r.fin} cm del asiento (subió ${r.pico})`,
+  );
+}
+
 console.log(fallos === 0 ? "\nTODO OK" : `\n${fallos} FALLOS`);
 await browser.close();
 process.exit(fallos === 0 ? 0 : 1);

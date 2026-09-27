@@ -30,6 +30,35 @@ para el pivote nuevo es **viga girada −27°, movida (−20, +12), puntal de 34
 topes a **68,1° · 56,0° · 33,1°** y 27,2° en el peor contra la normal.
 `prueba-banco-tres-topes` también queda **verde**.
 
+### Medido — el diente no necesita ser más hondo
+
+El hilo que quedaba abierto era «una cuna más profunda retendría mejor». Medido,
+no: **el labio del gancho no es el que manda**. Con el pasador de la banca se le
+dan impulsos a lo largo del carril y se miran las DOS cosas —hasta dónde sube y
+dónde acaba—:
+
+| impulso | v tras el golpe | sube | acaba |
+|---|---|---|---|
+| 6 N·s | 3 m/s | 5,0 cm | en su diente |
+| 16 N·s | 8 m/s (el tope del motor) | 4,6 cm | en su diente |
+
+Subir el labio de 3,76 cm —el de fábrica, 0,301 del paso— a 6,5 no cambia el pico
+(4,8 contra 5,0). Lo que para al pasador no es la altura del labio sino el
+**faldón del diente de arriba**, que le sale al encuentro a los 5 cm y lo
+devuelve. O sea que un carril así **no se desajusta empujándolo por su propio
+plano**: para cambiar de diente hay que sacar el pasador FUERA del plano del
+carril, que es lo que hace la mano en la máquina de verdad — y lo que la app no
+sabe pedirle a un gesto.
+
+Dos cosas más que quedan escritas, porque cuestan de averiguar: el motor recorta
+la velocidad a **8 m/s y 30 rad/s** (`limitarDesbocados`), así que por encima de
+16 N·s sobre 2 kg no hay más empujón que dar; y **medir sólo el final esconde el
+salto** —el pasador sube, no alcanza el diente de al lado y vuelve a caer en el
+suyo, así que parece que no se ha movido—, igual que medir sólo el pico esconde
+si se quedó fuera. Es la tercera vez en esta versión que la trampa es la misma:
+retener no era recoger, alcanzar no era sostener, y aquí el final no es el
+camino. La prueba mide las dos.
+
 ### Cambiado — la prueba de las dos bisagras mide lo que sí es suyo
 
 Pedía que un gesto recostara la banca de un diente a otro, y eso resultó ser un
