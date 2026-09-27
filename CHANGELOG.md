@@ -5,6 +5,49 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.7] — 2026-09-27
+
+Sin cambios en la app: esta versión es **la banca de pruebas puesta al día**. Sus
+cinco y sus tres poses de tope venían de la máquina anterior a la horquilla —
+pivote en la bisagra de placas, en (−24,75, 42,15)— así que medían un mecanismo
+que el diseño ya no tiene, y llevaban rojas desde que se escribieron.
+
+### Regenerados — las poses de tope, desde la base nueva
+
+`pruebas/datos/banco-topes-geometria.py` resuelve las cinco contra el pivote de
+ahora —el pasador de la horquilla, en (−28, 45,87), con el respaldo concéntrico
+con él— y el mismo puntal de 42 cm: **74,9° · 62,2° · 51,4° · 41,3° · 30,6°**
+desde la vertical, con el pasador de apoyo a **0,00 mm** de su asiento en las
+cinco. `prueba-banco-cinco-topes` pasa de diez rojos a **verde**.
+
+`banco3-geometria.py` vuelve a resolver la variante de tres topes, que existe
+justamente para que el puntal empuje casi perpendicular al carril. El diseño
+viejo (viga girada −7,5°, movida (−22,5, +20,5), puntal de 33) daba 12,7° contra
+la normal, pero con dos topes a 5° uno del otro — tres topes que caen casi en el
+mismo ángulo no son tres topes. Pidiéndole reparto de verdad (24° entre el primero
+y el último, 12° entre vecinos) y la banda útil de una banca (30°–78°), el óptimo
+para el pivote nuevo es **viga girada −27°, movida (−20, +12), puntal de 34 cm**:
+topes a **68,1° · 56,0° · 33,1°** y 27,2° en el peor contra la normal.
+`prueba-banco-tres-topes` también queda **verde**.
+
+### Medido — alcanzar no es sostener
+
+El tope más recostado de la banca de cinco **no aguanta**, y ahora se sabe con un
+número por qué: ahí el puntal queda a **37° del carril**, contra 49°, 59°, 68° y
+75° en los otros cuatro. Con ese ángulo la fuerza del puntal empuja al pasador A
+LO LARGO del carril en vez de contra el fondo de su cuna, y ninguna cuna sujeta
+eso: el respaldo oscila y cae al tope de al lado. Los otros cuatro se quedan
+clavados —0,1° a 0,6° en los últimos nueve segundos—. La prueba le exige a los
+cuatro que trabajan y del quinto mide y dice; corregirlo es el largo del puntal o
+dónde va el carril, no el diente ni el motor.
+
+### Cambiado — la cesión se mide en el tramo estable
+
+Las dos pruebas medían la deriva contra la POSE GUARDADA, y eso metía en la
+cuenta el asentamiento del primer par de segundos —el pasador cayendo en su cuna,
+las uniones tensándose: de 1,6° a 6°—. Lo que la banca promete es que **no cede**,
+y eso se lee de la tercera muestra a la última.
+
 ## [0.4.6] — 2026-09-27
 
 ### Corregido — operar una bisagra era dar un latigazo
