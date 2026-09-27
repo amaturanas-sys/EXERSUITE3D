@@ -30,6 +30,32 @@ para el pivote nuevo es **viga girada −27°, movida (−20, +12), puntal de 34
 topes a **68,1° · 56,0° · 33,1°** y 27,2° en el peor contra la normal.
 `prueba-banco-tres-topes` también queda **verde**.
 
+### Medido — sujetar sin clavar el ángulo: la mano sí puede
+
+El hilo que quedaba de las dos bisagras: `tomarBisagra` **clava el ángulo**, así
+que puntal y respaldo quedan rígidos entre sí y al recostar se barre el pasador
+fuera del carril —60 cm, con el respaldo desplomado a 86°—. La mano
+(`grab`/`dragTo`) es lo contrario: un resorte de fuerza hacia un punto, que deja
+libres los demás grados de libertad. Y con ella **sí se puede**:
+
+| | ángulo clavado | en la mano |
+|---|---|---|
+| el pasador se aparta de la altura de su diente | **60 cm** | **0,8 cm** |
+| el respaldo | se desploma a 86° | recuesta 16° y aguanta (0,5° en 6 s) |
+
+Tres comprobaciones nuevas en `prueba-dos-bisagras` lo fijan. Medido en cuatro
+corridas: recostando de 39° a 53°, el pasador se queda siempre a menos de 1,5 cm
+de la altura de su diente.
+
+**Y lo que no da, que también es el hallazgo:** el pasador acaba **apoyado por
+fuera** de los dientes —de 4 a 8 cm de la boca de la cuna—, no encajado. La mano
+no puede meterlo, y no por un fallo: el extremo del puntal viaja por un arco y
+`applyDrag` descarta a propósito la componente que tira fuera de él («la mano no
+tira fuera del arco», v0.3.19). Para caer en un diente hace falta que el ÁNGULO
+DEL RESPALDO sea el que la geometría pide para ese diente —lo que resuelve
+`banco-topes-geometria.py`— y eso no lo coordina un gesto. Es el sitio del eje
+indexado (`pasadorIndexado`), que la app ya sabe hacer y `banca-indexada` ya mide.
+
 ### Medido — el diente no necesita ser más hondo
 
 El hilo que quedaba abierto era «una cuna más profunda retendría mejor». Medido,

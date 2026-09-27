@@ -311,6 +311,123 @@ ok(
   "el pasador del puntal descansa en la viga dentada, que es lo que la sostiene",
 );
 
+// ── SUJETAR SIN CLAVAR EL ÁNGULO (v0.4.7) ───────────────────────────────────
+//
+// Del hilo de arriba quedaba esto: `tomarBisagra` clava el ángulo, así que
+// puntal y respaldo quedan rígidos y al recostar se barre el pasador fuera del
+// carril (medido: acaba a 60 cm, con el respaldo desplomado a 86°). La MANO es
+// lo contrario —un resorte de fuerza hacia un punto, que deja libres los demás
+// grados de libertad— y con ella sí se puede sujetar el puntal mientras el
+// respaldo se mueve.
+//
+// Lo que se afirma es justo eso: con el puntal EN LA MANO, el pasador se queda a
+// la altura de su diente durante todo el recorrido en vez de irse del carril.
+// Medido en tres corridas: recostando de 39° a 53°, el pasador se queda entre
+// 25,5 y 26,9 de altura en el carril —su diente está en 25,9— y la banca aguanta
+// después (0,5° a 0,9° en ocho segundos).
+//
+// Y lo que NO da, que conviene saber: el pasador acaba APOYADO POR FUERA de los
+// dientes (4 a 7 cm de la boca de la cuna), no encajado. La mano no puede
+// meterlo: el extremo del puntal viaja por un arco y `applyDrag` descarta a
+// propósito la componente que tira fuera de él («la mano no tira fuera del
+// arco», v0.3.19). Para caer en un diente hace falta que el ÁNGULO DEL RESPALDO
+// sea el que la geometría pide para ese diente —lo que resuelve
+// `banco-topes-geometria.py`—, y eso no lo consigue coordinar un gesto: es el
+// sitio del eje indexado (`pasadorIndexado`), que la app ya sabe hacer.
+const conLaMano = await page.evaluate(async (data) => {
+  const ed = window.exersuite.editor;
+  const T = window.exersuite.THREE;
+  await ed.loadProject(data);
+  await new Promise((r) => setTimeout(r, 700));
+  const por = (n) => [...ed.objects.values()].find((o) => o.name === n);
+  const resp = por("Respaldo");
+  const pin = por("Pasador de apoyo");
+  const carril = por("Placa dentada (upright)");
+  const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  const incl = () => {
+    const v = new T.Vector3(0, 1, 0).applyQuaternion(resp.mesh.quaternion);
+    return +(Math.acos(Math.min(1, Math.abs(v.y))) * 180 / Math.PI).toFixed(1);
+  };
+  const enCarril = () => {
+    carril.mesh.updateMatrixWorld(true);
+    pin.mesh.updateMatrixWorld(true);
+    return carril.mesh.worldToLocal(pin.mesh.getWorldPosition(new T.Vector3()));
+  };
+  ed.toggleSimulation();
+  let listo = false;
+  for (let k = 0; k < 120 && !listo; k++) {
+    await espera(50);
+    const id = [...ed.objects].find(([, o]) => o.name === "Respaldo")?.[0];
+    const c = id ? ed.physics?.bodies?.get(id)?.body : null;
+    try { if (c && c.mass() > 0.5) listo = true; } catch { /* cuerpo viejo */ }
+  }
+  await espera(4000);
+  const y0 = enCarril().y;
+  const incl0 = incl();
+  // La mano toma el puntal por su extremo bajo y lo aparta 3 cm de la cara del
+  // carril: lo justo para que el pasador salga del diente.
+  const X_ASIENTO = -1.03;
+  const objetivo = (off) => {
+    const loc = enCarril();
+    return carril.mesh.localToWorld(new T.Vector3(X_ASIENTO + off, loc.y, loc.z));
+  };
+  ed.physics.grab(puntal.id, pin.mesh.getWorldPosition(new T.Vector3()), true);
+  ed.physics.dragTo(objetivo(3));
+  await espera(900);
+  // Y con el puntal en la mano se recuesta el respaldo.
+  ed.physics.elegirBisagra(resp.id, resp.mesh.getWorldPosition(new T.Vector3()));
+  ed.physics.tomarBisagra(resp.id);
+  let peor = 0;
+  for (let k = 0; k < 30 && incl() < 50; k++) {
+    ed.physics.girarBisagra(resp.id, 3);
+    ed.physics.dragTo(objetivo(3));
+    await espera(80);
+    peor = Math.max(peor, Math.abs(enCarril().y - y0));
+  }
+  const inclFin = incl();
+  ed.physics.release();
+  await espera(1500);
+  ed.physics.soltarBisagra(resp.id);
+  await espera(2500);
+  const serie = [];
+  for (let k = 0; k < 6; k++) {
+    await espera(1000);
+    serie.push(incl());
+  }
+  const fin = enCarril();
+  ed.toggleSimulation();
+  await espera(300);
+  return {
+    incl0, inclFin,
+    recorrido: +(inclFin - incl0).toFixed(1),
+    seVaDelCarril: +peor.toFixed(2),
+    finY: +fin.y.toFixed(2), finX: +fin.x.toFixed(2),
+    cede: +(Math.max(...serie) - Math.min(...serie)).toFixed(1),
+    serie,
+  };
+}, proyecto);
+console.log("CON LA MANO:", JSON.stringify(conLaMano));
+ok(
+  conLaMano.recorrido > 8,
+  "sujetando el puntal CON LA MANO, el respaldo sí se recuesta",
+  `de ${conLaMano.incl0}° a ${conLaMano.inclFin}°`,
+);
+ok(
+  conLaMano.seVaDelCarril < 3,
+  "y el pasador se queda a la altura de su diente en vez de irse del carril",
+  `se apartó ${conLaMano.seVaDelCarril} cm de su altura (con el ángulo clavado se iba 60)`,
+);
+ok(
+  conLaMano.cede <= 1,
+  "y donde queda, la banca aguanta",
+  `cedió ${conLaMano.cede}° en 6 s (${conLaMano.serie.join(" → ")})`,
+);
+console.log(
+  `  (y lo que no da: el pasador acaba a ${(conLaMano.finX + 1.03).toFixed(1)} cm `
+    + "por fuera de la boca de la cuna, apoyado en los dientes y no encajado)",
+);
+
 await browser.close();
 console.log(fallos === 0 ? "TODO OK" : `${fallos} FALLOS`);
 process.exit(fallos === 0 ? 0 : 1);
