@@ -163,6 +163,18 @@ export class PhysicsWorld {
       paso: number;
       /** Ángulo al que el motor la lleva mientras la mano la opera. */
       objetivo: number | null;
+      /**
+       * EL TOPE QUE DE VERDAD ESTÁ PUESTO (v0.4.6), que persigue al `objetivo`
+       * a una velocidad acotada en vez de saltar a él.
+       *
+       * Clavar el tope en el ángulo pedido hace que el solver corrija la
+       * diferencia EN UN PASO, y esa corrección es un impulso: el mando acumula
+       * hasta 15° de intención contra un mecanismo que no cede, y cuando cede,
+       * el conjunto sale disparado. Medido en la banca ajustable: 10 rad/s de
+       * golpe, y con la pose fuera de su rango, 30 rad/s. Persiguiéndolo, el
+       * gesto es un movimiento y no un latigazo.
+       */
+      limite: number | null;
       signo: 1 | -1;
       /** Arco que describe esta pieza: el eje visto desde el OTRO cuerpo. */
       arco: {
@@ -1719,6 +1731,7 @@ export class PhysicsWorld {
         sensibilidad: joint.sensibilidad,
         paso: Math.max(0, (joint.indexPaso ?? 0) * DEG2RAD),
         objetivo: null,
+        limite: null,
       };
       const anota = (
         body: R.RigidBody,
@@ -2887,6 +2900,8 @@ export class PhysicsWorld {
   private static readonly PASO_MAX = 8;
   /** Cuánto puede adelantarse el mando a la pieza (rad) antes de esperarla. */
   private static readonly VENTANA_MANDO = 15 * DEG2RAD;
+  /** Lo que el tope avanza por paso de física: 1,5° a 60 Hz son 90°/s. */
+  private static readonly VEL_MANDO = 1.5 * DEG2RAD;
 
   /** ¿Esta pieza se opera girando (está colgada de una bisagra)? */
   esBisagra(objectId: string): boolean {
@@ -2974,9 +2989,25 @@ export class PhysicsWorld {
     const e = this.bodies.get(objectId);
     const f = e && this.frenosDe(e.body);
     if (!f) return false;
-    f.objetivo = Math.min(Math.max(this.anguloFreno(f), f.rango[0]), f.rango[1]);
+    // SE TOMA DONDE ESTÁ, NO DONDE DEBERÍA ESTAR (v0.4.6).
+    //
+    // Esto clavaba el objetivo DENTRO del rango, y con una pose que estuviera
+    // fuera de él —un recorrido acotado a mano, un proyecto cuyos topes ya no
+    // cuadran con su pose— la bisagra se iba de golpe al borde del rango nada
+    // más tocarla: los topes se ponen en [objetivo, objetivo] y el solver tira
+    // del cuerpo hasta ahí en un paso. Medido en la banca ajustable, cuyo
+    // pivote arrastraba un tope de 15° a 120° de la época de la bisagra de
+    // placas: el pasador de apoyo salía disparado 84 cm, se iba del carril y el
+    // respaldo acababa en −80°. Y parecía culpa del gesto.
+    //
+    // Agarrar no es corregir: se toma el ángulo REAL. El rango sigue mandando
+    // —lo aplica el propio tope al soltar, y `girarBisagra` no deja salir de
+    // él—, así que una pose fuera de rango se recupera moviéndola, no de un
+    // tirón.
+    f.objetivo = this.anguloFreno(f);
+    f.limite = f.objetivo;
     {
-      const t = PhysicsWorld.tope(f.base, f.objetivo);
+      const t = PhysicsWorld.tope(f.base, f.limite);
       f.handle.setLimits(t, t);
     }
     // SE PARA EN SECO donde la tomas. Si venía cayendo, el tope tarda unos
@@ -3017,18 +3048,55 @@ export class PhysicsWorld {
     const actual = this.anguloFreno(f);
     const ventana = PhysicsWorld.VENTANA_MANDO;
     const pedido = (f.objetivo ?? actual) + paso;
-    f.objetivo = Math.min(
-      Math.max(pedido, actual - ventana, f.rango[0]),
-      actual + ventana,
-    );
-    f.objetivo = Math.min(Math.max(f.objetivo, f.rango[0]), f.rango[1]);
-    {
-      const t = PhysicsWorld.tope(f.base, f.objetivo);
-      f.handle.setLimits(t, t);
-    }
+    // LA VENTANA MANDA TAMBIÉN SOBRE EL RANGO (v0.4.6). El clamp al rango iba
+    // después y en crudo, así que con la pose fuera de él devolvía el borde sin
+    // más: el mismo tirón que se acaba de quitar de `tomarBisagra`, sólo que un
+    // evento más tarde. Fuera del rango se vuelve a él A UNA VENTANA POR GESTO.
+    const lo = Math.max(f.rango[0], actual - ventana);
+    const hi = Math.min(f.rango[1], actual + ventana);
+    // Y fuera del rango se vuelve A UN PASO POR GESTO, no a una ventana: el
+    // tope se pone en [objetivo, objetivo] y el solver corrige la diferencia en
+    // UN paso, así que el salto es el impulso. Con la ventana entera (15°) el
+    // cuerpo salía a 30 rad/s.
+    const recupera = Math.max(Math.abs(paso), 1 * DEG2RAD);
+    f.objetivo = lo <= hi
+      ? Math.min(Math.max(pedido, lo), hi)
+      : actual < f.rango[0]
+        ? actual + recupera
+        : actual - recupera;
+    // El tope NO se pone aquí: lo persigue `perseguirTopes()` en cada paso, a
+    // velocidad acotada. Poner el tope en el ángulo pedido es lo que convertía
+    // el gesto en un latigazo.
+    if (f.limite == null) f.limite = actual;
     f.a.wakeUp();
     f.b.wakeUp();
     return f.objetivo * RAD2DEG;
+  }
+
+  /**
+   * EL TOPE PERSIGUE AL PEDIDO, A UNA VELOCIDAD DE MANO (v0.4.6).
+   *
+   * Una bisagra se opera clavando sus topes en un ángulo: el solver lleva la
+   * pieza hasta ahí. Si el tope SALTA al ángulo pedido, esa corrección se hace
+   * en un paso y el impulso es proporcional al salto — y el mando acumula hasta
+   * una ventana de intención mientras el mecanismo no cede, así que en cuanto
+   * cede sale de golpe. Persiguiéndolo a 1,5° por paso (90°/s, que es lo que
+   * mueve una mano) el gesto entrega lo mismo y no lanza nada.
+   */
+  private perseguirTopes(): void {
+    for (const lista of this.frenos.values()) {
+      for (const f of lista) {
+        if (f.objetivo == null || f.limite == null) continue;
+        const d = f.objetivo - f.limite;
+        if (Math.abs(d) < 1e-4) continue;
+        const paso = PhysicsWorld.VEL_MANDO;
+        f.limite += Math.abs(d) <= paso ? d : Math.sign(d) * paso;
+        const t = PhysicsWorld.tope(f.base, f.limite);
+        f.handle.setLimits(t, t);
+        f.a.wakeUp();
+        f.b.wakeUp();
+      }
+    }
   }
 
   /**
@@ -3039,7 +3107,22 @@ export class PhysicsWorld {
     const e = this.bodies.get(objectId);
     const f = e && this.frenosDe(e.body);
     if (!f) return;
+    // SOLTAR NO ES LANZAR (v0.4.6).
+    //
+    // El mando gira la bisagra clavando sus topes en [objetivo, objetivo], y el
+    // solver corrige la diferencia en un paso: el cuerpo llega al final del
+    // gesto con la velocidad que le haya dejado esa corrección. Medido en la
+    // banca ajustable con la pose fuera de su propio rango: 30 rad/s —1.700°/s—
+    // al soltar, y desde ahí el respaldo se iba a −80° y el pasador de apoyo
+    // 84 cm fuera del carril. Nadie lanza un respaldo al soltarlo.
+    //
+    // `tomarBisagra` ya para en seco al agarrar, por la misma razón y con las
+    // mismas palabras: una mano sujeta al instante. Soltar es su simétrico.
+    const quieta = { x: 0, y: 0, z: 0 };
+    if (f.b.isDynamic()) f.b.setAngvel(quieta, true);
+    if (f.a.isDynamic()) f.a.setAngvel(quieta, true);
     f.objetivo = null;
+    f.limite = null;
     if (f.freno) this.fijarFreno(e!.body);
     else {
       const t = PhysicsWorld.topes(f.base, f.rango);
@@ -3222,6 +3305,7 @@ export class PhysicsWorld {
         if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
       }
       this.applyDrag(PhysicsWorld.FIXED_DT);
+      this.perseguirTopes();
       // El maniquí manda su postura al motor ANTES del paso: sus segmentos
       // son cinemáticos, así que llegan como destino y el motor calcula con
       // qué velocidad barren lo que tengan delante.

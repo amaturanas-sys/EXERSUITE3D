@@ -205,9 +205,14 @@ const ajuste = await page.evaluate(async (data) => {
   ed.toggleSimulation();
   await new Promise((r) => setTimeout(r, 4000));
 
+  // LAS METAS, POR ENCIMA DE DONDE LA BANCA DESCANSA (v0.4.6). Antes eran 20° y
+  // 28°, y la banca arreglada descansa en 28,5: el `recostar` no llegaba a
+  // ejecutarse ni una vez —su condición es `inclinación < meta`— así que el
+  // recorrido medido era 0 y la prueba lo leía como «no se ajusta». Los cinco
+  // topes van de 31° a 75° desde la vertical, así que 45 y 60 son dos de verdad.
   const reposo1 = inclinacion();
-  const reposo2 = await recostar(20);
-  const reposo3 = await recostar(28);
+  const reposo2 = await recostar(45);
+  const reposo3 = await recostar(60);
 
   // ¿SE QUEDA? Seis segundos mirando sin tocar. Cuando la banca estaba rota
   // el respaldo caía a ~0,9°/s, o sea unos 5-6° en esta ventana.

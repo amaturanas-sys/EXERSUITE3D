@@ -5,6 +5,51 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.6] — 2026-09-27
+
+### Corregido — operar una bisagra era dar un latigazo
+
+Una bisagra se opera clavándole los topes en el ángulo pedido: el solver lleva la
+pieza hasta ahí. Eso quiere decir que **cada diferencia entre el tope y la pieza
+es un impulso**, porque la corrección se hace en un paso. De ahí salían tres
+fallos que parecían tres cosas distintas:
+
+* **Agarrar teleportaba.** `tomarBisagra` clavaba el objetivo DENTRO del rango, y
+  con una pose que estuviera fuera de él —un recorrido acotado a mano, un
+  proyecto cuyos topes ya no cuadran con su pose— la bisagra se iba de golpe al
+  borde nada más tocarla. Ahora se toma el ángulo REAL: el rango lo sigue
+  aplicando el tope al soltar y el propio mando al mover, así que una pose fuera
+  de rango se recupera moviéndola.
+* **Soltar lanzaba.** El cuerpo llegaba al final del gesto con la velocidad que
+  le hubiera dejado la corrección, y al soltar salía volando. `tomarBisagra` ya
+  paraba en seco al agarrar —«una mano sujeta al instante»—; soltar es su
+  simétrico y no lo hacía.
+* **El mando acumulaba intención contra un mecanismo que no cede** (hasta una
+  ventana de 15°) y cuando cedía, salía de golpe. Ahora **el tope persigue al
+  pedido a 1,5° por paso de física**, que son 90°/s: lo que mueve una mano. El
+  gesto entrega lo mismo, pero como movimiento.
+
+Medido en la banca ajustable, con la pose fuera de su propio rango, que es el
+caso que reventaba:
+
+| | antes | ahora |
+|---|---|---|
+| velocidad máxima durante el gesto | **30 rad/s** (1.700°/s) | 1,6 rad/s |
+| al soltar | 30 rad/s | **0** |
+| dónde acaba el respaldo | **−80°** | 15–22° |
+| el pasador de apoyo | **84 cm fuera del carril** | sigue en el carril |
+
+Y de paso el gesto **mejora**: en la banca, 24° pedidos entregaban 2,3° y ahora
+entregan unos 10°, porque el impulso ya no se gasta peleándose con el tope.
+
+### Cambiado — la prueba de las dos bisagras pedía recostar hacia donde no había sitio
+
+Sus metas eran 20° y 28° y la banca arreglada descansa en 28,5, así que la
+condición `inclinación < meta` no se cumplía nunca: el gesto no llegaba a
+ejecutarse y el recorrido medido era 0, que la prueba leía como «no se ajusta».
+Los cinco topes van de 31° a 75° desde la vertical, así que ahora se le piden 45°
+y 60°, que son dos de verdad.
+
 ## [0.4.5] — 2026-09-26
 
 ### Corregido — tres defectos del cargador que llevaban la banca rota por dentro
