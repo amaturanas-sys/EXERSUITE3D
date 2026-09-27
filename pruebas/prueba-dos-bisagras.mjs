@@ -188,17 +188,41 @@ const ajuste = await page.evaluate(async (data) => {
   // SE INSISTE HASTA QUE PRENDA. El agarre de la bisagra no siempre engancha a
   // la primera, y una prueba que a veces ni llega a recostar la banca no mide
   // nada: lo que se quiere comprobar es qué pasa DESPUÉS de recostarla.
+  // EL GESTO DE LAS DOS MANOS, QUE ES EL DE LA MÁQUINA (v0.4.7).
+  //
+  // Con la cuna cortada a la medida de su pasador —como debe estar— el diente
+  // SUJETA, y entonces recostar el respaldo a secas ya no lo mueve: hay que
+  // liberar el pasador. Es lo que dice el rótulo de cualquier banca ajustable y
+  // lo que ya avisaba el comentario de arriba. Así que una mano LEVANTA EL
+  // PUNTAL —`tomarBisagra` lo deja sujeto donde se le deje— y la otra recuesta
+  // el respaldo; se suelta el puntal primero, para que el pasador baje buscando
+  // su diente, y el respaldo después.
+  //
+  // Medido a una mano: el respaldo no se movía (4° de recorrido) o se pasaba de
+  // largo hasta 86°, fuera del último diente. A dos manos hace lo que la máquina.
+  const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
+  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const recostar = async (meta) => {
     for (let intento = 0; intento < 6 && inclinacion() < meta; intento++) {
-      const c = respaldo.mesh.getWorldPosition(new T.Vector3());
-      ed.physics.elegirBisagra(respaldo.id, c);
-      ed.physics.tomarBisagra(respaldo.id);
-      for (let k = 0; k < 8; k++) {
-        ed.physics.girarBisagra(respaldo.id, 3);
-        await new Promise((r) => setTimeout(r, 80));
+      if (puntal) {
+        ed.physics.elegirBisagra(puntal.id, puntal.mesh.getWorldPosition(new T.Vector3()));
+        ed.physics.tomarBisagra(puntal.id);
+        for (let k = 0; k < 3; k++) {
+          ed.physics.girarBisagra(puntal.id, -3);
+          await espera(80);
+        }
       }
+      ed.physics.elegirBisagra(respaldo.id, respaldo.mesh.getWorldPosition(new T.Vector3()));
+      ed.physics.tomarBisagra(respaldo.id);
+      // Se para al llegar, como pararía una mano.
+      for (let k = 0; k < 8 && inclinacion() < meta; k++) {
+        ed.physics.girarBisagra(respaldo.id, 3);
+        await espera(80);
+      }
+      if (puntal) ed.physics.soltarBisagra(puntal.id);
+      await espera(1200);                              // el pasador busca diente
       ed.physics.soltarBisagra(respaldo.id);
-      await new Promise((r) => setTimeout(r, 3000));   // que asiente en su diente
+      await espera(3000);                              // y la banca se asienta
     }
     return inclinacion();
   };

@@ -320,7 +320,7 @@
         "width": 12.850000000000001,
         "height": 50.40596110691564,
         "dienteLado": "izquierda",
-        "dienteAgarreCm": 1.0,
+        "dienteAgarreCm": 2,
         "dentadaGemela": "obj_52",
         "dentadaEspejo": {
           "host": "obj_43",
@@ -370,7 +370,7 @@
         "width": 12.850000000000001,
         "height": 50.40596110691564,
         "dienteLado": "izquierda",
-        "dienteAgarreCm": 1.0,
+        "dienteAgarreCm": 2,
         "dentadaGemela": "obj_51",
         "dentadaEspejo": {
           "host": "obj_43",

@@ -197,6 +197,34 @@ const cuantoResbala = (data) =>
     };
   }, data);
 
+/**
+ * DÓNDE ACABA, que no es lo mismo que cuánto se mueve (v0.4.7).
+ *
+ * `cuantoResbala` mide el desplazamiento DESDE una foto tomada a los 2 s, y esa
+ * foto ya es post-caída: con ella, un pasador que baja al diente en el primer
+ * segundo y se queda sale como «no se ha movido». Sirve para preguntar si
+ * RETIENE; no sirve para preguntar si RECOGE. Esto último se mide por el sitio
+ * final, en el marco de la placa.
+ */
+const dondeAcaba = (data) =>
+  page.evaluate(async (proyecto) => {
+    const ed = window.exersuite.editor;
+    const T = window.exersuite.THREE;
+    await ed.loadProject(proyecto);
+    await new Promise((r) => setTimeout(r, 600));
+    const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
+    const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
+    if (!pa || !pl) return null;
+    ed.toggleSimulation();
+    await new Promise((r) => setTimeout(r, 6000));
+    pl.mesh.updateMatrixWorld(true);
+    pa.mesh.updateMatrixWorld(true);
+    const v = pl.mesh.worldToLocal(pa.mesh.getWorldPosition(new T.Vector3()));
+    ed.toggleSimulation();
+    await new Promise((r) => setTimeout(r, 300));
+    return +v.y.toFixed(2);
+  }, data);
+
 console.log(`Un diente y un pasador de Ø${PASADOR_CM} cm. Se deja caer y se mira si se queda.`);
 console.log("Cuánto se corre POR EL CARRIL en 6 s, en centímetros:\n");
 console.log("  inclinación   GANCHO    MUESCA");
@@ -246,6 +274,43 @@ for (const f of tabla) {
     f.muesca !== null && f.muesca < RETIENE,
     `a ${f.grados}° de inclinación, la MUESCA retiene el pasador`,
     `${f.muesca} cm por el carril (${f.muescaDetalle})`,
+  );
+}
+
+// ── Y SI NO CAE JUSTO EN EL DIENTE, ¿LO RECOGE? ─────────────────────────────
+//
+// Un carril de ajuste promete POSICIONES, y eso no es lo mismo que retener: el
+// pasador de una banca recién ajustada no aterriza en el diente, aterriza donde
+// caiga. Así que se le deja a varias alturas del hueco —el paso son 12,5 cm— y
+// se mira en qué diente acaba. Abajo del medio tiene que caer al de abajo;
+// arriba del medio, al de arriba. Quedarse a medio camino es lo que hace que
+// «en qué diente está» deje de querer decir nada.
+//
+// AQUÍ SE VIO POR QUÉ LA BANCA CEDÍA DESPUÉS DE AJUSTARLA. Con el pasador y la
+// cuna a la misma medida —como en esta prueba— el carril recoge desde cualquier
+// altura. Con la cuna cortada para 1 cm y un pasador de Ø2, que es lo que tenía
+// `bancoajustable.json`, el pasador se queda PERCHADO en la mitad de arriba del
+// hueco: cae 6,25 cm desde +6,25 pero desde +9 no se mueve. Un pasador del doble
+// de su cuna no entra en el diente de al lado: se apoya en su borde.
+console.log("\nY puesto A MEDIA ALTURA del hueco, ¿en qué diente acaba? (paso 12,5 cm)");
+const asientoGancho = asiento.gancho;
+const pitch = 12.5;
+const recogidas = [];
+for (const off of [1, 4, 6.25, 9, 11.5]) {
+  const local = [asientoGancho[0], asientoGancho[1] + off, asientoGancho[2]];
+  const punto = await asientoEnElMundo(escenaCarril(35, null), local);
+  const fin = await dondeAcaba(escenaConPasador(35, null, punto));
+  // ¿A qué diente corresponde ese sitio? 0 = el de partida, 1 = el siguiente.
+  const cual = fin === null ? null : Math.round((fin - asientoGancho[1]) / pitch);
+  const error = fin === null ? null : +Math.abs(fin - (asientoGancho[1] + cual * pitch)).toFixed(2);
+  recogidas.push({ off, fin, cual, error });
+  console.log(`  puesto en +${String(off).padEnd(5)} acaba en y=${String(fin).padStart(7)}  → diente ${cual} (a ${error} cm de su asiento)`);
+}
+for (const r of recogidas) {
+  ok(
+    r.error !== null && r.error < 0.6,
+    `puesto a +${r.off} cm del diente, el carril lo RECOGE en uno (no a medio camino)`,
+    `acabó en y=${r.fin}, a ${r.error} cm del asiento del diente ${r.cual}`,
   );
 }
 

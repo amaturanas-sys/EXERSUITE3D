@@ -51,6 +51,46 @@ caso que reventaba:
 Y de paso el gesto **mejora**: en la banca, 24° pedidos entregaban 2,3° y ahora
 entregan unos 10°, porque el impulso ya no se gasta peleándose con el tope.
 
+### Medido — el carril dentado RECOGE, y por qué la banca no lo aprovechaba
+
+`prueba-diente-retiene` probaba que un diente **retiene** un pasador ya sentado
+(0,02–0,07 cm en seis segundos, de 0° a 60°). Faltaba la otra mitad, que es la
+que usa una banca al ajustarse: el pasador no aterriza en el diente, aterriza
+donde caiga. **¿Lo recoge?**
+
+Sí — con el pasador y la cuna a la misma medida. Puesto a +1, +4 y +6,25 cm del
+diente cae y se sienta en él; puesto a +9 y +11,5 sube al siguiente. Cinco
+comprobaciones nuevas en esa prueba, y el sitio final medido en el marco de la
+placa, que es la pregunta correcta.
+
+**Y ahí estaba lo de la banca:** sus dos vigas dentadas tenían las cunas cortadas
+para **1 cm** y el pasador de apoyo mide **Ø2**. Un pasador del doble de su cuna
+no entra en el diente de al lado: se queda PERCHADO en la mitad de arriba del
+hueco —desde +6,25 cae los 6,25, pero desde +9 no se mueve— y de ahí salía la
+cesión lenta de después de ajustarla. Con las cunas a su medida, la banca dejó de
+ceder (0,2° en seis segundos, y 0 en la corrida siguiente).
+
+Una lección de método, que costó dos arreglos inútiles: medir **cuánto se mueve**
+desde una foto tomada a los dos segundos oculta justo el suceso que se pregunta
+—el pasador ya había caído al diente en el primer segundo, así que «no se mueve»
+se leía como «no lo recoge»—. La pregunta era **dónde acaba**. Con la lectura
+equivocada llegué a darle al colisionador del gancho la punta y la rampa que
+tiene en la malla; el control dijo que no cambiaba nada y se revirtió.
+
+### Cambiado — la banca se ajusta con LAS DOS MANOS, que es como se ajusta
+
+Con la cuna a la medida de su pasador el diente sujeta de verdad, y entonces
+recostar el respaldo a secas ya no lo mueve: a una mano, el respaldo o no se
+movía (4° de recorrido) o se pasaba de largo hasta 86°, fuera del último diente.
+`prueba-dos-bisagras` hace ahora el gesto de la máquina —una mano levanta el
+puntal para liberar el pasador, la otra recuesta el respaldo, se suelta el puntal
+primero para que el pasador baje buscando diente— y con él la banca recorre 24,6°
+por sus topes de verdad.
+
+Le queda un rojo, y ya es otra pregunta: **a 47° no aguanta**, baja 12° en seis
+segundos escalón por escalón. Sostenerse ahí es cosa del puntal y de a qué altura
+del carril trabaja, no del diente.
+
 ### Cambiado — la prueba de las dos bisagras pedía recostar hacia donde no había sitio
 
 Sus metas eran 20° y 28° y la banca arreglada descansa en 28,5, así que la
