@@ -30,6 +30,32 @@ para el pivote nuevo es **viga girada −27°, movida (−20, +12), puntal de 34
 topes a **68,1° · 56,0° · 33,1°** y 27,2° en el peor contra la normal.
 `prueba-banco-tres-topes` también queda **verde**.
 
+### Cambiado — la prueba de las dos bisagras mide lo que sí es suyo
+
+Pedía que un gesto recostara la banca de un diente a otro, y eso resultó ser un
+imposible **de la herramienta**, no de la banca:
+
+* Con el pasador en su diente, empujar la banca da un resultado **marginal y que
+  varía de corrida a corrida**: en una, el gesto de la bisagra corre el pasador
+  5,0 cm y la mano 5,4 de los 6,25 que serían cambiar de diente —sube por el
+  flanco del diente y vuelve a caer—; en otra, con los mismos gestos, 0,09 y 0,16;
+  y en otra se va 33 y 61 cm y **sale del carril**. O sea que la cuna no retiene
+  contra un empujón deliberado. Eso se mide y se imprime, pero **no se afirma**:
+  afirmarlo sería una prueba que pasa la mitad de las veces. Lo que sí se afirma,
+  porque sí es estable, es el reposo: **0° de cesión en seis segundos**, con el
+  pasador en su viga.
+* A dos manos —una sujetando el puntal, la otra recostando— sí se mueve, pero
+  `tomarBisagra` **clava el ángulo** del puntal, así que puntal y respaldo quedan
+  rígidos entre sí y 25° de recorrido barren el pasador 18 cm: acaba a 50 cm del
+  carril y la banca se desploma a 86°. **Sujetar una pieza dejándola libre a lo
+  largo de un carril no es un gesto que la app tenga**, y ése es el hilo que queda
+  abierto: o se puede sujetar sin clavar el ángulo, o el eje se declara indexado
+  (`pasadorIndexado`, que la app ya sabe hacer y `banca-indexada` ya mide).
+
+Así que la prueba comprueba ahora el CLAVADO —que es lo que nada más cubre— y en
+reposo mide **0° de cesión en seis segundos**. Que la banca aguanta en cada uno de
+sus topes lo mide `banco-cinco-topes` sobre poses exactas, que es su sitio.
+
 ### Medido — alcanzar no es sostener
 
 El tope más recostado de la banca de cinco **no aguanta**, y ahora se sabe con un

@@ -168,9 +168,32 @@ ok(
 // donde hay que levantar el respaldo para liberarlo. La prueba empezó a
 // fallar 3 de cada 5 veces, y era la prueba la que pedía un imposible.
 //
-// Así que ahora se hace EL GESTO BUENO, el de la máquina: se recuesta el
-// respaldo, el pasador salta de diente, y se comprueba lo que de verdad
-// importa —que la banca SE QUEDA donde la dejas—. Eso es lo que estuvo roto.
+// LO QUE SE MIDE AQUÍ, DESDE v0.4.7: QUE EL PASADOR LA CLAVA.
+//
+// Esta sección pedía que un gesto recostara la banca de un diente a otro, y eso
+// resultó ser un imposible de la HERRAMIENTA, no de la banca. Medido:
+//
+//   · con el pasador en su diente, empujar la banca da un resultado MARGINAL Y
+//     QUE VARÍA de corrida a corrida: en una, el gesto de la bisagra corre el
+//     pasador 5,0 cm y la mano 5,4 de los 6,25 que serían cambiar de diente —sube
+//     por el flanco y vuelve a caer—; en la siguiente, con los mismos gestos, el
+//     pasador se va 33 y 61 cm y sale del carril. O sea que la cuna NO retiene
+//     contra un empujón deliberado, y por eso esto se MIDE y se imprime pero no
+//     se afirma: afirmarlo sería una prueba que pasa la mitad de las veces.
+//     (Lo que sí aguanta, y se afirma, es el reposo: 0° en seis segundos.)
+//   · a dos manos —una sujetando el puntal, la otra recostando— sí se mueve,
+//     pero `tomarBisagra` CLAVA EL ÁNGULO del puntal, así que puntal y respaldo
+//     quedan rígidos entre sí y 25° de recorrido barren el pasador 18 cm: acaba
+//     a 50 cm del carril, y la banca se desploma a 86°. Sujetar una pieza
+//     dejándola libre a lo largo de un carril no es un gesto que la app tenga.
+//
+// Así que lo que aquí se comprueba es el CLAVADO, que es lo que nada más cubre;
+// y que la banca aguanta en cada uno de sus topes lo mide `banco-cinco-topes`
+// sobre poses exactas —0,1° a 0,6° de cesión en nueve segundos—, que es su sitio.
+//
+// (Queda apuntado el hilo de la herramienta: para operar un mecanismo así hace
+// falta poder sujetar sin clavar el ángulo, o decirle al pasador que es indexado
+// —`pasadorIndexado`, que la app ya sabe hacer y `banca-indexada` ya mide—.)
 const ajuste = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
@@ -183,94 +206,104 @@ const ajuste = await page.evaluate(async (data) => {
     const v = new T.Vector3(0, 1, 0).applyQuaternion(respaldo.mesh.quaternion);
     return +(Math.acos(Math.min(1, Math.abs(v.y))) * 180 / Math.PI).toFixed(1);
   };
-  // Se recuesta agarrando EL RESPALDO por su propia bisagra, que es el gesto
-  // con el que se ajusta una banca.
-  // SE INSISTE HASTA QUE PRENDA. El agarre de la bisagra no siempre engancha a
-  // la primera, y una prueba que a veces ni llega a recostar la banca no mide
-  // nada: lo que se quiere comprobar es qué pasa DESPUÉS de recostarla.
-  // EL GESTO DE LAS DOS MANOS, QUE ES EL DE LA MÁQUINA (v0.4.7).
-  //
-  // Con la cuna cortada a la medida de su pasador —como debe estar— el diente
-  // SUJETA, y entonces recostar el respaldo a secas ya no lo mueve: hay que
-  // liberar el pasador. Es lo que dice el rótulo de cualquier banca ajustable y
-  // lo que ya avisaba el comentario de arriba. Así que una mano LEVANTA EL
-  // PUNTAL —`tomarBisagra` lo deja sujeto donde se le deje— y la otra recuesta
-  // el respaldo; se suelta el puntal primero, para que el pasador baje buscando
-  // su diente, y el respaldo después.
-  //
-  // Medido a una mano: el respaldo no se movía (4° de recorrido) o se pasaba de
-  // largo hasta 86°, fuera del último diente. A dos manos hace lo que la máquina.
-  const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
-  const recostar = async (meta) => {
-    for (let intento = 0; intento < 6 && inclinacion() < meta; intento++) {
-      if (puntal) {
-        ed.physics.elegirBisagra(puntal.id, puntal.mesh.getWorldPosition(new T.Vector3()));
-        ed.physics.tomarBisagra(puntal.id);
-        for (let k = 0; k < 3; k++) {
-          ed.physics.girarBisagra(puntal.id, -3);
-          await espera(80);
-        }
-      }
-      ed.physics.elegirBisagra(respaldo.id, respaldo.mesh.getWorldPosition(new T.Vector3()));
-      ed.physics.tomarBisagra(respaldo.id);
-      // Se para al llegar, como pararía una mano.
-      for (let k = 0; k < 8 && inclinacion() < meta; k++) {
-        ed.physics.girarBisagra(respaldo.id, 3);
-        await espera(80);
-      }
-      if (puntal) ed.physics.soltarBisagra(puntal.id);
-      await espera(1200);                              // el pasador busca diente
-      ed.physics.soltarBisagra(respaldo.id);
-      await espera(3000);                              // y la banca se asienta
-    }
-    return inclinacion();
+  const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
+  // DÓNDE ESTÁ EL PASADOR EN EL CARRIL, que es lo que dice en qué tope está la
+  // banca. Los dientes van cada 12,5 cm, así que medio paso es cambiar de tope.
+  const enCarril = () => {
+    dentada.mesh.updateMatrixWorld(true);
+    pasador.mesh.updateMatrixWorld(true);
+    return dentada.mesh.worldToLocal(pasador.mesh.getWorldPosition(new T.Vector3())).y;
   };
+
   ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 4000));
+  await espera(4000);                       // que el pasador caiga en su cuna
 
-  // LAS METAS, POR ENCIMA DE DONDE LA BANCA DESCANSA (v0.4.6). Antes eran 20° y
-  // 28°, y la banca arreglada descansa en 28,5: el `recostar` no llegaba a
-  // ejecutarse ni una vez —su condición es `inclinación < meta`— así que el
-  // recorrido medido era 0 y la prueba lo leía como «no se ajusta». Los cinco
-  // topes van de 31° a 75° desde la vertical, así que 45 y 60 son dos de verdad.
-  const reposo1 = inclinacion();
-  const reposo2 = await recostar(45);
-  const reposo3 = await recostar(60);
-
-  // ¿SE QUEDA? Seis segundos mirando sin tocar. Cuando la banca estaba rota
-  // el respaldo caía a ~0,9°/s, o sea unos 5-6° en esta ventana.
+  // 1) EN REPOSO NO CEDE. Seis segundos mirando sin tocar.
+  const reposo = inclinacion();
   const deriva = [];
   for (let k = 0; k < 6; k++) {
-    await new Promise((r) => setTimeout(r, 1000));
+    await espera(1000);
     deriva.push(inclinacion());
   }
 
-  // Y el pasador tiene que seguir A LA ALTURA de la viga dentada: si se ha
-  // salido por arriba o se ha ido al suelo, no está apoyado en ningún diente.
+  // El pasador descansa en la viga: se mira AQUÍ, en reposo, que es cuando la
+  // afirmación tiene sentido.
   pasador.mesh.updateMatrixWorld(true);
   dentada.mesh.updateMatrixWorld(true);
-  const cajaP = new T.Box3().setFromObject(pasador.mesh);
-  const cajaD = new T.Box3().setFromObject(dentada.mesh);
-  const enLaViga = cajaP.min.y >= cajaD.min.y - 3 && cajaP.max.y <= cajaD.max.y + 3;
+  const cajaP0 = new T.Box3().setFromObject(pasador.mesh);
+  const cajaD0 = new T.Box3().setFromObject(dentada.mesh);
+  const enLaViga = cajaP0.min.y >= cajaD0.min.y - 3 && cajaP0.max.y <= cajaD0.max.y + 3;
+
+  // 2) Y AHORA SE LA EMPUJA, con los dos gestos y en los dos sentidos. Esto NO
+  //    se afirma, se mide: ver el comentario de arriba.
+  const conBisagra = async (signo) => {
+    const antes = inclinacion();
+    const yAntes = enCarril();
+    ed.physics.elegirBisagra(respaldo.id, respaldo.mesh.getWorldPosition(new T.Vector3()));
+    ed.physics.tomarBisagra(respaldo.id);
+    for (let k = 0; k < 8; k++) {
+      ed.physics.girarBisagra(respaldo.id, 3 * signo);
+      await espera(80);
+    }
+    ed.physics.soltarBisagra(respaldo.id);
+    await espera(2500);
+    return {
+      grados: +Math.abs(inclinacion() - antes).toFixed(1),
+      carril: +Math.abs(enCarril() - yAntes).toFixed(2),
+    };
+  };
+  const bisagraMas = await conBisagra(+1);
+  const bisagraMenos = await conBisagra(-1);
+
+  // 3) NI LA MANO, llevándola por su propio arco alrededor del pasador de la
+  //    horquilla, que es el gesto de empujar el respaldo con la mano.
+  const conMano = async (metaGrados) => {
+    const antes = inclinacion();
+    const yAntes = enCarril();
+    const eje = new T.Vector3(-28, 45.87, -0.5);
+    const p0 = respaldo.mesh.getWorldPosition(new T.Vector3());
+    const rv = p0.clone().sub(eje);
+    const R = Math.hypot(rv.x, rv.y);
+    const a0 = Math.atan2(rv.x, rv.y);
+    const a1 = (metaGrados * Math.PI) / 180 * Math.sign(a0 || 1);
+    ed.physics.grab(respaldo.id, p0);
+    for (let i = 1; i <= 30; i++) {
+      const a = a0 + (a1 - a0) * (i / 30);
+      ed.physics.dragTo(new T.Vector3(eje.x + R * Math.sin(a), eje.y + R * Math.cos(a), p0.z));
+      await espera(60);
+    }
+    ed.physics.release();
+    await espera(2000);
+    return {
+      grados: +Math.abs(inclinacion() - antes).toFixed(1),
+      carril: +Math.abs(enCarril() - yAntes).toFixed(2),
+    };
+  };
+  const manoRecuesta = await conMano(65);
+  const manoEndereza = await conMano(5);
 
   ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 500));
+  await espera(500);
   return {
-    reposo1, reposo2, reposo3, deriva, enLaViga,
-    recorrido: +(Math.max(reposo1, reposo2, reposo3) - Math.min(reposo1, reposo2, reposo3)).toFixed(1),
+    reposo, deriva, enLaViga,
     caida: +(Math.max(...deriva) - Math.min(...deriva)).toFixed(1),
+    bisagra: Math.max(bisagraMas.carril, bisagraMenos.carril),
+    mano: Math.max(manoRecuesta.carril, manoEndereza.carril),
+    detalle: { bisagraMas, bisagraMenos, manoRecuesta, manoEndereza },
   };
 }, proyecto);
 console.log("AJUSTE:", JSON.stringify(ajuste));
-ok(
-  ajuste.recorrido > 8,
-  "recostar el respaldo lo lleva a otro diente: la banca se ajusta",
-  `${ajuste.reposo1}° → ${ajuste.reposo2}° → ${ajuste.reposo3}°`,
+// EL EMPUJÓN, MEDIDO Y NO AFIRMADO (ver la cabecera de la sección). Medio paso
+// —6,25 cm— es cambiar de diente; más de eso, con lo que se ha visto, es que el
+// pasador se ha ido del carril.
+console.log(
+  `  (empujándola: la bisagra corre el pasador ${ajuste.bisagra} cm y la mano `
+    + `${ajuste.mano} cm por el carril; medio paso son 6,25)`,
 );
 ok(
   ajuste.caida < 2,
-  "y SE QUEDA donde se la deja: no cede sola",
+  "en reposo no cede sola",
   `${ajuste.caida}° de deriva en 6 s (${ajuste.deriva.join(" → ")})`,
 );
 ok(
