@@ -115,14 +115,25 @@ archivos: son los que más ahorran contexto.
 
 | Agente | Para qué, aquí |
 |---|---|
-| `silent-failure-hunter` | Fallos que no se ven. Este repo ya tuvo el caso de libro: `serialize()` descartaba las piezas dibujadas y el proyecto se guardaba sin ellas, sin decir nada. |
 | `typescript-reviewer` | Revisión del código de `src/`. |
-| `type-design-analyzer` | Los tipos que se prestan a estados imposibles. |
 | `performance-optimizer` | three.js y Rapier en Android: fugas de GPU, trabajo por fotograma, tamaño del bundle. |
-| `code-simplifier` | Limpieza sin cacería de bugs. |
 | `build-error-resolver` | Los builds de Vite, Tauri y Gradle. |
 | `a11y-architect` | El DOM se construye a mano con `el()`, sin framework que ponga nada por ti. |
 | `e2e-runner` | La batería de Playwright de `pruebas/`. |
+
+Eran ocho. Tres se borraron al encender `pr-review-toolkit`, que trae los
+mismos tres nombres con la versión completa detrás: `silent-failure-hunter`
+(130 líneas frente a las 59 de ECC), `type-design-analyzer` (110 frente a 50) y
+`code-simplifier` (83 frente a 56). Se comprobó que no eran los mismos ficheros
+sino recortes de la misma estirpe, y tener dos agentes con un nombre y dos
+cuerpos distintos era una trampa: un nombre a secas no decía cuál se invocaba.
+Se quedan los completos. El porqué largo está en `PLUGINS.md`.
+
+Lo que se pierde con el cambio: los de ECC devolvían un informe corto, y los
+completos son más minuciosos y por tanto más caros al invocarse. El caso de
+libro que justificó traer `silent-failure-hunter` sigue siendo el mismo —
+`serialize()` descartaba las piezas dibujadas y el proyecto se guardaba sin
+ellas, sin decir nada—, solo cambia quién lo busca.
 
 ## Skills (`.claude/skills/`)
 

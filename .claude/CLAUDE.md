@@ -4,15 +4,18 @@ When the user types `/graphify`, use the installed graphify skill or instruction
 
 # Agentes y skills de ECC
 
-En `.claude/agents/` hay ocho revisores traídos de [ECC](https://github.com/affaan-m/ECC)
+En `.claude/agents/` hay cinco revisores traídos de [ECC](https://github.com/affaan-m/ECC)
 (MIT). Devuelven un informe en vez de volcar archivos en el contexto, así que
 son la vía barata para revisar mucho código:
 
-- `silent-failure-hunter` — errores tragados y datos que se pierden sin avisar.
-- `typescript-reviewer`, `type-design-analyzer`, `code-simplifier`.
+- `typescript-reviewer` — el código de `src/`.
 - `performance-optimizer` — fugas de GPU, trabajo por fotograma, bundle.
 - `a11y-architect` — el DOM se monta a mano con `el()`, sin framework.
 - `build-error-resolver`, `e2e-runner`.
+
+Eran ocho. `silent-failure-hunter`, `type-design-analyzer` y `code-simplifier`
+se borraron: los trae `pr-review-toolkit` con el mismo nombre y el cuerpo
+completo detrás, y dos agentes homónimos con cuerpos distintos era una trampa.
 
 Y tres skills que tapan huecos del stack: `vite-patterns`, `e2e-testing` y
 `frontend-a11y`.

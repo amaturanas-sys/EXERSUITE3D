@@ -15,10 +15,11 @@ MCP y ~2 900 tokens de contexto en reposo**, todos ellos de
 `pr-review-toolkit`. Los otros cuatro plugins cuestan 0 en reposo: una skill
 se paga al invocarse, pero la descripción de un agente se carga siempre.
 
-Dos solapes de nombre, los dos deliberados y los dos explicados más abajo:
-cuatro skills de `superpowers` repiten el nombre de las cuatro copiadas en
-`.claude/skills/`, y tres agentes de `pr-review-toolkit` repiten el nombre de
-tres de los nueve de `.claude/agents/`.
+Queda un solape de nombre, deliberado y explicado más abajo: cuatro skills de
+`superpowers` repiten el nombre de las cuatro copiadas en `.claude/skills/`, y
+se quedan las dos copias a propósito. Hubo un segundo —tres agentes de
+`pr-review-toolkit` contra tres de ECC— y ese se resolvió borrando los de ECC,
+porque en los agentes la ambigüedad no compraba nada.
 
 ---
 
@@ -99,18 +100,23 @@ Este segundo es el único de toda la tanda que cuesta contexto en reposo:
 siempre, no al invocarlo. Vale la pena saberlo antes de preguntarse a dónde se
 fue el contexto.
 
-Y trae el segundo solape de nombres: **tres de sus seis agentes se llaman igual
-que tres de los nueve de `.claude/agents/`** —`type-design-analyzer`,
-`code-simplifier` y `silent-failure-hunter`, los de ECC—. Se compararon: **no
-son los mismos ficheros.** Los del plugin son notablemente más largos (130
-líneas frente a 59 en `silent-failure-hunter`, 110 frente a 50 en
-`type-design-analyzer`); los de ECC son versiones recortadas de la misma
-estirpe. Los dos juegos quedan, distinguidos por el prefijo
-(`pr-review-toolkit:silent-failure-hunter` frente a `silent-failure-hunter`),
-pero **un nombre a secas es ambiguo**: si lo que se quiere es la revisión
-completa, hay que nombrar el del plugin; si lo que se quiere es un informe
-corto que no vuelque ficheros al contexto —que es por lo que se eligieron los
-de ECC—, el propio.
+Trajo además un choque de nombres, **ya resuelto**: tres de sus seis agentes se
+llamaban igual que tres de los ocho de ECC en `.claude/agents/`
+—`type-design-analyzer`, `code-simplifier` y `silent-failure-hunter`—. Se
+compararon y **no eran los mismos ficheros**: los del plugin son notablemente
+más largos (130 líneas frente a 59 en `silent-failure-hunter`, 110 frente a 50
+en `type-design-analyzer`, 83 frente a 56 en `code-simplifier`) y los de ECC son
+recortes de la misma estirpe.
+
+Se borraron los tres de ECC. Dos agentes con un nombre y dos cuerpos distintos
+es una trampa: el prefijo (`pr-review-toolkit:silent-failure-hunter`) los
+distingue, pero un nombre a secas no dice cuál se invoca, y esa es la clase de
+ambigüedad que se paga tarde. Quedan los completos. En `.claude/agents/` había
+ocho de ECC; quedan cinco, más `game-developer`.
+
+El coste del cambio, que no es cero: los de ECC devolvían un informe corto —por
+eso se eligieron— y los completos son más minuciosos, así que se paga más al
+invocarlos. Se cambia brevedad por cobertura, a sabiendas.
 
 `commit-commands` y los otros nueve del marketplace siguen apagados, a una
 orden: `claude plugin enable <plugin>@claude-code-plugins --scope project`.
