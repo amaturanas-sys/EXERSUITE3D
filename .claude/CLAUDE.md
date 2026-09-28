@@ -42,7 +42,7 @@ repositorios enteros que no se enganchan en este entorno— está en
 # Plugins registrados
 
 Estos no se copiaron: están declarados en `.claude/settings.json` y el CLI los
-clona al arrancar. Tres encendidos, 44 skills, ningún servidor MCP:
+clona al arrancar. Cinco encendidos, 46 skills, 6 agentes, ningún servidor MCP:
 
 - `example-skills` (de [anthropics/skills](https://github.com/anthropics/skills))
   — `algorithmic-art`, `theme-factory`, `web-artifacts-builder`,
@@ -53,6 +53,15 @@ clona al arrancar. Tres encendidos, 44 skills, ningún servidor MCP:
 - `context-engineering` (de [Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering))
   — `context-compression`, `filesystem-context`, `memory-systems`,
   `long-horizon-prompting` y trece más.
+- `code-review` y `pr-review-toolkit` (del marketplace oficial de
+  [anthropics/claude-code](https://github.com/anthropics/claude-code)) — la
+  skill `review-pr` y seis agentes de revisión. **Ojo con dos cosas:**
+  `pr-review-toolkit` cuesta ~2 879 tokens en cada sesión (las descripciones
+  de sus agentes se cargan siempre), y tres de sus agentes se llaman igual que
+  tres de los de ECC en `.claude/agents/` sin ser los mismos —los del plugin
+  son la versión completa; los de ECC, la recortada que devuelve informe
+  corto—. Un nombre a secas es ambiguo: usa el prefijo
+  `pr-review-toolkit:` cuando quieras el del plugin.
 
 De las 27 URLs pedidas, 24 repositorios distintos: 13 son plugins de Claude
 Code y 11 no lo son. `.claude/vendor/PLUGINS.md` los recorre uno a uno —

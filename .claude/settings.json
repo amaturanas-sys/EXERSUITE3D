@@ -26,7 +26,9 @@
     "example-skills@anthropic-agent-skills": true,
     "superpowers@superpowers-dev": true,
     "context-engineering@context-engineering-marketplace": true,
-    "context7@context7-marketplace": false
+    "context7@context7-marketplace": false,
+    "code-review@claude-code-plugins": true,
+    "pr-review-toolkit@claude-code-plugins": true
   },
   "extraKnownMarketplaces": {
     "claude-code-plugins": {

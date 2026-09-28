@@ -1,4 +1,4 @@
-# Plugins: 27 enlaces, 24 repositorios, 3 encendidos
+# Plugins: 27 enlaces, 24 repositorios, 5 encendidos
 
 Esta tanda no se copió: se **registró**. Un plugin de Claude Code no vive en
 `.claude/skills/` sino en un *marketplace* declarado en `.claude/settings.json`
@@ -8,15 +8,17 @@ repositorio, solo la referencia.
 
 Se pidieron 27 URLs. Son 24 repositorios distintos —cuatro de los enlaces
 apuntan a skills sueltas del mismo `anthropics/skills`— y de los 24 **solo 13
-son plugins de Claude Code**. De esos 13, tres están encendidos.
+son plugins de Claude Code**. De esos 13, cinco están encendidos.
 
-El recuento honesto: **3 plugins activos, 44 skills, 0 servidores MCP, 0 coste
-de contexto en reposo** (las skills se pagan al invocarse, no al cargarse). De
-las 44, cuarenta son nuevas; las otras cuatro repiten el nombre de skills que
-ya estaban copiadas en `.claude/skills/` —`systematic-debugging`,
-`verification-before-completion`, `dispatching-parallel-agents`,
-`subagent-driven-development`— y aparecen como `superpowers:<nombre>`. Es el
-único solape de nombres, es deliberado, y el porqué está más abajo.
+El recuento honesto: **5 plugins activos, 46 skills, 6 agentes, 0 servidores
+MCP y ~2 900 tokens de contexto en reposo**, todos ellos de
+`pr-review-toolkit`. Los otros cuatro plugins cuestan 0 en reposo: una skill
+se paga al invocarse, pero la descripción de un agente se carga siempre.
+
+Dos solapes de nombre, los dos deliberados y los dos explicados más abajo:
+cuatro skills de `superpowers` repiten el nombre de las cuatro copiadas en
+`.claude/skills/`, y tres agentes de `pr-review-toolkit` repiten el nombre de
+tres de los nueve de `.claude/agents/`.
 
 ---
 
@@ -84,10 +86,34 @@ El marketplace queda registrado (checkout disperso: `.claude-plugin` y
 trae `example-skills` y es **idéntica byte a byte**. Encenderla duplicaría una
 skill sin añadir nada. El enlace pedido está servido, por otra puerta.
 
-Se deja el marketplace porque `code-review`, `pr-review-toolkit` y
-`commit-commands` encajan con el flujo de aquí (rama de trabajo, `build.yml`,
-release por tag) y quedan a una orden:
-`claude plugin enable code-review@claude-code-plugins --scope project`.
+De ese mismo marketplace sí están encendidos otros dos, que encajan con el
+flujo de aquí (rama de trabajo, `build.yml`, release por tag):
+
+- **`code-review`** — una skill, coste en reposo ~22 tokens. Sin sorpresas.
+- **`pr-review-toolkit`** — la skill `review-pr` y **seis agentes**:
+  `code-reviewer`, `comment-analyzer`, `pr-test-analyzer`,
+  `type-design-analyzer`, `code-simplifier` y `silent-failure-hunter`.
+
+Este segundo es el único de toda la tanda que cuesta contexto en reposo:
+**~2 879 tokens en cada sesión**, porque la descripción de un agente se carga
+siempre, no al invocarlo. Vale la pena saberlo antes de preguntarse a dónde se
+fue el contexto.
+
+Y trae el segundo solape de nombres: **tres de sus seis agentes se llaman igual
+que tres de los nueve de `.claude/agents/`** —`type-design-analyzer`,
+`code-simplifier` y `silent-failure-hunter`, los de ECC—. Se compararon: **no
+son los mismos ficheros.** Los del plugin son notablemente más largos (130
+líneas frente a 59 en `silent-failure-hunter`, 110 frente a 50 en
+`type-design-analyzer`); los de ECC son versiones recortadas de la misma
+estirpe. Los dos juegos quedan, distinguidos por el prefijo
+(`pr-review-toolkit:silent-failure-hunter` frente a `silent-failure-hunter`),
+pero **un nombre a secas es ambiguo**: si lo que se quiere es la revisión
+completa, hay que nombrar el del plugin; si lo que se quiere es un informe
+corto que no vuelque ficheros al contexto —que es por lo que se eligieron los
+de ECC—, el propio.
+
+`commit-commands` y los otros nueve del marketplace siguen apagados, a una
+orden: `claude plugin enable <plugin>@claude-code-plugins --scope project`.
 
 ### [`upstash/context7`](https://github.com/upstash/context7) — bloqueado por la red del entorno
 
