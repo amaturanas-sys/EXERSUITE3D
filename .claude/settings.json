@@ -20,5 +20,53 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-code-plugins": false,
+    "example-skills@anthropic-agent-skills": true,
+    "superpowers@superpowers-dev": true,
+    "context-engineering@context-engineering-marketplace": true,
+    "context7@context7-marketplace": false
+  },
+  "extraKnownMarketplaces": {
+    "claude-code-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/claude-code.git",
+        "sparsePaths": [
+          ".claude-plugin",
+          "plugins"
+        ]
+      }
+    },
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/skills.git"
+      }
+    },
+    "superpowers-dev": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/obra/superpowers.git"
+      }
+    },
+    "context-engineering-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering.git"
+      }
+    },
+    "context7-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/upstash/context7.git",
+        "sparsePaths": [
+          ".claude-plugin",
+          "plugins/claude",
+          "skills"
+        ]
+      }
+    }
   }
 }

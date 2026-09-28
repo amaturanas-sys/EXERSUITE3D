@@ -38,3 +38,24 @@ Cuatro de [superpowers](https://github.com/obra/superpowers) (MIT), de método:
 El porqué de cada selección —y de lo que se dejó fuera, incluidos tres
 repositorios enteros que no se enganchan en este entorno— está en
 `.claude/vendor/README.md`.
+
+# Plugins registrados
+
+Estos no se copiaron: están declarados en `.claude/settings.json` y el CLI los
+clona al arrancar. Tres encendidos, 44 skills, ningún servidor MCP:
+
+- `example-skills` (de [anthropics/skills](https://github.com/anthropics/skills))
+  — `algorithmic-art`, `theme-factory`, `web-artifacts-builder`,
+  `skill-creator`, `canvas-design` y siete más.
+- `superpowers` (de [obra/superpowers](https://github.com/obra/superpowers)) —
+  las once que no estaban ya copiadas a mano: `test-driven-development`,
+  `writing-plans`, `brainstorming`, `requesting-code-review`…
+- `context-engineering` (de [Agent-Skills-for-Context-Engineering](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering))
+  — `context-compression`, `filesystem-context`, `memory-systems`,
+  `long-horizon-prompting` y trece más.
+
+De las 27 URLs pedidas, 24 repositorios distintos: 13 son plugins de Claude
+Code y 11 no lo son. `.claude/vendor/PLUGINS.md` los recorre uno a uno —
+cuáles piden clave o servicio, cuál bloquea la política de red del entorno,
+cuáles se apagaron a propósito por chocar con el método de aquí, y cuáles son
+frameworks que no se enchufan a una sesión.

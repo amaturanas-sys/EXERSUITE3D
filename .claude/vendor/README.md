@@ -1,5 +1,9 @@
 # Capacidades traídas de fuera
 
+Este fichero cubre lo **copiado** al repositorio. Lo **registrado** como plugin
+—marketplaces declarados en `.claude/settings.json`, que el CLI clona al
+arrancar y que no dejan código aquí— está en `PLUGINS.md`.
+
 Dos orígenes, las dos licencias MIT y las dos copiadas aquí:
 [ECC](https://github.com/affaan-m/ECC) (`LICENSE-ECC`) y
 [superpowers](https://github.com/obra/superpowers) (`LICENSE-SUPERPOWERS`).
