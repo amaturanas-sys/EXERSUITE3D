@@ -3298,6 +3298,13 @@ export class PhysicsWorld {
   /** Acumulador de tiempo real para avanzar con pasos fijos de 1/60 s. */
   private accumulator = 0;
   private static readonly FIXED_DT = 1 / 60;
+  /**
+   * Cuantos sub-pasos de `FIXED_DT` cabe recuperar en una sola llamada. 15 son
+   * los 0,25 s con los que `Editor.loop` topa su dt, de modo que el motor
+   * consume lo que el bucle ofrece y ni un frame mas: la guarda contra la
+   * espiral de la muerte esta alli, y aqui solo se respeta su medida.
+   */
+  private static readonly MAX_SUBPASOS = 15;
 
   /**
    * Avanza la simulacion en tiempo real y sincroniza las mallas (m -> cm).
@@ -3307,10 +3314,28 @@ export class PhysicsWorld {
    */
   step(dtSeconds: number = PhysicsWorld.FIXED_DT): void {
     if (!this.world) return;
-    // Limita el dt (pestana en segundo plano, hipos) para no espiralar: como
-    // mucho 2 pasos por frame — si el equipo no llega, la simulacion va a
-    // camara ligeramente lenta pero SIN tirones (espiral de la muerte).
-    this.accumulator = Math.min(this.accumulator + dtSeconds, 2 * PhysicsWorld.FIXED_DT);
+    // EL TECHO DEL ACUMULADOR, Y POR QUE ES 15 Y NO 2 (v0.4.9).
+    //
+    // Aqui habia `2 * FIXED_DT`, y eso incumplia la promesa de tres lineas mas
+    // arriba: con 2 sub-pasos por llamada la fisica SI depende de los bajones de
+    // FPS, porque el tiempo que no cabe en esos dos pasos no se aplaza, SE TIRA.
+    //
+    // Medido en v0.4.8 con el Chromium headless, que va a ~3,6 fps y entrega dt
+    // de 0,25: el motor daba **81-85 pasos en 12 segundos de reloj**, o sea 1,4 s
+    // simulados de los ~9,5 ofrecidos. Descartaba el 86 %. El comentario prometia
+    // «camara ligeramente lenta»; era camara a un septimo.
+    //
+    // La guarda contra la espiral de la muerte no se pierde: ya vive en
+    // `Editor.loop`, que entrega `Math.min(frameTime, 0.25)`. Eso acota el
+    // trabajo por frame en 0,25 s de simulacion, que son exactamente 15 pasos de
+    // 1/60. Este techo se pone ahi: una guarda en un sitio, no dos con distinta
+    // medida y la de dentro perdiendo tiempo. Con 60 fps reales dt vale 1/60 y
+    // sale UN sub-paso, igual que antes: esto solo cambia lo que pasa cuando el
+    // equipo no llega.
+    this.accumulator = Math.min(
+      this.accumulator + dtSeconds,
+      PhysicsWorld.MAX_SUBPASOS * PhysicsWorld.FIXED_DT,
+    );
     while (this.accumulator >= PhysicsWorld.FIXED_DT) {
       this.accumulator -= PhysicsWorld.FIXED_DT;
       // Instantánea para la esticción de los cuerpos colgados de cables.

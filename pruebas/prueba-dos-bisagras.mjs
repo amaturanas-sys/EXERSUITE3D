@@ -403,7 +403,21 @@ const conLaMano = await page.evaluate(async (data) => {
     recorrido: +(inclFin - incl0).toFixed(1),
     seVaDelCarril: +peor.toFixed(2),
     finY: +fin.y.toFixed(2), finX: +fin.x.toFixed(2),
-    cede: +(Math.max(...serie) - Math.min(...serie)).toFixed(1),
+    // EL TRAMO ESTABLE, NO LA SERIE ENTERA (v0.4.9).
+    //
+    // Esto medía sobre las seis muestras, y por eso metía en la cuenta el
+    // asentamiento de la primera: el pasador cayendo en su sitio y las uniones
+    // tensándose. Es la misma corrección que v0.4.7 ya hizo en
+    // `prueba-banco-cinco-topes` («lo que la banca promete es que NO CEDE, y eso
+    // se lee en el tramo estable»); esta prueba se quedó sin ella.
+    //
+    // No se notaba porque el motor descartaba el 86 % del tiempo pedido (ver
+    // v0.4.8) y el asentamiento no llegaba a ocurrir dentro de la ventana. Con
+    // el acumulador arreglado ocurre en la primera muestra, y contarlo daba
+    // «cedió 7,6°» y «cedió 18,4°» sobre series que luego están CLAVADAS:
+    // 53,8 → 46,2 → 46,5 → 46,6 → 46,3 → 46,7 y 46,9 → 28,5 → 28,9 → 28,9 →
+    // 28,9 → 28,9. En el tramo estable, cinco corridas dan 0,0° a 0,4°.
+    cede: +(() => { const e = serie.slice(2); return Math.max(...e) - Math.min(...e); })().toFixed(1),
     serie,
   };
 }, proyecto);
@@ -421,7 +435,7 @@ ok(
 ok(
   conLaMano.cede <= 1,
   "y donde queda, la banca aguanta",
-  `cedió ${conLaMano.cede}° en 6 s (${conLaMano.serie.join(" → ")})`,
+  `cedió ${conLaMano.cede}° tras asentarse (serie completa: ${conLaMano.serie.join(" → ")})`,
 );
 console.log(
   `  (y lo que no da: el pasador acaba a ${(conLaMano.finX + 1.03).toFixed(1)} cm `
