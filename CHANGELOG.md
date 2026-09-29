@@ -5,6 +5,82 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.9] — 2026-09-29
+
+**El motor simula el tiempo que se le pide.** v0.4.8 midió que descartaba el
+86 %; esto lo arregla, y lo que el arreglo destapó se arregla también.
+
+### El cambio
+
+`PhysicsWorld.step` topaba su acumulador en `2 * FIXED_DT`. Eso incumplía la
+promesa de su propio docstring —«para que la velocidad de la física no dependa
+del refresco del monitor ni de bajones de FPS»—: el tiempo que no cabía en esos
+dos sub-pasos **no se aplazaba, se tiraba**. El techo pasa a `15 * FIXED_DT`, que
+son exactamente los 0,25 s con los que `Editor.loop` ya topa su dt.
+
+Una guarda contra la espiral de la muerte, **en un sitio**, en vez de dos con
+distinta medida y la de dentro perdiendo tiempo. Con 60 fps reales el dt vale
+1/60 y sale un sub-paso: igual que antes. Esto solo cambia lo que pasa cuando el
+equipo no llega.
+
+Medido con el mismo instrumento de v0.4.8, contando `world.step` en los 12
+segundos de reloj de `prueba-banco-cinco-topes`:
+
+| | pasos del motor | simulado | ofrecido |
+|---|---|---|---|
+| antes | 81 – 85 | 1,35 – 1,42 s | ~9,5 s |
+| ahora | **499 – 555** | **8,32 – 9,25 s** | 8,35 – 9,27 s |
+
+### El examen
+
+**Batería completa en serie: 123 de 123.** Sesenta y dos minutos, el mismo
+tiempo que antes del cambio —la física hace seis veces más trabajo, pero el
+cuello de botella de estas pruebas es el render, no el solver—. El único rojo de
+la corrida fue `prueba-sitio` a los 0 s, que es su Next.js del 3100 sin levantar;
+levantado, verde con sus doce aserciones.
+
+Ninguna de las otras 122 necesitó tocarse. El cambio no desplazó la calibración
+de la batería, que era el riesgo que lo tenía en cuarentena.
+
+### Lo que destapó, que sí hubo que arreglar
+
+`prueba-dos-bisagras` se puso en 4 rojas de 5 y luego 5 de 8, y sus dos aserciones
+del tramo «con la mano» resultaron estar midiendo mal desde que se escribieron.
+Los verdes anteriores lo eran porque el motor descartaba el 86 % del tiempo y
+nada llegaba a ocurrir dentro de la ventana.
+
+- **El aguante contaba el asentamiento.** Daba «cedió 7,6°» y «cedió 18,4°» sobre
+  series que después están clavadas: `53,8 → 46,2 → 46,5 → 46,6 → 46,3 → 46,7` y
+  `46,9 → 28,5 → 28,9 → 28,9 → 28,9 → 28,9`. Es la corrección que v0.4.7 ya hizo
+  en `prueba-banco-cinco-topes` («eso se lee en el tramo estable») y que esta
+  prueba nunca recibió. Con `serie.slice(2)`: 0,0° a 0,4°.
+
+- **Y aun así, el aguante no es exigible aquí.** Ocho corridas: donde el gesto
+  aterriza cerca de un diente la banca queda **clavada** —0,0° a 28,9° y a
+  60,0°—, y donde no hay diente se desliza: a 68,7° la serie hace
+  `69,9 → 68 → 64,5 → 64`, esos 5,9°. Pero esta misma prueba ya concluye más
+  arriba que **la mano no puede meter el pasador en un diente** (`applyDrag`
+  descarta la componente que tira fuera del arco del puntal). Se le exigía lo que
+  ella misma declara inalcanzable. Ahora **se mide y se informa**, como con el
+  tope 1 desde v0.4.8.
+
+- **El umbral del carril era una moneda al aire.** Exigía `< 3` cm y trece
+  corridas dan de 0,41 a 7,21, porque el gesto no es reproducible: el recorrido
+  del respaldo va de 21,7° a 31,7° según cuántos pasos de física toque cada
+  tirón, y cuanto más recuesta, más viaja el pasador por su arco. La afirmación
+  que importa es que el pasador **sigue en el carril** en vez de salirse, y el
+  contraste medido para eso son los 60 cm del caso con el ángulo clavado. El
+  umbral queda en 12: el doble del máximo observado y una quinta parte del modo
+  de fallo. Ocho corridas después: **8 de 8 verdes**.
+
+### El hilo que queda abierto
+
+Para poder **exigir** el aguante tras un gesto haría falta que el gesto fuera
+reproducible, y eso pide gobernar la simulación **por pasos** en vez de por
+`espera(ms)` de reloj. Es un cambio del arnés de las 123 pruebas, no de una
+prueba: mientras se mida con el reloj, cuántos pasos de física le toquen a cada
+tirón seguirá siendo cosa de la máquina.
+
 ## [0.4.8] — 2026-09-29
 
 Sin cambios en la app: esta versión es **la causa medida de una prueba
