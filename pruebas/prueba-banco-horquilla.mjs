@@ -18,6 +18,7 @@
 // mecanismo —carril, pasador de apoyo y puntal— se quita a propósito: aquí no
 // se juzga si la banca SE SOSTIENE, sino si la unión la deja LLEGAR.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync } from "node:fs";
 
 const CONVENIO = "0° = respaldo HORIZONTAL, 90° = VERTICAL (el convenio de la máquina)";
@@ -40,21 +41,23 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1200);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1200);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2000);
+await pausa(2000);
 
 const medir = (data) =>
   page.evaluate(async (proyecto) => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 700));
+    await window.__pausa(700);
     const resp = [...ed.objects.values()].find((o) => o.name === "Respaldo");
     const base = [...ed.objects.values()].find((o) => o.name === "Asiento");
     if (!resp || !base) return { error: "falta pieza de referencia" };
@@ -77,11 +80,11 @@ const medir = (data) =>
     // trae uno, que no entra al motor y por tanto no estorba a la medida.
     ed.humanMode = "mannequin";
     await ed.addHumanFigure(175);
-    await new Promise((r) => setTimeout(r, 400));
+    await window.__pausa(400);
     await ed.iniciarPoseMaquina();
     let bodies = null, listo = false;
     for (let k = 0; k < 120 && !listo; k++) {
-      await new Promise((r) => setTimeout(r, 50));
+      await window.__pausa(50);
       bodies = ed.physics?.bodies;
       if (!bodies) continue;
       const id = [...ed.objects].find(([, o]) => o.name === "Respaldo")?.[0];
@@ -147,7 +150,7 @@ const medir = (data) =>
     }
     const medido = ang();
     ed.terminarPoseMaquina();
-    await new Promise((r) => setTimeout(r, 200));
+    await window.__pausa(200);
     return { medido, penetra: +(Math.abs(peor) * 100).toFixed(2), culpable };
   }, data);
 

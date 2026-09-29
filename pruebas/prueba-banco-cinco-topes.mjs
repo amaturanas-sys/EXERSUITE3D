@@ -15,6 +15,7 @@
 // RESPALDO con la máquina andando. Los datos los genera `banco42.py`, que
 // resuelve el ángulo de cada tope; esta prueba no los recalcula, los comprueba.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync } from "node:fs";
 
 // Los cinco ángulos del respaldo, contados desde la vertical, que resuelve la
@@ -48,22 +49,27 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 /** Carga una pose, la deja andar 12 s y devuelve el ángulo del respaldo. */
 const medir = (data) =>
   page.evaluate(async (proyecto) => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
+    // POR PASOS, NO POR RELOJ (v0.4.10): la física la avanza esta prueba, 12 s
+    // simulados = 720 sub-pasos exactos, vaya la máquina a los fps que vaya.
+    ed.setPasoManual(true);
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 800));
+    await window.__pausa(800);
     const resp = [...ed.objects.values()].find((o) => o.name === "Respaldo");
     const por = (n) => [...ed.objects.values()].find((o) => o.name === n);
     const carril = por("Placa dentada (upright)");
@@ -93,18 +99,18 @@ const medir = (data) =>
     };
     const inicio = eje();
     const p0 = enCarril();
-    ed.toggleSimulation();
+    await ed.toggleSimulation();
     const serie = [], carrera = [];
     for (let k = 0; k < 12; k++) {
-      await new Promise((r) => setTimeout(r, 1000));
+      ed.avanzarSimulacion(1);
       serie.push(eje());
       const q = enCarril();
       // LAS DOS COMPONENTES. Mirar solo la de a lo largo del carril da verdes
       // falsos: el pasador se sale DE LADO —en x— y la y apenas se entera.
       carrera.push([+(q.x - p0.x).toFixed(2), +(q.y - p0.y).toFixed(2)]);
     }
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return {
       inicio, fin: serie[serie.length - 1], serie, carrera,
       corrido: +Math.hypot(...carrera[carrera.length - 1]).toFixed(2),

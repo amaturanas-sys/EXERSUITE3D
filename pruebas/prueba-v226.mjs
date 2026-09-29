@@ -3,6 +3,7 @@
 // inventario (roldana visible; cable/base-apoyo/fulcro ocultos),
 // (D) arrastre de la foto de fondo en el prototipo.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -12,19 +13,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // C) Paleta: roldana y carro visibles; cable/base-apoyo/fulcro ocultos.
 const C = await page.evaluate(() => {
@@ -67,13 +70,13 @@ await page.evaluate(() => {
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   };
 });
-await page.waitForTimeout(600);
+await pausa(600);
 const prep = await page.evaluate(() => ({
   p100: window.__aPx(0, 100, 0),
   p150: window.__aPx(0, 150, 0),
 }));
 await page.mouse.click(prep.p100.x, prep.p100.y); // fase 1: estructura
-await page.waitForTimeout(300);
+await pausa(300);
 const fase1 = await page.evaluate(() => ({
   host: window.exersuite.editor.roldanaHost?.id === window.__pilar,
   linea: !!window.exersuite.editor.roldanaAxisLine,
@@ -85,7 +88,7 @@ const fase1b = await page.evaluate(() => ({
 console.log("fase1:", JSON.stringify({ ...fase1, ...fase1b }), "prep:", JSON.stringify(prep));
 const p150b = await page.evaluate(() => window.__aPx(0, 150, 0));
 await page.mouse.click(p150b.x, p150b.y); // fase 2: punto del eje
-await page.waitForTimeout(500);
+await pausa(500);
 const hayDialogo = await page.evaluate(() => {
   const p = document.getElementById("rold-panel");
   if (!p) return false;
@@ -100,9 +103,9 @@ const hayDialogo = await page.evaluate(() => {
 console.log("hayDialogo (panel derecho compacto):", hayDialogo);
 if (!hayDialogo) await page.screenshot({ path: "v226-debug-sin-dialogo.png" });
 await page.click("#rold-panel .rold-opt:has-text('Externa')");
-await page.waitForTimeout(200);
+await pausa(200);
 await page.click("#rold-panel .rold-dir:has-text('Derecha')");
-await page.waitForTimeout(400);
+await pausa(400);
 const A = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const pilar = ed.getObject(window.__pilar);
@@ -127,11 +130,11 @@ await page.screenshot({ path: "v227-roldana-montaje.png" });
 //     rectangular en la cara elegida (izquierda, según la vista).
 const p120 = await page.evaluate(() => window.__aPx(0, 120, 0));
 await page.mouse.click(p120.x, p120.y);
-await page.waitForTimeout(500);
+await pausa(500);
 await page.click("#rold-panel .rold-opt:has-text('Interna')");
-await page.waitForTimeout(200);
+await pausa(200);
 await page.click("#rold-panel .rold-dir:has-text('Izquierda')");
-await page.waitForTimeout(400);
+await pausa(400);
 const A2 = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const pilar = ed.getObject(window.__pilar);
@@ -179,7 +182,7 @@ const B = await page.evaluate(async () => {
   const empotradasAlPuente = ph.empotradas.filter((e) =>
     rols.some((r) => r.id === e.obj.id),
   ).length;
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return {
     piezas: nuevos.length,
     movil: puente ? !puente.physics.fixed : false,
@@ -192,33 +195,33 @@ const B = await page.evaluate(async () => {
 console.log("B-carro:", JSON.stringify(B));
 
 // D) Prototipo (viewer): cargar foto, mover con 🖐 y verificar el offset.
-await page.waitForTimeout(2000); // autoguardado de la sesión
+await pausa(2000); // autoguardado de la sesión
 await page.click("#toolbar button:has-text('Home')");
-await page.waitForTimeout(500);
+await pausa(500);
 const btnSalir = page.locator("button:has-text('Salir sin guardar')");
 if (await btnSalir.count()) await btnSalir.click();
-await page.waitForTimeout(800);
+await pausa(800);
 await page.click("text=📁 PROYECTOS");
-await page.waitForTimeout(500);
+await pausa(500);
 await page.click(".land-desplegar.sesion");
 await page.click(".land-modos-inline.sesion .land-modo:has-text('SIMULAR')");
-await page.waitForTimeout(4000);
+await pausa(4000);
 await page.click("#simbar button:has-text('Prototipo')");
-await page.waitForTimeout(500);
+await pausa(500);
 await page.setInputFiles("#proto-viewer input[type=file]", AQUI + "fijos/foto-garaje.jpg");
-await page.waitForTimeout(1200);
+await pausa(1200);
 const D0 = await page.evaluate(() => ({
   calce: document.body.classList.contains("modo-calce"),
   overlay: getComputedStyle(document.getElementById("proto-overlay")).display !== "none",
 }));
 await page.click("#proto-viewer button:has-text('Mover y escalar')");
-await page.waitForTimeout(300);
+await pausa(300);
 const capa = await page.evaluate(() => !!document.getElementById("proto-drag"));
 await page.mouse.move(640, 400);
 await page.mouse.down();
 await page.mouse.move(640, 340, { steps: 6 }); // arrastre 60px hacia arriba
 await page.mouse.up();
-await page.waitForTimeout(300);
+await pausa(300);
 const D = await page.evaluate(() => {
   const ov = document.getElementById("proto-overlay");
   return { transform: ov.style.transform };

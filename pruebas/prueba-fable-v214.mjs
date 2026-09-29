@@ -9,6 +9,7 @@
 // —eso lo mide ahora `prueba-v245`—. Un rojo que no señala nada acaba
 // enseñando a no mirar los rojos.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -17,16 +18,18 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(1000);
+await pausa(1000);
 
 // Marketplace. Desde v0.2.62 la tienda es EL HUB, a pantalla completa y con
 // marco propio: se monta como una capa `.hub` sobre la ventana entera y no
 // comparte navegación con la Home. Lo de antes (`.mkc-card`, «Ver», «Solicitar
 // cotización») era la maqueta anterior y ya no existe.
-await page.click("text=🛒 MARKETPLACE"); await page.waitForTimeout(1500);
+await page.click("text=🛒 MARKETPLACE"); await pausa(1500);
 const MK1 = await page.evaluate(() => {
   const hub = document.querySelector(".hub");
   return {
@@ -40,7 +43,7 @@ await page.evaluate(() => {
   const b = [...document.querySelectorAll(".hub button")].find((x) => /Volver/.test(x.textContent));
   b?.click();
 });
-await page.waitForTimeout(800);
+await pausa(800);
 const MK2 = await page.evaluate(() => ({
   cerrado: !document.querySelector(".hub"),
   home: !!document.querySelector(".landing"),
@@ -48,19 +51,19 @@ const MK2 = await page.evaluate(() => ({
 console.log("mk:", JSON.stringify({ ...MK1, ...MK2 }));
 
 // Builder
-await page.goto("http://localhost:4174/"); await page.waitForTimeout(800);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await page.goto("http://localhost:4174/"); await pausa(800);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // Doblado sin selección → aviso (no queda en modo doblado)
-await page.click("#tool-quick .tq-bend"); await page.waitForTimeout(300);
+await page.click("#tool-quick .tq-bend"); await pausa(300);
 const bendAviso = await page.evaluate(() => !window.exersuite.editor.isBending());
 
 // Rack nativo: nace CON 2 cadenas; barra cargada soltada sobre ellas.
@@ -85,10 +88,10 @@ const R = await page.evaluate(async () => {
   ed.select(null);
   await ed.addHumanFigure(175);
   ed.humanFigure.position.set(120, ed.humanFigure.position.y, 0);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { cuerdas, yCad: +yCad.toFixed(1) };
 });
-await page.waitForTimeout(9000);
+await pausa(9000);
 const B = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const b = ed.getObject(window.__barra);
@@ -107,7 +110,7 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(210, 130, 230);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v214b-rack-cadenas.png" });
 
 const ok =

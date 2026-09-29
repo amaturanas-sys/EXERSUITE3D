@@ -1,6 +1,7 @@
 // Ajuste 1b: empujón horizontal a la barra asentada — el TOPE del gancho la
 // retiene (antes rodaba y caía).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -9,19 +10,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("PAGEERROR:", e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(900);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(900);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
-await page.evaluate(() => {
+await pausa(2500);
+await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.insertarMaquina("rack-sentadillas", new T.Vector3(0, 0, 0));
@@ -34,9 +37,9 @@ await page.evaluate(() => {
   barra.rebuildCargaVisual();
   window.__b = barra.id;
   ed.select(null);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
 });
-await page.waitForTimeout(3000);
+await pausa(3000);
 // Empujones en ±X (la boca del gancho mira por X)
 for (const vx of [0.8, -0.8, 1.2]) {
   await page.evaluate((vx) => {
@@ -44,7 +47,7 @@ for (const vx of [0.8, -0.8, 1.2]) {
     const body = ed.physics.bodies.get(window.__b).body;
     body.setLinvel({ x: vx, y: 0, z: 0 }, true); // m/s
   }, vx);
-  await page.waitForTimeout(1500);
+  await pausa(1500);
   const s = await page.evaluate(() => {
     const b = window.exersuite.editor.getObject(window.__b);
     return { x: +b.mesh.position.x.toFixed(1), y: +b.mesh.position.y.toFixed(1) };

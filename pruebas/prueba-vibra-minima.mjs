@@ -25,6 +25,7 @@
 // limpio y la banca: cuerpos FUNDIDOS de varias piezas soldadas, colisionadores
 // que SE SOLAPAN, un CONTACTO contra un tope, y un LAZO CERRADO.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -130,37 +131,39 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1200);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1200);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2000);
+await pausa(2000);
 
 const medir = (data) =>
   page.evaluate(async (proyecto) => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 700));
+    await window.__pausa(700);
     const brazo = [...ed.objects.values()].find((o) => o.name === "Brazo");
     if (!brazo) return { error: "la escena no se montó" };
-    ed.toggleSimulation();
+    await ed.toggleSimulation();
     // SE ESPERA A QUE LAS MASAS ESTÉN PUESTAS, no sólo a que exista el mapa de
     // cuerpos: leer antes da 0,003 kg para un brazo de 5 y hace creer que el
     // motor pierde la masa. Costó una falsa alarma entera en v0.3.94.
     let bodies = null, cuerpo = null;
     for (let k = 0; k < 40; k++) {
-      await new Promise((r) => setTimeout(r, 100));
+      await window.__pausa(100);
       bodies = ed.physics?.bodies;
       if (!bodies) continue;
       const id = [...ed.objects].find(([, o]) => o.name === "Brazo")?.[0];
       cuerpo = id ? bodies.get(id)?.body ?? null : null;
       if (cuerpo && cuerpo.mass() > 0.5) break;
     }
-    if (!cuerpo) { ed.toggleSimulation(); return { error: "no se alcanzó el cuerpo del brazo" }; }
+    if (!cuerpo) { await ed.toggleSimulation(); return { error: "no se alcanzó el cuerpo del brazo" }; }
     const masa = +cuerpo.mass().toFixed(3);
     const ang = () => {
       brazo.mesh.updateMatrixWorld(true);
@@ -177,7 +180,7 @@ const medir = (data) =>
       return Math.asin(Math.max(-1, Math.min(1, v.z))) * 180 / Math.PI;
     };
     // Cuatro segundos para que caiga y se asiente, y sólo entonces se mide.
-    await new Promise((r) => setTimeout(r, 4000));
+    await window.__pausa(4000);
     const A = [], W = [], Wc = [], L = [];
     for (let k = 0; k < 60; k++) {
       await new Promise((r) => requestAnimationFrame(r));
@@ -185,8 +188,8 @@ const medir = (data) =>
       A.push(ang()); W.push(Math.hypot(w.x, w.y, w.z));
       Wc.push([w.x, w.y, w.z]); L.push(ladeo());
     }
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 200));
+    await ed.toggleSimulation();
+    await window.__pausa(200);
     return {
       masa,
       media: +(W.reduce((a, b) => a + b, 0) / W.length).toFixed(2),

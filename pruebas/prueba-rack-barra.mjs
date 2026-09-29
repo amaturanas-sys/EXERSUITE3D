@@ -1,6 +1,7 @@
 // Rack de sentadillas nativo + barra cargada: la barra NO cruza el suelo,
 // se apoya en las jotas y, si se suelta, la CADENA de seguridad la detiene.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -9,19 +10,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(900);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(900);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ---- Rack de sentadillas de fábrica + barra cargada sobre las jotas
 const setup = await page.evaluate(() => {
@@ -55,8 +58,8 @@ const setup = await page.evaluate(() => {
 console.log("setup:", JSON.stringify(setup));
 
 // ---- A) La barra descansa en las jotas y NO atraviesa el suelo
-await page.evaluate(() => window.exersuite.editor.toggleSimulation());
-await page.waitForTimeout(4000);
+await page.evaluate(async () => await window.exersuite.editor.toggleSimulation());
+await pausa(4000);
 const A = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const b = ed.getObject(window.__ids.barra);
@@ -69,10 +72,10 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(190, 150, 210);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v214-barra-jotas.png" });
-await page.evaluate(() => window.exersuite.editor.toggleSimulation());
-await page.waitForTimeout(700);
+await page.evaluate(async () => await window.exersuite.editor.toggleSimulation());
+await pausa(700);
 
 // ---- B) Cadena de seguridad entre los anclajes + barra soltada por encima
 const setB = await page.evaluate(() => {
@@ -104,9 +107,9 @@ const setB = await page.evaluate(() => {
   };
 });
 console.log("setB:", JSON.stringify(setB));
-await page.evaluate(() => window.exersuite.editor.toggleSimulation());
+await page.evaluate(async () => await window.exersuite.editor.toggleSimulation());
 // La barra roza los pilares traseros al bajar (fricción real): tarda ~8 s.
-await page.waitForTimeout(9000);
+await pausa(9000);
 const B = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const b = ed.getObject(window.__ids.barra);
@@ -119,7 +122,7 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(150, 110, 190);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v214-barra-cadena.png" });
 
 const okSetup = setup.piezas === 14 && setup.uniones === 2 && setup.jotas === 2 && setup.anclajes === 4;

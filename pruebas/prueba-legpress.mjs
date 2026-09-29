@@ -7,6 +7,7 @@
 // desarma (el carro baja hasta su tope y ahí se queda) y que el maniquí
 // reconoce su asiento y su respaldo, que es para lo que existe.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -22,18 +23,20 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ── 1. ESTÁ EN EL INVENTARIO ────────────────────────────────────────────────
 const enLaPaleta = await page.evaluate(() =>
@@ -50,7 +53,7 @@ const armado = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.insertarMaquina("legpress", new T.Vector3(0, 0, 0));
-  await new Promise((r) => setTimeout(r, 900));
+  await window.__pausa(900);
   const objs = [...ed.objects.values()];
   const js = ed.listJoints();
   const caja = new T.Box3();
@@ -128,19 +131,19 @@ const sim = await page.evaluate(async () => {
   // llegar a su tope, y una foto a los 6 s pillaba el gesto a medias. Lo que
   // se quiere saber es si CONVERGE, así que se muestrea hasta que dos
   // lecturas seguidas coinciden.
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   const traza = [];
   let quieto = false;
   for (let i = 0; i < 15 && !quieto; i++) {
-    await new Promise((r) => setTimeout(r, 2000));
+    await window.__pausa(2000);
     traza.push(deriva(objs)[0]);
     const n = traza.length;
     quieto = n >= 2 && Math.abs(traza[n - 1] - traza[n - 2]) <= 0.5;
   }
   const estructura = deriva(fijas);
   const final = deriva(objs);
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 600));
+  await ed.toggleSimulation();
+  await window.__pausa(600);
   return { traza, quieto, estructura, final, alParar: deriva(objs) };
 });
 console.log("SIMULACIÓN:", JSON.stringify(sim));
@@ -165,7 +168,7 @@ const ergo = await page.evaluate(async () => {
   const respaldo = [...ed.objects.values()].find((o) => o.name.startsWith("Respaldo ("));
   const cj = new T.Box3().setFromObject(asiento.mesh);
   await ed.colocarFiguraEn({ punto: cj.getCenter(new T.Vector3()), obj: asiento });
-  await new Promise((r) => setTimeout(r, 500));
+  await window.__pausa(500);
   ed.humanFigure.updateMatrixWorld(true);
   const seg = (id) => {
     let m = null;

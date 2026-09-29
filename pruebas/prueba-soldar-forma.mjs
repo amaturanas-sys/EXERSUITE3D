@@ -25,6 +25,7 @@
 // sección de física desaparecía — masa y «Fija» quedaban fuera de alcance sin
 // desagrupar la máquina entera.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -32,22 +33,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 const PREPARA = `
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
@@ -172,14 +175,14 @@ const guiado = await p.evaluate(`(async () => {
     if (soldar) ed.soldarPiezas([carro.id, mens.id]);
     const p0 = carro.mesh.position.clone();
     await ed.toggleSimulation();
-    for (let i = 0; i < 200 && !ed.physics; i++) await new Promise(r => setTimeout(r, 25));
-    await new Promise(r => setTimeout(r, 200));
+    for (let i = 0; i < 200 && !ed.physics; i++) await window.__pausa(25);
+    await window.__pausa(200);
     const cuerpo = ed.physics.bodies.get(carro.id)?.body;
     const enGuia = (ed.physics.guias ?? []).some(g => g.body === cuerpo);
     for (let i = 0; i < 240; i++) ed.physics.step(1/60);
     const p1 = carro.mesh.position.clone();
     ed.stopSimulation();
-    await new Promise(r => setTimeout(r, 250));
+    await window.__pausa(250);
     const d = p1.clone().sub(p0);
     return { canales, enGuia, baja: r2(p0.y - p1.y),
              lateral: r2(Math.hypot(d.x, d.z)) };
@@ -215,7 +218,7 @@ await p.evaluate(`(() => {
   const gid = ed.createGroupFromIds([carro.id, mens.id]);
   ed.selectGroup(gid);
 })()`);
-await p.waitForTimeout(600);
+await pausa(600);
 const panel = await p.evaluate(() => {
   const t = document.getElementById("inspector")?.textContent ?? "";
   const masa = [...document.querySelectorAll("#inspector input[type=number]")].length;
@@ -241,7 +244,7 @@ const desfija = await p.evaluate(async () => {
     .find((n) => (n.parentElement?.textContent ?? "").includes("Fijas"));
   fija.checked = false;
   fija.dispatchEvent(new Event("change"));
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   const carro = ed.listObjects().find((o) => o.name === "Carro");
   return { fijo: carro.physics.fixed,
            avisa: /enhebrada en guías/.test(document.getElementById("inspector")?.textContent ?? "") };
@@ -250,7 +253,7 @@ ok(!desfija.fijo && !desfija.avisa,
   `y desde ahí se le quita «Fija» sin desagrupar la máquina (fijo: ${desfija.fijo})`);
 
 await p.evaluate(() => window.exersuite.editor.setViewPreset?.("isometrica"));
-await p.waitForTimeout(700);
+await pausa(700);
 await p.screenshot({ path: "salidas/soldar-forma.png" });
 
 for (const e of errores) console.log("PAGEERROR " + e);

@@ -3,6 +3,7 @@
 // se dibuja la viga con dos clics, se eleva, y se coloca la roldana con la
 // herramienta en dos pasos (estructura → punto del eje → interna + dirección).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -11,19 +12,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // Cámara determinista + proyección de mundo a píxeles para los clics.
 await page.evaluate(() => {
@@ -40,11 +43,11 @@ await page.evaluate(() => {
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   };
 });
-await page.waitForTimeout(500);
+await pausa(500);
 
 // ── 1) HERRAMIENTA LINEAL: perfil 1:2 de 50 mm CON pinholes ───────────────
 await page.click("#palette .comp-btn:has-text('Pilar / travesaño (línea)')");
-await page.waitForTimeout(400);
+await pausa(400);
 const dlg = await page.evaluate(() => !!document.querySelector(".confirm-dialog"));
 await page.evaluate(() => {
   const d = document.querySelector(".confirm-dialog");
@@ -55,17 +58,17 @@ await page.evaluate(() => {
   chk.click(); // pinholes ON (⌀16 mm cada 5 cm)
 });
 await page.click(".confirm-dialog button:has-text('Colocar')");
-await page.waitForTimeout(400);
+await pausa(400);
 
 // Dos clics sobre el suelo: la viga se traza de (-45,0,0) a (45,0,0).
 const pA = await page.evaluate(() => window.__aPx(-45, 0, 0));
 await page.mouse.click(pA.x, pA.y);
-await page.waitForTimeout(300);
+await pausa(300);
 const pB = await page.evaluate(() => window.__aPx(45, 0, 0));
 await page.mouse.click(pB.x, pB.y);
-await page.waitForTimeout(500);
+await pausa(500);
 await page.keyboard.press("Escape"); // termina el encadenado de la herramienta
-await page.waitForTimeout(200);
+await pausa(200);
 
 const V = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -96,7 +99,7 @@ await page.evaluate(() => {
   ed.orbit.update?.();
   ed.requestRender?.();
 });
-await page.waitForTimeout(500);
+await pausa(500);
 await page.screenshot({ path: "vlinea-1-viga.png" });
 
 // ── 2) ROLDANA INTERNA por la interfaz ────────────────────────────────────
@@ -108,11 +111,11 @@ await page.evaluate(() => {
   );
   b.click();
 });
-await page.waitForTimeout(300);
+await pausa(300);
 // Fase 1: tocar la ESTRUCTURA (centro de la viga, ya elevada a y=150).
 const pViga = await page.evaluate(() => window.__aPx(0, 150, 0));
 await page.mouse.click(pViga.x, pViga.y);
-await page.waitForTimeout(400);
+await pausa(400);
 const fase1 = await page.evaluate(() => ({
   host: window.exersuite.editor.roldanaHost?.id === window.__viga,
   ejeAzul: !!window.exersuite.editor.roldanaAxisLine,
@@ -123,16 +126,16 @@ await page.screenshot({ path: "vlinea-2-eje-azul.png" });
 // Fase 2: tocar un punto A LO LARGO del eje azul (a 20 cm del centro).
 const pPunto = await page.evaluate(() => window.__aPx(20, 150, 0));
 await page.mouse.click(pPunto.x, pPunto.y);
-await page.waitForTimeout(500);
+await pausa(500);
 const panel = await page.evaluate(() => !!document.getElementById("rold-panel"));
 console.log("panel:", panel);
 if (!panel) await page.screenshot({ path: "vlinea-debug.png" });
 await page.click("#rold-panel .rold-opt:has-text('Interna')");
-await page.waitForTimeout(200);
+await pausa(200);
 await page.click("#rold-panel .rold-dir:has-text('Anterior')");
-await page.waitForTimeout(600);
+await pausa(600);
 await page.keyboard.press("Escape");
-await page.waitForTimeout(200);
+await pausa(200);
 
 const R = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -219,7 +222,7 @@ const C = await page.evaluate(() => {
   ed.requestRender?.();
   return { cables: ed.listCables().length };
 });
-await page.waitForTimeout(1000);
+await pausa(1000);
 const C2 = await page.evaluate(() => ({
   invalidos: window.exersuite.editor.cablesInvalidos.size,
 }));
@@ -248,7 +251,7 @@ const S = await page.evaluate(async () => {
   for (let i = 0; i < 180; i++) ph.step(1 / 60);
   const dR = +rold.mesh.position.distanceTo(p0).toFixed(2);
   const dV = +viga.mesh.position.distanceTo(v0).toFixed(2);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return {
     empotrada: !!emp,
     anfitrion,

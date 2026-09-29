@@ -16,6 +16,7 @@
 //   4. un tope montado en las guías lo detiene antes;
 //   5. y el safety pin calza en los pinholes del pilar.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -23,22 +24,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 // ── 0. LA PIEZA ESTÁ EN EL CATÁLOGO ────────────────────────────────────────
 console.log("\n── En la paleta ────────────────────────────────────────────");
@@ -188,10 +191,10 @@ const caida = await p.evaluate(async (id) => {
   const carro = ed.objects.get(id);
   const p0 = carro.mesh.position.clone();
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 4000));
+  await window.__pausa(4000);
   const p1 = carro.mesh.position.clone();
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   return {
     dy: +(p1.y - p0.y).toFixed(1),
     dz: +(p1.z - p0.z).toFixed(1),
@@ -236,10 +239,10 @@ const conTope = await p.evaluate(async (ctx) => {
   }
   const p0 = carro.mesh.position.clone();
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 3000));
+  await window.__pausa(3000);
   const recorrido = +carro.mesh.position.distanceTo(p0).toFixed(1);
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   return { montados, recorrido };
 }, { carro: enhebrado.id, g0: armado.ids.g0, g1: armado.ids.g1 });
 ok(conTope.montados.every((m) => m.alineado > 0.99),
@@ -350,10 +353,10 @@ const arreglos = await p.evaluate(async () => {
   suelto.mesh.updateMatrixWorld(true);
   const y0 = movil.mesh.position.y;
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 2500));
+  await window.__pausa(2500);
   out.topeSuelto = { caida: +(y0 - movil.mesh.position.y).toFixed(1) };
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
 
   // (d) DOS TOPES MÁS JUNTOS QUE EL CARRO lo dejan encajado, no lo sueltan.
   limpia();
@@ -373,10 +376,10 @@ const arreglos = await p.evaluate(async () => {
   }
   const p0 = carro2.mesh.position.clone();
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 2500));
+  await window.__pausa(2500);
   out.encerrado = { movido: +carro2.mesh.position.distanceTo(p0).toFixed(1) };
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   return out;
 });
 ok(arreglos.borde.canales === 0,

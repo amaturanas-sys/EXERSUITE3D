@@ -3,6 +3,7 @@
 // y el reenvío correcto es horizontal — el cable baja por dentro del pilar y
 // sale por la ventana calada en su cara.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -11,19 +12,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -39,7 +42,7 @@ await page.evaluate(() => {
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   };
 });
-await page.waitForTimeout(400);
+await pausa(400);
 
 // ── 1) PILAR VERTICAL (8×200×8, apoyado en el suelo) ─────────────────────
 //
@@ -50,7 +53,7 @@ await page.waitForTimeout(400);
 await page.evaluate(() => {
   window.exersuite.editor.addComponent("pilar");
 });
-await page.waitForTimeout(500);
+await pausa(500);
 const P = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const pilar = [...ed.objects.values()].find((o) => o.componentId === "pilar");
@@ -72,10 +75,10 @@ await page.evaluate(() => {
     .find((b) => (b.textContent ?? "").trim() === "Roldana")
     .click();
 });
-await page.waitForTimeout(300);
+await pausa(300);
 const pPilar = await page.evaluate(() => window.__aPx(0, 120, 0));
 await page.mouse.click(pPilar.x, pPilar.y);
-await page.waitForTimeout(400);
+await pausa(400);
 const fase1 = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const l = ed.roldanaAxisLine;
@@ -97,11 +100,11 @@ await page.screenshot({ path: "vpilar-1-eje-azul.png" });
 // ── 3) Dirección INVÁLIDA: "arriba" coincide con el eje del pilar ─────────
 const pPunto = await page.evaluate(() => window.__aPx(0, 160, 0));
 await page.mouse.click(pPunto.x, pPunto.y);
-await page.waitForTimeout(500);
+await pausa(500);
 await page.click("#rold-panel .rold-opt:has-text('Interna')");
-await page.waitForTimeout(150);
+await pausa(150);
 await page.click("#rold-panel .rold-dir:has-text('Arriba')");
-await page.waitForTimeout(500);
+await pausa(500);
 const rechazo = await page.evaluate(() => ({
   aviso: document.getElementById("hud")?.textContent ?? "",
   roldanas: [...window.exersuite.editor.objects.values()].filter((o) =>
@@ -113,13 +116,13 @@ console.log("3-direccion invalida:", JSON.stringify(rechazo));
 
 // ── 4) Dirección VÁLIDA: "anterior" (+Z) — reenvío horizontal ─────────────
 await page.mouse.click(pPunto.x, pPunto.y);
-await page.waitForTimeout(500);
+await pausa(500);
 await page.click("#rold-panel .rold-opt:has-text('Interna')");
-await page.waitForTimeout(150);
+await pausa(150);
 await page.click("#rold-panel .rold-dir:has-text('Anterior')");
-await page.waitForTimeout(600);
+await pausa(600);
 await page.keyboard.press("Escape");
-await page.waitForTimeout(200);
+await pausa(200);
 
 const R = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -201,7 +204,7 @@ const C = await page.evaluate(() => {
   ed.requestRender?.();
   return { cables: ed.listCables().length };
 });
-await page.waitForTimeout(1000);
+await pausa(1000);
 const C2 = await page.evaluate(() => ({
   invalidos: window.exersuite.editor.cablesInvalidos.size,
 }));
@@ -219,7 +222,7 @@ const S = await page.evaluate(async () => {
   for (let i = 0; i < 180; i++) ed.physics.step(1 / 60);
   const dR = +rold.mesh.position.distanceTo(p0).toFixed(2);
   const dP = +pilar.mesh.position.distanceTo(v0).toFixed(2);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { derivaRoldana: dR, derivaPilar: dP, sigueSiendoPolea: ed.isPulley(rold) };
 });
 console.log("6-simulacion:", JSON.stringify(S));

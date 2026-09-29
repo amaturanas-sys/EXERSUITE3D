@@ -3338,99 +3338,123 @@ export class PhysicsWorld {
     );
     while (this.accumulator >= PhysicsWorld.FIXED_DT) {
       this.accumulator -= PhysicsWorld.FIXED_DT;
-      // Instantánea para la esticción de los cuerpos colgados de cables.
-      this.posAntes.clear();
-      for (const b of this.cuerposCable) {
-        if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
-      }
-      this.applyDrag(PhysicsWorld.FIXED_DT);
-      // El maniquí manda su postura al motor ANTES del paso: sus segmentos
-      // son cinemáticos, así que llegan como destino y el motor calcula con
-      // qué velocidad barren lo que tengan delante.
-      this.sincronizarFigura();
-      this.world.step();
-      this.frenarMando();
-      this.aplicarGuias();
-      // Cable: primero corrige velocidades, luego proyecta posiciones para
-      // conservar la longitud de forma dura (cable inextensible).
-      if (this.cables.length > 0) {
-        // 32 pasadas Gauss-Seidel: la TENSIÓN debe propagarse a través de
-        // los nodos livianos (el puente del carro pesa 0,8 kg entre dos
-        // cables y actúa como resorte blando en serie) hasta el contrapeso
-        // pesado — con pocas pasadas el reparto por masa inversa apenas
-        // toca al portadiscos y el cable se estira en vez de transmitir.
-        for (let it = 0; it < 32; it++) {
-          for (const c of this.cables) {
-            this.solveCableVelocity(c);
-            this.aplicarFrenos(c, false);
-          }
-        }
-        // Instantánea previa a la parte POSICIONAL: es la que se barre luego
-        // para que ninguna corrección de longitud atraviese geometría.
-        this.posCable.clear();
+      this.subpaso();
+    }
+    this.sincronizarMallas();
+  }
+
+  /**
+   * ARNÉS: avanza EXACTAMENTE `n` sub-pasos de `FIXED_DT`, sin acumulador y sin
+   * reloj (v0.4.10). Es la puerta por la que las pruebas gobiernan la
+   * simulación por pasos: el mismo `n` da el mismo mundo, vaya a los fps que
+   * vaya la máquina. El acumulador no se toca ni se lee.
+   */
+  pasosExactos(n: number): void {
+    if (!this.world) return;
+    for (let i = 0; i < n; i++) this.subpaso();
+    this.sincronizarMallas();
+  }
+
+  /** Un sub-paso de `FIXED_DT`: arrastre, figura, mundo y guardarraíles. */
+  private subpaso(): void {
+    const world = this.world;
+    if (!world) return;
+    // Instantánea para la esticción de los cuerpos colgados de cables.
+    this.posAntes.clear();
+    for (const b of this.cuerposCable) {
+      if (b.isDynamic()) this.posAntes.set(b, { ...b.translation() });
+    }
+    this.applyDrag(PhysicsWorld.FIXED_DT);
+    // El maniquí manda su postura al motor ANTES del paso: sus segmentos
+    // son cinemáticos, así que llegan como destino y el motor calcula con
+    // qué velocidad barren lo que tengan delante.
+    this.sincronizarFigura();
+    world.step();
+    this.frenarMando();
+    this.aplicarGuias();
+    // Cable: primero corrige velocidades, luego proyecta posiciones para
+    // conservar la longitud de forma dura (cable inextensible).
+    if (this.cables.length > 0) {
+      // 32 pasadas Gauss-Seidel: la TENSIÓN debe propagarse a través de
+      // los nodos livianos (el puente del carro pesa 0,8 kg entre dos
+      // cables y actúa como resorte blando en serie) hasta el contrapeso
+      // pesado — con pocas pasadas el reparto por masa inversa apenas
+      // toca al portadiscos y el cable se estira en vez de transmitir.
+      for (let it = 0; it < 32; it++) {
         for (const c of this.cables) {
-          for (const b of c.bodies) {
-            if (!this.posCable.has(b)) this.posCable.set(b, { ...b.translation() });
-          }
+          this.solveCableVelocity(c);
+          this.aplicarFrenos(c, false);
         }
-        for (let it = 0; it < 8; it++) {
-          for (const c of this.cables) {
-            this.solveCablePosition(c);
-            this.aplicarFrenos(c, true);
-          }
+      }
+      // Instantánea previa a la parte POSICIONAL: es la que se barre luego
+      // para que ninguna corrección de longitud atraviese geometría.
+      this.posCable.clear();
+      for (const c of this.cables) {
+        for (const b of c.bodies) {
+          if (!this.posCable.has(b)) this.posCable.set(b, { ...b.translation() });
         }
-        // Topes de terminal: el extremo no pasa por su roldana vecina.
-        for (const c of this.cables) this.aplicarTopesCable(c);
-        // Nada de lo anterior pudo meter una pieza dentro de otra.
-        this.frenarAtravesamiento();
-        // La corrección del cable no puede sacar a las guiadas de su riel.
-        this.aplicarGuias();
-        // ESTICCIÓN de polea (posicional): si en este subpaso un cuerpo
-        // colgado de cables se desplazó menos de 0,5 mm (< 3 cm/s), el
-        // desplazamiento se revierte y el cuerpo queda aparcado. Esto mata
-        // por completo la deriva cuasi-estática del compromiso entre cables
-        // acoplados (el solver oscila fuerte por dentro pero solo "repta"
-        // milímetros netos). SOLO aplica en REPOSO: con la mano activa se
-        // desactiva — un contrapeso pesado necesita varios subpasos para
-        // acelerar desde cero y el muro de la esticción lo dejaría clavado
-        // por fuerte que tire el usuario.
-        if (!this.drag) {
-          for (const [b, antes] of this.posAntes) {
-            if (!b.isDynamic()) continue;
-            const t = b.translation();
-            const dx = t.x - antes.x;
-            const dy = t.y - antes.y;
-            const dz = t.z - antes.z;
-            if (dx * dx + dy * dy + dz * dz < 0.0005 * 0.0005) {
-              b.setTranslation(antes, true);
-              b.setLinvel({ x: 0, y: 0, z: 0 }, true);
-            }
+      }
+      for (let it = 0; it < 8; it++) {
+        for (const c of this.cables) {
+          this.solveCablePosition(c);
+          this.aplicarFrenos(c, true);
+        }
+      }
+      // Topes de terminal: el extremo no pasa por su roldana vecina.
+      for (const c of this.cables) this.aplicarTopesCable(c);
+      // Nada de lo anterior pudo meter una pieza dentro de otra.
+      this.frenarAtravesamiento();
+      // La corrección del cable no puede sacar a las guiadas de su riel.
+      this.aplicarGuias();
+      // ESTICCIÓN de polea (posicional): si en este subpaso un cuerpo
+      // colgado de cables se desplazó menos de 0,5 mm (< 3 cm/s), el
+      // desplazamiento se revierte y el cuerpo queda aparcado. Esto mata
+      // por completo la deriva cuasi-estática del compromiso entre cables
+      // acoplados (el solver oscila fuerte por dentro pero solo "repta"
+      // milímetros netos). SOLO aplica en REPOSO: con la mano activa se
+      // desactiva — un contrapeso pesado necesita varios subpasos para
+      // acelerar desde cero y el muro de la esticción lo dejaría clavado
+      // por fuerte que tire el usuario.
+      if (!this.drag) {
+        for (const [b, antes] of this.posAntes) {
+          if (!b.isDynamic()) continue;
+          const t = b.translation();
+          const dx = t.x - antes.x;
+          const dy = t.y - antes.y;
+          const dz = t.z - antes.z;
+          if (dx * dx + dy * dy + dz * dz < 0.0005 * 0.0005) {
+            b.setTranslation(antes, true);
+            b.setLinvel({ x: 0, y: 0, z: 0 }, true);
           }
         }
       }
-      // Guardarraíl al final de CADA subpaso (v0.2.14).
-      this.limitarDesbocados();
     }
-    for (const { body, obj } of this.bodies.values()) {
-      if (body.isFixed()) continue;
-      const t = body.translation();
-      obj.mesh.position.set(t.x / S, t.y / S, t.z / S);
-      const r = body.rotation();
-      obj.mesh.quaternion.set(r.x, r.y, r.z, r.w);
-    }
-    // Roldanas empotradas: su malla se reproyecta desde el cuerpo compuesto
-    // del anfitrión con la pose relativa de diseño.
-    for (const emp of this.empotradas) {
-      if (emp.host.isFixed()) continue;
-      const t = emp.host.translation();
-      const q = emp.host.rotation();
-      const qh = new THREE.Quaternion(q.x, q.y, q.z, q.w);
-      const p = new THREE.Vector3(emp.relPos.x, emp.relPos.y, emp.relPos.z).applyQuaternion(qh);
-      emp.obj.mesh.position.set((t.x + p.x) / S, (t.y + p.y) / S, (t.z + p.z) / S);
-      emp.obj.mesh.quaternion
-        .copy(qh)
-        .multiply(new THREE.Quaternion(emp.relQ.x, emp.relQ.y, emp.relQ.z, emp.relQ.w));
-    }
+    // Guardarraíl al final de CADA subpaso (v0.2.14).
+    this.limitarDesbocados();
+  }
+
+  /** Las mallas copian a sus cuerpos (m -> cm), tras los sub-pasos que toquen. */
+  private sincronizarMallas(): void {
+  for (const { body, obj } of this.bodies.values()) {
+    if (body.isFixed()) continue;
+    const t = body.translation();
+    obj.mesh.position.set(t.x / S, t.y / S, t.z / S);
+    const r = body.rotation();
+    obj.mesh.quaternion.set(r.x, r.y, r.z, r.w);
+  }
+  // Roldanas empotradas: su malla se reproyecta desde el cuerpo compuesto
+  // del anfitrión con la pose relativa de diseño.
+  for (const emp of this.empotradas) {
+    if (emp.host.isFixed()) continue;
+    const t = emp.host.translation();
+    const q = emp.host.rotation();
+    const qh = new THREE.Quaternion(q.x, q.y, q.z, q.w);
+    const p = new THREE.Vector3(emp.relPos.x, emp.relPos.y, emp.relPos.z).applyQuaternion(qh);
+    emp.obj.mesh.position.set((t.x + p.x) / S, (t.y + p.y) / S, (t.z + p.z) / S);
+    emp.obj.mesh.quaternion
+      .copy(qh)
+      .multiply(new THREE.Quaternion(emp.relQ.x, emp.relQ.y, emp.relQ.z, emp.relQ.w));
+  }
   }
 
   /**

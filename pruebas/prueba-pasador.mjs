@@ -11,6 +11,7 @@
 //     escapa por el eje del pasador;
 //   · moverlo con el gizmo rehace sus uniones donde quedó.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -26,18 +27,20 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ── 1. ESTÁ EN LA PALETA, EN MOVIMIENTO ─────────────────────────────────────
 const enPaleta = await page.evaluate(() => {
@@ -191,8 +194,8 @@ const fisica = async (libre) => page.evaluate(async (lib) => {
   ed.aplicarPasador(pas);
   const alto = () => +brazo.mesh.getWorldPosition(new T.Vector3()).y.toFixed(1);
   const antes = alto();
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 250));
+  await ed.toggleSimulation();
+  await window.__pausa(250);
   const alArrancar = {
     y: alto(),
     esBisagra: ed.physics?.esBisagra(brazo.id) ?? "sin-fisica",
@@ -201,13 +204,13 @@ const fisica = async (libre) => page.evaluate(async (lib) => {
   let quieto = false;
   const traza = [];
   for (let i = 0; i < 30 && !quieto; i++) {
-    await new Promise((r) => setTimeout(r, 400));
+    await window.__pausa(400);
     traza.push(alto());
     const n = traza.length;
     quieto = n >= 5 && Math.abs(traza[n - 1] - traza[n - 5]) <= 0.3;
   }
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await ed.toggleSimulation();
+  await window.__pausa(400);
   const j = ed.listJoints().find((x) => x.name.startsWith(`Pasador ${pas.id}`) && !x.soldada);
   return {
     alArrancar,

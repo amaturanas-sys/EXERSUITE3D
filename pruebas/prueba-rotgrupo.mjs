@@ -2,6 +2,7 @@
 // eje) viajan con el conjunto. Tres escenarios: torre de pesos 90°Y con
 // simulación, rack de sentadillas 45°Y (eje libre), grupo manual con bisagra.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -10,19 +11,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // A) Torre polea de pesos ROTADA 90° en Y: la pila sigue guiada y el remo
 //    la levanta — exactamente igual que sin rotar.
@@ -44,7 +47,7 @@ const esperarValidacion = async () => {
       ed.cablesDirty = true;
       ed.requestRender(4);
     });
-    await page.waitForTimeout(220);
+    await pausa(220);
   }
 };
 await esperarValidacion();
@@ -94,7 +97,7 @@ const Asim = await page.evaluate(async () => {
   }
   const sube = pila.mesh.position.y - p0.y;
   const derivaXZ = Math.hypot(pila.mesh.position.x - p0.x, pila.mesh.position.z - p0.z);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { asentadaY: +p0.y.toFixed(1), pilaSube: +sube.toFixed(1), derivaXZ: +derivaXZ.toFixed(1) };
 });
 console.log("A-sim:", JSON.stringify(Asim));
@@ -104,7 +107,7 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(230, 160, 210);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v225-torre-rotada.png" });
 
 // B) Rack de sentadillas rotado 45° en Y (eje NO cardinal → vector libre):
@@ -129,7 +132,7 @@ const B = await page.evaluate(async () => {
   nuevos.forEach((o, i) => {
     maxDesp = Math.max(maxDesp, o.mesh.position.distanceTo(pos0[i]));
   });
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { piezas: nuevos.length, ejes, maxDesp: +maxDesp.toFixed(1) };
 });
 console.log("B-rack45:", JSON.stringify(B));

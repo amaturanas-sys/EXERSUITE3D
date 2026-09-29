@@ -14,6 +14,7 @@
 // donde las piezas se tocan (y solo ahí), que el conjunto cae ENTERO sin
 // deformarse, y que agrupar a secas NO consigue eso.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -21,22 +22,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 // Un brazo en L colgado en el aire, hecho de cuatro tubos que se tocan en
 // cadena: A—B—C—D. A y D NO se tocan entre sí, así que la cadena tiene que dar
@@ -140,11 +143,11 @@ const caida = await p.evaluate(`(async () => {
   const dist = (x, y) => +x.mesh.position.distanceTo(y.mesh.position).toFixed(2);
   const simular = async (pasos) => {
     await ed.toggleSimulation();
-    for (let i = 0; i < 200 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 25));
-    await new Promise((r) => setTimeout(r, 200));
+    for (let i = 0; i < 200 && !ed.physics; i++) await window.__pausa(25);
+    await window.__pausa(200);
     for (let i = 0; i < pasos; i++) ed.physics.step(1 / 60);
   };
-  const parar = async () => { ed.stopSimulation(); await new Promise((r) => setTimeout(r, 250)); };
+  const parar = async () => { ed.stopSimulation(); await window.__pausa(250); };
 
   // (a) TODO MÓVIL: el brazo soldado cae entero y llega abajo SIN deformarse.
   const [A, B, C, D] = armar();
@@ -256,17 +259,17 @@ const menu = await p.evaluate(async () => {
   };
   const a = mk("Uno", 0), b = mk("Dos", 40);
   ed.select(null); ed.toggleMulti(a); ed.toggleMulti(b);
-  await new Promise((r) => setTimeout(r, 200));
+  await window.__pausa(200);
   const edicion = [...document.querySelectorAll(".menu-btn, button")]
     .find((n) => (n.textContent ?? "").trim().startsWith("Edición"));
   edicion?.click();
-  await new Promise((r) => setTimeout(r, 250));
+  await window.__pausa(250);
   const items = [...document.querySelectorAll(".menu-item")].map((n) => (n.textContent ?? "").trim());
   const soldar = [...document.querySelectorAll(".menu-item")]
     .find((n) => (n.textContent ?? "").includes("Soldar"));
   const antes = ed.listJoints().filter((j) => j.locked).length;
   soldar?.click();
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   return {
     items: items.filter((t) => /Agrupar|Soldar/.test(t)),
     habilitado: soldar ? !soldar.disabled : false,
@@ -287,7 +290,7 @@ await p.evaluate(`(() => {
   ed.setViewPreset?.("isometrica");
   ed.requestRender();
 })()`);
-await p.waitForTimeout(900);
+await pausa(900);
 await p.screenshot({ path: "salidas/soldar.png" });
 
 for (const e of errores) console.log("PAGEERROR " + e);

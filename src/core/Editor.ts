@@ -1050,6 +1050,57 @@ export class Editor {
 
   private lastFrameTime = 0;
   private simFrame = 0;
+
+  /**
+   * EL ARNÉS GOBIERNA LA SIMULACIÓN POR PASOS (v0.4.10).
+   *
+   * Las pruebas medían con el reloj —«deja andar 12 s»— y el bucle de render
+   * convierte reloj en pasos según los fps que saque la máquina. En el Chromium
+   * headless eso son ~3,6 fps con dt topados, y dos corridas idénticas recibían
+   * distinto número de pasos: v0.4.8 midió 81 frente a 85 y con eso bastó para
+   * que el tope 1 de la banca cayera a un lado o al otro; v0.4.9 vio el gesto de
+   * la mano recostar entre 21,7° y 31,7° según la corrida.
+   *
+   * Con `pasoManual` el bucle deja de avanzar la física y la avanza
+   * `avanzarSimulacion`, que da exactamente `round(s * 60)` sub-pasos de 1/60 y
+   * en cada uno hace lo que haría un fotograma a 60 fps de verdad. El mismo
+   * guion da el mismo mundo, vaya la máquina a los fps que vaya. La app no lo
+   * usa: con el paso manual apagado nada cambia.
+   *
+   * Arranca encendido si la página trae `__EXERSUITE_PASO_MANUAL`, que es lo
+   * que pone `pruebas/arnes.mjs` antes de cargar la app: así lo hereda también
+   * cualquier editor que se cree después, sin que cada prueba tenga que
+   * acordarse.
+   */
+  private pasoManual =
+    (globalThis as { __EXERSUITE_PASO_MANUAL?: boolean }).__EXERSUITE_PASO_MANUAL === true;
+
+  /** Enciende o apaga el paso manual (solo para el arnés de pruebas). */
+  setPasoManual(on: boolean): void {
+    this.pasoManual = on;
+  }
+
+  /**
+   * Avanza la simulación `segundos` de tiempo simulado, en sub-pasos exactos de
+   * 1/60, con el trabajo de fotograma de un bucle ideal a 60 fps en cada uno.
+   * Devuelve cuántos sub-pasos dio. Sin simulación en marcha, no hace nada.
+   */
+  avanzarSimulacion(segundos: number): number {
+    if (!this.simulating || !this.physics) return 0;
+    const n = Math.max(0, Math.round(segundos * 60));
+    for (let i = 0; i < n; i++) {
+      this.physics.pasosExactos(1);
+      if (++this.simFrame % 2 === 0) this.syncRopesFromPhysics();
+      this.updateStackAnimation();
+      this.updateHandIK();
+      this.updateFootIK();
+      this.sincronizarBarraManiqui();
+    }
+    this.updateCableVisuals();
+    this.cablesDirty = false;
+    this.requestRender();
+    return n;
+  }
   /** Los visuales de cable solo se reconstruyen cuando algo se ha movido. */
   private cablesDirty = true;
   /** Frames de render pendientes (render bajo demanda fuera de simulación). */
@@ -1245,7 +1296,10 @@ export class Editor {
     const now = performance.now();
     const dt = Math.min((now - this.lastFrameTime) / 1000, 0.25);
     this.lastFrameTime = now;
-    if (this.simulating && this.physics) {
+    // Con el paso manual puesto (el arnés de pruebas), el bucle NO avanza la
+    // física: la avanza quien llame a `avanzarSimulacion`. El resto del
+    // fotograma —IK, cuerdas, render— sigue como siempre.
+    if (this.simulating && this.physics && !this.pasoManual) {
       this.physics.step(dt);
       this.cablesDirty = true;
       // Las cuerdas SIMULADAS se reproyectan desde sus eslabones físicos

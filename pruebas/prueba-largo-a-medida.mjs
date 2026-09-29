@@ -19,6 +19,7 @@
 //   · y volver al largo de fábrica devuelve la malla original, vértice a
 //     vértice (no se acumula estirado sobre estirado).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const PIEZAS = [
   { id: "brazo-seguridad", fabrica: 106, remate: 29, prueba: [150, 70] },
@@ -32,22 +33,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 // ── 1. LAS TRES ESTÁN EN LA PALETA Y SE DECLARAN AJUSTABLES ────────────────
 console.log("\n── En la paleta, y ajustables ──────────────────────────────");
@@ -181,7 +184,7 @@ const viaje = await p.evaluate(async () => {
   for (const o of [...ed.listObjects()]) ed.removeObject(o);
   const informe = parsearPrefab(texto);
   ed.insertarPrefab(informe.archivo);
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const T = window.exersuite.THREE;
   const vuelta = ed.listObjects().map((o) => {
     const g = o.mesh.geometry; g.computeBoundingBox();
@@ -217,12 +220,12 @@ const fisica = await p.evaluate(async () => {
   const y0 = disco.mesh.position.y;
   await ed.toggleSimulation();
   for (let i = 0; i < 60; i++) {
-    await new Promise((r) => setTimeout(r, 250));
+    await window.__pausa(250);
     if (disco.mesh.position.y < 40) break;
   }
   const y1 = disco.mesh.position.y;
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 500));
+  await window.__pausa(500);
   return { y0, y1: +y1.toFixed(1) };
 });
 ok(fisica.y1 > 60,

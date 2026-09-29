@@ -1,6 +1,7 @@
 // Ajuste 1: la barra sobre las jotas queda RETENIDA en el asiento cóncavo
 // (no rueda ni desliza fuera del gancho durante la simulación).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -9,20 +10,22 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(900);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(900);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
-const R0 = await page.evaluate(() => {
+await pausa(2500);
+const R0 = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.insertarMaquina("rack-sentadillas", new T.Vector3(0, 0, 0));
@@ -35,10 +38,10 @@ const R0 = await page.evaluate(() => {
   barra.rebuildCargaVisual();
   window.__b = barra.id;
   ed.select(null);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { x0: +jota.mesh.position.x.toFixed(1), y0: +(jota.mesh.position.y + 8).toFixed(1) };
 });
-await page.waitForTimeout(7000);
+await pausa(7000);
 const R = await page.evaluate(() => {
   const b = window.exersuite.editor.getObject(window.__b);
   return { x: +b.mesh.position.x.toFixed(1), y: +b.mesh.position.y.toFixed(1), z: +b.mesh.position.z.toFixed(1) };
@@ -53,6 +56,6 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(200, 150, 220);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v215-asiento-jota.png" });
 await browser.close();

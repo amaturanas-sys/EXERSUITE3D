@@ -2,6 +2,7 @@
 // ilimitada + guardarraíl de 12 m/s), tensión kg/lb, órbita, articulación
 // focal, botón de doblado y Marketplace.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -10,10 +11,12 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(1000);
+await pausa(1000);
 
 // Marketplace accesible desde la landing.
 //
@@ -21,7 +24,7 @@ await page.waitForTimeout(1000);
 // HUMO —solo mira que la puerta abre y que hay algo detrás—; quien mide el hub
 // a fondo es `prueba-hub`, con sus 62 comprobaciones.
 await page.click("text=🛒 MARKETPLACE");
-await page.waitForTimeout(1200);
+await pausa(1200);
 const MK = await page.evaluate(() => ({
   marcas: document.querySelectorAll(".hub-historia").length,
   recorridos: document.querySelectorAll(".hub-tab").length,
@@ -31,16 +34,16 @@ const MK = await page.evaluate(() => ({
 console.log("marketplace:", JSON.stringify(MK));
 
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(800);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(800);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // Botón de DOBLADO del Toolbox
 await page.evaluate(() => {
@@ -48,9 +51,9 @@ await page.evaluate(() => {
   const T = window.exersuite.THREE;
   ed.select(ed.addComponent("pilar-linea", new T.Vector3(0, 100, 300)));
 });
-await page.click("#tool-quick .tq-bend"); await page.waitForTimeout(300);
+await page.click("#tool-quick .tq-bend"); await pausa(300);
 const bendOn = await page.evaluate(() => window.exersuite.editor.isBending());
-await page.click("#tool-quick .tq-bend"); await page.waitForTimeout(200);
+await page.click("#tool-quick .tq-bend"); await pausa(200);
 const bendOff = await page.evaluate(() => !window.exersuite.editor.isBending());
 console.log("doblado:", JSON.stringify({ bendOn, bendOff }));
 
@@ -62,8 +65,8 @@ const T1 = await page.evaluate(async () => {
   await ed.addHumanFigure(175);
   ed.humanFigure.position.set(95, ed.humanFigure.position.y, 55);
   ed.select(null);
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 2500));
+  await ed.toggleSimulation();
+  await window.__pausa(2500);
   const remo = [...ed.objects.values()].find((o) => (o.name || "").toLowerCase().includes("remo"));
   const porta = [...ed.objects.values()].find((o) => o.componentId === "portadiscos-ttp");
   const y0 = porta ? porta.mesh.position.y : null;
@@ -72,7 +75,7 @@ const T1 = await page.evaluate(async () => {
   ed.physics.grab(remo.id, pos);
   for (let i = 0; i < 25; i++) {
     ed.physics.dragTo(pos.clone().add(new T.Vector3(0, -3 - i * 2, 8)));
-    await new Promise((r) => setTimeout(r, 120));
+    await window.__pausa(120);
   }
   const y1 = porta ? porta.mesh.position.y : null;
   return {
@@ -84,7 +87,7 @@ const T1 = await page.evaluate(async () => {
     tensionKg: +ed.tensionManoKg().toFixed(1),
   };
 });
-await page.waitForTimeout(600);
+await pausa(600);
 const UI = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   // v0.2.49: la figura nace con el TREN SUPERIOR como zona activa (hombros y

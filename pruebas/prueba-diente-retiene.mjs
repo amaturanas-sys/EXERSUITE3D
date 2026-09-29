@@ -18,6 +18,7 @@
 // sólo retiene cerca de la vertical, la pieza no sirve para un carril de
 // ajuste por mucho que se le afine la forma, y eso decide el diseño.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -98,15 +99,17 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1200);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1200);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2000);
+await pausa(2000);
 
 /**
  * DÓNDE SE SIENTA DE VERDAD EL PASADOR, medido y no calculado.
@@ -127,18 +130,18 @@ const asientoMedido = (data) =>
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
     const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
     if (!pl || !pa) return null;
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 2500));
+    await ed.toggleSimulation();
+    await window.__pausa(2500);
     pl.mesh.updateMatrixWorld(true);
     pa.mesh.updateMatrixWorld(true);
     const v = pa.mesh.getWorldPosition(new T.Vector3());
     pl.mesh.worldToLocal(v);
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return [+v.x.toFixed(2), +v.y.toFixed(2), +v.z.toFixed(2)];
   }, data);
 
@@ -148,7 +151,7 @@ const asientoEnElMundo = (data, local) =>
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
     if (!pl) return null;
     pl.mesh.updateMatrixWorld(true);
@@ -162,20 +165,20 @@ const cuantoResbala = (data) =>
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
     if (!pa) return { error: "sin pasador" };
     const donde = () => {
       pa.mesh.updateMatrixWorld(true);
       return pa.mesh.getWorldPosition(new T.Vector3());
     };
-    ed.toggleSimulation();
+    await ed.toggleSimulation();
     // Dos segundos para que caiga y asiente; después se mide el desplazamiento.
-    await new Promise((r) => setTimeout(r, 2000));
+    await window.__pausa(2000);
     const asentado = donde();
     const serie = [];
     for (let k = 0; k < 6; k++) {
-      await new Promise((r) => setTimeout(r, 1000));
+      await window.__pausa(1000);
       serie.push(+donde().distanceTo(asentado).toFixed(2));
     }
     const fin = donde();
@@ -186,8 +189,8 @@ const cuantoResbala = (data) =>
     pl.mesh.updateMatrixWorld(true);
     const ejeCarril = new T.Vector3(0, 1, 0).applyQuaternion(pl.mesh.quaternion).normalize();
     const d = fin.clone().sub(asentado);
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return {
       corrimiento: +d.length().toFixed(2),
       porElCarril: +Math.abs(d.dot(ejeCarril)).toFixed(2),
@@ -211,17 +214,17 @@ const dondeAcaba = (data) =>
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
     const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
     if (!pa || !pl) return null;
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 6000));
+    await ed.toggleSimulation();
+    await window.__pausa(6000);
     pl.mesh.updateMatrixWorld(true);
     pa.mesh.updateMatrixWorld(true);
     const v = pl.mesh.worldToLocal(pa.mesh.getWorldPosition(new T.Vector3()));
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return +v.y.toFixed(2);
   }, data);
 
@@ -345,7 +348,7 @@ const empujon = (data, impulso) =>
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const pl = [...ed.objects.values()].find((o) => o.name === "Carril");
     const pa = [...ed.objects.values()].find((o) => o.name === "Pasador");
     const enPlaca = () => {
@@ -353,15 +356,15 @@ const empujon = (data, impulso) =>
       pa.mesh.updateMatrixWorld(true);
       return pl.mesh.worldToLocal(pa.mesh.getWorldPosition(new T.Vector3())).y;
     };
-    ed.toggleSimulation();
+    await ed.toggleSimulation();
     let listo = false;
     for (let k = 0; k < 100 && !listo; k++) {
-      await new Promise((r) => setTimeout(r, 50));
+      await window.__pausa(50);
       const id = [...ed.objects].find(([, o]) => o.name === "Pasador")?.[0];
       const c = id ? ed.physics?.bodies?.get(id)?.body : null;
       try { if (c && c.mass() > 1) listo = true; } catch { /* cuerpo viejo */ }
     }
-    await new Promise((r) => setTimeout(r, 1500));
+    await window.__pausa(1500);
     const y0 = enPlaca();
     const id = [...ed.objects].find(([, o]) => o.name === "Pasador")[0];
     const cuerpo = ed.physics.bodies.get(id).body;
@@ -370,13 +373,13 @@ const empujon = (data, impulso) =>
     cuerpo.applyImpulse({ x: u.x * impulso, y: u.y * impulso, z: u.z * impulso }, true);
     let pico = 0;
     for (let k = 0; k < 20; k++) {
-      await new Promise((r) => setTimeout(r, 100));
+      await window.__pausa(100);
       const dy = enPlaca() - y0;
       if (Math.abs(dy) > Math.abs(pico)) pico = dy;
     }
     const fin = enPlaca() - y0;
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return { pico: +pico.toFixed(2), fin: +fin.toFixed(2) };
   }, { proyecto: data, impulso });
 

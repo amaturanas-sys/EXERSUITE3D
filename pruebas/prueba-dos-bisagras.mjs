@@ -12,6 +12,7 @@
 //     existe el mecanismo.
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -31,24 +32,26 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ── 1. LAS DOS BISAGRAS LLEGAN ARTICULADAS ──────────────────────────────────
 const cargado = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor;
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 800));
+  await window.__pausa(800);
   const js = ed.listJoints();
   const bisagras = js.filter((j) => j.apertura0 != null);
   return {
@@ -89,7 +92,7 @@ const ida = await page.evaluate(async () => {
   const guardado = ed.serialize();
   const texto = JSON.stringify(guardado);
   await ed.loadProject(JSON.parse(texto));
-  await new Promise((r) => setTimeout(r, 800));
+  await window.__pausa(800);
   const tras = ed.listJoints().filter((j) => j.apertura0 != null);
   return {
     enElFichero: JSON.parse(texto).joints.filter((j) => j.apertura0 != null)
@@ -114,15 +117,16 @@ ok(
 const manda = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
+  ed.setPasoManual(true);   // por pasos, no por reloj (v0.4.10)
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   const busca = (re) => [...ed.objects.values()].find((o) => re.test(o.name));
   // El pilar de apoyo es el travesaño con agujeros de 4 cm; el respaldo, el
   // tapizado grande.
   const pilar = [...ed.objects.values()].find((o) => o.params.holeDiameter === 4);
   const respaldo = busca(/^Respaldo$/);
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 1500));
+  await ed.toggleSimulation();
+  ed.avanzarSimulacion(1.5);
   const ejeDe = (o, punto) => {
     ed.physics.elegirBisagra(o.id, punto);
     const g = ed.physics.ejeDeGiro(o.id);
@@ -137,8 +141,8 @@ const manda = await page.evaluate(async (data) => {
     pivotePilar: ejeDe(pilar, cPilar),
     pivoteRespaldo: ejeDe(respaldo, cResp),
   };
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 500));
+  await ed.toggleSimulation();
+  await window.__pausa(500);
   return out;
 }, proyecto);
 console.log("MANDA:", JSON.stringify(manda));
@@ -198,7 +202,7 @@ const ajuste = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   const respaldo = [...ed.objects.values()].find((o) => /^Respaldo$/.test(o.name));
   const pasador = [...ed.objects.values()].find((o) => /Pasador de apoyo/.test(o.name));
   const dentada = [...ed.objects.values()].find((o) => /Placa dentada \(upright\)$/.test(o.name));
@@ -206,7 +210,12 @@ const ajuste = await page.evaluate(async (data) => {
     const v = new T.Vector3(0, 1, 0).applyQuaternion(respaldo.mesh.quaternion);
     return +(Math.acos(Math.min(1, Math.abs(v.y))) * 180 / Math.PI).toFixed(1);
   };
-  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  // POR PASOS, NO POR RELOJ (v0.4.10). En este tramo `espera` ya no duerme:
+  // avanza la física ese tiempo SIMULADO, en sub-pasos exactos de 1/60. Antes
+  // cuántos pasos cabían en cada espera dependía de los fps de la máquina, y
+  // por eso el gesto de la mano no se repetía de una corrida a otra.
+  ed.setPasoManual(true);
+  const espera = async (ms) => { ed.avanzarSimulacion(ms / 1000); };
   const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
   // DÓNDE ESTÁ EL PASADOR EN EL CARRIL, que es lo que dice en qué tope está la
   // banca. Los dientes van cada 12,5 cm, así que medio paso es cambiar de tope.
@@ -216,7 +225,7 @@ const ajuste = await page.evaluate(async (data) => {
     return dentada.mesh.worldToLocal(pasador.mesh.getWorldPosition(new T.Vector3())).y;
   };
 
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   await espera(4000);                       // que el pasador caiga en su cuna
 
   // 1) EN REPOSO NO CEDE. Seis segundos mirando sin tocar.
@@ -283,7 +292,7 @@ const ajuste = await page.evaluate(async (data) => {
   const manoRecuesta = await conMano(65);
   const manoEndereza = await conMano(5);
 
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   await espera(500);
   return {
     reposo, deriva, enLaViga,
@@ -338,13 +347,18 @@ const conLaMano = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   const por = (n) => [...ed.objects.values()].find((o) => o.name === n);
   const resp = por("Respaldo");
   const pin = por("Pasador de apoyo");
   const carril = por("Placa dentada (upright)");
   const puntal = [...ed.objects.values()].find((o) => /travesaño \(línea\) 6/.test(o.name));
-  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+  // POR PASOS, NO POR RELOJ (v0.4.10). En este tramo `espera` ya no duerme:
+  // avanza la física ese tiempo SIMULADO, en sub-pasos exactos de 1/60. Antes
+  // cuántos pasos cabían en cada espera dependía de los fps de la máquina, y
+  // por eso el gesto de la mano no se repetía de una corrida a otra.
+  ed.setPasoManual(true);
+  const espera = async (ms) => { ed.avanzarSimulacion(ms / 1000); };
   const incl = () => {
     const v = new T.Vector3(0, 1, 0).applyQuaternion(resp.mesh.quaternion);
     return +(Math.acos(Math.min(1, Math.abs(v.y))) * 180 / Math.PI).toFixed(1);
@@ -354,7 +368,7 @@ const conLaMano = await page.evaluate(async (data) => {
     pin.mesh.updateMatrixWorld(true);
     return carril.mesh.worldToLocal(pin.mesh.getWorldPosition(new T.Vector3()));
   };
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   let listo = false;
   for (let k = 0; k < 120 && !listo; k++) {
     await espera(50);
@@ -396,7 +410,7 @@ const conLaMano = await page.evaluate(async (data) => {
     serie.push(incl());
   }
   const fin = enCarril();
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   await espera(300);
   return {
     incl0, inclFin,
@@ -427,51 +441,38 @@ ok(
   "sujetando el puntal CON LA MANO, el respaldo sí se recuesta",
   `de ${conLaMano.incl0}° a ${conLaMano.inclFin}°`,
 );
-// EL PASADOR SIGUE EN EL CARRIL, CON EL UMBRAL QUE EL GESTO PERMITE (v0.4.9).
+// EL PASADOR SIGUE EN EL CARRIL (v0.4.9, y v0.4.10).
 //
-// Esto exigía `< 3`, y con el motor simulando de verdad (v0.4.9) eso es una
-// moneda al aire: trece corridas dan de 0,41 a 7,21 cm. No porque el pasador se
-// vaya, sino porque el GESTO no es reproducible — el recorrido del respaldo va
-// de 21,7° a 31,7° según cuántos pasos de física le toquen a cada tirón—, y
-// cuanto más recuesta, más viaja el pasador por su arco.
+// Esto exigía `< 3` y en v0.4.9 se vio que era una moneda al aire: trece corridas
+// dieron de 0,41 a 7,21 cm, porque cuántos pasos de física le tocaban a cada
+// tirón dependía de los fps de la máquina. Gobernado por pasos (v0.4.10) el gesto
+// es el mismo siempre, y el pasador se aparta **7,85 cm, en cada corrida**.
 //
-// Lo que la afirmación dice es que el pasador SIGUE EN EL CARRIL en vez de
-// salirse, y el contraste medido para eso son los **60 cm** del caso con el
-// ángulo clavado. El umbral se pone en 12: el doble del máximo observado en
-// trece corridas (7,21) y una quinta parte del modo de fallo. Sigue separando
-// «se queda en el carril» de «se va», que es lo que se quería saber; lo que ya
-// no hace es fingir que el gesto aterriza siempre en el mismo sitio.
+// El umbral se queda en 12 porque lo que se afirma no es un número sino un hecho:
+// que el pasador SIGUE EN EL CARRIL en vez de salirse, y el contraste medido para
+// eso son los 60 cm del caso con el ángulo clavado. Ahora, además, es una guarda
+// de regresión de verdad: si un cambio del motor lo mueve, se ve.
 ok(
   conLaMano.seVaDelCarril < 12,
   "y el pasador se queda en el carril en vez de irse de él",
   `se apartó ${conLaMano.seVaDelCarril} cm de su altura (con el ángulo clavado se iba 60)`,
 );
-// Y EL AGUANTE SE MIDE, NO SE EXIGE (v0.4.9).
+// Y DONDE QUEDA, AGUANTA — OTRA VEZ EXIGIDO (v0.4.10).
 //
-// Esta prueba ya concluye más arriba que **la mano no puede meter el pasador en
-// un diente**: el extremo del puntal viaja por un arco y `applyDrag` descarta la
-// componente que tira fuera de él. De modo que exigirle después que aguante era
-// exigir lo que ella misma declara inalcanzable.
+// v0.4.9 lo tuvo que bajar a «se mide y se informa»: con el reloj, el gesto
+// aterrizaba entre 28,9° y 69° según la corrida, y el aguante dependía de si caía
+// cerca de un diente. Gobernado por pasos aterriza **siempre en el mismo sitio**
+// —la mano lo recuesta hasta 50,0°, y al soltar vuelve a su diente de 28,9°— y
+// desde ahí cede 0,0°. Un resultado que se repite se puede exigir.
 //
-// Ocho corridas con el motor arreglado lo dejan claro: donde el gesto aterriza
-// cerca de un diente, la banca queda CLAVADA —0,0° a 28,9° y a 60,0°—, y donde
-// no hay diente, se desliza: a 68,7° la serie hace 69,9 → 68 → 64,5 → 64, que
-// son los 5,9°. El aguante no depende del mecanismo sino de dónde paró el gesto,
-// y el gesto no se controla. Así que se informa, como se hace con el tope 1 en
-// `prueba-banco-cinco-topes` desde v0.4.8.
-//
-// Lo que sigue abierto: para exigir esto haría falta que el gesto fuera
-// reproducible, y eso pide gobernar la simulación por PASOS en vez de por
-// `espera(ms)` de reloj. Es un cambio del arnés de las 123 pruebas, no de ésta.
 // OJO CON QUÉ ÁNGULO SE INFORMA: `inclFin` se mide con el puntal AÚN EN LA MANO,
-// y la serie empieza después de soltar la mano y la bisagra, así que la banca se
-// ha movido entre los dos. El que importa para el aguante es dónde se posa la
-// serie, no dónde la dejó el tirón.
-console.log(
-  `  (con la mano el respaldo llegó a ${Math.abs(conLaMano.inclFin).toFixed(1)}°; ` +
-  `soltada, se posó en ${Math.abs(conLaMano.serie[2]).toFixed(1)}° y desde ahí ` +
-  `${conLaMano.cede <= 1 ? `aguantó: cedió ${conLaMano.cede}°` : `cedió ${conLaMano.cede}° — ahí no hay diente`}` +
-  ` — serie ${conLaMano.serie.join(" → ")})`,
+// y la serie empieza después de soltar mano y bisagra; entre los dos la banca se
+// mueve. El aguante se lee donde se posa la serie, no donde la dejó el tirón.
+ok(
+  conLaMano.cede <= 1,
+  "y donde queda, la banca aguanta",
+  `con la mano llegó a ${Math.abs(conLaMano.inclFin).toFixed(1)}°, soltada se posó en ` +
+  `${Math.abs(conLaMano.serie[2]).toFixed(1)}° y cedió ${conLaMano.cede}° (serie ${conLaMano.serie.join(" → ")})`,
 );
 console.log(
   `  (y lo que no da: el pasador acaba a ${(conLaMano.finX + 1.03).toFixed(1)} cm `

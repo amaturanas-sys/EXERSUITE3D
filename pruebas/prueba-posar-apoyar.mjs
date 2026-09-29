@@ -8,6 +8,7 @@
 // la simulación comienza se dispondrá la máquina en pose de último fotograma
 // sólo cuando el maniquí está presente».
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -15,22 +16,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 // ── 1. Sin maniquí no se posa la máquina ──────────────────────────────────
 const a = await p.evaluate(async () => {
@@ -53,7 +56,7 @@ const b = await p.evaluate(async () => {
   pieza.mesh.position.set(0, 60, 0);
   const disenoY = pieza.mesh.position.y;
   await ed.addHumanFigure();
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   await ed.iniciarPoseMaquina();
   const entra = ed.posandoMaquina();
   // Posar es A MANO: corre el motor pero sin gravedad ni tiempo, así que la
@@ -71,24 +74,24 @@ const b = await p.evaluate(async () => {
   const congeladas = ed.piezasEnLaPartida();
   // ▶ CON MANIQUÍ: el motor arranca en la partida.
   ed.startSimulation();
-  for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
-  await new Promise((x) => setTimeout(x, 200));
+  for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(20);
+  await window.__pausa(200);
   const alArrancar = pieza.mesh.position.y;
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 400));
+  await window.__pausa(400);
   const trasParar = pieza.mesh.position.y;
   // Y OTRA VEZ, dos ciclos más: el plano no puede irse derivando.
   for (let k = 0; k < 2; k++) {
     ed.startSimulation();
-    for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
-    await new Promise((x) => setTimeout(x, 150));
+    for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(20);
+    await window.__pausa(150);
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 300));
+    await window.__pausa(300);
   }
   const trasTresCiclos = pieza.mesh.position.y;
   // Sin maniquí la partida no rige.
   ed.removeHumanFigure();
-  await new Promise((x) => setTimeout(x, 200));
+  await window.__pausa(200);
   const congeladasSin = ed.piezasEnLaPartida();
   return { entra, piezas: r.piezas, disenoY,
     trasPosar: +trasPosar.toFixed(1), alArrancar: +alArrancar.toFixed(1),
@@ -124,14 +127,14 @@ const c = await p.evaluate(async () => {
   const T = window.exersuite.THREE;
   for (const o of [...ed.objects.values()]) ed.removeObject(o);
   // El bloque anterior se lleva al maniquí para comprobar la partida sin él.
-  if (!ed.humanFigure) { await ed.addHumanFigure(); await new Promise((r) => setTimeout(r, 700)); }
+  if (!ed.humanFigure) { await ed.addHumanFigure(); await window.__pausa(700); }
   const mando = ed.addComponent("prim-cylinder");
   mando.params = { kind: "cylinder", radiusTop: 2, radiusBottom: 2, height: 60 };
   mando.rebuildGeometry();
   mando.physics = { ...mando.physics, fixed: true };
   mando.mesh.position.set(0, 120, 40);
   ed.applyPose("De pie");
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   await ed.iniciarPoseMaquina();
   const posando = ed.posandoMaquina();
   // El modo apoyo sobrevive a entrar en «Manipular» y acepta el apoyo.
@@ -141,7 +144,7 @@ const c = await p.evaluate(async () => {
   ed.attachHand("L", mando.id, new T.Vector3(0, 0, 0));
   const puestos = ed.apoyosPuestos();
   ed.updateHandIK();
-  await new Promise((r) => setTimeout(r, 200));
+  await window.__pausa(200);
   const fig = ed.humanFigure; fig.updateMatrixWorld(true);
   let mano = null; fig.traverse((n) => { if (n.userData?.segmentId === "mano-L") mano = n; });
   const cm = new T.Box3().setFromObject(mano).getCenter(new T.Vector3());
@@ -162,7 +165,7 @@ const d = await p.evaluate(async () => {
   // «Tren superior» es la zona de fábrica y declara hombro y codo.
   ed.activarZona("superior", "sim");
   ed.updateHandIK();
-  await new Promise((r) => setTimeout(r, 200));
+  await window.__pausa(200);
   const fig = ed.humanFigure; fig.updateMatrixWorld(true);
   let mano = null; fig.traverse((n) => { if (n.userData?.segmentId === "mano-L") mano = n; });
   const cm = new T.Box3().setFromObject(mano).getCenter(new T.Vector3());
@@ -179,10 +182,10 @@ const e = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   for (const o of [...ed.objects.values()]) ed.removeObject(o);
   ed.soltarBarraDelManiqui?.();
-  await new Promise((r) => setTimeout(r, 200));
+  await window.__pausa(200);
   const sinBarra = ed.getBarraManiqui()?.objectId ?? null;
   ed.applyPose("Peso muerto");
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   const tras = ed.getBarraManiqui();
   return { sinBarra, objeto: tras?.objectId ?? null, ejercicio: tras?.ejercicio ?? null,
     zona: [...(ed.zonasActivas?.keys?.() ?? [])] };
@@ -198,14 +201,14 @@ const f = await p.evaluate(async () => {
   const T = window.exersuite.THREE;
   for (const o of [...ed.objects.values()]) ed.removeObject(o);
   ed.soltarBarraDelManiqui?.();
-  await new Promise((r) => setTimeout(r, 200));
+  await window.__pausa(200);
   // Una barra colocada a mano, cargada, y girada como la dejó el usuario.
   const mia = ed.addComponent("barra-olimpica");
   mia.mesh.position.set(0, 100, 30);
   mia.mesh.rotation.set(0.5, 0.3, 0.2);
   const antes = ed.listObjects().filter((o) => o.componentId === "barra-olimpica").length;
   ed.ponerBarraEnManos("peso-muerto");
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const despues = ed.listObjects().filter((o) => o.componentId === "barra-olimpica").length;
   return { antes, despues, esLaMia: ed.getBarraManiqui()?.objectId === mia.id };
 });
@@ -218,7 +221,7 @@ const g = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.ponerBarraEnManos("peso-muerto");
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const incl = () => {
     const o = ed.getObject(ed.getBarraManiqui().objectId);
     o.mesh.updateMatrixWorld(true);
@@ -257,14 +260,14 @@ const h = await p.evaluate(async () => {
   // La barra puesta acompaña al giro: va atada a las manos.
   ed.setRumboFigura(0);
   ed.ponerBarraEnManos("peso-muerto");
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const ejeAntes = (() => {
     const o = ed.getObject(ed.getBarraManiqui().objectId);
     o.mesh.updateMatrixWorld(true);
     return new T.Vector3(0, 1, 0).applyQuaternion(o.mesh.quaternion).toArray().map((v) => +v.toFixed(2));
   })();
   ed.setRumboFigura(90);
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   const ejeDespues = (() => {
     const o = ed.getObject(ed.getBarraManiqui().objectId);
     o.mesh.updateMatrixWorld(true);

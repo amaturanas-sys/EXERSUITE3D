@@ -1,6 +1,7 @@
 // Ajuste 2: cadenas como CUERDAS flexibles — la barra queda mecida en ellas,
 // el visual sigue la física y un golpe hunde la cadena transitoriamente.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -9,20 +10,22 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1440, height: 810 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://localhost:4174/");
-await page.waitForTimeout(900);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(900);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
-const R0 = await page.evaluate(() => {
+await pausa(2500);
+const R0 = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
   ed.insertarMaquina("rack-sentadillas", new T.Vector3(0, 0, 0));
@@ -37,11 +40,11 @@ const R0 = await page.evaluate(() => {
   window.__b = barra.id;
   window.__rope = ed.listRopes()[0].id;
   ed.select(null);
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { cuerdas: ed.listRopes().length, yCad: +yCad.toFixed(1) };
 });
 console.log("setup:", JSON.stringify(R0));
-await page.waitForTimeout(12000);
+await pausa(12000);
 const A = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const b = ed.getObject(window.__b);
@@ -61,7 +64,7 @@ await page.evaluate(() => {
 let hundMax = 0;
 let minAbs = 1e9;
 for (let i = 0; i < 14; i++) {
-  await page.waitForTimeout(400);
+  await pausa(400);
   const m = await page.evaluate(() => {
     const pts = window.exersuite.editor.physics.polilineaCuerda(window.__rope);
     return Math.min(...pts.map((p) => p.y));
@@ -69,7 +72,7 @@ for (let i = 0; i < 14; i++) {
   hundMax = Math.max(hundMax, A.minCad - m);
   minAbs = Math.min(minAbs, m);
 }
-await page.waitForTimeout(4000);
+await pausa(4000);
 const F = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const b = ed.getObject(window.__b);
@@ -90,6 +93,6 @@ await page.evaluate(() => {
   ed.sceneManager.camera.position.set(170, 120, 200);
   ed.orbit.update?.(); ed.requestRender?.();
 });
-await page.waitForTimeout(400);
+await pausa(400);
 await page.screenshot({ path: "v215-cadena-flexible.png" });
 await browser.close();

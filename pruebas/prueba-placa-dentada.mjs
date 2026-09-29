@@ -9,6 +9,7 @@
 // La última parte se mide en simulación, no en la malla: un gancho que se ve
 // bien y deja escapar la barra no sirve de nada.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -16,19 +17,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2000);
+await pausa(2000);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -52,7 +55,7 @@ const reposar = async (id, tope = 30000) => {
   let quietos = 0;
   let cayo = false;
   for (let t = 0; t < tope; t += 150) {
-    await page.waitForTimeout(150);
+    await pausa(150);
     const y = await leer();
     // HAY QUE VERLA CAER ANTES DE DARLA POR ASENTADA. Es la misma trampa que
     // en el carrusel del hub, y aquí muerde más fuerte: con la batería entera
@@ -108,13 +111,13 @@ const r1 = await page.evaluate(async () => {
   return { caraX, abajo, arriba, piezas: ed.objects.size };
 });
 
-await page.mouse.click(r1.caraX.x, r1.caraX.y); await page.waitForTimeout(250);
+await page.mouse.click(r1.caraX.x, r1.caraX.y); await pausa(250);
 const guia = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   return { piezas: ed.objects.size };
 });
-await page.mouse.click(r1.abajo.x, r1.abajo.y); await page.waitForTimeout(200);
-await page.mouse.click(r1.arriba.x, r1.arriba.y); await page.waitForTimeout(400);
+await page.mouse.click(r1.abajo.x, r1.abajo.y); await pausa(200);
+await page.mouse.click(r1.arriba.x, r1.arriba.y); await pausa(400);
 
 const m = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -258,7 +261,7 @@ for (let i = 0; i < rack.asientos.length; i++) {
     ed.bus.emit("objectTransformed", { object: b });
     return b.id;
   }, { y, x: rack.xGarganta, radio: rack.radio });
-  await page.evaluate(() => window.exersuite.editor.toggleSimulation());
+  await page.evaluate(async () => await window.exersuite.editor.toggleSimulation());
   await reposar(id);
   const fin = await page.evaluate((id) => {
     const b = window.exersuite.editor.objects.get(id);
@@ -270,7 +273,7 @@ for (let i = 0; i < rack.asientos.length; i++) {
     await page.screenshot({ path: "salidas/placa-dentada.png" });
   }
   await page.evaluate(() => window.exersuite.editor.stopSimulation());
-  await page.waitForTimeout(250);
+  await pausa(250);
 }
 
 ok(sujetan.every(Boolean),
@@ -281,7 +284,7 @@ ok(sujetan.every(Boolean),
 // 4. En un PILAR DIAGONAL: la trayectoria es el eje de la pieza, no la vertical.
 // ---------------------------------------------------------------------------
 await page.evaluate(() => window.exersuite.editor.stopSimulation());
-await page.waitForTimeout(600);
+await pausa(600);
 
 const rDiag = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -336,7 +339,7 @@ await page.screenshot({ path: "salidas/placa-dentada-diagonal.png" });
 // lo que falla es la barra, que ahora choca con el pilar.
 // ---------------------------------------------------------------------------
 await page.evaluate(() => window.exersuite.editor.stopSimulation());
-await page.waitForTimeout(400);
+await pausa(400);
 
 const panel = await page.evaluate(() => {
   const ed = window.exersuite.editor;

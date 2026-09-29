@@ -12,6 +12,7 @@
 //   · al simular, el brazo mantiene su ángulo y el pie no se va;
 //   · y mandando el brazo a otro nivel, se queda también en ese.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -24,18 +25,20 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ── 1. GEOMETRÍA: EL PIE SOBRE LA VIGA, Y CADA NIVEL UNA MUESCA ─────────────
 const geo = await page.evaluate(() => {
@@ -133,14 +136,14 @@ const quieto = await page.evaluate(async () => {
   const dirCarril = viga.mesh.localToWorld(new T.Vector3(...vp[vp.length-1]))
     .sub(viga.mesh.localToWorld(new T.Vector3(...vp[0]))).normalize();
   const a0 = ang(), p0 = pieDe().clone();
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   const serie = [];
   for (let i=0;i<10;i++){
-    await new Promise(r=>setTimeout(r,600));
+    await window.__pausa(600);
     const d = pieDe().sub(p0);
     serie.push({ ang: ang(), pie: +d.dot(dirCarril).toFixed(2), total: +d.length().toFixed(2) });
   }
-  ed.toggleSimulation(); await new Promise(r=>setTimeout(r,400));
+  await ed.toggleSimulation(); await window.__pausa(400);
   return { a0, serie };
 });
 console.log("QUIETO:", JSON.stringify(quieto));

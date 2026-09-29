@@ -10,6 +10,7 @@
 //      pero la mano puede seguir moviéndola: es una máquina plegable, no una
 //      soldadura.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -25,25 +26,27 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 /** Monta dos placas con una bisagra entre ellas y devuelve las medidas. */
 const ensayo = async (caso) =>
   page.evaluate(async (caso) => {
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
-    if (ed.simulating) ed.toggleSimulation();
+    if (ed.simulating) await ed.toggleSimulation();
     for (const o of [...ed.objects.values()]) ed.deleteObject?.(o.id);
     const out = { caso };
     const caja = (n, w, h, d, p) => {
@@ -78,8 +81,8 @@ const ensayo = async (caso) =>
       .filter((x) => x.name.startsWith("Soldadura") && x.soldada).length;
     if (caso === "freno") j.locked = true;
 
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 1500));
+    await ed.toggleSimulation();
+    await window.__pausa(1500);
     const ph = ed.physics;
     const bg = ph.ejeDeGiro(B.id);
     if (!bg) return { ...out, error: "la bisagra no quedó articulada" };
@@ -95,7 +98,7 @@ const ensayo = async (caso) =>
     out.R0 = +R0.toFixed(2);
     out.angReposo = ang();
     // ¿se sostiene sola o cae?
-    await new Promise((r) => setTimeout(r, 1500));
+    await window.__pausa(1500);
     out.angTrasEsperar = ang();
 
     // La mano la arrastra POR SU ARCO, 70° a razón de uno por fotograma.
@@ -107,13 +110,13 @@ const ensayo = async (caso) =>
     let deriva = 0;
     for (let k = 1; k <= 70; k++) {
       ph.dragTo(puntoDelArco(a0 - (k * Math.PI) / 180));
-      await new Promise((r) => setTimeout(r, 40));
+      await window.__pausa(40);
       deriva = Math.max(deriva, Math.abs(radial().length() - R0));
     }
     out.derivaRadio = +deriva.toFixed(2);
     out.angBajoMano = ang();
     ph.release();
-    await new Promise((r) => setTimeout(r, 2000));
+    await window.__pausa(2000);
     out.angTrasSoltar = ang();
     return out;
   }, caso);
@@ -222,37 +225,37 @@ const gesto = await page.evaluate(async () => {
     esBisagra: ph.esBisagra(B.id),
     sensibilidad: ph.sensibilidadDeBisagra(B.id),
   };
-  await new Promise((r) => setTimeout(r, 1200));
+  await window.__pausa(1200);
   // Se le hace sitio ARRIBA: la placa pudo quedar contra su tope y entonces la
   // prueba no mediría el gesto sino el material.
   ph.tomarBisagra(B.id);
   for (let k = 0; k < 8; k++) {
     ph.girarBisagra(B.id, -6);
-    await new Promise((r) => setTimeout(r, 130));
+    await window.__pausa(130);
   }
-  await new Promise((r) => setTimeout(r, 1000));
+  await window.__pausa(1000);
   const a0 = ang();
   // Ocho impulsos de 5° «hacia arriba», como ocho vueltas de rueda.
   ph.tomarBisagra(B.id);
   let deriva = 0;
   for (let k = 0; k < 8; k++) {
     ph.girarBisagra(B.id, 5);
-    await new Promise((r) => setTimeout(r, 120));
+    await window.__pausa(120);
     deriva = Math.max(deriva, Math.abs(radial().length() - R0));
   }
-  await new Promise((r) => setTimeout(r, 1200));
+  await window.__pausa(1200);
   out.pedido = 40;
   out.logrado = +(ang() - a0).toFixed(1);
   out.deriva = +deriva.toFixed(2);
   // Se deja asentar y luego se comprueba que YA NO se mueve: el mando puede
   // ir unos grados por delante de la placa cuando el gesto para, y lo que
   // importa es que se detenga, no que frene en seco.
-  await new Promise((r) => setTimeout(r, 1500));
+  await window.__pausa(1500);
   const sostenido = ang();
-  await new Promise((r) => setTimeout(r, 1500));
+  await window.__pausa(1500);
   out.quietaMientrasSeSostiene = +(ang() - sostenido).toFixed(1);
   ph.soltarBisagra(B.id);
-  await new Promise((r) => setTimeout(r, 1500));
+  await window.__pausa(1500);
   out.sueltaVuelveAGravedad = +(ang() - sostenido).toFixed(1);
   // Y sobre todo: el MANDO deja de sujetarla. Sin freno, soltarla devuelve el
   // recorrido entero; lo que la retenga a partir de ahí será el material, que
@@ -287,11 +290,11 @@ ok(
 // puede quedar apoyada en su material y no tener a dónde ir.
 
 // ── 7. LA SENSIBILIDAD SE AJUSTA EN PROPIEDADES ─────────────────────────────
-const panel = await page.evaluate(() => {
+const panel = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const moviles = [...ed.objects.values()].filter((o) => o.name === "Movil");
   const B = moviles[moviles.length - 1];
-  if (ed.simulating) ed.toggleSimulation();
+  if (ed.simulating) await ed.toggleSimulation();
   ed.select(B);
   const inspector = document.getElementById("inspector");
   const etiquetas = [...inspector.querySelectorAll("label")].map((l) => l.textContent);
@@ -326,8 +329,8 @@ const preparado = await page.evaluate(async () => {
   const moviles = [...ed.objects.values()].filter((o) => o.name === "Movil");
   const B = moviles[moviles.length - 1];
   ed.setSimHerramienta("mano");
-  if (!ed.simulating) ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 2000));
+  if (!ed.simulating) await ed.toggleSimulation();
+  await window.__pausa(2000);
   window.__B = B.id;
   const p = B.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera);
   const rect = ed.canvas.getBoundingClientRect();
@@ -360,12 +363,12 @@ const preparado = await page.evaluate(async () => {
 });
 
 await page.mouse.move(preparado.x, preparado.y);
-await page.waitForTimeout(300);
+await pausa(300);
 for (let i = 0; i < 10; i++) {
   await page.mouse.wheel(0, 60);
-  await page.waitForTimeout(60);
+  await pausa(60);
 }
-await page.waitForTimeout(1500);
+await pausa(1500);
 const conRueda = await page.evaluate(() => ({
   ang: window.__ang(),
   radio: window.__radio(),
@@ -390,7 +393,7 @@ ok(
 
 // Se espera a que la bisagra se suelte sola tras el scroll y se hace el otro
 // gesto: agarrar y subir la mano.
-await page.waitForTimeout(900);
+await pausa(900);
 // Se devuelve la placa a media carrera antes del segundo gesto: tras el
 // scroll puede haber quedado contra el material, y ahí no cede hacia ese lado
 // —lo correcto— pero la prueba dejaría de medir lo que quiere medir.
@@ -404,22 +407,22 @@ const centrada = await page.evaluate(async () => {
   let previo = null;
   for (let k = 0; k < 24; k++) {
     ph.girarBisagra(window.__B, 5);
-    await new Promise((r) => setTimeout(r, 100));
+    await window.__pausa(100);
     const a = ph.anguloDeBisagra(window.__B);
     if (previo !== null && Math.abs(a - previo) < 0.2) break;
     previo = a;
   }
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   const tope = ph.anguloDeBisagra(window.__B);
   // 40° por debajo del tope: sitio de sobra para los ~18° que pide el gesto.
   for (let k = 0; k < 8; k++) {
     ph.girarBisagra(window.__B, -5);
-    await new Promise((r) => setTimeout(r, 150));
+    await window.__pausa(150);
   }
-  await new Promise((r) => setTimeout(r, 800));
+  await window.__pausa(800);
   const aqui = ph.anguloDeBisagra(window.__B);
   ph.soltarBisagra(window.__B);
-  await new Promise((r) => setTimeout(r, 900));
+  await window.__pausa(900);
   return { tope: +tope.toFixed(1), aqui: +aqui.toFixed(1) };
 });
 console.log("CENTRADA:", JSON.stringify(centrada));
@@ -474,17 +477,17 @@ const haciaDonde = await page.evaluate(async () => {
     ph.tomarBisagra(window.__B);
     for (let k = 0; k < 3; k++) {
       ph.girarBisagra(window.__B, 5 * signo);
-      await new Promise((r) => setTimeout(r, 150));
+      await window.__pausa(150);
     }
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     const d = Math.abs(ph.anguloDeBisagra(window.__B) - a0);
     for (let k = 0; k < 3; k++) {
       ph.girarBisagra(window.__B, -5 * signo);
-      await new Promise((r) => setTimeout(r, 150));
+      await window.__pausa(150);
     }
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     ph.soltarBisagra(window.__B);
-    await new Promise((r) => setTimeout(r, 800));
+    await window.__pausa(800);
     return d;
   };
   const sube = await probar(1);
@@ -497,9 +500,9 @@ await page.mouse.move(ahora.x, ahora.y);
 await page.mouse.down();
 for (let i = 1; i <= 10; i++) {
   await page.mouse.move(ahora.x, ahora.y - haciaDonde * i * 20);
-  await page.waitForTimeout(60);
+  await pausa(60);
 }
-await page.waitForTimeout(1200);
+await pausa(1200);
 const arrastrada = await page.evaluate(() => ({
   ang: window.__ang(),
   radio: window.__radio(),
@@ -525,7 +528,7 @@ const suelta = await page.evaluate(async () => {
   // Se parte de cero: la sección anterior deja la bisagra ENGANCHADA, que es
   // justo el comportamiento nuevo.
   Object.getPrototypeOf(ed).soltarLaBisagra.call(ed);
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   const T = window.exersuite.THREE;
   const B = ed.objects.get(window.__B);
   const p = B.mesh.getWorldPosition(new T.Vector3()).project(ed.sceneManager.camera);
@@ -540,7 +543,7 @@ await page.mouse.down();
 await page.mouse.up();
 // Se deja asentar: al engancharla venía cayendo, y el tope tarda unos pasos
 // en pararla del todo. Lo que se mide después es el efecto del RATÓN.
-await page.waitForTimeout(1600);
+await pausa(1600);
 const tomada = await page.evaluate(() => ({
   enganchada: !!window.exersuite.editor.bisagraDrag?.enganchada,
   arrastrando: !!window.exersuite.editor.bisagraDrag?.arrastrando,
@@ -561,9 +564,9 @@ await page.evaluate(() => {
   };
 });
 await page.mouse.move(suelta.x, suelta.y - 200);
-await page.waitForTimeout(400);
+await pausa(400);
 await page.mouse.move(suelta.x + 120, suelta.y - 40);
-await page.waitForTimeout(400);
+await pausa(400);
 const paseo = await page.evaluate(() => ({
   ordenes: window.__ordenes,
   arrastrando: !!window.exersuite.editor.bisagraDrag?.arrastrando,
@@ -580,7 +583,7 @@ ok(paseo.enganchada, "…y la bisagra sigue enganchada, esperando");
 await page.mouse.move(suelta.x, suelta.y);
 await page.mouse.down();
 await page.mouse.up();
-await page.waitForTimeout(400);
+await pausa(400);
 const libre2 = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   let arcos = 0;
@@ -623,9 +626,9 @@ const rango = await page.evaluate(async () => {
   j.limitsEnabled = false;
   ed.jointUpdated();
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 400));
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 2500));
+  await window.__pausa(400);
+  await ed.toggleSimulation();
+  await window.__pausa(2500);
   const sinTope = ed.physics.recorridoDeBisagra(B.id);
   const cierraSinTope = medirArco();
   return { acotada, conTope, cierraConTope, sinTope, cierraSinTope };
@@ -654,8 +657,8 @@ ok(
 const ajustes = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
-  if (ed.simulating) ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  if (ed.simulating) await ed.toggleSimulation();
+  await window.__pausa(400);
   const caja = (n, w, h, d, p) => {
     const o = ed.addComponent("pilar");
     o.name = n;
@@ -713,13 +716,13 @@ const ajustes = await page.evaluate(async () => {
   j.limitsEnabled = false;
   // GRAVEDAD con el lock switch abierto: la pieza gira hasta pararse.
   const bg0 = () => ed.physics?.anguloDeBisagra(B.id) ?? 0;
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 1500));
+  await ed.toggleSimulation();
+  await window.__pausa(1500);
   const y0 = +B.mesh.getWorldPosition(new T.Vector3()).y.toFixed(1);
   const traza = [];
   let quieta = false;
   for (let i = 0; i < 10 && !quieta; i++) {
-    await new Promise((r) => setTimeout(r, 1500));
+    await window.__pausa(1500);
     traza.push(+bg0().toFixed(1));
     const n = traza.length;
     quieta = n >= 2 && Math.abs(traza[n - 1] - traza[n - 2]) <= 0.5;
@@ -727,7 +730,7 @@ const ajustes = await page.evaluate(async () => {
   out.traza = traza;
   out.cayo = +(y0 - B.mesh.getWorldPosition(new T.Vector3()).y).toFixed(1);
   out.quieta = quieta;
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return out;
 });
 console.log("v0.3.23:", JSON.stringify(ajustes));

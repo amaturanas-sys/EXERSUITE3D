@@ -4,6 +4,7 @@
 // puesto" —eso lo diría un grep— sino que el fallo YA NO PASA. Cada bloque
 // monta la escena, hace lo que hacía el usuario y MIDE.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -11,22 +12,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 const limpiar = () => p.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -73,11 +76,11 @@ const b = await p.evaluate(async () => {
   const o2 = ed.addComponent("prim-box");
   ed.select(null);
   ed.toggleMulti(o1); ed.toggleMulti(o2);
-  await new Promise((r) => setTimeout(r, 60));
+  await window.__pausa(60);
   const texto = document.querySelector("#inspector")?.textContent ?? "";
   const anuncia = /2 piezas seleccionadas|2 pieces selected/.test(texto);
   ed.deleteSelection();
-  await new Promise((r) => setTimeout(r, 60));
+  await window.__pausa(60);
   const despues = document.querySelector("#inspector")?.textContent ?? "";
   return { anuncia, sigue: /piezas seleccionadas|pieces selected/.test(despues) };
 });
@@ -118,7 +121,7 @@ const d = await p.evaluate(async () => {
   mod.abrirDialogoDerecha(() => { cerrado = true; });
   const abierto = document.body.classList.contains("dialogo-derecha");
   ed.setHerramienta("mover");
-  await new Promise((r) => setTimeout(r, 60));
+  await window.__pausa(60);
   return {
     abierto,
     cerrado,
@@ -209,7 +212,7 @@ const f = await p.evaluate(async () => {
   const guiada = ed.physics.guias.some((g) => g.body === ed.physics.bodies.get(pila.id)?.body);
   for (let i = 0; i < 400; i++) ed.physics.step(1 / 60);
   const fin = pila.mesh.position.clone();
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return {
     guiada,
     y: +fin.y.toFixed(1),
@@ -255,7 +258,7 @@ const g = await p.evaluate(async () => {
   const y0 = bloque.mesh.position.y;
   for (let i = 0; i < 300; i++) ed.physics.step(1 / 60);
   const fin = bloque.mesh.position.clone();
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return {
     deriva: +Math.hypot(fin.x, fin.z).toFixed(1),
     caida: +(y0 - fin.y).toFixed(1),
@@ -323,7 +326,7 @@ const j = await p.evaluate(async () => {
   o.physics = { ...o.physics, fixed: false };
   // La máquina se posa PARA alguien (v0.2.91): sin maniquí no se entra.
   await ed.addHumanFigure();
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   ed.setSimHerramienta("orbitar");
   await ed.iniciarPoseMaquina();
   const posando = ed.getSimHerramienta();

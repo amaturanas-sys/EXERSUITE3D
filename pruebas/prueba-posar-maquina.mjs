@@ -2,6 +2,7 @@
 // PARADA, se queda donde la dejas (parálisis cérea) y al terminar esa
 // posición es la partida: cada ▶ arranca ahí.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (c, m) => { console.log((c ? "✓ " : "✗ ") + m); if (!c) fallos++; };
@@ -14,20 +15,22 @@ const b = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errs = [];
 p.on("pageerror", (e) => errs.push("PAGEERROR: " + e.message));
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(800);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(800);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2500);
+await pausa(2500);
 
 // Una máquina con conjunto móvil de verdad.
 await p.evaluate(async () => {
@@ -38,14 +41,14 @@ await p.evaluate(async () => {
   // «▶ Manipular» avisa y no entra. El maniquí va delante.
   await ed.addHumanFigure();
 });
-await p.waitForTimeout(1500);
+await pausa(1500);
 
 // --- 1. El modo entra estando PARADO y no cuenta como simular ---
 const entrada = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const antes = ed.isSimulating();
   await ed.iniciarPoseMaquina();
-  await new Promise((r) => setTimeout(r, 800));
+  await window.__pausa(800);
   return { antes, posando: ed.posandoMaquina(), simulando: ed.isSimulating(),
            herr: ed.getSimHerramienta() };
 });
@@ -62,7 +65,7 @@ const quieta = await p.evaluate(async () => {
     return s && !o.mesh.position.equals(new window.exersuite.THREE.Vector3(0, 0, 0));
   });
   const antes = [...ed.objects.values()].map((o) => o.mesh.position.y);
-  await new Promise((r) => setTimeout(r, 2500));
+  await window.__pausa(2500);
   const despues = [...ed.objects.values()].map((o) => o.mesh.position.y);
   let maxCaida = 0;
   for (let i = 0; i < antes.length; i++) maxCaida = Math.max(maxCaida, antes[i] - despues[i]);
@@ -91,7 +94,7 @@ const movida = await p.evaluate(async () => {
   }
   const yArrastrada = pila.mesh.position.y;
   ed.physics.release();
-  await new Promise((r) => setTimeout(r, 2000));
+  await window.__pausa(2000);
   return {
     id: pila.id, y0: +y0.toFixed(2),
     yArrastrada: +yArrastrada.toFixed(2),
@@ -122,10 +125,10 @@ const arranque = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const id = [...ed.objects.keys()].find((k) => true);
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const ys = new Map([...ed.objects.values()].map((o) => [o.id, +o.mesh.position.y.toFixed(2)]));
   const simulando = ed.isSimulating();
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { simulando, ys: [...ys] };
 });
 ok(arranque.simulando === true, "▶ arranca la simulación de verdad");
@@ -134,11 +137,11 @@ ok(arranque.simulando === true, "▶ arranca la simulación de verdad");
 const durante = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 300));
+  await window.__pausa(300);
   await ed.iniciarPoseMaquina();          // debe ser ignorado
   const posando = ed.posandoMaquina();
   const boton = document.querySelector("#articulaciones button.sim");
-  ed.toggleSimulation();
+  await ed.toggleSimulation();
   return { posando, botonDeshabilitado: boton ? boton.disabled : null };
 });
 ok(durante.posando === false, "iniciarPoseMaquina se ignora con el gesto corriendo");

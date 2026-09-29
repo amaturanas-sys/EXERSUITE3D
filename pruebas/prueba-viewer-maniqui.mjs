@@ -16,6 +16,7 @@
 // Esta prueba abre un archivo DE VERDAD por la vía del simulador —el mismo
 // selector de fichero de la Home— y comprueba las tres cosas.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -26,6 +27,8 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 // `elegirArchivo` prefiere el selector NATIVO (`showOpenFilePicker`), y ese no
 // pasa por el evento `filechooser` de Playwright. Se retira para que la app
 // caiga en su camino alternativo —el `<input type=file>` clásico—, que es el
@@ -41,22 +44,22 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
 // ── 1. EN EL BUILDER: una postura inconfundible, y el archivo ──────────────
 console.log("\n── En el Builder: se posa y se guarda ──────────────────────");
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 const guardado = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   for (let i = 0; i < 20 && !ed.humanFigure; i++) {
     await ed.addHumanFigure();
-    await new Promise((r) => setTimeout(r, 350));
+    await window.__pausa(350);
   }
   // Una máquina cualquiera, para que el proyecto no sea solo el maniquí.
   ed.insertarMaquina("banco-plano", new window.exersuite.THREE.Vector3(0, 0, 0));
@@ -80,8 +83,8 @@ fs.writeFileSync(archivo, guardado.texto);
 // ── 2. EN EL VIEWER: se abre el archivo por la vía del simulador ───────────
 console.log("\n── En el Viewer: se abre el archivo ────────────────────────");
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1200);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(800);
+await pausa(1200);
+await p.click("text=📁 PROYECTOS"); await pausa(800);
 // El selector de fichero es NATIVO y se crea al vuelo: se atiende su evento.
 // El desplegable se abre ANTES del Promise.all: el selector de archivos lo
 // dispara el botón de modo, no la flecha.
@@ -91,7 +94,7 @@ const [chooser] = await Promise.all([
   p.click(".land-modos-inline.archivo .land-modo:has-text('SIMULAR')"),
 ]);
 await chooser.setFiles(archivo);
-await p.waitForTimeout(5000);
+await pausa(5000);
 
 const viewer = await p.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -155,12 +158,12 @@ const quitar = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   const antes = !!ed.humanFigure;
   ed.removeHumanFigure();
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const sin = !!ed.humanFigure;
   // Y vuelve, que esconder no es perder.
   for (let i = 0; i < 20 && !ed.humanFigure; i++) {
     await ed.addHumanFigure();
-    await new Promise((r) => setTimeout(r, 300));
+    await window.__pausa(300);
   }
   return { antes, sin, devuelto: !!ed.humanFigure, piezas: ed.listObjects().length };
 });
@@ -174,7 +177,7 @@ console.log("\n── El ▶ de la barra arranca la simulación ─────�
 const play = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   await ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 1200));
+  await window.__pausa(1200);
   const corriendo = !!ed.isSimulating?.();
   ed.stopSimulation();
   return { corriendo };
@@ -188,7 +191,7 @@ await p.evaluate(() => {
   ed.setViewPreset?.("isometrica");
   ed.requestRender();
 });
-await p.waitForTimeout(900);
+await pausa(900);
 await p.screenshot({ path: "salidas/viewer-maniqui.png" });
 
 for (const e of errores) console.log("PAGEERROR " + e);

@@ -31,6 +31,7 @@
 // viejo que la llevara la verá cambiada; es el precio de arreglarla, y por eso
 // queda escrito aquí y no sólo en el CHANGELOG.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 // tamaño [x,y,z] en cm · masa en kg · si está anclada · material · vértices
 const HUELLA = {
@@ -66,22 +67,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 // ── 1. YA NO SE LISTAN ─────────────────────────────────────────────────────
 console.log("\n── Fuera del inventario ────────────────────────────────────");
@@ -208,7 +211,7 @@ const viaje = await p.evaluate(async () => {
   const informe = parsearPrefab(texto);
   if (!informe?.archivo) return { error: "parsearPrefab no devolvió el archivo" };
   ed.insertarPrefab(informe.archivo);
-  await new Promise((r) => setTimeout(r, 400));
+  await window.__pausa(400);
   const vuelta = ed.listObjects()
     .filter((o) => ids.includes(o.componentId))
     .map((o) => ({ comp: o.componentId, masa: o.physics.massKg, fijo: !!o.physics.fixed }));
@@ -260,12 +263,12 @@ const fisica = await p.evaluate(async () => {
   // quince segundos de margen.
   await ed.toggleSimulation();
   for (let i = 0; i < 60; i++) {
-    await new Promise((r) => setTimeout(r, 250));
+    await window.__pausa(250);
     if (suelta.mesh.position.y < 5) break;   // ya tocó el suelo
   }
   const y1 = { anclada: anclada.mesh.position.y, suelta: suelta.mesh.position.y };
   ed.stopSimulation();
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   const y2 = { anclada: anclada.mesh.position.y, suelta: suelta.mesh.position.y };
   return { y0, y1, y2 };
 });
@@ -285,9 +288,9 @@ ok(Math.abs(fisica.y2.suelta - fisica.y0.suelta) < 0.5,
 // fuente que la paleta, así que las dos no pueden desviarse una de otra.
 console.log("\n── La ventana de Biblioteca de modelos ─────────────────────");
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(400);
-await p.click(".land-actions button:has-text('BIBLIOTECA')"); await p.waitForTimeout(2000);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(400);
+await p.click(".land-actions button:has-text('BIBLIOTECA')"); await pausa(2000);
 
 // LA MISMA SELECCIÓN, CON LAS FAMILIAS DE PESO ABIERTAS (v0.3.75). Hasta aquí
 // se exigía la lista IDÉNTICA a la paleta, y eso dejaba en la Biblioteca tres
@@ -325,16 +328,16 @@ ok(biblio.pesos === 17,
 // el editor inserta, y esto lo comprueba vértice a vértice.
 console.log("\n── El modelo de cada máquina es la máquina ─────────────────");
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 const maquinas = await p.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
@@ -349,7 +352,7 @@ const maquinas = await p.evaluate(async () => {
     // triángulos en coordenadas de mundo, en el mismo orden de recorrido.
     for (const o of [...ed.listObjects()]) ed.removeObject(o);
     ed.insertarMaquina(m.id, new T.Vector3(0, 0, 0));
-    await new Promise((r) => setTimeout(r, 350));
+    await window.__pausa(350);
     const real = [];
     const v = new T.Vector3();
     const recorrer = (raiz) => {

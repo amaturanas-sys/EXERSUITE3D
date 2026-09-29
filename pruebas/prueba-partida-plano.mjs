@@ -14,6 +14,7 @@
 // Y de propina, la cuarta: DESHACER recarga el proyecto entero, así que un ↶
 // después de congelar pasaba por la primera puerta sin que nadie lo pidiera.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const browser = await chromium.launch({
   executablePath: process.env.CHROMIUM
@@ -21,29 +22,31 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const p = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(p);
 const errores = [];
 p.on("pageerror", (e) => errores.push(e.message));
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 await p.goto("http://127.0.0.1:4174/");
-await p.waitForTimeout(1000);
-await p.click("text=📁 PROYECTOS"); await p.waitForTimeout(300);
-await p.click(".land-actions button:has-text('NUEVO')"); await p.waitForTimeout(300);
-await p.click(".wizard-carta:has-text('Profesional')"); await p.waitForTimeout(300);
+await pausa(1000);
+await p.click("text=📁 PROYECTOS"); await pausa(300);
+await p.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await p.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await p.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await p.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await p.waitForTimeout(2200);
+await pausa(2200);
 
 await p.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   ed.insertarMaquina("uppermachine", new T.Vector3(0, 0, 0));
-  await new Promise((r) => setTimeout(r, 1800));
+  await window.__pausa(1800);
   await ed.addHumanFigure();
-  await new Promise((r) => setTimeout(r, 800));
+  await window.__pausa(800);
   window.__retrato = () => Object.fromEntries(
     ed.listObjects().map((o) => [o.id, o.mesh.position.toArray().map((v) => +v.toFixed(2))]),
   );
@@ -70,7 +73,7 @@ await p.evaluate(async () => {
     ed.physics.release?.();
     for (let i = 0; i < 30; i++) ed.physics.step(1 / 60);
     const n = ed.terminarPoseMaquina().piezas;
-    await new Promise((r) => setTimeout(r, 600));
+    await window.__pausa(600);
     return n;
   };
 });
@@ -92,14 +95,14 @@ ok(await p.evaluate(([a, b]) => window.__deriva(a, b).peor, [base.diseno, base.p
 const abrir = await p.evaluate(async ([diseno, partida, proyecto]) => {
   const ed = window.exersuite.editor;
   await ed.loadProject(proyecto);
-  await new Promise((r) => setTimeout(r, 1500));
+  await window.__pausa(1500);
   const traeMani = ed.hasHumanFigure();
   const conFigura = window.__deriva(partida, window.__retrato());
   ed.toggleHumanFigure();               // se quita el maniquí
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   const sinFigura = window.__deriva(diseno, window.__retrato());
   await ed.toggleHumanFigure();         // y vuelve
-  await new Promise((r) => setTimeout(r, 1000));
+  await window.__pausa(1000);
   return { traeMani, conFigura, sinFigura,
     guardado: ed.serialize().objects.map((o) => [o.id, o.position]) };
 }, [base.diseno, base.partida, base.proyecto]);
@@ -127,13 +130,13 @@ ok(guardado < 0.5, `y re-guardarlo escribe el PLANO, no la pose (${guardado} cm)
 const sim = await p.evaluate(async ([diseno, partida]) => {
   const ed = window.exersuite.editor;
   ed.startSimulation();
-  for (let i = 0; i < 150 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
-  await new Promise((x) => setTimeout(x, 2000));
+  for (let i = 0; i < 150 && !ed.physics; i++) await window.__pausa(20);
+  await window.__pausa(2000);
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 1200));
+  await window.__pausa(1200);
   const trasParar = window.__deriva(partida, window.__retrato());
   ed.soltarPartidaMaquina();
-  await new Promise((x) => setTimeout(x, 600));
+  await window.__pausa(600);
   return { trasParar, trasSoltar: window.__deriva(diseno, window.__retrato()) };
 }, [base.diseno, base.partida]);
 ok(sim.trasParar.peor < 1,
@@ -149,16 +152,16 @@ const fijar = await p.evaluate(async ([diseno]) => {
   const ed = window.exersuite.editor;
   const total = ed.listObjects().length;
   ed.startSimulation();
-  for (let i = 0; i < 150 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 20));
-  await new Promise((x) => setTimeout(x, 1500));
+  for (let i = 0; i < 150 && !ed.physics; i++) await window.__pausa(20);
+  await window.__pausa(1500);
   const r = ed.fijarPartida();
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 1000));
+  await window.__pausa(1000);
   ed.toggleHumanFigure();               // se quita el maniquí
-  await new Promise((x) => setTimeout(x, 700));
+  await window.__pausa(700);
   const sinFigura = window.__deriva(diseno, window.__retrato());
   await ed.toggleHumanFigure();
-  await new Promise((x) => setTimeout(x, 1000));
+  await window.__pausa(1000);
   return { total, piezas: r.piezas, sinFigura };
 }, [base.diseno]);
 ok(fijar.piezas < fijar.total,
@@ -171,11 +174,11 @@ ok(fijar.sinFigura.peor < 0.5,
 const deshacer = await p.evaluate(async () => {
   const ed = window.exersuite.editor;
   ed.soltarPartidaMaquina();
-  await new Promise((x) => setTimeout(x, 400));
+  await window.__pausa(400);
   const plano = window.__retrato();
   await window.__congelar();
   ed.undo();
-  await new Promise((x) => setTimeout(x, 1500));
+  await window.__pausa(1500);
   const tras = window.__deriva(plano, window.__retrato());
   return { tras, sano: ed.listObjects().length > 0 };
 });

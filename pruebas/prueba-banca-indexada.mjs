@@ -17,6 +17,7 @@
 // Lo que se mide en las dos es lo mismo y es lo único que importa: CUÁNTO SE
 // MUEVE EL RESPALDO con la máquina andando.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const BANCA = JSON.parse(
@@ -34,34 +35,36 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // ── 1. LA BANCA COMO ESTÁ: el puntal en su diente ────────────────────────
 const antes = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   const resp = [...ed.objects.values()].find((o) => o.name === "Respaldo");
   const donde = () => {
     resp.mesh.updateMatrixWorld(true);
     return resp.mesh.getWorldPosition(new T.Vector3());
   };
   const inicio = donde();
-  if (!ed.isSimulating()) ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 4000));
+  if (!ed.isSimulating()) await ed.toggleSimulation();
+  await window.__pausa(4000);
   const fin = donde();
-  if (ed.isSimulating()) ed.toggleSimulation();
+  if (ed.isSimulating()) await ed.toggleSimulation();
   return {
     piezas: [...ed.objects.values()].length,
     deriva: +inicio.distanceTo(fin).toFixed(2),
@@ -83,7 +86,7 @@ console.log("ANTES:", JSON.stringify(antes));
 const cambio = await page.evaluate(async (data) => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE, R = window.exersuite.reloj;
   await ed.loadProject(data);
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
 
   // EL EJE NO SE INVENTA: es el que la banca ya tenía. Se lee de la bisagra que
   // sostiene al brazo antes de tocar nada.
@@ -208,8 +211,8 @@ const aguante = await page.evaluate(async () => {
   const enDiseno = junta.apertura0 ?? 0;
   const paso = junta.max - enDiseno > enDiseno - junta.min ? 5 : -5;
 
-  if (!ed.isSimulating()) ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 1200));
+  if (!ed.isSimulating()) await ed.toggleSimulation();
+  await window.__pausa(1200);
 
   const paradas = [];
   for (let k = 0; k < 4; k++) {
@@ -217,15 +220,15 @@ const aguante = await page.evaluate(async () => {
     // Una hora, en pasos de cinco grados.
     for (let i = 0; i < 6; i++) {
       ed.physics.girarBisagra(resp.id, paso);
-      await new Promise((r) => setTimeout(r, 140));
+      await window.__pausa(140);
     }
     const pedido = ed.physics.anguloDeBisagra(resp.id);
     ed.physics.soltarBisagra(resp.id);
-    await new Promise((r) => setTimeout(r, 800));
+    await window.__pausa(800);
     const idx = ed.physics.indiceDeBisagra(resp.id);
     const a0 = ed.physics.anguloDeBisagra(resp.id);
     const p0 = donde();
-    await new Promise((r) => setTimeout(r, 3000));
+    await window.__pausa(3000);
     const a1 = ed.physics.anguloDeBisagra(resp.id);
     paradas.push({
       hacia: paso,
@@ -236,7 +239,7 @@ const aguante = await page.evaluate(async () => {
       deriva: +p0.distanceTo(donde()).toFixed(2),
     });
   }
-  if (ed.isSimulating()) ed.toggleSimulation();
+  if (ed.isSimulating()) await ed.toggleSimulation();
   return paradas;
 });
 console.log("AGUANTE:", JSON.stringify(aguante));

@@ -23,6 +23,7 @@
 // Si no, el problema de la banca está en otro sitio y no hay que tocar la
 // física.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -86,22 +87,24 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1200);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1200);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2000);
+await pausa(2000);
 
 const medir = (data) =>
   page.evaluate(async (proyecto) => {
     const ed = window.exersuite.editor;
     const T = window.exersuite.THREE;
     await ed.loadProject(proyecto);
-    await new Promise((r) => setTimeout(r, 700));
+    await window.__pausa(700);
     const ancla = ed.objects.get([...ed.objects.keys()].find((k) => ed.objects.get(k).name === "Ancla"));
     const brazo = ed.objects.get([...ed.objects.keys()].find((k) => ed.objects.get(k).name === "Brazo"));
     if (!ancla || !brazo) return { error: "la escena no se montó" };
@@ -120,21 +123,21 @@ const medir = (data) =>
       return a.distanceTo(b);
     };
     const muestras = [];
-    ed.toggleSimulation();
+    await ed.toggleSimulation();
     // El brazo arranca horizontal y se desploma: el pico del primer balanceo
     // es la carga dinámica, y el reposo de después, la estática.
     for (let k = 0; k < 40; k++) {
-      await new Promise((r) => setTimeout(r, 100));
+      await window.__pausa(100);
       muestras.push(separacion());
     }
     const pico = Math.max(...muestras);
     const reposo = [];
     for (let k = 0; k < 10; k++) {
-      await new Promise((r) => setTimeout(r, 300));
+      await window.__pausa(300);
       reposo.push(separacion());
     }
-    ed.toggleSimulation();
-    await new Promise((r) => setTimeout(r, 300));
+    await ed.toggleSimulation();
+    await window.__pausa(300);
     return {
       pico: +pico.toFixed(3),
       reposo: +(reposo.reduce((a, b) => a + b, 0) / reposo.length).toFixed(3),

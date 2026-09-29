@@ -13,6 +13,7 @@
 //   · el paso sale del número de posiciones que se pidan;
 //   · y la unión se guarda y se recarga con su paso puesto.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 let fallos = 0;
 const ok = (cond, msg, dato) => {
@@ -25,18 +26,20 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 page.on("pageerror", (e) => console.log("✗ PAGEERROR: " + e.message));
 await page.goto(process.env.BASE ?? "http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 // Un brazo que cuelga de un pasador FRENADO sobre un poste fijo.
 await page.evaluate(() => {
@@ -82,27 +85,27 @@ await page.evaluate(() => {
 const girarYSoltar = (posiciones, grados) => page.evaluate(async ({ posiciones, grados }) => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const { brazo } = window.__escena(posiciones);
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 900));
+  await ed.toggleSimulation();
+  await window.__pausa(900);
   const punta = brazo.mesh.getWorldPosition(new T.Vector3());
   ed.physics.elegirBisagra(brazo.id, punta);
   ed.physics.tomarBisagra(brazo.id);
   const paso = 2;
   for (let i = 0; i < Math.round(Math.abs(grados) / paso); i++) {
     ed.physics.girarBisagra(brazo.id, Math.sign(grados) * paso);
-    await new Promise((r) => setTimeout(r, 55));
+    await window.__pausa(55);
   }
   const antes = ed.physics.anguloDeBisagra(brazo.id);
   ed.physics.soltarBisagra(brazo.id);
   const traza = [];
   for (let i = 0; i < 8; i++) {
-    await new Promise((r) => setTimeout(r, 300));
+    await window.__pausa(300);
     traza.push(+ed.physics.anguloDeBisagra(brazo.id).toFixed(2));
   }
   const despues = ed.physics.anguloDeBisagra(brazo.id);
   const indice = ed.physics.indiceDeBisagra(brazo.id);
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await ed.toggleSimulation();
+  await window.__pausa(400);
   return { antes: +antes.toFixed(2), despues: +despues.toFixed(2), indice, traza };
 }, { posiciones, grados });
 
@@ -151,7 +154,7 @@ const vuelta = await page.evaluate(async () => {
   const guardado = ed.serialize();
   const antes = ed.listJoints().filter((j) => j.indexPaso > 0).length;
   await ed.loadProject(JSON.parse(JSON.stringify(guardado)));
-  await new Promise((r) => setTimeout(r, 700));
+  await window.__pausa(700);
   const pasos = ed.listJoints().map((j) => j.indexPaso).filter((v) => v > 0);
   return { antes, despues: pasos.length, paso: pasos[0] ?? null };
 });
@@ -177,22 +180,22 @@ const hud = await page.evaluate(async () => {
     if (!h || getComputedStyle(h).display === "none") return null;
     return h.textContent ?? null;
   };
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 800));
+  await ed.toggleSimulation();
+  await window.__pausa(800);
   const enReposo = leido();
   const punta = brazo.mesh.getWorldPosition(new T.Vector3());
   ed.physics.elegirBisagra(brazo.id, punta);
   ed.physics.tomarBisagra(brazo.id);
   for (let i = 0; i < 6; i++) {
     ed.physics.girarBisagra(brazo.id, 2);
-    await new Promise((r) => setTimeout(r, 60));
+    await window.__pausa(60);
   }
   ed.anunciarBisagra?.(brazo.id, false);
   const girando = leido();
   ed.anunciarBisagra?.(brazo.id, true);
   const soltando = leido();
-  ed.toggleSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await ed.toggleSimulation();
+  await window.__pausa(400);
   return { enReposo, girando, soltando };
 });
 console.log("HUD:", JSON.stringify(hud));
