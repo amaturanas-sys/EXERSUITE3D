@@ -888,7 +888,39 @@ export class PhysicsWorld {
       for (const g of guiasTubo) {
         const delta = centroD.clone().sub(g.centro);
         const p = g.centro.clone().addScaledVector(g.eje, delta.dot(g.eje));
-        if (!bbox.containsPoint(p)) continue;
+        // ENSARTADA DE VERDAD, NO SOLO TOCADA (v0.4.11).
+        //
+        // Aquí bastaba con que el eje del tubo cruzara la caja envolvente
+        // ALINEADA CON EL MUNDO de la pieza, y eso no dice que la pieza rodee el
+        // tubo: la caja de una barra en diagonal es enorme. En la banca
+        // ajustable, en el tope 1 —el más recostado—, el puntal de 42 cm queda
+        // a 37° del carril dentado, el eje del carril le atravesaba la caja, y
+        // el puntal ENTERO pasaba a ser un carro que desliza por el carril con
+        // la rotación congelada. No podía girar sobre su bisagra, así que la
+        // bisagra se abría —medido con las anclas de Rapier: 0,62 cm en tres
+        // sub-pasos, 20 cm a los 12 s— y el respaldo acababa en 104,9°. En los
+        // topes 2 a 5 no se detectaba ninguna guía; en el 1, ésta.
+        //
+        // Dos condiciones que cualquier pieza de verdad ensartada cumple:
+        // (1) el eje del tubo pasa por su caja ORIENTADA, no por la del mundo;
+        // (2) uno de sus ejes va ALINEADO con el tubo: nada desliza por un tubo
+        //     al que va sesgado. La caja orientada se centra en el centro de la
+        //     del mundo, que para una caja girada es el mismo punto.
+        const alineada = (["x", "y", "z"] as const).some(
+          (k) => Math.abs(axisVector(k).applyQuaternion(qD).dot(g.eje)) >= 0.99,
+        );
+        if (!alineada) continue;
+        const enLocal = p
+          .clone()
+          .sub(bbox.getCenter(new THREE.Vector3()))
+          .applyQuaternion(qD.clone().invert());
+        if (
+          Math.abs(enLocal.x) > tamLocal.x / 2 + 1 ||
+          Math.abs(enLocal.y) > tamLocal.y / 2 + 1 ||
+          Math.abs(enLocal.z) > tamLocal.z / 2 + 1
+        ) {
+          continue;
+        }
         // ABRAZO real (v0.2.9): un manguito guiado ATRAVIESA la pieza a lo
         // largo del eje (≥ 5 cm de recorrido interior). Sin este filtro, una
         // barra de agarre colgando JUNTO a un travesaño del piso quedaba

@@ -145,37 +145,24 @@ for (const r of res) {
 // correrse más de medio paso es haberse cambiado de tope; y ésta es la medida
 // directa, la que no depende de dónde esté la máquina.
 //
-// EL TOPE 1 SE MIDE Y SE DICE, NO SE EXIGE (v0.4.8). Se le exigía, y eso hacía
-// esta prueba INTERMITENTE: 4 rojas de 9 corridas, y luego 6 de 10. No era
-// ruido, eran dos ramas: o se queda (0,4-5,9 cm hacia atrás) o se va +12,1-12,5
-// cm, que es UN PASO DE DIENTE exacto — cae al tope de al lado, tal como
-// predice el comentario de más abajo.
+// A LOS CINCO, TAMBIÉN AL TOPE 1 (v0.4.11). De v0.4.7 a v0.4.10 el tope 1 se
+// medía y se decía pero no se exigía, y la razón escrita aquí era mecánica: que
+// el puntal queda a 37° del carril y empuja al pasador a lo largo de él, «y
+// ninguna cuna sujeta eso». ERA DEL MOTOR. Midiendo el triángulo
+// respaldo-puntal-bastidor con las anclas de Rapier, la bisagra entre respaldo y
+// puntal se ABRÍA —0,62 cm en tres sub-pasos, 20 cm a los 12 s—, igual sin
+// límites, sin pasador y sin contactos. El puntal, 1,90 kg colgado de un
+// respaldo que giraba, tenía velocidad angular 0,00 en cada sub-paso: el
+// detector de tubos guía lo había tomado por un carro ensartado en el carril,
+// porque con 37° el eje del carril le cruzaba la caja envolvente ALINEADA CON EL
+// MUNDO, y le congelaba la rotación. Sólo en el tope 1; en los otros cuatro, cero
+// guías. Arreglado el detector (caja orientada, y alineada con el tubo), la
+// bisagra se queda en 0,01-0,03 cm y el tope 1 aguanta como los demás.
 //
-// La causa de la intermitencia se midió, y no es del mecanismo: es que esta
-// prueba no deja andar la banca 12 segundos. Instrumentando `world.step` salen
-// **81-85 pasos reales del motor en los 12 segundos de reloj**, o sea **1,35-1,42
-// s simulados** de los ~9,5 que el bucle de render ofrece. `PhysicsWorld.step`
-// topa su acumulador en `2 * FIXED_DT`, así que con los dt de ~0,25 s que
-// entrega el bucle headless (~3,6 fps, 29-38 de 43 llamadas topadas) consume
-// 0,033 s por llamada y descarta el resto: el 86 % del tiempo pedido.
-//
-// Con 1,4 s de simulación el tope 1 se muestrea EN PLENA TRANSICIÓN, y un vaivén
-// del 5 % en los pasos que pasan (81 frente a 85) deja la última muestra a un
-// lado o al otro de la caída del pasador al diente siguiente. De ahí las dos
-// ramas. Contraprueba: pasándole al motor el tiempo completo en sub-pasos de
-// 1/60 (~9,3 s simulados) NO se escapó en 8 de 8 corridas, con recorridos de
-// 0,64 a 2,06 cm.
-//
-// Así que aquí se hace con el tope 1 lo mismo que ya se hacía con su aguante:
-// se mide y se informa. Lo que queda abierto es el tope del acumulador, que es
-// del motor y no de esta prueba.
-const MIDEN_SOLO = [1];
+// La intermitencia de v0.4.8 (el tope 1 caía un diente entero en 4 de 9
+// corridas) era esto mismo muestreado a destiempo: con el acumulador descartando
+// el 86 % del tiempo, la banca rota se leía a mitad de caerse.
 for (const r of res) {
-  if (MIDEN_SOLO.includes(r.asiento)) {
-    console.log(`  (tope ${r.asiento}: el pasador acabó a ${r.corrido} cm de su diente` +
-      `${r.corrido >= 6 ? " — un paso entero: se cambió de tope" : ""}, ${r.deLado} de lado)`);
-    continue;
-  }
   ok(r.corrido < 6, `el pasador se queda en el diente del tope ${r.asiento}`,
     `se corrió ${r.corrido} cm, ${r.deLado} de ellos DE LADO — ${r.carrera.map((c) => c.join("/")).join(" ")}`);
 }
@@ -183,39 +170,21 @@ for (const r of res) {
 //
 // Se medía contra la pose GUARDADA, y eso mete en la cuenta el asentamiento del
 // primer segundo: el pasador cayendo en su cuna y las uniones tensándose valen
-// 1,6-2,2° que no son cesión ninguna —las series se quedan clavadas al segundo y
-// no se mueven en los once restantes—. Lo que la banca promete es que NO CEDE, y
-// eso se lee en el tramo estable: de la tercera muestra a la última.
-//
-// ALCANZAR NO ES SOSTENER, y el tope 1 es donde se ve (v0.4.7). El puntal de
-// 42 cm llega a los cinco asientos —los cinco arrancan a 0,00 mm del suyo— pero
-// en el más recostado queda a sólo **37° del carril**, contra 49°, 59°, 68° y
-// 75° en los otros cuatro: ahí la fuerza del puntal empuja al pasador A LO LARGO
-// del carril en vez de contra el fondo de su cuna, y ninguna cuna sujeta eso. El
-// respaldo oscila y acaba cayendo al tope de al lado.
-//
-// Así que se le exige a los cuatro que sí trabajan, y del quinto se mide y se
-// dice. Corregirlo no es cosa del diente ni del motor: es el largo del puntal o
-// dónde va el carril.
-const AGUANTAN = [2, 3, 4, 5];
+// 1,6-3° que no son cesión ninguna —las series se quedan clavadas al segundo y no
+// se mueven en los once restantes—. Lo que la banca promete es que NO CEDE, y eso
+// se lee en el tramo estable: de la tercera muestra a la última. A los cinco
+// topes, desde v0.4.11 (ver arriba por qué el 1 estuvo fuera).
 for (const r of res) {
   const estable = r.serie.slice(2);
   const cede = +(Math.max(...estable) - Math.min(...estable)).toFixed(1);
-  if (!AGUANTAN.includes(r.asiento)) {
-    console.log(`  (tope ${r.asiento}, el más recostado: cedió ${cede}° — el puntal queda a 37° del carril)`);
-    continue;
-  }
   ok(cede <= 1, `y el respaldo aguanta ahí los 12 s (tope ${r.asiento})`,
     `cedió ${cede}° tras asentarse — ${r.serie.join(" ")}`);
 }
 // Y QUE SEAN CINCO POSICIONES DISTINTAS, que es de lo que iba todo esto.
 if (res.length === 5) {
-  const finales = res
-    .filter((r) => AGUANTAN.includes(r.asiento))
-    .map((r) => Math.abs(r.fin))
-    .sort((a, b) => a - b);
+  const finales = res.map((r) => Math.abs(r.fin)).sort((a, b) => a - b);
   const juntos = finales.some((v, i) => i > 0 && v - finales[i - 1] < 5);
-  ok(!juntos, "los topes que aguantan acaban en ángulos distintos",
+  ok(!juntos, "los cinco topes acaban en ángulos distintos",
     finales.map((v) => `${v}°`).join(" · "));
 }
 
