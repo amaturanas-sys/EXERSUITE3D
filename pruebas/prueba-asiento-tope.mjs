@@ -148,10 +148,22 @@ const quieto = await page.evaluate(async () => {
 });
 console.log("QUIETO:", JSON.stringify(quieto));
 const ultimos = quieto.serie.slice(-5);
+// ASIENTA EN SU NIVEL, Y AHÍ NO CEDE (v0.4.11). Esto exigía ±1° contra el ángulo
+// de DISEÑO, antes de asentarse, y pasaba porque una GUÍA FANTASMA congelaba el
+// brazo: el detector de tubos guía lo tomaba por un carro ensartado en la viga
+// (eje a 30°) y le fijaba la rotación en cada sub-paso, así que «mantenía su
+// ángulo» exactamente, en 70,0°. Arreglado el detector, el brazo hace lo que
+// hacen los topes de la banca: asienta —el pie cae en su muesca y las bisagras
+// se tensan: 1,7° aquí, 1,6-3° en `banco-cinco-topes`— y se queda CLAVADO, la
+// serie entera en 71,7°. Así que se mide lo mismo que allí desde v0.4.7:
+//   · que asiente en SU nivel: a menos de 3° del de diseño, muy por debajo de
+//     medio nivel (los cinco van de 10° a 70°, ~15° entre sí);
+//   · y que desde ahí no ceda: menos de 1° en las cinco últimas muestras.
 ok(
-  ultimos.every(s => Math.abs(s.ang - quieto.a0) <= 1),
-  "al simular, el brazo mantiene su ángulo",
-  `${quieto.a0}° → ${quieto.serie[quieto.serie.length-1].ang}°`,
+  ultimos.every(s => Math.abs(s.ang - quieto.a0) <= 3)
+    && Math.max(...ultimos.map(s => s.ang)) - Math.min(...ultimos.map(s => s.ang)) <= 1,
+  "al simular, el brazo asienta en su nivel y ahí mantiene su ángulo",
+  `${quieto.a0}° → ${quieto.serie.map(s => s.ang).join(" → ")}°`,
 );
 ok(
   ultimos.every(s => Math.abs(s.pie - ultimos[0].pie) < 0.5),

@@ -353,6 +353,19 @@ export class ComponentPalette {
     const incl = num(0, "5");
     const desc = num(0);
     const topes = num(6);
+    // LO NUEVO DE v0.4.11: repartir los topes por GRADOS, darlos a horas
+    // exactas, o partir de un pilar que ya se tiene. Los tres son opcionales:
+    // sin tocarlos, el diálogo hace lo de siempre.
+    const reparto = el("select", {}, [
+      el("option", { value: "viga" }, [tt("Iguales en la viga", "Evenly along the beam")]),
+      el("option", { value: "grados" }, [tt("Iguales en grados", "Evenly in degrees")]),
+    ]) as HTMLSelectElement;
+    const horasTopes = el("input", {
+      type: "text", placeholder: tt("p. ej. 3, 2:30, 2, 1:30, 1", "e.g. 3, 2:30, 2, 1:30, 1"),
+    }) as HTMLInputElement;
+    const pilar = el("input", {
+      type: "number", step: "0.5", placeholder: tt("se calcula", "computed"),
+    }) as HTMLInputElement;
     const salida = el("div", { class: "rold-pie" });
     const campo = (etiqueta: string, input: HTMLElement): HTMLElement =>
       el("div", { class: "row" }, [el("div", { class: "sub" }, [etiqueta]), input]);
@@ -365,6 +378,15 @@ export class ComponentPalette {
       inclinacionC: parseFloat(incl.value) || 0,
       descentradoCm: parseFloat(desc.value) || 0,
       topes: Math.max(2, Math.round(parseFloat(topes.value) || 2)),
+      reparto: reparto.value as "viga" | "grados",
+      gradosTopes: (() => {
+        const g = horasTopes.value.split(",")
+          .map((h) => parsearHora(h.trim()))
+          .filter((h): h is number => h != null)
+          .map((h) => ((90 - h + 180) % 360 + 360) % 360 - 180);
+        return g.length >= 2 ? g : undefined;
+      })(),
+      pilarCm: parseFloat(pilar.value) > 0 ? parseFloat(pilar.value) : undefined,
     });
     const repintar = (): void => {
       const s = calcularBrazoPilar(leer());
@@ -373,21 +395,37 @@ export class ComponentPalette {
         salida.append(el("b", {}, [s.aviso ?? ""]));
         return;
       }
+      const dado = parseFloat(pilar.value) > 0;
       salida.append(
-        el("b", {}, [tt(`Pilar: ${s.pilarCm} cm`, `Strut: ${s.pilarCm} cm`)]),
+        el("b", {}, [dado
+          ? tt(`Pilar: ${s.pilarCm} cm (el tuyo)`, `Strut: ${s.pilarCm} cm (yours)`)
+          : tt(`Pilar: ${s.pilarCm} cm`, `Strut: ${s.pilarCm} cm`)]),
         el("div", {}, [
           tt(
             `Topes: ${s.desdeCm} a ${s.hastaCm} cm por la viga`,
             `Stops: ${s.desdeCm} to ${s.hastaCm} cm along the beam`,
           ),
         ]),
-        el("div", {}, [
-          s.topes.map((t) => formatearHora(90 - t.gradoBrazo)).join(" · "),
-        ]),
+        // TOPE A TOPE: dónde va la muesca, cuánto la separa de la anterior y
+        // cómo empuja el pilar (0° tumbado sobre la viga, 90° de pie).
+        ...s.topes.map((t) =>
+          el("div", { class: "sub" }, [
+            `${formatearHora(90 - t.gradoBrazo)} · ${t.distanciaCm} cm`
+            + (t.pasoCm == null ? "" : ` · +${t.pasoCm}`)
+            + tt(` · pilar a ${t.anguloPilarVigaGrados}°`, ` · strut at ${t.anguloPilarVigaGrados}°`),
+          ])),
+        ...(s.alcanceGrados
+          ? [el("div", {}, [tt(
+            `Con este pilar el brazo sólo llega de ${formatearHora(90 - s.alcanceGrados[1])}`
+              + ` a ${formatearHora(90 - s.alcanceGrados[0])}`,
+            `With this strut the arm only reaches ${formatearHora(90 - s.alcanceGrados[1])}`
+              + ` to ${formatearHora(90 - s.alcanceGrados[0])}`,
+          )])]
+          : []),
         ...(s.aviso ? [el("div", {}, [`⚠ ${s.aviso}`])] : []),
       );
     };
-    for (const c of [brazo, gA, gB, viga, incl, desc, topes]) {
+    for (const c of [brazo, gA, gB, viga, incl, desc, topes, reparto, horasTopes, pilar]) {
       c.addEventListener("input", repintar);
     }
 
@@ -406,6 +444,9 @@ export class ComponentPalette {
       campo(tt("Inclinación de la viga (°)", "Beam tilt (°)"), incl),
       campo(tt("Descentrado de la viga (cm)", "Beam offset (cm)"), desc),
       campo(tt("Topes", "Stops"), topes),
+      campo(tt("Reparto", "Spacing"), reparto),
+      campo(tt("…o a estas horas", "…or at these hours"), horasTopes),
+      campo(tt("Pilar (cm), si ya lo tienes", "Strut (cm), if you have one"), pilar),
       el("div", { class: "rold-seccion" }, [tt("Lo que sale", "What comes out")]),
       salida,
       el("div", { class: "rold-dirs" }, [crear]),

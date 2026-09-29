@@ -5,6 +5,129 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.11] — 2026-09-29
+
+**El tope 1 de la banca era el motor, y el brazo con pilar se diseña por
+ángulos.** Dos hilos que acabaron en el mismo sitio: piezas que el motor
+trataba como no eran.
+
+### El tope 1: una guía fantasma
+
+De v0.4.7 a v0.4.10 el tope 1 de la banca ajustable se medía pero no se exigía,
+y la razón escrita era mecánica: *«el puntal queda a 37° del carril… ninguna cuna
+sujeta eso. Corregirlo no es cosa del diente ni del motor: es el largo del puntal
+o dónde va el carril.»* **Era del motor.**
+
+Midiendo el triángulo respaldo–puntal–bastidor con las anclas de Rapier, la
+bisagra entre respaldo y puntal **se abría**: 0,62 cm en tres sub-pasos, 9 cm al
+medio segundo, 20 cm a los 12 s. Igual sin límites, sin el pasador y sin
+contactos. Y el puntal —1,90 kg colgado de un respaldo que giraba cada vez más
+rápido— tenía **velocidad angular 0,00 en cada sub-paso**.
+
+`detectarGuias` lo había tomado por un carro ensartado en el carril dentado: le
+bastaba con que el eje de un tubo fijo cruzara la caja envolvente **alineada con
+el mundo** de la pieza, y la de una barra en diagonal es enorme. A 37° el eje del
+carril le atravesaba la caja, y `aplicarGuias` le congelaba la rotación en cada
+sub-paso. Sólo en el tope 1; en los otros cuatro, cero guías. Ahora una pieza
+sólo va ensartada si el eje del tubo pasa por su caja **orientada** y uno de sus
+ejes va **alineado** con el tubo. La bisagra se queda en 0,01–0,03 cm, el tope 1
+asienta 3°, cede 0,1° y el pasador acaba a 2,54 cm de su diente, como los demás.
+`prueba-banco-cinco-topes` vuelve a exigírselo todo: 16 de 16.
+
+Y la intermitencia de v0.4.8 era esto mismo muestreado a destiempo: con el
+acumulador descartando el 86 % del tiempo, la banca rota se leía a mitad de caerse.
+
+**Radio de impacto:** censo de guías de las nueve máquinas de la biblioteca, con el
+detector viejo y con el nuevo — **idéntico**. Las cinco guías legítimas (dos pilas
+de pesos, dos portadiscos, el trineo de la prensa) se conservan.
+
+### Otra guía fantasma, y un verde falso
+
+`prueba-asiento-tope` se puso roja con el detector nuevo: «el brazo mantiene su
+ángulo — 70° → 71,7°». Con el viejo, el **brazo** del mecanismo «brazo con pilar»
+quedaba guiado por un eje a 30° y con la rotación congelada: *mantenía su ángulo*
+exactamente porque no podía girar. Sin la guía asienta 1,7° y se queda clavado. La
+prueba medía contra el ángulo de diseño antes de asentarse —la trampa que v0.4.7
+ya había quitado de `banco-cinco-topes`—, y ahora mide lo mismo que allí: que
+asiente en su nivel (a menos de 3°, con niveles a ~15°) y que desde ahí no ceda.
+
+### El brazo con pilar, diseñado por ángulos
+
+La herramienta de «Mecanismos» deducía el pilar y repartía los topes
+**equidistantes sobre la viga**: los ángulos salían como salieran. Una banca se
+diseña al revés, y ahora se puede:
+
+- **Reparto en grados**, o **la lista exacta** de ángulos de cada tope (en el
+  diálogo, a horas del reloj: `3, 2:30, 2, 1:30, 1`).
+- **El pilar como dato**: si ya lo tienes, se respeta y salen las muescas y la viga.
+  Es la ley del coseno despejada al revés,
+  `t = X·cos ψ ± √(L² − (X·sen ψ − E)²)`.
+- **El techo geométrico**: esa raíz sólo existe si `|X·sen ψ − E| ≤ L`, así que la
+  herramienta dice **hasta dónde puede llegar el brazo** con ese pilar.
+- **Tope a tope**: paso hasta la muesca anterior, ángulo entre pilar y viga, y
+  grados por centímetro.
+- **Aviso de muescas que no caben**: una muesca son dos dedos alrededor del pie, y
+  dos no pueden estar a menos de 6,9 cm. Las medidas viven ahora en `MUESCA_PILAR`,
+  la misma fuente para el cálculo y para el editor que monta la viga.
+- **Un recorrido que cruza la viga ya no se cambia por otro en silencio.** Pedir de
+  10° a 70° sobre una viga a 30° devolvía topes de 70° a 109° sin un aviso; ahora
+  dice que el brazo no puede pasar por encima de la viga.
+
+El reparto de siempre no cambia: **1296 configuraciones comparadas contra la
+versión anterior, 0 con distinto pilar o topes.**
+
+### El documento de referencia, verificado antes de usarlo
+
+Llegó como «fuente de verdad» una tabla de banca —brazo de 36, pilar de 18 en su
+extremo, topes a 0/15/30/45/60/85°— con su ley del coseno. **La tabla no cierra
+con su propia fórmula**: sólo el plano da un pilar de 18; los demás topes, pilares
+de 13,7 a 39,1. Y no puede cerrar: con el pilar en el extremo, el techo es
+`asen(18/36) = 30°`. La herramienta nueva lo dice en una frase: *«Con 18 cm de
+pilar el brazo sólo llega de −30° a 30°: a 45°, 60°, 85° el pilar no alcanza la
+viga.»*
+
+La **gráfica** que acompañaba a la tabla sí era coherente: colgaba el pilar a **15**
+del pivote, no en el extremo. La herramienta la reproduce muesca a muesca —33 /
+32,07 / 29,35 / 25,15 / 19,96 / 11,34— y avisa de lo que la gráfica calla: de 0°
+a 15° la muesca sólo corre 0,93, y ahí no caben dos. La lección que se queda: el
+brazo que cuenta es la distancia del pivote a donde cuelga el pilar, no el largo
+del respaldo.
+
+### Y debajo de la herramienta, otro fallo del motor
+
+Montado por ángulos, el mecanismo **reventaba en el arranque**: en tres sub-pasos el
+brazo saltaba de 55° a 82,9° y el pie salía despedido 26 cm. No era el reparto: la
+bisagra del **pivote** conservaba los contactos —la «bisagra real» de v0.2.33, que
+deja chocar las dos piezas para que el material frene el plegado— porque viga y
+brazo nacían separados. Pero los contactos se encienden entre **cuerpos**, y el
+cuerpo de la viga lleva soldado el pasador de la bisagra, que atraviesa el extremo
+del brazo. La regla de v0.2.33 ya decía qué hacer —*«si ya se interpenetran en la
+pose de diseño, se dejan apagados»*—; sólo miraba las dos anfitrionas. Ahora
+`mitadesSeparadas` revisa todo lo soldado a cada lado, salvo el herraje entre sí.
+Con eso, los cuatro topes de la prueba se clavan en su ángulo: **17,2° / 36,7° /
+55,6° / 75,3°**, sin moverse una décima en 6 s. Y un dato de paso: el de 15° aguanta
+con el pilar a 18° de la viga, así que un pilar tumbado no es fatal con estas
+muescas.
+
+Nueva: `prueba-brazo-pilar-angulos`, 14 aserciones —la gráfica, el documento, el
+reparto en grados, el recorrido que cruza la viga, y los cuatro topes montados y
+simulando—.
+
+### La banca, vista con la herramienta
+
+Brazo 41,4 cm, pilar 42,0, carril a 150° casi por el pivote: con el pilar más largo
+que el brazo **no hay techo geométrico**. Sus topes de hoy —dientes equidistantes a
+12,5 cm— dan **15,1 / 27,8 / 38,6 / 48,7 / 59,4°**. Para los de catálogo las muescas
+irían a pasos de **15,1 / 17,9 / 17,8** cm (15/30/45/60°), el plano pediría alargar
+el carril 11 cm, y 75° y 85° caen casi bajo el pivote a 2,1 cm uno de otro, menos
+de lo que ocupa una muesca. Topes redondos exigen **dientes no equidistantes**, y la
+placa dentada deriva todo su gancho de un único paso: es una decisión de diseño que
+queda abierta, no un arreglo.
+
+### El examen
+
+PENDIENTE: batería completa en serie en marcha.
+
 ## [0.4.10] — 2026-09-29
 
 **Las pruebas gobiernan la simulación por pasos.** Sin cambios visibles en la

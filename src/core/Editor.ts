@@ -249,7 +249,7 @@ import {
 import { degToRad, radToDeg, roundTo } from "../core/units";
 import { solveTwoBoneIK } from "./armIK";
 import { PROJECT_VERSION, type ProjectData, type WorkspaceData } from "./project";
-import { calcularBrazoPilar } from "../objects/brazoPilar";
+import { calcularBrazoPilar, MUESCA_PILAR } from "../objects/brazoPilar";
 import type { CfgBrazoPilar, SolucionBrazoPilar } from "../objects/brazoPilar";
 import type {
   CanalTubo,
@@ -1687,7 +1687,9 @@ export class Editor {
     // 3 cm y saltaba a 17,8). La viga tiene que quedar POR DEBAJO de esa recta,
     // justo lo que miden medio pie y medio perfil.
     const PERFIL_VIGA = 6;
-    const PERFIL_PILAR = 5;
+    // La sección del pie y la muesca vienen de `MUESCA_PILAR`, la misma fuente
+    // de la que el cálculo saca el paso mínimo entre topes (v0.4.11).
+    const PERFIL_PILAR = MUESCA_PILAR.perfilPilarCm;
     // ARRIBA ES ARRIBA. La perpendicular al carril salía NEGADA, así que
     // apuntaba hacia abajo: la viga se colocaba por encima del pie y los topes
     // colgaban por debajo de ella. El pilar no se apoyaba en nada —quedaba a
@@ -1700,8 +1702,8 @@ export class Editor {
 
     // LAS MEDIDAS DE LA MUESCA, arriba del todo porque también deciden dónde
     // acaba el carril.
-    const DEDO = 1.5;              // grueso de cada dedo
-    const HOLGURA = 0.4;           // lo que el pie baila dentro de la muesca
+    const DEDO = MUESCA_PILAR.dedoCm;          // grueso de cada dedo
+    const HOLGURA = MUESCA_PILAR.holguraCm;    // lo que el pie baila dentro de la muesca
     const semiHueco = (PERFIL_PILAR + HOLGURA) / 2;
     // El dedo arranca en la cara de la viga y sube hasta pasar el centro del
     // pie: por debajo lo sostiene la viga, por encima lo encierra el dedo.
@@ -9737,12 +9739,63 @@ export class Editor {
       if (a?.componentId !== "placa-bisagra" || b?.componentId !== "placa-bisagra") continue;
       const ha = this.objects.get(anfitrion.get(a.id) ?? "");
       const hb = this.objects.get(anfitrion.get(b.id) ?? "");
-      if (ha && hb && ha !== hb && this.piezasSeparadas(ha, hb)) j.contactos = true;
+      if (!ha || !hb || ha === hb) continue;
+      // El herraje de ESTA bisagra: sus dos placas y los pasadores soldados a
+      // ellas. Todo lo demás de cada mitad tiene que nacer separado (v0.4.11).
+      const herraje = new Set<string>([a.id, b.id]);
+      for (const k of this.joints.values()) {
+        if (!k.soldada) continue;
+        for (const [x, y] of [[k.bodyAId, k.bodyBId], [k.bodyBId, k.bodyAId]]) {
+          if ((x === a.id || x === b.id) && this.objects.get(y)?.componentId === "pasador-bisagra") herraje.add(y);
+        }
+      }
+      if (this.mitadesSeparadas(a, b, herraje)) j.contactos = true;
     }
   }
 
   piezasSeparadas(a: SceneObject, b: SceneObject, tol = 0.8): boolean {
     return this.separacionEntre(a, b) >= -tol;
+  }
+
+  /**
+   * ¿NACEN SEPARADAS LAS DOS MITADES DE UNA BISAGRA? (v0.4.11)
+   *
+   * Encender los contactos de una bisagra los enciende entre sus dos CUERPOS, y
+   * un cuerpo es todo lo soldado: la pieza anfitriona, su placa, el pasador y lo
+   * que cuelgue. La regla de v0.2.33 —«si ya se interpenetran en la pose de
+   * diseño, se dejan apagados: encenderlos las expulsaría al arrancar»— sólo
+   * miraba las dos anfitrionas, y así dejaba pasar lo demás. En el brazo con
+   * pilar, el pasador del pivote atraviesa el extremo del brazo: viga y brazo
+   * nacían separados, los contactos se encendían, y al arrancar el pasador
+   * expulsaba al brazo —de 55° a 82,9° en tres sub-pasos, y de ahí al suelo—.
+   *
+   * Aquí se revisa cada pareja de una mitad contra la otra, salvo las del propio
+   * `herraje` entre sí (placa con placa, pasador con placa): ésas se tocan por
+   * diseño, y la bisagra de la banca ajustable, con los contactos encendidos,
+   * demuestra que no se pelean.
+   */
+  mitadesSeparadas(a: SceneObject, b: SceneObject, herraje: Set<string>): boolean {
+    const mitad = (o: SceneObject): SceneObject[] => {
+      const vistos = new Set<string>([o.id]);
+      const cola = [o.id];
+      while (cola.length) {
+        const id = cola.pop()!;
+        for (const j of this.joints.values()) {
+          if (!j.soldada) continue;
+          const otro = j.bodyAId === id ? j.bodyBId : j.bodyBId === id ? j.bodyAId : null;
+          if (otro && !vistos.has(otro)) { vistos.add(otro); cola.push(otro); }
+        }
+      }
+      return [...vistos].map((id) => this.objects.get(id)).filter((x): x is SceneObject => !!x);
+    };
+    const ma = mitad(a), mb = mitad(b);
+    for (const p of ma) {
+      for (const q of mb) {
+        if (herraje.has(p.id) && herraje.has(q.id)) continue;
+        if (!this.piezasSeparadas(p, q)) return false;
+      }
+    }
+    return true;
   }
 
 
@@ -10215,7 +10268,7 @@ export class Editor {
       // pivote clásico se solapan a propósito), así que aquí se piden
       // EXPRESAMENTE. Si las dos piezas ya están interpenetradas en la pose
       // de diseño, se dejan apagados: encenderlos las expulsaría al arrancar.
-      if (this.piezasSeparadas(a, b)) {
+      if (this.mitadesSeparadas(a, b, new Set([placaA.id, placaB.id, pasador.id]))) {
         bisagra.contactos = true;
       } else {
         this.avisoTemporal(
