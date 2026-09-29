@@ -177,7 +177,27 @@ apoyo en el bastidor; para 75°, una bisagra que pliegue más.
 
 ### El examen
 
-PENDIENTE: batería completa en serie en marcha.
+**Batería completa en serie: 125 pruebas, 123 verdes, 57 minutos.** Toda la
+familia que tocan estos cambios en verde: la banca (cinco topes, tres topes,
+horquilla, catálogo), los brazos, los pasadores, la placa dentada,
+`asiento-tope`, `dos-bisagras`, `diente-retiene` y las dos nuevas.
+
+Las dos rojas son de las que esperan **por reloj**, y las dos dan verde corridas
+solas: `prueba-800-debug3` (interfaz en tiempo real: midió la barra de
+simulación un fotograma antes de que se colocara; 4 de 4 verdes sola, incluso con
+la máquina cargada) y `prueba-v232` (toma la altura de partida de la tapa tras
+200 ms de reloj simulando, y según cuánto reloj pase la tapa ya ha caído o no:
+`y0` sale 77,8 / 70 / 70 en tres corridas sueltas, y 64,5 en la batería). Ninguna
+toca lo cambiado: los contactos de la bisagra de v232 siguen encendidos, como
+antes.
+
+**Y una corrección a v0.4.10.** Allí se dijo que «las 39 pruebas que simulan»
+usaban el arnés por pasos. **Son 39 de 65.** El transformador eligió las pruebas
+buscando `toggleSimulation`, y hay **26 que simulan** llamando a
+`startSimulation()` o a `physics.step()` directamente: siguen esperando por reloj.
+Entre ellas están las dos rojas de esta batería y las que el LEEME ya señalaba
+como sensibles a la carga (`800-debug*`, `atraviesa`, `uppermachine-lib`). El
+arnés está bien; la migración quedó incompleta, y es el siguiente paso.
 
 ## [0.4.10] — 2026-09-29
 
