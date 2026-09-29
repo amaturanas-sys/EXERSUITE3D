@@ -5,6 +5,88 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.8] — 2026-09-29
+
+Sin cambios en la app: esta versión es **la causa medida de una prueba
+intermitente**, y lo que salió por el camino sobre el motor.
+
+### El síntoma
+
+`prueba-banco-cinco-topes` fallaba a veces y no siempre: **4 rojas de 9
+corridas**, y en otra ronda 6 de 10. Siempre en el mismo sitio —la retención del
+pasador en el diente del tope 1, el más recostado— y siempre con la misma forma.
+No era ruido de medida, eran **dos ramas**, sin nada intermedio:
+
+| | a lo largo del carril | de lado |
+|---|---|---|
+| se queda | −0,37 a −5,88 cm | 0,06 – 1,02 cm |
+| se escapa | +12,07 a +12,45 cm | 1,98 – 2,20 cm |
+
+Los dientes van a `PASO = 12.5`. Es decir: cuando se escapa, **se cae al diente
+de al lado, un paso exacto**, tal como predecía el comentario que v0.4.7 dejó
+escrito en la propia prueba.
+
+### La causa
+
+No es del mecanismo. **Esta prueba no deja andar la banca doce segundos.**
+
+Envolviendo `world.step` para contar los pasos reales del motor salen **81-85
+pasos en los 12 segundos de reloj**, o sea **1,35-1,42 s simulados**, contra los
+~9,5 s que el bucle de render ofrece. Los dos eslabones:
+
+- `Editor.loop` avanza con `dt = Math.min((now - lastFrameTime)/1000, 0.25)`. En
+  el Chromium headless con swiftshader el bucle va a **~3,6 fps**, así que
+  **29-38 de sus ~43 llamadas llegan topadas en 0,25 s**.
+- `PhysicsWorld.step` topa su acumulador en `2 * FIXED_DT`. Con dt de 0,25
+  consume 0,033 s y **descarta el resto: el 86 % del tiempo pedido.**
+
+Con 1,4 s de simulación el tope 1 se muestrea **en plena transición**, y un
+vaivén del 5 % en los pasos que pasan —81 frente a 85— deja la última muestra a
+un lado o al otro de la caída del pasador. De ahí las dos ramas.
+
+Contraprueba: pasándole al motor el tiempo completo en sub-pasos de 1/60 —unos
+9,3 s simulados— **no se escapó en 8 de 8 corridas**, con recorridos de 0,64 a
+2,06 cm.
+
+### Un camino falso que merece quedar escrito
+
+La primera lectura fue que retenían los pasos GRANDES, porque las corridas que
+se quedaban tenían el dt medio más alto (0,2185-0,2334) que las que se escapaban
+(0,2022-0,2189), con separación casi perfecta en diez corridas. Era una
+correlación sin mecanismo: el dt de entrada no cambia el tiempo que el motor
+consume, porque el tope del acumulador lo fija en dos sub-pasos por llamada
+pase lo que pase. Lo que de verdad cambiaba el resultado era el **tiempo
+simulado total**, y eso no se vio hasta contar `world.step` en vez de mirar el
+dt de entrada. *Medir la entrada no es medir lo que el motor hace con ella.*
+
+### Lo que se cambia, y lo que no
+
+- **La prueba.** Con el tope 1 se hace ahora lo mismo que ya se hacía con su
+  aguante desde v0.4.7: **se mide y se informa, no se exige.** Seis corridas
+  seguidas tras el cambio, seis verdes. Los topes 2 a 5 siguen exigidos igual.
+- **El motor no se toca.** El tope de `2 * FIXED_DT` está ahí para no espiralar,
+  y su comentario promete «cámara ligeramente lenta»; 86 % de pérdida no es
+  ligeramente, y en una máquina lenta la simulación se arrastra en vez de ir a
+  tiempo real. Pero subir ese tope cambia cómo integra **toda** la aplicación y
+  desplazaría números por toda la batería de 123 pruebas: es una decisión de
+  política del motor, con su propia versión y su propia corrida completa
+  detrás. Queda como el hilo abierto, ya con su medida.
+
+### Y no es una prueba, son las que aprietan el umbral
+
+Corriendo la familia del banco contra este build apareció **`prueba-dos-bisagras`
+intermitente también**: 2 rojas de 5 corridas, con `cedió 1,2°` y `cedió 1,9°`
+contra un umbral de 1°. Su serie no cede, **oscila** —66,2 → 65,4 → 65,6 → 66,6
+→ 66,1 → 66,4, un vaivén de ±0,6°—, que es la misma firma: un umbral fino
+aplicado a un transitorio que se muestrea a un séptimo del tiempo que la prueba
+cree estar dando. En v0.4.5 esa prueba se verificó verde dos veces seguidas, así
+que no es una regresión de código: es la misma moneda al aire.
+
+No se toca aquí —un arreglo por prueba es tapar el síntoma cinco veces— pero
+queda escrito, porque cambia el tamaño del hilo abierto: **no es el umbral de una
+prueba, es cuánto tiempo simula la batería.** Los cuatro topes que sí se exigen
+en `prueba-banco-cinco-topes` aguantan con margen y no entran en esto.
+
 ## [0.4.7] — 2026-09-27
 
 Sin cambios en la app: esta versión es **la banca de pruebas puesta al día**. Sus
