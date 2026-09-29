@@ -24,6 +24,11 @@ import json, math, copy, sys, os
 
 BASE = "pruebas/datos/bancoajustable.json"   # se corre desde la raiz del repo
 SALIDA = "pruebas/datos/banco-tope-%d.json"
+# Otra banca y otras salidas por la linea de ordenes (v0.4.11), p. ej. la de
+# catalogo: `python3 pruebas/datos/banco-topes-geometria.py
+#   pruebas/datos/bancocatalogo.json pruebas/datos/banco-catalogo-%d.json`
+if len(sys.argv) >= 3:
+    BASE, SALIDA = sys.argv[1], sys.argv[2]
 # El asiento del diente, en el marco de la placa, medido con el pasador de la
 # banca (Ø2) sobre su propia viga (agarre 2): local (-1.03, +0.89) respecto del
 # diente nominal. Lo mide `pruebas/_sonda-asiento.mjs`.
@@ -57,14 +62,25 @@ def qinv(q):
     return [-x, -y, -z, w]
 
 
+def posicionesLocales(obj):
+    """Y local de cada diente en la placa. Con `dientePosiciones` (v0.4.11) van
+    donde se pidieron, centrados en la plancha como hace `medidasDentada`; sin
+    ellas, a paso fijo como siempre."""
+    pos = obj[PLACA]["params"].get("dientePosiciones")
+    if pos and len(pos) >= 2:
+        tramo = pos[-1] - pos[0]
+        return [p - pos[0] - tramo / 2 for p in pos]
+    return [(k - (DIENTES - 1) / 2) * PASO for k in range(DIENTES)]
+
+
 def asientos(d, obj):
-    """Los cinco asientos en el mundo (x, y), a la z del pasador de apoyo."""
+    """Los asientos en el mundo (x, y), a la z del pasador de apoyo."""
     pl = obj[PLACA]
     q, pp = pl["quaternion"], pl["position"]
     zPin = obj[PIN]["position"][2]
     out = []
-    for k in range(DIENTES):
-        a = qrot(q, [ASIENTO[0], (k - (DIENTES - 1) / 2) * PASO + ASIENTO[1], 0.0])
+    for yk in posicionesLocales(obj):
+        a = qrot(q, [ASIENTO[0], yk + ASIENTO[1], 0.0])
         b = qrot(q, [0, 0, 1.0])
         # Se corre a lo largo del espesor hasta la z del pasador.
         lz = (zPin - pp[2] - a[2]) / b[2] if abs(b[2]) > 1e-9 else 0.0
@@ -162,7 +178,7 @@ if __name__ == "__main__":
     L = math.dist(bisagraArriba(base)['anchor'][:2], obj0[PIN]['position'][:2])
     print(f"puntal: {L:.2f} cm entre la bisagra de arriba y su pasador")
     angulos = []
-    for k in range(DIENTES):
+    for k in range(len(posicionesLocales(obj0))):
         d, th, err = posar(k, base)
         if d is None:
             print(f"  tope {k+1}: SIN SOLUCION (el puntal no alcanza ese asiento)")

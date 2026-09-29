@@ -61,7 +61,12 @@ const cuenta = await page.evaluate(() => {
   // Un recorrido que cruza la dirección de la viga.
   const cruza = calc({ brazoCm: 46, gradoA: 10, gradoB: 70, vigaCm: 60, inclinacionC: 30,
     descentradoCm: 4.2, topes: 5 });
-  return { grafica, deducido, documento, grados, cruza };
+  // El pilar DEDUCIDO con ángulos a medida: los extremos tienen que caer en las
+  // dos puntas de la viga. Con la rama equivocada caían entre 1,6 y 3,4 cm
+  // mientras la viga iba de 1,6 a 41,6 (lo destapó el diálogo de la paleta).
+  const puntas = calc({ brazoCm: 45, gradoA: 15, gradoB: 80, vigaCm: 40, inclinacionC: 0,
+    gradosTopes: [15, 30, 45, 60] });
+  return { grafica, deducido, documento, grados, cruza, puntas };
 });
 
 const esperadas = [33.0, 32.07, 29.35, 25.15, 19.96, 11.34];
@@ -94,6 +99,17 @@ ok(
   "el reparto EN GRADOS deja los topes a 15° uno de otro",
   cuenta.grados.topes.map((t) => `${t.gradoBrazo}°`).join(" "),
 );
+{
+  const d = cuenta.puntas.topes.map((t) => t.distanciaCm);
+  ok(
+    cuenta.puntas.topes.length === 4
+      && cerca(Math.min(...d), cuenta.puntas.desdeCm, 0.06)
+      && cerca(Math.max(...d), cuenta.puntas.hastaCm, 0.06)
+      && cerca(cuenta.puntas.hastaCm - cuenta.puntas.desdeCm, 40, 0.06),
+    "con el pilar deducido, los topes extremos caen en las dos puntas de la viga",
+    `muescas ${d.join(" ")} — viga ${cuenta.puntas.desdeCm} a ${cuenta.puntas.hastaCm}`,
+  );
+}
 ok(
   /cruza la dirección de la viga/.test(cuenta.cruza.aviso ?? ""),
   "y un recorrido que cruza la viga ya no se cambia por otro en silencio",

@@ -304,7 +304,52 @@ export interface MedidasDentada {
  * a ese paso, la plancha CRECE en vez de recortar el último a medias — es la
  * única salida que nunca deja una placa rota.
  */
+/**
+ * Las posiciones de los dientes a medida, si las hay y sirven: al menos dos,
+ * finitas y en orden creciente estricto. Si no, nulo y la placa reparte a paso
+ * fijo como siempre.
+ */
+export function posicionesDentada(p: PrimitiveParams): number[] | null {
+  const v = p.dientePosiciones;
+  if (!Array.isArray(v) || v.length < 2 || v.length > DENTADA_DIENTES_MAX) return null;
+  for (let i = 0; i < v.length; i++) {
+    if (!Number.isFinite(v[i]) || (i > 0 && !(v[i] > v[i - 1]))) return null;
+  }
+  return v;
+}
+
+/**
+ * El hueco más estrecho entre dos dientes a medida, y si el gancho cabe en él:
+ * por debajo del paso mínimo de ESE gancho, la barra no entra en esa cuna.
+ */
+export function huecoMasEstrechoDentada(p: PrimitiveParams): { hueco: number; cabe: boolean } | null {
+  const pos = posicionesDentada(p);
+  if (!pos) return null;
+  let hueco = Infinity;
+  for (let i = 1; i < pos.length; i++) hueco = Math.min(hueco, pos[i] - pos[i - 1]);
+  return { hueco, cabe: hueco >= pasoMinimoDentada(p) - 1e-6 };
+}
+
 export function medidasDentada(p: PrimitiveParams): MedidasDentada {
+  // DIENTES A MEDIDA (v0.4.11): la placa se mide como si fuera de paso fijo
+  // —así el gancho sale EXACTAMENTE con la forma de siempre, la que dibuja
+  // `dienteEspaciado`— y luego se recolocan los asientos donde se pidieron y se
+  // estira la plancha para cubrirlos con su margen. Nada más cambia: la
+  // geometría, las cajas de colisión y el editor leen los dientes por
+  // `asiento(i)`.
+  const pos = posicionesDentada(p);
+  if (pos) {
+    const m = medidasDentadaFijo({ ...p, dientePosiciones: undefined, dientes: pos.length });
+    const tramo = pos[pos.length - 1] - pos[0];
+    const largo = Math.max(p.height ?? 0, tramo + 2 * DENTADA_PROPORCIONES.margen * m.paso);
+    const sobra = (largo - tramo) / 2;
+    return { ...m, dientes: pos.length, largo, asiento: (i) => -largo / 2 + sobra + (pos[i] - pos[0]) };
+  }
+  return medidasDentadaFijo(p);
+}
+
+/** Las medidas de una placa de paso fijo: la de siempre. */
+function medidasDentadaFijo(p: PrimitiveParams): MedidasDentada {
   const R = DENTADA_PROPORCIONES;
   const { vuelo, garganta } = huecoDentada(p);
   // EL PASO NUNCA BAJA DE SU MÍNIMO, aunque se pida. Se prefiere una placa con

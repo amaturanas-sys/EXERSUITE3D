@@ -206,7 +206,12 @@ const calculo = await page.evaluate(() => {
       +Math.abs(lado(t.gradoBrazo, t.distanciaCm) - s.pilarCm).toFixed(3));
   };
   const casos = [
-    { brazoCm: 45, gradoA: 15, gradoB: 60, vigaCm: 30, inclinacionC: 0, topes: 6 },
+    // VIGA DE 36, NO DE 30 (v0.4.11). Con 30 cm y seis topes las muescas caían
+    // a 6 cm, y una muesca son dos dedos alrededor del pie: dos necesitan 6,9
+    // entre centros. A 6 el dedo de una se metía 0,9 cm en el hueco de la
+    // siguiente, justo donde se sienta el pie. El «sin peros» de abajo nunca fue
+    // cierto para ese caso; sólo no se miraba. A 36, 7,2 cm.
+    { brazoCm: 45, gradoA: 15, gradoB: 60, vigaCm: 36, inclinacionC: 0, topes: 6 },
     { brazoCm: 60, gradoA: 30, gradoB: 70, vigaCm: 40, inclinacionC: 12, topes: 5 },
     { brazoCm: 35, gradoA: 10, gradoB: 55, vigaCm: 22, inclinacionC: -8, topes: 4 },
     // DESCENTRADA: la recta de la viga pasa a 4,2 cm del pivote, que es lo que

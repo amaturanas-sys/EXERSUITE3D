@@ -413,7 +413,8 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
   const pasoMin = cfg.pasoMinimoCm ?? pasoMinimoMuesca();
 
   /** Una candidata: el ángulo `p` en la punta cercana y `q` en la lejana. */
-  const probar = (p: number, q: number): { t0: number; L: number } | null => {
+  type Candidata = { t0: number; L: number; p: number; q: number };
+  const probar = (p: number, q: number): Candidata | null => {
     const cp = Math.cos((p - C) * D2R);
     const cq = Math.cos((q - C) * D2R);
     const sp = Math.sin((p - C) * D2R);
@@ -423,20 +424,24 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
     const t0 = (Y * Y - 2 * X * Y * cq + 2 * X * E * (sp - sq)) / den;
     const L2 = X * X + E * E + t0 * t0 - 2 * X * E * sp - 2 * X * t0 * cp;
     if (!(L2 > 0)) return null;
-    return { t0, L: Math.sqrt(L2) };
+    // `p` cae en `t0` y `q` en `t0 + Y`: así se resolvió, y así se exige luego.
+    return { t0, L: Math.sqrt(L2), p, q };
   };
 
   type Crudo = { distanciaCm: number; gradoBrazo: number };
   /** Los topes de una candidata, y si sirven: todos resueltos y en escalera. */
-  const topesDe = (c: { t0: number; L: number }, rama: 1 | -1): Crudo[] => {
+  const topesDe = (c: Candidata, rama: 1 | -1): Crudo[] => {
     const out: Crudo[] = [];
     if (pedidos) {
       // POR ÁNGULO: la muesca de cada ángulo, en la rama de esta candidata. Una
       // rama no cambia de signo mientras el pilar llegue a la viga —sólo cruza
       // por donde deja de llegar—, así que una sola rama sirve para todos los
-      // topes o para ninguno. Y la muesca tiene que caer dentro del tramo que
-      // resolvió la candidata: los dos extremos caen en sus puntas por
-      // construcción, y los de en medio, entre ellas.
+      // topes o para ninguno. Y LOS EXTREMOS TIENEN QUE CAER EN SUS PUNTAS: la
+      // candidata resolvió el pilar poniendo `p` en `t0` y `q` en `t0 + Y`, y
+      // eso se comprueba muesca a muesca. No basta con que caigan dentro del
+      // tramo: con la rama equivocada, 15/30/45/60 sobre 40 cm de viga salían
+      // entre 1,6 y 3,4 cm mientras el panel anunciaba una viga de 1,6 a 41,6
+      // (el diálogo lo destapó; ninguna prueba lo miraba).
       const lo = Math.min(c.t0, c.t0 + Y) - 0.05;
       const hi = Math.max(c.t0, c.t0 + Y) + 0.05;
       for (const g of pedidos) {
@@ -444,6 +449,8 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
         if (!m) return [];
         const t = rama === 1 ? m[0] : m[1];
         if (t < lo || t > hi) return [];
+        if (Math.abs(g - c.p) < 1e-9 && Math.abs(t - c.t0) > 0.05) return [];
+        if (Math.abs(g - c.q) < 1e-9 && Math.abs(t - (c.t0 + Y)) > 0.05) return [];
         out.push({ distanciaCm: t, gradoBrazo: g });
       }
       const crece = out[1].distanciaCm > out[0].distanciaCm;
@@ -477,7 +484,7 @@ function resolver(cfg: CfgBrazoPilar, C: number): SolucionBrazoPilar {
   // descentrado hay que probar las dos y quedarse con la que deja los topes en
   // escalera.
   const candidatas = [probar(A, B), probar(B, A)]
-    .filter((c): c is { t0: number; L: number } => !!c)
+    .filter((c): c is Candidata => !!c)
     .flatMap((c) => ([1, -1] as const).map((rama) => ({ ...c, topes: topesDe(c, rama) })));
   // PRIMERO LAS QUE DAN UNA ESCALERA DE TOPES USABLE; entre ésas, el pilar más
   // corto. Las dos ramas de la ecuación cierran el triángulo, pero una puede

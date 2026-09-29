@@ -102,6 +102,15 @@ export interface PrimitiveParams {
   dientes?: number;
   /** Distancia entre centros de dientes (cm). */
   dienteEspaciado?: number;
+  /**
+   * DIENTES A MEDIDA (v0.4.11): dónde va cada asiento, en cm desde el primero
+   * (`[0, 10.86, 25.94, …]`). Con esto la placa deja de repartirlos a paso fijo:
+   * una banca pone sus muescas donde dan ángulos redondos, y ésas no son
+   * equidistantes. `dienteEspaciado` sigue siendo el paso con que se DIBUJA el
+   * gancho —su forma no cambia—, y el hueco más estrecho no debe bajar del paso
+   * mínimo de ese gancho. Manda sobre `dientes`.
+   */
+  dientePosiciones?: number[];
   /** Alto de la repisa del diente (cm). Por defecto, 0,4 del paso. */
   dienteAlto?: number;
   /** Cuánto vuela el diente por delante de la plancha (cm). */

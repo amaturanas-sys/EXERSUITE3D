@@ -109,20 +109,71 @@ Con eso, los cuatro topes de la prueba se clavan en su ángulo: **17,2° / 36,7�
 con el pilar a 18° de la viga, así que un pilar tumbado no es fatal con estas
 muescas.
 
-Nueva: `prueba-brazo-pilar-angulos`, 14 aserciones —la gráfica, el documento, el
-reparto en grados, el recorrido que cruza la viga, y los cuatro topes montados y
-simulando—.
+Nueva: `prueba-brazo-pilar-angulos`, 15 aserciones —la gráfica, el documento, el
+reparto en grados, los extremos en las puntas, el recorrido que cruza la viga, y
+los cuatro topes montados y simulando—.
 
-### La banca, vista con la herramienta
+### La placa dentada, con dientes a medida
 
-Brazo 41,4 cm, pilar 42,0, carril a 150° casi por el pivote: con el pilar más largo
-que el brazo **no hay techo geométrico**. Sus topes de hoy —dientes equidistantes a
-12,5 cm— dan **15,1 / 27,8 / 38,6 / 48,7 / 59,4°**. Para los de catálogo las muescas
-irían a pasos de **15,1 / 17,9 / 17,8** cm (15/30/45/60°), el plano pediría alargar
-el carril 11 cm, y 75° y 85° caen casi bajo el pivote a 2,1 cm uno de otro, menos
-de lo que ocupa una muesca. Topes redondos exigen **dientes no equidistantes**, y la
-placa dentada deriva todo su gancho de un único paso: es una decisión de diseño que
-queda abierta, no un arreglo.
+La placa repartía sus dientes a paso fijo. Ahora admite **`dientePosiciones`**:
+dónde va cada asiento, en cm desde el primero. El gancho **no cambia**:
+`dienteEspaciado` sigue siendo el paso con que se dibuja su forma —vuelo,
+garganta, labio, rampa—, y sólo se mueven los asientos. Así la cuna que v0.4.7
+midió con una sonda sigue valiendo. Comprobado en Node: una placa de paso fijo
+sale **idéntica** a la de antes, y la de dientes a medida pone los asientos con
+los huecos exactos y el mismo gancho, parámetro a parámetro. Si un hueco baja del
+paso mínimo de ese gancho, `huecoMasEstrechoDentada` lo dice.
+
+### La banca de catálogo
+
+La banca del diseñador reparte sus dientes a 12,5 cm y sus topes caen donde caen:
+15,1 / 27,8 / 38,6 / 48,7 / 59,4° sobre la horizontal. La herramienta, aplicada a
+su geometría —brazo 41,4, pilar 42,0, placa a 150° casi por el pivote—, dice
+dónde tendrían que ir los dientes para dar ángulos de catálogo, y
+`bancocatalogo.json` es esa banca, con **topes exactos a 15, 30, 45 y 60°**. Los
+calcula `banco-catalogo.py` con la cuenta de la herramienta al revés; las poses
+las resuelve `banco-topes-geometria.py` por su cuenta, sin saber de ángulos, y
+salen al 0,0 con el pasador a 0,00 mm de su asiento. Huecos de 15,1 / 17,9 / 17,8
+cm; el gancho del diseñador sólo pide 4,53. `prueba-banco-catalogo`: los cuatro
+topes asientan 1,5–3,5° y no ceden, **13 de 13, idéntica en dos corridas**.
+
+El generador de poses se amplió para leer los dientes a medida y aceptar otra
+banca por la línea de órdenes, y regenera las cinco poses de siempre **byte a
+byte iguales**. `bancoajustable.json` se queda como está: es el original del
+diseñador, y `diente-retiene` y `dos-bisagras` tienen decenas de cifras medidas
+sobre sus dientes a 12,5.
+
+**Se probaron seis topes, y dos no sirven con esta bisagra y este pilar** —medido,
+no supuesto—:
+
+- **El plano (0°):** el pilar queda a sólo 22° de la placa —el más tumbado de
+  todos— justo cuando el respaldo tiene su brazo de palanca máximo. La mayor carga
+  con el empuje más a lo largo de la placa: el pasador trepa al diente de 15 y la
+  banca acaba ahí. El de 15, con el pilar a 37°, aguanta. Las bancas reales apoyan
+  el plano en el bastidor, no en el pilar; ésta no tiene ese apoyo.
+- **75°:** el pilar se pliega contra el respaldo y sus dos travesaños nacen
+  **metidos 4 cm** uno en otro. La bisagra es «real» y el motor los separa; el
+  respaldo pasa la vertical. Esta bisagra no pliega tanto. Primero sospeché que el
+  centro de masas del respaldo cruzaba por delante del pivote y el par se
+  invertía: medido, sigue a +11 cm del mismo lado en ese tope, así que no era eso.
+
+Una placa con dientes que no sirven es peor diseño que una sin ellos, así que la
+banca de catálogo lleva los cuatro que funcionan. Para el plano haría falta un
+apoyo en el bastidor; para 75°, una bisagra que pliegue más.
+
+### Lo que salió por el camino
+
+- **`prueba-brazo-pilar` exigía «sin peros» a un mecanismo que no se podía
+  construir.** Su primera muestra —viga de 30, seis topes— deja las muescas a 6 cm,
+  y dos necesitan 6,9: el dedo de una se metía 0,9 cm en el hueco de la siguiente,
+  justo donde se sienta el pie. El aviso nuevo lo cazó en la batería. La muestra
+  pasa a viga de 36 (7,2 cm), en vez de tolerar el aviso.
+- **El diálogo de la paleta destapó un error de la cuenta por ángulos con el pilar
+  deducido:** con la rama equivocada, 15/30/45/60° sobre una viga de 40 salían
+  entre 1,6 y 3,4 cm mientras el panel anunciaba la viga de 1,6 a 41,6. Faltaba
+  exigir que los topes extremos caigan en las puntas con que se resolvió el
+  pilar, no sólo dentro del tramo. Ya está exigido, y `prueba-brazo-pilar-angulos`
+  lo comprueba (15 aserciones).
 
 ### El examen
 
