@@ -5,6 +5,89 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.10] — 2026-09-29
+
+**Las pruebas gobiernan la simulación por pasos.** Sin cambios visibles en la
+app: con el paso manual apagado, que es como corre siempre fuera de las pruebas,
+el bucle de render avanza la física exactamente igual que antes.
+
+### El porqué
+
+Las pruebas medían con el reloj —«deja andar 12 s»— y el bucle de render
+convertía reloj en pasos según los fps de la máquina. En el Chromium headless
+eso son ~3,6 fps, y dos corridas idénticas recibían distinto número de pasos.
+v0.4.8 midió 81 frente a 85, y bastaba para que el tope 1 de la banca cayera a
+un lado o al otro de su diente; v0.4.9 vio el gesto de la mano recostar entre
+21,7° y 31,7° según la corrida, y tuvo que bajar a «se mide» el aguante que
+`dos-bisagras` exigía.
+
+### El cambio
+
+- **El motor** separa el sub-paso del acumulador (`subpaso()`,
+  `sincronizarMallas()`) y gana `pasosExactos(n)`: n sub-pasos de 1/60, sin
+  acumulador ni reloj. Con `git diff -w` son 25 líneas. El motor no lee reloj
+  ni azar, así que el mismo n da el mismo mundo.
+- **El editor**, con el paso manual encendido, deja de avanzar la física en el
+  bucle de render y la avanza `avanzarSimulacion(s)`: `round(s·60)` sub-pasos,
+  y en cada uno el trabajo de un fotograma a 60 fps de verdad (cuerdas, pila,
+  IK de manos y pies, barra).
+- **Los temporizadores que tocan la física**, también por pasos. Sólo había
+  uno —el «se suelta sola» de la rueda, 500 ms de reloj—, y ahora pasa por
+  `alCabo`: un `setTimeout` de siempre en la app, y sub-pasos simulados con el
+  paso manual. Los pendientes se cumplen al parar la simulación o terminar el
+  posado, como vencerían con reloj.
+- **El arnés**, `pruebas/arnes.mjs`: esperar es avanzar la física mientras haya
+  mundo físico, y es dormir cuando no lo hay. Antes de avanzar espera un
+  fotograma, porque Chromium despacha la rueda y el `pointermove` alineados al
+  fotograma y no al llegar.
+
+Las 39 pruebas que simulan se migraron con un transformador que solo toca
+código del navegador —dentro de `page.evaluate`, con un emparejador de
+paréntesis que respeta cadenas y plantillas—. Ninguna espera de reloj queda en
+ellas.
+
+### El examen
+
+- **Las 39, cada una corrida dos veces: verdes e idénticas byte a byte.**
+- **Batería completa en serie: 123 de 123**, en 56 minutos (antes 62). Las que
+  simulan van más rápidas —`diente-retiene` de 159 s a 36, `banco-cinco-topes`
+  de 79 a 24, `dos-bisagras` de 57 a 15, `posar-maquina` de 133 a 15—, salvo
+  `bisagra-mano`, que sube a ~90 s porque cada una de sus muchas pausas espera
+  un fotograma, y a ~4 fps un fotograma son 250 ms.
+
+### Lo que recupera
+
+**`dos-bisagras` vuelve a exigir que la banca aguante tras el gesto de la mano.**
+Gobernado por pasos el gesto aterriza siempre igual —la mano recuesta hasta
+50,0°, y al soltar vuelve a su diente de 28,9°— y desde ahí cede 0,0°. Un
+resultado que se repite se puede exigir. El pasador se aparta del carril
+7,85 cm, en cada corrida, contra los 60 del modo de fallo.
+
+### Lo que salió por el camino
+
+- **Tres pruebas contaban con que un fotograma avanzara la física.**
+  `posar-maquina` arrastraba esperando 200 fotogramas y se puso roja: la pila
+  no se movía. `vibra-minima` tomaba 60 muestras con un fotograma entre cada
+  una, así que medía un cuerpo congelado; no tapaba nada —los mecanismos quedan
+  de verdad en reposo, y da los mismos ceros que antes—, pero ahora mide lo que
+  dice medir. Cada fotograma es ahora `avanzarSimulacion(1 / 60)`.
+- **`bisagra-mano` tardó dos arreglos en ser idéntica**, y el segundo enseña
+  algo: con la entrada ya determinista —instrumentado, los diez eventos de
+  rueda llegando SIEMPRE en los sub-pasos 2052, 2056 … 2088— el ángulo salía
+  −22,4°, −23,4° o −29,8°. El temporizador de 500 ms de reloj soltaba la
+  bisagra a veces entre dos muescas y a veces no. *Una entrada idéntica no
+  basta si en medio hay un reloj.*
+- **El 0,0015 de `torre-pesos` no era del solver.** v0.4.8 lo atribuyó a que
+  «el solver no es determinista al bit», y era atribución de más: el prefab se
+  exporta ANTES de simular, así que esa oscilación es de algo que se mueve en
+  modo edición, fotograma a fotograma. Queda fuera de este cambio y el margen de
+  0,01 la cubre.
+- **El tope 1, ahora que se ve siempre igual:** el pasador se queda a 2,93 cm
+  de su diente, pero el respaldo oscila entre 69° y 88° y deriva hasta 104,9°
+  en 12 s. Con el pasador quieto, respaldo, puntal y bastidor deberían formar un
+  triángulo rígido, así que algo cede en esa cadena. La prueba ya no le exige el
+  aguante desde v0.4.7; queda como hilo abierto, y ahora es reproducible.
+
 ## [0.4.9] — 2026-09-29
 
 **El motor simula el tiempo que se le pide.** v0.4.8 midió que descartaba el
