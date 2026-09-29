@@ -409,3 +409,4 @@ await m.screenshot({ path: "hub-11-movil-ondemand.png" });
 
 console.log(malas === 0 ? "\nTODO EN VERDE" : `\n❌ ${malas} fallo(s)`);
 await b.close();
+process.exit(malas === 0 ? 0 : 1);

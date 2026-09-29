@@ -5,6 +5,36 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.12] — 2026-09-29
+
+**Las 67 pruebas que simulan van ya por pasos, y dos rojas que la batería
+contaba como verdes.**
+
+### Cambiado
+
+- **Las 26 que quedaban, al arnés.** v0.4.11 reconoció que de las 65 pruebas
+  que simulan sólo 39 usaban `arnes.mjs`; las otras 26 arrancaban con
+  `startSimulation()` o daban `physics.step` a mano y esperaban con el reloj.
+  Ahora las 67 que simulan —las 65 y las dos nuevas de v0.4.11— lo usan. La
+  migración es la misma de v0.4.10, más un caso: `startSimulation()` es
+  asíncrono y pasa a esperarse con `await`. Las dos rojas de reloj del examen
+  de v0.4.11, `800-debug3` y `v232`, salen verdes en la corrida en serie.
+
+### Arreglado
+
+- **Siete pruebas que no decían que fallaban.** `brazo-plano`, `codos`,
+  `colocar`, `freno`, `hub`, `manip-artic` y `mano-brazo` llevan la cuenta de
+  sus fallos y la imprimen, pero terminaban con código 0 pasara lo que pasara;
+  y la batería juzga por el código de salida. Ahora salen con 1 si algo falla.
+  Al hacerlo aparecen **dos rojas que ya lo eran**: `colocar` («mirando hacia
+  la máquina», `mira` = [-0.1, 0, 1]) y `freno` («sin freno el ramal se acorta
+  libremente», 116,3 de 119,8 cm; «la pila recibe más recorrido», 7 → 7 cm)
+  fallan igual en las seis baterías completas corridas desde v0.4.8, antes y después
+  del arnés. Los veredictos «123 verdes» y anteriores las contaban como
+  verdes; no lo eran. Quedan rojas y a la vista hasta perseguirlas.
+- Las demás pruebas sin `process.exit` son sondas: imprimen medidas o
+  capturas y no afirman nada, así que no tienen fallo que declarar.
+
 ## [0.4.11] — 2026-09-29
 
 **El tope 1 de la banca era el motor, y el brazo con pilar se diseña por

@@ -2,6 +2,7 @@
 // el resto, con sus 41 piezas, 16 uniones y 2 cables, y funciona en
 // simulación (brazo compuesto rígido, cables válidos, jalón que mueve la pila).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const OUT = ".";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -11,19 +12,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1180, height: 860 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
@@ -36,7 +39,7 @@ await page.evaluate(() => {
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
 });
-await page.waitForTimeout(1800);
+await pausa(1800);
 
 const r = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
@@ -45,7 +48,7 @@ const r = await page.evaluate(async () => {
   const O = (i) => objs[i];
   ed.select(null);
   ed.cablesDirty = true; ed.requestRender?.(6);
-  await new Promise((x) => setTimeout(x, 600));
+  await window.__pausa(600);
   const rojos = [...ed.cableVisuals.children].filter((l) => l.material.color.getHex() === 0xef4444).length;
   const grupos = [...ed.groups.values()].map((g) => g.name);
   const base = {
@@ -60,9 +63,9 @@ const r = await page.evaluate(async () => {
   O(20).stack.selected = 3; O(20).rebuildStackVisual();
   const p = (i) => O(i).mesh.position.clone();
   const a0 = { c34: p(34), c37: p(37), c38: p(38) };
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2500));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2500);
   const avisos = ed.physics.avisosDeArmado();
   const barra = O(17), pila = O(20);
   const b0 = barra.mesh.position.clone(); const y0 = pila.mesh.position.y;
@@ -70,7 +73,7 @@ const r = await page.evaluate(async () => {
   ed.physics.grab(barra.id, b0.clone());
   for (let i = 0; i < 40; i++) {
     ed.physics.dragTo(b0.clone().add(new T.Vector3(0, -Math.min(2 + i * 2, 80), 1 + i * 0.3)));
-    await new Promise((x) => setTimeout(x, 100));
+    await window.__pausa(100);
     rango = Math.max(rango, pila.mesh.position.y - y0);
     kg = Math.max(kg, ed.tensionManoKg());
   }
@@ -80,7 +83,7 @@ const r = await page.evaluate(async () => {
     rig37: +(d(a0.c34, a0.c37) - d(a1.c34, a1.c37)).toFixed(2),
     rig38: +(d(a0.c34, a0.c38) - d(a1.c34, a1.c38)).toFixed(2) };
   ed.physics.release?.(); ed.endSimInteraction?.();
-  await new Promise((x) => setTimeout(x, 800));
+  await window.__pausa(800);
   return res;
 });
 console.log(JSON.stringify(r).replace(/,"/g, ', "'));

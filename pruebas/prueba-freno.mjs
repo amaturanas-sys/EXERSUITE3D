@@ -3,6 +3,7 @@
 // pasa por la roldana, así que ese lado deja de retraerse y la tensión se
 // transmite al otro (deja de fugarse por el extremo liviano).
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -11,24 +12,26 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1180, height: 860 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 await page.evaluate(() => {
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
 });
-await page.waitForTimeout(1800);
+await pausa(1800);
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
@@ -39,7 +42,7 @@ ok(hayBoton, "el panel Conexiones ofrece la herramienta ⏺ Freno");
 await page.evaluate(() => {
   [...document.querySelectorAll("#joints button")].find((b) => b.textContent.includes("Freno")).click();
 });
-await page.waitForTimeout(300);
+await pausa(300);
 const activo = await page.evaluate(() => window.exersuite.editor.isFrenoMode());
 ok(activo, "la herramienta queda activa");
 
@@ -65,7 +68,7 @@ const mira = await page.evaluate(() => {
 });
 console.log("cable del jalón:", JSON.stringify(mira.piezas), "punto", mira.x, mira.y);
 await page.mouse.click(mira.x, mira.y);
-await page.waitForTimeout(1200);
+await pausa(1200);
 const puesto = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const c = ed.listCables()[1];
@@ -104,9 +107,9 @@ const tope = async (dist) => page.evaluate(async (dist) => {
   ed.cablesDirty = true;
   objs[20].stack.selected = 5; objs[20].rebuildStackVisual();
   const agarre = objs[39];
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 6000));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(6000);
   const b = ed.physics.ejeDeGiro(agarre.id);
   const P = b.punto.clone(), E = b.eje.clone();
   const radio = agarre.mesh.position.clone().sub(P);
@@ -114,13 +117,13 @@ const tope = async (dist) => page.evaluate(async (dist) => {
   let minimo = Infinity;
   for (let k = 1; k <= 50; k++) {
     ed.physics.dragTo(radio.clone().applyAxisAngle(E, T.MathUtils.degToRad(-k)).add(P));
-    await new Promise((x) => setTimeout(x, 120));
+    await window.__pausa(120);
     minimo = Math.min(minimo, p(c.nodes[0]).distanceTo(p(c.nodes[1])));
   }
   ed.physics.release();
   const res = { dist, largo: +largo.toFixed(1), minimo: +minimo.toFixed(1) };
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 1200));
+  await window.__pausa(1200);
   return res;
 }, dist);
 const libre = await tope(null);
@@ -141,9 +144,9 @@ const press = async (dist) => page.evaluate(async (dist) => {
   ed.cablesDirty = true;
   objs[20].stack.selected = 5; objs[20].rebuildStackVisual();
   const agarre = objs[39], pila = objs[20];
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 6000));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(6000);
   const b = ed.physics.ejeDeGiro(agarre.id);
   const P = b.punto.clone(), E = b.eje.clone();
   const radio = agarre.mesh.position.clone().sub(P);
@@ -152,13 +155,13 @@ const press = async (dist) => page.evaluate(async (dist) => {
   let pilaMax = 0;
   for (let k = 1; k <= 50; k++) {
     ed.physics.dragTo(radio.clone().applyAxisAngle(E, T.MathUtils.degToRad(-k)).add(P));
-    await new Promise((x) => setTimeout(x, 120));
+    await window.__pausa(120);
     pilaMax = Math.max(pilaMax, pila.mesh.position.y - y0);
   }
   ed.physics.release();
   const res = { dist, pila: +pilaMax.toFixed(1) };
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 1200));
+  await window.__pausa(1200);
   return res;
 }, dist);
 const sinF = await press(null);
@@ -169,3 +172,4 @@ ok(conF.pila > sinF.pila, `la pila recibe más recorrido (${sinF.pila} → ${con
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();
+process.exit(fallos.length ? 1 : 0);

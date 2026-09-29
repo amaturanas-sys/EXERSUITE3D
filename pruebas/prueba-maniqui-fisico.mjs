@@ -3,6 +3,7 @@
 // de medir): fuera del motor el brazo de press la barre; dentro, choca. Se
 // comprueba además que no se desploma y que el brazo conserva recorrido.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { AYUDANTES } from "./ayudantes-maniqui.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -12,19 +13,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -83,33 +86,33 @@ for (const enElMotor of [false, true]) {
   await page.evaluate(async () => {
     const ed = window.exersuite.editor;
     if (ed.simulating) ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 800));
+    await window.__pausa(800);
     for (const o of [...ed.objects.values()]) ed.removeObject(o);
     for (const j of ed.listJoints()) ed.removeJoint(j);
     [...document.querySelectorAll("#palette .comp-btn")]
       .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-    await new Promise((x) => setTimeout(x, 1800));
+    await window.__pausa(1800);
     const objs = [...ed.objects.values()];
     const pivote = ed.listJoints().find((u) => !u.locked);
     if (pivote) pivote.limitsEnabled = true;
     if (objs[20]?.stack) { objs[20].stack.selected = 5; objs[20].rebuildStackVisual(); }
     if (!ed.figureJoints()) await ed.addHumanFigure();
-    await new Promise((x) => setTimeout(x, 700));
+    await window.__pausa(700);
   });
   // 2) arrancar la simulación y SOLO ENTONCES proyectar (el encuadre cambia
   //    al ocultarse los paneles).
   const px = await page.evaluate(async () => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
-    ed.startSimulation();
-    for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-    await new Promise((x) => setTimeout(x, 2500));
+    await ed.startSimulation();
+    for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+    await window.__pausa(2500);
     const caja = new T.Box3().setFromObject([...ed.objects.values()][4].mesh);
     return window.__proy(new T.Vector3((caja.min.x + caja.max.x) / 2, caja.max.y + 0.3, (caja.min.z + caja.max.z) / 2));
   });
   // 3) sentar por el flujo real
   await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-  await page.mouse.move(px.x, px.y); await page.waitForTimeout(400);
-  await page.mouse.click(px.x, px.y); await page.waitForTimeout(1300);
+  await page.mouse.move(px.x, px.y); await pausa(400);
+  await page.mouse.click(px.x, px.y); await pausa(1300);
   await page.evaluate(AYUDANTES);
 
   medidas[enElMotor ? "con" : "sin"] = await page.evaluate(async (enElMotor) => {
@@ -118,7 +121,7 @@ for (const enElMotor of [false, true]) {
     const rodilla = +T.MathUtils.radToDeg(j.kneeR.rotation.x).toFixed(0);
     const tope = window.__rodillaAlTope("R");
     if (!enElMotor) ph.quitarFigura();
-    await new Promise((x) => setTimeout(x, 3000));
+    await window.__pausa(3000);
     const objs = [...ed.objects.values()];
     const fig = ed.humanFigure;
     const y0 = fig.position.y;
@@ -133,13 +136,13 @@ for (const enElMotor of [false, true]) {
     let angulo = 0;
     for (let k = 1; k <= 50; k++) {
       ph.dragTo(radio.clone().applyAxisAngle(E, T.MathUtils.degToRad(-k)).add(P));
-      await new Promise((x) => setTimeout(x, 90));
+      await window.__pausa(90);
       const pm = window.__prof(true);
       if (pm.prof > peorMovil.prof) peorMovil = pm;
       angulo = Math.max(angulo, T.MathUtils.radToDeg(radio.angleTo(agarre.mesh.position.clone().sub(P))));
     }
     ph.release();
-    await new Promise((x) => setTimeout(x, 2500));
+    await window.__pausa(2500);
     const pf = window.__prof(true);
     if (pf.prof > peorMovil.prof) peorMovil = pf;
 
@@ -151,7 +154,7 @@ for (const enElMotor of [false, true]) {
       avisos: ph.avisosDeArmado().length,
     };
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 1000));
+    await window.__pausa(1000);
     return res;
   }, enElMotor);
 }

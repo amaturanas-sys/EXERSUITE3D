@@ -3,6 +3,7 @@
 // codo se instruían por separado y sus direcciones anatómicas son opuestas.
 // Ahora la instrucción es «tren superior · empuje» y el brazo hace el gesto.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { AYUDANTES } from "./ayudantes-maniqui.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -12,19 +13,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -33,15 +36,15 @@ await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-  await new Promise((x) => setTimeout(x, 1800));
+  await window.__pausa(1800);
   const objs = [...ed.objects.values()];
   const pivote = ed.listJoints().find((u) => !u.locked);
   if (pivote) pivote.limitsEnabled = true;
   if (objs[20]?.stack) { objs[20].stack.selected = 5; objs[20].rebuildStackVisual(); }
   if (!ed.figureJoints()) await ed.addHumanFigure();
-  ed.startSimulation();
-  for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2000));
+  await ed.startSimulation();
+  for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2000);
 });
 // Sentar el maniquí en el asiento con la herramienta real.
 const px = await page.evaluate(() => {
@@ -53,8 +56,8 @@ const px = await page.evaluate(() => {
   return { x: Math.round((q.x * 0.5 + 0.5) * rect.width), y: Math.round((-q.y * 0.5 + 0.5) * rect.height) };
 });
 await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-await page.mouse.move(px.x, px.y); await page.waitForTimeout(400);
-await page.mouse.click(px.x, px.y); await page.waitForTimeout(1300);
+await page.mouse.move(px.x, px.y); await pausa(400);
+await page.mouse.click(px.x, px.y); await pausa(1300);
 await page.evaluate(AYUDANTES);
 
 const r = await page.evaluate(async () => {
@@ -77,7 +80,7 @@ const r = await page.evaluate(async () => {
     objs[idx].mesh.updateMatrixWorld(true);
     ed.attachHand(side, objs[idx].id, new T.Vector3(0, 0, 0));
   }
-  await new Promise((x) => setTimeout(x, 700));
+  await window.__pausa(700);
   ed.physics.añadirFigura(ed.humanFigure);
   ed.marcarPoseDePartida("Empuje horizontal");
   const sentada = window.__sentadaEn([...ed.objects.values()][4]);
@@ -85,13 +88,13 @@ const r = await page.evaluate(async () => {
 
   ed.activarZona("inferior", null); ed.activarZona("bisagra", null);
   ed.activarZona("superior", "sim");
-  for (let k = 0; k < 30; k++) { ed.moverPrimitiva(1, 5); await new Promise((x) => setTimeout(x, 30)); }
+  for (let k = 0; k < 30; k++) { ed.moverPrimitiva(1, 5); await window.__pausa(30); }
   const empujado = foto();
   const choque = ed.contactoConEstructura;
-  for (let k = 0; k < 30; k++) { ed.moverPrimitiva(-1, 5); await new Promise((x) => setTimeout(x, 30)); }
+  for (let k = 0; k < 30; k++) { ed.moverPrimitiva(-1, 5); await window.__pausa(30); }
   const traccionado = foto();
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 1200));
+  await window.__pausa(1200);
   const trasParar = foto();
   // Sentada = los glúteos posados en la cara del asiento (ver __sentadaEn): la
   // `y` de la figura ya no significa nada desde que la raíz del rig está en el

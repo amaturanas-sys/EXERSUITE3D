@@ -5,6 +5,7 @@
 //               se comprueba ahora es que el campo REFLEJE lo seleccionado.
 // Se usa el prefab REAL del usuario, que es donde se vio el problema.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync } from "node:fs";
 const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 
@@ -20,20 +21,22 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 page.on("console", (m) => { if (m.type() === "error") errores.push("CONSOLE: " + m.text()); });
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -43,9 +46,9 @@ const posar = await page.evaluate(async (txt) => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const { parsearPrefab } = window.exersuitePrefabs;
   ed.insertarPrefab(parsearPrefab(txt).archivo, new T.Vector3(0, 0, 0));
-  await new Promise((x) => setTimeout(x, 2000));
+  await window.__pausa(2000);
   if (!ed.figureJoints()) await ed.addHumanFigure();
-  await new Promise((x) => setTimeout(x, 800));
+  await window.__pausa(800);
   ed.panelArticulaciones.setModo("posar");
   const panel = document.querySelector("#articulaciones");
   const campo = panel.querySelector("input.mq-articulacion");
@@ -75,9 +78,9 @@ ok(posar.texto === "Codo derecho", `y el campo lo dice con nombre de persona ("$
 // ---- 1) apoyo real en asiento y respaldo ------------------------------
 const px = await page.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
-  ed.startSimulation();
-  for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2500));
+  await ed.startSimulation();
+  for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2500);
   const rect = ed.sceneManager.renderer.domElement.getBoundingClientRect();
   const asiento = [...ed.objects.values()].find((o) => /^Asiento/i.test(o.name));
   const c = new T.Box3().setFromObject(asiento.mesh);
@@ -86,8 +89,8 @@ const px = await page.evaluate(async () => {
   return { x: Math.round((q.x * 0.5 + 0.5) * rect.width), y: Math.round((-q.y * 0.5 + 0.5) * rect.height) };
 });
 await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-await page.mouse.move(px.x, px.y); await page.waitForTimeout(400);
-await page.mouse.click(px.x, px.y); await page.waitForTimeout(1600);
+await page.mouse.move(px.x, px.y); await pausa(400);
+await page.mouse.click(px.x, px.y); await pausa(1600);
 
 const ap = await page.evaluate(() => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;

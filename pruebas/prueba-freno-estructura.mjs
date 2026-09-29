@@ -3,6 +3,7 @@
 // dejaba muerta una dirección entera del recorrido y escondía justo la
 // evidencia que interesa — que la máquina no deja sitio al cuerpo.)
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -11,19 +12,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -32,14 +35,14 @@ const r = await page.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-  await new Promise((x) => setTimeout(x, 1800));
+  await window.__pausa(1800);
   const pivote = ed.listJoints().find((u) => !u.locked);
   if (pivote) pivote.limitsEnabled = true;
   if (!ed.figureJoints()) await ed.addHumanFigure();
-  await new Promise((x) => setTimeout(x, 700));
-  ed.startSimulation();
-  for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2500));
+  await window.__pausa(700);
+  await ed.startSimulation();
+  for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2500);
 
   // La figura, DENTRO de la máquina a propósito.
   const objs = [...ed.objects.values()];
@@ -50,7 +53,7 @@ const r = await page.evaluate(async () => {
   const resp = objs.find((o) => /Respaldo/i.test(o.name));
   fig.position.set(0, caja.max.y + 18, resp ? resp.mesh.position.z : caja.min.z);
   fig.updateMatrixWorld(true);
-  await new Promise((x) => setTimeout(x, 700));
+  await window.__pausa(700);
 
   ed.activarZona("inferior", null); ed.activarZona("bisagra", null);
   ed.activarZona("superior", "sim");   // v0.2.49: la zona sustituye al candado

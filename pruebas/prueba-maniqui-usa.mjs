@@ -3,6 +3,7 @@
 // los brazos siguen al agarre por IK en vez de estorbarle— y la figura no
 // debe ser atravesada.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -11,19 +12,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -71,25 +74,25 @@ for (const caso of ["sin-figura", "manos-sueltas", "manos-apoyadas"]) {
   await page.evaluate(async () => {
     const ed = window.exersuite.editor;
     if (ed.simulating) ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 800));
+    await window.__pausa(800);
     for (const o of [...ed.objects.values()]) ed.removeObject(o);
     for (const j of ed.listJoints()) ed.removeJoint(j);
     [...document.querySelectorAll("#palette .comp-btn")]
       .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-    await new Promise((x) => setTimeout(x, 1800));
+    await window.__pausa(1800);
     const objs = [...ed.objects.values()];
     const pivote = ed.listJoints().find((u) => !u.locked);
     if (pivote) pivote.limitsEnabled = true;
     if (objs[20]?.stack) { objs[20].stack.selected = 5; objs[20].rebuildStackVisual(); }
     if (!ed.figureJoints()) await ed.addHumanFigure();
     ed.detachHands();
-    await new Promise((x) => setTimeout(x, 700));
+    await window.__pausa(700);
   });
   const px = await page.evaluate(async () => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
-    ed.startSimulation();
-    for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-    await new Promise((x) => setTimeout(x, 2500));
+    await ed.startSimulation();
+    for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+    await window.__pausa(2500);
     const rect = ed.sceneManager.renderer.domElement.getBoundingClientRect();
     const caja = new T.Box3().setFromObject([...ed.objects.values()][4].mesh);
     const v = new T.Vector3((caja.min.x + caja.max.x) / 2, caja.max.y + 0.3, (caja.min.z + caja.max.z) / 2);
@@ -97,8 +100,8 @@ for (const caso of ["sin-figura", "manos-sueltas", "manos-apoyadas"]) {
     return { x: Math.round((q.x * 0.5 + 0.5) * rect.width), y: Math.round((-q.y * 0.5 + 0.5) * rect.height) };
   });
   await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-  await page.mouse.move(px.x, px.y); await page.waitForTimeout(400);
-  await page.mouse.click(px.x, px.y); await page.waitForTimeout(1300);
+  await page.mouse.move(px.x, px.y); await pausa(400);
+  await page.mouse.click(px.x, px.y); await pausa(1300);
 
   medidas[caso] = await page.evaluate(async (caso) => {
     const ed = window.exersuite.editor, T = window.exersuite.THREE, ph = ed.physics;
@@ -111,10 +114,10 @@ for (const caso of ["sin-figura", "manos-sueltas", "manos-apoyadas"]) {
         o.mesh.updateMatrixWorld(true);
         ed.attachHand(side, o.id, new T.Vector3(0, 0, 0));
       }
-      await new Promise((x) => setTimeout(x, 800));
+      await window.__pausa(800);
       ph.añadirFigura(ed.humanFigure);
     }
-    await new Promise((x) => setTimeout(x, 2500));
+    await window.__pausa(2500);
     const agarre = objs[39], pila = objs[20];
     const y0 = pila.mesh.position.y;
     const b = ph.ejeDeGiro(agarre.id);
@@ -124,17 +127,17 @@ for (const caso of ["sin-figura", "manos-sueltas", "manos-apoyadas"]) {
     let ang = 0, sube = 0, prof = 0;
     for (let k = 1; k <= 45; k++) {
       ph.dragTo(radio.clone().applyAxisAngle(E, T.MathUtils.degToRad(-k)).add(P));
-      await new Promise((x) => setTimeout(x, 85));
+      await window.__pausa(85);
       ang = Math.max(ang, T.MathUtils.radToDeg(radio.angleTo(agarre.mesh.position.clone().sub(P))));
       sube = Math.max(sube, pila.mesh.position.y - y0);
       prof = Math.max(prof, window.__prof());
     }
     ph.release();
-    await new Promise((x) => setTimeout(x, 1500));
+    await window.__pausa(1500);
     const res = { caso, ang: +ang.toFixed(1), pila: +sube.toFixed(1), prof, dentro: ph.figuraEnElMotor,
       manos: ed.hasAttachedHands() };
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 900));
+    await window.__pausa(900);
     return res;
   }, caso);
   console.log(JSON.stringify(medidas[caso]));

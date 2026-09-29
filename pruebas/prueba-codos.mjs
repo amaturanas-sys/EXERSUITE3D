@@ -81,3 +81,4 @@ await page.screenshot({ path: "v238-codos.png" });
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();
+process.exit(fallos.length ? 1 : 0);

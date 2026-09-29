@@ -4,6 +4,7 @@
 //  · montada en la cara INFERIOR, el mismo conjunto SÍ flexiona hacia abajo;
 //  · el herraje no se agarrota: el pasador no roza la pala contraria.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const OUT = ".";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -13,19 +14,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const chequear = (ok, m) => { if (!ok) fallos.push(m); console.log((ok ? "✓ " : "✗ ") + m); };
@@ -70,9 +73,9 @@ const simular = async (pasos = 240) =>
     const ed = window.exersuite.editor;
     const B = ed.objects.get(window.__ids.B);
     const A = ed.objects.get(window.__ids.A);
-    ed.startSimulation();
-    for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
-    await new Promise((r) => setTimeout(r, 200));
+    await ed.startSimulation();
+    for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(50);
+    await window.__pausa(200);
     for (let i = 0; i < pasos; i++) ed.physics.step(1 / 60);
     const e = new window.exersuite.THREE.Euler().setFromQuaternion(B.mesh.quaternion, "ZYX");
     // Penetración real entre las dos vigas al final (cajas orientadas).
@@ -170,8 +173,8 @@ const pivote = await page.evaluate(async () => {
   j.axis = "z";
   j.limitsEnabled = false;
   ed.jointUpdated();
-  ed.startSimulation();
-  await new Promise((r) => setTimeout(r, 400));
+  await ed.startSimulation();
+  await window.__pausa(400);
   for (let i = 0; i < 180; i++) ed.physics.step(1 / 60);
   const p = brazo.mesh.position.clone();
   const r = {

@@ -4,6 +4,7 @@
 //     direcciones (ya no hay bloqueo direccional)
 //  3) las teclas son 8 y 9, y los cursores ▲▼ ya NO mueven el maniquí
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -12,20 +13,22 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 page.on("console", (m) => { if (m.type() === "error") errores.push("CONSOLE: " + m.text()); });
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
@@ -34,11 +37,11 @@ await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-  await new Promise((x) => setTimeout(x, 1800));
+  await window.__pausa(1800);
   const pivote = ed.listJoints().find((u) => !u.locked);
   if (pivote) pivote.limitsEnabled = true;
   if (!ed.figureJoints()) await ed.addHumanFigure();
-  await new Promise((x) => setTimeout(x, 800));
+  await window.__pausa(800);
 });
 
 // ---- 1) UNA ventana con dos modos -----------------------------------
@@ -100,9 +103,9 @@ ok(sim.mover.length === 2 && /8/.test(sim.mover[0]) && /9/.test(sim.mover[1]) &&
 // ---- 2) colocar durante la simulación --------------------------------
 const px = await page.evaluate(async () => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
-  ed.startSimulation();
-  for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2500));
+  await ed.startSimulation();
+  for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2500);
   const rect = ed.sceneManager.renderer.domElement.getBoundingClientRect();
   const objs = [...ed.objects.values()];
   const proy = (v) => {
@@ -119,8 +122,8 @@ const px = await page.evaluate(async () => {
 });
 const antesErr = errores.length;
 await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-await page.mouse.move(px.asiento.x, px.asiento.y); await page.waitForTimeout(350);
-await page.mouse.click(px.asiento.x, px.asiento.y); await page.waitForTimeout(1400);
+await page.mouse.move(px.asiento.x, px.asiento.y); await pausa(350);
+await page.mouse.click(px.asiento.x, px.asiento.y); await pausa(1400);
 const tras = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   return { modo: ed.isColocarFigura(), pos: ed.humanFigure.position.toArray().map((v) => +v.toFixed(1)),
@@ -133,7 +136,7 @@ ok(tras.modoPanel === "simular", `la ventana pasó sola a SIMULAR al arrancar la
 // Clic sobre una pieza que NO es apoyo: no debe teletransportar la figura.
 const posAntes = tras.pos;
 await page.evaluate(() => window.exersuite.editor.beginColocarFigura());
-await page.mouse.click(px.pila.x, px.pila.y); await page.waitForTimeout(1200);
+await page.mouse.click(px.pila.x, px.pila.y); await pausa(1200);
 const trasPila = await page.evaluate(() => window.exersuite.editor.humanFigure.position.toArray().map((v) => +v.toFixed(1)));
 ok(JSON.stringify(trasPila) === JSON.stringify(posAntes),
   `clicar una pieza que no es apoyo NO mueve la figura (${JSON.stringify(posAntes)} → ${JSON.stringify(trasPila)})`);
@@ -145,7 +148,7 @@ const mov = await page.evaluate(async () => {
   fig.position.x += 18; fig.position.z += 12;   // como si se arrastrase
   fig.updateMatrixWorld(true);
   ed.physics?.añadirFigura(fig);
-  await new Promise((x) => setTimeout(x, 600));
+  await window.__pausa(600);
   ed.activarZona("inferior", null); ed.activarZona("bisagra", null);
   ed.activarZona("superior", "sim");   // v0.2.49: la zona sustituye al candado
   const j = ed.figureJoints();
@@ -168,15 +171,15 @@ const teclas = await page.evaluate(() => {
   const j = ed.figureJoints();
   return { antes: +T.MathUtils.radToDeg(j.elbowL.rotation.x).toFixed(1) };
 });
-await page.keyboard.press("8"); await page.waitForTimeout(200);
-await page.keyboard.press("8"); await page.waitForTimeout(200);
+await page.keyboard.press("8"); await pausa(200);
+await page.keyboard.press("8"); await pausa(200);
 const tras8 = await page.evaluate(() => +window.exersuite.THREE.MathUtils.radToDeg(
   window.exersuite.editor.figureJoints().elbowL.rotation.x).toFixed(1));
-await page.keyboard.press("9"); await page.waitForTimeout(200);
+await page.keyboard.press("9"); await pausa(200);
 const tras9 = await page.evaluate(() => +window.exersuite.THREE.MathUtils.radToDeg(
   window.exersuite.editor.figureJoints().elbowL.rotation.x).toFixed(1));
-await page.keyboard.press("ArrowUp"); await page.waitForTimeout(200);
-await page.keyboard.press("ArrowDown"); await page.waitForTimeout(200);
+await page.keyboard.press("ArrowUp"); await pausa(200);
+await page.keyboard.press("ArrowDown"); await pausa(200);
 const trasFlechas = await page.evaluate(() => +window.exersuite.THREE.MathUtils.radToDeg(
   window.exersuite.editor.figureJoints().elbowL.rotation.x).toFixed(1));
 ok(tras8 > teclas.antes, `la tecla 8 EMPUJA: extiende el codo (${teclas.antes}° → ${tras8}°)`);

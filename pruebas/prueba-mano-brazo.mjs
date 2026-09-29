@@ -7,6 +7,7 @@
 // bajando la mano, como un scroll. Lo que aquí se mide es que ese gesto mueve
 // el brazo de verdad y que el pivote no se va de sitio.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -15,33 +16,35 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1180, height: 860 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 await page.evaluate(() => {
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
 });
-await page.waitForTimeout(1800);
+await pausa(1800);
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
 // Arranca la simulación y deja que el conjunto se asiente.
 const eje = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 6000));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(6000);
   ed.setSimHerramienta("mano"); // v0.2.41: la manipulación se elige a propósito
   const objs = [...ed.objects.values()];
   const b = ed.physics.ejeDeGiro(objs[39].id);
@@ -74,7 +77,7 @@ const mira = async () => page.evaluate(() => {
   return null;
 });
 let r = null;
-for (let i = 0; i < 8 && !r; i++) { r = await mira(); if (!r) await page.waitForTimeout(400); }
+for (let i = 0; i < 8 && !r; i++) { r = await mira(); if (!r) await pausa(400); }
 ok(!!r, `hay un punto del brazo bajo el puntero (pieza ${r?.i})`);
 
 // EL GESTO NUEVO: agarrar y mover la mano en vertical. Una sola dimensión.
@@ -102,12 +105,12 @@ const sentido = await page.evaluate(async () => {
     ph.tomarBisagra(objs[39].id);
     for (let k = 0; k < 4; k++) {
       ph.girarBisagra(objs[39].id, 5 * signo);
-      await new Promise((x) => setTimeout(x, 150));
+      await window.__pausa(150);
     }
-    await new Promise((x) => setTimeout(x, 700));
+    await window.__pausa(700);
     const d = Math.abs((ph.anguloDeBisagra(objs[39].id) ?? 0) - a0);
     ph.soltarBisagra(objs[39].id);
-    await new Promise((x) => setTimeout(x, 1200));
+    await window.__pausa(1200);
     return d;
   };
   const arriba = await probar(1);
@@ -122,7 +125,7 @@ ok(
 
 // Se vuelve a apuntar: el brazo ya no está donde estaba.
 let r2 = null;
-for (let i = 0; i < 8 && !r2; i++) { r2 = await mira(); if (!r2) await page.waitForTimeout(400); }
+for (let i = 0; i < 8 && !r2; i++) { r2 = await mira(); if (!r2) await pausa(400); }
 ok(!!r2, "el brazo sigue localizable bajo el puntero tras moverlo");
 
 const antes = await page.evaluate(() => {
@@ -145,12 +148,12 @@ await page.mouse.down();
 const traza = [];
 for (let k = 1; k <= 14; k++) {
   await page.mouse.move(r2.x, r2.y - sentido.signo * k * 18);
-  await page.waitForTimeout(90);
+  await pausa(90);
   if (k % 5 === 0) {
     traza.push(await page.evaluate(() => ({ a: window.__ang(), r: window.__radio() })));
   }
 }
-await page.waitForTimeout(1500);
+await pausa(1500);
 await page.screenshot({ path: "v238-brazo.png" });
 const fin = await page.evaluate(() => {
   const T = window.exersuite.THREE;
@@ -180,3 +183,4 @@ ok(
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();
+process.exit(fallos.length ? 1 : 0);

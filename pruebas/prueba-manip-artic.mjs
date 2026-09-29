@@ -2,6 +2,7 @@
 // (2) Articulaciones del maniquí: bloqueadas de fábrica, panel por familia y
 // lado, y ▲▼ mueven a la vez todo lo liberado.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -10,19 +11,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1180, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
@@ -31,16 +34,16 @@ await page.evaluate(() => {
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
 });
-await page.waitForTimeout(1800);
+await pausa(1800);
 const t0 = await page.evaluate(() => window.exersuite.editor.getSimHerramienta());
 ok(t0 === "orbitar", `la mano NO viene activada de fábrica (herramienta: ${t0})`);
 
 const hover = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 6000));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(6000);
   ed.setSimHerramienta("mano");
   const objs = [...ed.objects.values()];
   const rect = ed.sceneManager.renderer.domElement.getBoundingClientRect();
@@ -55,7 +58,7 @@ const hover = await page.evaluate(async () => {
 ok(hover.puedeBrazo, "el motor reconoce el brazo de press como estructura móvil");
 ok(!hover.puedeRespaldo, "y el respaldo anclado no lo es");
 await page.mouse.move(hover.movil.x, hover.movil.y);
-await page.waitForTimeout(400);
+await pausa(400);
 const resaltado = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const objs = [...ed.objects.values()];
@@ -70,9 +73,9 @@ await page.screenshot({ path: "v241-mano.png" });
 const art = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   ed.stopSimulation();
-  await new Promise((x) => setTimeout(x, 600));
+  await window.__pausa(600);
   await ed.addHumanFigure();
-  await new Promise((x) => setTimeout(x, 700));
+  await window.__pausa(700);
   const total = ed.articulacionesFigura().length;
   const libres0 = ed.articulacionesLibres().sort().join(",");
   // La ventana del maniquí aparece sola; solo hay que ponerla en SIMULAR.
@@ -121,3 +124,4 @@ await page.screenshot({ path: "v241-articulaciones.png" });
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();
+process.exit(fallos.length ? 1 : 0);

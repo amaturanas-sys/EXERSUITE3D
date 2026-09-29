@@ -187,7 +187,7 @@ corridas idénticas recibían distinto número de pasos. v0.4.8 midió 81 frente
 85 en `banco-cinco-topes` y con eso bastaba para que el tope 1 cayera a un lado
 o al otro de su diente.
 
-Las 39 pruebas que simulan usan ahora `arnes.mjs`:
+Las pruebas que simulan —las 67 desde v0.4.12— usan `arnes.mjs`:
 
 ```js
 import { prepararPasos } from "./arnes.mjs";
@@ -328,7 +328,7 @@ sección «Sabido».
 
 - `prueba-*.mjs` — las pruebas, una por asunto.
 - `arnes.mjs` — el arnés por pasos (v0.4.10): `prepararPasos(page)` y la regla
-  de que esperar es avanzar la física mientras la haya. Lo usan las 39 que
+  de que esperar es avanzar la física mientras la haya. Lo usan las 67 que
   simulan.
 - `ayudantes-maniqui.mjs` — ayudantes de página compartidos para juzgar al
   maniquí (la planta del pie, la piel más baja, la rodilla al tope, sentada

@@ -6,6 +6,7 @@
 //      configuración individual (pinholes, ventanas, viga vs tubo, dims,
 //      nodos del trazado) pese a estar soldada.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync } from "node:fs";
 const AQUI = new URL(".", import.meta.url).pathname;   // vale desde cualquier cwd
 
@@ -23,21 +24,23 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 const avisosConsola = [];
 page.on("console", (m) => { if (m.type() === "warning") avisosConsola.push(m.text()); });
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const chequear = (ok, m) => { if (!ok) fallos.push(m); console.log((ok ? "✓ " : "✗ ") + m); };
@@ -76,9 +79,9 @@ const simular = (pasos) =>
     // con un `undefined.mesh`, sin imprimir un solo ✗.
     const ult = window.__ids.length - 1;
     const antes = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(ult) };
-    ed.startSimulation();
-    for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
-    await new Promise((r) => setTimeout(r, 200));
+    await ed.startSimulation();
+    for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+    await window.__pausa(200);
     const avisos = ed.physics.avisosDeArmado();
     for (let i = 0; i < pasos; i++) ed.physics.step(1 / 60);
     const despues = { p32: pose(32), p34: pose(34), p38: pose(38), p39: pose(39), p41: pose(ult) };
@@ -257,7 +260,7 @@ const val = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   ed.cablesDirty = true;
   ed.requestRender?.(6);
-  await new Promise((r) => setTimeout(r, 600));
+  await window.__pausa(600);
   return [...ed.cableVisuals.children].filter((l) => l.material.color.getHex() === 0xef4444).length;
 });
 chequear(val === 0, `ningún cable se marca en rojo en la pose de diseño (${val})`);
@@ -271,7 +274,7 @@ await page.evaluate(() => {
   ed.orbit.update?.();
   ed.requestRender?.(6);
 });
-await page.waitForTimeout(900);
+await pausa(900);
 await page.screenshot({ path: `${OUT}/v234-uppermachine.png` });
 
 console.log("\nerrores de página:", errores.length ? errores : "ninguno");

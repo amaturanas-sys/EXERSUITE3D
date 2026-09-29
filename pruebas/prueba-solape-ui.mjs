@@ -7,6 +7,7 @@
 // pantalla y mide la intersección de sus rectángulos. Lo que se solapa se
 // reporta con el área en px² y el porcentaje del elemento más pequeño.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 
 const TAMANOS = [
   { nombre: "escritorio 1440×900", w: 1440, h: 900 },
@@ -76,18 +77,20 @@ const medir = async (page, etiqueta) => {
 let total = 0;
 for (const t of TAMANOS) {
   const page = await browser.newPage({ viewport: { width: t.w, height: t.h } });
+  // Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+  const pausa = await prepararPasos(page);
   page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
   await page.goto("http://127.0.0.1:4174/");
-  await page.waitForTimeout(900);
-  await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-  await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-  await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+  await pausa(900);
+  await page.click("text=📁 PROYECTOS"); await pausa(300);
+  await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+  await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
   await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2200);
+await pausa(2200);
   console.log(`\n════ ${t.nombre} ════`);
 
   // A) Builder recién abierto
@@ -98,9 +101,9 @@ await page.waitForTimeout(2200);
     const ed = window.exersuite.editor;
     [...document.querySelectorAll("#palette .comp-btn")]
       .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-    await new Promise((x) => setTimeout(x, 1500));
+    await window.__pausa(1500);
     await ed.addHumanFigure();
-    await new Promise((x) => setTimeout(x, 600));
+    await window.__pausa(600);
   });
   total += await medir(page, "B · + ventana del maniquí");
 
@@ -110,7 +113,7 @@ await page.waitForTimeout(2200);
       .find((n) => /Arrastre preciso/i.test(n.textContent ?? ""));
     b?.click();
   });
-  await page.waitForTimeout(400);
+  await pausa(400);
   total += await medir(page, "C · + arrastre preciso");
 
   // D) + diálogo de roldana (costado derecho)
@@ -120,7 +123,7 @@ await page.waitForTimeout(2200);
     if (o) ed.select(o);
     ed.beginRoldana();
   });
-  await page.waitForTimeout(500);
+  await pausa(500);
   total += await medir(page, "D · + diálogo de roldana");
 
   // E) + menú desplegable de la barra superior
@@ -128,24 +131,24 @@ await page.waitForTimeout(2200);
     const b = [...document.querySelectorAll("#toolbar button")].find((n) => /Selección/i.test(n.textContent ?? ""));
     b?.click();
   });
-  await page.waitForTimeout(400);
+  await pausa(400);
   total += await medir(page, "E · + menú de la barra");
 
   // D2) el carril derecho ocupado por un diálogo de herramienta
   await page.evaluate(() => document.body.classList.add("dialogo-derecha"));
-  await page.waitForTimeout(300);
+  await pausa(300);
   total += await medir(page, "D2 · carril ocupado por un diálogo");
   await page.evaluate(() => document.body.classList.remove("dialogo-derecha"));
-  await page.waitForTimeout(200);
+  await pausa(200);
 
   // F) simulación (barra inferior + ventana del maniquí en modo simular)
   await page.evaluate(async () => {
     const ed = window.exersuite.editor;
     ed.cancelRoldana?.();
     document.body.click();
-    ed.startSimulation();
-    for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-    await new Promise((x) => setTimeout(x, 1200));
+    await ed.startSimulation();
+    for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(50);
+    await window.__pausa(1200);
   });
   total += await medir(page, "F · simulación");
   await page.screenshot({ path: `ui-${t.w}x${t.h}.png` });

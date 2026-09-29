@@ -7,6 +7,7 @@
 //     mundo (determinante de la matriz > 0) y la malla queda espejada.
 //  4) BISAGRA REAL: dos placas + pasador, tres soldaduras y UNA articulación.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -15,19 +16,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const chequear = (ok, msg) => { if (!ok) fallos.push(msg); console.log((ok ? "✓ " : "✗ ") + msg); };
@@ -164,9 +167,9 @@ console.log("  armado:", JSON.stringify(armado));
 
 const sim = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
-  ed.startSimulation();
-  for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
-  await new Promise((r) => setTimeout(r, 200));
+  await ed.startSimulation();
+  for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(200);
   for (let i = 0; i < 180; i++) ed.physics.step(1 / 60);
   const brazo = ed.objects.get(window.__ids.brazo);
   const ext = ed.objects.get(window.__ids.ext);
@@ -239,9 +242,9 @@ chequear(bis.grupos >= 1, "el herraje quedó agrupado como una bisagra");
 
 const simBis = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
-  ed.startSimulation();
-  for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
-  await new Promise((r) => setTimeout(r, 200));
+  await ed.startSimulation();
+  for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(200);
   const tapa = ed.objects.get(window.__bis.tapa);
   const y0 = tapa.mesh.position.y;
   for (let i = 0; i < 150; i++) ed.physics.step(1 / 60);

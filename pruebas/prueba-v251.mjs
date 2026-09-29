@@ -5,6 +5,7 @@
 //    ahí en vez de en el diseño.
 // 3) POSAR cabe sin bajar, y posar ya no depende del candado de la zona.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -17,17 +18,19 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
 const errores = [];
 const nueva = async (w = 1280, h = 900) => {
   const page = await browser.newPage({ viewport: { width: w, height: h } });
+  // Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+  const pausa = await prepararPasos(page);
   page.on("pageerror", (e) => errores.push(e.message));
-  await page.goto("http://127.0.0.1:4174/"); await page.waitForTimeout(1000);
-  await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-  await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-  await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+  await page.goto("http://127.0.0.1:4174/"); await pausa(1000);
+  await page.click("text=📁 PROYECTOS"); await pausa(300);
+  await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+  await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
   await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
   return page;
 };
 
@@ -38,9 +41,9 @@ await page.waitForTimeout(2500);
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
     [...document.querySelectorAll("#palette .comp-btn")]
       .find((b) => (b.textContent ?? "").trim().endsWith("Banco plano")).click();
-    await new Promise((x) => setTimeout(x, 1800));
+    await window.__pausa(1800);
     await ed.addHumanFigure();
-    await new Promise((x) => setTimeout(x, 700));
+    await window.__pausa(700);
     const banco = [...ed.objects.values()].find((o) => /colchoneta|banco/i.test(o.name));
     const caja = new T.Box3().setFromObject(banco.mesh);
     const tam = caja.getSize(new T.Vector3()), cen = caja.getCenter(new T.Vector3());
@@ -70,7 +73,7 @@ await page.waitForTimeout(2500);
       const p = new T.Vector3(cen.x, caja.max.y, cen.z);
       if (largoX) p.x += semi * frac; else p.z += semi * frac;
       await Object.getPrototypeOf(ed).colocarFiguraEn.call(ed, { punto: p, obj: banco });
-      await new Promise((x) => setTimeout(x, 400));
+      await window.__pausa(400);
       const f = new T.Vector3(0, 0, 1).applyQuaternion(ed.humanFigure.quaternion);
       // ¿Mira hacia fuera del banco? Producto con el vector centro→asiento.
       const haciaFuera = new T.Vector3(p.x - cen.x, 0, p.z - cen.z);
@@ -133,21 +136,21 @@ await page.waitForTimeout(2500);
     const ed = window.exersuite.editor, T = window.exersuite.THREE;
     [...document.querySelectorAll("#palette .comp-btn")]
       .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
-    await new Promise((x) => setTimeout(x, 2000));
+    await window.__pausa(2000);
     const objs = [...ed.objects.values()];
     const agarre = objs[39], pila = objs[20];
     if (pila?.stack) { pila.stack.selected = 5; pila.rebuildStackVisual(); }
     await ed.addHumanFigure();
-    await new Promise((x) => setTimeout(x, 600));
+    await window.__pausa(600);
 
     const yAgarre = () => +agarre.mesh.position.y.toFixed(1);
     const yPila = () => +pila.mesh.position.y.toFixed(1);
     // Se mide el INSTANTE del arranque: es lo que define desde dónde empieza
     // el gesto. Que después el brazo baje es la fase excéntrica, no un fallo.
     const arrancar = async (esperaMs = 2500) => {
-      ed.startSimulation();
-      for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-      await new Promise((x) => setTimeout(x, esperaMs));
+      await ed.startSimulation();
+      for (let i = 0; i < 160 && !ed.physics; i++) await window.__pausa(50);
+      await window.__pausa(esperaMs);
     };
     await arrancar();
     const diseno = { agarre: yAgarre(), pila: yPila() };
@@ -162,16 +165,16 @@ await page.waitForTimeout(2500);
     // cargada puede quedarse a medias.
     for (let k = 1; k <= 40; k++) {
       ed.physics.dragTo(radio.clone().applyAxisAngle(E, T.MathUtils.degToRad(-Math.min(k, 32))).add(P));
-      await new Promise((x) => setTimeout(x, 70));
+      await window.__pausa(70);
     }
     const bloqueo = { agarre: yAgarre(), pila: yPila() };
     // 📌 se fija CON la mano puesta: es el punto que el usuario está viendo.
     const fijado = ed.fijarPartida();
     ed.physics.release();
-    await new Promise((x) => setTimeout(x, 300));
+    await window.__pausa(300);
 
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 1200));
+    await window.__pausa(1200);
     const parado = { agarre: yAgarre(), pila: yPila() };
 
     // ▶ otra vez. Se traza fotograma a fotograma: el gesto arranca en el
@@ -188,11 +191,11 @@ await page.waitForTimeout(2500);
     await arrancar(0);
     const trazaSegunda = await traza();
     const segunda = { agarre: Math.max(...trazaSegunda), pila: yPila() };
-    await new Promise((x) => setTimeout(x, 2500));
+    await window.__pausa(2500);
     const segundaAsentada = { agarre: yAgarre(), pila: yPila() };
     const avisos = ed.physics.avisosDeArmado().length;
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 1000));
+    await window.__pausa(1000);
 
     // 🗑 Soltar: vuelve a arrancar en el diseño.
     ed.soltarPartidaMaquina();
@@ -200,7 +203,7 @@ await page.waitForTimeout(2500);
     const trazaTercera = await traza();
     const tercera = { agarre: Math.max(...trazaTercera), pila: yPila() };
     ed.stopSimulation();
-    await new Promise((x) => setTimeout(x, 900));
+    await window.__pausa(900);
     return { diseno, bloqueo, fijado, parado, segunda, segundaAsentada, tercera, avisos, trazaSegunda, trazaTercera };
   });
   console.log("\n2) PARTIDA CON LA MÁQUINA CONGELADA");
@@ -248,10 +251,10 @@ await page.waitForTimeout(2500);
   const r = await page.evaluate(async () => {
     const ed = window.exersuite.editor;
     await ed.addHumanFigure();
-    await new Promise((x) => setTimeout(x, 700));
+    await window.__pausa(700);
     if (!ed.panelArticulaciones.visible()) ed.panelArticulaciones.alternar();
     ed.panelArticulaciones.setModo("posar");
-    await new Promise((x) => setTimeout(x, 300));
+    await window.__pausa(300);
 
     // La rodilla está BLOQUEADA por la zona (de fábrica solo el tren superior).
     const bloqueada = ed.isJointLocked("kneeL");

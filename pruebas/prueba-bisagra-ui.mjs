@@ -5,6 +5,7 @@
 // Desde v0.3.8 el gesto marca CARAS, no piezas: con las dos caras señaladas el
 // eje del pivote sale solo, así que el panel ya no pide eje ni cara.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
   // CHROMIUM=/ruta/al/chrome (ver LEEME.md).
@@ -13,19 +14,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 760 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const chequear = (ok, m) => { if (!ok) fallos.push(m); console.log((ok ? "✓ " : "✗ ") + m); };
@@ -58,13 +61,13 @@ await page.evaluate(() => {
     return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
   };
 });
-await page.waitForTimeout(400);
+await pausa(400);
 
 // La sección "Conexiones" nace plegada: se despliega desde su título.
 await page.click("#joints .panel-title");
-await page.waitForTimeout(250);
+await pausa(250);
 await page.click("#joints button:has-text('+ Bisagra')");
-await page.waitForTimeout(250);
+await pausa(250);
 const hint1 = await page.textContent("#joints .empty-hint");
 chequear(/PUNTO de la cara/i.test(hint1 ?? ""),
   `la ayuda pide un punto sobre una cara, no una pieza suelta: "${hint1}"`);
@@ -72,12 +75,12 @@ chequear(/PUNTO de la cara/i.test(hint1 ?? ""),
 // Se pincha la CARA SUPERIOR de cada caja (y = 94 es su techo).
 const pA = await page.evaluate(() => window.__aPx(-26, 94, 0));
 await page.mouse.click(pA.x, pA.y);
-await page.waitForTimeout(250);
+await pausa(250);
 const marcada = await page.evaluate(() => window.exersuite.editor.hayMarcaBisagra());
 chequear(marcada, "el primer clic deja marcada la cara elegida");
 const pB = await page.evaluate(() => window.__aPx(26, 94, 0));
 await page.mouse.click(pB.x, pB.y);
-await page.waitForTimeout(400);
+await pausa(400);
 
 const panel = await page.evaluate(() => {
   const p = document.getElementById("bisagra-panel");
@@ -95,7 +98,7 @@ await page.screenshot({ path: "v232-panel-bisagra.png" });
 // Un clic en el visor con el panel abierto no debe armar nada ni seleccionar.
 const antes = await page.evaluate(() => window.exersuite.editor.objects.size);
 await page.mouse.click(pA.x, pA.y);
-await page.waitForTimeout(200);
+await pausa(200);
 const durante = await page.evaluate(() => window.exersuite.editor.objects.size);
 chequear(antes === durante, "con el panel abierto se puede orbitar sin efectos secundarios");
 
@@ -121,7 +124,7 @@ await page.check("#bisagra-panel .rold-check:has-text('Limitar') input");
 await page.fill("#bisagra-panel .rold-nums input:nth-child(1)", "3:00");
 await page.fill("#bisagra-panel .rold-nums input:nth-child(2)", "6:00");
 await page.click("#bisagra-panel button:has-text('Instalar bisagra')");
-await page.waitForTimeout(500);
+await pausa(500);
 
 const res = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -195,9 +198,9 @@ await page.screenshot({ path: "v232-bisagra-montada.png" });
 const sim = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
   const tapa = ed.objects.get(window.__B);
-  ed.startSimulation();
-  for (let i = 0; i < 100 && !ed.physics; i++) await new Promise((r) => setTimeout(r, 50));
-  await new Promise((r) => setTimeout(r, 200));
+  await ed.startSimulation();
+  for (let i = 0; i < 100 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(200);
   for (let i = 0; i < 240; i++) ed.physics.step(1 / 60);
   const p = tapa.mesh.position.clone();
   const q = tapa.mesh.quaternion.clone();

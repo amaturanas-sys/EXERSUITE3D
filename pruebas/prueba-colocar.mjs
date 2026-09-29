@@ -1,6 +1,7 @@
 // v0.2.41 · COLOCAR MANIQUÍ: hover sobre suelo y apoyos ergonómicos, clic
 // deja la figura con su posición y orientación. En construcción Y simulación.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { AYUDANTES } from "./ayudantes-maniqui.mjs";
 const browser = await chromium.launch({
   // El Chromium de Playwright ya instalado. Se puede apuntar a otro con
@@ -10,24 +11,26 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1180, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push(e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 await page.evaluate(() => {
   [...document.querySelectorAll("#palette .comp-btn")]
     .find((b) => (b.textContent ?? "").trim().endsWith("UpperMachine")).click();
 });
-await page.waitForTimeout(1800);
+await pausa(1800);
 const fallos = [];
 const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ") + m); };
 
@@ -55,7 +58,7 @@ ok(p.activo, "la herramienta queda activa");
 
 // Hover sobre el asiento: aparece la marca de apoyo (verde).
 await page.mouse.move(p.asiento.x, p.asiento.y);
-await page.waitForTimeout(400);
+await pausa(400);
 const marca = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const m = ed.marcaApoyo;
@@ -66,7 +69,7 @@ ok(marca.color === 0x7fd08a, `sobre un apoyo ergonómico la marca cambia de colo
 
 // Clic: la figura se sienta sobre el asiento y mira al frente.
 await page.mouse.click(p.asiento.x, p.asiento.y);
-await page.waitForTimeout(900);
+await pausa(900);
 await page.evaluate(AYUDANTES);
 const sentada = await page.evaluate(() => {
   const ed = window.exersuite.editor;
@@ -108,9 +111,9 @@ await page.screenshot({ path: "v241-colocar.png" });
 // En SIMULACIÓN también se puede recolocar.
 const enSim = await page.evaluate(async () => {
   const ed = window.exersuite.editor;
-  ed.startSimulation();
-  for (let i = 0; i < 120 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 50));
-  await new Promise((x) => setTimeout(x, 2500));
+  await ed.startSimulation();
+  for (let i = 0; i < 120 && !ed.physics; i++) await window.__pausa(50);
+  await window.__pausa(2500);
   ed.beginColocarFigura();
   return { simulando: ed.isSimulating(), activo: ed.isColocarFigura(),
     boton: !!([...document.querySelectorAll("#simbar button")].find((b) => b.textContent.includes("🧍"))) };
@@ -118,9 +121,9 @@ const enSim = await page.evaluate(async () => {
 ok(enSim.boton, "la barra de simulación ofrece 🧍 (Builder y Viewer)");
 ok(enSim.simulando && enSim.activo, "y la herramienta se puede usar con la física corriendo");
 await page.mouse.move(p.suelo.x, p.suelo.y);
-await page.waitForTimeout(400);
+await pausa(400);
 await page.mouse.click(p.suelo.x, p.suelo.y);
-await page.waitForTimeout(900);
+await pausa(900);
 const dePie = await page.evaluate(() => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
@@ -137,3 +140,4 @@ await page.screenshot({ path: "v241-colocar-sim.png" });
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
 await browser.close();
+process.exit(fallos.length ? 1 : 0);

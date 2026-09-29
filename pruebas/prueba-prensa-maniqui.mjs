@@ -17,6 +17,7 @@
 //      en el mismo paso, el gesto no producía nada y el cuerpo acababa
 //      arrastrado hacia la plataforma y despegado del respaldo.
 import { chromium } from "playwright-core";
+import { prepararPasos } from "./arnes.mjs";
 import { readFileSync } from "node:fs";
 const AQUI = new URL(".", import.meta.url).pathname;
 const PROY = JSON.parse(readFileSync(AQUI + "fijos/legpress-del-disenador.json", "utf8"));
@@ -27,19 +28,21 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl"],
 });
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+// Por pasos, no por reloj: ver pruebas/arnes.mjs (v0.4.10).
+const pausa = await prepararPasos(page);
 const errores = [];
 page.on("pageerror", (e) => errores.push("PAGEERROR: " + e.message));
 await page.goto("http://127.0.0.1:4174/");
-await page.waitForTimeout(1000);
-await page.click("text=📁 PROYECTOS"); await page.waitForTimeout(300);
-await page.click(".land-actions button:has-text('NUEVO')"); await page.waitForTimeout(300);
-await page.click(".wizard-carta:has-text('Profesional')"); await page.waitForTimeout(300);
+await pausa(1000);
+await page.click("text=📁 PROYECTOS"); await pausa(300);
+await page.click(".land-actions button:has-text('NUEVO')"); await pausa(300);
+await page.click(".wizard-carta:has-text('Profesional')"); await pausa(300);
 await page.click(".wizard-carta:has-text('Canvas libre')");
 // SE ESPERA A QUE LA APP ESTE LISTA, NO AL RELOJ (v0.3.81): la capa de carga
 // se va cuando las mallas estan. Adivinarlo con un timeout fijo es lo que
 // hacia parpadear a estas pruebas.
 await page.waitForFunction(() => !document.querySelector(".cargando-capa"), null, { timeout: 45000 });
-await page.waitForTimeout(2500);
+await pausa(2500);
 
 const fallos = [];
 const chequear = (ok, m) => { if (!ok) fallos.push(m); console.log((ok ? "✓ " : "✗ ") + m); };
@@ -210,8 +213,8 @@ const puntoPlaca = await page.evaluate(({ ids }) => {
   return { placa: elegido, rodilla: aPantalla(rodilla) };
 }, { ids: montaje.ids });
 await page.evaluate(() => window.exersuite.editor.beginAttachFoot());
-await page.mouse.click(puntoPlaca.rodilla.x, puntoPlaca.rodilla.y); await page.waitForTimeout(250);
-await page.mouse.click(puntoPlaca.placa.x, puntoPlaca.placa.y); await page.waitForTimeout(400);
+await page.mouse.click(puntoPlaca.rodilla.x, puntoPlaca.rodilla.y); await pausa(250);
+await page.mouse.click(puntoPlaca.placa.x, puntoPlaca.placa.y); await pausa(400);
 const conNormal = await page.evaluate(() => {
   const ed = window.exersuite.editor, T = window.exersuite.THREE;
   const t = ed.footTargets.get("L");
@@ -623,9 +626,9 @@ const aMano = await page.evaluate(async ({ AYUDA, ids }) => {
   for (let i = 0; i < 6; i++) { ed.moverPrimitiva(1, 5); P.updateFootIK.call(ed); }
   fig.updateMatrixWorld(true);
   const trasGesto = +(fig.position.y - puesta).toFixed(1);
-  ed.startSimulation();
-  for (let i = 0; i < 200 && !ed.physics; i++) await new Promise((x) => setTimeout(x, 25));
-  await new Promise((x) => setTimeout(x, 1200));
+  await ed.startSimulation();
+  for (let i = 0; i < 200 && !ed.physics; i++) await window.__pausa(25);
+  await window.__pausa(1200);
   fig.updateMatrixWorld(true);
   return {
     trasReapoyo,
