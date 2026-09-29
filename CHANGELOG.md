@@ -19,6 +19,11 @@ contaba como verdes.**
   migración es la misma de v0.4.10, más un caso: `startSimulation()` es
   asíncrono y pasa a esperarse con `await`. Las dos rojas de reloj del examen
   de v0.4.11, `800-debug3` y `v232`, salen verdes en la corrida en serie.
+  Comprobado como en v0.4.10, **cada una de las 26 corrida dos veces**: 23
+  salidas idénticas byte a byte, y en las otras tres la única línea distinta
+  es un cronómetro, no la física —fotogramas contados en 600 ms
+  (`800-debug2`), milisegundos por paso (`atravesamiento`) y por pulsación
+  (`freno-estructura`)—.
 
 ### Arreglado
 
