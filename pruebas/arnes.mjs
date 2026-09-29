@@ -41,6 +41,18 @@ export async function prepararPasos(page) {
         await new Promise((r) => setTimeout(r, 20));
       }
       if (ed?.physics) {
+        // LA ENTRADA PENDIENTE, ANTES QUE LOS PASOS. En Chromium la rueda y el
+        // `pointermove` son eventos continuos: no se despachan al llegar sino
+        // alineados al siguiente fotograma de animación. Este `evaluate`, en
+        // cambio, corre como tarea normal en cuanto llega. Sin esperar un
+        // fotograma, los pasos de física se daban a veces ANTES de que la app
+        // viera la muesca de rueda que la prueba acababa de mandar y a veces
+        // después; y como `girarBisagra` acota el objetivo a una ventana
+        // alrededor del ángulo actual, el orden cambiaba el resultado
+        // (`prueba-bisagra-mano`: la rueda dejaba -49,5° o -40,4°). La entrada
+        // se despacha al principio del fotograma, antes de los rAF: esperar
+        // uno garantiza que ya se procesó.
+        await new Promise((r) => requestAnimationFrame(() => r()));
         ed.avanzarSimulacion(ms / 1000);
         // Un respiro al hilo para que lo asíncrono de la app (avisos, render)
         // pueda correr, igual que lo tenía con el reloj.

@@ -1075,6 +1075,56 @@ export class Editor {
   private pasoManual =
     (globalThis as { __EXERSUITE_PASO_MANUAL?: boolean }).__EXERSUITE_PASO_MANUAL === true;
 
+  /**
+   * LOS TEMPORIZADORES QUE TOCAN LA FÍSICA, TAMBIÉN POR PASOS (v0.4.10).
+   *
+   * El «se suelta sola» de la rueda era un `setTimeout` de 500 ms de RELOJ, y
+   * con el paso manual eso rompía el determinismo: la prueba manda muescas de
+   * rueda y avanza la física entre una y otra, pero cuánto reloj pasa entre
+   * muescas depende de la máquina, así que la bisagra se soltaba a veces entre
+   * dos muescas y a veces no. Soltarla y retomarla reinicia su objetivo:
+   * `prueba-bisagra-mano` sacaba −22,4°, −23,4° o −29,8° con los MISMOS diez
+   * eventos llegando en los MISMOS sub-pasos.
+   *
+   * `alCabo` es un `setTimeout` en la app de siempre, y con el paso manual
+   * cuenta sub-pasos simulados: vence dentro de `avanzarSimulacion`, entre un
+   * sub-paso y el siguiente. Devuelve con qué cancelarlo.
+   */
+  private alCabo(ms: number, fn: () => void): () => void {
+    if (!this.pasoManual) {
+      const h = window.setTimeout(fn, ms);
+      return () => window.clearTimeout(h);
+    }
+    const t = { quedan: Math.max(1, Math.round((ms / 1000) * 60)), fn };
+    this.pendientesAlCabo.push(t);
+    return () => {
+      const k = this.pendientesAlCabo.indexOf(t);
+      if (k >= 0) this.pendientesAlCabo.splice(k, 1);
+    };
+  }
+  private pendientesAlCabo: Array<{ quedan: number; fn: () => void }> = [];
+
+  /**
+   * Los temporizadores de `alCabo` que queden al parar la física se cumplen ya:
+   * con reloj vencerían igual al poco de parar, y por pasos ya no quedan pasos
+   * que los venzan. Dejarlos colgados los haría saltar en la sesión siguiente,
+   * sobre un mundo que no es el suyo.
+   */
+  private cumplirAlCabo(): void {
+    const pendientes = this.pendientesAlCabo;
+    this.pendientesAlCabo = [];
+    for (const t of pendientes) t.fn();
+  }
+
+  /** Descuenta un sub-paso a cada temporizador de `alCabo` y dispara los vencidos. */
+  private vencerAlCabo(): void {
+    if (this.pendientesAlCabo.length === 0) return;
+    const vencidos = this.pendientesAlCabo.filter((t) => --t.quedan <= 0);
+    if (vencidos.length === 0) return;
+    this.pendientesAlCabo = this.pendientesAlCabo.filter((t) => t.quedan > 0);
+    for (const t of vencidos) t.fn();
+  }
+
   /** Enciende o apaga el paso manual (solo para el arnés de pruebas). */
   setPasoManual(on: boolean): void {
     this.pasoManual = on;
@@ -1089,6 +1139,8 @@ export class Editor {
     if (!this.simulating || !this.physics) return 0;
     const n = Math.max(0, Math.round(segundos * 60));
     for (let i = 0; i < n; i++) {
+      this.vencerAlCabo();
+      if (!this.physics) break;   // un vencido pudo parar la simulación
       this.physics.pasosExactos(1);
       if (++this.simFrame % 2 === 0) this.syncRopesFromPhysics();
       this.updateStackAnimation();
@@ -1464,6 +1516,7 @@ export class Editor {
 
   stopSimulation(): void {
     if (!this.simulating) return;
+    this.cumplirAlCabo();
     this.soltarLaBisagra();
     this.endSimInteraction();
     this.simulating = false;
@@ -3898,7 +3951,7 @@ export class Editor {
     this.canvas.removeEventListener("contextmenu", this.onContextMenu);
     this.canvas.removeEventListener("dblclick", this.onDobleClic);
     this.cerrarBurbujaDeNodo();
-    if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
+    this.soltarTrasScroll?.();
     window.removeEventListener("pointerup", this.onPointerUp);
     for (const soltar of this.oyentes) soltar();
     this.oyentes = [];
@@ -7632,6 +7685,7 @@ export class Editor {
     this.partidaPiezas = poses.size ? poses : null;
     this.disenoDePartida = diseno.size ? diseno : null;
 
+    this.cumplirAlCabo();
     this.simulating = false;
     this.modoPoseMaquina = false;
     this.setSimHerramienta(this.simToolPrevio);
@@ -13087,7 +13141,8 @@ export class Editor {
    * cable/cuerda/pieza de línea, y arrastra los nodos en modo doblado.
    */
   /** Temporizador que suelta la bisagra cuando el scroll deja de llegar. */
-  private soltarTrasScroll: number | null = null;
+  /** Cómo cancelar el «se suelta sola» pendiente de la rueda (ver `alCabo`). */
+  private soltarTrasScroll: (() => void) | null = null;
 
   /**
    * SCROLL SOBRE UNA BISAGRA (v0.3.21).
@@ -13132,8 +13187,8 @@ export class Editor {
     // `deltaY` positivo es «hacia abajo», como en cualquier página.
     this.girarBisagraConElGesto(-this.pasosDeRueda(event));
     // Se suelta sola en cuanto el gesto para, salvo que la mano la sujete.
-    if (this.soltarTrasScroll !== null) window.clearTimeout(this.soltarTrasScroll);
-    this.soltarTrasScroll = window.setTimeout(() => {
+    this.soltarTrasScroll?.();
+    this.soltarTrasScroll = this.alCabo(500, () => {
       this.soltarTrasScroll = null;
       if (!this.bisagraDrag || this.simDrag || this.bisagraDrag.enganchada) return;
       this.anunciarBisagra(this.bisagraDrag.objectId, true);
@@ -13142,7 +13197,7 @@ export class Editor {
       this.bisagraDrag = null;
       this.quitarMarcaArco();
       this.requestRender();
-    }, 500);
+    });
   };
 
   /**
