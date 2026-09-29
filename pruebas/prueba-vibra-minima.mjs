@@ -183,7 +183,7 @@ const medir = (data) =>
     await window.__pausa(4000);
     const A = [], W = [], Wc = [], L = [];
     for (let k = 0; k < 60; k++) {
-      await new Promise((r) => requestAnimationFrame(r));
+      ed.avanzarSimulacion(1 / 60);   // un fotograma a 60 fps = un sub-paso (v0.4.10)
       const w = cuerpo.angvel();
       A.push(ang()); W.push(Math.hypot(w.x, w.y, w.z));
       Wc.push([w.x, w.y, w.z]); L.push(ladeo());

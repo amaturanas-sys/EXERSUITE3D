@@ -90,7 +90,7 @@ const movida = await p.evaluate(async () => {
   ed.physics.grab(pila.id, pila.mesh.position.clone());
   for (let i = 0; i < 200; i++) {
     ed.physics.dragTo(destino);
-    await new Promise((r) => requestAnimationFrame(r));
+    ed.avanzarSimulacion(1 / 60);   // un fotograma a 60 fps = un sub-paso (v0.4.10)
   }
   const yArrastrada = pila.mesh.position.y;
   ed.physics.release();

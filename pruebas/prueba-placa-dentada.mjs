@@ -46,6 +46,10 @@ const ok = (c, m) => { if (!c) fallos.push(m); console.log((c ? "✓ " : "✗ ")
  * inservibles dos ganchos de cuatro que funcionan. Ahora se espera a que la
  * altura se quede quieta tres lecturas seguidas, con un tope por si algo cae
  * para siempre.
+ *
+ * Desde v0.4.10 lo de arriba es historia: con `arnes.mjs` cada `pausa(150)`
+ * son 9 sub-pasos exactos, vaya la máquina como vaya. La espera a la quietud
+ * se queda porque sigue siendo la forma honrada de preguntar «¿ya cayó?».
  */
 const reposar = async (id, tope = 30000) => {
   const leer = () => page.evaluate(

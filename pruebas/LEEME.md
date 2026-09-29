@@ -178,6 +178,51 @@ La comprobación de que una espera así está bien escrita es correrla **con la
 máquina cargada a propósito** —tres pruebas más en paralelo— y ver que sigue
 verde. Si solo se prueba en una máquina ociosa, no se ha probado.
 
+### Desde v0.4.10 la simulación la gobiernan las pruebas, por PASOS
+
+Esperar a que la magnitud se quede quieta arregla las esperas, pero no lo de
+fondo: que cuántos pasos de física da el motor en un segundo de reloj depende
+de los fps de la máquina. En el Chromium headless eso son ~3,6 fps, y dos
+corridas idénticas recibían distinto número de pasos. v0.4.8 midió 81 frente a
+85 en `banco-cinco-topes` y con eso bastaba para que el tope 1 cayera a un lado
+o al otro de su diente.
+
+Las 39 pruebas que simulan usan ahora `arnes.mjs`:
+
+```js
+import { prepararPasos } from "./arnes.mjs";
+const page = await browser.newPage(...);
+const pausa = await prepararPasos(page);   // ANTES del primer goto
+```
+
+y la regla es una sola: **esperar es avanzar la física** mientras haya mundo
+físico (simulando o posando), en sub-pasos exactos de 1/60 —`pausa(1000)` son
+60 sub-pasos, siempre—; y **esperar es dormir** cuando no lo hay, que es lo que
+necesitan la carga y la UI. Desde Node, `pausa(ms)`; dentro de
+`page.evaluate`, `window.__pausa(ms)`. Para avanzar sin esperar a nada,
+`ed.avanzarSimulacion(segundos)`.
+
+El resultado se comprobó como hay que comprobarlo: **cada una de las 39 corrida
+dos veces, y las dos salidas idénticas byte a byte.** De paso van más rápidas:
+`diente-retiene` de 159 s a 36, `banco-cinco-topes` de 79 a 24.
+
+Tres cosas que no se ven y conviene saber al escribir una prueba nueva:
+
+- **Nada de esperar fotogramas.** `requestAnimationFrame` ya no avanza la
+  física: el bucle de render tiene el paso manual y no la toca. Una prueba que
+  tome muestras «un fotograma entre cada una» mide un cuerpo congelado. Para
+  una muestra por fotograma a 60 fps: `ed.avanzarSimulacion(1 / 60)`.
+- **La entrada de ratón llega alineada al fotograma.** En Chromium la rueda y
+  el `pointermove` no se despachan al llegar sino en el siguiente fotograma, y
+  por eso `__pausa` espera uno antes de avanzar: si no, los pasos se darían a
+  veces antes de que la app viera la muesca de rueda y a veces después.
+- **Un temporizador de reloj que toque la física rompe todo esto.** El «se
+  suelta sola» de la rueda era un `setTimeout` de 500 ms y hacía que
+  `bisagra-mano` sacara −22,4°, −23,4° o −29,8° con los mismos eventos llegando
+  en los mismos sub-pasos. Ahora pasa por `Editor.alCabo`, que con el paso
+  manual cuenta sub-pasos. Si la app gana otro temporizador que toque la
+  física, tiene que ir por ahí.
+
 ### Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`
 
 Cuando una prueba muere con una excepción no capturada —el preview caído, un
@@ -282,6 +327,9 @@ sección «Sabido».
 ## Ficheros
 
 - `prueba-*.mjs` — las pruebas, una por asunto.
+- `arnes.mjs` — el arnés por pasos (v0.4.10): `prepararPasos(page)` y la regla
+  de que esperar es avanzar la física mientras la haya. Lo usan las 39 que
+  simulan.
 - `ayudantes-maniqui.mjs` — ayudantes de página compartidos para juzgar al
   maniquí (la planta del pie, la piel más baja, la rodilla al tope, sentada
   sobre un apoyo).
