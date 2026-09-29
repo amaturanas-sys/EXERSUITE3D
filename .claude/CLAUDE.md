@@ -66,8 +66,11 @@ clona al arrancar. Cinco encendidos, 46 skills, 6 agentes, ningún servidor MCP:
   corto—. Un nombre a secas es ambiguo: usa el prefijo
   `pr-review-toolkit:` cuando quieras el del plugin.
 
-De las 27 URLs pedidas, 24 repositorios distintos: 13 son plugins de Claude
-Code y 11 no lo son. `.claude/vendor/PLUGINS.md` los recorre uno a uno —
+De las 28 URLs pedidas, 25 repositorios distintos: 14 son plugins de Claude
+Code y 11 no lo son. El último, `kiln`, autora mallas y GLB con three.js:
+es bueno, pero **no refina CAD** —no toca STEP— y queda registrado y apagado.
+
+`.claude/vendor/PLUGINS.md` los recorre uno a uno —
 cuáles piden clave o servicio, cuál bloquea la política de red del entorno,
 cuáles se apagaron a propósito por chocar con el método de aquí, y cuáles son
 frameworks que no se enchufan a una sesión.

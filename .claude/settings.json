@@ -69,6 +69,12 @@
           "skills"
         ]
       }
+    },
+    "kiln": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/matthew-kissinger/kiln.git"
+      }
     }
   }
 }

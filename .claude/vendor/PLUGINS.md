@@ -1,4 +1,4 @@
-# Plugins: 27 enlaces, 24 repositorios, 5 encendidos
+# Plugins: 28 enlaces, 25 repositorios, 5 encendidos
 
 Esta tanda no se copió: se **registró**. Un plugin de Claude Code no vive en
 `.claude/skills/` sino en un *marketplace* declarado en `.claude/settings.json`
@@ -6,9 +6,9 @@ Esta tanda no se copió: se **registró**. Un plugin de Claude Code no vive en
 sesión. Por eso aquí no hay ficheros de licencia: el código no entra al
 repositorio, solo la referencia.
 
-Se pidieron 27 URLs. Son 24 repositorios distintos —cuatro de los enlaces
-apuntan a skills sueltas del mismo `anthropics/skills`— y de los 24 **solo 13
-son plugins de Claude Code**. De esos 13, cinco están encendidos.
+Se pidieron 28 URLs. Son 25 repositorios distintos —cuatro de los enlaces
+apuntan a skills sueltas del mismo `anthropics/skills`— y de los 25 **solo 14
+son plugins de Claude Code**. De esos 14, cinco están encendidos.
 
 El recuento honesto: **5 plugins activos, 46 skills, 6 agentes, 0 servidores
 MCP y ~2 900 tokens de contexto en reposo**, todos ellos de
@@ -120,6 +120,61 @@ invocarlos. Se cambia brevedad por cobertura, a sabiendas.
 
 `commit-commands` y los otros nueve del marketplace siguen apagados, a una
 orden: `claude plugin enable <plugin>@claude-code-plugins --scope project`.
+
+### [`matthew-kissinger/kiln`](https://github.com/matthew-kissinger/kiln) — funciona, pero no es lo que parece
+
+Llegó con la idea de que serviría para **refinar los diseños hechos con
+text-to-cad**. Se probó de verdad antes de opinar, y hay que separar dos cosas.
+
+**Lo que es.** Un plugin de Claude Code legítimo (MIT, v0.8.0), con seis skills
+—`kiln-author-asset`, `kiln-refine-asset`, `kiln-qa-asset`,
+`kiln-compose-scene`, `kiln-batch-dispatch`, `kiln-setup-workspace`— y un
+servidor MCP local. Se le hizo el saludo MCP a mano y responde: **14
+herramientas**, `initialize` correcto, y **sin clave de API** — el modelo lo
+pone el agente. El bucle que propone es bueno y es el mismo que aquí se hace a
+mano con los `_foto-*.mjs`: el agente escribe JavaScript con three.js, kiln lo
+ejecuta, devuelve vistas renderizadas y comprobaciones estructurales, y el
+agente corrige lo que ve. Trae `manifold-3d` (booleanas CSG de verdad),
+`gltf-validator` y `xatlasjs`. Y es three.js, como la app (0.186 frente al
+^0.169 de aquí).
+
+**Lo que no es: no refina CAD.** Kiln autora **mallas** y exporta **GLB**. No
+hay STEP en ninguna parte —ni en sus dependencias, ni en sus skills, ni en sus
+14 herramientas: se buscó `step`, `occt`, `opencascade` y `brep` y no aparece
+nada—. La skill `cad` de este proyecto produce **sólidos STEP** con
+build123d/cadgen, que es geometría de fabricación: lo que se suelda y se
+mecaniza. GLB es geometría de representación. No son el mismo mundo y kiln no
+tiene puerta al primero: **no puede leer lo que text-to-cad genera ni escribir
+algo que text-to-cad pueda usar.** Para pulir una pieza que luego se fabrica,
+la herramienta sigue siendo `cad`.
+
+Donde sí encajaría es en lo visual de la app —las vistas previas de la
+biblioteca, los assets de presentación—, que es un trabajo real pero distinto
+del que se le atribuía.
+
+**Y por qué queda apagado.** El marketplace está registrado, el plugin no. El
+`dist/mcp-server.mjs` que versiona el repo son 2,6 MB pero **no es autónomo**:
+importa `zod` y compañía de fuera, así que recién clonado el servidor muere con
+`ERR_MODULE_NOT_FOUND: Cannot find package 'zod'`. Hay que hacer `npm install`
+*dentro* del directorio del plugin —78 paquetes, **244 MB**—, y ese directorio
+es caché: lo borra `claude plugin marketplace update` y no viaja con el
+repositorio. En este contenedor, que se recicla, eso significa un servidor MCP
+roto en cada arranque, que es exactamente lo que se evitó con context7.
+
+Su camino soportado tampoco es el de plugin, sino el de espacio de trabajo
+(`npm install <tarball>` y `kiln-init`, con un `.mcp.json` que apunta a
+`${CLAUDE_PROJECT_DIR}/dist/`). Si algún día se quiere aquí, ese es el camino.
+Para probarlo tal cual:
+
+```sh
+npm --prefix ~/.claude/plugins/marketplaces/kiln install --omit=dev --include=optional
+claude plugin enable kiln@kiln --scope project
+```
+
+Nota medida: el renderizador se declara `installation: ready`, `status:
+on-demand`, y arranca un servicio en `127.0.0.1:8000` cuando se le pide. Su
+propia respuesta avisa de que *«GPU readiness has not been tested»*, y aquí no
+se llegó a probar un render completo.
 
 ### [`upstash/context7`](https://github.com/upstash/context7) — bloqueado por la red del entorno
 
