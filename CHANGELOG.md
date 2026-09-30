@@ -5,6 +5,37 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.13] — 2026-09-30
+
+**Colocar al maniquí con la física corriendo volvía a funcionar a medias: el
+rótulo del HUD se quedaba el clic.**
+
+### Arreglado
+
+- **El HUD que habla ya no tapa la escena.** Simulando, el HUD se esconde
+  salvo cuando tiene algo que decir (v0.3.43); entonces sube centrado sobre la
+  barra de simulación. Ahí se quedaba con el puntero: en `prueba-colocar` el
+  punto del suelo donde se toca para dejar al maniquí de pie caía justo bajo
+  ese rótulo, y ni el hover marcaba el apoyo ni el clic movía la figura —se
+  quedaba sentada donde estaba—. Ahora el rótulo no recoge eventos
+  (`pointer-events: none`): es sólo texto. `colocar` pasa entera; la figura
+  queda de pie en el suelo y mirando a la máquina ([-1, 0, 0]).
+- La aserción «apoya los pies en el piso» pasaba antes de rebote: la figura
+  sentada ya tenía los pies a -0,2 cm del suelo. Con el clic llegando, la
+  mide de verdad (0).
+
+### Sabido
+
+- **`freno` sigue en rojo, y no es el freno: es la máquina.** El brazo de
+  press de la UpperMachine declara 90° de recorrido, pero hacia los 33° la
+  punta alta de su segmento superior sube hasta el bastidor superior y choca
+  (1,6 cm de penetración medida; y la geometría lo predice: la punta está a
+  21 cm del pivote y el bastidor baja hasta y = 199). La prueba empuja el
+  brazo 50° y espera que la pila suba unos 13-16 cm; se queda en 7. Hasta
+  v0.4.8 salía «libre» porque un paso de física grande atravesaba el
+  bastidor; el motor por sub-pasos de v0.4.9 dejó de atravesarlo. Queda sin
+  tocar hasta decidir si se corrige el modelo o la prueba.
+
 ## [0.4.12] — 2026-09-29
 
 **Las 67 pruebas que simulan van ya por pasos, y dos rojas que la batería

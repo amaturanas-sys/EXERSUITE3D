@@ -211,8 +211,13 @@ body.simulating .edit-only {
  * de arriba.
  *
  * Sube por encima de la barra de simulación, que ocupa el bajo de la pantalla.
+ *
+ * Y NO SE QUEDA CON EL PUNTERO (v0.4.12). Centrado sobre la escena, este
+ * rótulo tapaba justo el suelo que se toca para colocar al maniquí: el clic
+ * iba al texto y la figura no se movía. Es sólo texto; los clics, a la escena.
  */
 body.simulating #hud.hablando {
+  pointer-events: none;
   display: block !important;
   left: 50%;
   transform: translateX(-50%);
