@@ -41,6 +41,15 @@ HUD se quedaba el clic del maniquí, y el brazo de press topa a los 33°.**
     dos casos. Lo que se comprueba ahora es que el freno no le quita recorrido.
   La máquina sigue teniendo ese tope a 33° en vez de 90°; queda anotado.
 
+### Examen
+
+La batería completa, en serie: **125 pruebas, 125 verdes**, 58 min —48 antes
+de que se reiniciara el contenedor y las 77 restantes al reanudarla—. Ningún
+log con ✗, ❌ ni error de página. Es el primer recuento en que «verde» quiere
+decir lo que dice: desde v0.4.12 las pruebas que llevan cuenta de fallos salen
+con código 1, y las 67 que simulan van por pasos. Las 30 que no llaman a
+`process.exit` son sondas sin aserciones; su verde sólo dice que corrieron.
+
 ## [0.4.12] — 2026-09-29
 
 **Las 67 pruebas que simulan van ya por pasos, y dos rojas que la batería
