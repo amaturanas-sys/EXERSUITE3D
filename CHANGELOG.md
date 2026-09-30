@@ -41,6 +41,26 @@ HUD se quedaba el clic del maniquí, y el brazo de press topa a los 33°.**
     dos casos. Lo que se comprueba ahora es que el freno no le quita recorrido.
   La máquina sigue teniendo ese tope a 33° en vez de 90°; queda anotado.
 
+### Publicación
+
+- **El APK se comprueba contra el que ya está instalado.** `verificar-apk.py`
+  vigilaba dos causas de «no se puede actualizar» —build de depuración y llave
+  distinta— mirando el APK a solas. Faltaba la tercera, que sólo se ve
+  comparando: un versionCode que no sube, que Android rechaza como bajada de
+  versión. Con `--anterior` compara contra el APK publicado: mismo paquete,
+  misma llave y versionCode estrictamente mayor. El CI descarga el de la
+  última Release —la que no sea del propio tag— y lo pasa. Probado contra los
+  APK publicados: v0.4.4 sobre v0.3.99 se instala encima (código 210 → 215);
+  v0.4.4 sobre sí misma se rechaza como bajada.
+- Para esta Release: el APK publicado de v0.4.4 está firmado con la llave del
+  repositorio (la misma huella), el keystore no ha cambiado desde entonces, y
+  de Android sólo cambió la versión (código 215 → 224); manifiesto, SDK
+  mínimo y permisos, idénticos. Quien tenga la v0.4.4 actualiza encima sin
+  desinstalar y sin perder sus proyectos.
+- **Las notas de la Release reúnen todo lo que trae el APK**, desde esta
+  versión hasta la Release anterior, excluida. Entre v0.4.4 y v0.4.13 hubo
+  nueve versiones sin publicar; antes sólo salía la última.
+
 ### Examen
 
 La batería completa, en serie: **125 pruebas, 125 verdes**, 58 min —48 antes

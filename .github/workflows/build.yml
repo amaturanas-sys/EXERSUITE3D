@@ -65,14 +65,36 @@ jobs:
           APK=$(ls android/app/build/outputs/apk/release/*.apk | head -n 1)
           mv "$APK" android/app/build/outputs/apk/release/EXERSUITE3D.APK
 
+      # EL APK QUE YA TIENE LA GENTE INSTALADO (v0.4.13): el de la última
+      # Release publicada que no sea la de este mismo tag. Contra él se
+      # comprueba que el nuevo se instala ENCIMA —mismo paquete, misma llave,
+      # versionCode mayor— sin obligar a desinstalar. Si aún no hay ninguna
+      # Release, no hay con qué comparar y se avisa.
+      - name: Descargar el APK de la última Release publicada
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREV=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts \
+                   --exclude-pre-releases --limit 20 --json tagName -q '.[].tagName' \
+                 | grep -vx "$GITHUB_REF_NAME" | head -n 1 || true)
+          if [ -n "$PREV" ] && gh release download "$PREV" --repo "$GITHUB_REPOSITORY" \
+               --pattern EXERSUITE3D.APK --dir anterior; then
+            echo "APK anterior: $PREV"
+          else
+            echo "::warning::No hay APK publicado con el que comparar la actualización"
+          fi
+
       # Puerta: mira el BINARIO, no el workflow. Comprueba que no sea un build
       # de depuración, que esté firmado con la llave del repo —si cambiara,
-      # nadie podría actualizar—, y que el paquete sea instalable.
+      # nadie podría actualizar—, que el paquete sea instalable y que se
+      # instala encima del publicado sin conflicto.
       - name: Verificar el APK antes de publicarlo
         run: |
           pip install --quiet pyaxmlparser
+          ANTERIOR=""
+          [ -f anterior/EXERSUITE3D.APK ] && ANTERIOR="--anterior anterior/EXERSUITE3D.APK"
           python3 scripts/verificar-apk.py \
-            android/app/build/outputs/apk/release/EXERSUITE3D.APK
+            android/app/build/outputs/apk/release/EXERSUITE3D.APK $ANTERIOR
 
       - name: Subir APK como artefacto
         uses: actions/upload-artifact@v4
@@ -156,15 +178,27 @@ jobs:
         with:
           path: artifacts
 
+      # LAS NOTAS CUBREN TODO LO QUE TRAE ESTE APK (v0.4.13): desde esta
+      # versión hasta la de la Release anterior, excluida. Entre dos Releases
+      # puede haber varias versiones sin publicar (de v0.4.4 a v0.4.13 hubo
+      # nueve), y quien actualiza recibe todas.
       - name: Preparar notas de la Release desde CHANGELOG.md
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          PREV=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts \
+                   --exclude-pre-releases --limit 20 --json tagName -q '.[].tagName' \
+                 | grep -vx "$GITHUB_REF_NAME" | head -n 1 || true)
+          PREV="${PREV#v}"
           {
             echo "## EXERSUITE3D ${GITHUB_REF_NAME}"
             echo
-            awk -v ver="$VERSION" '
-              $0 ~ "^## \\[" ver "\\]" { cap=1; next }
-              cap && /^## \[/ { exit }
+            [ -n "$PREV" ] && echo "Reúne las versiones posteriores a la v${PREV}." && echo
+            awk -v ver="$VERSION" -v prev="$PREV" '
+              $0 ~ "^## \\[" ver "\\]" { cap=1; print; next }
+              cap && prev != "" && $0 ~ "^## \\[" prev "\\]" { exit }
+              cap && prev == "" && /^## \[/ { exit }
               cap && /^\[[^]]+\]:[[:space:]]/ { exit }
               cap { print }
             ' CHANGELOG.md

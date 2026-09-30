@@ -16,7 +16,15 @@ aprecian abriendo el binario:
 Ninguno se detecta leyendo el YAML, y el segundo ni siquiera se detecta
 mirando un APK aislado: hay que compararlo con la llave del repositorio.
 
+Y una tercera causa de «no se puede instalar encima» (v0.4.13): que el nuevo
+APK no lleve un versionCode MAYOR que el que ya está instalado. Android lo
+trata como una bajada de versión y se niega (INSTALL_FAILED_VERSION_DOWNGRADE,
+o «la aplicación no se ha instalado» a secas desde el gestor de archivos). Con
+--anterior se compara contra el APK de la última Release publicada: mismo
+paquete, misma llave y versionCode estrictamente mayor.
+
 Uso:  python3 scripts/verificar-apk.py <ruta.apk> [--keystore <ruta>]
+                                       [--anterior <apk publicado>]
 
 Sale con código 1 y explica qué falla. No necesita el SDK de Android: le
 basta con keytool (que viene con el JDK) y pyaxmlparser.
@@ -177,10 +185,48 @@ def revisar_zip(apk: pathlib.Path, z: zipfile.ZipFile) -> None:
         bien("resources.arsc sin comprimir y alineado a 4 bytes")
 
 
+def revisar_actualizacion(a, apk: pathlib.Path, anterior: pathlib.Path) -> None:
+    """¿Se instala ENCIMA de la versión publicada sin desinstalarla?
+
+    Android sólo acepta la actualización si el paquete es el mismo, el
+    certificado es el mismo y el versionCode sube. Cualquiera de las tres que
+    falle obliga al usuario a desinstalar —y a perder sus proyectos locales—.
+    """
+    from pyaxmlparser import APK
+
+    if not anterior.exists():
+        mal(f"no existe el APK anterior {anterior}")
+        return
+    b = APK(str(anterior))
+    nombre = f"{b.version_name} (código {b.version_code})"
+    if b.package != a.package:
+        mal(f"el paquete cambia respecto a {nombre}: {b.package} -> {a.package}. "
+            "Android lo instalaría como OTRA app, al lado de la vieja")
+    h_ant, h_new = huella_del_apk(anterior), huella_del_apk(apk)
+    if h_ant is None or h_new is None or h_ant != h_new:
+        mal(f"la llave cambia respecto a {nombre}: no se podrá actualizar "
+            f"encima (INSTALL_FAILED_UPDATE_INCOMPATIBLE).\n"
+            f"       publicada: {h_ant}\n"
+            f"       nueva:     {h_new}")
+    try:
+        viejo, nuevo = int(b.version_code), int(a.version_code)
+    except (TypeError, ValueError):
+        mal(f"versionCode ilegible: publicado {b.version_code!r}, nuevo {a.version_code!r}")
+        return
+    if nuevo <= viejo:
+        mal(f"versionCode {nuevo} no es mayor que el publicado ({viejo}, "
+            f"v{b.version_name}): Android lo rechaza como bajada de versión "
+            "(INSTALL_FAILED_VERSION_DOWNGRADE). Súbelo en android/app/build.gradle")
+    if not [m for m in fallos if "respecto a" in m or "versionCode" in m]:
+        bien(f"se instala encima de la publicada {nombre}: mismo paquete, "
+             f"misma llave, código {viejo} -> {nuevo}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("apk")
     ap.add_argument("--keystore", default=str(KEYSTORE))
+    ap.add_argument("--anterior", help="APK de la última Release publicada")
     args = ap.parse_args()
 
     apk = pathlib.Path(args.apk)
@@ -239,6 +285,8 @@ def main() -> int:
         revisar_zip(apk, z)
         revisar_firma_v1(z)
     revisar_firma_v2(apk)
+    if args.anterior:
+        revisar_actualizacion(a, apk, pathlib.Path(args.anterior))
 
     print()
     for n in notas:
