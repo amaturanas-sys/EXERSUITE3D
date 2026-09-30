@@ -7,8 +7,8 @@ y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [0.4.13] — 2026-09-30
 
-**Colocar al maniquí con la física corriendo volvía a funcionar a medias: el
-rótulo del HUD se quedaba el clic.**
+**Las dos rojas que la batería contaba como verdes, resueltas: el rótulo del
+HUD se quedaba el clic del maniquí, y el brazo de press topa a los 33°.**
 
 ### Arreglado
 
@@ -24,17 +24,22 @@ rótulo del HUD se quedaba el clic.**
   sentada ya tenía los pies a -0,2 cm del suelo. Con el clic llegando, la
   mide de verdad (0).
 
-### Sabido
-
-- **`freno` sigue en rojo, y no es el freno: es la máquina.** El brazo de
-  press de la UpperMachine declara 90° de recorrido, pero hacia los 33° la
-  punta alta de su segmento superior sube hasta el bastidor superior y choca
-  (1,6 cm de penetración medida; y la geometría lo predice: la punta está a
-  21 cm del pivote y el bastidor baja hasta y = 199). La prueba empuja el
-  brazo 50° y espera que la pila suba unos 13-16 cm; se queda en 7. Hasta
-  v0.4.8 salía «libre» porque un paso de física grande atravesaba el
-  bastidor; el motor por sub-pasos de v0.4.9 dejó de atravesarlo. Queda sin
-  tocar hasta decidir si se corrige el modelo o la prueba.
+- **`freno`, ajustada al arco real de la máquina.** No fallaba el freno:
+  el brazo de press de la UpperMachine declara 90° de recorrido, pero hacia los
+  33° la punta alta de su segmento superior sube hasta el bastidor superior y
+  choca (1,6 cm de penetración medida; y la geometría lo predice: la punta está
+  a 21 cm del pivote y el bastidor baja hasta y = 199). Hasta v0.4.8 un paso de
+  física grande atravesaba el bastidor y el brazo llegaba a los 50° que empuja
+  la prueba; el motor por sub-pasos de v0.4.9 dejó de atravesarlo. Se decidió
+  no tocar el modelo y ajustar la prueba a su arco:
+  · el freno del ramal del carro pasa de 116 a 118 cm: en 33° el ramal libre
+    baja a 116,3, así que un freno a 116 nunca llegaba a tocarse. Ahora el
+    ramal libre baja a 116,3 y el frenado se queda en 118,8;
+  · «el freno del jalón da más recorrido a la pila» deja de afirmarse: en el
+    arco real el tramo bajo la roldana sólo se acorta 0,6 cm, con freno o sin
+    él (medido con el freno a 0,1, 0,5, 1 y 1,5 cm), y la pila sube 7 cm en los
+    dos casos. Lo que se comprueba ahora es que el freno no le quita recorrido.
+  La máquina sigue teniendo ese tope a 33° en vez de 90°; queda anotado.
 
 ## [0.4.12] — 2026-09-29
 

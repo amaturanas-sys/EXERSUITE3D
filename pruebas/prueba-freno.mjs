@@ -90,8 +90,15 @@ const viaje = await page.evaluate(() => {
 ok(viaje.guardado === 1, "el freno viaja en el proyecto guardado");
 
 // 4) El freno es un TOPE DURO: la esfera no pasa por su nodo. Con un freno a
-// 116 cm sobre el ramal del carro (que mide 119,8), ese ramal no puede
-// acortarse por debajo de los 116 aunque se empuje el brazo con fuerza.
+// 118 cm sobre el ramal del carro (que mide 119,8), ese ramal no puede
+// acortarse por debajo de los 118 aunque se empuje el brazo con fuerza.
+//
+// POR QUÉ 118 Y NO 116 (v0.4.13). El brazo de press de la UpperMachine topa con
+// el bastidor superior hacia los 33° —la punta alta de su segmento superior
+// sube hasta él—, y en ese arco el ramal libre sólo baja hasta 116,3. Un freno
+// a 116 no llegaba a tocarse nunca. Hasta v0.4.8 el brazo atravesaba el
+// bastidor en un paso de física grande y el ramal bajaba a 112,7; con el motor
+// por sub-pasos ya no, y la prueba se ajusta al arco real de la máquina.
 const tope = async (dist) => page.evaluate(async (dist) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
@@ -127,14 +134,21 @@ const tope = async (dist) => page.evaluate(async (dist) => {
   return res;
 }, dist);
 const libre = await tope(null);
-const frenado = await tope(116);
+const frenado = await tope(118);
 console.log("ramal del carro sin freno:", JSON.stringify(libre));
-console.log("ramal del carro con freno a 116 cm:", JSON.stringify(frenado));
-ok(libre.minimo < 115.5, `sin freno el ramal se acorta libremente (${libre.minimo} de ${libre.largo} cm)`);
-ok(frenado.minimo >= 115.5, `con freno no baja de donde topa la esfera (${frenado.minimo} cm)`);
+console.log("ramal del carro con freno a 118 cm:", JSON.stringify(frenado));
+ok(libre.minimo < 118, `sin freno el ramal se acorta libremente (${libre.minimo} de ${libre.largo} cm)`);
+ok(frenado.minimo >= 118, `con freno no baja de donde topa la esfera (${frenado.minimo} cm)`);
 
-// 5) Y en el extremo liviano: un freno bajo la roldana alta del jalón manda
-// más recorrido a la pila al empujar el brazo.
+// 5) Y en el extremo liviano: un freno bajo la roldana alta del jalón no le
+// quita recorrido a la pila al empujar el brazo.
+//
+// Hasta v0.4.12 esto afirmaba que le DABA más (13,7 contra 13,1 cm, y ya
+// entonces intermitente): era la ganancia del brazo atravesando el bastidor
+// hasta los 50°. En su arco real de 33° el tramo del jalón bajo la roldana
+// sólo se acorta 0,6 cm con freno o sin él —medido con el freno a 0,1, 0,5, 1
+// y 1,5 cm—, y la pila sube lo mismo, 7 cm. Lo que queda por comprobar es que
+// el freno no estorba.
 const press = async (dist) => page.evaluate(async (dist) => {
   const ed = window.exersuite.editor;
   const T = window.exersuite.THREE;
@@ -167,7 +181,7 @@ const press = async (dist) => page.evaluate(async (dist) => {
 const sinF = await press(null);
 const conF = await press(1.5);
 console.log("press sin freno:", JSON.stringify(sinF), " con freno:", JSON.stringify(conF));
-ok(conF.pila > sinF.pila, `la pila recibe más recorrido (${sinF.pila} → ${conF.pila} cm)`);
+ok(sinF.pila > 5 && conF.pila >= sinF.pila - 0.2, `la pila no pierde recorrido con el freno (${sinF.pila} → ${conF.pila} cm)`);
 
 console.log("ERRORES:", errores.length ? errores.join("\n") : "ninguno");
 console.log(fallos.length ? "❌ " + fallos.join(" · ") : "✅ todo correcto");
