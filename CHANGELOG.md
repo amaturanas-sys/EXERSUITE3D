@@ -5,6 +5,95 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
+## [0.4.14] — 2026-11-22
+
+**El maniquí cambia de cuerpo: el modelo con rig del diseñador, aligerado de
+296.245 a 23.966 triángulos, se ve con una piel que dobla en las
+articulaciones y se sigue midiendo con sus dieciséis segmentos.**
+
+### Cambiado
+
+- **Cuerpo nuevo.** El de serie pasa a ser el que aportó el diseñador: un
+  cuerpo atlético limpio, con esqueleto de 22 huesos al estilo Mixamo, en pose
+  T y con 296.245 triángulos. La fuente queda en `fuentes/maniqui/` y lo que
+  carga la aplicación sale de ella con `node scripts/procesar-maniqui.mjs`
+  —determinista, un par de segundos—; el README de esa carpeta y la cabecera
+  del script explican cada paso.
+- **Se VE con piel y se MIDE con segmentos.** Lo que se dibuja es una sola
+  malla con skinning cuyos huesos son los propios pivotes del rig: el gizmo,
+  las posturas, la IK de manos y pies, el gesto por zonas y los agarres tocan
+  los mismos pivotes que antes, y la piel dobla en la junta en vez de abrirse
+  entre dos trozos rígidos. Los dieciséis segmentos siguen en la figura —son
+  trozos de esa misma piel— y siguen siendo el maniquí para todo lo que se
+  mide: dónde pisa la planta, qué se posa en el asiento, cuánto se hunde, el
+  cuerpo físico en el motor y el clic que elige una articulación. Sólo dejan
+  de dibujarse. La piel tiene caja envolvente vacía y no responde al ratón,
+  para no colarse en ninguna medida.
+- **No satura el motor.** 23.966 triángulos en UN objeto, donde el anterior
+  dibujaba 47.024 en dieciséis. Desviación máxima respecto del original de
+  0,45 cm. Pesa lo mismo que antes (piel 518 kB y segmentos 311 kB, contra
+  860 kB), y conserva las normales del modelo de 296.000 triángulos: el
+  sombreado es el del original.
+- **El reposo es el de siempre.** Las posturas cuentan sus grados desde el
+  reposo del maniquí, así que el cuerpo nuevo no podía llegar en pose T: con
+  los brazos en cruz, cada postura del catálogo saldría desplazada 66° en el
+  hombro. Se le quita con su propio rig hasta el reposo del cuerpo anterior
+  —brazo a 23,9° de la vertical, antebrazo a 5,6°, muslo a 7,2°, pierna a
+  plomo, pie plano— y la columna sigue doblando a 100 cm.
+- **Las juntas**, donde la piel dobla de verdad (el centro del anillo donde
+  dos huesos se reparten el peso a medias), medidas sobre la malla entera:
+
+  | junta   | antes                 | ahora                  |
+  |---------|-----------------------|------------------------|
+  | columna | (0, 100,0, +1,4)      | (0, 100,1, −0,8)       |
+  | cuello  | (0, 146,4, −0,7)      | (0, 151,3, −0,4)       |
+  | hombro  | (∓16,2, 136,0, −2,3)  | (∓18,9, 141,4, −4,9)   |
+  | codo    | (∓25,9, 114,1, −2,3)  | (∓27,9, 119,5, −3,7)   |
+  | muñeca  | (∓28,7, 84,7, −2,3)   | (∓31,1, 96,2, −4,0)    |
+  | cadera  | (∓8,5, 90,5, +0,2)    | (∓8,9, 92,2, +0,2)     |
+  | rodilla | (∓13,4, 51,8, +0,2)   | (∓15,4, 51,3, +0,4)    |
+  | tobillo | (∓13,3, 11,5, +0,2)   | (∓14,6, 12,7, −0,4)    |
+
+  Es otro cuerpo y no todo puede coincidir: los hombros quedan 5 cm más altos
+  y el antebrazo es más corto (23,5 cm de codo a muñeca, contra 29,5), con una
+  mano más larga —la punta de los dedos cuelga a 76,3 cm, contra 72,4—. El
+  muslo mide 41,4 (39,0) y la pierna 38,6 (40,3). Las medidas de ergonomía que
+  dependen del cuerpo cambian con él, que es lo que se pide al cambiarlo.
+
+### Arreglado al montarlo (no llega a verse, pero se midió)
+
+- **El glúteo es de la pelvis.** El rig de origen, pensado para andar, reparte
+  la nalga a medias entre cadera y muslo: cortada por el hueso que más pesa, la
+  pelvis se quedaba en un parche y el glúteo se iba con el muslo. Ahora el
+  reparto pelvis↔muslo lo da la posición a lo largo del fémur: el muslo empieza
+  en la ingle por delante (con transición amplia, para que doble suave) y en el
+  pliegue del glúteo por detrás, 15 cm más abajo y con una franja de ±1,5 cm.
+- **Un triángulo es de un segmento si sus tres vértices lo son.** Repartiendo
+  los de frontera al que más vértices reclamaba, el segmento de la pelvis se
+  llevaba rígido un vértice que en la piel es 100 % muslo: sentado, quedaba 8,9
+  cm por debajo de donde se ve, y la aplicación posa el maniquí sobre ese
+  punto. Con las dos cosas, lo que se posa en el asiento y lo que se ve están a
+  menos de 1 cm en todas las posturas (eran 3,6).
+- **El cuello se corta por su forma**: en el rig de origen su hueso casi no
+  pesa y, cortado por pesos, el segmento se quedaba en unas briznas. Es la
+  columna del cuello, y de ella sale dónde se apoya la barra en una sentadilla
+  trasera.
+- **Grietas al aligerar.** Las copias de un punto en las costuras del modelo
+  difieren en el último decimal; soldándolas sólo si eran idénticas quedaban
+  9.280 aristas abiertas, y el aligerado abría por ellas rayas por las que se
+  veía el interior del cuerpo. Se sueldan a 20 micras: quedan 46, las del propio
+  modelo.
+
+### Pruebas
+
+- `prueba-maniqui-piel.mjs` (nueva, 27 comprobaciones): la piel cuelga de los
+  mismos pivotes, sólo se dibuja ella (1 objeto, no 16), el presupuesto de
+  triángulos, y en cinco posturas —de pie, sentado, sentadilla, remo y peso
+  muerto— que la planta, lo más bajo del cuerpo, el asiento y las manos que se
+  ven son los que se miden (planta y manos, exactas; asiento, a menos de 1 cm).
+  También que el clic da con el segmento y no con la piel, y que a otra talla la
+  figura se rehace con piel y en el suelo.
+
 ## [0.4.13] — 2026-09-30
 
 **Las dos rojas que la batería contaba como verdes, resueltas: el rótulo del

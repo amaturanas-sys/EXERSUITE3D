@@ -154,6 +154,18 @@ export type SegmentSkinProvider = (segmentId: string) => THREE.Material | null;
 export type SegmentJointProvider = () => Record<string, [number, number, number]> | null;
 
 /**
+ * LA PIEL del maniquí (v0.4.14): el cuerpo entero en una sola malla con
+ * skinning, en el mismo espacio que los segmentos y las juntas —cm, pies en
+ * y=0, mirando a +Z—. `huesos` dice a qué articulación va cada índice de
+ * `skinIndex`: «raiz» es la figura y el resto son las claves de `joints`.
+ */
+export interface PielManiqui {
+  geometry: THREE.BufferGeometry;
+  huesos: string[];
+}
+export type SkinProviderManiqui = () => PielManiqui | null;
+
+/**
  * Primitiva REAL de cada segmento (misma que usa el rig al construirse), en
  * función de la altura H. Fuente única para el maniquí y para la vista previa
  * de la Biblioteca: así cada segmento se ve como lo que es (cabeza=esfera,
@@ -213,6 +225,7 @@ export function buildHumanFigure(
   segments?: SegmentProvider,
   skins?: SegmentSkinProvider,
   esqueleto?: SegmentJointProvider,
+  piel?: SkinProviderManiqui,
 ): THREE.Group {
   const H = heightCm;
   const joints: Record<string, THREE.Object3D> = {};
@@ -309,7 +322,12 @@ export function buildHumanFigure(
   buildLeg("R", 0.06 * H);
 
   // Sustituye las primitivas por los modelos de segmento (ajustados a su hueco).
-  if (segments) applySegmentOverrides(root, joints, segments, skins, esqueleto?.() ?? null);
+  const conEsqueleto = segments
+    ? applySegmentOverrides(root, joints, segments, skins, esqueleto?.() ?? null)
+    : false;
+  // Y encima, la piel. Sólo sobre el cuerpo de serie montado con su propio
+  // esqueleto: los pivotes tienen que estar donde la piel espera que doble.
+  if (conEsqueleto && piel) vestirConPiel(root, joints, piel());
 
   // Escala el rig a la altura exacta solicitada y apoya los pies en y=0.
   root.updateMatrixWorld(true);
@@ -339,6 +357,10 @@ export function buildHumanFigure(
  * Sustituye la geometría de cada segmento que tenga un modelo asignado,
  * ajustándolo al hueco de la primitiva original. La malla conserva su material
  * (color de referencia) y su lugar en la jerarquía articulada.
+ *
+ * Devuelve si el cuerpo se montó con su PROPIO esqueleto (los dieciséis
+ * segmentos troceados de un mismo cuerpo y sus juntas): es la condición para
+ * vestirlo con la piel.
  */
 function applySegmentOverrides(
   root: THREE.Group,
@@ -346,7 +368,7 @@ function applySegmentOverrides(
   provider: SegmentProvider,
   skins?: SegmentSkinProvider,
   esqueleto?: Record<string, [number, number, number]> | null,
-): void {
+): boolean {
   const conModelo: { mesh: THREE.Mesh; geo: THREE.BufferGeometry; id: string }[] = [];
   root.traverse((o) => {
     const m = o as THREE.Mesh;
@@ -355,7 +377,7 @@ function applySegmentOverrides(
     const geo = provider(id);
     if (geo) conModelo.push({ mesh: m, geo, id });
   });
-  if (!conModelo.length) return;
+  if (!conModelo.length) return false;
 
   // ¿Vienen troceados de un mismo cuerpo o es cada uno un modelo suelto?
   // Si son trozos de un cuerpo, sus cajas están REPARTIDAS en el espacio y la
@@ -398,6 +420,74 @@ function applySegmentOverrides(
     const orden = SEGMENT_DEFS.findIndex((s) => s.id === id);
     sesgarProfundidad(mesh.material as THREE.MeshStandardMaterial, orden);
   }
+  return propio != null;
+}
+
+/**
+ * VISTE EL MANIQUÍ CON SU PIEL (v0.4.14).
+ *
+ * Los dieciséis segmentos siguen ahí y siguen siendo el maniquí para todo lo
+ * que se MIDE —dónde pisa la planta, qué toca el asiento, cuánto se hunde un
+ * muslo, el cuerpo físico, el clic que elige una articulación—, pero ya no se
+ * dibujan: lo que se VE es una sola malla con skinning cuyos huesos son los
+ * propios pivotes del rig. Girar una articulación la dobla igual que antes —el
+ * gizmo, las posturas, la IK y los gestos tocan los mismos pivotes—, sólo que
+ * la piel dobla en la junta en vez de abrirse entre dos trozos rígidos.
+ *
+ * Tres cosas para que la piel no se cuele donde la aplicación mide:
+ *
+ *  · Su caja envolvente es VACÍA. `Box3.setFromObject` usa la caja de un
+ *    SkinnedMesh calculada una vez, en la pose de enlace; con el maniquí
+ *    sentado seguiría contando los pies donde estaban de pie, y apoyar la
+ *    figura en el suelo («ground») la subiría. Vacía no suma nada: las medidas
+ *    de la figura siguen saliendo de sus segmentos, como siempre.
+ *  · No se deja señalar con el ratón: el clic tiene que dar con el segmento,
+ *    que es quien dice qué articulación es (`jointName`).
+ *  · No lleva `humanFigurePart`, así que ni el motor físico ni las medidas de
+ *    hundimiento la recorren.
+ *
+ * Se enlaza con la figura en reposo y sin escalar —la raíz en el origen y cada
+ * pivote en su junta—, que es el espacio en el que viene la piel. El reescalado
+ * a la talla pedida, que hace el rig después, la arrastra con los huesos.
+ */
+function vestirConPiel(
+  root: THREE.Group,
+  joints: Record<string, THREE.Object3D>,
+  piel: PielManiqui | null,
+): void {
+  if (!piel) return;
+  const huesos = piel.huesos.map((n) => (n === "raiz" ? root : joints[n]));
+  const falta = piel.huesos.find((_, i) => !huesos[i]);
+  if (falta !== undefined) {
+    console.warn(`Piel del maniquí: el rig no tiene la articulación «${falta}»; se dibujan los segmentos.`);
+    piel.geometry.dispose();
+    return;
+  }
+  root.updateMatrixWorld(true);
+  const material = new THREE.MeshStandardMaterial({ color: 0x2f7dd1, metalness: 0, roughness: 0.6 });
+  const malla = new THREE.SkinnedMesh(piel.geometry, material);
+  malla.name = "Piel del maniquí";
+  malla.castShadow = true;
+  malla.frustumCulled = false;
+  malla.boundingBox = new THREE.Box3();
+  malla.raycast = () => {};
+  malla.userData.pielManiqui = true;
+  root.add(malla);
+  malla.updateMatrixWorld(true);
+  // Three.js solo usa de cada hueso su `matrixWorld`; los pivotes del rig son
+  // `Object3D` y no `Bone`, y valen igual. Lo que NO puede hacerse es
+  // `skeleton.pose()`: reescribe la matriz de cada hueso con la de enlace y
+  // devolvería todos los pivotes —el rig entero— a la pose de reposo.
+  malla.bind(new THREE.Skeleton(huesos as THREE.Bone[]), malla.matrixWorld);
+  // Los segmentos dejan de dibujarse (y de echar sombra) pero siguen visibles
+  // para todo lo demás: `visible` queda en true, que es lo que miran el motor
+  // físico y las medidas.
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || !m.userData.humanFigurePart) return;
+    for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.visible = false;
+  });
+  root.userData.piel = malla;
 }
 
 /**
@@ -573,5 +663,7 @@ export function disposeHumanFigure(group: THREE.Group): void {
       o.geometry.dispose();
       (o.material as THREE.Material).dispose?.();
     }
+    // La piel lleva además la textura de huesos de su esqueleto.
+    if (o instanceof THREE.SkinnedMesh) o.skeleton?.dispose();
   });
 }

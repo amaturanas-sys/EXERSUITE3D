@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { SEGMENT_DEFS } from "../objects/humanFigure";
+import { PARENT_JOINT, SEGMENT_DEFS, type PielManiqui } from "../objects/humanFigure";
 import { bakeComponentGeometry, firstTexturedMaterial, loadModelRoot } from "./modelLoading";
 import {
   deleteSegment,
@@ -21,6 +21,8 @@ import {
  * de una pieza a partir de eso.
  */
 const VALID = new Set(SEGMENT_DEFS.map((s) => s.id));
+/** Las articulaciones del rig: los huesos que puede traer la piel, además de «raiz». */
+const SEGMENT_JOINT_NAMES = Object.keys(PARENT_JOINT);
 
 type Fuente = "file" | "user";
 
@@ -38,6 +40,9 @@ class FigureSegmentManager {
   private fileModels = new Map<string, Piel>();
   // Dónde articula el cuerpo de serie, tal como lo declara su manifiesto.
   private juntas: Record<string, [number, number, number]> | null = null;
+  // La PIEL del cuerpo de serie (v0.4.14): la malla con skinning que se ve
+  // encima de los segmentos. Ver `vestirConPiel` en humanFigure.ts.
+  private piel: { geo: THREE.BufferGeometry; huesos: string[] } | null = null;
   private listeners = new Set<() => void>();
   private loaded: Promise<void> | null = null;
 
@@ -162,6 +167,8 @@ class FigureSegmentManager {
       }
       if (Object.keys(leidas).length) this.juntas = leidas;
     }
+    // La piel va en paralelo con los segmentos: es una descarga más.
+    const pielBajada = this.bajarPiel(base, (manifest as { piel?: unknown }).piel);
     // Las 16 descargas, a la vez. En serie son 16 idas y vueltas encadenadas y
     // esto corre en el arranque, con el usuario esperando; el horneado sí va
     // uno detrás de otro, que es CPU y solaparlo no gana nada.
@@ -192,7 +199,62 @@ class FigureSegmentManager {
         console.warn(`Maniquí de serie: no se pudo hornear "${b.segmentId}":`, e);
       }
     }
+    this.piel = await pielBajada;
     if (this.models.size) this.emit();
+  }
+
+  /**
+   * Baja y lee la piel declarada en el manifiesto. Si falta o no se deja leer,
+   * el maniquí se dibuja con sus segmentos rígidos, como antes de tenerla: la
+   * piel es lo que se ve, no lo que se mide, y sin ella no se pierde ninguna
+   * medida.
+   */
+  private async bajarPiel(
+    base: string,
+    archivo: unknown,
+  ): Promise<{ geo: THREE.BufferGeometry; huesos: string[] } | null> {
+    if (typeof archivo !== "string" || !archivo.trim()) return null;
+    try {
+      // Con plazo: los segmentos esperan a la piel para avisar de una sola vez
+      // (dos avisos rehacen la figura dos veces, y el segundo le borraría la
+      // postura a quien ya la estuviera posando), así que una descarga
+      // colgada no puede dejar colgado al maniquí entero.
+      const res = await fetch(`${base}models/maniqui/${archivo.trim()}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const raiz = await loadModelRoot(await res.arrayBuffer(), "glb");
+      let malla: THREE.SkinnedMesh | null = null;
+      raiz.traverse((o) => {
+        if (!malla && (o as THREE.SkinnedMesh).isSkinnedMesh) malla = o as THREE.SkinnedMesh;
+      });
+      const m = malla as THREE.SkinnedMesh | null;
+      if (!m) throw new Error("no trae malla con esqueleto");
+      const huesos = m.skeleton.bones.map((b) => b.name);
+      const geo = m.geometry;
+      for (const a of ["position", "normal", "skinIndex", "skinWeight"]) {
+        if (!geo.getAttribute(a)) throw new Error(`le falta el atributo ${a}`);
+      }
+      // Un archivo que no cuadra con el rig se rechaza aquí, y el maniquí se
+      // dibuja con sus segmentos: mejor eso que una piel que dobla por donde
+      // no es. Los huesos tienen que ser articulaciones del rig, y los índices
+      // de la piel, huesos que existen.
+      const validos = new Set(["raiz", ...SEGMENT_JOINT_NAMES]);
+      const ajeno = huesos.find((h) => !validos.has(h));
+      if (ajeno) throw new Error(`hueso desconocido «${ajeno}»`);
+      const indices = geo.getAttribute("skinIndex");
+      for (let i = 0; i < indices.count; i++) {
+        for (let k = 0; k < 4; k++) {
+          if (indices.getComponent(i, k) >= huesos.length) throw new Error("índice de hueso fuera de rango");
+        }
+      }
+      (m.material as THREE.Material).dispose?.();
+      return { geo, huesos };
+    } catch (e) {
+      console.warn(`Maniquí de serie: no se pudo leer la piel (${String(archivo)}):`, e);
+      return null;
+    }
   }
 
   private async loadUserModels(): Promise<void> {
@@ -235,6 +297,17 @@ class FigureSegmentManager {
    */
   jointProvider = (): Record<string, [number, number, number]> | null =>
     this.fileModels.size === VALID.size ? this.juntas : null;
+  /**
+   * La piel, mientras los dieciséis segmentos activos sean los de serie: está
+   * hecha de ESE cuerpo, y con un segmento sustituido por el usuario la piel
+   * taparía su modelo y doblaría sobre pivotes que ya no son los suyos. En
+   * ese caso se dibujan los segmentos, como siempre.
+   */
+  pielProvider = (): PielManiqui | null => {
+    if (!this.piel || !this.jointProvider()) return null;
+    for (const id of VALID) if (this.info.get(id)?.source !== "file") return null;
+    return { geometry: this.piel.geo.clone(), huesos: [...this.piel.huesos] };
+  };
 }
 
 export const figureSegments = new FigureSegmentManager();

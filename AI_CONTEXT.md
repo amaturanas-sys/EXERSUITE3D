@@ -936,7 +936,7 @@ src/
                                 y del historial.
     prefabIO.ts (297)           Exportar/importar prefabs v2.
     componentModels.ts (283)    Geometría ACTIVA de cada pieza (mallas .obj + modelos de usuario).
-    figureSegments.ts (240)     Idem para los 16 segmentos del maniquí.
+    figureSegments.ts (290)     Idem para los 16 segmentos del maniquí y su piel (skinning).
     appDb.ts (79)               Único punto de apertura de IndexedDB (un solo onupgradeneeded).
     descargas.ts (265)          Guardar/abrir con el gestor nativo de cada plataforma.
     armIK.ts (90)               IK analítica de dos huesos por ley de cosenos.
@@ -983,7 +983,8 @@ pruebas/         81 programas .mjs de Playwright + correr-todo.sh + LEEME.md
 docs/            inventario de piezas, cápsula del tiempo (capturas por versión), migración a Godot
 sitio-web/       sitio de marketing Next.js 14 (proyecto APARTE, su propio package.json)
 android/ src-tauri/   empaquetado APK y .exe
-scripts/         verificar-apk.py y utilidades de release
+scripts/         verificar-apk.py, procesar-maniqui.mjs (fuentes/maniqui → public/models/maniqui)
+                 y utilidades de release
 godot/           kit de migración a Godot (CI propio en godot.yml)
 ```
 
@@ -1100,7 +1101,8 @@ await p.click(".wizard-carta:has-text('Canvas libre')"); await p.waitForTimeout(
   conjunto se funde en un solo cuerpo rígido al simular. Es la puerta de entrada
   a las estructuras compuestas móviles (brazos de press, jammer arms).
 - **Cables multipolea** con desmultiplicación emergente de la geometría.
-- **El maniquí**: rig escaneado, posturas, gesto por zonas, IK de manos y pies.
+- **El maniquí**: cuerpo con rig y piel con skinning sobre los 14 pivotes (v0.4.14),
+  16 segmentos rígidos para medir, posturas, gesto por zonas, IK de manos y pies.
 - **La serialización**: proyectos, prefabs y máquinas van y vienen sin pérdida.
 
 ### 9.2 Fragilidades reales, por riesgo

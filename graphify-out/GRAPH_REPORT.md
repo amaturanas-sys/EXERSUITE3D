@@ -1,149 +1,202 @@
-# Graph Report - EXERSUITE3D  (2026-09-27)
+# Graph Report - EXERSUITE3D  (2026-11-22)
 
 ## Corpus Check
-- 438 files · ~1,602,819 words
+- 442 files · ~961,760 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 221 file(s) not represented in the graph (top: .import 64, .csv 37, .obj 29)
+- WARNING: 221 of 850 files seen (26%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 4877 nodes · 9543 edges · 436 communities (337 shown, 83 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 438 edges (avg confidence: 0.81)
+- 5127 nodes · 10688 edges · 387 communities (320 shown, 67 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 835 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3439426b`
+- Built from commit: `012a7c65`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - Changelog
+- prepararPasos
 - Editor
-- playwright-core
-- [0.3.98] — 2026-09-23
 - manifest.json
-- PhysicsWorld
-- Examples
-- el
-- .select
-- validate_data.py
-- .moverPrimitiva
-- prueba-manip-artic.mjs
-- LibraryView.ts
-- LibraryView
-- indexada.py
-- .listObjects
 - design_system.py
-- SceneManager
+- el
+- procesar-maniqui.mjs
+- .moverPrimitiva
+- playwright-core
+- .scheduleAutosave
+- validate_data.py
+- test_core.py
 - DesignSystemGenerator
-- FigureSegmentManager
-- .componentButton
-- agarre_doble
-- mancuerna_hex.py
-- linePieces.ts
-- prueba-vibra-minima.mjs
-- hub.ts
-- Subagent-Driven Development
-- Mannequin Test Scripts
+- main.ts
+- Editor.ts
+- .onPointerDown
+- datos.ts
+- core.py
+- ref_node_fs
+- .constructor
+- .requestRender
 - Landing.ts
+- SceneObject
+- steps
+- prueba-sentadilla.mjs
+- three
+- standardMachines.ts
+- search_stack
+- Examples
+- LibraryView
+- SceneObject.ts
+- LibraryView.ts
+- .rebuildGeometry
+- PropertiesPanel.ts
+- .listObjects
+- linePieces.ts
+- getDefinition
+- PhysicsWorld
+- mancuerna_hex.py
+- search
+- ComponentPalette.ts
+- indexada.py
+- math
+- AI_CONTEXT.md — EXERSUITE3D
+- Toolbar
+- package.json
+- recentStore.ts
+- FigureSegmentManager
 - build123d modeling patterns
 - prueba-gesto-barra.mjs
-- ArticulacionesPanel
-- PropertiesPanel.ts
-- Frontend Accessibility Patterns
+- descargas.ts
 - kettlebell.py
-- What You Must Do When Invoked
-- .setHighlight
-- Creation Log: Systematic Debugging Skill
-- Rope
-- Root Cause Tracing
-- core.py
-- search_stack
-- test_data_contracts.py
-- JointsPanel
+- [0.4.11] — 2026-09-29
+- SceneManager
+- agarre_doble.py
+- BM25
+- Frontend Accessibility Patterns
+- VisorPiezas.ts
+- cadgen
+- Joint
+- Subagent-Driven Development
+- PrototipoFoto
 - disco_barbell.py
-- tauri.conf.json
 - Performance Optimizer
-- Systematic Debugging
+- i18n.ts
+- tauri.conf.json
+- Creation Log: Systematic Debugging Skill
+- Cable
+- EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)
+- poseLibrary.ts
 - Landing.js
-- main.ts
 - compilerOptions
 - horquilla
-- Positioning logic, joints, and mating
+- a11y-architect.md
+- E2E Testing Patterns
+- UI/UX Pro Max - Design Intelligence
 - gracias/page.js
-- .addHumanFigure
 - Project scaffold template
 - Failure classes and fixes
 - The model contract and STEP generation
-- cuerda_triceps.py
-- sitio-web/package.json
-- verificar-apk.py
-- contenido.js
+- Referencias de diseño — EXERSUITE3D
+- next
 - i18n.js
-- Qué hay
+- cuerda_triceps.py
+- Positioning logic, joints, and mating
+- Root Cause Tracing
+- Systematic Debugging
+- EXERSUITE3D
+- contenido.js
 - brazo_spotter.py
+- Review Priorities
 - Inspection and validation
 - CAD generation, inspection, and validation
-- package.json
+- Condition-Based Waiting
+- CatalogRefreshTest
+- Plugins: 28 enlaces, 25 repositorios, 5 encendidos
+- with
+- preparar-logos.py
 - prueba-barra-olimpica.mjs
 - prueba-fusion.mjs
-- a11y-architect.md
-- poseLibrary.ts
+- brazoPilar.ts
+- Qué hay
+- Build Error Resolver
+- E2E Test Runner
 - Dispatching Parallel Agents
-- Referencias de diseño — EXERSUITE3D
-- prueba-biblioteca-modelos.mjs
-- Landing
-- AI_CONTEXT.md — EXERSUITE3D
-- Batería de pruebas de EXERSUITE3D
-- EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)
-- prueba-hub.mjs
+- Capacidades traídas de ECC
+- PhysicsWorld.ts
+- build.yml
+- prueba-vibra-minima.mjs
 - newsletter/route.js
+- project.ts
+- lineToolDialog.ts
+- 9.2 Fragilidades reales, por riesgo
+- Pre-Delivery Checklist (canonical — the only one)
+- Quick Reference
+- Migración de EXERSUITE3D a Godot — Guía completa
+- scripts
+- prueba-diente-retiene.mjs
+- agarre_simple.py
+- Defense-in-Depth Validation
+- dependencies
+- prueba-biblioteca-modelos.mjs
+- prueba-hub.mjs
 - Widgets.js
-- 2. Mecanismos y cinemática (núcleo para el simulador de física)
+- chapa.ts
+- solveTwoBoneIK
+- [0.3.98] — 2026-09-23
 - CAD project structure
-- prueba-barra-maniqui.mjs
-- EXERSUITE3D
+- pil
+- Batería de pruebas de EXERSUITE3D
+- prueba-brazo-pilar-angulos.mjs
 - Lienzo.js
-- SceneObject
-- search
-- 4. Física y matemáticas
-- 5. Geometría procedural
-- atril_discos
+- perforar.ts
+- atril_discos.py
 - CAD brief
 - Supported exports
-- Migración de EXERSUITE3D a Godot — Guía completa
+- Verification Before Completion
 - prueba-disco-barbell.mjs
-- prueba-800-debug.mjs
-- Defense-in-Depth Validation
-- a_prefab.py
+- prueba-torre-pesos.mjs
+- PreciseDrag
+- 4. Física y matemáticas
 - placa_dentada
-- graphify reference: extra exports and benchmark
+- Deterministic Checks
+- steps
 - prueba-moleteado-tubo.mjs
 - prueba-piezas-retiradas.mjs
 - prueba-uppermachine.mjs
-- 7. Paridad con la app web y hoja de ruta
-- [0.3.73] — 2026-09-19
-- carril_topes
+- crearBotonesHerramientas
+- [0.4.10] — 2026-09-29
 - Snapshot review
-- preparar-logos.py
 - prueba-biblioteca-posturas.mjs
-- [0.3.22] — 2026-08-28
-- Condition-Based Waiting
-- prueba-prefab-cad.mjs
-- types.ts
+- prueba-brazo-plano.mjs
+- estirar.ts
+- units.ts
+- [0.4.7] — 2026-09-27
+- Development Workflow
+- Changelog From Commits
+- Skill Audit
+- TestThresholdGate
+- test_skill_script_paths.py
+- release
 - prueba-banca-indexada.mjs
 - prueba-largo-a-medida.mjs
 - prueba-mano-brazo.mjs
 - prueba-pie-anclado.mjs
 - 10. Reglas de estilo
-- 2. Arquitectura del sistema
-- 6. El maniquí
-- [0.2.60] — 2026-08-15
+- [0.2.63] — 2026-08-16
 - [0.3.61] — 2026-09-16
+- [0.4.3] — 2026-09-23
+- .claude/CLAUDE.md
 - CAD kinematics and animation
-- graphify reference: query, path, explain
+- CatalogSummaryLineEndingsTest
+- TestTextLayoutDataContracts
 - El backend LLM del grafo
+- EXERSUITE3D — Kit de migración a Godot 4
 - _auditar-ingles.mjs
 - prueba-apoyos.mjs
+- prueba-banco-catalogo.mjs
+- prueba-banco-horquilla.mjs
+- prueba-banco-tres-topes.mjs
 - prueba-bisagra-fisica.mjs
 - prueba-brazo-spotter.mjs
 - prueba-freno.mjs
@@ -151,22 +204,22 @@
 - prueba-kettlebell.mjs
 - prueba-mancuerna-hex.mjs
 - prueba-placa-dentada.mjs
-- make-brand-assets.py
-- Verification Before Completion
 - default.json
-- 8. Pruebas: cómo se verifica que algo funciona
-- 9. Estado actual y deuda técnica
-- [0.3.78] — 2026-09-20
+- [0.1.5] — 2026-07-03
 - [0.1.7] — 2026-07-06
-- [0.2.63] — 2026-08-16
 - [0.2.66] — 2026-08-16
-- [0.3.2] — 2026-08-22
-- [0.3.49] — 2026-09-12
-- prueba-v232.mjs
-- EXERSUITE3D — Kit de migración a Godot 4
-- prueba-atraviesa.mjs
+- [0.2.93] — 2026-08-19
+- [0.3.97] — 2026-09-22
+- [0.4.4] — 2026-09-26
+- [0.4.5] — 2026-09-26
+- [0.4.6] — 2026-09-27
+- interface
+- Pressure Test 1: Emergency Production Fix
+- Pressure Test 2: Sunk Cost + Exhaustion
+- Pressure Test 3: Authority + Social Pressure
+- TestStackFlagWithDesignSystem
+- TestMetricMath
 - prueba-atril-discos.mjs
-- prueba-auditoria.mjs
 - prueba-auditoria2.mjs
 - prueba-bisagra-caras.mjs
 - prueba-cable-oculto.mjs
@@ -174,14 +227,7 @@
 - prueba-maniqui-usa.mjs
 - prueba-menus-v257.mjs
 - prueba-pasador-indexado.mjs
-- prueba-prensa-maniqui.mjs
-- prueba-v245.mjs
-- prueba-v246.mjs
-- prueba-v251.mjs
-- prueba-viewer-maniqui.mjs
-- Empaquetado (Android / Windows)
-- E2E Testing Patterns
-- i18n.ts
+- .setModoCalce
 - [0.2.15] — 2026-08-03
 - [0.2.32] — 2026-08-09
 - [0.2.34] — 2026-08-09
@@ -194,7 +240,6 @@
 - [0.2.51] — 2026-08-12
 - [0.2.57] — 2026-08-14
 - [0.2.61] — 2026-08-16
-- [0.2.62] — 2026-08-16
 - [0.2.64] — 2026-08-16
 - [0.2.69] — 2026-08-16
 - [0.2.6] — 2026-07-24
@@ -205,1634 +250,1473 @@
 - [0.2.81] — 2026-08-18
 - [0.2.84] — 2026-08-18
 - [0.2.91] — 2026-08-19
-- [0.2.93] — 2026-08-19
 - [0.2.99] — 2026-08-20
 - [0.3.0] — 2026-08-20
 - [0.3.19] — 2026-08-27
-- [0.3.1] — 2026-08-21
 - [0.3.23] — 2026-08-28
+- [0.3.2] — 2026-08-22
 - [0.3.3] — 2026-08-22
-- [0.3.46] — 2026-09-12
 - [0.3.48] — 2026-09-12
+- [0.3.73] — 2026-09-19
+- [0.3.74] — 2026-09-19
+- [0.3.76] — 2026-09-19
+- [0.3.77] — 2026-09-19
+- [0.3.82] — 2026-09-21
+- [0.3.84] — 2026-09-21
+- [0.3.87] — 2026-09-21
+- [0.3.88] — 2026-09-22
+- [0.3.90] — 2026-09-22
+- [0.4.0] — 2026-09-23
+- [0.4.13] — 2026-09-30
 - Migrations
-- graphify reference: add a URL and watch a folder
-- graphify reference: commit hook and native CLAUDE.md integration
-- graphify reference: incremental update and cluster-only
-- preparar-fotos.py
-- prueba-visor-proto.mjs
-- prueba-800-debug2.mjs
-- prueba-800-debug3.mjs
-- prueba-bisagra-mano.mjs
-- Editor.ts
-- Review Priorities
-- prueba-discos.mjs
+- scan.sh
+- TestFixtureValidation
+- prueba-bisagra-ui.mjs
+- prueba-codos.mjs
 - prueba-freno-estructura.mjs
 - prueba-guia-tubular.mjs
-- prueba-maniqui-serie.mjs
+- prueba-home-visor.mjs
 - prueba-maquina-entera.mjs
-- [0.4.5] — 2026-09-26
-- prueba-posar-apoyar.mjs
+- prueba-partida-plano.mjs
 - prueba-solape-ui.mjs
 - prueba-soldar.mjs
-- prueba-soldar-forma.mjs
-- project.ts
 - prueba-vinculacion-pines.mjs
-- Joint
-- SceneObject.ts
-- [0.2.41] — 2026-08-10
-- [0.1.2] — 2026-06-30
-- prueba-partida-plano.mjs
-- [0.3.27] — 2026-09-01
-- ComponentPalette.ts
-- capacitor.config.ts
-- [0.2.89] — 2026-08-18
-- BM25
-- componentModels.ts
+- mundo
 - [0.1.1] — 2026-06-30
-- [0.4.3] — 2026-09-23
-- Toolbar
-- PrototipoFoto
-- [0.1.4] — 2026-07-01
-- [0.3.51] — 2026-09-12
-- [0.2.14] — 2026-08-02
-- [0.2.97] — 2026-08-20
-- [0.2.30] — 2026-08-07
-- Build Error Resolver
-- humanFigure.ts
-- prueba-brazo-plano.mjs
-- banco3-geometria.py
-- [0.3.85] — 2026-09-21
-- test_design_system_mode.py
-- [0.2.35] — 2026-08-09
-- prueba-diente-retiene.mjs
-- [0.3.11] — 2026-08-26
-- scripts
-- [0.2.19] — 2026-08-05
-- banco-topes-geometria.py
-- prueba-banco-tres-topes.mjs
-- [0.2.8] — 2026-07-25
-- [0.2.76] — 2026-08-17
-- [0.2.54] — 2026-08-13
-- E2E Test Runner
-- Pressure Test 1: Emergency Production Fix
-- TestThresholdGate
-- Pressure Test 2: Sunk Cost + Exhaustion
-- [0.2.45] — 2026-08-11
-- [0.3.81] — 2026-09-21
-- [0.2.87] — 2026-08-18
-- Pressure Test 3: Authority + Social Pressure
-- [0.2.90] — 2026-08-18
-- [0.2.52] — 2026-08-13
-- [0.2.86] — 2026-08-18
-- tt
-- [0.2.96] — 2026-08-19
-- [0.3.31] — 2026-09-03
-- [0.3.12] — 2026-08-26
-- Hunt Targets
-- UI/UX Pro Max - Design Intelligence
-- [0.3.18] — 2026-08-27
-- [0.3.62] — 2026-09-16
-- prueba-posar-maquina.mjs
-- [0.2.83] — 2026-08-18
-- prueba-banco-cinco-topes.mjs
-- [0.3.25] — 2026-08-29
-- [0.2.68] — 2026-08-16
-- [0.3.40] — 2026-09-12
-- [0.1.8] — 2026-07-06
-- Code Simplifier Agent
-- [0.2.0] — 2026-07-20
-- CatalogRefreshTest
-- .onPointerDown
-- [0.3.17] — 2026-08-27
-- [0.3.33] — 2026-09-09
-- devDependencies
-- VisorPiezas.ts
-- [0.3.47] — 2026-09-12
-- [0.3.76] — 2026-09-19
-- [0.3.88] — 2026-09-22
-- [0.3.43] — 2026-09-12
-- [0.3.92] — 2026-09-22
-- [0.2.43] — 2026-08-10
-- [0.3.58] — 2026-09-16
-- [0.4.4] — 2026-09-26
-- [0.3.72] — 2026-09-18
-- [0.2.55] — 2026-08-13
-- [0.3.71] — 2026-09-16
-- [0.4.6] — 2026-09-27
-- [0.3.77] — 2026-09-19
-- [0.2.48] — 2026-08-11
-- [0.3.74] — 2026-09-19
-- graphify reference: GitHub clone and cross-repo merge
-- graphify reference: transcribe video and audio
-- next.config.js
-- preparar-fotos-recortes.py
-- preparar-fotos-recortes2.py
-- preparar-hub-sitio.py
-- Evaluation Criteria
-- [0.2.94] — 2026-08-19
-- [0.3.89] — 2026-09-22
-- [0.2.77] — 2026-08-17
-- [0.2.98] — 2026-08-20
-- [0.3.26] — 2026-08-31
-- [0.3.90] — 2026-09-22
-- [0.4.1] — 2026-09-23
-- prueba-bisagra-rigida.mjs
-- [0.3.15] — 2026-08-27
-- [0.3.80] — 2026-09-20
-- [0.3.21] — 2026-08-27
-- vite
-- prueba-enlace-app.mjs
-- [0.3.82] — 2026-09-21
-- compilerOptions
-- __init__.py
-- CLAUDE.md
-- .claude/CLAUDE.md
-- extraction-spec.md
-- promocion/README.md
-- extras/LEEME.md
-- correr-todo.sh
-- prueba-garaje.mjs
-- grafo-semantico.sh
-- AGENTS.md
-- exersuite3d
-- [0.4.0] — 2026-09-23
-- detect_domain
-- sdd-workspace
-- [0.2.58] — 2026-08-14
-- [0.3.66] — 2026-09-16
-- review-package
-- Capacidades traídas de ECC
-- [0.1.5] — 2026-07-03
-- task-brief
-- [0.3.91] — 2026-09-22
-- [0.2.31] — 2026-08-07
-- prueba-home-visor.mjs
-- prueba-prototipo.mjs
-- [0.3.79] — 2026-09-20
-- standardMachines.ts
-- [0.3.13] — 2026-08-26
-- [0.3.86] — 2026-09-21
-- _foto-banca.mjs
-- prueba-asiento-tope.mjs
-- find-polluter.sh
-- test-academic.md
-- prueba-cuerda-flex.mjs
-- prueba-rotgrupo.mjs
-- [0.3.83] — 2026-09-21
-- Pre-Delivery Checklist (canonical — the only one)
-- [0.3.87] — 2026-09-21
-- Quick Reference
-- [0.3.75] — 2026-09-19
-- PreciseDrag
-- prueba-v226.mjs
-- [0.3.16] — 2026-08-27
-- [0.3.99] — 2026-09-23
-- prueba-bisagra-ui.mjs
-- test_text_layout_resilience.py
-- [0.3.32] — 2026-09-09
+- [0.1.2] — 2026-06-30
 - [0.1.3] — 2026-06-30
-- [0.3.84] — 2026-09-21
-- [0.2.25] — 2026-08-05
-- [0.2.72] — 2026-08-16
-- [0.2.70] — 2026-08-16
-- dependencies
-- _verificar-faq.mjs
-- [0.3.9] — 2026-08-23
-- prueba-codos.mjs
-- Deterministic Checks
-- [0.3.7] — 2026-08-22
-- CatalogSummaryLineEndingsTest
-- Development Workflow
-- Changelog From Commits
-- Skill Audit
-- TestStackFlagWithDesignSystem
-- test_skill_script_paths.py
-- audit.py
-- [0.4.7] — 2026-09-27
-- scan.sh
-- [0.2.26] — 2026-08-06
-- [0.2.29] — 2026-08-07
-- [0.2.5] — 2026-07-23
-- [0.3.55] — 2026-09-15
-- [0.2.75] — 2026-08-17
-- generate.sh
+- [0.1.4] — 2026-07-01
+- [0.1.8] — 2026-07-06
+- [0.1.9] — 2026-07-17
+- [0.2.0] — 2026-07-20
 - [0.2.11] — 2026-07-26
 - [0.2.12] — 2026-07-26
-- [0.3.69] — 2026-09-16
-- prueba-banco-horquilla.mjs
-- [0.3.95] — 2026-09-22
-- [0.3.97] — 2026-09-22
-- [0.2.20] — 2026-08-05
+- [0.2.14] — 2026-08-02
+- [0.2.19] — 2026-08-05
 - [0.2.1] — 2026-07-21
-- [0.3.53] — 2026-09-14
-- [0.2.2] — 2026-07-22
-- [0.2.56] — 2026-08-13
-- [0.2.82] — 2026-08-18
-- [0.2.92] — 2026-08-19
+- [0.2.20] — 2026-08-05
 - [0.2.21] — 2026-08-05
-- [0.3.68] — 2026-09-16
+- [0.2.25] — 2026-08-05
+- [0.2.26] — 2026-08-06
+- [0.2.29] — 2026-08-07
+- [0.2.2] — 2026-07-22
+- [0.2.30] — 2026-08-07
+- [0.2.31] — 2026-08-07
+- [0.2.33] — 2026-08-09
+- [0.2.35] — 2026-08-09
+- [0.2.37] — 2026-08-09
+- [0.2.41] — 2026-08-10
+- [0.2.43] — 2026-08-10
+- [0.2.45] — 2026-08-11
+- [0.2.48] — 2026-08-11
+- [0.2.54] — 2026-08-13
+- [0.2.55] — 2026-08-13
+- [0.2.56] — 2026-08-13
+- [0.2.58] — 2026-08-14
+- [0.2.5] — 2026-07-23
+- [0.2.62] — 2026-08-16
+- [0.2.68] — 2026-08-16
+- [0.2.70] — 2026-08-16
+- [0.2.72] — 2026-08-16
+- [0.2.75] — 2026-08-17
+- [0.2.76] — 2026-08-17
+- [0.2.77] — 2026-08-17
+- [0.2.82] — 2026-08-18
+- [0.2.83] — 2026-08-18
+- [0.2.87] — 2026-08-18
+- [0.2.8] — 2026-07-25
+- [0.2.90] — 2026-08-18
+- [0.2.94] — 2026-08-19
+- [0.2.95] — 2026-08-19
+- [0.2.96] — 2026-08-19
+- [0.2.98] — 2026-08-20
+- [0.3.11] — 2026-08-26
+- [0.3.12] — 2026-08-26
 - [0.3.14] — 2026-08-26
+- [0.3.16] — 2026-08-27
+- [0.3.17] — 2026-08-27
+- [0.3.18] — 2026-08-27
+- [0.3.21] — 2026-08-27
+- [0.3.22] — 2026-08-28
+- [0.3.25] — 2026-08-29
+- [0.3.26] — 2026-08-31
+- [0.3.27] — 2026-09-01
 - [0.3.29] — 2026-09-02
+- [0.3.31] — 2026-09-03
+- [0.3.32] — 2026-09-09
+- [0.3.33] — 2026-09-09
+- [0.3.40] — 2026-09-12
+- [0.3.43] — 2026-09-12
+- [0.3.47] — 2026-09-12
+- [0.3.51] — 2026-09-12
+- [0.3.53] — 2026-09-14
 - [0.3.54] — 2026-09-14
-- prueba-garaje2.mjs
-- prueba-sitio.mjs
+- [0.3.55] — 2026-09-15
+- [0.3.58] — 2026-09-16
+- [0.3.62] — 2026-09-16
+- [0.3.63] — 2026-09-16
+- [0.3.66] — 2026-09-16
+- [0.3.68] — 2026-09-16
+- [0.3.72] — 2026-09-18
+- [0.3.75] — 2026-09-19
+- [0.3.79] — 2026-09-20
+- [0.3.7] — 2026-08-22
+- [0.3.81] — 2026-09-21
+- [0.3.85] — 2026-09-21
+- [0.3.86] — 2026-09-21
+- [0.3.89] — 2026-09-22
+- [0.3.91] — 2026-09-22
+- [0.3.92] — 2026-09-22
+- [0.3.93] — 2026-09-22
+- [0.3.94] — 2026-09-22
+- [0.3.95] — 2026-09-22
+- [0.3.9] — 2026-08-23
+- [0.4.1] — 2026-09-23
+- next.config.js
+- girar
+- segmentoFinal
+- compilerOptions
+- CLAUDE.md
+- generate.sh
+- find-polluter.sh
+- test-academic.md
+- promocion/README.md
+- maniqui/README.md
+- extras/LEEME.md
+- correr-todo.sh
+- grafo-semantico.sh
+- pesoOrigenU
+- AGENTS.md
+- exersuite3d
 
 ## God Nodes (most connected - your core abstractions)
-1. `Editor` - 573 edges
-2. `Changelog` - 217 edges
-3. `SceneObject` - 186 edges
-4. `tt()` - 172 edges
-5. `el()` - 165 edges
-6. `playwright-core` - 138 edges
-7. `PhysicsWorld` - 85 edges
-8. `bootEditor()` - 60 edges
-9. `search()` - 43 edges
-10. `clear()` - 36 edges
+1. `Editor` - 581 edges
+2. `Changelog` - 223 edges
+3. `SceneObject` - 188 edges
+4. `el()` - 175 edges
+5. `tt()` - 173 edges
+6. `playwright-core` - 142 edges
+7. `PhysicsWorld` - 91 edges
+8. `prepararPasos()` - 70 edges
+9. `bootEditor()` - 63 edges
+10. `search()` - 43 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `TestReasoningContract` --uses--> `DesignSystemGenerator`  [INFERRED]
-  .claude/skills/ui-ux-pro-max/scripts/tests/test_data_contracts.py → .claude/skills/ui-ux-pro-max/scripts/design_system.py
-- `TestEndToEndCoherence` --uses--> `DesignSystemGenerator`  [INFERRED]
-  .claude/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py → .claude/skills/ui-ux-pro-max/scripts/design_system.py
-- `CandidatoPoste` --references--> `SceneObject`  [EXTRACTED]
-  src/core/Editor.ts → src/objects/SceneObject.ts
-- `bootEditor()` --indirect_call--> `hornearMaquina()`  [INFERRED]
-  src/main.ts → src/core/maquinasModelo.ts
-- `bootEditor()` --indirect_call--> `serializarPrefab()`  [INFERRED]
-  src/main.ts → src/core/prefabIO.ts
+- `2.2 El patrón de MODO (la estructura más importante del Editor)` --references--> `EditorEvents`  [INFERRED]
+  AI_CONTEXT.md → src/core/Editor.ts
+- `Cambiado` --references--> `t()`  [INFERRED]
+  CHANGELOG.md → src/core/i18n.ts
+- `Corregido — los cuatro botones de la Home, en castellano duro` --references--> `tt()`  [INFERRED]
+  CHANGELOG.md → src/core/i18n.ts
+- `3.1 Dos reglas del catálogo que ya costaron caras` --references--> `catalogoVigente()`  [INFERRED]
+  AI_CONTEXT.md → src/objects/componentLibrary.ts
+- `5.4 Estirar por el centro (`estirar.ts`)` --references--> `puntoTrasEstirar()`  [INFERRED]
+  AI_CONTEXT.md → src/objects/estirar.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (436 total, 83 thin omitted)
+## Communities (387 total, 67 thin omitted)
 
 ### Community 0 - "Changelog"
-Cohesion: 0.01
-Nodes (138): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.1.9] — 2026-07-17, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04 (+130 more)
-
-### Community 1 - "Editor"
-Cohesion: 0.03
-Nodes (3): Editor, EjercicioBarra, poseNames()
-
-### Community 2 - "playwright-core"
 Cohesion: 0.02
-Nodes (31): K, PESO, errores, banca, errs, errores, errores, proyecto (+23 more)
+Nodes (132): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04, [0.2.22] — 2026-08-05 (+124 more)
 
-### Community 3 - "[0.3.98] — 2026-09-23"
-Cohesion: 0.40
-Nodes (5): [0.3.98] — 2026-09-23, Corregido — consultar el mapa de cuerpos durante la reconstrucción reventaba el WASM, Corregido — UN CONJUNTO SOLDADO PESABA TODO EN SU ANFITRIÓN, La cinemática del puntal sobrevive al eje nuevo, Los 6 mm del extremo horizontal: acotados, no resueltos
+### Community 1 - "prepararPasos"
+Cohesion: 0.03
+Nodes (43): prepararPasos(), SELECTORES, TAMANOS, SELECTORES, TAMANOS, SELECTORES, TAMANOS, errores (+35 more)
 
-### Community 4 - "manifest.json"
+### Community 2 - "Editor"
+Cohesion: 0.04
+Nodes (3): Editor, WorkspaceData, localSnapPoints()
+
+### Community 3 - "manifest.json"
 Cohesion: 0.02
 Nodes (91): agarradera, agarre-d, agarre-doble, asiento, atril-discos, barra-dominadas, barra-fondos, barra-jalon (+83 more)
 
-### Community 6 - "Examples"
+### Community 4 - "design_system.py"
+Cohesion: 0.04
+Nodes (29): ansi_ljust(), _contrast_ratio(), _derive_dark_palette(), _detect_page_type(), _filter_anti_patterns_for_mode(), format_ascii_box(), format_markdown(), format_master_md() (+21 more)
+
+### Community 5 - "el"
+Cohesion: 0.10
+Nodes (67): Sabido, tt(), el(), avatar(), barraCarrito(), botonDemo(), cabeceraMarca(), campo() (+59 more)
+
+### Community 6 - "procesar-maniqui.mjs"
+Cohesion: 0.03
+Nodes (65): aCm(), alturaTalla, aManiqui, args, B, BASE, cabeza, cilindroCuello (+57 more)
+
+### Community 7 - ".moverPrimitiva"
+Cohesion: 0.06
+Nodes (6): degToRad(), radToDeg(), FaseMov, UmbralFase, getPose(), PoseDef
+
+### Community 8 - "playwright-core"
+Cohesion: 0.03
+Nodes (21): K, PESO, errs, errores, errores, fallos, errores, fallos (+13 more)
+
+### Community 9 - ".scheduleAutosave"
+Cohesion: 0.05
+Nodes (3): Ya funciona (✔), huecoEntreCajas(), SnapManager
+
+### Community 10 - "validate_data.py"
+Cohesion: 0.06
+Nodes (43): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, TestGeneratedCatalogContract, _catalog_date(), _check_app_interface_contract() (+35 more)
+
+### Community 11 - "test_core.py"
+Cohesion: 0.07
+Nodes (17): _indexar(), main(), prefab(), _triangulos(), check_description_quality(), find_skill_dirs(), main(), parse_frontmatter() (+9 more)
+
+### Community 12 - "DesignSystemGenerator"
+Cohesion: 0.06
+Nodes (14): DesignSystemGenerator, _resolve_dial(), apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), _validate_action(), TestReasoningMatch, read_rows() (+6 more)
+
+### Community 13 - "main.ts"
+Cohesion: 0.08
+Nodes (51): [0.3.80] — 2026-09-20, Cambiado, Corregido, Corregido, Nota abierta, parsearPrefab(), serializarPrefab(), ProjectData (+43 more)
+
+### Community 14 - "Editor.ts"
+Cohesion: 0.05
+Nodes (51): Arco, CajaOr, CandidatoPoste, ColorMode, DIRECCIONES_ROLDANA, DireccionRoldana, EditorEvents, HandSide (+43 more)
+
+### Community 15 - ".onPointerDown"
+Cohesion: 0.07
+Nodes (7): RopeEnd, RopeKind, aplicarCables(), aplicarCuerdas(), aplicarUniones(), construirMaquina(), construirPiezas()
+
+### Community 16 - "datos.ts"
+Cohesion: 0.05
+Nodes (50): Corregido, ARTE, C, D, F, G, LOGOS, R (+42 more)
+
+### Community 17 - "core.py"
+Cohesion: 0.06
+Nodes (24): _contains_phrase(), detect_domain(), _domain_keywords(), _exact_match_diagnostic(), _exact_row_identity(), _file_signature(), _get_bm25(), _legacy_successor_guidance() (+16 more)
+
+### Community 18 - "ref_node_fs"
+Cohesion: 0.03
+Nodes (30): BANCA, datos, res, TOPES, banca, proyecto, avisoSalida, errores (+22 more)
+
+### Community 20 - ".constructor"
+Cohesion: 0.06
+Nodes (5): EjercicioBarra, LadoZona, ZonaId, poseNames(), ArticulacionesPanel
+
+### Community 22 - "Landing.ts"
+Cohesion: 0.09
+Nodes (19): PluginArchivos, getIdioma(), applyPreset(), defaults(), getPerf(), PERF_PRESETS, PerfPreset, PerfSettings (+11 more)
+
+### Community 23 - "SceneObject"
+Cohesion: 0.07
+Nodes (4): aplicarModeloMaquina(), SceneObject, EspejoDentada, Casilla
+
+### Community 24 - "steps"
+Cohesion: 0.05
+Nodes (45): name, needs, runs-on, steps, env, GITHUB_TOKEN, GODOT_DIR_VERSION, GODOT_VERSION (+37 more)
+
+### Community 25 - "prueba-sentadilla.mjs"
+Cohesion: 0.05
+Nodes (23): AYUDANTES(), errores, fallos, postura(), errores, fallos, errores, fallos (+15 more)
+
+### Community 26 - "three"
+Cohesion: 0.07
+Nodes (38): [0.2.60] — 2026-08-15, Añadido, Cambiado, Corregido, Corregido (continuación), Sabido, three, figureSegments (+30 more)
+
+### Community 27 - "standardMachines.ts"
+Cohesion: 0.07
+Nodes (31): PrefabArchivo, ReportePrefab, PrefabsMaquina, Registro, LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES (+23 more)
+
+### Community 28 - "search_stack"
+Cohesion: 0.08
+Nodes (8): _exact_stack_identifier(), _project_row(), search_stack(), _rows(), TestNativeDesktopStackFreshness, read_rows(), _rows(), TestWebStackFreshness
+
+### Community 29 - "Examples"
 Cohesion: 0.05
 Nodes (39): Anti-Patterns, Authoring Custom Plugins, Avoid Barrel Files, Basic Config, Be Explicit with Import Extensions, Build Optimization, Client-Side Access, Common Pitfalls (+31 more)
 
-### Community 7 - "el"
-Cohesion: 0.12
-Nodes (6): roundTo(), cargaFallida(), clear(), el(), PropertiesPanel, elegirWorkspace()
-
-### Community 9 - "validate_data.py"
-Cohesion: 0.07
-Nodes (48): Semantic quality contracts for the core UI/UX datasets., read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, _catalog_date(), _check_app_interface_contract() (+40 more)
-
-### Community 10 - ".moverPrimitiva"
-Cohesion: 0.08
-Nodes (6): degToRad(), radToDeg(), FaseMov, UmbralFase, getPose(), PoseDef
-
-### Community 12 - "LibraryView.ts"
-Cohesion: 0.10
-Nodes (21): componentModels, claveMaquina(), geometriaAOBJ(), geometriaASTL(), hornearMaquina(), MAQUINA_PREFIX, origenDeMaquina(), PrefabArchivo (+13 more)
-
-### Community 13 - "LibraryView"
+### Community 30 - "LibraryView"
 Cohesion: 0.11
 Nodes (3): ComponentPreview, LibrarySource, LibraryView
 
-### Community 15 - "indexada.py"
-Cohesion: 0.06
-Nodes (32): disco_indexado(), glb, step, stl, DISCO INDEXADO — el seguro que clava un brazo que pivota, en CAD de taller. Lo…, comprueba(), _disco(), indexada() (+24 more)
+### Community 31 - "SceneObject.ts"
+Cohesion: 0.10
+Nodes (21): 3.1 Dos reglas del catálogo que ya costaron caras, 3. Atributos diferenciados por clase de objeto, ObjData, SnapResult, deltaEspejo(), espejarGeometria(), espejoDe(), invertirCaras() (+13 more)
 
-### Community 17 - "design_system.py"
+### Community 32 - "LibraryView.ts"
+Cohesion: 0.10
+Nodes (25): componentModels, armarMaquina(), claveMaquina(), geometriaAOBJ(), geometriaASTL(), hornearMaquina(), MAQUINA_PREFIX, normalizarEspejo() (+17 more)
+
+### Community 33 - ".rebuildGeometry"
+Cohesion: 0.14
+Nodes (3): roundTo(), clear(), PropertiesPanel
+
+### Community 34 - "PropertiesPanel.ts"
+Cohesion: 0.11
+Nodes (35): BY_ID, MATERIAL_PRESETS, MaterialPreset, agarreDentada(), altoLabio(), buildDentadaGeometry(), CajaDentada, cajasDentada() (+27 more)
+
+### Community 35 - ".listObjects"
+Cohesion: 0.09
+Nodes (7): 2.1 La forma general, 2.2 El patrón de MODO (la estructura más importante del Editor), 2.3 DISEÑO vs PARTIDA (el concepto que más daño hace si se ignora), 2.4 Grupos y multiselección, 2.5 Historial y autoguardado, 2. Arquitectura del sistema, disposeHumanFigure()
+
+### Community 36 - "linePieces.ts"
+Cohesion: 0.12
+Nodes (30): 5.6 Ramas nodales (v0.3.25), applyBend(), applyTwist(), baseGeometry(), buildGeometry(), segFor(), buildBeamGeometry(), buildBeamSinRamas() (+22 more)
+
+### Community 37 - "getDefinition"
+Cohesion: 0.11
+Nodes (16): [0.3.65] — 2026-09-16, Añadido, Añadido, ComponentModelManager, hashU8(), ImportEntry, ImportStatus, separarBandas() (+8 more)
+
+### Community 39 - "mancuerna_hex.py"
+Cohesion: 0.11
+Nodes (13): bandas(), barra_olimpica(), _mangas(), anillos(), _cabeza(), _hexagono(), mancuerna(), mancuerna_10lb() (+5 more)
+
+### Community 40 - "search"
+Cohesion: 0.09
+Nodes (7): search(), _style_search_destination(), _valid_max_results(), TestDiagnosticsContracts, TestSearchDomains, TestStyleTaxonomy, TestTextLayoutRetrieval
+
+### Community 41 - "ComponentPalette.ts"
+Cohesion: 0.11
+Nodes (18): ConfigBisagra, ConfigPasador, BY_ID, catalogoVigente(), CATEGORY_COLORS, CATEGORY_LABELS, COMPONENT_LIBRARY, COMPONENTES_RETIRADOS (+10 more)
+
+### Community 42 - "indexada.py"
+Cohesion: 0.09
+Nodes (11): comprueba(), _disco(), indexada(), pasador_manija(), pivote_indexado(), pivote_indexado_soldar(), [0.3.50] — 2026-09-12, [0.3.52] — 2026-09-14 (+3 more)
+
+### Community 43 - "math"
+Cohesion: 0.13
+Nodes (20): anguloRespaldo(), asientos(), bisagraArriba(), gira(), peor(), posar(), preparar(), qinv() (+12 more)
+
+### Community 44 - "AI_CONTEXT.md — EXERSUITE3D"
 Cohesion: 0.07
-Nodes (32): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+24 more)
+Nodes (29): 0. En una página, 11.1 Los cinco sitios de la versión, 11.2 Qué publica qué, 11. Cómo hacer un cambio, de principio a fin, 12. Cómo usar este documento con una IA local, 1. Cómo levantar el proyecto, 5.1 La cadena de construcción de una malla, 5.2 Primitiva paramétrica vs malla real (+21 more)
 
-### Community 18 - "SceneManager"
+### Community 46 - "package.json"
 Cohesion: 0.09
-Nodes (6): CM, formatKg(), METER, gradientTexture(), pintarCaucho(), SceneManager
+Nodes (27): description, devDependencies, @capacitor/android@^6.2.1, @capacitor/cli@^6.2.1, @capacitor/core@^6.2.1, @gltf-transform/core@^4.5.1, meshoptimizer@^1.3.0, playwright-core@^1.49.1 (+19 more)
 
-### Community 19 - "DesignSystemGenerator"
-Cohesion: 0.11
-Nodes (12): DesignSystemGenerator, Generates design system recommendations from aggregated searches., Load reasoning rules from CSV., Execute searches across multiple domains., Find matching reasoning rule for a category., Apply reasoning rules to search results., Select best matching result based on priority keywords., Extract results list from search result dict. (+4 more)
+### Community 47 - "recentStore.ts"
+Cohesion: 0.15
+Nodes (23): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_PREFABS, STORE_RECENT, STORE_RECENT_META (+15 more)
 
-### Community 20 - "FigureSegmentManager"
-Cohesion: 0.14
-Nodes (6): FigureSegmentManager, deleteSegment(), getAllSegments(), putSegment(), StoredSegment, tx()
+### Community 48 - "FigureSegmentManager"
+Cohesion: 0.12
+Nodes (7): FigureSegmentManager, deleteSegment(), getAllSegments(), putSegment(), StoredSegment, tx(), firstTexturedMaterial()
 
-### Community 22 - "agarre_doble"
-Cohesion: 0.09
-Nodes (29): agarre_doble(), _mango(), _placa(), glb, step, stl, AGARRE DOBLE DE POLEA (doble D) — accesorio ergonómico, en CAD. El agarre de…, Un mango: tubo de punta a punta, funda de goma y las dos bolas. (+21 more)
-
-### Community 23 - "mancuerna_hex.py"
-Cohesion: 0.11
-Nodes (29): bandas(), barra_olimpica(), _mangas(), glb, step, stl, BARRA OLÍMPICA — la de 20 kg, con su moleteado de verdad. Copiada de la ficha…, Largo de cada manga para que la barra mida LARGO de punta a punta. (+21 more)
-
-### Community 24 - "linePieces.ts"
-Cohesion: 0.11
-Nodes (35): applyBend(), applyTwist(), baseGeometry(), buildGeometry(), segFor(), buildHorquillaGeometry(), CajaHorquilla, cajasHorquilla() (+27 more)
-
-### Community 25 - "prueba-vibra-minima.mjs"
-Cohesion: 0.14
-Nodes (8): A, B, C, CASOS, D, E, res, TOPE
-
-### Community 26 - "hub.ts"
-Cohesion: 0.06
-Nodes (43): arrastrable(), suavidad(), barraCarrito(), Carrito, CATALOGO, catalogoOnDemand(), Deseo, DESEOS (+35 more)
-
-### Community 27 - "Subagent-Driven Development"
-Cohesion: 0.09
-Nodes (18): Implementer Subagent Prompt Template, Scoped Re-Review Prompt Template, 1. Dispatch the implementer, 2. Handle the report, 3. Review the task, 4. The fix loop, 5. Complete the task, Common Rationalizations (+10 more)
-
-### Community 28 - "Mannequin Test Scripts"
-Cohesion: 0.09
-Nodes (19): AYUDANTES(), errores, fallos, errores, fallos, medidas, errores, fallos (+11 more)
-
-### Community 29 - "Landing.ts"
-Cohesion: 0.14
-Nodes (17): getIdioma(), setIdioma(), applyPreset(), defaults(), getPerf(), PERF_PRESETS, PerfPreset, PerfSettings (+9 more)
-
-### Community 30 - "build123d modeling patterns"
+### Community 49 - "build123d modeling patterns"
 Cohesion: 0.07
 Nodes (27): 2D sketch algebra decays; winding decides extrude direction, A revolve puts its seam at +X, `align=(None, None, None)` is the raw OCC datum, not "centered", Assemblies and positioning, Blending volumes: a closed lobe that ends inside the body is a cliff, build123d modeling patterns, Builder contexts, Colour (+19 more)
 
-### Community 31 - "prueba-gesto-barra.mjs"
+### Community 50 - "prueba-gesto-barra.mjs"
 Cohesion: 0.08
 Nodes (24): aleja, atras, bloqueo, carril, carrilB, columnaEn(), conMarca, d3() (+16 more)
 
-### Community 32 - "ArticulacionesPanel"
-Cohesion: 0.19
-Nodes (3): LadoZona, ZonaId, ArticulacionesPanel
-
-### Community 33 - "PropertiesPanel.ts"
+### Community 51 - "descargas.ts"
 Cohesion: 0.13
-Nodes (29): agarreDentada(), altoLabio(), buildDentadaGeometry(), CajaDentada, cajasDentada(), contornoDiente(), contornoMuescas(), DENTADA_BARRA_CM (+21 more)
+Nodes (22): [0.3.78] — 2026-09-20, Corregido — accesibilidad, Corregido — trabajo que se perdía sin decir nada, Herramientas, Pruebas, Rendimiento, aBase64(), abrirConInput() (+14 more)
 
-### Community 34 - "Frontend Accessibility Patterns"
+### Community 52 - "kettlebell.py"
+Cohesion: 0.18
+Nodes (13): _asa(), _comprueba(), _grabado(), kettlebell(), kettlebell_10kg(), kettlebell_15kg(), kettlebell_20kg(), kettlebell_25kg() (+5 more)
+
+### Community 53 - "[0.4.11] — 2026-09-29"
+Cohesion: 0.08
+Nodes (24): [0.4.11] — 2026-09-29, [0.4.12] — 2026-09-29, [0.4.8] — 2026-09-29, [0.4.9] — 2026-09-29, Arreglado, Cambiado, El brazo con pilar, diseñado por ángulos, El cambio (+16 more)
+
+### Community 55 - "agarre_doble.py"
+Cohesion: 0.13
+Nodes (11): agarre_doble(), _mango(), _placa(), codo(), _sin_builder(), tubo(), varilla(), [0.3.46] — 2026-09-12 (+3 more)
+
+### Community 56 - "BM25"
+Cohesion: 0.14
+Nodes (4): BM25, _suggest_identities(), TestBm25CoreBehavior, TestTokenizer
+
+### Community 57 - "Frontend Accessibility Patterns"
 Cohesion: 0.09
 Nodes (22): Anti-Patterns, ARIA Attributes, aria-describedby, aria-expanded and aria-controls, aria-label vs aria-labelledby, aria-live for Dynamic Content, Checklist, Complete Accessible Form (+14 more)
 
-### Community 35 - "kettlebell.py"
-Cohesion: 0.18
-Nodes (23): _asa(), _comprueba(), _grabado(), kettlebell(), kettlebell_10kg(), kettlebell_15kg(), kettlebell_20kg(), kettlebell_25kg() (+15 more)
+### Community 58 - "VisorPiezas.ts"
+Cohesion: 0.19
+Nodes (4): formatCm(), marcar(), Retratista, VisorPiezas
 
-### Community 36 - "What You Must Do When Invoked"
-Cohesion: 0.08
-Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
-
-### Community 38 - "Creation Log: Systematic Debugging Skill"
+### Community 59 - "cadgen"
 Cohesion: 0.10
-Nodes (19): Bulletproofing Elements, Creation Log: Systematic Debugging Skill, Enhancement 1: TDD Reference, Extraction Decisions, Final Outcome, Initial Version, Iterations, Key Insight (+11 more)
+Nodes (5): El pivote que se clava por tramos, carril_topes(), _dedo(), disco_indexado(), pin_seguro()
 
-### Community 40 - "Root Cause Tracing"
-Cohesion: 0.12
-Nodes (15): 1. Observe the Symptom, 2. Find Immediate Cause, 3. Ask: What Called This?, 4. Keep Tracing Up, 5. Find Original Trigger, Adding Stack Traces, Finding Which Test Causes Pollution, Key Principle (+7 more)
+### Community 60 - "Joint"
+Cohesion: 0.13
+Nodes (9): [0.3.49] — 2026-09-12, Cambiado, Corregido, Interno, Pruebas, AssemblyHelper pattern, Core rule, Joint (+1 more)
 
-### Community 41 - "core.py"
-Cohesion: 0.08
-Nodes (41): _contains_phrase(), _domain_keywords(), _exact_match_diagnostic(), _exact_row_identity(), _file_signature(), _get_bm25(), _legacy_successor_guidance(), _load_csv() (+33 more)
-
-### Community 43 - "search_stack"
+### Community 61 - "Subagent-Driven Development"
 Cohesion: 0.09
-Nodes (12): _exact_stack_identifier(), _project_row(), Resolve a standalone API identifier even when its BM25 IDF is low., Search stack-specific guidelines, search_stack(), _valid_max_results(), Freshness and migration contracts for native, desktop, and 3D stacks., _rows() (+4 more)
+Nodes (18): Implementer Subagent Prompt Template, Scoped Re-Review Prompt Template, 1. Dispatch the implementer, 2. Handle the report, 3. Review the task, 4. The fix loop, 5. Complete the task, Common Rationalizations (+10 more)
 
-### Community 44 - "test_data_contracts.py"
-Cohesion: 0.08
-Nodes (15): apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), Return deterministic mutations and an audit trail; never execute data., Closed, non-executable grammar for design-system decision rules., Parse the canonical condition -> action-array representation., _validate_action(), Cross-file semantic contracts for curated design data. (+7 more)
-
-### Community 46 - "disco_barbell.py"
+### Community 63 - "disco_barbell.py"
 Cohesion: 0.20
-Nodes (19): cotas(), disco(), disco_barbell_10lb(), disco_barbell_25lb(), disco_barbell_35lb(), disco_barbell_45lb(), disco_barbell_5lb(), medidas() (+11 more)
+Nodes (10): cotas(), disco(), disco_barbell_10lb(), disco_barbell_25lb(), disco_barbell_35lb(), disco_barbell_45lb(), disco_barbell_5lb(), medidas() (+2 more)
 
-### Community 47 - "tauri.conf.json"
-Cohesion: 0.10
-Nodes (20): debugApplicationIdSuffix, app, security, windows, build, beforeBuildCommand, beforeDevCommand, devUrl (+12 more)
-
-### Community 48 - "Performance Optimizer"
+### Community 64 - "Performance Optimizer"
 Cohesion: 0.10
 Nodes (20): 1. Identify Performance Issues, 2. Algorithmic Analysis, 3. React Performance Optimization, 4. Bundle Size Optimization, 5. Database & Query Optimization, 6. Network & API Optimization, 7. Memory Leak Detection, Analysis Commands (+12 more)
 
-### Community 49 - "Systematic Debugging"
+### Community 65 - "i18n.ts"
 Cohesion: 0.12
-Nodes (15): Common Rationalizations, Overview, Phase 1: Root Cause Investigation, Phase 2: Pattern Analysis, Phase 3: Hypothesis and Testing, Phase 4: Implementation, Quick Reference, Red Flags - STOP and Follow Process (+7 more)
+Nodes (12): cargarIdioma(), dicc, Idioma, setIdioma(), TRADUCCIONES, ElProps, marcarActual(), FAQ (+4 more)
 
-### Community 50 - "Landing.js"
-Cohesion: 0.18
-Nodes (13): react, Hub(), TEXTOS, BotonComprar(), FormNewsletter(), Idiomas(), Landing(), normalizarImagen() (+5 more)
+### Community 66 - "tauri.conf.json"
+Cohesion: 0.10
+Nodes (20): debugApplicationIdSuffix, app, security, windows, build, beforeBuildCommand, beforeDevCommand, devUrl (+12 more)
 
-### Community 51 - "main.ts"
-Cohesion: 0.09
-Nodes (44): ConfigBisagra, HerramientaRapida, parsearPrefab(), prefabDeFabrica(), ReportePrefab, Esfera, esferaDe(), formatearAmplitud() (+36 more)
+### Community 67 - "Creation Log: Systematic Debugging Skill"
+Cohesion: 0.10
+Nodes (19): Bulletproofing Elements, Creation Log: Systematic Debugging Skill, Enhancement 1: TDD Reference, Extraction Decisions, Final Outcome, Initial Version, Iterations, Key Insight (+11 more)
 
-### Community 52 - "compilerOptions"
+### Community 69 - "EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)"
+Cohesion: 0.11
+Nodes (13): config, Cómo funciona, Editar la página (como en Canva), EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago), La página en dos idiomas (español e inglés), Newsletter, Paso 1 — Credenciales de Mercado Pago (10 min), Paso 2 — Upstash Redis gratis (5 min) (+5 more)
+
+### Community 70 - "poseLibrary.ts"
+Cohesion: 0.14
+Nodes (16): [0.3.1] — 2026-08-21, Añadido, Corregido, Sobre las pruebas, BUILTIN_POSES, conPosturasDeFabrica(), load(), mismaPostura() (+8 more)
+
+### Community 71 - "Landing.js"
+Cohesion: 0.22
+Nodes (15): DiscoDefs(), Discos(), Hub(), TEXTOS, BotonComprar(), FormNewsletter(), Idiomas(), Landing() (+7 more)
+
+### Community 72 - "compilerOptions"
 Cohesion: 0.11
 Nodes (18): compilerOptions, esModuleInterop, forceConsistentCasingInFileNames, isolatedModules, lib, module, moduleResolution, noFallthroughCasesInSwitch (+10 more)
 
-### Community 53 - "horquilla"
+### Community 73 - "horquilla"
 Cohesion: 0.14
-Nodes (15): horquilla(), _oreja(), LA HORQUILLA: alma soldable, dos orejas y el taladro sobre el eje. Una sola…, Una oreja taladrada, con la punta redonda centrada en el eje. `x_interior` es…, La pieza entera: alma al fondo del vuelo y las dos orejas., punto_anclaje_abrazadera(), glb, step (+7 more)
+Nodes (4): horquilla(), _oreja(), punto_anclaje_abrazadera(), punto_anclaje()
 
-### Community 54 - "Positioning logic, joints, and mating"
-Cohesion: 0.11
-Nodes (17): Assembly positioning workflow, AssemblyHelper pattern, Child dependencies, CLI alignment validation, Core rule, Feature placement inside a part, Frame validation, Imported components (+9 more)
-
-### Community 55 - "gracias/page.js"
-Cohesion: 0.19
-Nodes (13): POST(), runtime, POST(), runtime, dynamic, Gracias(), T, consultarPago() (+5 more)
-
-### Community 57 - "Project scaffold template"
-Cohesion: 0.12
-Nodes (16): `.gitattributes`, `.gitignore`, Project scaffold template, `src/assembly.py`, `src/bracket_left.py`, `src/bracket_right.py`, `src/frame.py`, `src/lib/bracket_shape.py` (+8 more)
-
-### Community 58 - "Failure classes and fixes"
-Cohesion: 0.12
-Nodes (16): Boolean against a large lofted surface never returns, CAD `cadgen step snapshot` failure, CAD Viewer startup or link failure, Diff after repair, Failure classes and fixes, Fillet or chamfer failure, Invalid or missing geometry, Loop (+8 more)
-
-### Community 59 - "The model contract and STEP generation"
-Cohesion: 0.12
-Nodes (16): After generation, Children, Composing on other parts: children and inputs, Freshness: `cadgen store why`, Generated assemblies, Generated vs imported STEP, Imported STEP/STP files, Inputs: reading a STEP file the model does not generate (+8 more)
-
-### Community 60 - "cuerda_triceps.py"
-Cohesion: 0.17
-Nodes (15): _abrazadera(), _casquillo(), _colcha(), cuerda_triceps(), _directriz(), _hebra(), glb, step (+7 more)
-
-### Community 61 - "sitio-web/package.json"
-Cohesion: 0.12
-Nodes (15): next, react-dom, @upstash/redis, dependencies, next, react, react-dom, @upstash/redis (+7 more)
-
-### Community 62 - "verificar-apk.py"
-Cohesion: 0.28
-Nodes (15): bien(), huella_del_apk(), huella_del_keystore(), main(), mal(), Path, Android 11+ exige v2 (o superior) para apps que apuntan a SDK 30+., Comprueba que un APK está en condiciones de instalarse antes de publicarlo.… (+7 more)
-
-### Community 63 - "contenido.js"
-Cohesion: 0.23
-Nodes (13): dynamic, GET(), POST(), runtime, dynamic, Pagina(), cargarContenido(), CONTENIDO_DEFECTO (+5 more)
-
-### Community 64 - "i18n.js"
-Cohesion: 0.22
-Nodes (12): generateMetadata(), META, RootLayout(), CABECERA_IDIOMA, COOKIE_IDIOMA, IDIOMA_POR_DEFECTO, idiomaDeAcceptLanguage(), IDIOMAS (+4 more)
-
-### Community 65 - "Qué hay"
-Cohesion: 0.13
-Nodes (14): CAD de taller, Cómo se usa, El carril sobresale de sus dedos, El pivote que se clava por tramos, El seguro del pivote, La estructura, Las cotas no se vuelven a deducir aquí, LAS UNIDADES NO SON LAS MISMAS (+6 more)
-
-### Community 66 - "brazo_spotter.py"
-Cohesion: 0.17
-Nodes (14): _brazo(), brazo_spotter(), brazo_spotter_pieza(), _comprueba(), _culata(), _numerados(), glb, step (+6 more)
-
-### Community 67 - "Inspection and validation"
-Cohesion: 0.13
-Nodes (14): Alignment checks, Diff checks, File-prefixed refs (the CAD Viewer copy format), Frame inspection, Inspection and validation, `interfere`: do two parts occupy the same space?, Measurement checks, Principle (+6 more)
-
-### Community 68 - "CAD generation, inspection, and validation"
-Cohesion: 0.13
-Nodes (14): A model, CAD generation, inspection, and validation, Composition, freshness and builds, Default assumptions, Handoff, Non-negotiables, Progressive references, Purpose (+6 more)
-
-### Community 69 - "package.json"
-Cohesion: 0.12
-Nodes (15): description, license, name, type, version, @capacitor/android, @capacitor/core, @capacitor/filesystem (+7 more)
-
-### Community 70 - "prueba-barra-olimpica.mjs"
-Cohesion: 0.14
-Nodes (11): CENTRO, collar, dMax(), eje, enCentro, enCollar, enKnurl, enTramo() (+3 more)
-
-### Community 71 - "prueba-fusion.mjs"
-Cohesion: 0.17
-Nodes (12): cuenta, destino, en, es, FABRICA, fallos, fusionado, GUARDADO (+4 more)
-
-### Community 72 - "a11y-architect.md"
+### Community 74 - "a11y-architect.md"
 Cohesion: 0.11
 Nodes (17): 1. Perceivable (Information must be presentable), 2. Operable (Interface components must be usable), 3. Understandable (Information must be clear), 4. Robust (Content must be compatible), Accessibility Decision Record Template, Anti-Patterns, Example: Accessible Search Component, Examples (+9 more)
 
-### Community 73 - "poseLibrary.ts"
-Cohesion: 0.18
-Nodes (12): BUILTIN_POSES, conPosturasDeFabrica(), load(), mismaPostura(), persist(), PoseMap, poses, POSTURAS_INTERNAS (+4 more)
+### Community 75 - "E2E Testing Patterns"
+Cohesion: 0.11
+Nodes (17): Artifact Management, CI/CD Integration, Common Causes & Fixes, E2E Testing Patterns, Financial / Critical Flow Testing, Flaky Test Patterns, Identify Flakiness, Page Object Model (POM) (+9 more)
 
-### Community 74 - "Dispatching Parallel Agents"
+### Community 76 - "UI/UX Pro Max - Design Intelligence"
+Cohesion: 0.11
+Nodes (17): Before Delivering App UI, Example Workflow, If a search returns 0 results, Output Formats, Query Contract, Rule Categories by Priority, Running the search tool, Step 1: Analyze User Requirements (+9 more)
+
+### Community 77 - "gracias/page.js"
+Cohesion: 0.19
+Nodes (13): POST(), runtime, POST(), runtime, dynamic, Gracias(), T, consultarPago() (+5 more)
+
+### Community 78 - "Project scaffold template"
+Cohesion: 0.12
+Nodes (16): `.gitattributes`, `.gitignore`, Project scaffold template, `src/assembly.py`, `src/bracket_left.py`, `src/bracket_right.py`, `src/frame.py`, `src/lib/bracket_shape.py` (+8 more)
+
+### Community 79 - "Failure classes and fixes"
+Cohesion: 0.12
+Nodes (16): Boolean against a large lofted surface never returns, CAD `cadgen step snapshot` failure, CAD Viewer startup or link failure, Diff after repair, Failure classes and fixes, Fillet or chamfer failure, Invalid or missing geometry, Loop (+8 more)
+
+### Community 80 - "The model contract and STEP generation"
+Cohesion: 0.12
+Nodes (16): After generation, Children, Composing on other parts: children and inputs, Freshness: `cadgen store why`, Generated assemblies, Generated vs imported STEP, Imported STEP/STP files, Inputs: reading a STEP file the model does not generate (+8 more)
+
+### Community 81 - "Referencias de diseño — EXERSUITE3D"
+Cohesion: 0.12
+Nodes (16): 1. Familias estructurales (racks), 2.1 Palanca Iso-Lateral (Hammer Strength), 2.2 Leva de resistencia variable (Cybex), 2.3 Cables, poleas y pilas de peso (Rogue, REP, Titan, Obelix), 2.4 Carga por disco (plate-loaded: todas), 2.5 Elementos de seguridad, 2. Mecanismos y cinemática (núcleo para el simulador de física), 2B. Recetas de mecanismos con poleas/palancas (referencias visuales) (+8 more)
+
+### Community 82 - "next"
+Cohesion: 0.15
+Nodes (16): next, react, react-dom, @upstash/redis, dependencies, next@^14.2.15, react@^18.3.1, react-dom@^18.3.1 (+8 more)
+
+### Community 83 - "i18n.js"
+Cohesion: 0.20
+Nodes (12): generateMetadata(), META, RootLayout(), CABECERA_IDIOMA, COOKIE_IDIOMA, IDIOMA_POR_DEFECTO, idiomaDeAcceptLanguage(), IDIOMAS (+4 more)
+
+### Community 85 - "cuerda_triceps.py"
+Cohesion: 0.17
+Nodes (6): _abrazadera(), _casquillo(), _colcha(), cuerda_triceps(), _directriz(), _hebra()
+
+### Community 86 - "Positioning logic, joints, and mating"
+Cohesion: 0.12
+Nodes (15): Assembly positioning workflow, Child dependencies, CLI alignment validation, Feature placement inside a part, Frame validation, Imported components, Joint type selection, Measurement validation (+7 more)
+
+### Community 87 - "Root Cause Tracing"
+Cohesion: 0.12
+Nodes (15): 1. Observe the Symptom, 2. Find Immediate Cause, 3. Ask: What Called This?, 4. Keep Tracing Up, 5. Find Original Trigger, Adding Stack Traces, Finding Which Test Causes Pollution, Key Principle (+7 more)
+
+### Community 88 - "Systematic Debugging"
+Cohesion: 0.12
+Nodes (15): Common Rationalizations, Overview, Phase 1: Root Cause Investigation, Phase 2: Pattern Analysis, Phase 3: Hypothesis and Testing, Phase 4: Implementation, Quick Reference, Red Flags - STOP and Follow Process (+7 more)
+
+### Community 89 - "EXERSUITE3D"
+Cohesion: 0.12
+Nodes (16): Android — APK (Capacitor), Arquitectura, Assets de terceros y licencias, Compilación automática (CI), Controles del editor, Convención de unidades, Desarrollo, Empaquetado (Android / Windows) (+8 more)
+
+### Community 90 - "contenido.js"
+Cohesion: 0.22
+Nodes (13): dynamic, GET(), POST(), runtime, dynamic, Pagina(), cargarContenido(), CONTENIDO_DEFECTO (+5 more)
+
+### Community 91 - "brazo_spotter.py"
+Cohesion: 0.17
+Nodes (6): _brazo(), brazo_spotter(), brazo_spotter_pieza(), _comprueba(), _culata(), _numerados()
+
+### Community 92 - "Review Priorities"
+Cohesion: 0.13
+Nodes (14): Approval Criteria, CRITICAL -- Security, Diagnostic Commands, HIGH -- Async Correctness, HIGH -- Error Handling, HIGH -- Idiomatic Patterns, HIGH -- Node.js Specifics, HIGH -- Type Safety (+6 more)
+
+### Community 93 - "Inspection and validation"
+Cohesion: 0.13
+Nodes (14): Alignment checks, Diff checks, File-prefixed refs (the CAD Viewer copy format), Frame inspection, Inspection and validation, `interfere`: do two parts occupy the same space?, Measurement checks, Principle (+6 more)
+
+### Community 94 - "CAD generation, inspection, and validation"
+Cohesion: 0.13
+Nodes (14): A model, CAD generation, inspection, and validation, Composition, freshness and builds, Default assumptions, Handoff, Non-negotiables, Progressive references, Purpose (+6 more)
+
+### Community 95 - "Condition-Based Waiting"
+Cohesion: 0.15
+Nodes (12): Common Mistakes, Condition-Based Waiting, Core Pattern, waitForEvent(), waitForEventCount(), waitForEventMatch(), Implementation, Overview (+4 more)
+
+### Community 97 - "Plugins: 28 enlaces, 25 repositorios, 5 encendidos"
+Cohesion: 0.13
+Nodes (14): [`anthropics/claude-code`](https://github.com/anthropics/claude-code) — 13 plugins oficiales, [`anthropics/skills`](https://github.com/anthropics/skills) → `example-skills` (12 skills), Cómo se deshace, Encendidos, [`matthew-kissinger/kiln`](https://github.com/matthew-kissinger/kiln) — funciona, pero no es lo que parece, [`muratcankoylan/Agent-Skills-for-Context-Engineering`](https://github.com/muratcankoylan/Agent-Skills-for-Context-Engineering) → `context-engineering` (17 skills), No son plugins en absoluto, [`obra/superpowers`](https://github.com/obra/superpowers) → `superpowers` (15 skills) (+6 more)
+
+### Community 98 - "with"
+Cohesion: 0.13
+Nodes (15): with, body_path, cache, distribution, fail_on_unmatched_files, files, generate_release_notes, if-no-files-found (+7 more)
+
+### Community 99 - "preparar-logos.py"
+Cohesion: 0.15
+Nodes (5): corte(), cuadrar(), recuadro(), clean(), square()
+
+### Community 100 - "prueba-barra-olimpica.mjs"
+Cohesion: 0.14
+Nodes (11): CENTRO, collar, dMax(), eje, enCentro, enCollar, enKnurl, enTramo() (+3 more)
+
+### Community 101 - "prueba-fusion.mjs"
+Cohesion: 0.17
+Nodes (12): cuenta, destino, en, es, FABRICA, fallos, fusionado, GUARDADO (+4 more)
+
+### Community 102 - "brazoPilar.ts"
+Cohesion: 0.27
+Nodes (14): alcanceDelPilar(), anguloEnTope(), angulosPedidos(), calcularBrazoPilar(), CfgBrazoPilar, comoTrabaja(), cumpleElRecorrido(), MUESCA_PILAR (+6 more)
+
+### Community 103 - "Qué hay"
+Cohesion: 0.14
+Nodes (13): CAD de taller, Cómo se usa, El carril sobresale de sus dedos, El seguro del pivote, La estructura, Las cotas no se vuelven a deducir aquí, LAS UNIDADES NO SON LAS MISMAS, Los pernos son TALADROS, no bultos (+5 more)
+
+### Community 104 - "Build Error Resolver"
+Cohesion: 0.14
+Nodes (13): 1. Collect All Errors, 2. Fix Strategy (MINIMAL CHANGES), 3. Common Fixes, Build Error Resolver, Core Responsibilities, Diagnostic Commands, DO and DON'T, Priority Levels (+5 more)
+
+### Community 105 - "E2E Test Runner"
+Cohesion: 0.14
+Nodes (13): 1. Plan, 2. Create, 3. Execute, Core Responsibilities, E2E Test Runner, Fallback: Playwright, Flaky Test Handling, Key Principles (+5 more)
+
+### Community 106 - "Dispatching Parallel Agents"
 Cohesion: 0.14
 Nodes (13): 1. Identify Independent Domains, 2. Create Focused Agent Tasks, 3. Dispatch in Parallel, 4. Review and Integrate, Agent Prompt Structure, Common Mistakes, Dispatching Parallel Agents, Overview (+5 more)
 
-### Community 75 - "Referencias de diseño — EXERSUITE3D"
-Cohesion: 0.18
-Nodes (10): 1. Familias estructurales (racks), 2B. Recetas de mecanismos con poleas/palancas (referencias visuales), 3. Materiales y acabados, 4. Paletas de color (hex aproximados), 5. Implicaciones para EXERSUITE3D, Fuentes, Receta A — Functional trainer / jalón con brazo ajustable, Receta B — Belt squat / cable bajo con carro vertical (+2 more)
+### Community 107 - "Capacidades traídas de ECC"
+Cohesion: 0.14
+Nodes (13): Agentes (`.claude/agents/`), Capacidades traídas de ECC, Capacidades traídas de fuera, De [awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents), De [Claude-Code-Promts-Skills](https://github.com/Rtur2003/Claude-Code-Promts-Skills), De [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), Lo que NO entró, y por qué, Lo que se dejó fuera, y por qué (+5 more)
 
-### Community 76 - "prueba-biblioteca-modelos.mjs"
-Cohesion: 0.18
-Nodes (8): cabeceras, CATALOGO, coladas, IDS, pesos, sinBoton, sinModelo, SON_CAJA
-
-### Community 77 - "Landing"
-Cohesion: 0.17
-Nodes (5): FAQ, mostrarInstructivo(), renderInstructivo(), formatDate(), Landing
-
-### Community 78 - "AI_CONTEXT.md — EXERSUITE3D"
-Cohesion: 0.17
-Nodes (11): 0. En una página, 11.1 Los cinco sitios de la versión, 11.2 Qué publica qué, 11. Cómo hacer un cambio, de principio a fin, 12. Cómo usar este documento con una IA local, 1. Cómo levantar el proyecto, 3.1 Dos reglas del catálogo que ya costaron caras, 3. Atributos diferenciados por clase de objeto (+3 more)
-
-### Community 79 - "Batería de pruebas de EXERSUITE3D"
+### Community 108 - "PhysicsWorld.ts"
 Cohesion: 0.20
-Nodes (10): Batería de pruebas de EXERSUITE3D, Concurrencia, Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`, Cómo correrlas, Cómo están escritas, Esperar por RELOJ es la primera causa de rojo mentiroso, Ficheros, Requisitos (+2 more)
+Nodes (11): buildHorquillaGeometry(), CajaHorquilla, cajasHorquilla(), medidasHorquilla(), perfilDisco(), perfilOreja(), CableEntry, GRAVITY (+3 more)
 
-### Community 80 - "EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)"
-Cohesion: 0.17
-Nodes (12): Cómo funciona, Editar la página (como en Canva), EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago), La página en dos idiomas (español e inglés), Newsletter, Paso 1 — Credenciales de Mercado Pago (10 min), Paso 2 — Upstash Redis gratis (5 min), Paso 3 — Desplegar en Vercel (10 min) (+4 more)
+### Community 109 - "build.yml"
+Cohesion: 0.14
+Nodes (13): name, runs-on, jobs, android-apk, windows-exe, name, on, push (+5 more)
 
-### Community 81 - "prueba-hub.mjs"
-Cohesion: 0.21
-Nodes (5): desplazado(), lamina(), pestana(), quieto(), tiron
+### Community 110 - "prueba-vibra-minima.mjs"
+Cohesion: 0.14
+Nodes (8): A, B, C, CASOS, D, E, res, TOPE
 
-### Community 82 - "newsletter/route.js"
-Cohesion: 0.23
+### Community 111 - "newsletter/route.js"
+Cohesion: 0.19
 Nodes (6): runtime, runtime, POST(), responder(), runtime, kv
 
-### Community 83 - "Widgets.js"
-Cohesion: 0.33
-Nodes (10): Acordeon(), analizarVideo(), Carrusel(), nuevoAcordeon(), nuevoCarrusel(), nuevoId(), nuevoVideo(), Video() (+2 more)
+### Community 112 - "project.ts"
+Cohesion: 0.21
+Nodes (12): CableData, GroupData, HumanData, JointData, PartidaData, PROJECT_VERSION, Quat, RopeData (+4 more)
 
-### Community 84 - "2. Mecanismos y cinemática (núcleo para el simulador de física)"
-Cohesion: 0.33
-Nodes (6): 2.1 Palanca Iso-Lateral (Hammer Strength), 2.2 Leva de resistencia variable (Cybex), 2.3 Cables, poleas y pilas de peso (Rogue, REP, Titan, Obelix), 2.4 Carga por disco (plate-loaded: todas), 2.5 Elementos de seguridad, 2. Mecanismos y cinemática (núcleo para el simulador de física)
+### Community 113 - "lineToolDialog.ts"
+Cohesion: 0.24
+Nodes (12): BEAM_NOMINALS_MM, TUBE_NOMINALS_MM, confirmUnsavedChanges(), SaveChoice, prepararModal(), configurarDentada(), configureBeam(), configureGuiaTubular() (+4 more)
 
-### Community 85 - "CAD project structure"
-Cohesion: 0.18
-Nodes (10): Assemblies pull their children, Building many models, CAD project structure, Commit policy (a principle, not a layout), Folders mirror the product tree, Naming, Renaming or retiring outputs, Scaffolding a new project (+2 more)
+### Community 114 - "9.2 Fragilidades reales, por riesgo"
+Cohesion: 0.17
+Nodes (9): 4.6 Guías tubulares: detección por forma + clamp cinemático, 9.1 Lo que está sólido, 9.2 Fragilidades reales, por riesgo, 9.3 Deuda en las pruebas, 9.4 Estado de publicación, 9. Estado actual y deuda técnica, EventBus, Listener (+1 more)
 
-### Community 87 - "EXERSUITE3D"
-Cohesion: 0.18
-Nodes (11): Arquitectura, Assets de terceros y licencias, Controles del editor, Convención de unidades, Desarrollo, EXERSUITE3D, Hoja de ruta, Librería de componentes (+3 more)
+### Community 115 - "Pre-Delivery Checklist (canonical — the only one)"
+Cohesion: 0.15
+Nodes (12): Accessibility, Common Rules for Professional UI + Pre-Delivery Checklist, Icons & Visual Elements, Interaction, Interaction (App), Layout, Layout & Spacing, Light/Dark Mode (+4 more)
 
-### Community 88 - "Lienzo.js"
-Cohesion: 0.35
-Nodes (9): ANCHO_DISENO, FUENTES, Lienzo(), nuevaImagen(), nuevoId(), nuevoTexto(), elegirArchivo(), elegirYSubir() (+1 more)
+### Community 116 - "Quick Reference"
+Cohesion: 0.15
+Nodes (12): 10. Charts & Data (LOW), 1. Accessibility (CRITICAL), 2. Touch & Interaction (CRITICAL), 3. Performance (HIGH), 4. Style Selection (HIGH), 5. Layout & Responsive (HIGH), 6. Typography & Color (MEDIUM), 7. Animation (MEDIUM) (+4 more)
 
-### Community 89 - "SceneObject"
-Cohesion: 0.06
-Nodes (13): aplicarModeloMaquina(), armarMaquina(), normalizarEspejo(), getDefinition(), buildMaterial(), SceneObject, aplicarCables(), aplicarUniones() (+5 more)
+### Community 117 - "Migración de EXERSUITE3D a Godot — Guía completa"
+Cohesion: 0.15
+Nodes (13): 1. Qué incluye el kit (`godot/`), 2. Instalar Godot y abrir el proyecto, 3. Estructura y convenios (léelo antes de tocar código), 4. Tus modelos 3D (.glb) de la biblioteca — YA INTEGRADO, 5. Exportar a Windows (.exe), 6. Exportar a Android (.apk), 7. Paridad con la app web y hoja de ruta, 8. Regenerar `data/components.json` si cambias la biblioteca web (+5 more)
 
-### Community 90 - "search"
-Cohesion: 0.11
-Nodes (8): Resolve a deprecated in-domain alias, or expose a cross-domain redirect., Main search function with auto-domain detection, search(), _style_search_destination(), TestSearchDomains, Regression tests for the public style taxonomy and search contract., read_rows(), TestStyleTaxonomy
+### Community 118 - "scripts"
+Cohesion: 0.15
+Nodes (13): scripts, android:add, android:apk, android:open, android:sync, build, dev, preview (+5 more)
 
-### Community 91 - "4. Física y matemáticas"
-Cohesion: 0.20
-Nodes (10): 4.1 Escala y mundo base, 4.2 El orden de `build()` es obligatorio, 4.3 Grupos rígidos: un mecanismo real no es una nube de cuerpos sueltos, 4.4 Articulaciones, 4.5 Cables: restricción por gradientes, no cadena de cuerpos, 4.6 Guías tubulares: detección por forma + clamp cinemático, 4.7 Cuerdas de seguridad: física + geometría, 4.8 Bisagras: escala de la placa, arco y freno (v0.3.19) (+2 more)
+### Community 119 - "prueba-diente-retiene.mjs"
+Cohesion: 0.17
+Nodes (6): asiento, escenaCarril(), escenaConPasador(), GRADOS, recogidas, tabla
 
-### Community 92 - "5. Geometría procedural"
-Cohesion: 0.20
-Nodes (10): 5.1 La cadena de construcción de una malla, 5.2 Primitiva paramétrica vs malla real, 5.3 Perforado pasante (`perforar.ts`), 5.4 Estirar por el centro (`estirar.ts`), 5.5 Piezas de línea (`linePieces.ts`), 5.5b Insertar un nodo NO deforma (v0.3.29), 5.6 Ramas nodales (v0.3.25), 5.7 Placa dentada doble (v0.3.25) (+2 more)
+### Community 120 - "agarre_simple.py"
+Cohesion: 0.21
+Nodes (4): agarre_simple(), _empunadura(), _estribo(), _placa()
 
-### Community 93 - "atril_discos"
-Cohesion: 0.22
-Nodes (9): atril(), atril_discos(), _comprueba(), glb, step, stl, ATRIL DE DISCOS — el cuerno que se cuelga de cualquier viga con pinholes. La…, La pieza entera: placa, lengüeta con su nariz, y el cuerno. (+1 more)
-
-### Community 94 - "CAD brief"
-Cohesion: 0.20
-Nodes (9): Brief format, CAD brief, Clarification policy, Example: assembly, Example: simple part, Goal, Reference images, Success criteria (+1 more)
-
-### Community 95 - "Supported exports"
-Cohesion: 0.20
-Nodes (9): A model with no STEP, Declare the exports the model always has, Mesh tolerance, Policy, Rendering a mesh file, Reporting, Supported exports, Tool (+1 more)
-
-### Community 96 - "Migración de EXERSUITE3D a Godot — Guía completa"
-Cohesion: 0.22
-Nodes (9): 1. Qué incluye el kit (`godot/`), 2. Instalar Godot y abrir el proyecto, 3. Estructura y convenios (léelo antes de tocar código), 4. Tus modelos 3D (.glb) de la biblioteca — YA INTEGRADO, 5. Exportar a Windows (.exe), 6. Exportar a Android (.apk), 8. Regenerar `data/components.json` si cambias la biblioteca web, 9. Problemas típicos y su solución (+1 more)
-
-### Community 98 - "prueba-disco-barbell.mjs"
-Cohesion: 0.20
-Nodes (6): agujeros, CARTEL, CON_CRUZ, diams, gordos, LIBRAS
-
-### Community 100 - "Defense-in-Depth Validation"
+### Community 121 - "Defense-in-Depth Validation"
 Cohesion: 0.17
 Nodes (11): Applying the Pattern, Defense-in-Depth Validation, Example from Session, Key Insight, Layer 1: Entry Point Validation, Layer 2: Business Logic Validation, Layer 3: Environment Guards, Layer 4: Debug Instrumentation (+3 more)
 
-### Community 101 - "a_prefab.py"
-Cohesion: 0.36
-Nodes (8): _indexar(), main(), prefab(), Path, DE UNA MALLA CAD AL PREFAB DE EXERSUITE3D. Convierte el STL que escribe un…, Los vértices de un STL binario, en su orden de triángulo., Suelda los vértices repetidos y devuelve (posiciones, índices)., _triangulos()
+### Community 122 - "dependencies"
+Cohesion: 0.17
+Nodes (12): dependencies, @capacitor/filesystem@^6.0.4, @capacitor/share@^6.0.4, @dimforge/rapier3d-compat@^0.19.3, fflate@^0.8.3, @fontsource/dm-sans@^5.3.0, three@^0.169.0, @capacitor/filesystem (+4 more)
 
-### Community 102 - "placa_dentada"
-Cohesion: 0.25
-Nodes (8): _contorno_diente(), placa_dentada(), glb, step, stl, PLACA DENTADA (upright dentado) — la plancha de ganchos, en CAD de taller. La…, El contorno de UN gancho, sentado a la altura `y`. Se recorre el perfil entero:…, Sketch
+### Community 123 - "prueba-biblioteca-modelos.mjs"
+Cohesion: 0.17
+Nodes (8): cabeceras, CATALOGO, coladas, IDS, pesos, sinBoton, sinModelo, SON_CAJA
 
-### Community 103 - "graphify reference: extra exports and benchmark"
-Cohesion: 0.22
-Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
+### Community 124 - "prueba-hub.mjs"
+Cohesion: 0.21
+Nodes (5): desplazado(), lamina(), pestana(), quieto(), tiron
 
-### Community 104 - "prueba-moleteado-tubo.mjs"
-Cohesion: 0.22
-Nodes (6): antes, dentro, dentroE, despues, fueraE, TRAMO
+### Community 125 - "Widgets.js"
+Cohesion: 0.39
+Nodes (11): Acordeon(), analizarVideo(), Carrusel(), nuevoAcordeon(), nuevoCarrusel(), nuevoId(), nuevoVideo(), Titulo() (+3 more)
 
-### Community 105 - "prueba-piezas-retiradas.mjs"
-Cohesion: 0.22
-Nodes (7): clavadas, distintas, errores, fallos, HUELLA, IDS, igualFisica
+### Community 127 - "chapa.ts"
+Cohesion: 0.24
+Nodes (11): CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara(), lectura() (+3 more)
 
-### Community 106 - "prueba-uppermachine.mjs"
-Cohesion: 0.22
-Nodes (5): avisosConsola, errores, fallos, FIX, ORIG
-
-### Community 107 - "7. Paridad con la app web y hoja de ruta"
-Cohesion: 0.40
-Nodes (5): 7. Paridad con la app web y hoja de ruta, Cómo comprobar que no rompes nada, Lo que falta, por orden de lo que más se nota (⏳), Una trampa entre motores que conviene saber antes de tocar geometría, Ya funciona (✔)
-
-### Community 108 - "[0.3.73] — 2026-09-19"
-Cohesion: 0.50
-Nodes (4): [0.3.73] — 2026-09-19, Cambiado, Corregido, Pruebas
-
-### Community 109 - "carril_topes"
-Cohesion: 0.29
-Nodes (7): carril_topes(), _dedo(), glb, step, stl, CARRIL DE TOPES — la viga con muescas donde asienta el pie del pilar. La pieza…, Un dedo: chapa de pie que sube de la cara de la viga.
-
-### Community 110 - "Snapshot review"
-Cohesion: 0.25
-Nodes (7): Diagnostic review, Output paths, Packet sizing, Policy, Small packet, Snapshot review, Targeted additions
-
-### Community 111 - "preparar-logos.py"
-Cohesion: 0.25
-Nodes (7): corte(), cuadrar(), Recorta los 16 logotipos de la lámina y deja dos piezas de cada uno. ·…, Ajusta la caja a la tinta que haya dentro y le da aire., Fila por la que separar el emblema del nombre. No se exige una fila del todo…, Centra el recorte en un cuadrado blanco: la burbuja es redonda., recuadro()
-
-### Community 112 - "prueba-biblioteca-posturas.mjs"
-Cohesion: 0.25
-Nodes (5): editada, errores, fallos, FRONTAL_VIEJA, MIA
-
-### Community 113 - "[0.3.22] — 2026-08-28"
-Cohesion: 0.67
-Nodes (3): [0.3.22] — 2026-08-28, Añadido, Cambiado
-
-### Community 114 - "Condition-Based Waiting"
+### Community 128 - "solveTwoBoneIK"
 Cohesion: 0.20
-Nodes (9): Common Mistakes, Condition-Based Waiting, Core Pattern, Implementation, Overview, Quick Patterns, Real-World Impact, When Arbitrary Timeout IS Correct (+1 more)
+Nodes (10): [0.2.92] — 2026-08-19, [0.3.15] — 2026-08-27, Arreglado, Cambiado, Corregido, Verificación, POLE, REST (+2 more)
 
-### Community 116 - "types.ts"
-Cohesion: 0.11
-Nodes (25): CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara(), lectura() (+17 more)
+### Community 129 - "[0.3.98] — 2026-09-23"
+Cohesion: 0.20
+Nodes (10): [0.3.98] — 2026-09-23, [0.3.99] — 2026-09-23, Corregido — consultar el mapa de cuerpos durante la reconstrucción reventaba el WASM, Corregido — la inercia de cada trozo, girada a los ejes del anfitrión, Corregido — UN CONJUNTO SOLDADO PESABA TODO EN SU ANFITRIÓN, El reparto de masa MATÓ la velocidad fantasma, La batería entera, en serie: 115 de 121, La cinemática del puntal sobrevive al eje nuevo (+2 more)
 
-### Community 117 - "prueba-banca-indexada.mjs"
-Cohesion: 0.29
-Nodes (5): BANCA, enHora, movio, peorCede, peorDeriva
+### Community 130 - "CAD project structure"
+Cohesion: 0.18
+Nodes (10): Assemblies pull their children, Building many models, CAD project structure, Commit policy (a principle, not a layout), Folders mirror the product tree, Naming, Renaming or retiring outputs, Scaffolding a new project (+2 more)
 
-### Community 118 - "prueba-largo-a-medida.mjs"
-Cohesion: 0.29
-Nodes (5): brazo, errores, fallos, multi, PIEZAS
+### Community 132 - "Batería de pruebas de EXERSUITE3D"
+Cohesion: 0.18
+Nodes (11): Batería de pruebas de EXERSUITE3D, Concurrencia, Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`, Cómo correrlas, Cómo están escritas, Desde v0.4.10 la simulación la gobiernan las pruebas, por PASOS, Esperar por RELOJ es la primera causa de rojo mentiroso, Ficheros (+3 more)
 
-### Community 119 - "prueba-mano-brazo.mjs"
-Cohesion: 0.29
-Nodes (4): errores, fallos, giro, traza
+### Community 133 - "prueba-brazo-pilar-angulos.mjs"
+Cohesion: 0.16
+Nodes (5): viaje, esperadas, montajes, pasos, TOPES
 
-### Community 121 - "10. Reglas de estilo"
-Cohesion: 0.33
-Nodes (6): 10.1 Idioma, 10.2 Comentarios: el rasgo más característico del proyecto, 10.3 Formato, 10.4 Lo que en este repositorio NO se hace, 10.5 Mensajes de commit, 10. Reglas de estilo
+### Community 134 - "Lienzo.js"
+Cohesion: 0.35
+Nodes (9): ANCHO_DISENO, FUENTES, Lienzo(), nuevaImagen(), nuevoId(), nuevoTexto(), elegirArchivo(), elegirYSubir() (+1 more)
 
-### Community 122 - "2. Arquitectura del sistema"
-Cohesion: 0.33
-Nodes (6): 2.1 La forma general, 2.2 El patrón de MODO (la estructura más importante del Editor), 2.3 DISEÑO vs PARTIDA (el concepto que más daño hace si se ignora), 2.4 Grupos y multiselección, 2.5 Historial y autoguardado, 2. Arquitectura del sistema
+### Community 135 - "perforar.ts"
+Cohesion: 0.31
+Nodes (10): abanico(), areaUV(), contornoCanal(), contornoVentana(), ejesDe(), P3, perforarContorno(), perforarGeometria() (+2 more)
 
-### Community 123 - "6. El maniquí"
-Cohesion: 0.33
-Nodes (6): 6.1 Convención de signos (lo primero que hay que interiorizar), 6.2 Una postura es un estado ABSOLUTO, 6.3 El gesto se instruye por ZONAS, no por articulaciones, 6.4 Acomodaciones: lo que se RESUELVE, no se interpola, 6.5 Apoyos: nada es horizontal (v0.3.11), 6. El maniquí
+### Community 136 - "atril_discos.py"
+Cohesion: 0.22
+Nodes (3): atril(), atril_discos(), _comprueba()
 
-### Community 124 - "[0.2.60] — 2026-08-15"
-Cohesion: 0.33
-Nodes (6): [0.2.60] — 2026-08-15, Añadido, Cambiado, Corregido, Corregido (continuación), Sabido
+### Community 137 - "CAD brief"
+Cohesion: 0.20
+Nodes (9): Brief format, CAD brief, Clarification policy, Example: assembly, Example: simple part, Goal, Reference images, Success criteria (+1 more)
 
-### Community 125 - "[0.3.61] — 2026-09-16"
-Cohesion: 0.33
-Nodes (6): [0.3.61] — 2026-09-16, Añadido, Añadido, Corregido, Corregido, Pendiente, y conviene decirlo claro
-
-### Community 126 - "CAD kinematics and animation"
-Cohesion: 0.33
-Nodes (5): Animation: the render module (`<name>.step.js`), Annotating a STEP you did not generate, CAD kinematics and animation, Kinematics: typed mates, Reviewing motion
-
-### Community 127 - "graphify reference: query, path, explain"
-Cohesion: 0.33
-Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
-
-### Community 128 - "El backend LLM del grafo"
-Cohesion: 0.33
-Nodes (5): El backend LLM del grafo, El estado de hoy, Las tres variables, Lo que este cableado NO acelera, Qué sale de la máquina, y esto es lo que hay que decidir
-
-### Community 129 - "_auditar-ingles.mjs"
-Cohesion: 0.47
-Nodes (5): barrer(), informe, mirar(), PALABRAS, sospechoso()
-
-### Community 134 - "prueba-ingles.mjs"
-Cohesion: 0.47
-Nodes (5): barrer(), informe, mirar(), PALABRAS, sospechoso()
-
-### Community 135 - "prueba-kettlebell.mjs"
-Cohesion: 0.33
-Nodes (4): bolas, PESOS, TABLA_20, topadas
-
-### Community 136 - "prueba-mancuerna-hex.mjs"
-Cohesion: 0.33
-Nodes (3): anchos, mangos, PESOS
-
-### Community 137 - "prueba-placa-dentada.mjs"
-Cohesion: 0.33
-Nodes (3): errores, fallos, sujetan
-
-### Community 138 - "make-brand-assets.py"
-Cohesion: 0.33
-Nodes (5): clean(), Procesa las fotos del logotipo EXERSUITE3D en assets limpios de marca.…, Devuelve RGBA con arte negro, exterior transparente, huecos interiores blancos., Centra `im` en un lienzo cuadrado, con margen relativo. bg=None => transparente., square()
+### Community 138 - "Supported exports"
+Cohesion: 0.20
+Nodes (9): A model with no STEP, Declare the exports the model always has, Mesh tolerance, Policy, Rendering a mesh file, Reporting, Supported exports, Tool (+1 more)
 
 ### Community 139 - "Verification Before Completion"
 Cohesion: 0.20
 Nodes (9): Common Failures, Key Patterns, Overview, Rationalization Prevention, Red Flags - STOP, The Gate Function, The Iron Law, Verification Before Completion (+1 more)
 
-### Community 140 - "default.json"
-Cohesion: 0.33
-Nodes (5): description, identifier, permissions, $schema, windows
-
-### Community 141 - "8. Pruebas: cómo se verifica que algo funciona"
-Cohesion: 0.40
-Nodes (5): 8.1 El contrato de una prueba, 8.2 Dos reglas que evitan pruebas mentirosas, 8.3 El preámbulo canónico, 8.4 Trampas de la batería, 8. Pruebas: cómo se verifica que algo funciona
-
-### Community 142 - "9. Estado actual y deuda técnica"
-Cohesion: 0.40
-Nodes (5): 9.1 Lo que está sólido, 9.2 Fragilidades reales, por riesgo, 9.3 Deuda en las pruebas, 9.4 Estado de publicación, 9. Estado actual y deuda técnica
-
-### Community 143 - "[0.3.78] — 2026-09-20"
-Cohesion: 0.33
-Nodes (6): [0.3.78] — 2026-09-20, Corregido — accesibilidad, Corregido — trabajo que se perdía sin decir nada, Herramientas, Pruebas, Rendimiento
-
-### Community 144 - "[0.1.7] — 2026-07-06"
-Cohesion: 0.40
-Nodes (5): [0.1.7] — 2026-07-06, Añadido, Cambiado, Corregido, Eliminado
-
-### Community 145 - "[0.2.63] — 2026-08-16"
-Cohesion: 0.40
-Nodes (5): [0.2.63] — 2026-08-16, Añadido, Cambiado, Corregido, Sabido
-
-### Community 146 - "[0.2.66] — 2026-08-16"
-Cohesion: 0.40
-Nodes (5): [0.2.66] — 2026-08-16, Añadido, Cambiado, Corregido, Sabido
-
-### Community 147 - "[0.3.2] — 2026-08-22"
-Cohesion: 0.40
-Nodes (5): [0.3.2] — 2026-08-22, Arreglado, Añadido, Cambiado, Cambiado
-
-### Community 148 - "[0.3.49] — 2026-09-12"
-Cohesion: 0.40
-Nodes (5): [0.3.49] — 2026-09-12, Cambiado, Corregido, Interno, Pruebas
-
-### Community 149 - "prueba-v232.mjs"
-Cohesion: 0.40
-Nodes (3): /src/objects/componentLibrary.ts, errores, fallos
-
-### Community 150 - "EXERSUITE3D — Kit de migración a Godot 4"
-Cohesion: 0.33
-Nodes (5): Antes de tocar nada, Arranque rápido, EXERSUITE3D — Kit de migración a Godot 4, Guía completa, Mapa de archivos
-
-### Community 151 - "prueba-atraviesa.mjs"
-Cohesion: 0.40
-Nodes (3): errores, fallos, medidas
-
-### Community 152 - "prueba-atril-discos.mjs"
-Cohesion: 0.40
-Nodes (3): CAJA, diagonal, LENGUETA
-
-### Community 158 - "prueba-levantamiento.mjs"
-Cohesion: 0.40
-Nodes (3): EJ, errores, fallos
-
-### Community 159 - "prueba-maniqui-usa.mjs"
-Cohesion: 0.40
-Nodes (3): errores, fallos, medidas
-
-### Community 162 - "prueba-prensa-maniqui.mjs"
-Cohesion: 0.40
-Nodes (3): errores, fallos, PROY
-
-### Community 163 - "prueba-v245.mjs"
-Cohesion: 0.40
-Nodes (3): errores, fallos, tienePosar
-
-### Community 164 - "prueba-v246.mjs"
-Cohesion: 0.40
-Nodes (3): errores, fallos, prefab
-
-### Community 166 - "prueba-viewer-maniqui.mjs"
-Cohesion: 0.40
-Nodes (3): archivo, errores, fallos
-
-### Community 167 - "Empaquetado (Android / Windows)"
-Cohesion: 0.40
-Nodes (5): Android — APK (Capacitor), Compilación automática (CI), Empaquetado (Android / Windows), Migración a Godot (nativo), Windows — standalone (Tauri)
-
-### Community 168 - "E2E Testing Patterns"
-Cohesion: 0.11
-Nodes (17): Artifact Management, CI/CD Integration, Common Causes & Fixes, E2E Testing Patterns, Financial / Critical Flow Testing, Flaky Test Patterns, Identify Flakiness, Page Object Model (POM) (+9 more)
-
-### Community 169 - "i18n.ts"
-Cohesion: 0.06
-Nodes (37): aBase64(), abrirConInput(), acceptSeguro(), capacitor(), CapacitorGlobal, deBase64(), descargarArchivo(), elegirArchivo() (+29 more)
-
-### Community 170 - "[0.2.15] — 2026-08-03"
-Cohesion: 0.50
-Nodes (4): [0.2.15] — 2026-08-03, Añadido, Cambiado, Corregido
-
-### Community 171 - "[0.2.32] — 2026-08-09"
-Cohesion: 0.50
-Nodes (4): [0.2.32] — 2026-08-09, Añadido, Cambiado, Corregido
-
-### Community 172 - "[0.2.34] — 2026-08-09"
-Cohesion: 0.50
-Nodes (4): [0.2.34] — 2026-08-09, Añadido, Corregido, Revisión del prefab UpperMachine
-
-### Community 173 - "[0.2.3] — 2026-07-22"
-Cohesion: 0.50
-Nodes (4): [0.2.3] — 2026-07-22, Añadido, Cambiado, Corregido
-
-### Community 174 - "[0.2.44] — 2026-08-11"
-Cohesion: 0.50
-Nodes (4): [0.2.44] — 2026-08-11, Añadido, Lo que esto revela, Sabido
-
-### Community 175 - "[0.2.46] — 2026-08-11"
-Cohesion: 0.50
-Nodes (4): [0.2.46] — 2026-08-11, Añadido, Corregido, Sabido
-
-### Community 176 - "[0.2.49] — 2026-08-12"
-Cohesion: 0.50
-Nodes (4): [0.2.49] — 2026-08-12, Añadido, Cambiado, Corregido
-
-### Community 177 - "[0.2.4] — 2026-07-23"
-Cohesion: 0.50
-Nodes (4): [0.2.4] — 2026-07-23, Añadido, Cambiado, Corregido
-
-### Community 178 - "[0.2.50] — 2026-08-12"
-Cohesion: 0.50
-Nodes (4): [0.2.50] — 2026-08-12, Añadido, Cambiado, Corregido
-
-### Community 179 - "[0.2.51] — 2026-08-12"
-Cohesion: 0.50
-Nodes (4): [0.2.51] — 2026-08-12, Añadido, Cambiado, Corregido
-
-### Community 180 - "[0.2.57] — 2026-08-14"
-Cohesion: 0.50
-Nodes (4): [0.2.57] — 2026-08-14, Cambiado, Corregido, Sabido
-
-### Community 181 - "[0.2.61] — 2026-08-16"
-Cohesion: 0.50
-Nodes (4): [0.2.61] — 2026-08-16, Añadido, Cambiado, Sabido
-
-### Community 182 - "[0.2.62] — 2026-08-16"
-Cohesion: 0.50
-Nodes (4): [0.2.62] — 2026-08-16, Cambiado, Corregido, Sabido
-
-### Community 183 - "[0.2.64] — 2026-08-16"
-Cohesion: 0.50
-Nodes (4): [0.2.64] — 2026-08-16, Añadido, Cambiado, Sabido
-
-### Community 184 - "[0.2.69] — 2026-08-16"
-Cohesion: 0.50
-Nodes (4): [0.2.69] — 2026-08-16, Añadido, Cambiado, Sabido
-
-### Community 185 - "[0.2.6] — 2026-07-24"
-Cohesion: 0.50
-Nodes (4): [0.2.6] — 2026-07-24, Añadido, Cambiado, Corregido
-
-### Community 186 - "[0.2.71] — 2026-08-16"
-Cohesion: 0.50
-Nodes (4): [0.2.71] — 2026-08-16, Añadido, Cambiado, Corregido
-
-### Community 187 - "[0.2.73] — 2026-08-17"
-Cohesion: 0.50
-Nodes (4): [0.2.73] — 2026-08-17, Añadido, Corregido, Sabido
-
-### Community 188 - "[0.2.74] — 2026-08-17"
-Cohesion: 0.50
-Nodes (4): [0.2.74] — 2026-08-17, Añadido, Corregido, Sabido
-
-### Community 189 - "[0.2.78] — 2026-08-18"
-Cohesion: 0.50
-Nodes (4): [0.2.78] — 2026-08-18, Añadido, Corregido, Pruebas
-
-### Community 190 - "[0.2.81] — 2026-08-18"
-Cohesion: 0.50
-Nodes (4): [0.2.81] — 2026-08-18, Añadido, Corregido, Pruebas
-
-### Community 191 - "[0.2.84] — 2026-08-18"
-Cohesion: 0.50
-Nodes (4): [0.2.84] — 2026-08-18, Añadido, Corregido, Pruebas
-
-### Community 192 - "[0.2.91] — 2026-08-19"
-Cohesion: 0.50
-Nodes (4): [0.2.91] — 2026-08-19, Añadido, Corregido, Verificación
-
-### Community 193 - "[0.2.93] — 2026-08-19"
-Cohesion: 0.50
-Nodes (4): [0.2.93] — 2026-08-19, Cambiado, Corregido, Verificación
-
-### Community 194 - "[0.2.99] — 2026-08-20"
-Cohesion: 0.50
-Nodes (4): [0.2.99] — 2026-08-20, Añadido, Corregido, Decidido, y va aquí para que no se reabra
-
-### Community 195 - "[0.3.0] — 2026-08-20"
-Cohesion: 0.50
-Nodes (4): [0.3.0] — 2026-08-20, Añadido, Corregido, Medido, y ya decidido: se queda así
-
-### Community 196 - "[0.3.19] — 2026-08-27"
-Cohesion: 0.50
-Nodes (4): [0.3.19] — 2026-08-27, Arreglado, Añadido, Cambiado
-
-### Community 197 - "[0.3.1] — 2026-08-21"
-Cohesion: 0.50
-Nodes (4): [0.3.1] — 2026-08-21, Añadido, Corregido, Sobre las pruebas
-
-### Community 198 - "[0.3.23] — 2026-08-28"
-Cohesion: 0.50
-Nodes (4): [0.3.23] — 2026-08-28, Arreglado, Añadido, Cambiado
-
-### Community 199 - "[0.3.3] — 2026-08-22"
-Cohesion: 0.50
-Nodes (4): [0.3.3] — 2026-08-22, Arreglado, Añadido, Cambiado
-
-### Community 200 - "[0.3.46] — 2026-09-12"
-Cohesion: 0.50
-Nodes (4): [0.3.46] — 2026-09-12, Añadido, Corregido, Pruebas
-
-### Community 201 - "[0.3.48] — 2026-09-12"
-Cohesion: 0.50
-Nodes (4): [0.3.48] — 2026-09-12, Cambiado, Corregido, Pruebas
-
-### Community 202 - "Migrations"
-Cohesion: 0.50
-Nodes (3): Migration guides, Migrations, When to suspect skew
-
-### Community 203 - "graphify reference: add a URL and watch a folder"
-Cohesion: 0.50
-Nodes (3): For /graphify add, For --watch, graphify reference: add a URL and watch a folder
-
-### Community 204 - "graphify reference: commit hook and native CLAUDE.md integration"
-Cohesion: 0.50
-Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify reference: commit hook and native CLAUDE.md integration
-
-### Community 205 - "graphify reference: incremental update and cluster-only"
-Cohesion: 0.50
-Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
-
-### Community 207 - "preparar-fotos.py"
-Cohesion: 0.50
-Nodes (3): Mete las fotografías del hub en el repositorio con el tamaño que se usan. Van…, Recorta al encuadre pedido conservando la franja que marca `foco`., recortar()
-
-### Community 212 - "Editor.ts"
-Cohesion: 0.04
-Nodes (59): POLE, REST, setBoneWorldDir(), solveTwoBoneIK(), Arco, CajaOr, CandidatoPoste, ColorMode (+51 more)
-
-### Community 213 - "Review Priorities"
-Cohesion: 0.13
-Nodes (14): Approval Criteria, CRITICAL -- Security, Diagnostic Commands, HIGH -- Async Correctness, HIGH -- Error Handling, HIGH -- Idiomatic Patterns, HIGH -- Node.js Specifics, HIGH -- Type Safety (+6 more)
-
-### Community 220 - "[0.4.5] — 2026-09-26"
-Cohesion: 0.40
-Nodes (5): [0.4.5] — 2026-09-26, Cambiado — la banca, concéntrica con su pasador, Corregido — el pasador no reconocía su propio herraje tras abrir el proyecto, Corregido — tres defectos del cargador que llevaban la banca rota por dentro, Medido
-
-### Community 225 - "project.ts"
-Cohesion: 0.18
-Nodes (15): CableData, GroupData, HumanData, JointData, ObjData, PartidaData, PROJECT_VERSION, Quat (+7 more)
-
-### Community 229 - "SceneObject.ts"
-Cohesion: 0.09
-Nodes (23): @dimforge/rapier3d-compat, three, SnapManager, SnapResult, deltaEspejo(), espejarGeometria(), espejoDe(), invertirCaras() (+15 more)
-
-### Community 230 - "[0.2.41] — 2026-08-10"
-Cohesion: 0.67
-Nodes (3): [0.2.41] — 2026-08-10, Añadido, Corregido
-
-### Community 231 - "[0.1.2] — 2026-06-30"
-Cohesion: 0.67
-Nodes (3): [0.1.2] — 2026-06-30, Añadido, Cambiado
-
-### Community 233 - "[0.3.27] — 2026-09-01"
-Cohesion: 0.67
-Nodes (3): [0.3.27] — 2026-09-01, Cambiado, Corregido
-
-### Community 234 - "ComponentPalette.ts"
-Cohesion: 0.12
-Nodes (23): ConfigPasador, BY_ID, catalogoVigente(), CATEGORY_COLORS, CATEGORY_LABELS, COMPONENT_LIBRARY, COMPONENTES_RETIRADOS, esDelCatalogo() (+15 more)
-
-### Community 236 - "[0.2.89] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.89] — 2026-08-18, Cambiado, Corregido
-
-### Community 237 - "BM25"
-Cohesion: 0.10
-Nodes (10): BM25, BM25 ranking algorithm for text search, Lowercase, normalize synonyms, split, remove punctuation, filter stopwords, Build BM25 index from documents, Score all documents against query, All indexed terms, for suggestion/typo-recovery purposes., Stdlib-only regression tests for core.py / design_system.py (unittest, not…, TestBm25CoreBehavior (+2 more)
-
-### Community 238 - "componentModels.ts"
-Cohesion: 0.14
-Nodes (11): ComponentModelManager, hashU8(), ImportEntry, ImportStatus, separarBandas(), separarRotulo(), deleteModel(), getAllModels() (+3 more)
-
-### Community 239 - "[0.1.1] — 2026-06-30"
-Cohesion: 0.67
-Nodes (3): [0.1.1] — 2026-06-30, Añadido, Cambiado
-
-### Community 240 - "[0.4.3] — 2026-09-23"
-Cohesion: 0.33
-Nodes (6): [0.4.3] — 2026-09-23, Añadido — cada colisionador dice de qué pieza es, Cambiado — la prueba de la horquilla mide SIN GRAVEDAD, Corregido — el EXTREMO REDONDO estaba sólo en la malla, Corregido — la horquilla se apoyaba en la cara, no; se enterraba en ella, Pendiente, ya con número
-
-### Community 241 - "Toolbar"
-Cohesion: 0.06
-Nodes (39): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_PREFABS, STORE_RECENT, STORE_RECENT_META (+31 more)
-
-### Community 243 - "[0.1.4] — 2026-07-01"
-Cohesion: 0.67
-Nodes (3): [0.1.4] — 2026-07-01, Añadido, Cambiado
-
-### Community 244 - "[0.3.51] — 2026-09-12"
-Cohesion: 0.67
-Nodes (3): [0.3.51] — 2026-09-12, Añadido, Corregido
-
-### Community 245 - "[0.2.14] — 2026-08-02"
-Cohesion: 0.67
-Nodes (3): [0.2.14] — 2026-08-02, Añadido, Corregido
-
-### Community 246 - "[0.2.97] — 2026-08-20"
-Cohesion: 0.67
-Nodes (3): [0.2.97] — 2026-08-20, Añadido, Corregido
-
-### Community 247 - "[0.2.30] — 2026-08-07"
-Cohesion: 0.67
-Nodes (3): [0.2.30] — 2026-08-07, Añadido, Cambiado
-
-### Community 248 - "Build Error Resolver"
-Cohesion: 0.14
-Nodes (13): 1. Collect All Errors, 2. Fix Strategy (MINIMAL CHANGES), 3. Common Fixes, Build Error Resolver, Core Responsibilities, Diagnostic Commands, DO and DON'T, Priority Levels (+5 more)
-
-### Community 249 - "humanFigure.ts"
-Cohesion: 0.08
-Nodes (28): figureSegments, Fuente, Piel, VALID, bakeComponentGeometry(), firstTexturedMaterial(), gltfLoader(), loadModelRoot() (+20 more)
-
-### Community 250 - "prueba-brazo-plano.mjs"
-Cohesion: 0.25
-Nodes (6): derivaX, fallos, giro, maxRoll, maxTors, maxYaw
-
-### Community 251 - "banco3-geometria.py"
-Cohesion: 0.32
-Nodes (12): anguloRespaldo(), asientos(), bisagraArriba(), gira(), peor(), posar(), preparar(), qinv() (+4 more)
-
-### Community 252 - "[0.3.85] — 2026-09-21"
-Cohesion: 0.67
-Nodes (3): [0.3.85] — 2026-09-21, Pruebas — `prueba-dos-bisagras` hace ahora el gesto de la máquina, Y lo que ha encontrado — corrige lo dicho en v0.3.84
-
-### Community 253 - "test_design_system_mode.py"
-Cohesion: 0.07
-Nodes (25): _contrast_ratio(), _derive_dark_palette(), _filter_anti_patterns_for_mode(), _palette_is_dark(), _query_wants_dark(), WCAG relative luminance of a #RRGGBB string, or None if unparseable., True when a colors.csv row's Background is a dark surface., WCAG contrast ratio for two hex colors, or None if either is invalid. (+17 more)
-
-### Community 254 - "[0.2.35] — 2026-08-09"
-Cohesion: 0.67
-Nodes (3): [0.2.35] — 2026-08-09, Añadido, Corregido
-
-### Community 255 - "prueba-diente-retiene.mjs"
-Cohesion: 0.12
-Nodes (8): asiento, escenaCarril(), escenaConPasador(), GRADOS, recogidas, tabla, EventBus, Listener
-
-### Community 256 - "[0.3.11] — 2026-08-26"
-Cohesion: 0.67
-Nodes (3): [0.3.11] — 2026-08-26, Arreglado, Añadido
-
-### Community 257 - "scripts"
-Cohesion: 0.15
-Nodes (13): scripts, android:add, android:apk, android:open, android:sync, build, dev, preview (+5 more)
-
-### Community 258 - "[0.2.19] — 2026-08-05"
-Cohesion: 0.67
-Nodes (3): [0.2.19] — 2026-08-05, Cambiado, Corregido
-
-### Community 259 - "banco-topes-geometria.py"
-Cohesion: 0.26
-Nodes (12): anguloRespaldo(), asientos(), bisagraArriba(), gira(), posar(), qinv(), qmul(), qrot() (+4 more)
-
-### Community 260 - "prueba-banco-tres-topes.mjs"
-Cohesion: 0.33
-Nodes (3): datos, res, TOPES
-
-### Community 261 - "[0.2.8] — 2026-07-25"
-Cohesion: 0.67
-Nodes (3): [0.2.8] — 2026-07-25, Cambiado, Corregido
-
-### Community 262 - "[0.2.76] — 2026-08-17"
-Cohesion: 0.67
-Nodes (3): [0.2.76] — 2026-08-17, Corregido, Sabido
-
-### Community 263 - "[0.2.54] — 2026-08-13"
-Cohesion: 0.67
-Nodes (3): [0.2.54] — 2026-08-13, Corregido, Sabido
-
-### Community 264 - "E2E Test Runner"
-Cohesion: 0.14
-Nodes (13): 1. Plan, 2. Create, 3. Execute, Core Responsibilities, E2E Test Runner, Fallback: Playwright, Flaky Test Handling, Key Principles (+5 more)
-
-### Community 265 - "Pressure Test 1: Emergency Production Fix"
-Cohesion: 0.40
-Nodes (4): Choose A, B, or C, Pressure Test 1: Emergency Production Fix, Scenario, Your Options
-
-### Community 266 - "TestThresholdGate"
-Cohesion: 0.12
-Nodes (4): Unit tests for metric math and relevance fixture validation., TestFixtureValidation, TestMetricMath, TestThresholdGate
-
-### Community 267 - "Pressure Test 2: Sunk Cost + Exhaustion"
-Cohesion: 0.40
-Nodes (4): Choose A, B, or C, Pressure Test 2: Sunk Cost + Exhaustion, Scenario, Your Options
-
-### Community 268 - "[0.2.45] — 2026-08-11"
-Cohesion: 0.67
-Nodes (3): [0.2.45] — 2026-08-11, Cambiado, Corregido
-
-### Community 269 - "[0.3.81] — 2026-09-21"
-Cohesion: 0.50
-Nodes (4): [0.3.81] — 2026-09-21, Corregido, Pruebas, Sigue abierto
-
-### Community 270 - "[0.2.87] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.87] — 2026-08-18, Cambiado, Corregido
-
-### Community 271 - "Pressure Test 3: Authority + Social Pressure"
-Cohesion: 0.40
-Nodes (4): Choose A, B, or C, Pressure Test 3: Authority + Social Pressure, Scenario, Your Options
-
-### Community 273 - "[0.2.90] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.90] — 2026-08-18, Corregido, Verificación
-
-### Community 274 - "[0.2.52] — 2026-08-13"
-Cohesion: 0.67
-Nodes (3): [0.2.52] — 2026-08-13, Añadido, Corregido
-
-### Community 275 - "[0.2.86] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.86] — 2026-08-18, Corregido, Pruebas
-
-### Community 276 - "tt"
-Cohesion: 0.10
-Nodes (58): tt(), avatar(), botonDemo(), cabeceraMarca(), campo(), fichaProducto(), MarketplaceAcciones, Categoria (+50 more)
-
-### Community 277 - "[0.2.96] — 2026-08-19"
-Cohesion: 0.67
-Nodes (3): [0.2.96] — 2026-08-19, Corregido, Verificación
-
-### Community 278 - "[0.3.31] — 2026-09-03"
-Cohesion: 0.67
-Nodes (3): [0.3.31] — 2026-09-03, Añadido, Corregido
-
-### Community 279 - "[0.3.12] — 2026-08-26"
-Cohesion: 0.67
-Nodes (3): [0.3.12] — 2026-08-26, Arreglado, Cambiado
-
-### Community 280 - "Hunt Targets"
+### Community 140 - "prueba-disco-barbell.mjs"
 Cohesion: 0.20
-Nodes (9): 1. Empty Catch Blocks, 2. Inadequate Logging, 3. Dangerous Fallbacks, 4. Error Propagation Issues, 5. Missing Error Handling, Hunt Targets, Output Format, Prompt Defense Baseline (+1 more)
+Nodes (6): agujeros, CARTEL, CON_CRUZ, diams, gordos, LIBRAS
 
-### Community 281 - "UI/UX Pro Max - Design Intelligence"
-Cohesion: 0.11
-Nodes (17): Before Delivering App UI, Example Workflow, If a search returns 0 results, Output Formats, Query Contract, Rule Categories by Priority, Running the search tool, Step 1: Analyze User Requirements (+9 more)
+### Community 141 - "prueba-torre-pesos.mjs"
+Cohesion: 0.20
+Nodes (9): aNue, aRef, errores, faltan, numeros(), parsed, peor, ref (+1 more)
 
-### Community 282 - "[0.3.18] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.18] — 2026-08-27, Arreglado, Pendiente
-
-### Community 283 - "[0.3.62] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.62] — 2026-09-16, Añadido, Sin cambios
-
-### Community 285 - "[0.2.83] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.83] — 2026-08-18, Corregido, Pruebas
-
-### Community 286 - "prueba-banco-cinco-topes.mjs"
-Cohesion: 0.29
-Nodes (4): AGUANTAN, datos, res, TOPES
-
-### Community 287 - "[0.3.25] — 2026-08-29"
-Cohesion: 0.67
-Nodes (3): [0.3.25] — 2026-08-29, Añadido, Corregido
-
-### Community 288 - "[0.2.68] — 2026-08-16"
-Cohesion: 0.67
-Nodes (3): [0.2.68] — 2026-08-16, Cambiado, Sabido
-
-### Community 289 - "[0.3.40] — 2026-09-12"
-Cohesion: 0.67
-Nodes (3): [0.3.40] — 2026-09-12, Añadido, Corregido
-
-### Community 290 - "[0.1.8] — 2026-07-06"
-Cohesion: 0.67
-Nodes (3): [0.1.8] — 2026-07-06, Añadido, Corregido
-
-### Community 291 - "Code Simplifier Agent"
+### Community 143 - "4. Física y matemáticas"
 Cohesion: 0.22
-Nodes (8): Approach, Code Simplifier Agent, Principles, Prompt Defense Baseline, Quality, Readability, Simplification Targets, Structure
+Nodes (8): 4.1 Escala y mundo base, 4.2 El orden de `build()` es obligatorio, 4.3 Grupos rígidos: un mecanismo real no es una nube de cuerpos sueltos, 4.4 Articulaciones, 4.5 Cables: restricción por gradientes, no cadena de cuerpos, 4.7 Cuerdas de seguridad: física + geometría, 4.9 Regla geométrica transversal, 4. Física y matemáticas
 
-### Community 292 - "[0.2.0] — 2026-07-20"
-Cohesion: 0.67
-Nodes (3): [0.2.0] — 2026-07-20, Añadido, Corregido
-
-### Community 294 - ".onPointerDown"
-Cohesion: 0.06
-Nodes (5): localSnapPoints(), RopeEnd, RopeKind, aplicarCuerdas(), Cable
-
-### Community 295 - "[0.3.17] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.17] — 2026-08-27, Arreglado, Pendiente
-
-### Community 296 - "[0.3.33] — 2026-09-09"
-Cohesion: 0.67
-Nodes (3): [0.3.33] — 2026-09-09, Añadido, Corregido
-
-### Community 297 - "devDependencies"
-Cohesion: 0.20
-Nodes (10): devDependencies, @capacitor/android, @capacitor/cli, @capacitor/core, playwright-core, @tauri-apps/cli, @types/three, typescript (+2 more)
-
-### Community 298 - "VisorPiezas.ts"
-Cohesion: 0.13
-Nodes (6): formatCm(), marcar(), MeasurementHUD, Casilla, Retratista, VisorPiezas
-
-### Community 299 - "[0.3.47] — 2026-09-12"
-Cohesion: 0.67
-Nodes (3): [0.3.47] — 2026-09-12, Añadido, Pruebas
-
-### Community 300 - "[0.3.76] — 2026-09-19"
-Cohesion: 0.50
-Nodes (4): [0.3.76] — 2026-09-19, Corregido, Pruebas, Revisado, y está bien
-
-### Community 301 - "[0.3.88] — 2026-09-22"
-Cohesion: 0.50
-Nodes (4): [0.3.88] — 2026-09-22, Añadido — `prueba-diente-retiene`, el caso mínimo del contacto, Dos trampas de medida que documenta la propia prueba, Dónde queda la banca
-
-### Community 302 - "[0.3.43] — 2026-09-12"
-Cohesion: 0.67
-Nodes (3): [0.3.43] — 2026-09-12, Añadido, Corregido
-
-### Community 303 - "[0.3.92] — 2026-09-22"
-Cohesion: 0.67
-Nodes (3): [0.3.92] — 2026-09-22, El tope de 25° es LA BISAGRA DEL RESPALDO, y con eso se cae la investigación entera, Método — tres formas de medir contactos, dos malas
-
-### Community 304 - "[0.2.43] — 2026-08-10"
-Cohesion: 0.67
-Nodes (3): [0.2.43] — 2026-08-10, Corregido, Sabido
-
-### Community 305 - "[0.3.58] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.58] — 2026-09-16, Cambiado, Corregido
-
-### Community 306 - "[0.4.4] — 2026-09-26"
-Cohesion: 0.40
-Nodes (5): [0.4.4] — 2026-09-26, Cambiado — tres pruebas que medían el reloj, no la app, Corregido — los cuatro botones de la Home, en castellano duro, En esta entrega (de v0.3.99 a v0.4.4), La batería entera, en serie: 118 de 123
-
-### Community 307 - "[0.3.72] — 2026-09-18"
-Cohesion: 0.67
-Nodes (3): [0.3.72] — 2026-09-18, Añadido, Corregido
-
-### Community 308 - "[0.2.55] — 2026-08-13"
-Cohesion: 0.67
-Nodes (3): [0.2.55] — 2026-08-13, Añadido, Cambiado
-
-### Community 309 - "[0.3.71] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.71] — 2026-09-16, Cambiado, Sobre cómo se comprueba
-
-### Community 310 - "[0.4.6] — 2026-09-27"
-Cohesion: 0.40
-Nodes (5): [0.4.6] — 2026-09-27, Cambiado — la banca se ajusta con LAS DOS MANOS, que es como se ajusta, Cambiado — la prueba de las dos bisagras pedía recostar hacia donde no había sitio, Corregido — operar una bisagra era dar un latigazo, Medido — el carril dentado RECOGE, y por qué la banca no lo aprovechaba
-
-### Community 311 - "[0.3.77] — 2026-09-19"
-Cohesion: 0.50
-Nodes (4): [0.3.77] — 2026-09-19, Añadido, Corregido, Pruebas
-
-### Community 312 - "[0.2.48] — 2026-08-11"
-Cohesion: 0.67
-Nodes (3): [0.2.48] — 2026-08-11, Cambiado, Corregido
-
-### Community 313 - "[0.3.74] — 2026-09-19"
-Cohesion: 0.50
-Nodes (4): [0.3.74] — 2026-09-19, Cambiado, Documentación, Pruebas
-
-### Community 320 - "Evaluation Criteria"
-Cohesion: 0.22
-Nodes (8): 1. Encapsulation, 2. Invariant Expression, 3. Invariant Usefulness, 4. Enforcement, Evaluation Criteria, Output Format, Prompt Defense Baseline, Type Design Analyzer Agent
-
-### Community 321 - "[0.2.94] — 2026-08-19"
-Cohesion: 0.67
-Nodes (3): [0.2.94] — 2026-08-19, Corregido, Verificación
-
-### Community 322 - "[0.3.89] — 2026-09-22"
-Cohesion: 0.67
-Nodes (3): [0.3.89] — 2026-09-22, Cambiado — el pasador de la banca, sentado en el asiento medido, La razón, y por qué no es un fallo del programa
-
-### Community 323 - "[0.2.77] — 2026-08-17"
-Cohesion: 0.67
-Nodes (3): [0.2.77] — 2026-08-17, Corregido, Sabido
-
-### Community 325 - "[0.2.98] — 2026-08-20"
-Cohesion: 0.67
-Nodes (3): [0.2.98] — 2026-08-20, Añadido, Corregido
-
-### Community 326 - "[0.3.26] — 2026-08-31"
-Cohesion: 0.67
-Nodes (3): [0.3.26] — 2026-08-31, Cambiado, Corregido
-
-### Community 327 - "[0.3.90] — 2026-09-22"
-Cohesion: 0.50
-Nodes (4): [0.3.90] — 2026-09-22, Añadido — `prueba-banco-cinco-topes`, y **está en rojo a propósito**, Cambiado — el puntal de la banca: 42 cm y la unión de arriba libre, Corregido — dos trampas de medida, las dos propias
-
-### Community 328 - "[0.4.1] — 2026-09-23"
-Cohesion: 0.67
-Nodes (3): [0.4.1] — 2026-09-23, Añadido — el PASADOR se pone TOCANDO LA CARA, como la roldana, Corregido
-
-### Community 330 - "[0.3.15] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.15] — 2026-08-27, Arreglado, Cambiado
-
-### Community 331 - "[0.3.80] — 2026-09-20"
-Cohesion: 0.67
-Nodes (3): [0.3.80] — 2026-09-20, Corregido, Nota abierta
-
-### Community 332 - "[0.3.21] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.21] — 2026-08-27, Añadido, Cambiado
-
-### Community 336 - "[0.3.82] — 2026-09-21"
-Cohesion: 0.50
-Nodes (4): [0.3.82] — 2026-09-21, Corregido — la banca ajustable no se sostenía, Pendiente, Pruebas
-
-### Community 341 - ".claude/CLAUDE.md"
-Cohesion: 0.40
-Nodes (4): Agentes y skills de ECC, graphify, Skills de superpowers, Skills y agentes de la tercera tanda
-
-### Community 354 - "[0.4.0] — 2026-09-23"
-Cohesion: 0.50
-Nodes (4): [0.4.0] — 2026-09-23, Cambiado — el VISOR se parte a lo ancho, con la raya desplazable, Cambiado — la pantalla de inicio: sin duplicados, y con la foto de cada proyecto, Pruebas
-
-### Community 355 - "detect_domain"
-Cohesion: 0.23
-Nodes (3): detect_domain(), Auto-detect the most relevant domain from query. Matches are weighted by…, TestDomainDetection
-
-### Community 357 - "[0.2.58] — 2026-08-14"
-Cohesion: 0.67
-Nodes (3): [0.2.58] — 2026-08-14, Añadido, Corregido
-
-### Community 358 - "[0.3.66] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.66] — 2026-09-16, Cambiado, Corregido
-
-### Community 360 - "Capacidades traídas de ECC"
-Cohesion: 0.14
-Nodes (13): Agentes (`.claude/agents/`), Capacidades traídas de ECC, Capacidades traídas de fuera, De [awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents), De [Claude-Code-Promts-Skills](https://github.com/Rtur2003/Claude-Code-Promts-Skills), De [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), Lo que NO entró, y por qué, Lo que se dejó fuera, y por qué (+5 more)
-
-### Community 361 - "[0.1.5] — 2026-07-03"
-Cohesion: 0.40
-Nodes (5): [0.1.5] — 2026-07-03, Añadido, Cambiado, Corregido, Rendimiento
-
-### Community 363 - "[0.3.91] — 2026-09-22"
-Cohesion: 0.67
-Nodes (3): [0.3.91] — 2026-09-22, Añadido — la banca de tres topes, y por qué tampoco vale, Corregido — la prueba de los topes daba VERDES FALSOS
-
-### Community 364 - "[0.2.31] — 2026-08-07"
-Cohesion: 0.67
-Nodes (3): [0.2.31] — 2026-08-07, Cambiado, Corregido
-
-### Community 367 - "[0.3.79] — 2026-09-20"
-Cohesion: 0.67
-Nodes (3): [0.3.79] — 2026-09-20, Cambiado, Pruebas
-
-### Community 368 - "standardMachines.ts"
-Cohesion: 0.09
-Nodes (27): LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES, UPPER_MACHINE_UNIONES, ARBOL, BANCO, BANCO_UNIONES (+19 more)
-
-### Community 369 - "[0.3.13] — 2026-08-26"
-Cohesion: 0.67
-Nodes (3): [0.3.13] — 2026-08-26, Arreglado, Pendiente
-
-### Community 370 - "[0.3.86] — 2026-09-21"
-Cohesion: 0.67
-Nodes (3): [0.3.86] — 2026-09-21, Añadido — perfil de diente en MUESCA para `placa-dentada`, Pero NO arregla la banca, y esto es lo importante
-
-### Community 377 - "[0.3.83] — 2026-09-21"
-Cohesion: 0.67
-Nodes (3): [0.3.83] — 2026-09-21, Cambiado — el apaño de v0.3.82 se sustituye por la pieza de verdad, Pruebas
-
-### Community 378 - "Pre-Delivery Checklist (canonical — the only one)"
-Cohesion: 0.15
-Nodes (12): Accessibility, Common Rules for Professional UI + Pre-Delivery Checklist, Icons & Visual Elements, Interaction, Interaction (App), Layout, Layout & Spacing, Light/Dark Mode (+4 more)
-
-### Community 379 - "[0.3.87] — 2026-09-21"
-Cohesion: 0.50
-Nodes (4): [0.3.87] — 2026-09-21, Añadido — `prueba-bisagra-rigida`, el caso mínimo, Corrige a v0.3.86, Dónde queda la banca
-
-### Community 380 - "Quick Reference"
-Cohesion: 0.15
-Nodes (12): 10. Charts & Data (LOW), 1. Accessibility (CRITICAL), 2. Touch & Interaction (CRITICAL), 3. Performance (HIGH), 4. Style Selection (HIGH), 5. Layout & Responsive (HIGH), 6. Typography & Color (MEDIUM), 7. Animation (MEDIUM) (+4 more)
-
-### Community 381 - "[0.3.75] — 2026-09-19"
-Cohesion: 0.67
-Nodes (3): [0.3.75] — 2026-09-19, Corregido, Pruebas
-
-### Community 384 - "[0.3.16] — 2026-08-27"
-Cohesion: 0.67
-Nodes (3): [0.3.16] — 2026-08-27, Arreglado, Cambiado
-
-### Community 385 - "[0.3.99] — 2026-09-23"
-Cohesion: 0.40
-Nodes (5): [0.3.99] — 2026-09-23, Corregido — la inercia de cada trozo, girada a los ejes del anfitrión, El reparto de masa MATÓ la velocidad fantasma, La batería entera, en serie: 115 de 121, Regresión conocida — `prueba-atraviesa`, intermitente
-
-### Community 387 - "test_text_layout_resilience.py"
-Cohesion: 0.20
-Nodes (4): Canonical regression contracts for resilient UI text layouts., read_rows(), TestTextLayoutDataContracts, TestTextLayoutRetrieval
-
-### Community 388 - "[0.3.32] — 2026-09-09"
-Cohesion: 0.67
-Nodes (3): [0.3.32] — 2026-09-09, Añadido, Corregido
-
-### Community 389 - "[0.1.3] — 2026-06-30"
-Cohesion: 0.67
-Nodes (3): [0.1.3] — 2026-06-30, Añadido, Corregido
-
-### Community 390 - "[0.3.84] — 2026-09-21"
-Cohesion: 0.50
-Nodes (4): [0.3.84] — 2026-09-21, Atención — `prueba-dos-bisagras` falla 3 de cada 5, Añadido — las tres soldaduras que faltaban, El mecanismo, demostrado
-
-### Community 391 - "[0.2.25] — 2026-08-05"
-Cohesion: 0.67
-Nodes (3): [0.2.25] — 2026-08-05, Corregido, Eliminado
-
-### Community 392 - "[0.2.72] — 2026-08-16"
-Cohesion: 0.67
-Nodes (3): [0.2.72] — 2026-08-16, Corregido, Sabido
-
-### Community 393 - "[0.2.70] — 2026-08-16"
-Cohesion: 0.67
-Nodes (3): [0.2.70] — 2026-08-16, Añadido, Sabido
-
-### Community 394 - "dependencies"
-Cohesion: 0.29
-Nodes (7): dependencies, @capacitor/filesystem, @capacitor/share, @dimforge/rapier3d-compat, fflate, @fontsource/dm-sans, three
-
-### Community 396 - "_verificar-faq.mjs"
-Cohesion: 0.50
-Nodes (3): enDom, esperadas, faltan
-
-### Community 397 - "[0.3.9] — 2026-08-23"
-Cohesion: 0.67
-Nodes (3): [0.3.9] — 2026-08-23, Añadido, Documentación
-
-### Community 400 - "Deterministic Checks"
+### Community 145 - "Deterministic Checks"
 Cohesion: 0.22
 Nodes (8): Deterministic Checks, Known false-positive class, Overview, Remember, Usage, What it checks, When to use vs. when not to, Wiring it as a hook instead of running it manually
 
-### Community 401 - "[0.3.7] — 2026-08-22"
-Cohesion: 0.67
-Nodes (3): [0.3.7] — 2026-08-22, Añadido, Cambiado
+### Community 146 - "steps"
+Cohesion: 0.36
+Nodes (9): steps, GH_TOKEN, steps, env, name, run, shell, uses (+1 more)
 
-### Community 402 - "CatalogSummaryLineEndingsTest"
-Cohesion: 0.32
-Nodes (4): CatalogSummaryLineEndingsTest, _load_generator(), The catalog snapshot must not depend on the checkout's line endings. Regression…, Simulate a Windows checkout: the recorded hashes must still validate.
+### Community 147 - "prueba-moleteado-tubo.mjs"
+Cohesion: 0.22
+Nodes (6): antes, dentro, dentroE, despues, fueraE, TRAMO
 
-### Community 403 - "Development Workflow"
+### Community 148 - "prueba-piezas-retiradas.mjs"
+Cohesion: 0.22
+Nodes (7): clavadas, distintas, errores, fallos, HUELLA, IDS, igualFisica
+
+### Community 149 - "prueba-uppermachine.mjs"
+Cohesion: 0.22
+Nodes (5): avisosConsola, errores, fallos, FIX, ORIG
+
+### Community 150 - "crearBotonesHerramientas"
+Cohesion: 0.28
+Nodes (5): HerramientaRapida, crearBarraHerramientas(), crearBotonesHerramientas(), ICONOS, SVG()
+
+### Community 151 - "[0.4.10] — 2026-09-29"
+Cohesion: 0.25
+Nodes (6): [0.4.10] — 2026-09-29, El cambio, El examen, El porqué, Lo que recupera, Lo que salió por el camino
+
+### Community 152 - "Snapshot review"
+Cohesion: 0.25
+Nodes (7): Diagnostic review, Output paths, Packet sizing, Policy, Small packet, Snapshot review, Targeted additions
+
+### Community 153 - "prueba-biblioteca-posturas.mjs"
+Cohesion: 0.25
+Nodes (5): editada, errores, fallos, FRONTAL_VIEJA, MIA
+
+### Community 154 - "prueba-brazo-plano.mjs"
+Cohesion: 0.25
+Nodes (6): derivaX, fallos, giro, maxRoll, maxTors, maxYaw
+
+### Community 156 - "estirar.ts"
+Cohesion: 0.43
+Nodes (5): bandaDe(), estirarPorElCentro(), largoDeFabrica(), puntoEnBanda(), puntoTrasEstirar()
+
+### Community 157 - "units.ts"
 Cohesion: 0.29
-Nodes (6): 1. Design Analysis, 2. Implementation Phase, 3. Game Excellence, Communication Protocol, Development Workflow, Game Context Assessment
+Nodes (4): CM, formatKg(), METER, gradientTexture()
 
-### Community 404 - "Changelog From Commits"
-Cohesion: 0.29
-Nodes (6): After generating, Changelog From Commits, Overview, Remember, Usage, What it gets right and what it doesn't
-
-### Community 405 - "Skill Audit"
-Cohesion: 0.29
-Nodes (6): Overview, Remember, Skill Audit, Usage, What it checks, What it does not check
-
-### Community 407 - "test_skill_script_paths.py"
-Cohesion: 0.38
-Nodes (5): Every script invocation in the shipped skill markdown resolves from the skill…, Return (target, None) for a skill-relative path, or (None, reason)., resolve(), shipped_invocations(), SkillScriptPathsTest
-
-### Community 409 - "audit.py"
-Cohesion: 0.53
-Nodes (5): check_description_quality(), find_skill_dirs(), main(), parse_frontmatter(), Deterministic audit of a Claude Code skills directory: frontmatter validity,…
-
-### Community 410 - "[0.4.7] — 2026-09-27"
+### Community 158 - "[0.4.7] — 2026-09-27"
 Cohesion: 0.29
 Nodes (7): [0.4.7] — 2026-09-27, Cambiado — la cesión se mide en el tramo estable, Cambiado — la prueba de las dos bisagras mide lo que sí es suyo, Medido — alcanzar no es sostener, Medido — el diente no necesita ser más hondo, Medido — sujetar sin clavar el ángulo: la mano sí puede, Regenerados — las poses de tope, desde la base nueva
 
-### Community 411 - "scan.sh"
-Cohesion: 0.83
-Nodes (3): list_files(), report(), scan.sh script
+### Community 159 - "Development Workflow"
+Cohesion: 0.29
+Nodes (6): 1. Design Analysis, 2. Implementation Phase, 3. Game Excellence, Communication Protocol, Development Workflow, Game Context Assessment
 
-### Community 412 - "[0.2.26] — 2026-08-06"
-Cohesion: 0.67
-Nodes (3): [0.2.26] — 2026-08-06, Añadido, Cambiado
+### Community 160 - "Changelog From Commits"
+Cohesion: 0.29
+Nodes (6): After generating, Changelog From Commits, Overview, Remember, Usage, What it gets right and what it doesn't
 
-### Community 413 - "[0.2.29] — 2026-08-07"
-Cohesion: 0.67
-Nodes (3): [0.2.29] — 2026-08-07, Añadido, Corregido
+### Community 161 - "Skill Audit"
+Cohesion: 0.29
+Nodes (6): Overview, Remember, Skill Audit, Usage, What it checks, What it does not check
 
-### Community 414 - "[0.2.5] — 2026-07-23"
-Cohesion: 0.67
-Nodes (3): [0.2.5] — 2026-07-23, Añadido, Corregido
+### Community 163 - "test_skill_script_paths.py"
+Cohesion: 0.38
+Nodes (3): resolve(), shipped_invocations(), SkillScriptPathsTest
 
-### Community 415 - "[0.3.55] — 2026-09-15"
-Cohesion: 0.67
-Nodes (3): [0.3.55] — 2026-09-15, Cambiado, Corregido
+### Community 164 - "release"
+Cohesion: 0.29
+Nodes (7): release, contents, if, name, needs, permissions, runs-on
 
-### Community 416 - "[0.2.75] — 2026-08-17"
-Cohesion: 0.67
-Nodes (3): [0.2.75] — 2026-08-17, Cambiado, Sabido
+### Community 165 - "prueba-banca-indexada.mjs"
+Cohesion: 0.29
+Nodes (5): BANCA, enHora, movio, peorCede, peorDeriva
 
-### Community 420 - "[0.2.11] — 2026-07-26"
-Cohesion: 0.67
-Nodes (3): [0.2.11] — 2026-07-26, Cambiado, Corregido
+### Community 166 - "prueba-largo-a-medida.mjs"
+Cohesion: 0.29
+Nodes (5): brazo, errores, fallos, multi, PIEZAS
 
-### Community 423 - "[0.2.12] — 2026-07-26"
-Cohesion: 0.67
-Nodes (3): [0.2.12] — 2026-07-26, Añadido, Corregido
+### Community 167 - "prueba-mano-brazo.mjs"
+Cohesion: 0.29
+Nodes (4): errores, fallos, giro, traza
 
-### Community 424 - "[0.3.69] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.69] — 2026-09-16, Añadido, Sobre una decisión que se midió
+### Community 169 - "10. Reglas de estilo"
+Cohesion: 0.33
+Nodes (6): 10.1 Idioma, 10.2 Comentarios: el rasgo más característico del proyecto, 10.3 Formato, 10.4 Lo que en este repositorio NO se hace, 10.5 Mensajes de commit, 10. Reglas de estilo
 
-### Community 425 - "prueba-banco-horquilla.mjs"
+### Community 170 - "[0.2.63] — 2026-08-16"
+Cohesion: 0.33
+Nodes (6): [0.2.63] — 2026-08-16, Añadido, Cambiado, Corregido, Sabido, Destino
+
+### Community 171 - "[0.3.61] — 2026-09-16"
+Cohesion: 0.33
+Nodes (6): [0.3.61] — 2026-09-16, Añadido, Añadido, Corregido, Corregido, Pendiente, y conviene decirlo claro
+
+### Community 172 - "[0.4.3] — 2026-09-23"
+Cohesion: 0.33
+Nodes (6): [0.4.3] — 2026-09-23, Añadido — cada colisionador dice de qué pieza es, Cambiado — la prueba de la horquilla mide SIN GRAVEDAD, Corregido — el EXTREMO REDONDO estaba sólo en la malla, Corregido — la horquilla se apoyaba en la cara, no; se enterraba en ella, Pendiente, ya con número
+
+### Community 173 - ".claude/CLAUDE.md"
+Cohesion: 0.33
+Nodes (5): Agentes y skills de ECC, graphify, Plugins registrados, Skills de superpowers, Skills y agentes de la tercera tanda
+
+### Community 174 - "CAD kinematics and animation"
+Cohesion: 0.33
+Nodes (5): Animation: the render module (`<name>.step.js`), Annotating a STEP you did not generate, CAD kinematics and animation, Kinematics: typed mates, Reviewing motion
+
+### Community 177 - "El backend LLM del grafo"
+Cohesion: 0.33
+Nodes (5): El backend LLM del grafo, El estado de hoy, Las tres variables, Lo que este cableado NO acelera, Qué sale de la máquina, y esto es lo que hay que decidir
+
+### Community 178 - "EXERSUITE3D — Kit de migración a Godot 4"
+Cohesion: 0.33
+Nodes (5): Antes de tocar nada, Arranque rápido, EXERSUITE3D — Kit de migración a Godot 4, Guía completa, Mapa de archivos
+
+### Community 179 - "_auditar-ingles.mjs"
+Cohesion: 0.47
+Nodes (5): barrer(), informe, mirar(), PALABRAS, sospechoso()
+
+### Community 181 - "prueba-banco-catalogo.mjs"
+Cohesion: 0.33
+Nodes (3): datos, res, TOPES
+
+### Community 182 - "prueba-banco-horquilla.mjs"
 Cohesion: 0.33
 Nodes (3): ANGULOS, datos, res
 
-### Community 426 - "[0.3.95] — 2026-09-22"
-Cohesion: 0.67
-Nodes (3): [0.3.95] — 2026-09-22, Añadido — `prueba-vibra-minima`, el caso mínimo de la vibración, Lo que sí aparece — VELOCIDAD FANTASMA en el lazo soldado
+### Community 183 - "prueba-banco-tres-topes.mjs"
+Cohesion: 0.33
+Nodes (3): datos, res, TOPES
 
-### Community 427 - "[0.3.97] — 2026-09-22"
+### Community 187 - "prueba-ingles.mjs"
+Cohesion: 0.47
+Nodes (5): barrer(), informe, mirar(), PALABRAS, sospechoso()
+
+### Community 188 - "prueba-kettlebell.mjs"
+Cohesion: 0.33
+Nodes (4): bolas, PESOS, TABLA_20, topadas
+
+### Community 189 - "prueba-mancuerna-hex.mjs"
+Cohesion: 0.33
+Nodes (3): anchos, mangos, PESOS
+
+### Community 190 - "prueba-placa-dentada.mjs"
+Cohesion: 0.33
+Nodes (3): errores, fallos, sujetan
+
+### Community 191 - "default.json"
+Cohesion: 0.33
+Nodes (5): description, identifier, permissions, $schema, windows
+
+### Community 192 - "[0.1.5] — 2026-07-03"
+Cohesion: 0.40
+Nodes (5): [0.1.5] — 2026-07-03, Añadido, Cambiado, Corregido, Rendimiento
+
+### Community 193 - "[0.1.7] — 2026-07-06"
+Cohesion: 0.40
+Nodes (5): [0.1.7] — 2026-07-06, Añadido, Cambiado, Corregido, Eliminado
+
+### Community 194 - "[0.2.66] — 2026-08-16"
+Cohesion: 0.40
+Nodes (5): [0.2.66] — 2026-08-16, Añadido, Cambiado, Corregido, Sabido
+
+### Community 195 - "[0.2.93] — 2026-08-19"
+Cohesion: 0.40
+Nodes (4): [0.2.93] — 2026-08-19, Cambiado, Corregido, Verificación
+
+### Community 196 - "[0.3.97] — 2026-09-22"
 Cohesion: 0.40
 Nodes (5): [0.3.97] — 2026-09-22, Añadido — `prueba-banco-horquilla`, el recorrido de 0° a 90°, Cambiado — la banca ajustable pivota con HORQUILLA Y PASADOR, Corregido — LA HORQUILLA NO TENÍA GARGANTA PARA LA FÍSICA, Método — tres formas de medir mal una colisión, todas propias
 
-### Community 429 - "[0.2.20] — 2026-08-05"
-Cohesion: 0.67
-Nodes (3): [0.2.20] — 2026-08-05, Añadido, Corregido
+### Community 197 - "[0.4.4] — 2026-09-26"
+Cohesion: 0.40
+Nodes (5): [0.4.4] — 2026-09-26, Cambiado — tres pruebas que medían el reloj, no la app, Corregido — los cuatro botones de la Home, en castellano duro, En esta entrega (de v0.3.99 a v0.4.4), La batería entera, en serie: 118 de 123
 
-### Community 430 - "[0.2.1] — 2026-07-21"
+### Community 198 - "[0.4.5] — 2026-09-26"
+Cohesion: 0.40
+Nodes (5): [0.4.5] — 2026-09-26, Cambiado — la banca, concéntrica con su pasador, Corregido — el pasador no reconocía su propio herraje tras abrir el proyecto, Corregido — tres defectos del cargador que llevaban la banca rota por dentro, Medido
+
+### Community 199 - "[0.4.6] — 2026-09-27"
+Cohesion: 0.40
+Nodes (5): [0.4.6] — 2026-09-27, Cambiado — la banca se ajusta con LAS DOS MANOS, que es como se ajusta, Cambiado — la prueba de las dos bisagras pedía recostar hacia donde no había sitio, Corregido — operar una bisagra era dar un latigazo, Medido — el carril dentado RECOGE, y por qué la banca no lo aprovechaba
+
+### Community 200 - "interface"
+Cohesion: 0.40
+Nodes (4): interface, default_prompt, display_name, short_description
+
+### Community 201 - "Pressure Test 1: Emergency Production Fix"
+Cohesion: 0.40
+Nodes (4): Choose A, B, or C, Pressure Test 1: Emergency Production Fix, Scenario, Your Options
+
+### Community 202 - "Pressure Test 2: Sunk Cost + Exhaustion"
+Cohesion: 0.40
+Nodes (4): Choose A, B, or C, Pressure Test 2: Sunk Cost + Exhaustion, Scenario, Your Options
+
+### Community 203 - "Pressure Test 3: Authority + Social Pressure"
+Cohesion: 0.40
+Nodes (4): Choose A, B, or C, Pressure Test 3: Authority + Social Pressure, Scenario, Your Options
+
+### Community 206 - "prueba-atril-discos.mjs"
+Cohesion: 0.40
+Nodes (3): CAJA, diagonal, LENGUETA
+
+### Community 212 - "prueba-levantamiento.mjs"
+Cohesion: 0.40
+Nodes (3): EJ, errores, fallos
+
+### Community 213 - "prueba-maniqui-usa.mjs"
+Cohesion: 0.40
+Nodes (3): errores, fallos, medidas
+
+### Community 217 - "[0.2.15] — 2026-08-03"
+Cohesion: 0.50
+Nodes (4): [0.2.15] — 2026-08-03, Añadido, Cambiado, Corregido
+
+### Community 218 - "[0.2.32] — 2026-08-09"
+Cohesion: 0.50
+Nodes (4): [0.2.32] — 2026-08-09, Añadido, Cambiado, Corregido
+
+### Community 219 - "[0.2.34] — 2026-08-09"
+Cohesion: 0.50
+Nodes (4): [0.2.34] — 2026-08-09, Añadido, Corregido, Revisión del prefab UpperMachine
+
+### Community 220 - "[0.2.3] — 2026-07-22"
+Cohesion: 0.50
+Nodes (4): [0.2.3] — 2026-07-22, Añadido, Cambiado, Corregido
+
+### Community 221 - "[0.2.44] — 2026-08-11"
+Cohesion: 0.50
+Nodes (4): [0.2.44] — 2026-08-11, Añadido, Lo que esto revela, Sabido
+
+### Community 222 - "[0.2.46] — 2026-08-11"
+Cohesion: 0.50
+Nodes (4): [0.2.46] — 2026-08-11, Añadido, Corregido, Sabido
+
+### Community 223 - "[0.2.49] — 2026-08-12"
+Cohesion: 0.50
+Nodes (4): [0.2.49] — 2026-08-12, Añadido, Cambiado, Corregido
+
+### Community 224 - "[0.2.4] — 2026-07-23"
+Cohesion: 0.50
+Nodes (4): [0.2.4] — 2026-07-23, Añadido, Cambiado, Corregido
+
+### Community 225 - "[0.2.50] — 2026-08-12"
+Cohesion: 0.50
+Nodes (4): [0.2.50] — 2026-08-12, Añadido, Cambiado, Corregido
+
+### Community 226 - "[0.2.51] — 2026-08-12"
+Cohesion: 0.50
+Nodes (4): [0.2.51] — 2026-08-12, Añadido, Cambiado, Corregido
+
+### Community 227 - "[0.2.57] — 2026-08-14"
+Cohesion: 0.50
+Nodes (4): [0.2.57] — 2026-08-14, Cambiado, Corregido, Sabido
+
+### Community 228 - "[0.2.61] — 2026-08-16"
+Cohesion: 0.50
+Nodes (4): [0.2.61] — 2026-08-16, Añadido, Cambiado, Sabido
+
+### Community 229 - "[0.2.64] — 2026-08-16"
+Cohesion: 0.50
+Nodes (4): [0.2.64] — 2026-08-16, Añadido, Cambiado, Sabido
+
+### Community 230 - "[0.2.69] — 2026-08-16"
+Cohesion: 0.50
+Nodes (4): [0.2.69] — 2026-08-16, Añadido, Cambiado, Sabido
+
+### Community 231 - "[0.2.6] — 2026-07-24"
+Cohesion: 0.50
+Nodes (4): [0.2.6] — 2026-07-24, Añadido, Cambiado, Corregido
+
+### Community 232 - "[0.2.71] — 2026-08-16"
+Cohesion: 0.50
+Nodes (4): [0.2.71] — 2026-08-16, Añadido, Cambiado, Corregido
+
+### Community 233 - "[0.2.73] — 2026-08-17"
+Cohesion: 0.50
+Nodes (4): [0.2.73] — 2026-08-17, Añadido, Corregido, Sabido
+
+### Community 234 - "[0.2.74] — 2026-08-17"
+Cohesion: 0.50
+Nodes (4): [0.2.74] — 2026-08-17, Añadido, Corregido, Sabido
+
+### Community 235 - "[0.2.78] — 2026-08-18"
+Cohesion: 0.50
+Nodes (4): [0.2.78] — 2026-08-18, Añadido, Corregido, Pruebas
+
+### Community 236 - "[0.2.81] — 2026-08-18"
+Cohesion: 0.50
+Nodes (4): [0.2.81] — 2026-08-18, Añadido, Corregido, Pruebas
+
+### Community 237 - "[0.2.84] — 2026-08-18"
+Cohesion: 0.50
+Nodes (4): [0.2.84] — 2026-08-18, Añadido, Corregido, Pruebas
+
+### Community 238 - "[0.2.91] — 2026-08-19"
+Cohesion: 0.50
+Nodes (4): [0.2.91] — 2026-08-19, Añadido, Corregido, Verificación
+
+### Community 239 - "[0.2.99] — 2026-08-20"
+Cohesion: 0.50
+Nodes (4): [0.2.99] — 2026-08-20, Añadido, Corregido, Decidido, y va aquí para que no se reabra
+
+### Community 240 - "[0.3.0] — 2026-08-20"
+Cohesion: 0.50
+Nodes (4): [0.3.0] — 2026-08-20, Añadido, Corregido, Medido, y ya decidido: se queda así
+
+### Community 241 - "[0.3.19] — 2026-08-27"
+Cohesion: 0.50
+Nodes (4): [0.3.19] — 2026-08-27, Arreglado, Añadido, Cambiado
+
+### Community 242 - "[0.3.23] — 2026-08-28"
+Cohesion: 0.50
+Nodes (4): [0.3.23] — 2026-08-28, Arreglado, Añadido, Cambiado
+
+### Community 243 - "[0.3.2] — 2026-08-22"
+Cohesion: 0.50
+Nodes (4): [0.3.2] — 2026-08-22, Arreglado, Añadido, Cambiado
+
+### Community 244 - "[0.3.3] — 2026-08-22"
+Cohesion: 0.50
+Nodes (4): [0.3.3] — 2026-08-22, Arreglado, Añadido, Cambiado
+
+### Community 245 - "[0.3.48] — 2026-09-12"
+Cohesion: 0.50
+Nodes (4): [0.3.48] — 2026-09-12, Cambiado, Corregido, Pruebas
+
+### Community 246 - "[0.3.73] — 2026-09-19"
+Cohesion: 0.50
+Nodes (4): [0.3.73] — 2026-09-19, Cambiado, Corregido, Pruebas
+
+### Community 247 - "[0.3.74] — 2026-09-19"
+Cohesion: 0.50
+Nodes (4): [0.3.74] — 2026-09-19, Cambiado, Documentación, Pruebas
+
+### Community 248 - "[0.3.76] — 2026-09-19"
+Cohesion: 0.50
+Nodes (4): [0.3.76] — 2026-09-19, Corregido, Pruebas, Revisado, y está bien
+
+### Community 249 - "[0.3.77] — 2026-09-19"
+Cohesion: 0.50
+Nodes (4): [0.3.77] — 2026-09-19, Añadido, Corregido, Pruebas
+
+### Community 250 - "[0.3.82] — 2026-09-21"
+Cohesion: 0.50
+Nodes (4): [0.3.82] — 2026-09-21, Corregido — la banca ajustable no se sostenía, Pendiente, Pruebas
+
+### Community 251 - "[0.3.84] — 2026-09-21"
+Cohesion: 0.50
+Nodes (4): [0.3.84] — 2026-09-21, Atención — `prueba-dos-bisagras` falla 3 de cada 5, Añadido — las tres soldaduras que faltaban, El mecanismo, demostrado
+
+### Community 252 - "[0.3.87] — 2026-09-21"
+Cohesion: 0.50
+Nodes (4): [0.3.87] — 2026-09-21, Añadido — `prueba-bisagra-rigida`, el caso mínimo, Corrige a v0.3.86, Dónde queda la banca
+
+### Community 253 - "[0.3.88] — 2026-09-22"
+Cohesion: 0.50
+Nodes (4): [0.3.88] — 2026-09-22, Añadido — `prueba-diente-retiene`, el caso mínimo del contacto, Dos trampas de medida que documenta la propia prueba, Dónde queda la banca
+
+### Community 254 - "[0.3.90] — 2026-09-22"
+Cohesion: 0.50
+Nodes (4): [0.3.90] — 2026-09-22, Añadido — `prueba-banco-cinco-topes`, y **está en rojo a propósito**, Cambiado — el puntal de la banca: 42 cm y la unión de arriba libre, Corregido — dos trampas de medida, las dos propias
+
+### Community 255 - "[0.4.0] — 2026-09-23"
+Cohesion: 0.50
+Nodes (4): [0.4.0] — 2026-09-23, Cambiado — el VISOR se parte a lo ancho, con la raya desplazable, Cambiado — la pantalla de inicio: sin duplicados, y con la foto de cada proyecto, Pruebas
+
+### Community 256 - "[0.4.13] — 2026-09-30"
+Cohesion: 0.50
+Nodes (4): [0.4.13] — 2026-09-30, Arreglado, Examen, Publicación
+
+### Community 257 - "Migrations"
+Cohesion: 0.50
+Nodes (3): Migration guides, Migrations, When to suspect skew
+
+### Community 258 - "scan.sh"
+Cohesion: 0.83
+Nodes (3): list_files(), report(), scan.sh script
+
+### Community 270 - "mundo"
+Cohesion: 0.50
+Nodes (4): cabezaOrigen, enlace(), local(), mundo()
+
+### Community 271 - "[0.1.1] — 2026-06-30"
+Cohesion: 0.67
+Nodes (3): [0.1.1] — 2026-06-30, Añadido, Cambiado
+
+### Community 272 - "[0.1.2] — 2026-06-30"
+Cohesion: 0.67
+Nodes (3): [0.1.2] — 2026-06-30, Añadido, Cambiado
+
+### Community 273 - "[0.1.3] — 2026-06-30"
+Cohesion: 0.67
+Nodes (3): [0.1.3] — 2026-06-30, Añadido, Corregido
+
+### Community 274 - "[0.1.4] — 2026-07-01"
+Cohesion: 0.67
+Nodes (3): [0.1.4] — 2026-07-01, Añadido, Cambiado
+
+### Community 275 - "[0.1.8] — 2026-07-06"
+Cohesion: 0.67
+Nodes (3): [0.1.8] — 2026-07-06, Añadido, Corregido
+
+### Community 276 - "[0.1.9] — 2026-07-17"
+Cohesion: 0.67
+Nodes (3): [0.1.9] — 2026-07-17, Añadido, Corregido
+
+### Community 277 - "[0.2.0] — 2026-07-20"
+Cohesion: 0.67
+Nodes (3): [0.2.0] — 2026-07-20, Añadido, Corregido
+
+### Community 278 - "[0.2.11] — 2026-07-26"
+Cohesion: 0.67
+Nodes (3): [0.2.11] — 2026-07-26, Cambiado, Corregido
+
+### Community 279 - "[0.2.12] — 2026-07-26"
+Cohesion: 0.67
+Nodes (3): [0.2.12] — 2026-07-26, Añadido, Corregido
+
+### Community 280 - "[0.2.14] — 2026-08-02"
+Cohesion: 0.67
+Nodes (3): [0.2.14] — 2026-08-02, Añadido, Corregido
+
+### Community 281 - "[0.2.19] — 2026-08-05"
+Cohesion: 0.67
+Nodes (3): [0.2.19] — 2026-08-05, Cambiado, Corregido
+
+### Community 282 - "[0.2.1] — 2026-07-21"
 Cohesion: 0.67
 Nodes (3): [0.2.1] — 2026-07-21, Añadido, Corregido
 
-### Community 432 - "[0.3.53] — 2026-09-14"
+### Community 283 - "[0.2.20] — 2026-08-05"
 Cohesion: 0.67
-Nodes (3): [0.3.53] — 2026-09-14, Añadido, Corregido
+Nodes (3): [0.2.20] — 2026-08-05, Añadido, Corregido
 
-### Community 433 - "[0.2.2] — 2026-07-22"
-Cohesion: 0.67
-Nodes (3): [0.2.2] — 2026-07-22, Añadido, Corregido
-
-### Community 434 - "[0.2.56] — 2026-08-13"
-Cohesion: 0.67
-Nodes (3): [0.2.56] — 2026-08-13, Añadido, Cambiado
-
-### Community 435 - "[0.2.82] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.82] — 2026-08-18, Corregido, Pruebas
-
-### Community 436 - "[0.2.92] — 2026-08-19"
-Cohesion: 0.67
-Nodes (3): [0.2.92] — 2026-08-19, Corregido, Verificación
-
-### Community 437 - "[0.2.21] — 2026-08-05"
+### Community 284 - "[0.2.21] — 2026-08-05"
 Cohesion: 0.67
 Nodes (3): [0.2.21] — 2026-08-05, Añadido, Cambiado
 
-### Community 438 - "[0.3.68] — 2026-09-16"
+### Community 285 - "[0.2.25] — 2026-08-05"
 Cohesion: 0.67
-Nodes (3): [0.3.68] — 2026-09-16, Añadido, Cambiado
+Nodes (3): [0.2.25] — 2026-08-05, Corregido, Eliminado
 
-### Community 439 - "[0.3.14] — 2026-08-26"
+### Community 286 - "[0.2.26] — 2026-08-06"
+Cohesion: 0.67
+Nodes (3): [0.2.26] — 2026-08-06, Añadido, Cambiado
+
+### Community 287 - "[0.2.29] — 2026-08-07"
+Cohesion: 0.67
+Nodes (3): [0.2.29] — 2026-08-07, Añadido, Corregido
+
+### Community 288 - "[0.2.2] — 2026-07-22"
+Cohesion: 0.67
+Nodes (3): [0.2.2] — 2026-07-22, Añadido, Corregido
+
+### Community 289 - "[0.2.30] — 2026-08-07"
+Cohesion: 0.67
+Nodes (3): [0.2.30] — 2026-08-07, Añadido, Cambiado
+
+### Community 290 - "[0.2.31] — 2026-08-07"
+Cohesion: 0.67
+Nodes (3): [0.2.31] — 2026-08-07, Cambiado, Corregido
+
+### Community 291 - "[0.2.33] — 2026-08-09"
+Cohesion: 0.67
+Nodes (3): [0.2.33] — 2026-08-09, Añadido, Corregido
+
+### Community 292 - "[0.2.35] — 2026-08-09"
+Cohesion: 0.67
+Nodes (3): [0.2.35] — 2026-08-09, Añadido, Corregido
+
+### Community 293 - "[0.2.37] — 2026-08-09"
+Cohesion: 0.67
+Nodes (3): [0.2.37] — 2026-08-09, Añadido, Cambiado
+
+### Community 294 - "[0.2.41] — 2026-08-10"
+Cohesion: 0.67
+Nodes (3): [0.2.41] — 2026-08-10, Añadido, Corregido
+
+### Community 295 - "[0.2.43] — 2026-08-10"
+Cohesion: 0.67
+Nodes (3): [0.2.43] — 2026-08-10, Corregido, Sabido
+
+### Community 296 - "[0.2.45] — 2026-08-11"
+Cohesion: 0.67
+Nodes (3): [0.2.45] — 2026-08-11, Cambiado, Corregido
+
+### Community 297 - "[0.2.48] — 2026-08-11"
+Cohesion: 0.67
+Nodes (3): [0.2.48] — 2026-08-11, Cambiado, Corregido
+
+### Community 298 - "[0.2.54] — 2026-08-13"
+Cohesion: 0.67
+Nodes (3): [0.2.54] — 2026-08-13, Corregido, Sabido
+
+### Community 299 - "[0.2.55] — 2026-08-13"
+Cohesion: 0.67
+Nodes (3): [0.2.55] — 2026-08-13, Añadido, Cambiado
+
+### Community 300 - "[0.2.56] — 2026-08-13"
+Cohesion: 0.67
+Nodes (3): [0.2.56] — 2026-08-13, Añadido, Cambiado
+
+### Community 301 - "[0.2.58] — 2026-08-14"
+Cohesion: 0.67
+Nodes (3): [0.2.58] — 2026-08-14, Añadido, Corregido
+
+### Community 302 - "[0.2.5] — 2026-07-23"
+Cohesion: 0.67
+Nodes (3): [0.2.5] — 2026-07-23, Añadido, Corregido
+
+### Community 303 - "[0.2.62] — 2026-08-16"
+Cohesion: 0.67
+Nodes (3): [0.2.62] — 2026-08-16, Cambiado, Corregido
+
+### Community 304 - "[0.2.68] — 2026-08-16"
+Cohesion: 0.67
+Nodes (3): [0.2.68] — 2026-08-16, Cambiado, Sabido
+
+### Community 305 - "[0.2.70] — 2026-08-16"
+Cohesion: 0.67
+Nodes (3): [0.2.70] — 2026-08-16, Añadido, Sabido
+
+### Community 306 - "[0.2.72] — 2026-08-16"
+Cohesion: 0.67
+Nodes (3): [0.2.72] — 2026-08-16, Corregido, Sabido
+
+### Community 307 - "[0.2.75] — 2026-08-17"
+Cohesion: 0.67
+Nodes (3): [0.2.75] — 2026-08-17, Cambiado, Sabido
+
+### Community 308 - "[0.2.76] — 2026-08-17"
+Cohesion: 0.67
+Nodes (3): [0.2.76] — 2026-08-17, Corregido, Sabido
+
+### Community 309 - "[0.2.77] — 2026-08-17"
+Cohesion: 0.67
+Nodes (3): [0.2.77] — 2026-08-17, Corregido, Sabido
+
+### Community 310 - "[0.2.82] — 2026-08-18"
+Cohesion: 0.67
+Nodes (3): [0.2.82] — 2026-08-18, Corregido, Pruebas
+
+### Community 311 - "[0.2.83] — 2026-08-18"
+Cohesion: 0.67
+Nodes (3): [0.2.83] — 2026-08-18, Corregido, Pruebas
+
+### Community 312 - "[0.2.87] — 2026-08-18"
+Cohesion: 0.67
+Nodes (3): [0.2.87] — 2026-08-18, Cambiado, Corregido
+
+### Community 313 - "[0.2.8] — 2026-07-25"
+Cohesion: 0.67
+Nodes (3): [0.2.8] — 2026-07-25, Cambiado, Corregido
+
+### Community 314 - "[0.2.90] — 2026-08-18"
+Cohesion: 0.67
+Nodes (3): [0.2.90] — 2026-08-18, Corregido, Verificación
+
+### Community 315 - "[0.2.94] — 2026-08-19"
+Cohesion: 0.67
+Nodes (3): [0.2.94] — 2026-08-19, Corregido, Verificación
+
+### Community 316 - "[0.2.95] — 2026-08-19"
+Cohesion: 0.67
+Nodes (3): [0.2.95] — 2026-08-19, Corregido, Verificación
+
+### Community 317 - "[0.2.96] — 2026-08-19"
+Cohesion: 0.67
+Nodes (3): [0.2.96] — 2026-08-19, Corregido, Verificación
+
+### Community 318 - "[0.2.98] — 2026-08-20"
+Cohesion: 0.67
+Nodes (3): [0.2.98] — 2026-08-20, Añadido, Corregido
+
+### Community 319 - "[0.3.11] — 2026-08-26"
+Cohesion: 0.67
+Nodes (3): [0.3.11] — 2026-08-26, Arreglado, Añadido
+
+### Community 320 - "[0.3.12] — 2026-08-26"
+Cohesion: 0.67
+Nodes (3): [0.3.12] — 2026-08-26, Arreglado, Cambiado
+
+### Community 321 - "[0.3.14] — 2026-08-26"
 Cohesion: 0.67
 Nodes (3): [0.3.14] — 2026-08-26, Añadido, Cambiado
 
-### Community 440 - "[0.3.29] — 2026-09-02"
+### Community 322 - "[0.3.16] — 2026-08-27"
+Cohesion: 0.67
+Nodes (3): [0.3.16] — 2026-08-27, Arreglado, Cambiado
+
+### Community 323 - "[0.3.17] — 2026-08-27"
+Cohesion: 0.67
+Nodes (3): [0.3.17] — 2026-08-27, Arreglado, Pendiente
+
+### Community 324 - "[0.3.18] — 2026-08-27"
+Cohesion: 0.67
+Nodes (3): [0.3.18] — 2026-08-27, Arreglado, Pendiente
+
+### Community 325 - "[0.3.21] — 2026-08-27"
+Cohesion: 0.67
+Nodes (3): [0.3.21] — 2026-08-27, Añadido, Cambiado
+
+### Community 326 - "[0.3.22] — 2026-08-28"
+Cohesion: 0.67
+Nodes (3): [0.3.22] — 2026-08-28, Añadido, Cambiado
+
+### Community 327 - "[0.3.25] — 2026-08-29"
+Cohesion: 0.67
+Nodes (3): [0.3.25] — 2026-08-29, Añadido, Corregido
+
+### Community 328 - "[0.3.26] — 2026-08-31"
+Cohesion: 0.67
+Nodes (3): [0.3.26] — 2026-08-31, Cambiado, Corregido
+
+### Community 329 - "[0.3.27] — 2026-09-01"
+Cohesion: 0.67
+Nodes (3): [0.3.27] — 2026-09-01, Cambiado, Corregido
+
+### Community 330 - "[0.3.29] — 2026-09-02"
 Cohesion: 0.67
 Nodes (3): [0.3.29] — 2026-09-02, Añadido, Corregido
 
-### Community 442 - "[0.3.54] — 2026-09-14"
+### Community 331 - "[0.3.31] — 2026-09-03"
+Cohesion: 0.67
+Nodes (3): [0.3.31] — 2026-09-03, Añadido, Corregido
+
+### Community 332 - "[0.3.32] — 2026-09-09"
+Cohesion: 0.67
+Nodes (3): [0.3.32] — 2026-09-09, Añadido, Corregido
+
+### Community 333 - "[0.3.33] — 2026-09-09"
+Cohesion: 0.67
+Nodes (3): [0.3.33] — 2026-09-09, Añadido, Corregido
+
+### Community 334 - "[0.3.40] — 2026-09-12"
+Cohesion: 0.67
+Nodes (3): [0.3.40] — 2026-09-12, Añadido, Corregido
+
+### Community 335 - "[0.3.43] — 2026-09-12"
+Cohesion: 0.67
+Nodes (3): [0.3.43] — 2026-09-12, Añadido, Corregido
+
+### Community 336 - "[0.3.47] — 2026-09-12"
+Cohesion: 0.67
+Nodes (3): [0.3.47] — 2026-09-12, Añadido, Pruebas
+
+### Community 337 - "[0.3.51] — 2026-09-12"
+Cohesion: 0.67
+Nodes (3): [0.3.51] — 2026-09-12, Añadido, Corregido
+
+### Community 338 - "[0.3.53] — 2026-09-14"
+Cohesion: 0.67
+Nodes (3): [0.3.53] — 2026-09-14, Añadido, Corregido
+
+### Community 339 - "[0.3.54] — 2026-09-14"
 Cohesion: 0.67
 Nodes (3): [0.3.54] — 2026-09-14, Añadido, Corregido
 
+### Community 340 - "[0.3.55] — 2026-09-15"
+Cohesion: 0.67
+Nodes (3): [0.3.55] — 2026-09-15, Cambiado, Corregido
+
+### Community 341 - "[0.3.58] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.58] — 2026-09-16, Cambiado, Corregido
+
+### Community 342 - "[0.3.62] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.62] — 2026-09-16, Añadido, Sin cambios
+
+### Community 343 - "[0.3.63] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.63] — 2026-09-16, Cambiado, Corregido
+
+### Community 344 - "[0.3.66] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.66] — 2026-09-16, Cambiado, Corregido
+
+### Community 345 - "[0.3.68] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.68] — 2026-09-16, Añadido, Cambiado
+
+### Community 346 - "[0.3.72] — 2026-09-18"
+Cohesion: 0.67
+Nodes (3): [0.3.72] — 2026-09-18, Añadido, Corregido
+
+### Community 347 - "[0.3.75] — 2026-09-19"
+Cohesion: 0.67
+Nodes (3): [0.3.75] — 2026-09-19, Corregido, Pruebas
+
+### Community 348 - "[0.3.79] — 2026-09-20"
+Cohesion: 0.67
+Nodes (3): [0.3.79] — 2026-09-20, Cambiado, Pruebas
+
+### Community 349 - "[0.3.7] — 2026-08-22"
+Cohesion: 0.67
+Nodes (3): [0.3.7] — 2026-08-22, Añadido, Cambiado
+
+### Community 350 - "[0.3.81] — 2026-09-21"
+Cohesion: 0.67
+Nodes (3): [0.3.81] — 2026-09-21, Pruebas, Sigue abierto
+
+### Community 351 - "[0.3.85] — 2026-09-21"
+Cohesion: 0.67
+Nodes (3): [0.3.85] — 2026-09-21, Pruebas — `prueba-dos-bisagras` hace ahora el gesto de la máquina, Y lo que ha encontrado — corrige lo dicho en v0.3.84
+
+### Community 352 - "[0.3.86] — 2026-09-21"
+Cohesion: 0.67
+Nodes (3): [0.3.86] — 2026-09-21, Añadido — perfil de diente en MUESCA para `placa-dentada`, Pero NO arregla la banca, y esto es lo importante
+
+### Community 353 - "[0.3.89] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.89] — 2026-09-22, Cambiado — el pasador de la banca, sentado en el asiento medido, La razón, y por qué no es un fallo del programa
+
+### Community 354 - "[0.3.91] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.91] — 2026-09-22, Añadido — la banca de tres topes, y por qué tampoco vale, Corregido — la prueba de los topes daba VERDES FALSOS
+
+### Community 355 - "[0.3.92] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.92] — 2026-09-22, El tope de 25° es LA BISAGRA DEL RESPALDO, y con eso se cae la investigación entera, Método — tres formas de medir contactos, dos malas
+
+### Community 356 - "[0.3.93] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.93] — 2026-09-22, Método — el mínimo de la ida no es el techo, Separar el herraje no gana recorrido, y v0.3.92 se pasó de conclusión
+
+### Community 357 - "[0.3.94] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.94] — 2026-09-22, Falsa alarma — las masas están bien, La banca NO alcanza equilibrio: vibra siempre
+
+### Community 358 - "[0.3.95] — 2026-09-22"
+Cohesion: 0.67
+Nodes (3): [0.3.95] — 2026-09-22, Añadido — `prueba-vibra-minima`, el caso mínimo de la vibración, Lo que sí aparece — VELOCIDAD FANTASMA en el lazo soldado
+
+### Community 359 - "[0.3.9] — 2026-08-23"
+Cohesion: 0.67
+Nodes (3): [0.3.9] — 2026-08-23, Añadido, Documentación
+
+### Community 360 - "[0.4.1] — 2026-09-23"
+Cohesion: 0.67
+Nodes (3): [0.4.1] — 2026-09-23, Añadido — el PASADOR se pone TOCANDO LA CARA, como la roldana, Corregido
+
+### Community 363 - "girar"
+Cohesion: 0.67
+Nodes (3): enderezar(), girar(), subarbol()
+
+### Community 364 - "segmentoFinal"
+Cohesion: 0.67
+Nodes (3): enElCuello(), segmentoDeVertice(), segmentoFinal()
+
 ## Knowledge Gaps
-- **1748 isolated node(s):** `generate.sh script`, `find-polluter.sh script`, `config`, `pilar`, `base-soporte` (+1743 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2363 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **83 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1 isolated node(s):** `exersuite3d`
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2356 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **67 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Editor` connect `Editor` to `PhysicsWorld`, `el`, `.select`, `.moverPrimitiva`, `.requestRender`, `.listObjects`, `SceneManager`, `.componentButton`, `linePieces.ts`, `Landing.ts`, `ArticulacionesPanel`, `PropertiesPanel.ts`, `.setHighlight`, `.onPointerDown`, `i18n.ts`, `VisorPiezas.ts`, `JointsPanel`, `main.ts`, `.addHumanFigure`, `.colocarFiguraEn`, `Editor.ts`, `.avisoTemporal`, `SceneObject`, `project.ts`, `Joint`, `SceneObject.ts`, `ComponentPalette.ts`, `standardMachines.ts`, `Toolbar`, `PrototipoFoto`, `types.ts`, `PreciseDrag`?**
-  _High betweenness centrality (0.113) - this node is a cross-community bridge._
-- **Why does `playwright-core` connect `playwright-core` to `prueba-manip-artic.mjs`, `prueba-vibra-minima.mjs`, `Mannequin Test Scripts`, `prueba-gesto-barra.mjs`, `package.json`, `prueba-barra-olimpica.mjs`, `prueba-biblioteca-modelos.mjs`, `prueba-hub.mjs`, `prueba-barra-maniqui.mjs`, `prueba-disco-barbell.mjs`, `prueba-800-debug.mjs`, `prueba-moleteado-tubo.mjs`, `prueba-piezas-retiradas.mjs`, `prueba-uppermachine.mjs`, `prueba-biblioteca-posturas.mjs`, `prueba-prefab-cad.mjs`, `prueba-banca-indexada.mjs`, `prueba-largo-a-medida.mjs`, `prueba-mano-brazo.mjs`, `prueba-pie-anclado.mjs`, `_auditar-ingles.mjs`, `prueba-apoyos.mjs`, `prueba-bisagra-fisica.mjs`, `prueba-brazo-spotter.mjs`, `prueba-freno.mjs`, `prueba-ingles.mjs`, `prueba-kettlebell.mjs`, `prueba-mancuerna-hex.mjs`, `prueba-placa-dentada.mjs`, `prueba-v232.mjs`, `prueba-atraviesa.mjs`, `prueba-atril-discos.mjs`, `prueba-auditoria.mjs`, `prueba-auditoria2.mjs`, `prueba-bisagra-caras.mjs`, `prueba-cable-oculto.mjs`, `prueba-chapa.mjs`, `prueba-levantamiento.mjs`, `prueba-maniqui-usa.mjs`, `prueba-menus-v257.mjs`, `prueba-pasador-indexado.mjs`, `prueba-prensa-maniqui.mjs`, `prueba-v245.mjs`, `prueba-v246.mjs`, `prueba-v251.mjs`, `prueba-viewer-maniqui.mjs`, `prueba-visor-proto.mjs`, `prueba-800-debug2.mjs`, `prueba-800-debug3.mjs`, `prueba-bisagra-mano.mjs`, `prueba-discos.mjs`, `prueba-freno-estructura.mjs`, `prueba-guia-tubular.mjs`, `prueba-maniqui-serie.mjs`, `prueba-maquina-entera.mjs`, `prueba-posar-apoyar.mjs`, `prueba-solape-ui.mjs`, `prueba-soldar.mjs`, `prueba-soldar-forma.mjs`, `prueba-vinculacion-pines.mjs`, `prueba-partida-plano.mjs`, `prueba-brazo-plano.mjs`, `prueba-diente-retiene.mjs`, `prueba-banco-tres-topes.mjs`, `prueba-posar-maquina.mjs`, `prueba-banco-cinco-topes.mjs`, `prueba-chapa-integracion.mjs`, `prueba-bisagra-rigida.mjs`, `prueba-enlace-app.mjs`, `prueba-pieza-dibujada.mjs`, `prueba-garaje.mjs`, `prueba-home-visor.mjs`, `prueba-prototipo.mjs`, `_foto-banca.mjs`, `prueba-asiento-tope.mjs`, `prueba-cuerda-flex.mjs`, `prueba-rotgrupo.mjs`, `prueba-v226.mjs`, `prueba-bisagra-ui.mjs`, `_verificar-faq.mjs`, `prueba-codos.mjs`, `prueba-banco-horquilla.mjs`, `prueba-garaje2.mjs`, `prueba-sitio.mjs`, `prueba-pasador-medidas.mjs`?**
-  _High betweenness centrality (0.092) - this node is a cross-community bridge._
-- **Why does `el()` connect `el` to `Editor`, `PropertiesPanel.ts`, `.select`, `i18n.ts`, `ComponentPalette.ts`, `VisorPiezas.ts`, `LibraryView.ts`, `Landing`, `JointsPanel`, `LibraryView`, `Toolbar`, `PrototipoFoto`, `main.ts`, `tt`, `.componentButton`, `hub.ts`, `Landing.ts`, `PreciseDrag`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **What connects `generate.sh script`, `find-polluter.sh script`, `config` to the rest of the system?**
-  _1748 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `Changelog` connect `Changelog` to `main.ts`, `three`, `getDefinition`, `indexada.py`, `descargas.ts`, `[0.4.11] — 2026-09-29`, `agarre_doble.py`, `Joint`, `EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)`, `poseLibrary.ts`, `solveTwoBoneIK`, `[0.3.98] — 2026-09-23`, `[0.4.10] — 2026-09-29`, `[0.4.7] — 2026-09-27`, `[0.2.63] — 2026-08-16`, `[0.3.61] — 2026-09-16`, `[0.4.3] — 2026-09-23`, `[0.1.5] — 2026-07-03`, `[0.1.7] — 2026-07-06`, `[0.2.66] — 2026-08-16`, `[0.2.93] — 2026-08-19`, `[0.3.97] — 2026-09-22`, `[0.4.4] — 2026-09-26`, `[0.4.5] — 2026-09-26`, `[0.4.6] — 2026-09-27`, `[0.2.15] — 2026-08-03`, `[0.2.32] — 2026-08-09`, `[0.2.34] — 2026-08-09`, `[0.2.3] — 2026-07-22`, `[0.2.44] — 2026-08-11`, `[0.2.46] — 2026-08-11`, `[0.2.49] — 2026-08-12`, `[0.2.4] — 2026-07-23`, `[0.2.50] — 2026-08-12`, `[0.2.51] — 2026-08-12`, `[0.2.57] — 2026-08-14`, `[0.2.61] — 2026-08-16`, `[0.2.64] — 2026-08-16`, `[0.2.69] — 2026-08-16`, `[0.2.6] — 2026-07-24`, `[0.2.71] — 2026-08-16`, `[0.2.73] — 2026-08-17`, `[0.2.74] — 2026-08-17`, `[0.2.78] — 2026-08-18`, `[0.2.81] — 2026-08-18`, `[0.2.84] — 2026-08-18`, `[0.2.91] — 2026-08-19`, `[0.2.99] — 2026-08-20`, `[0.3.0] — 2026-08-20`, `[0.3.19] — 2026-08-27`, `[0.3.23] — 2026-08-28`, `[0.3.2] — 2026-08-22`, `[0.3.3] — 2026-08-22`, `[0.3.48] — 2026-09-12`, `[0.3.73] — 2026-09-19`, `[0.3.74] — 2026-09-19`, `[0.3.76] — 2026-09-19`, `[0.3.77] — 2026-09-19`, `[0.3.82] — 2026-09-21`, `[0.3.84] — 2026-09-21`, `[0.3.87] — 2026-09-21`, `[0.3.88] — 2026-09-22`, `[0.3.90] — 2026-09-22`, `[0.4.0] — 2026-09-23`, `[0.4.13] — 2026-09-30`, `[0.1.1] — 2026-06-30`, `[0.1.2] — 2026-06-30`, `[0.1.3] — 2026-06-30`, `[0.1.4] — 2026-07-01`, `[0.1.8] — 2026-07-06`, `[0.1.9] — 2026-07-17`, `[0.2.0] — 2026-07-20`, `[0.2.11] — 2026-07-26`, `[0.2.12] — 2026-07-26`, `[0.2.14] — 2026-08-02`, `[0.2.19] — 2026-08-05`, `[0.2.1] — 2026-07-21`, `[0.2.20] — 2026-08-05`, `[0.2.21] — 2026-08-05`, `[0.2.25] — 2026-08-05`, `[0.2.26] — 2026-08-06`, `[0.2.29] — 2026-08-07`, `[0.2.2] — 2026-07-22`, `[0.2.30] — 2026-08-07`, `[0.2.31] — 2026-08-07`, `[0.2.33] — 2026-08-09`, `[0.2.35] — 2026-08-09`, `[0.2.37] — 2026-08-09`, `[0.2.41] — 2026-08-10`, `[0.2.43] — 2026-08-10`, `[0.2.45] — 2026-08-11`, `[0.2.48] — 2026-08-11`, `[0.2.54] — 2026-08-13`, `[0.2.55] — 2026-08-13`, `[0.2.56] — 2026-08-13`, `[0.2.58] — 2026-08-14`, `[0.2.5] — 2026-07-23`, `[0.2.62] — 2026-08-16`, `[0.2.68] — 2026-08-16`, `[0.2.70] — 2026-08-16`, `[0.2.72] — 2026-08-16`, `[0.2.75] — 2026-08-17`, `[0.2.76] — 2026-08-17`, `[0.2.77] — 2026-08-17`, `[0.2.82] — 2026-08-18`, `[0.2.83] — 2026-08-18`, `[0.2.87] — 2026-08-18`, `[0.2.8] — 2026-07-25`, `[0.2.90] — 2026-08-18`, `[0.2.94] — 2026-08-19`, `[0.2.95] — 2026-08-19`, `[0.2.96] — 2026-08-19`, `[0.2.98] — 2026-08-20`, `[0.3.11] — 2026-08-26`, `[0.3.12] — 2026-08-26`, `[0.3.14] — 2026-08-26`, `[0.3.16] — 2026-08-27`, `[0.3.17] — 2026-08-27`, `[0.3.18] — 2026-08-27`, `[0.3.21] — 2026-08-27`, `[0.3.22] — 2026-08-28`, `[0.3.25] — 2026-08-29`, `[0.3.26] — 2026-08-31`, `[0.3.27] — 2026-09-01`, `[0.3.29] — 2026-09-02`, `[0.3.31] — 2026-09-03`, `[0.3.32] — 2026-09-09`, `[0.3.33] — 2026-09-09`, `[0.3.40] — 2026-09-12`, `[0.3.43] — 2026-09-12`, `[0.3.47] — 2026-09-12`, `[0.3.51] — 2026-09-12`, `[0.3.53] — 2026-09-14`, `[0.3.54] — 2026-09-14`, `[0.3.55] — 2026-09-15`, `[0.3.58] — 2026-09-16`, `[0.3.62] — 2026-09-16`, `[0.3.63] — 2026-09-16`, `[0.3.66] — 2026-09-16`, `[0.3.68] — 2026-09-16`, `[0.3.72] — 2026-09-18`, `[0.3.75] — 2026-09-19`, `[0.3.79] — 2026-09-20`, `[0.3.7] — 2026-08-22`, `[0.3.81] — 2026-09-21`, `[0.3.85] — 2026-09-21`, `[0.3.86] — 2026-09-21`, `[0.3.89] — 2026-09-22`, `[0.3.91] — 2026-09-22`, `[0.3.92] — 2026-09-22`, `[0.3.93] — 2026-09-22`, `[0.3.94] — 2026-09-22`, `[0.3.95] — 2026-09-22`, `[0.3.9] — 2026-08-23`, `[0.4.1] — 2026-09-23`?**
+  _High betweenness centrality (0.196) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `Editor` (e.g. with `0. En una página` and `2.2 El patrón de MODO (la estructura más importante del Editor)`) actually correct?**
+  _`Editor` has 2 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `exersuite3d` to the rest of the system?**
+  _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Changelog` be split into smaller, more focused modules?**
-  _Cohesion score 0.014492753623188406 - nodes in this community are weakly interconnected._
-- **Should `Editor` be split into smaller, more focused modules?**
-  _Cohesion score 0.029620226383158785 - nodes in this community are weakly interconnected._
-- **Should `playwright-core` be split into smaller, more focused modules?**
-  _Cohesion score 0.02040816326530612 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.015151515151515152 - nodes in this community are weakly interconnected._
+- **Why does `Editor` connect `Editor` to `.moverPrimitiva`, `.scheduleAutosave`, `main.ts`, `Editor.ts`, `.onPointerDown`, `PreciseDrag`, `.emit`, `.constructor`, `.requestRender`, `crearBotonesHerramientas`, `SceneObject`, `Landing.ts`, `.selectJoint`, `estirar.ts`, `standardMachines.ts`, `SceneObject.ts`, `.rebuildGeometry`, `PropertiesPanel.ts`, `.listObjects`, `linePieces.ts`, `PhysicsWorld`, `ComponentPalette.ts`, `AI_CONTEXT.md — EXERSUITE3D`, `Toolbar`, `recentStore.ts`, `descargas.ts`, `SceneManager`, `VisorPiezas.ts`, `Joint`, `PrototipoFoto`, `i18n.ts`, `Cable`, `project.ts`, `.captureViewportPNG`, `.isModoCalce`, `.aplicarChapa`, `chapa.ts`?**
+  _High betweenness centrality (0.152) - this node is a cross-community bridge._
+- **Are the 10 inferred relationships involving `el()` (e.g. with `10.1 Idioma` and `10.4 Lo que en este repositorio NO se hace`) actually correct?**
+  _`el()` has 10 INFERRED edges - model-reasoned connections that need verification._
+- **Should `prepararPasos` be split into smaller, more focused modules?**
+  _Cohesion score 0.026798598227169654 - nodes in this community are weakly interconnected._

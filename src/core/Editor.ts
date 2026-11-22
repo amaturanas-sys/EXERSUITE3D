@@ -6688,6 +6688,7 @@ export class Editor {
       figureSegments.provider,
       figureSegments.skinProvider,
       figureSegments.jointProvider,
+      figureSegments.pielProvider,
     );
 
     // El usuario pudo quitar/cambiar la figura mientras cargaba.
