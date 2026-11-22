@@ -74,6 +74,13 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   cm por debajo de donde se ve, y la aplicación posa el maniquí sobre ese
   punto. Con las dos cosas, lo que se posa en el asiento y lo que se ve están a
   menos de 1 cm en todas las posturas (eran 3,6).
+- **El maniquí es un espejo exacto**, como el anterior. El cuerpo de origen no
+  lo es —sus caderas se separan 0,4 cm más a un lado, una planta quedaba 0,05
+  cm por encima de la otra— y la aplicación trata los dos lados como iguales:
+  en el peso muerto y la sentadilla frontal la barra, agarrada con las dos
+  manos, se desviaba de lado (3,3 cm, con margen de 2). Se corta el cuerpo por
+  la línea media, se aligera la mitad L y se refleja: los seis pares de
+  segmentos L/R son ahora el mismo vértice a vértice.
 - **El cuello se corta por su forma**: en el rig de origen su hueso casi no
   pesa y, cortado por pesos, el segmento se quedaba en unas briznas. Es la
   columna del cuello, y de ella sale dónde se apoya la barra en una sentadilla

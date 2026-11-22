@@ -288,8 +288,9 @@ const unicos = [];
     soldado[i] = u;
   }
 }
-const nU = unicos.length;
-const posU = new Float32Array(nU * 3);
+let nU = unicos.length;
+const nUentero = nU;
+let posU = new Float32Array(nU * 3);
 unicos.forEach((i, u) => posU.set(pos.subarray(i * 3, i * 3 + 3), u * 3));
 // LAS NORMALES DEL MODELO ORIGINAL, no las de la malla aligerada. Cada vértice
 // que sobrevive al aligerado es un vértice del original, así que conserva la
@@ -297,7 +298,7 @@ unicos.forEach((i, u) => posU.set(pos.subarray(i * 3, i * 3 + 3), u * 3));
 // queda tan suave como el del original con una décima parte de geometría.
 // Recalcularlas sobre la malla gruesa facetaba los pliegues (el del glúteo
 // salía a manchas).
-const nrmU = new Float32Array(nU * 3);
+let nrmU = new Float32Array(nU * 3);
 {
   const N0 = prim.getAttribute("NORMAL");
   const mN = new THREE.Matrix3().getNormalMatrix(B);
@@ -312,7 +313,7 @@ const nrmU = new Float32Array(nU * 3);
     }
   }
 }
-const idxU = [];
+let idxU = [];
 {
   const n = I0 ? I0.getCount() : nV0;
   for (let t = 0; t < n; t += 3) {
@@ -325,9 +326,9 @@ const idxU = [];
 
 // Pesos de cada vértice en los huesos del MANIQUÍ (15), y en los de origen
 // (para separar cuello de cabeza al cortar los segmentos).
-const pesoManiqui = new Float32Array(nU * HUESOS.length);
-const pesoCabezaOrigen = new Float32Array(nU); // Head
-const pesoCuelloOrigen = new Float32Array(nU); // Neck
+let pesoManiqui = new Float32Array(nU * HUESOS.length);
+let pesoCabezaOrigen = new Float32Array(nU); // Head
+let pesoCuelloOrigen = new Float32Array(nU); // Neck
 unicos.forEach((i, u) => {
   const { j, w } = pesos0(i);
   for (let k = 0; k < 4; k++) {
@@ -430,6 +431,90 @@ for (const lado of ["Left", "Right"]) {
   for (const c of cabeza) c.y -= m;
 }
 
+// --------------------------------------------- 3b. un cuerpo simétrico
+/**
+ * EL MANIQUÍ ES UN ESPEJO EXACTO, como el anterior. El cuerpo de origen no lo
+ * es —sus caderas se separan 0,4 cm más a un lado, una planta queda 0,05 cm
+ * más alta que la otra— y la aplicación trata los dos lados como iguales: un
+ * gesto con barra que agarra con las dos manos la desviaba de lado, porque
+ * las manos no estaban donde estaba su simétrica. Se corta el cuerpo por la
+ * línea media (x = 0), se queda la mitad del lado «L» (x ≤ 0) y, ya aligerada,
+ * se refleja para dar la otra (paso 5). El corte interpola posición, normal y
+ * pesos donde cruza un triángulo, y los vértices del corte quedan en x = 0
+ * exacto: al reflejar se comparten, y la costura no existe.
+ */
+{
+  const nH = HUESOS.length;
+  const pos = [], nrm = [], pes = [], cab = [], cue = [];
+  const nuevo = new Int32Array(nU).fill(-1);
+  const meter = (p, n, w, c, u) => {
+    pos.push(p[0], p[1], p[2]);
+    nrm.push(n[0], n[1], n[2]);
+    for (let b = 0; b < nH; b++) pes.push(w[b]);
+    cab.push(c);
+    cue.push(u);
+    return pos.length / 3 - 1;
+  };
+  const dentro = (i) => posU[i * 3] <= 0;
+  const viejo = (i) => {
+    if (nuevo[i] < 0) {
+      nuevo[i] = meter(
+        posU.subarray(i * 3, i * 3 + 3), nrmU.subarray(i * 3, i * 3 + 3),
+        pesoManiqui.subarray(i * nH, (i + 1) * nH), pesoCabezaOrigen[i], pesoCuelloOrigen[i],
+      );
+    }
+    return nuevo[i];
+  };
+  const cortes = new Map();
+  const corte = (a, b) => {
+    const k = a < b ? `${a}_${b}` : `${b}_${a}`;
+    let v = cortes.get(k);
+    if (v !== undefined) return v;
+    const xa = posU[a * 3], xb = posU[b * 3];
+    const t = xa / (xa - xb);
+    const mezcla = (arr, dim, i0, i1) =>
+      Array.from({ length: dim }, (_, e) => arr[i0 * dim + e] + (arr[i1 * dim + e] - arr[i0 * dim + e]) * t);
+    const p = mezcla(posU, 3, a, b);
+    p[0] = 0;
+    const n = new THREE.Vector3(...mezcla(nrmU, 3, a, b)).normalize().toArray();
+    const w = mezcla(pesoManiqui, nH, a, b);
+    v = meter(p, n, w,
+      pesoCabezaOrigen[a] + (pesoCabezaOrigen[b] - pesoCabezaOrigen[a]) * t,
+      pesoCuelloOrigen[a] + (pesoCuelloOrigen[b] - pesoCuelloOrigen[a]) * t);
+    cortes.set(k, v);
+    return v;
+  };
+  const tris = [];
+  for (let t = 0; t < idxU.length; t += 3) {
+    const vs = [idxU[t], idxU[t + 1], idxU[t + 2]];
+    const ins = vs.map(dentro);
+    if (ins.every((x) => !x)) continue;
+    if (ins.every((x) => x)) {
+      tris.push(viejo(vs[0]), viejo(vs[1]), viejo(vs[2]));
+      continue;
+    }
+    // Sutherland–Hodgman contra el semiespacio x ≤ 0, conservando el sentido.
+    const poli = [];
+    for (let k = 0; k < 3; k++) {
+      const a = vs[k], b = vs[(k + 1) % 3];
+      const ia = ins[k], ib = ins[(k + 1) % 3];
+      if (ia) poli.push(viejo(a));
+      if (ia !== ib && posU[a * 3] !== 0 && posU[b * 3] !== 0) poli.push(corte(a, b));
+    }
+    for (let k = 1; k + 1 < poli.length; k++) {
+      const [x, y, z] = [poli[0], poli[k], poli[k + 1]];
+      if (x !== y && y !== z && x !== z) tris.push(x, y, z);
+    }
+  }
+  nU = pos.length / 3;
+  posU = Float32Array.from(pos);
+  nrmU = Float32Array.from(nrm);
+  pesoManiqui = Float32Array.from(pes);
+  pesoCabezaOrigen = Float32Array.from(cab);
+  pesoCuelloOrigen = Float32Array.from(cue);
+  idxU = tris;
+}
+
 // --------------------------------------------------------- 4. las juntas
 /**
  * Centro del anillo donde la piel pasa de un hueso a su vecino: los vértices
@@ -455,14 +540,19 @@ const anillo = (madre, hija) => {
   if (n < 12) throw new Error(`Junta ${hija}: anillo con ${n} vértices`);
   return c.divideScalar(n);
 };
+// Sobre la mitad L; las del lado R son su reflejo, y las de la línea media
+// (cuello, columna) se miden sobre medio anillo, cuyo centro tiene la misma
+// altura y el mismo fondo que el entero: sólo su x hay que llevarla a 0.
 const juntas = {};
-for (const lado of ["L", "R"]) {
-  juntas[`shoulder${lado}`] = anillo(["spine"], `shoulder${lado}`);
-  juntas[`elbow${lado}`] = anillo([`shoulder${lado}`], `elbow${lado}`);
-  juntas[`wrist${lado}`] = anillo([`elbow${lado}`], `wrist${lado}`);
-  juntas[`hip${lado}`] = anillo(["raiz"], `hip${lado}`);
-  juntas[`knee${lado}`] = anillo([`hip${lado}`], `knee${lado}`);
-  juntas[`ankle${lado}`] = anillo([`knee${lado}`], `ankle${lado}`);
+juntas.shoulderL = anillo(["spine"], "shoulderL");
+juntas.elbowL = anillo(["shoulderL"], "elbowL");
+juntas.wristL = anillo(["elbowL"], "wristL");
+juntas.hipL = anillo(["raiz"], "hipL");
+juntas.kneeL = anillo(["hipL"], "kneeL");
+juntas.ankleL = anillo(["kneeL"], "ankleL");
+for (const base of ["shoulder", "elbow", "wrist", "hip", "knee", "ankle"]) {
+  const l = juntas[`${base}L`];
+  juntas[`${base}R`] = new THREE.Vector3(-l.x, l.y, l.z);
 }
 juntas.neck = anillo(["spine"], "neck");
 
@@ -477,17 +567,6 @@ const alturaTalla = (() => {
 const yColumna = COLUMNA_Y * (alturaTalla / TALLA);
 juntas.spine = new THREE.Vector3(0, yColumna, cabeza[idx("Hips")].z);
 
-// SIMÉTRICAS: el cuerpo de origen no es un espejo exacto (sus caderas se
-// separan 0,4 cm más a un lado), y las posturas espejan sus grados de un lado
-// al otro. Se promedian los dos lados; la línea media queda en x = 0.
-for (const base of ["shoulder", "elbow", "wrist", "hip", "knee", "ankle"]) {
-  const l = juntas[`${base}L`], r = juntas[`${base}R`];
-  const x = (Math.abs(l.x) + Math.abs(r.x)) / 2;
-  const y = (l.y + r.y) / 2;
-  const z = (l.z + r.z) / 2;
-  juntas[`${base}L`] = new THREE.Vector3(-x, y, z);
-  juntas[`${base}R`] = new THREE.Vector3(x, y, z);
-}
 juntas.neck.x = 0;
 
 // Fondo: las caderas a la misma profundidad que en el cuerpo anterior (+0,23),
@@ -510,7 +589,7 @@ const [idxS, errorRel] = MeshoptSimplifier.simplifyWithAttributes(
   HUESOS.length,
   new Array(HUESOS.length).fill(0.5),
   null,
-  PRESUPUESTO_TRIS * 3,
+  Math.round(PRESUPUESTO_TRIS / 2) * 3,
   0.05,
   ["Regularize"],
 );
@@ -558,20 +637,55 @@ for (const u of idxS) {
     orden.push(u);
   }
 }
-const nV = orden.length;
+// Y SE REFLEJA. Los vértices del corte (x = 0) se comparten; el resto se
+// duplica con x cambiada de signo, la normal reflejada y los pesos de un lado
+// pasados al otro. Los triángulos reflejados invierten su sentido, para seguir
+// mirando hacia fuera.
+const nVh = orden.length;
+const espejo = new Int32Array(nVh);
+let nV = nVh;
+for (let v = 0; v < nVh; v++) espejo[v] = posU[orden[v] * 3] === 0 ? v : nV++;
 const P = new Float32Array(nV * 3);
 const Wm = new Float32Array(nV * HUESOS.length);
 const pCab = new Float32Array(nV);
 const pCue = new Float32Array(nV);
 const N = new Float32Array(nV * 3);
+const OTRO_LADO = HUESOS.map((h) => H[h.replace(/L$/, "§").replace(/R$/, "L").replace(/§$/, "R")] ?? H[h]);
 orden.forEach((u, v) => {
-  P.set(posU.subarray(u * 3, u * 3 + 3), v * 3);
-  N.set(new THREE.Vector3().fromArray(nrmU, u * 3).normalize().toArray(), v * 3);
-  Wm.set(pesoManiqui.subarray(u * HUESOS.length, (u + 1) * HUESOS.length), v * HUESOS.length);
-  pCab[v] = pesoCabezaOrigen[u];
-  pCue[v] = pesoCuelloOrigen[u];
+  const p = posU.subarray(u * 3, u * 3 + 3);
+  const n = new THREE.Vector3().fromArray(nrmU, u * 3).normalize();
+  const w = pesoManiqui.subarray(u * HUESOS.length, (u + 1) * HUESOS.length);
+  if (espejo[v] === v) {
+    // En la línea media el vértice es de los dos lados: su normal no tiene
+    // componente lateral y sus pesos son la media de los suyos y los
+    // reflejados (un punto de la entrepierna pesa lo mismo en las dos
+    // caderas).
+    P.set([0, p[1], p[2]], v * 3);
+    N.set(new THREE.Vector3(0, n.y, n.z).normalize().toArray(), v * 3);
+    for (let b = 0; b < HUESOS.length; b++) {
+      Wm[v * HUESOS.length + b] += w[b] / 2;
+      Wm[v * HUESOS.length + OTRO_LADO[b]] += w[b] / 2;
+    }
+    pCab[v] = pesoCabezaOrigen[u];
+    pCue[v] = pesoCuelloOrigen[u];
+    return;
+  }
+  for (const [d, signo, pesos] of [[v, 1, false], [espejo[v], -1, true]]) {
+    P.set([signo * p[0], p[1], p[2]], d * 3);
+    N.set([signo * n.x, n.y, n.z], d * 3);
+    for (let b = 0; b < HUESOS.length; b++) Wm[d * HUESOS.length + (pesos ? OTRO_LADO[b] : b)] = w[b];
+    pCab[d] = pesoCabezaOrigen[u];
+    pCue[d] = pesoCuelloOrigen[u];
+  }
 });
-const IDX = Uint32Array.from(idxS, (u) => usado[u]);
+const mitad = Uint32Array.from(idxS, (u) => usado[u]);
+const IDX = new Uint32Array(mitad.length * 2);
+IDX.set(mitad);
+for (let t = 0; t < mitad.length; t += 3) {
+  IDX[mitad.length + t] = espejo[mitad[t]];
+  IDX[mitad.length + t + 1] = espejo[mitad[t + 2]];
+  IDX[mitad.length + t + 2] = espejo[mitad[t + 1]];
+}
 const nT = IDX.length / 3;
 
 // ------------------------------------------- 6. dos retoques de los pesos
@@ -693,6 +807,9 @@ let normalesRehechas = 0;
 /** Segmento de un vértice: el de su hueso dominante; cuello y cabeza aparte. */
 const segmentoDeVertice = (k) => {
   const h = HUESOS[dominante[k]];
+  // En la línea media (la entrepierna) un vértice pesa igual en las dos
+  // caderas, y el empate no puede darlo a un lado: es de la pelvis.
+  if (P[k * 3] === 0 && /[LR]$/.test(h)) return "pelvis";
   if (h === "neck") return pCab[k] >= pCue[k] ? "cabeza" : "cuello";
   return SEGMENTO_DE_HUESO[h];
 };
@@ -883,7 +1000,7 @@ fs.writeFileSync(path.join(SALIDA, "manifest.json"), JSON.stringify(manifiesto, 
 const kb = (f) => (fs.statSync(path.join(SALIDA, f)).size / 1024).toFixed(1);
 const grados = (v) => THREE.MathUtils.radToDeg(Math.atan2(Math.hypot(v.x, v.z), -v.y)).toFixed(1);
 console.log(`Fuente: ${path.relative(RAIZ_REPO, FUENTE)} — ${trisOrigen} triángulos, ${nV0} vértices, ${huesosOrigen.length} huesos`);
-console.log(`Soldada: ${nU} vértices. Aligerada: ${nT} triángulos, ${nV} vértices (desviación máxima ${(errorRel * escala).toFixed(2)} cm)`);
+console.log(`Soldada: ${nUentero} vértices; media, cortada por la línea media: ${nU}. Aligerada y reflejada: ${nT} triángulos, ${nV} vértices (desviación máxima ${(errorRel * escala).toFixed(2)} cm)`);
 console.log(`Triángulos doblados contra la superficie original: ${doblados.malos} del revés, ${doblados.torcidos} a más de 60°`);
 console.log(`Normales: ${nV - normalesRehechas} del original, ${normalesRehechas} rehechas sobre la malla aligerada`);
 for (const lado of ["Left", "Right"]) {
