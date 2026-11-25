@@ -25,10 +25,11 @@ en corto:
 |---|---|---|
 | Espacio | cm, 175 de talla, pies en y=0, mirando a +Z | es el del maniquí de siempre |
 | Pesos | 22 huesos → 14 articulaciones + raíz | el rig de la aplicación tiene 14 pivotes |
-| Pose | de pose T al reposo del maniquí anterior | las posturas cuentan sus grados desde ahí |
 | Juntas | centro del anillo donde dobla la piel | girar en otro punto cizalla la piel |
+| Pose | de pose T al reposo del maniquí anterior, medido entre juntas | las posturas cuentan sus grados desde ahí, y la IK da por hecho ese reposo |
+| Simetría | se corta por la línea media y se refleja la mitad L | la aplicación trata los dos lados como iguales |
 | Aligerado | 296.245 → ~24.000 triángulos (meshoptimizer) | el maniquí anterior dibujaba 47.024 |
-| Retoques | columna a 100 cm, glúteo con la pelvis | ver el CHANGELOG de la v0.4.14 |
+| Retoques | columna a 100 cm; la nalga, con la pelvis hasta 9 cm bajo la cadera | sentado apoyan nalga y muslo a la vez; ver el CHANGELOG de la v0.4.14 |
 | Corte | 16 segmentos rígidos + la piel | los segmentos se miden, la piel se ve |
 
 Para cambiar el presupuesto de triángulos basta con `--tris`. Para cambiar el

@@ -34,40 +34,67 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   0,45 cm. Pesa lo mismo que antes (piel 518 kB y segmentos 311 kB, contra
   860 kB), y conserva las normales del modelo de 296.000 triángulos: el
   sombreado es el del original.
-- **El reposo es el de siempre.** Las posturas cuentan sus grados desde el
-  reposo del maniquí, así que el cuerpo nuevo no podía llegar en pose T: con
-  los brazos en cruz, cada postura del catálogo saldría desplazada 66° en el
-  hombro. Se le quita con su propio rig hasta el reposo del cuerpo anterior
-  —brazo a 23,9° de la vertical, antebrazo a 5,6°, muslo a 7,2°, pierna a
-  plomo, pie plano— y la columna sigue doblando a 100 cm.
+- **El reposo es el de siempre, medido entre juntas.** Las posturas cuentan
+  sus grados desde el reposo del maniquí, así que el cuerpo nuevo no podía
+  llegar en pose T: con los brazos en cruz, cada postura del catálogo saldría
+  desplazada 66° en el hombro. Se le quita con su propio rig hasta el reposo
+  del cuerpo anterior —brazo a 23,9° de la vertical, antebrazo a 5,6°, muslo a
+  7,2°, pierna a plomo, pie plano— y la columna sigue doblando a 100 cm. Esos
+  ángulos son los del cuerpo anterior LEÍDOS DE SUS JUNTAS, y se enderezan
+  entre las juntas del nuevo (los anillos donde dobla su piel), no entre los
+  huesos de su rig: enderezando huesos, el muslo quedaba entre juntas a 9,2° y
+  la pierna a 1,6°, y la IK de la aplicación, que da por hecho el reposo de
+  siempre, dejaba la planta 1,8 cm en el aire en la prensa. Ahora cuelga como
+  el anterior a menos de una décima de grado.
 - **Las juntas**, donde la piel dobla de verdad (el centro del anillo donde
   dos huesos se reparten el peso a medias), medidas sobre la malla entera:
 
   | junta   | antes                 | ahora                  |
   |---------|-----------------------|------------------------|
-  | columna | (0, 100,0, +1,4)      | (0, 100,1, −0,8)       |
-  | cuello  | (0, 146,4, −0,7)      | (0, 151,3, −0,4)       |
-  | hombro  | (∓16,2, 136,0, −2,3)  | (∓18,9, 141,4, −4,9)   |
-  | codo    | (∓25,9, 114,1, −2,3)  | (∓27,9, 119,5, −3,7)   |
-  | muñeca  | (∓28,7, 84,7, −2,3)   | (∓31,1, 96,2, −4,0)    |
-  | cadera  | (∓8,5, 90,5, +0,2)    | (∓8,9, 92,2, +0,2)     |
-  | rodilla | (∓13,4, 51,8, +0,2)   | (∓15,4, 51,3, +0,4)    |
-  | tobillo | (∓13,3, 11,5, +0,2)   | (∓14,6, 12,7, −0,4)    |
+  | columna | (0, 100,0, +1,4)      | (0, 100,2, −0,5)       |
+  | cuello  | (0, 146,4, −0,7)      | (0, 151,5, −0,2)       |
+  | hombro  | (∓16,2, 136,0, −2,3)  | (∓19,2, 141,9, −4,8)   |
+  | codo    | (∓25,9, 114,1, −2,3)  | (∓29,1, 119,7, −4,8)   |
+  | muñeca  | (∓28,7, 84,7, −2,3)   | (∓31,4, 96,8, −4,8)    |
+  | cadera  | (∓8,5, 90,5, +0,2)    | (∓8,7, 92,2, +0,2)     |
+  | rodilla | (∓13,4, 51,8, +0,2)   | (∓13,8, 51,2, +0,2)    |
+  | tobillo | (∓13,3, 11,5, +0,2)   | (∓13,8, 12,7, +0,2)    |
 
-  Es otro cuerpo y no todo puede coincidir: los hombros quedan 5 cm más altos
-  y el antebrazo es más corto (23,5 cm de codo a muñeca, contra 29,5), con una
-  mano más larga —la punta de los dedos cuelga a 76,3 cm, contra 72,4—. El
-  muslo mide 41,4 (39,0) y la pierna 38,6 (40,3). Las medidas de ergonomía que
-  dependen del cuerpo cambian con él, que es lo que se pide al cambiarlo.
+  Es otro cuerpo y no todo puede coincidir: los hombros quedan 6 cm más altos
+  y el antebrazo es más corto (23,1 cm de codo a muñeca, contra 29,5), con una
+  mano abierta y más larga —la punta de los dedos cuelga a 76,3 cm, contra
+  72,4—: agarra 3,5 cm más cerca del hombro. El muslo mide 41,3 (39,0) y la
+  pierna 38,5 (40,3), y el cuerpo es más delgado —26 cm de fondo de tronco
+  contra 32—. Las medidas de ergonomía que dependen del cuerpo cambian con él,
+  que es lo que se pide al cambiarlo.
+- **Las posturas con barra, re-resueltas para el cuerpo nuevo.** Cada una
+  salió de resolver unas reglas sobre el cuerpo que había, y con el nuevo los
+  mismos grados dejaban de cumplirlas: la huella de la sentadilla se iba 1,7 cm
+  al bajar, la barra se apartaba hasta 4,7 cm de la vertical y en el peso
+  muerto los discos quedaban 2,3 cm en el aire. Se han vuelto a resolver las
+  MISMAS reglas —huella fija, planta plana, barra a plomo sobre el centro de la
+  huella, discos al suelo, mano en la barra—, partiendo de los grados que había
+  y moviéndolos lo mínimo: la cadera del fondo de sentadilla pasa de −78,6° a
+  −74,1, el tronco del peso muerto de 78° a 80 (su tope) y el bloqueo del press
+  de −166° a −163,4. La salida del press conserva la que se aprobó, la barra
+  9,2 cm por delante del medio del pie. La biblioteca de posturas trae una nota
+  con todos los valores; las copias de fábrica que un usuario no haya tocado se
+  refrescan solas, como siempre.
 
 ### Arreglado al montarlo (no llega a verse, pero se midió)
 
-- **El glúteo es de la pelvis.** El rig de origen, pensado para andar, reparte
-  la nalga a medias entre cadera y muslo: cortada por el hueso que más pesa, la
-  pelvis se quedaba en un parche y el glúteo se iba con el muslo. Ahora el
+- **La nalga se sienta como la del cuerpo anterior.** El rig de origen,
+  pensado para andar, reparte la nalga a medias entre cadera y muslo: cortada
+  por el hueso que más pesa, la pelvis se quedaba en un parche. Ahora el
   reparto pelvis↔muslo lo da la posición a lo largo del fémur: el muslo empieza
-  en la ingle por delante (con transición amplia, para que doble suave) y en el
-  pliegue del glúteo por detrás, 15 cm más abajo y con una franja de ±1,5 cm.
+  en la ingle por delante (con transición amplia, para que doble suave) y por
+  detrás 9 cm bajo la cadera, con una franja de ±1,5 cm. No en el pliegue de la
+  nalga, que en este cuerpo cae a 15: la parte baja del glúteo se inserta en el
+  fémur y al sentarse se va con él. Cortando en el pliegue, la nalga sentada
+  colgaba 15,5 cm bajo la cadera —la figura se sentaba 5 cm más alta que con el
+  cuerpo anterior— y los muslos quedaban 6,6 cm en el aire. Ahora la pelvis
+  apoya a 9,7 cm bajo la cadera (el anterior, a 10,5) y los muslos a 9,8: nalga
+  y muslo se posan a la vez.
 - **Un triángulo es de un segmento si sus tres vértices lo son.** Repartiendo
   los de frontera al que más vértices reclamaba, el segmento de la pelvis se
   llevaba rígido un vértice que en la piel es 100 % muslo: sentado, quedaba 8,9
@@ -91,6 +118,25 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   veía el interior del cuerpo. Se sueldan a 20 micras: quedan 46, las del propio
   modelo.
 
+### Arreglado en la aplicación (lo destapó el cuerpo nuevo)
+
+- **Sentado, la figura no atraviesa el asiento.** Al colocarla se baja hasta
+  que la carne toca el hierro (v0.3.18), y el hierro excluye los apoyos
+  ergonómicos para que tocar el asiento no cuente como estorbo: en un cojín
+  grueso con su pilar metido dentro, el cuerpo nuevo bajaba 4 cm DENTRO del
+  cojín. El anterior no llegaba a tocar ese pilar y se quedaba en la cara por
+  casualidad. Ahora se mide también la cara de verdad del asiento, con rayos
+  contra su malla, y la figura baja como mucho hasta tocarla.
+- **El rack frontal se apoya en el surco entre garganta y pecho**, medido
+  sobre la malla. Era una proporción fija entre las juntas del cuello y del
+  hombro, que en el cuerpo anterior caía en la clavícula y en el nuevo —cuyas
+  juntas están donde dobla su piel— en la garganta.
+- **El tirón del peso muerto termina en su hito**, con la barra 1,10 cm sobre
+  la rodilla como dice la postura «Peso muerto (rodilla)», y no a ras del
+  pivote. Con el cuerpo anterior el corte caía un grado antes; con el nuevo,
+  7,6°, y al bajar —que va al hito exacto— la columna se desviaba 5,4° de la
+  de subida.
+
 ### Pruebas
 
 - `prueba-maniqui-piel.mjs` (nueva, 27 comprobaciones): la piel cuelga de los
@@ -99,7 +145,30 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   muerto— que la planta, lo más bajo del cuerpo, el asiento y las manos que se
   ven son los que se miden (planta y manos, exactas; asiento, a menos de 1 cm).
   También que el clic da con el segmento y no con la piel, y que a otra talla la
-  figura se rehace con piel y en el suelo.
+  figura se rehace con piel y en el suelo. El asiento se mide en la pelvis y la
+  mitad alta de los muslos: la corva no se sienta.
+- **Pruebas que medían el cuerpo anterior y no el gesto**, adaptadas una a una
+  y con el porqué escrito en cada una:
+  - `prueba-apoyos`: los pies se separan por el eje lateral de la figura, como
+    la plataforma se pone por su frente; el cuerpo nuevo se sienta en la punta
+    del banco mirando hacia fuera, y un ±8 en X del mundo ponía un pie 8 cm
+    más cerca que el otro.
+  - `prueba-zonas`: el recorrido del puño, en proporción al brazo (el 28 %,
+    que eran los 15 cm del anterior; este lo pasa con el 31 %).
+  - `prueba-sentadilla`: la mano se mide por su centro, por donde agarra, y
+    las piernas estiradas por la rodilla y no por la estatura.
+  - `prueba-maniqui-fisico` y `prueba-maniqui-usa`: el cuerpo sentado frena el
+    brazo de press, pero más tarde —25° en vez de 9,5—, porque el cuerpo nuevo
+    es más delgado que las piezas solapadas del anterior; se pide que le quite
+    al arco más de 5°.
+  - `prueba-prensa-maniqui`: 18 pulsaciones en la sesión y no 16; el cuerpo
+    nuevo arranca con la rodilla 5,5° más doblada.
+  - `prueba-gesto-barra` y `prueba-biblioteca-posturas`: las referencias de
+    pose son las re-resueltas.
+- **Dos esperas a reloj pasan a esperar a la app** (`prueba-ergonomia-v256`,
+  `prueba-viewer-maniqui`): arrancar la simulación o abrir un proyecto en el
+  Viewer tarda más en unas máquinas que en otras —igual con el cuerpo anterior
+  que con el nuevo— y con tiempos fijos fallaban.
 
 ## [0.4.13] — 2026-09-30
 
