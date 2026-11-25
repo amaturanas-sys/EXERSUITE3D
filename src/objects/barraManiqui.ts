@@ -230,17 +230,34 @@ export function apoyoEnElTronco(
   if (!geo.boundingBox) geo.computeBoundingBox();
   const bb = geo.boundingBox as THREE.Box3;
 
-  const puntos: THREE.Vector3[] = [];
+  const delTronco: THREE.Vector3[] = [];
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const v = new THREE.Vector3();
-  for (let i = 0; i < pos.count; i++) puntos.push(v.fromBufferAttribute(pos, i).clone());
-  if (cuello) puntos.push(...verticesEn(cuello, tronco));
+  for (let i = 0; i < pos.count; i++) delTronco.push(v.fromBufferAttribute(pos, i).clone());
+  const delCuello = cuello ? verticesEn(cuello, tronco) : [];
+  const puntos = [...delTronco, ...delCuello];
 
   if (agarre === "frontal") {
-    // ALTURA DE LA CLAVÍCULA: por debajo de la base del cuello y por encima
-    // del hombro. Ahí es donde se apoya la barra en un rack frontal, y no en
-    // lo alto del tronco —que en este cuerpo es ya el trapecio— ni a la altura
-    // del hombro, que es el pecho.
+    // EN EL SURCO ENTRE LA GARGANTA Y EL PECHO (v0.4.14). La barra sube todo
+    // lo que puede MIENTRAS LA SOSTENGA EL PECHO: se baja desde la junta del
+    // cuello y la primera altura a la que el tronco asoma tanto como la
+    // garganta es el sitio. Ahí la barra toca las dos cosas —el cuello justo
+    // detrás, el pecho debajo—, que es el rack frontal de verdad.
+    //
+    // Antes era una proporción entre las juntas del cuello y del hombro, el
+    // 30 % de bajada, que en el cuerpo anterior caía en la clavícula. En el de
+    // la v0.4.14 las juntas están donde dobla su piel —el cuello en la base de
+    // la nuca, 5 cm más arriba— y ese 30 % ponía la barra en la garganta:
+    // apoyada en el cuello y 0,8 cm por delante del pecho. Midiendo dónde
+    // toca, la cuenta deja de depender de dónde ponga cada cuerpo sus juntas.
+    if (delCuello.length) {
+      for (let y = refs.cuelloY; y >= refs.hombroY; y -= 0.25) {
+        const zT = tangencia(delTronco, "z", y, radioBarra);
+        if (Number.isFinite(zT) && zT >= tangencia(delCuello, "z", y, radioBarra)) {
+          return new THREE.Vector3(0, y, zT);
+        }
+      }
+    }
     const y = refs.cuelloY - (refs.cuelloY - refs.hombroY) * 0.3;
     const z = tangencia(puntos, "z", y, radioBarra);
     return new THREE.Vector3(0, y, Number.isFinite(z) ? z : bb.max.z + radioBarra);
@@ -250,10 +267,8 @@ export function apoyoEnElTronco(
   // primero se busca hasta dónde llega el cuello hacia atrás y la barra se
   // pone justo detrás; luego se deja caer hasta que se apoya.
   let nucaZ = refs.cuelloZ;
-  if (cuello) {
-    for (const p of verticesEn(cuello, tronco)) {
-      if (p.y > refs.hombroY && p.z < nucaZ) nucaZ = p.z;
-    }
+  for (const p of delCuello) {
+    if (p.y > refs.hombroY && p.z < nucaZ) nucaZ = p.z;
   }
   const z = nucaZ - radioBarra;
   const y = tangencia(puntos, "y", z, radioBarra);

@@ -68,6 +68,11 @@ const press = await page.evaluate(async () => {
   ed.activarZona("inferior", null); ed.activarZona("bisagra", null);
   ed.activarZona("superior", "sim");
   const t = [{ fase: "partida", shoulder: __g("shoulderL"), elbow: __g("elbowL"), puno: __puno("L") }];
+  // Lo largo del brazo, del hombro a la muñeca (el «puño» que se mide aquí es
+  // el origen de la mano, que cuelga de la muñeca).
+  const T = window.exersuite.THREE, J = ed.humanFigure.userData.joints;
+  const w = (n) => new T.Vector3().setFromMatrixPosition(J[n].matrixWorld);
+  t[0].brazo = +(w("shoulderL").distanceTo(w("elbowL")) + w("elbowL").distanceTo(w("wristL"))).toFixed(1);
   for (let k = 0; k < 24; k++) ed.moverPrimitiva(1, 5);      // tecla 8 = EMPUJE
   t.push({ fase: "empuje", shoulder: __g("shoulderL"), elbow: __g("elbowL"), puno: __puno("L") });
   for (let k = 0; k < 24; k++) ed.moverPrimitiva(-1, 5);     // tecla 9 = TRACCIÓN
@@ -81,8 +86,15 @@ ok(pE.elbow > p0.elbow && pE.shoulder < p0.shoulder,
   `el EMPUJE extiende el codo (${p0.elbow}°→${pE.elbow}°) MIENTRAS flexiona el hombro (${p0.shoulder}°→${pE.shoulder}°): direcciones opuestas coordinadas`);
 ok(pE.elbow > -20, `el codo llega a extensión útil (${pE.elbow}°, tope anatómico +15°)`);
 const recorrido = Math.hypot(pE.puno.adelante - p0.puno.adelante, pE.puno.arriba - p0.puno.arriba);
-ok(pE.puno.adelante > p0.puno.adelante + 15,
-  `el puño SE ALEJA del cuerpo hacia delante (${p0.puno.adelante} → ${pE.puno.adelante} cm; ${recorrido.toFixed(1)} cm de recorrido)`);
+// EN PROPORCIÓN AL BRAZO (v0.4.14). Eran 15 cm fijos, medidos en el cuerpo
+// anterior, cuyo brazo medía 53,4 cm del hombro a la muñeca: el 28 %, y lo
+// pasaba por 0,3 cm. El cuerpo nuevo tiene el antebrazo 6,6 cm más corto
+// (46,9 cm de brazo) y el mismo gesto le lleva el puño 14,4 cm: el 31 % de su
+// brazo, más que antes. Lo que se pide es el gesto, no los centímetros de un
+// cuerpo concreto.
+const minimo = 0.28 * p0.brazo;
+ok(pE.puno.adelante > p0.puno.adelante + minimo,
+  `el puño SE ALEJA del cuerpo hacia delante (${p0.puno.adelante} → ${pE.puno.adelante} cm; ${recorrido.toFixed(1)} cm de recorrido, mínimo ${minimo.toFixed(1)}: el 28 % de un brazo de ${p0.brazo})`);
 ok(Math.abs(pE.puno.arriba) < Math.abs(pE.puno.adelante),
   `y lo hace en HORIZONTAL (${pE.puno.adelante} cm adelante frente a ${pE.puno.arriba} cm de altura)`);
 // Lo que define el remo no son 20 cm de recorrido —eso depende de lo largo que

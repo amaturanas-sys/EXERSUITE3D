@@ -4906,16 +4906,24 @@ export class Editor {
     const mR = this.centroSegmento("mano-R");
     const kL = joints.kneeL, kR = joints.kneeR;
     if (!mL || !mR || !kL || !kR) {
-      // Respaldo por ángulo: el mismo punto, medido (cadera −23,77°).
+      // Respaldo por ángulo: el mismo punto, medido (cadera −35,95° con el
+      // cuerpo de la v0.4.14; −23,77 con el anterior).
       return this.umbralCruzado(
-        { tipo: "angulo", familia: "hip", grados: -23.77, signo: 1 },
+        { tipo: "angulo", familia: "hip", grados: -35.95, signo: 1 },
         joints,
       );
     }
+    // «Sobre la patela» es lo que dice el hito —«Peso muerto (rodilla)»—: la
+    // barra 1,10 cm por encima del pivote de la rodilla (a 175 cm de talla).
+    // Cruzándolo a ras del pivote, el tirón terminaba ANTES de llegar al hito:
+    // con el cuerpo anterior un grado antes, y con el de la v0.4.14 —que sube
+    // la barra más despacio respecto de la rodilla— 7,6°. El bloqueo arrancaba
+    // entonces de una postura que no era la del hito, y al bajar, que va al
+    // hito exacto, la columna se desviaba hasta 5,4° de la de subida.
     const yMano = (mL.y + mR.y) / 2;
     const yRodilla =
       (kL.getWorldPosition(new THREE.Vector3()).y + kR.getWorldPosition(new THREE.Vector3()).y) / 2;
-    return yMano >= yRodilla;
+    return yMano >= yRodilla + 1.1 * (this.humanHeight / 175);
   }
 
   /** Ángulos X objetivo de la fase, leídos de las posturas de la biblioteca. */

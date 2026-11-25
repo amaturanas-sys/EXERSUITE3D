@@ -101,17 +101,31 @@ const medir = () => page.evaluate(() => {
   // de la mano y tienen que estar exactamente donde él.
   const bajo = {}, rigidos = { wristL: [], wristR: [] };
   let minimo = Infinity;
+  // EL ASIENTO es la pelvis y la MITAD ALTA de los muslos: lo que se posa al
+  // sentarse. La corva no. Con la rodilla doblada la piel se recoge ahí —va a
+  // medias con muslo y pierna— y el segmento rígido no, así que en el peso
+  // muerto, donde nada se sienta y la nalga ya no cuelga, lo más bajo de los
+  // muslos era la corva y comparaba otra cosa: 1,6 cm de pliegue de rodilla.
+  // La altura de reposo de cada junta sale de la matriz de ligado de la piel.
+  const reposoY = (h) => new T.Matrix4().copy(piel.skeleton.boneInverses[nombres.indexOf(h)]).invert().elements[13];
+  const mitadMuslo = { hipL: (reposoY("hipL") + reposoY("kneeL")) / 2, hipR: (reposoY("hipR") + reposoY("kneeR")) / 2 };
+  const reposo = piel.geometry.getAttribute("position");
+  const enAsiento = {};
   for (let i = 0; i < si.count; i++) {
     let d = 0, w = -1;
     for (let k = 0; k < 4; k++) if (sw.getComponent(i, k) > w) { w = sw.getComponent(i, k); d = si.getComponent(i, k); }
     piel.getVertexPosition(i, v).applyMatrix4(piel.matrixWorld);
     const h = nombres[d];
+    if (h === "raiz" || (mitadMuslo[h] !== undefined && reposo.getY(i) >= mitadMuslo[h])) {
+      enAsiento[h] = Math.min(enAsiento[h] ?? Infinity, v.y);
+    }
     bajo[h] = Math.min(bajo[h] ?? Infinity, v.y);
     minimo = Math.min(minimo, v.y);
     if (w > 0.99 && rigidos[h]) rigidos[h].push(v.clone());
   }
-  // De los segmentos: su piel propia (sin collarín) y todos sus puntos.
-  const seg = (id) => {
+  // De los segmentos: su piel propia (sin collarín) y todos sus puntos. Con
+  // `hasta`, sólo lo que en reposo queda por encima de esa cota del pivote.
+  const seg = (id, hasta = -Infinity) => {
     let m = null;
     f.traverse((n) => { if (n.isMesh && n.userData.segmentId === id) m = n; });
     const pos = m.geometry.getAttribute("position");
@@ -120,7 +134,9 @@ const medir = () => page.evaluate(() => {
     for (let i = 0; i < pos.count; i++) {
       const w = new T.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(m.matrixWorld);
       pts.push(w);
-      if (m.userData.jointName !== "" && pos.getY(i) * m.scale.y + m.position.y > 0) continue;
+      const local = pos.getY(i) * m.scale.y + m.position.y;
+      if (m.userData.jointName !== "" && local > 0) continue;
+      if (local < hasta) continue;
       y = Math.min(y, w.y);
     }
     return { bajo: y, pts };
@@ -138,10 +154,12 @@ const medir = () => page.evaluate(() => {
     return peor;
   };
   const r = (x) => +x.toFixed(2);
-  // EL ASIENTO es lo más bajo de pelvis y muslos: es lo que se posa en una
-  // superficie plana.
-  const asientoPiel = Math.min(bajo.raiz, bajo.hipL, bajo.hipR);
-  const asientoSeg = Math.min(seg("pelvis").bajo, seg("muslo-L").bajo, seg("muslo-R").bajo);
+  // EL ASIENTO, lo más bajo de pelvis y mitad alta de los muslos (ver arriba).
+  // En el segmento del muslo, la mitad es la de la rodilla en su pivote.
+  const J = f.userData.joints;
+  const asientoPiel = Math.min(enAsiento.raiz, enAsiento.hipL, enAsiento.hipR);
+  const asientoSeg = Math.min(seg("pelvis").bajo,
+    seg("muslo-L", J.kneeL.position.y / 2).bajo, seg("muslo-R", J.kneeR.position.y / 2).bajo);
   return {
     piel: { minimo: r(minimo), pieL: r(bajo.ankleL), pieR: r(bajo.ankleR), asiento: r(asientoPiel) },
     seg: { minimo: window.__pielMasBaja(), pieL: window.__planta("L"), pieR: window.__planta("R"), asiento: r(asientoSeg) },

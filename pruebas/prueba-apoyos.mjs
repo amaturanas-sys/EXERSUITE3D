@@ -207,14 +207,20 @@ const utiles = async (page) => page.evaluate(() => {
     const cajaPlat = new T.Box3().setFromObject(caj.mesh);
 
     // 🦶 Pisar: la planta va a la cara superior de la plataforma.
+    //
+    // Los pies se separan por el eje IZQUIERDA-DERECHA DE LA FIGURA, como la
+    // plataforma se pone por su frente (v0.4.14). Con ±8 en X del MUNDO la
+    // prueba daba por hecho que la figura se sentaba mirando a ±Z: el cuerpo
+    // nuevo, cuyos muslos ya no entran en el banco, se sienta en la punta
+    // mirando hacia fuera (+X), y ese ±8 ponía un pie 8 cm más cerca que el
+    // otro — a ése la cadera tenía que flexionarse 128° y la pierna se quedaba
+    // al tope, con la planta en el aire.
+    const derecha = new T.Vector3(1, 0, 0).applyQuaternion(ed.humanFigure.quaternion);
     for (const lado of ["L", "R"]) {
-      const destino = new T.Vector3(0, 0, 0);
       const inv = new T.Matrix4().copy(caj.mesh.matrixWorld).invert();
-      const puntoMundo = new T.Vector3(
-        cajaPlat.getCenter(new T.Vector3()).x + (lado === "L" ? -8 : 8),
-        cajaPlat.max.y,
-        cajaPlat.getCenter(new T.Vector3()).z,
-      );
+      const puntoMundo = cajaPlat.getCenter(new T.Vector3())
+        .addScaledVector(derecha, lado === "L" ? -8 : 8);
+      puntoMundo.y = cajaPlat.max.y;
       ed.attachFoot(lado, caj.id, puntoMundo.clone().applyMatrix4(inv));
     }
     // Se resuelve la IK como en cada frame.

@@ -86,6 +86,22 @@ const respectoA = (a, b) => p.evaluate(([a, b]) => {
   return [+v.x.toFixed(1), +v.y.toFixed(1), +v.z.toFixed(1)];
 }, [a, b]);
 
+// LA MANO SE MIDE POR SU CENTRO, que es por donde agarra: el mismo punto que
+// usa la aplicación para poner la barra en el puño (`centroSegmento`). Medirla
+// por la muñeca valía con el puño cerrado del cuerpo anterior, cuyo centro
+// quedaba a 5,5 cm de ella; la mano abierta del de la v0.4.14 lo tiene a 7,7,
+// y en el rack frontal la muñeca cuelga POR DEBAJO de la barra que sujeta.
+const centroRespectoA = (seg, b) => p.evaluate(([seg, b]) => {
+  const T = window.exersuite.THREE, ed = window.exersuite.editor;
+  const f = ed.humanFigure;
+  f.updateMatrixWorld(true);
+  let m = null;
+  f.traverse((n) => { if (n.isMesh && n.userData.segmentId === seg) m = n; });
+  const v = new T.Box3().setFromObject(m).getCenter(new T.Vector3())
+    .sub(ed.figureJoints()[b].getWorldPosition(new T.Vector3()));
+  return [+v.x.toFixed(1), +v.y.toFixed(1), +v.z.toFixed(1)];
+}, [seg, b]);
+
 const altura = () => p.evaluate(() => {
   const T = window.exersuite.THREE;
   const c = new T.Box3().setFromObject(window.exersuite.editor.humanFigure);
@@ -174,7 +190,7 @@ const medir = async () => ({
     return +T.MathUtils.radToDeg(d("muslo-L").angleTo(d("pierna-L"))).toFixed(1);
   }),
   plantaNormal: await eje("pie-L", "y"),
-  muneca: await respectoA("wristL", "shoulderL"),
+  muneca: await centroRespectoA("mano-L", "shoulderL"),
   codo: await respectoA("elbowL", "shoulderL"),
   suelaL: await p.evaluate(() => window.__planta("L")),
   suelaR: await p.evaluate(() => window.__planta("R")),
@@ -240,7 +256,7 @@ for (const [arriba, fondo] of [["Sentadilla frontal", F], ["Sentadilla trasera",
   await p.evaluate((q) => window.exersuite.editor.applyPose(q), arriba);
   await p.waitForTimeout(400);
   const alto = await altura();
-  const muneca = await respectoA("wristL", "shoulderL");
+  const muneca = await centroRespectoA("mano-L", "shoulderL");
   const etq = arriba.includes("frontal") ? "frontal" : "trasera";
   // 2,5 cm y no 1: desde v0.2.91 la postura de arriba YA LLEVA LA ESTAMPA de
   // sentadilla —los pies abiertos a 60 cm—, porque el diseñador pidió que los
@@ -248,7 +264,22 @@ for (const [arriba, fondo] of [["Sentadilla frontal", F], ["Sentadilla trasera",
   // Plantarse con esa apertura cuesta 2 cm de estatura, que es lo que le cuesta
   // a cualquiera: sigue siendo estar de pie con las piernas estiradas, que es
   // lo que esta comprobación vigila.
-  ok(Math.abs(alto - dePie) < 2.5, `${etq} arriba: la figura está estirada (${alto.toFixed(0)} cm frente a ${dePie.toFixed(0)} de pie)`);
+  //
+  // Y SE VIGILA DIRECTAMENTE (v0.4.14): muslo y espinilla en línea. La
+  // estatura era un indicio, y depende del cuerpo: el de la v0.4.14 abre la
+  // estampa a 64 cm —11,5° de abducción contra 10,3— y plantarse le cuesta
+  // 2,6 cm, no 2. Con la rodilla medida, la estatura queda como cota de
+  // cordura: 3 cm.
+  const rodillaArriba = await p.evaluate(() => {
+    const T = window.exersuite.THREE, f = window.exersuite.editor.humanFigure;
+    f.updateMatrixWorld(true);
+    const d = (s) => { let m = null;
+      f.traverse((n) => { if (n.isMesh && n.userData.segmentId === s) m = n; });
+      return new T.Vector3(0, -1, 0).applyQuaternion(m.getWorldQuaternion(new T.Quaternion())); };
+    return +T.MathUtils.radToDeg(d("muslo-L").angleTo(d("pierna-L"))).toFixed(1);
+  });
+  ok(rodillaArriba < 1 && Math.abs(alto - dePie) < 3,
+    `${etq} arriba: la figura está estirada (rodilla ${rodillaArriba}°; ${alto.toFixed(1)} cm frente a ${dePie.toFixed(1)} de pie)`);
   ok(Math.abs(muneca[2] - fondo.muneca[2]) < 1 && Math.abs(muneca[1] - fondo.muneca[1]) < 1,
     `${etq} arriba: el rack es el mismo que en el fondo (mano ${JSON.stringify(muneca)})`);
 }

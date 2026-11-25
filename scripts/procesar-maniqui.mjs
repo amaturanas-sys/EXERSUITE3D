@@ -702,10 +702,18 @@ const suave = (a, b, x) => {
  * sienta sobre la PELVIS («los glúteos se posan sobre la cara del asiento»),
  * como el cuerpo anterior, cuya pelvis bajaba hasta los 80 cm.
  *
- * El muslo empieza donde empieza en un cuerpo: en el pliegue de la ingle por
- * delante, a la altura de la cadera, y en el pliegue del glúteo por detrás,
- * PLIEGUE_GLUTEO cm más abajo a lo largo del fémur —donde termina la nalga de
- * este cuerpo—. El reparto entre pelvis y muslo pasa a depender SÓLO de eso:
+ * El muslo empieza en el pliegue de la ingle por delante, a la altura de la
+ * cadera, y por detrás PLIEGUE_GLUTEO cm más abajo a lo largo del fémur. Ese
+ * corte de atrás NO es el pliegue de la nalga, que en este cuerpo cae a 15 cm:
+ * la parte baja del glúteo se inserta en el fémur y al sentarse se va con él.
+ * Cortando en el pliegue, la nalga sentada colgaba 15,5 cm bajo la cadera —la
+ * figura se sentaba 5 cm más alta que el cuerpo anterior— y los muslos se
+ * quedaban 6,6 cm en el aire. Cortando a 9 cm la pelvis apoya a 9,95 cm bajo
+ * la cadera (el cuerpo anterior, a 10,5) y los muslos a 9,45: nalga y muslo se
+ * posan a la vez. Y la piel sentada se estira menos: en la nalga, el percentil
+ * 99 del área estirada baja de ×7,6 a ×5,8.
+ *
+ * El reparto entre pelvis y muslo pasa a depender SÓLO de eso:
  * por encima del pliegue la piel va con la pelvis, por debajo con el muslo, y
  * en medio una franja. Es lo que hace que la piel y los segmentos rígidos —que
  * se cortan por el hueso que más pesa— sean la misma cosa en la zona que se
@@ -713,7 +721,7 @@ const suave = (a, b, x) => {
  * la pelvis en el segmento y a medias con el muslo en la piel, y sentado se
  * separaban 3,6 cm.
  */
-const PLIEGUE_GLUTEO = 15;
+const PLIEGUE_GLUTEO = 9;
 /**
  * Anchura de la transición muslo↔pelvis, a cada lado del pliegue: amplia por
  * delante, para que la ingle doble suave, y ESTRECHA por detrás, que es donde
