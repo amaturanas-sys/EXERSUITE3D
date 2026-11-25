@@ -479,9 +479,9 @@ ok(Math.max(...mitad) < 0.05,
 
 // 4) TERMINA EN LA POSTURA APROBADA.
 const finP = P[P.length - 1];
-// −160,17 con el cuerpo de la v0.4.14 (−166 con el anterior): el bloqueo deja
+// −163,43 con el cuerpo de la v0.4.14 (−166 con el anterior): el bloqueo deja
 // la barra sobre el medio del pie, con la mano en la pronación con que llega.
-ok(Math.abs(finP.hombro + 160.17) < 0.5 && Math.abs(finP.codo) < 0.5,
+ok(Math.abs(finP.hombro + 163.43) < 0.5 && Math.abs(finP.codo) < 0.5,
   `termina en el bloqueo aprobado (hombro ${finP.hombro}°, codo ${finP.codo}°)`);
 
 // 5) Y LOS PIES TAMPOCO SE MUEVEN EN EL PRESS.
@@ -560,11 +560,11 @@ for (const [ej, nombre] of [["sentadilla-frontal", "frontal"], ["sentadilla-tras
     `el fondo llega a la rodilla del modelo (${fondo.rodilla}°)`);
   //    EL MODELO ES EL DEL CUERPO QUE SE CARGA (v0.4.14): los −78,61° salían de
   //    resolver la pierna del .obj del diseñador sobre el cuerpo anterior, y la
-  //    misma cuenta sobre el de la v0.4.14 da −75,22 —la cadera de «Sentadilla
+  //    misma cuenta sobre el de la v0.4.14 da −74,05 —la cadera de «Sentadilla
   //    … (fondo)»—, que es donde termina la trasera.
-  ok(Math.abs(fondo.cadera + 75.22) < 6,
+  ok(Math.abs(fondo.cadera + 74.05) < 6,
     `y la cadera cae donde la deja el equilibrio, cerca del modelo `
-    + `(${fondo.cadera}° contra −75,22°)`);
+    + `(${fondo.cadera}° contra −74,05°)`);
   const arriba = U[U.length - 1];
   ok(Math.abs(arriba.rodilla) < 1 && Math.abs(arriba.cadera) < 2,
     `y arriba se termina de pie (rodilla ${arriba.rodilla}°, cadera ${arriba.cadera}°)`);

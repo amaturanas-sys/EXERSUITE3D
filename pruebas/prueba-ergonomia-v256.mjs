@@ -193,7 +193,11 @@ const ciclo = await p.evaluate(async () => {
     .querySelector("button");
   const r = { partidas0: ed.listaPartidas().length };
   boton.click();                       // ▶
-  await new Promise((s) => setTimeout(s, 1200));
+  // SE ESPERA AL MOTOR, NO AL RELOJ (v0.4.14): arrancar la simulación con la
+  // UpperMachine entera tarda entre medio segundo y más de 1,2 según la
+  // máquina que corra la prueba, y con 1,2 fijos `physics` llegaba a null.
+  for (let i = 0; i < 160 && !ed.physics; i++) await new Promise((s) => setTimeout(s, 50));
+  await new Promise((s) => setTimeout(s, 400));
   r.posando = ed.posandoMaquina();
   r.rotuloAlManipular = boton.textContent.trim();
   const remo = [...ed.objects.values()].find((o) => o.componentId === "barra-lat-ttp");

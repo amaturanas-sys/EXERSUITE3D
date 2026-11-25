@@ -343,11 +343,60 @@ unicos.forEach((i, u) => {
 // que es con el que se pesó la piel).
 const pesoOrigenU = unicos.map((i) => pesos0(i));
 
+/**
+ * Centro del anillo donde la piel pasa de un hueso a su vecino: los vértices
+ * cuyo peso se reparte entre los dos entre el 35 y el 65 %. Es el sitio donde
+ * dobla la piel, y girar un miembro sobre otro punto lo cizalla. Se miden con
+ * los pesos DE ORIGEN, antes de retocarlos (paso 6): son los del rig que pesó
+ * esta piel.
+ */
+const anilloEn = (pos, n, pesos, madre, hija) => {
+  const c = new THREE.Vector3();
+  let k0 = 0;
+  for (let k = 0; k < n; k++) {
+    const o = k * HUESOS.length;
+    const a = madre.reduce((s, m) => s + pesos[o + H[m]], 0);
+    const b = pesos[o + H[hija]];
+    if (a + b < 0.8) continue;
+    const f = b / (a + b);
+    if (f > 0.35 && f < 0.65) {
+      c.add(new THREE.Vector3().fromArray(pos, k * 3));
+      k0++;
+    }
+  }
+  if (k0 < 12) throw new Error(`Junta ${hija}: anillo con ${k0} vértices`);
+  return c.divideScalar(k0);
+};
+
 // --------------------------------------------------- 3. quitar la pose T
 // D[j]: lo que se mueve cada hueso de origen (giro sobre su articulación), en
 // el espacio de la aplicación. La piel lo sigue con sus pesos (skinning
 // lineal, el mismo que usa three.js al dibujarla).
+//
+// SE ENDEREZA ENTRE JUNTAS, NO ENTRE HUESOS (v0.4.14). El reposo es el del
+// cuerpo anterior LEÍDO DE SUS JUNTAS, y las juntas de este cuerpo son los
+// anillos donde dobla su piel, que no caen sobre los huesos del rig de origen.
+// Enderezando los huesos, el muslo quedaba entre juntas a 9,2° en vez de 7,19,
+// la pierna a 1,6° en vez de a plomo y el antebrazo a 8,2 en vez de 5,58. Y la
+// aplicación da por hecho el reposo del cuerpo anterior: su IK orienta cada
+// hueso como si colgara como él —en la prensa la suela se quedaba 1,8 cm en el
+// aire y la rodilla no se extendía— y los grados de cada postura cuentan desde
+// ahí. Así que los anillos se miden en la pose T y es su recta la que se gira.
 const D = huesosOrigen.map(() => new THREE.Matrix4());
+const JUNTA_DE = { Arm: "shoulder", ForeArm: "elbow", Hand: "wrist", UpLeg: "hip", Leg: "knee", Foot: "ankle" };
+const MADRE_DE = { shoulder: (l) => ["spine"], elbow: (l) => [`shoulder${l}`], wrist: (l) => [`elbow${l}`],
+  hip: () => ["raiz"], knee: (l) => [`hip${l}`], ankle: (l) => [`knee${l}`] };
+/** Anillos en pose T, indexados por el hueso de ORIGEN cuya cabeza sustituyen. */
+const juntaT = new Map();
+for (const lado of ["Left", "Right"]) {
+  for (const [hueso, junta] of Object.entries(JUNTA_DE)) {
+    const i = nombreOrigen.indexOf(`${lado}${hueso}`);
+    if (i < 0) throw new Error(`Falta el hueso ${lado}${hueso}`);
+    // El lado del maniquí lo da la x, no el nombre (ver `aManiqui`).
+    const l = aManiqui[i].slice(-1);
+    juntaT.set(i, anilloEn(posU, nU, pesoManiqui, MADRE_DE[junta](l), `${junta}${l}`));
+  }
+}
 const hijos = huesosOrigen.map((j) => j.listChildren().map((c) => huesosOrigen.indexOf(c)).filter((i) => i >= 0));
 const subarbol = (i) => [i, ...hijos[i].flatMap(subarbol)];
 const girar = (i, q, centro) => {
@@ -358,6 +407,7 @@ const girar = (i, q, centro) => {
   for (const k of subarbol(i)) {
     D[k].premultiply(R);
     cabeza[k].applyMatrix4(R);
+    juntaT.get(k)?.applyMatrix4(R);
   }
 };
 const idx = (n) => {
@@ -370,8 +420,8 @@ const hacia = (grados, sx) => {
   return new THREE.Vector3(sx * Math.sin(a), -Math.cos(a), 0);
 };
 const enderezar = (i, hijo, objetivo) => {
-  const d = cabeza[hijo].clone().sub(cabeza[i]).normalize();
-  girar(i, new THREE.Quaternion().setFromUnitVectors(d, objetivo), cabeza[i].clone());
+  const d = juntaT.get(hijo).clone().sub(juntaT.get(i)).normalize();
+  girar(i, new THREE.Quaternion().setFromUnitVectors(d, objetivo), juntaT.get(i).clone());
 };
 const giroDe = (m) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(m));
 const poseOrigen = {};
@@ -391,7 +441,7 @@ for (const lado of ["Left", "Right"]) {
   // El pie vuelve a su orientación: plano contra el suelo y con la punta
   // donde la tenía.
   const iPie = idx(`${lado}Foot`);
-  girar(iPie, giroDe(D[iPie]).invert(), cabeza[iPie].clone());
+  girar(iPie, giroDe(D[iPie]).invert(), juntaT.get(iPie).clone());
 }
 // Sobre la malla ENTERA (soldada), antes de aligerar: las juntas se miden
 // sobre ella (paso 4), y con 148.000 vértices no dependen de cuáles sobrevivan
@@ -516,30 +566,8 @@ for (const lado of ["Left", "Right"]) {
 }
 
 // --------------------------------------------------------- 4. las juntas
-/**
- * Centro del anillo donde la piel pasa de un hueso a su vecino: los vértices
- * cuyo peso se reparte entre los dos entre el 35 y el 65 %. Es el sitio donde
- * dobla la piel, y girar un miembro sobre otro punto lo cizalla. Se miden con
- * los pesos DE ORIGEN, antes de retocarlos (paso 5): son los del rig que pesó
- * esta piel.
- */
-const anillo = (madre, hija) => {
-  const c = new THREE.Vector3();
-  let n = 0;
-  for (let k = 0; k < nU; k++) {
-    const o = k * HUESOS.length;
-    const a = madre.reduce((s, m) => s + pesoManiqui[o + H[m]], 0);
-    const b = pesoManiqui[o + H[hija]];
-    if (a + b < 0.8) continue;
-    const f = b / (a + b);
-    if (f > 0.35 && f < 0.65) {
-      c.add(new THREE.Vector3().fromArray(posU, k * 3));
-      n++;
-    }
-  }
-  if (n < 12) throw new Error(`Junta ${hija}: anillo con ${n} vértices`);
-  return c.divideScalar(n);
-};
+// El mismo anillo, ya sobre la mitad L reposada (ver `anilloEn`).
+const anillo = (madre, hija) => anilloEn(posU, nU, pesoManiqui, madre, hija);
 // Sobre la mitad L; las del lado R son su reflejo, y las de la línea media
 // (cuello, columna) se miden sobre medio anillo, cuyo centro tiene la misma
 // altura y el mismo fondo que el entero: sólo su x hay que llevarla a 0.

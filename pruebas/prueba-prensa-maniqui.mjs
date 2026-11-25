@@ -497,7 +497,12 @@ const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
   // IDA: empuje completo, guardando una partida por el camino.
   ed.activarZona("superior", null);
   ed.activarZona("inferior", "sim");
-  for (let i = 0; i < 16; i++) {
+  // 18 PULSACIONES Y NO 16 (v0.4.14): el cuerpo nuevo arranca la prensa con la
+  // rodilla 5,5° más doblada —79° contra 73,5: su pierna, con la suela, mide
+  // 1,7 cm más— y con 16 se quedaba a 23,3° del bloqueo. Lo que se pide es el
+  // gesto entero, de flexionada a bloqueada, no un número de teclas.
+  const PULSACIONES = 18;
+  for (let i = 0; i < PULSACIONES; i++) {
     ed.moverPrimitiva(1, 5);
     for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
     mirar();
@@ -506,7 +511,7 @@ const sesion = await page.evaluate(async ({ AYUDA, ids }) => {
   }
   const placaArriba = placa.mesh.position.clone();
   // VUELTA: tracción completa.
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < PULSACIONES; i++) {
     ed.moverPrimitiva(-1, 5);
     for (let k = 0; k < 2; k++) { P.updateFootIK.call(ed); fig.updateMatrixWorld(true); }
     mirar();

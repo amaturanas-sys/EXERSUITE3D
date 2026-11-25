@@ -168,8 +168,16 @@ ok(sin.rodilla > 20 && con.rodilla > 20 && sin.tope?.alTope && con.tope?.alTope,
   + `y ${con.tope?.planta} cm)`);
 ok(con.dentro && !sin.dentro, "el A/B se aplica de verdad (dentro/fuera del motor)");
 // La prueba de que el cuerpo SE HACE VALER es que la pieza móvil se detiene
-// contra él: sin cuerpo recorre su arco entero, con cuerpo apenas arranca.
-ok(con.anguloBrazo < sin.anguloBrazo * 0.4,
+// contra él: sin cuerpo recorre su arco entero, con cuerpo se queda corta.
+//
+// CORTA, NO «APENAS ARRANCA» (v0.4.14). Con el cuerpo anterior el brazo no
+// pasaba de 9,5° porque sus dieciséis piezas eran más gordas que el cuerpo
+// —trozos solapados en las juntas: tronco de 32 cm de fondo, brazo de 20,5,
+// muslo de 25— y el brazo de press nacía metido en ellas. El de la v0.4.14 es
+// el cuerpo real, más delgado (26, 17,8 y 18,6), y el brazo llega 25° antes
+// de topar con él. Lo que se vigila es el A/B: que el cuerpo le quite un buen
+// trozo del arco.
+ok(con.anguloBrazo < sin.anguloBrazo - 5,
   `el cuerpo DETIENE la pieza móvil (${sin.anguloBrazo}° sin cuerpo → ${con.anguloBrazo}° con cuerpo)`);
 console.log(`  penetración con piezas móviles — sin cuerpo: ${sin.peorMovil.prof} cm (${sin.peorMovil.parte}) · con cuerpo: ${con.peorMovil.prof} cm (${con.peorMovil.parte}); el residuo arranca en ${con.baseMovil} cm ANTES de mover nada: la figura bien sentada ya nace dentro del recorrido del brazo, que es el conflicto ergonómico del diseño.`);
 ok(Math.abs(con.caida) < 1, `la figura NO se desploma: es cinemática (${con.caida} cm)`);

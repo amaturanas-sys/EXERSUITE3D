@@ -65,6 +65,38 @@ export const BUILTIN_POSES: PoseMap = {
     shoulderL: [-70, 0, 0], shoulderR: [-70, 0, 0],
   },
   /**
+   * LAS POSTURAS CON BARRA, RE-RESUELTAS PARA EL CUERPO DE LA v0.4.14.
+   *
+   * Cada una de las de abajo salió de RESOLVER unas reglas sobre el cuerpo que
+   * había —huella fija, planta plana, barra a plomo, discos al suelo, mano en
+   * la barra—, y al cambiar el cuerpo los mismos grados dejaban de cumplirlas:
+   * la huella se iba 1,7 cm al bajar, la barra se apartaba hasta 4,7 cm de la
+   * vertical y los discos quedaban 2,3 cm en el aire. Así que se han vuelto a
+   * resolver las MISMAS reglas, partiendo de los grados que había y moviéndolos
+   * lo mínimo; las cifras que cuentan los comentarios de cada postura son las
+   * del cuerpo anterior, y se dejan como historia de dónde salió cada cosa.
+   * Con el cuerpo nuevo:
+   *
+   *   · SENTADILLAS. La pierna del fondo conserva la rodilla y la cadera en Y/Z
+   *     del modelo; la cadera X queda en −74,05 (era −78,61) y el tobillo en
+   *     (−47,25, 0, 11,76). De pie la estampa sale de 12,01° de abducción con
+   *     12,01 de tobillo: huella idéntica a la del fondo, planta plana y pie
+   *     recto; la puntera gira 34,9° al bajar.
+   *   · RACK FRONTAL. La barra va al surco entre garganta y pecho (ver
+   *     `apoyoEnElTronco`) y el brazo se resuelve con el centro de la mano EN
+   *     el eje y el codo bien por delante de ella (6,2 cm): hombro (−47,23,
+   *     −53,29, 30) —la Z sigue topando en +30, que es lo que limita la altura
+   *     del codo— y codo (−127,52, −7,67).
+   *   · PESO MUERTO. La barra va sobre el CENTRO DE LA HUELLA, que es el blanco
+   *     de la plomada del gesto: cadera −81,88, rodilla 96,88, tronco 80 (su
+   *     tope; la barra queda a 0,25 cm del medio del pie) y hombro −78,91. El
+   *     hito de la rótula se resuelve con la plomada puesta: cadera −33,87.
+   *   · PRESS. La salida conserva la que aprobó el diseñador —la barra 9,22 cm
+   *     por delante del medio del pie—, que con este antebrazo es el codo a
+   *     −124,62; el bloqueo, sobre el medio del pie con la pronación con que
+   *     llega el gesto (codo Y 80), es el hombro a −163,43.
+   */
+  /**
    * SENTADILLA FRONTAL Y TRASERA (v0.2.78), medidas sobre la secuencia que
    * mandó el diseñador: cuatro figuras con barra —de pie y fondo de cada una—.
    *
@@ -180,8 +212,8 @@ export const BUILTIN_POSES: PoseMap = {
     // arrastrarlo. Ojo con medirlo: con el centro de la CAJA del pie parece que
     // derrapa 10 cm, porque la caja está alineada con el mundo y girar el pie ya
     // le mueve el centro (ver `centroDeLaPisada` en Editor.ts).
-    hipL: [0, 0, -11.49], hipR: [0, 0, 11.49],
-    ankleL: [0, 0, 11.49], ankleR: [0, 0, -11.49],
+    hipL: [0, 0, -12.01], hipR: [0, 0, 12.01],
+    ankleL: [0, 0, 12.01], ankleR: [0, 0, -12.01],
     // EL RACK FRONTAL, RESUELTO POR CINEMÁTICA INVERSA (v0.3.1).
     //
     // Pedido del diseñador: «la técnica correcta implica empuñar la barra,
@@ -208,8 +240,8 @@ export const BUILTIN_POSES: PoseMap = {
     // lo que distingue un rack de unos brazos cruzados sobre el pecho, y hubo
     // que pedirlo: sin esa condición el solucionador encontraba soluciones que
     // ponían la mano en la barra con los dos antebrazos en horizontal.
-    shoulderL: [-55.36, -53.56, 29.99], shoulderR: [-55.36, 53.56, -29.99],
-    elbowL: [-129.81, -8.13, 0], elbowR: [-129.81, 8.13, 0],
+    shoulderL: [-47.23, -53.29, 30], shoulderR: [-47.23, 53.29, -30],
+    elbowL: [-127.52, -7.67, 0], elbowR: [-127.52, 7.67, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
     // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
     // el de la barra y la mano se ve pegada al lado, no agarrando. Comprobado
@@ -259,13 +291,13 @@ export const BUILTIN_POSES: PoseMap = {
     // vértices en contacto caían de 892 a 256, así que lo que tocaba el suelo
     // era el collarín, no la suela. Resueltos contra planta horizontal quedan
     // en −43,46 y la normal sale (0, 1, 0) exacta.
-    hipL: [-75.22, 3, -36.5], hipR: [-75.22, -3, 36.5],
+    hipL: [-74.05, 3, -36.5], hipR: [-74.05, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-46.27, 0, 11.1], ankleR: [-46.27, 0, -11.1],
+    ankleL: [-47.25, 0, 11.76], ankleR: [-47.25, 0, -11.76],
     // El tronco a plomo: es lo que sostiene la barra sobre las clavículas.
     spine: [0, 0, 0],
-    shoulderL: [-55.36, -53.56, 29.99], shoulderR: [-55.36, 53.56, -29.99],
-    elbowL: [-129.81, -8.13, 0], elbowR: [-129.81, 8.13, 0],
+    shoulderL: [-47.23, -53.29, 30], shoulderR: [-47.23, 53.29, -30],
+    elbowL: [-127.52, -7.67, 0], elbowR: [-127.52, 7.67, 0],
     // EXTENSIÓN DE MUÑECA: es lo que hace que el puño ENVUELVA la barra en vez
     // de doblarse hacia dentro. Sin ella el eje del puño queda 54° cruzado con
     // el de la barra y la mano se ve pegada al lado, no agarrando. Comprobado
@@ -300,8 +332,8 @@ export const BUILTIN_POSES: PoseMap = {
     // MISMA PIERNA QUE LA FRONTAL, y por la misma razón: ver allí. El pie de
     // arriba y el del fondo son literalmente el mismo pie —misma orientación en
     // el mundo, misma separación— así que no se mueve al bajar ni al subir.
-    hipL: [0, 0, -11.49], hipR: [0, 0, 11.49],
-    ankleL: [0, 0, 11.49], ankleR: [0, 0, -11.49],
+    hipL: [0, 0, -12.01], hipR: [0, 0, 12.01],
+    ankleL: [0, 0, 12.01], ankleR: [0, 0, -12.01],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
     elbowL: [-150, -52.5, 0], elbowR: [-150, 52.5, 0],
     // Aquí el puño ya salía casi alineado (13,4°) porque el agarre es cerrado
@@ -312,9 +344,9 @@ export const BUILTIN_POSES: PoseMap = {
     // Misma pierna que la frontal, resuelta igual (ver la frontal). Cambia el
     // parámetro porque la caída es de 45,4 cm y no de 45,9: la barra sobre los
     // trapecios arranca más alta que sobre las clavículas.
-    hipL: [-75.22, 3, -36.5], hipR: [-75.22, -3, 36.5],
+    hipL: [-74.05, 3, -36.5], hipR: [-74.05, -3, 36.5],
     kneeL: [126, 0, 0], kneeR: [126, 0, 0],
-    ankleL: [-46.27, 0, 11.1], ankleR: [-46.27, 0, -11.1],
+    ankleL: [-47.25, 0, 11.76], ankleR: [-47.25, 0, -11.76],
     // 3°, no 18: es lo que de verdad se adelanta el pecho respecto de la pelvis.
     spine: [3, 0, 0],
     shoulderL: [-41.5, -56, -26], shoulderR: [-41.5, 56, 26],
@@ -353,21 +385,21 @@ export const BUILTIN_POSES: PoseMap = {
    * falta al brazo lo paga la columna.
    */
   "Peso muerto": {
-    hipL: [-82.77, 0, 0], hipR: [-82.77, 0, 0],
-    kneeL: [97.77, 0, 0], kneeR: [97.77, 0, 0],
+    hipL: [-81.88, 0, 0], hipR: [-81.88, 0, 0],
+    kneeL: [96.88, 0, 0], kneeR: [96.88, 0, 0],
     ankleL: [-15, 0, 0], ankleR: [-15, 0, 0],
-    spine: [78.33, 0, 0],
+    spine: [80, 0, 0],
     // El hombro cuelga de la columna: inclinar el tronco se lleva el brazo con
     // él. Estos −76,8 son lo que hay que devolver para que el brazo caiga a
     // plomo, que es la primera regla de la lámina («arms are kept straight»).
-    shoulderL: [-75.89, 0, 0], shoulderR: [-75.89, 0, 0],
+    shoulderL: [-78.91, 0, 0], shoulderR: [-78.91, 0, 0],
     // LA MIRADA FIJA UN PUNTO A DOS METROS por delante de donde pisa, en el
     // suelo: es lo que mantiene la técnica y protege el cuello. Con el tronco
     // casi horizontal hace falta bastante extensión para llegar a ese blanco;
     // resuelto contra él, la desviación queda en 0,1° y la vista sale 21° bajo
     // la horizontal. A 2,25 m —el centro de la horquilla de 2 a 2,5 que pidió
     // el diseñador— salen 57,9° (v0.2.97: antes eran 51,8, contra 2,0 m).
-    neck: [-59.77, 0, 0],
+    neck: [-60, 0, 0],
   },
   /**
    * HITO DEL PESO MUERTO (v0.2.96): el punto donde la barra alcanza la rótula.
@@ -391,13 +423,13 @@ export const BUILTIN_POSES: PoseMap = {
    * resuelve la plomada en cada paso, porque el brazo es una cuerda.
    */
   "Peso muerto (rodilla)": {
-    spine: [78.33, 0, 0],
-    hipL: [-35.95, 0, 0], hipR: [-35.95, 0, 0],
-    kneeL: [35.95, 0, 0], kneeR: [35.95, 0, 0],
+    spine: [80, 0, 0],
+    hipL: [-33.87, 0, 0], hipR: [-33.87, 0, 0],
+    kneeL: [33.87, 0, 0], kneeR: [33.87, 0, 0],
     ankleL: [0, 0, 0], ankleR: [0, 0, 0],
-    shoulderL: [-69.34, 0, 0], shoulderR: [-69.34, 0, 0],
+    shoulderL: [-70.77, 0, 0], shoulderR: [-70.77, 0, 0],
     // Resuelto contra la misma marca del suelo a 2,25 m (v0.2.97).
-    neck: [-52.32, 0, 0],
+    neck: [-53.88, 0, 0],
   },
   /**
    * Bloqueo del peso muerto: de pie, cadera extendida y brazos colgando.
@@ -426,7 +458,7 @@ export const BUILTIN_POSES: PoseMap = {
     // MUSLOS y son ellos los que empujan el brazo hacia delante. 9,41° de
     // flexión de hombro —resueltos contra el modelo— dejan la barra en z=9,12
     // contra un medio del pie en 9,11.
-    shoulderL: [-13.22, 0, 0], shoulderR: [-13.22, 0, 0],
+    shoulderL: [-14.54, 0, 0], shoulderR: [-14.54, 0, 0],
   },
   /**
    * PRESS VERTICAL — LA SALIDA (v0.2.97).
@@ -474,7 +506,7 @@ export const BUILTIN_POSES: PoseMap = {
    */
   "Press vertical": {
     shoulderL: [-30, 0, 0], shoulderR: [-30, 0, 0],
-    elbowL: [-123.8, 80, 0], elbowR: [-123.8, -80, 0],
+    elbowL: [-124.62, 80, 0], elbowR: [-124.62, -80, 0],
     neck: [-12, 0, 0],
   },
   /** Bloqueo del press: codos extendidos y barra sobre el medio del pie. */
@@ -482,7 +514,7 @@ export const BUILTIN_POSES: PoseMap = {
     // −166 y no −180: con el brazo del todo vertical la mano se iba detrás de
     // la vertical del pie. Así la barra queda sobre el medio del pie (0,2 cm)
     // y la mano 15,9 cm por encima de la cabeza.
-    shoulderL: [-160.17, 0, 0], shoulderR: [-160.17, 0, 0],
+    shoulderL: [-163.43, 0, 0], shoulderR: [-163.43, 0, 0],
     elbowL: [0, 80, 0], elbowR: [0, -80, 0],
   },
   Sentado: {

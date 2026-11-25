@@ -4906,10 +4906,10 @@ export class Editor {
     const mR = this.centroSegmento("mano-R");
     const kL = joints.kneeL, kR = joints.kneeR;
     if (!mL || !mR || !kL || !kR) {
-      // Respaldo por ángulo: el mismo punto, medido (cadera −35,95° con el
+      // Respaldo por ángulo: el mismo punto, medido (cadera −33,87° con el
       // cuerpo de la v0.4.14; −23,77 con el anterior).
       return this.umbralCruzado(
-        { tipo: "angulo", familia: "hip", grados: -35.95, signo: 1 },
+        { tipo: "angulo", familia: "hip", grados: -33.87, signo: 1 },
         joints,
       );
     }
@@ -15335,7 +15335,7 @@ export class Editor {
       // cuanto la pieza no es una placa limpia —un cojín curvo, un asiento
       // partido en dos—: la figura se quedaba «sentada» en el aire. Bajarla
       // hasta que la carne toca el hierro no depende de la forma de nadie.
-      this.posarSobreElHierro(fig);
+      this.posarSobreElHierro(fig, destino.obj);
       if (respaldo) this.deslizarHastaElRespaldo(fig, respaldo);
       // Sentada en un banco bajo, la pierna no cabe entre el asiento y el
       // suelo: se estira la rodilla, como haría cualquiera.
@@ -15623,10 +15623,19 @@ export class Editor {
    * hundirse; si al empezar ya está metida, primero sale hacia arriba. Si no
    * encuentra nada debajo en 60 cm, se deja donde estaba: mejor un apoyo
    * aproximado que mandar a la figura al suelo.
+   *
+   * Y EL ASIENTO TAMBIÉN SOSTIENE (v0.4.14). El hierro de aquí excluye los
+   * apoyos ergonómicos —para que tocar el asiento no cuente como estorbo—, así
+   * que la figura podía atravesar un cojín grueso hasta dar con lo que hubiera
+   * dentro: en un asiento de 8 cm con su pilar metido hasta 2 cm de la cara, el
+   * cuerpo de la v0.4.14 bajaba 4 cm DENTRO del cojín. El anterior no llegaba a
+   * tocar ese pilar y se quedaba en la cara por casualidad. Ahora se mide
+   * también la cara de verdad del asiento —con rayos hacia abajo desde lo más
+   * bajo de la carne, contra su malla y no contra su caja—, y la figura baja
+   * como mucho hasta tocarla. Un cojín curvo, que era el caso de v0.3.18, sigue
+   * bajando hasta su superficie; uno plano ya no se atraviesa.
    */
-  private posarSobreElHierro(fig: THREE.Group): void {
-    const cajas = this.cajasCercaDeLaFigura();
-    if (!cajas?.length) return;
+  private posarSobreElHierro(fig: THREE.Group, asiento?: SceneObject | null): void {
     const posadas: THREE.Mesh[] = [];
     fig.traverse((n) => {
       const m = n as THREE.Mesh;
@@ -15634,6 +15643,17 @@ export class Editor {
       if (m.isMesh && (id === "pelvis" || id.startsWith("muslo-"))) posadas.push(m);
     });
     if (!posadas.length) return;
+    // Las matrices, al día: quien llama acaba de mover la figura.
+    fig.updateMatrixWorld(true);
+    const hastaElAsiento = asiento ? this.huecoHastaLaCara(posadas, asiento) : null;
+    const cajas = this.cajasCercaDeLaFigura();
+    if (!cajas?.length) {
+      if (hastaElAsiento !== null && hastaElAsiento > 0) {
+        fig.position.y -= hastaElAsiento;
+        fig.updateMatrixWorld(true);
+      }
+      return;
+    }
     const y0 = fig.position.y;
     const toca = (dy: number): boolean => {
       fig.position.y = y0 + dy;
@@ -15651,13 +15671,59 @@ export class Editor {
       if (toca(d)) break;
       apoyo = d;
     }
+    // Lo más que se puede bajar sin meterse en el asiento (0 si ya lo toca).
+    const tope = hastaElAsiento !== null ? -Math.max(0, hastaElAsiento) : null;
     if (apoyo === null || apoyo === dy - 60) {
-      fig.position.y = y0; // no hay nada debajo: se respeta lo calculado
+      // No hay hierro debajo: se respeta lo calculado, salvo que la cara del
+      // asiento quede más abajo (un cojín curvo), que es donde se posa.
+      fig.position.y = y0 + (dy === 0 && tope !== null ? tope : 0);
       fig.updateMatrixWorld(true);
       return;
     }
-    fig.position.y = y0 + apoyo;
+    fig.position.y = y0 + (tope !== null && dy === 0 ? Math.max(apoyo, tope) : apoyo);
     fig.updateMatrixWorld(true);
+  }
+
+  /**
+   * Cuánto le falta a la carne para tocar la cara del asiento, en cm (negativo
+   * si ya está dentro), o null si debajo de la carne no hay asiento. Se lanzan
+   * rayos hacia abajo desde los vértices más bajos de las piezas que se posan,
+   * contra la MALLA del asiento: su caja envolvente es la aproximación que
+   * falla con un cojín curvo.
+   *
+   * Sólo cuenta lo que da en el asiento a menos de 10 cm de la carne: más
+   * abajo ya no es la cara que la sostiene, sino lo que el rayo encuentra
+   * pasado el borde —un muslo que cuelga por delante da en la base, a ras del
+   * suelo— y bajar la figura hasta ahí la sentaría en el aire de otra forma.
+   */
+  private huecoHastaLaCara(posadas: THREE.Mesh[], asiento: SceneObject): number | null {
+    asiento.mesh.updateWorldMatrix(true, true);
+    const puntos: THREE.Vector3[] = [];
+    let minY = Infinity;
+    for (const m of posadas) {
+      m.updateWorldMatrix(true, false);
+      const pos = m.geometry.getAttribute("position");
+      if (!pos) continue;
+      for (let i = 0; i < pos.count; i++) {
+        const v = new THREE.Vector3().fromBufferAttribute(pos as THREE.BufferAttribute, i).applyMatrix4(m.matrixWorld);
+        puntos.push(v);
+        if (v.y < minY) minY = v.y;
+      }
+    }
+    if (!puntos.length) return null;
+    const ray = new THREE.Raycaster();
+    const abajo = new THREE.Vector3(0, -1, 0);
+    let hueco: number | null = null;
+    for (const p of puntos) {
+      if (p.y - minY > 3) continue; // sólo lo que de verdad puede tocar
+      ray.set(p.clone().setY(p.y + 5), abajo);
+      const hit = ray.intersectObject(asiento.mesh, true)[0];
+      if (!hit) continue;
+      const h = hit.distance - 5;
+      if (h > 10) continue;
+      if (hueco === null || h < hueco) hueco = h;
+    }
+    return hueco;
   }
 
   /**

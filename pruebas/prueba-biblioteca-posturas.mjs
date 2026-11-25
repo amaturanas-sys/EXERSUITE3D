@@ -92,9 +92,9 @@ const sinHuella = await abrirCon(
   null,
 );
 console.log(`   Sentadilla frontal → hombro ${sinHuella.frontal.hombro}° codo ${sinHuella.frontal.codo}°`);
-// −55,36 / −129,81: el rack frontal de fábrica, re-resuelto en v0.4.14 para el
+// −47,23 / −127,52: el rack frontal de fábrica, re-resuelto en v0.4.14 para el
 // cuerpo nuevo (con el anterior eran −59,2 / −123,5).
-ok(Math.abs(sinHuella.frontal.hombro + 55.36) < 0.5 && Math.abs(sinHuella.frontal.codo + 129.81) < 0.5,
+ok(Math.abs(sinHuella.frontal.hombro + 47.23) < 0.5 && Math.abs(sinHuella.frontal.codo + 127.52) < 0.5,
   `la postura de fábrica se REFRESCA y llega el rack nuevo `
   + `(hombro ${sinHuella.frontal.hombro}°, codo ${sinHuella.frontal.codo}°; la vieja era −33 / −140)`);
 ok(sinHuella.mia.rodilla === 42,
@@ -122,7 +122,7 @@ const intacta = await abrirCon(
   { "Sentadilla frontal": FRONTAL_VIEJA },
 );
 console.log(`   Sentadilla frontal → hombro ${intacta.frontal.hombro}° codo ${intacta.frontal.codo}°`);
-ok(Math.abs(intacta.frontal.hombro + 55.36) < 0.5,
+ok(Math.abs(intacta.frontal.hombro + 47.23) < 0.5,
   `la copia sin tocar sí se refresca (hombro ${intacta.frontal.hombro}°)`);
 
 for (const e of errores) console.log("PAGEERROR " + e);

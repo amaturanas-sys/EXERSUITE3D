@@ -149,7 +149,9 @@ ok(sueltas.dentro && apoyadas.dentro && !libre.dentro, "el maniquí entra y sale
 // detiene contra él. Comparar penetraciones dejó de ser válido cuando la
 // figura pasó a sentarse BIEN: su brazo nace dentro del recorrido del brazo
 // de press, así que el punto de partida ya no es cero.
-ok(sueltas.ang < libre.ang * 0.4,
+// Corta, no «apenas arranca», desde el cuerpo de la v0.4.14: ver la misma
+// comprobación en prueba-maniqui-fisico.mjs.
+ok(sueltas.ang < libre.ang - 5,
   `el cuerpo DETIENE la pieza móvil (${libre.ang}° sin cuerpo → ${sueltas.ang}° con cuerpo)`);
 console.log(`  penetración con piezas móviles — sin cuerpo: ${libre.prof} cm · con cuerpo: ${sueltas.prof} cm`);
 ok(apoyadas.manos, "las manos se pueden apoyar en los agarres con el cuerpo puesto");

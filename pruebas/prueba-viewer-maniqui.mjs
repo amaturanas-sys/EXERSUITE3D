@@ -94,7 +94,12 @@ const [chooser] = await Promise.all([
   p.click(".land-modos-inline.archivo .land-modo:has-text('SIMULAR')"),
 ]);
 await chooser.setFiles(archivo);
-await pausa(5000);
+// SE ESPERA AL PROYECTO, NO AL RELOJ (v0.4.14): abrirlo en el Viewer tarda de
+// 4 a 12 s según la máquina que corra la prueba —con el cuerpo de antes y con
+// el de ahora—, y con 5 s fijos llegaba vacío.
+await p.waitForFunction(() => !document.querySelector(".cargando-capa")
+  && window.exersuite?.editor?.listObjects().length > 0, null, { timeout: 45000 });
+await pausa(1500);
 
 const viewer = await p.evaluate(() => {
   const ed = window.exersuite.editor;
