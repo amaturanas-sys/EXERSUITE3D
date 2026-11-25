@@ -1,18 +1,18 @@
-# Graph Report - EXERSUITE3D  (2026-11-22)
+# Graph Report - EXERSUITE3D  (2026-11-25)
 
 ## Corpus Check
-- 442 files · ~961,760 words
+- 442 files · ~967,555 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 221 file(s) not represented in the graph (top: .import 64, .csv 37, .obj 29)
 - WARNING: 221 of 850 files seen (26%) have no supported extractor and are missing from this graph entirely. It may look complete while representing only part of the codebase.
 
 ## Summary
-- 5127 nodes · 10688 edges · 387 communities (320 shown, 67 thin omitted)
+- 5142 nodes · 10708 edges · 373 communities (318 shown, 55 thin omitted)
 - Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 835 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `012a7c65`
+- Built from commit: `866afb45`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -26,23 +26,22 @@
 - procesar-maniqui.mjs
 - .moverPrimitiva
 - playwright-core
-- .scheduleAutosave
+- SceneObject
 - validate_data.py
 - test_core.py
 - DesignSystemGenerator
 - main.ts
 - Editor.ts
-- .onPointerDown
+- .loadProjectInner
 - datos.ts
 - core.py
 - ref_node_fs
-- .constructor
-- .requestRender
+- design_system.py
 - Landing.ts
-- SceneObject
+- .build
 - steps
 - prueba-sentadilla.mjs
-- three
+- humanFigure.ts
 - standardMachines.ts
 - search_stack
 - Examples
@@ -53,7 +52,7 @@
 - PropertiesPanel.ts
 - .listObjects
 - linePieces.ts
-- getDefinition
+- ComponentModelManager
 - PhysicsWorld
 - mancuerna_hex.py
 - search
@@ -67,9 +66,9 @@
 - FigureSegmentManager
 - build123d modeling patterns
 - prueba-gesto-barra.mjs
-- descargas.ts
+- [0.3.78] — 2026-09-20
 - kettlebell.py
-- [0.4.11] — 2026-09-29
+- .subpaso
 - SceneManager
 - agarre_doble.py
 - BM25
@@ -78,10 +77,10 @@
 - cadgen
 - Joint
 - Subagent-Driven Development
-- PrototipoFoto
+- .scheduleAutosave
 - disco_barbell.py
 - Performance Optimizer
-- i18n.ts
+- reloj.ts
 - tauri.conf.json
 - Creation Log: Systematic Debugging Skill
 - Cable
@@ -123,25 +122,26 @@
 - E2E Test Runner
 - Dispatching Parallel Agents
 - Capacidades traídas de ECC
-- PhysicsWorld.ts
+- Landing
 - build.yml
 - prueba-vibra-minima.mjs
 - newsletter/route.js
 - project.ts
-- lineToolDialog.ts
-- 9.2 Fragilidades reales, por riesgo
+- three
+- figureSegments.ts
 - Pre-Delivery Checklist (canonical — the only one)
 - Quick Reference
 - Migración de EXERSUITE3D a Godot — Guía completa
 - scripts
 - prueba-diente-retiene.mjs
-- agarre_simple.py
+- banco-topes-geometria.py
 - Defense-in-Depth Validation
 - dependencies
 - prueba-biblioteca-modelos.mjs
 - prueba-hub.mjs
 - Widgets.js
-- chapa.ts
+- os
+- componentModels.ts
 - solveTwoBoneIK
 - [0.3.98] — 2026-09-23
 - CAD project structure
@@ -149,7 +149,7 @@
 - Batería de pruebas de EXERSUITE3D
 - prueba-brazo-pilar-angulos.mjs
 - Lienzo.js
-- perforar.ts
+- prueba-barra-maniqui.mjs
 - atril_discos.py
 - CAD brief
 - Supported exports
@@ -165,12 +165,13 @@
 - prueba-piezas-retiradas.mjs
 - prueba-uppermachine.mjs
 - crearBotonesHerramientas
-- [0.4.10] — 2026-09-29
+- .createRope
 - Snapshot review
 - prueba-biblioteca-posturas.mjs
 - prueba-brazo-plano.mjs
-- estirar.ts
-- units.ts
+- 5. Geometría procedural
+- [0.4.11] — 2026-09-29
+- JointsPanel
 - [0.4.7] — 2026-09-27
 - Development Workflow
 - Changelog From Commits
@@ -182,20 +183,20 @@
 - prueba-largo-a-medida.mjs
 - prueba-mano-brazo.mjs
 - prueba-pie-anclado.mjs
-- 10. Reglas de estilo
+- [0.4.14] — 2026-11-25
 - [0.2.63] — 2026-08-16
 - [0.3.61] — 2026-09-16
 - [0.4.3] — 2026-09-23
 - .claude/CLAUDE.md
 - CAD kinematics and animation
 - CatalogSummaryLineEndingsTest
-- TestTextLayoutDataContracts
+- prueba-banco-cinco-topes.mjs
 - El backend LLM del grafo
 - EXERSUITE3D — Kit de migración a Godot 4
 - _auditar-ingles.mjs
 - prueba-apoyos.mjs
-- prueba-banco-catalogo.mjs
-- prueba-banco-horquilla.mjs
+- [0.2.60] — 2026-08-15
+- prueba-bisagra-rigida.mjs
 - prueba-banco-tres-topes.mjs
 - prueba-bisagra-fisica.mjs
 - prueba-brazo-spotter.mjs
@@ -209,7 +210,7 @@
 - [0.1.7] — 2026-07-06
 - [0.2.66] — 2026-08-16
 - [0.2.93] — 2026-08-19
-- [0.3.97] — 2026-09-22
+- [0.2.52] — 2026-08-13
 - [0.4.4] — 2026-09-26
 - [0.4.5] — 2026-09-26
 - [0.4.6] — 2026-09-27
@@ -227,7 +228,7 @@
 - prueba-maniqui-usa.mjs
 - prueba-menus-v257.mjs
 - prueba-pasador-indexado.mjs
-- .setModoCalce
+- [0.2.89] — 2026-08-18
 - [0.2.15] — 2026-08-03
 - [0.2.32] — 2026-08-09
 - [0.2.34] — 2026-08-09
@@ -245,7 +246,7 @@
 - [0.2.6] — 2026-07-24
 - [0.2.71] — 2026-08-16
 - [0.2.73] — 2026-08-17
-- [0.2.74] — 2026-08-17
+- [0.2.97] — 2026-08-20
 - [0.2.78] — 2026-08-18
 - [0.2.81] — 2026-08-18
 - [0.2.84] — 2026-08-18
@@ -254,8 +255,8 @@
 - [0.3.0] — 2026-08-20
 - [0.3.19] — 2026-08-27
 - [0.3.23] — 2026-08-28
-- [0.3.2] — 2026-08-22
 - [0.3.3] — 2026-08-22
+- [0.3.13] — 2026-08-26
 - [0.3.48] — 2026-09-12
 - [0.3.73] — 2026-09-19
 - [0.3.74] — 2026-09-19
@@ -271,16 +272,10 @@
 - Migrations
 - scan.sh
 - TestFixtureValidation
-- prueba-bisagra-ui.mjs
-- prueba-codos.mjs
-- prueba-freno-estructura.mjs
-- prueba-guia-tubular.mjs
+- [0.3.71] — 2026-09-16
+- [0.3.83] — 2026-09-21
+- anillo
 - prueba-home-visor.mjs
-- prueba-maquina-entera.mjs
-- prueba-partida-plano.mjs
-- prueba-solape-ui.mjs
-- prueba-soldar.mjs
-- prueba-vinculacion-pines.mjs
 - mundo
 - [0.1.1] — 2026-06-30
 - [0.1.2] — 2026-06-30
@@ -298,7 +293,6 @@
 - [0.2.21] — 2026-08-05
 - [0.2.25] — 2026-08-05
 - [0.2.26] — 2026-08-06
-- [0.2.29] — 2026-08-07
 - [0.2.2] — 2026-07-22
 - [0.2.30] — 2026-08-07
 - [0.2.31] — 2026-08-07
@@ -315,19 +309,15 @@
 - [0.2.58] — 2026-08-14
 - [0.2.5] — 2026-07-23
 - [0.2.62] — 2026-08-16
-- [0.2.68] — 2026-08-16
 - [0.2.70] — 2026-08-16
 - [0.2.72] — 2026-08-16
 - [0.2.75] — 2026-08-17
-- [0.2.76] — 2026-08-17
 - [0.2.77] — 2026-08-17
 - [0.2.82] — 2026-08-18
 - [0.2.83] — 2026-08-18
 - [0.2.87] — 2026-08-18
 - [0.2.8] — 2026-07-25
-- [0.2.90] — 2026-08-18
 - [0.2.94] — 2026-08-19
-- [0.2.95] — 2026-08-19
 - [0.2.96] — 2026-08-19
 - [0.2.98] — 2026-08-20
 - [0.3.11] — 2026-08-26
@@ -352,9 +342,8 @@
 - [0.3.53] — 2026-09-14
 - [0.3.54] — 2026-09-14
 - [0.3.55] — 2026-09-15
-- [0.3.58] — 2026-09-16
-- [0.3.62] — 2026-09-16
 - [0.3.63] — 2026-09-16
+- [0.3.62] — 2026-09-16
 - [0.3.66] — 2026-09-16
 - [0.3.68] — 2026-09-16
 - [0.3.72] — 2026-09-18
@@ -390,9 +379,9 @@
 - exersuite3d
 
 ## God Nodes (most connected - your core abstractions)
-1. `Editor` - 581 edges
-2. `Changelog` - 223 edges
-3. `SceneObject` - 188 edges
+1. `Editor` - 582 edges
+2. `Changelog` - 224 edges
+3. `SceneObject` - 190 edges
 4. `el()` - 175 edges
 5. `tt()` - 173 edges
 6. `playwright-core` - 142 edges
@@ -404,83 +393,83 @@
 ## Surprising Connections (you probably didn't know these)
 - `2.2 El patrón de MODO (la estructura más importante del Editor)` --references--> `EditorEvents`  [INFERRED]
   AI_CONTEXT.md → src/core/Editor.ts
-- `Cambiado` --references--> `t()`  [INFERRED]
-  CHANGELOG.md → src/core/i18n.ts
 - `Corregido — los cuatro botones de la Home, en castellano duro` --references--> `tt()`  [INFERRED]
   CHANGELOG.md → src/core/i18n.ts
-- `3.1 Dos reglas del catálogo que ya costaron caras` --references--> `catalogoVigente()`  [INFERRED]
-  AI_CONTEXT.md → src/objects/componentLibrary.ts
-- `5.4 Estirar por el centro (`estirar.ts`)` --references--> `puntoTrasEstirar()`  [INFERRED]
-  AI_CONTEXT.md → src/objects/estirar.ts
+- `Corrige a v0.3.86` --references--> `PhysicsWorld`  [INFERRED]
+  CHANGELOG.md → src/physics/PhysicsWorld.ts
+- `Pero NO arregla la banca, y esto es lo importante` --references--> `PhysicsWorld`  [INFERRED]
+  CHANGELOG.md → src/physics/PhysicsWorld.ts
+- `Cambiado` --references--> `t()`  [INFERRED]
+  CHANGELOG.md → src/core/i18n.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (387 total, 67 thin omitted)
+## Communities (373 total, 55 thin omitted)
 
 ### Community 0 - "Changelog"
 Cohesion: 0.02
-Nodes (132): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04, [0.2.22] — 2026-08-05 (+124 more)
+Nodes (128): [0.1.0] — 2026-06-30, [0.1.6] — 2026-07-04, [0.2.10] — 2026-07-26, [0.2.13] — 2026-07-28, [0.2.16] — 2026-08-04, [0.2.17] — 2026-08-04, [0.2.18] — 2026-08-04, [0.2.22] — 2026-08-05 (+120 more)
 
 ### Community 1 - "prepararPasos"
-Cohesion: 0.03
-Nodes (43): prepararPasos(), SELECTORES, TAMANOS, SELECTORES, TAMANOS, SELECTORES, TAMANOS, errores (+35 more)
+Cohesion: 0.02
+Nodes (50): prepararPasos(), SELECTORES, TAMANOS, SELECTORES, TAMANOS, errores, ultimos, errores (+42 more)
 
 ### Community 2 - "Editor"
-Cohesion: 0.04
-Nodes (3): Editor, WorkspaceData, localSnapPoints()
+Cohesion: 0.03
+Nodes (4): Editor, WorkspaceData, EjercicioBarra, poseNames()
 
 ### Community 3 - "manifest.json"
 Cohesion: 0.02
 Nodes (91): agarradera, agarre-d, agarre-doble, asiento, atril-discos, barra-dominadas, barra-fondos, barra-jalon (+83 more)
 
 ### Community 4 - "design_system.py"
-Cohesion: 0.04
-Nodes (29): ansi_ljust(), _contrast_ratio(), _derive_dark_palette(), _detect_page_type(), _filter_anti_patterns_for_mode(), format_ascii_box(), format_markdown(), format_master_md() (+21 more)
+Cohesion: 0.07
+Nodes (14): _contrast_ratio(), _derive_dark_palette(), _filter_anti_patterns_for_mode(), _palette_is_dark(), _query_wants_dark(), _relative_luminance(), _resolve_color_mode(), _select_palette_for_mode() (+6 more)
 
 ### Community 5 - "el"
-Cohesion: 0.10
-Nodes (67): Sabido, tt(), el(), avatar(), barraCarrito(), botonDemo(), cabeceraMarca(), campo() (+59 more)
+Cohesion: 0.09
+Nodes (63): tt(), avatar(), barraCarrito(), botonDemo(), cabeceraMarca(), campo(), Carrito, fichaProducto() (+55 more)
 
 ### Community 6 - "procesar-maniqui.mjs"
-Cohesion: 0.03
-Nodes (65): aCm(), alturaTalla, aManiqui, args, B, BASE, cabeza, cilindroCuello (+57 more)
+Cohesion: 0.02
+Nodes (71): aCm(), alturaTalla, aManiqui, args, B, BASE, cabeza, cilindroCuello (+63 more)
 
 ### Community 7 - ".moverPrimitiva"
 Cohesion: 0.06
-Nodes (6): degToRad(), radToDeg(), FaseMov, UmbralFase, getPose(), PoseDef
+Nodes (5): degToRad(), radToDeg(), disposeHumanFigure(), SentidoMov, PoseDef
 
 ### Community 8 - "playwright-core"
-Cohesion: 0.03
-Nodes (21): K, PESO, errs, errores, errores, fallos, errores, fallos (+13 more)
+Cohesion: 0.02
+Nodes (25): K, PESO, errs, errores, fallos, errores, errores, fallos (+17 more)
 
-### Community 9 - ".scheduleAutosave"
-Cohesion: 0.05
-Nodes (3): Ya funciona (✔), huecoEntreCajas(), SnapManager
+### Community 9 - "SceneObject"
+Cohesion: 0.06
+Nodes (8): 4.8 Bisagras: escala de la placa, arco y freno (v0.3.19), localSnapPoints(), SnapResult, getDefinition(), pathIsStraight(), tramosCalce(), SceneObject, Casilla
 
 ### Community 10 - "validate_data.py"
-Cohesion: 0.06
-Nodes (43): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, TestGeneratedCatalogContract, _catalog_date(), _check_app_interface_contract() (+35 more)
+Cohesion: 0.07
+Nodes (44): read_rows(), TestAccessibilityGuidance, TestChartsTypographyAndIcons, TestCurrentReactGuidance, TestSemanticColors, TestGeneratedCatalogContract, _catalog_date(), _check_app_interface_contract() (+36 more)
 
 ### Community 11 - "test_core.py"
 Cohesion: 0.07
-Nodes (17): _indexar(), main(), prefab(), _triangulos(), check_description_quality(), find_skill_dirs(), main(), parse_frontmatter() (+9 more)
+Nodes (15): _indexar(), main(), prefab(), _triangulos(), read_rows(), TestTextLayoutDataContracts, bien(), huella_del_apk() (+7 more)
 
 ### Community 12 - "DesignSystemGenerator"
 Cohesion: 0.06
-Nodes (14): DesignSystemGenerator, _resolve_dial(), apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), _validate_action(), TestReasoningMatch, read_rows() (+6 more)
+Nodes (12): DesignSystemGenerator, apply_decision_rules(), _object_without_duplicates(), parse_decision_rules(), _validate_action(), TestReasoningMatch, read_rows(), split_values() (+4 more)
 
 ### Community 13 - "main.ts"
-Cohesion: 0.08
-Nodes (51): [0.3.80] — 2026-09-20, Cambiado, Corregido, Corregido, Nota abierta, parsearPrefab(), serializarPrefab(), ProjectData (+43 more)
+Cohesion: 0.07
+Nodes (47): [0.3.2] — 2026-08-22, [0.3.80] — 2026-09-20, Arreglado, Añadido, Cambiado, Cambiado, Corregido, Corregido (+39 more)
 
 ### Community 14 - "Editor.ts"
-Cohesion: 0.05
-Nodes (51): Arco, CajaOr, CandidatoPoste, ColorMode, DIRECCIONES_ROLDANA, DireccionRoldana, EditorEvents, HandSide (+43 more)
+Cohesion: 0.04
+Nodes (57): Arco, CajaOr, CandidatoPoste, ColorMode, DIRECCIONES_ROLDANA, DireccionRoldana, EditorEvents, HandSide (+49 more)
 
-### Community 15 - ".onPointerDown"
-Cohesion: 0.07
-Nodes (7): RopeEnd, RopeKind, aplicarCables(), aplicarCuerdas(), aplicarUniones(), construirMaquina(), construirPiezas()
+### Community 15 - ".loadProjectInner"
+Cohesion: 0.06
+Nodes (7): Ya funciona (✔), aplicarModeloMaquina(), serializarPrefab(), aplicarCables(), aplicarUniones(), construirMaquina(), construirPiezas()
 
 ### Community 16 - "datos.ts"
 Cohesion: 0.05
@@ -492,75 +481,71 @@ Nodes (24): _contains_phrase(), detect_domain(), _domain_keywords(), _exact_matc
 
 ### Community 18 - "ref_node_fs"
 Cohesion: 0.03
-Nodes (30): BANCA, datos, res, TOPES, banca, proyecto, avisoSalida, errores (+22 more)
+Nodes (33): BANCA, datos, res, TOPES, ANGULOS, datos, res, banca (+25 more)
 
-### Community 20 - ".constructor"
+### Community 20 - "design_system.py"
 Cohesion: 0.06
-Nodes (5): EjercicioBarra, LadoZona, ZonaId, poseNames(), ArticulacionesPanel
+Nodes (16): ansi_ljust(), _detect_page_type(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), _generate_intelligent_overrides() (+8 more)
 
 ### Community 22 - "Landing.ts"
-Cohesion: 0.09
-Nodes (19): PluginArchivos, getIdioma(), applyPreset(), defaults(), getPerf(), PERF_PRESETS, PerfPreset, PerfSettings (+11 more)
+Cohesion: 0.14
+Nodes (17): getIdioma(), setIdioma(), applyPreset(), defaults(), getPerf(), PERF_PRESETS, PerfPreset, PerfSettings (+9 more)
 
-### Community 23 - "SceneObject"
-Cohesion: 0.07
-Nodes (4): aplicarModeloMaquina(), SceneObject, EspejoDentada, Casilla
+### Community 23 - ".build"
+Cohesion: 0.11
+Nodes (6): [0.3.97] — 2026-09-22, Añadido — `prueba-banco-horquilla`, el recorrido de 0° a 90°, Cambiado — la banca ajustable pivota con HORQUILLA Y PASADOR, Corregido — LA HORQUILLA NO TENÍA GARGANTA PARA LA FÍSICA, Método — tres formas de medir mal una colisión, todas propias, cajasHorquilla()
 
 ### Community 24 - "steps"
 Cohesion: 0.05
 Nodes (45): name, needs, runs-on, steps, env, GITHUB_TOKEN, GODOT_DIR_VERSION, GODOT_VERSION (+37 more)
 
 ### Community 25 - "prueba-sentadilla.mjs"
-Cohesion: 0.05
-Nodes (23): AYUDANTES(), errores, fallos, postura(), errores, fallos, errores, fallos (+15 more)
-
-### Community 26 - "three"
 Cohesion: 0.07
-Nodes (38): [0.2.60] — 2026-08-15, Añadido, Cambiado, Corregido, Corregido (continuación), Sabido, three, figureSegments (+30 more)
+Nodes (22): AYUDANTES(), postura(), errores, fallos, errores, fallos, medidas, errores (+14 more)
+
+### Community 26 - "humanFigure.ts"
+Cohesion: 0.14
+Nodes (19): Sabido, applySegmentOverrides(), AxisLimits, buildHumanFigure(), colocarCuerpoEntero(), DEFAULT_HUMAN_HEIGHT, defaultSegmentGeometry(), fitSegmentGeometry() (+11 more)
 
 ### Community 27 - "standardMachines.ts"
-Cohesion: 0.07
-Nodes (31): PrefabArchivo, ReportePrefab, PrefabsMaquina, Registro, LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES (+23 more)
+Cohesion: 0.09
+Nodes (28): PrefabArchivo, LEG_PRESS, LEG_PRESS_UNIONES, UPPER_MACHINE, UPPER_MACHINE_CABLES, UPPER_MACHINE_UNIONES, ARBOL, BANCO (+20 more)
 
 ### Community 28 - "search_stack"
 Cohesion: 0.08
-Nodes (8): _exact_stack_identifier(), _project_row(), search_stack(), _rows(), TestNativeDesktopStackFreshness, read_rows(), _rows(), TestWebStackFreshness
+Nodes (9): _exact_stack_identifier(), _project_row(), search_stack(), _valid_max_results(), _rows(), TestNativeDesktopStackFreshness, read_rows(), _rows() (+1 more)
 
 ### Community 29 - "Examples"
 Cohesion: 0.05
 Nodes (39): Anti-Patterns, Authoring Custom Plugins, Avoid Barrel Files, Basic Config, Be Explicit with Import Extensions, Build Optimization, Client-Side Access, Common Pitfalls (+31 more)
 
 ### Community 30 - "LibraryView"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (3): ComponentPreview, LibrarySource, LibraryView
 
 ### Community 31 - "SceneObject.ts"
-Cohesion: 0.10
-Nodes (21): 3.1 Dos reglas del catálogo que ya costaron caras, 3. Atributos diferenciados por clase de objeto, ObjData, SnapResult, deltaEspejo(), espejarGeometria(), espejoDe(), invertirCaras() (+13 more)
+Cohesion: 0.06
+Nodes (46): ObjData, CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara() (+38 more)
 
 ### Community 32 - "LibraryView.ts"
-Cohesion: 0.10
-Nodes (25): componentModels, armarMaquina(), claveMaquina(), geometriaAOBJ(), geometriaASTL(), hornearMaquina(), MAQUINA_PREFIX, normalizarEspejo() (+17 more)
+Cohesion: 0.07
+Nodes (29): [0.3.5] — 2026-08-22, Arreglado, STORE_PREFABS, componentModels, armarMaquina(), claveMaquina(), geometriaAOBJ(), geometriaASTL() (+21 more)
 
 ### Community 33 - ".rebuildGeometry"
-Cohesion: 0.14
-Nodes (3): roundTo(), clear(), PropertiesPanel
+Cohesion: 0.11
+Nodes (14): 10.4 Lo que en este repositorio NO se hace, Sabido, roundTo(), clear(), el(), FAQ, mostrarInstructivo(), renderInstructivo() (+6 more)
 
 ### Community 34 - "PropertiesPanel.ts"
 Cohesion: 0.11
-Nodes (35): BY_ID, MATERIAL_PRESETS, MaterialPreset, agarreDentada(), altoLabio(), buildDentadaGeometry(), CajaDentada, cajasDentada() (+27 more)
+Nodes (36): [0.2.74] — 2026-08-17, Añadido, Corregido, La placa dentada, con dientes a medida, Sabido, agarreDentada(), altoLabio(), buildDentadaGeometry() (+28 more)
 
 ### Community 35 - ".listObjects"
-Cohesion: 0.09
-Nodes (7): 2.1 La forma general, 2.2 El patrón de MODO (la estructura más importante del Editor), 2.3 DISEÑO vs PARTIDA (el concepto que más daño hace si se ignora), 2.4 Grupos y multiselección, 2.5 Historial y autoguardado, 2. Arquitectura del sistema, disposeHumanFigure()
+Cohesion: 0.10
+Nodes (6): 2.1 La forma general, 2.2 El patrón de MODO (la estructura más importante del Editor), 2.3 DISEÑO vs PARTIDA (el concepto que más daño hace si se ignora), 2.4 Grupos y multiselección, 2.5 Historial y autoguardado, 2. Arquitectura del sistema
 
 ### Community 36 - "linePieces.ts"
-Cohesion: 0.12
-Nodes (30): 5.6 Ramas nodales (v0.3.25), applyBend(), applyTwist(), baseGeometry(), buildGeometry(), segFor(), buildBeamGeometry(), buildBeamSinRamas() (+22 more)
-
-### Community 37 - "getDefinition"
-Cohesion: 0.11
-Nodes (16): [0.3.65] — 2026-09-16, Añadido, Añadido, ComponentModelManager, hashU8(), ImportEntry, ImportStatus, separarBandas() (+8 more)
+Cohesion: 0.09
+Nodes (37): 5.6 Ramas nodales (v0.3.25), applyBend(), applyTwist(), baseGeometry(), buildGeometry(), segFor(), buildHorquillaGeometry(), CajaHorquilla (+29 more)
 
 ### Community 39 - "mancuerna_hex.py"
 Cohesion: 0.11
@@ -568,35 +553,35 @@ Nodes (13): bandas(), barra_olimpica(), _mangas(), anillos(), _cabeza(), _hexago
 
 ### Community 40 - "search"
 Cohesion: 0.09
-Nodes (7): search(), _style_search_destination(), _valid_max_results(), TestDiagnosticsContracts, TestSearchDomains, TestStyleTaxonomy, TestTextLayoutRetrieval
+Nodes (6): search(), _style_search_destination(), TestDiagnosticsContracts, TestSearchDomains, TestStyleTaxonomy, TestTextLayoutRetrieval
 
 ### Community 41 - "ComponentPalette.ts"
 Cohesion: 0.11
-Nodes (18): ConfigBisagra, ConfigPasador, BY_ID, catalogoVigente(), CATEGORY_COLORS, CATEGORY_LABELS, COMPONENT_LIBRARY, COMPONENTES_RETIRADOS (+10 more)
+Nodes (24): 3.1 Dos reglas del catálogo que ya costaron caras, 3. Atributos diferenciados por clase de objeto, ConfigPasador, BY_ID, catalogoVigente(), CATEGORY_COLORS, CATEGORY_LABELS, COMPONENT_LIBRARY (+16 more)
 
 ### Community 42 - "indexada.py"
 Cohesion: 0.09
 Nodes (11): comprueba(), _disco(), indexada(), pasador_manija(), pivote_indexado(), pivote_indexado_soldar(), [0.3.50] — 2026-09-12, [0.3.52] — 2026-09-14 (+3 more)
 
 ### Community 43 - "math"
-Cohesion: 0.13
-Nodes (20): anguloRespaldo(), asientos(), bisagraArriba(), gira(), peor(), posar(), preparar(), qinv() (+12 more)
+Cohesion: 0.27
+Nodes (11): anguloRespaldo(), asientos(), bisagraArriba(), gira(), peor(), posar(), preparar(), qinv() (+3 more)
 
 ### Community 44 - "AI_CONTEXT.md — EXERSUITE3D"
-Cohesion: 0.07
-Nodes (29): 0. En una página, 11.1 Los cinco sitios de la versión, 11.2 Qué publica qué, 11. Cómo hacer un cambio, de principio a fin, 12. Cómo usar este documento con una IA local, 1. Cómo levantar el proyecto, 5.1 La cadena de construcción de una malla, 5.2 Primitiva paramétrica vs malla real (+21 more)
+Cohesion: 0.08
+Nodes (25): 0. En una página, 10.1 Idioma, 10.2 Comentarios: el rasgo más característico del proyecto, 10.3 Formato, 10.5 Mensajes de commit, 10. Reglas de estilo, 11.1 Los cinco sitios de la versión, 11.2 Qué publica qué (+17 more)
+
+### Community 45 - "Toolbar"
+Cohesion: 0.09
+Nodes (19): aBase64(), abrirConInput(), acceptSeguro(), capacitor(), CapacitorGlobal, deBase64(), descargarArchivo(), elegirArchivo() (+11 more)
 
 ### Community 46 - "package.json"
-Cohesion: 0.09
-Nodes (27): description, devDependencies, @capacitor/android@^6.2.1, @capacitor/cli@^6.2.1, @capacitor/core@^6.2.1, @gltf-transform/core@^4.5.1, meshoptimizer@^1.3.0, playwright-core@^1.49.1 (+19 more)
+Cohesion: 0.08
+Nodes (29): description, devDependencies, @capacitor/android@^6.2.1, @capacitor/cli@^6.2.1, @capacitor/core@^6.2.1, @gltf-transform/core@^4.5.1, meshoptimizer@^1.3.0, playwright-core@^1.49.1 (+21 more)
 
 ### Community 47 - "recentStore.ts"
-Cohesion: 0.15
-Nodes (23): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_PREFABS, STORE_RECENT, STORE_RECENT_META (+15 more)
-
-### Community 48 - "FigureSegmentManager"
-Cohesion: 0.12
-Nodes (7): FigureSegmentManager, deleteSegment(), getAllSegments(), putSegment(), StoredSegment, tx(), firstTexturedMaterial()
+Cohesion: 0.18
+Nodes (17): APP_DB_NAME, APP_DB_VERSION, openAppDb(), STORE_CAPTURAS, STORE_MODELS, STORE_RECENT, STORE_RECENT_META, borrarCaptura() (+9 more)
 
 ### Community 49 - "build123d modeling patterns"
 Cohesion: 0.07
@@ -606,21 +591,25 @@ Nodes (27): 2D sketch algebra decays; winding decides extrude direction, A revol
 Cohesion: 0.08
 Nodes (24): aleja, atras, bloqueo, carril, carrilB, columnaEn(), conMarca, d3() (+16 more)
 
-### Community 51 - "descargas.ts"
-Cohesion: 0.13
-Nodes (22): [0.3.78] — 2026-09-20, Corregido — accesibilidad, Corregido — trabajo que se perdía sin decir nada, Herramientas, Pruebas, Rendimiento, aBase64(), abrirConInput() (+14 more)
+### Community 51 - "[0.3.78] — 2026-09-20"
+Cohesion: 0.33
+Nodes (6): [0.3.78] — 2026-09-20, Corregido — accesibilidad, Corregido — trabajo que se perdía sin decir nada, Herramientas, Pruebas, Rendimiento
 
 ### Community 52 - "kettlebell.py"
 Cohesion: 0.18
 Nodes (13): _asa(), _comprueba(), _grabado(), kettlebell(), kettlebell_10kg(), kettlebell_15kg(), kettlebell_20kg(), kettlebell_25kg() (+5 more)
 
-### Community 53 - "[0.4.11] — 2026-09-29"
-Cohesion: 0.08
-Nodes (24): [0.4.11] — 2026-09-29, [0.4.12] — 2026-09-29, [0.4.8] — 2026-09-29, [0.4.9] — 2026-09-29, Arreglado, Cambiado, El brazo con pilar, diseñado por ángulos, El cambio (+16 more)
+### Community 53 - ".subpaso"
+Cohesion: 0.07
+Nodes (20): [0.4.10] — 2026-09-29, [0.4.12] — 2026-09-29, [0.4.8] — 2026-09-29, [0.4.9] — 2026-09-29, Arreglado, Cambiado, El cambio, El cambio (+12 more)
+
+### Community 54 - "SceneManager"
+Cohesion: 0.05
+Nodes (8): CM, formatKg(), METER, gradientTexture(), pintarCaucho(), SceneManager, cargarImagen(), PrototipoFoto
 
 ### Community 55 - "agarre_doble.py"
-Cohesion: 0.13
-Nodes (11): agarre_doble(), _mango(), _placa(), codo(), _sin_builder(), tubo(), varilla(), [0.3.46] — 2026-09-12 (+3 more)
+Cohesion: 0.08
+Nodes (15): agarre_doble(), _mango(), _placa(), agarre_simple(), _empunadura(), _estribo(), _placa(), codo() (+7 more)
 
 ### Community 56 - "BM25"
 Cohesion: 0.14
@@ -631,16 +620,16 @@ Cohesion: 0.09
 Nodes (22): Anti-Patterns, ARIA Attributes, aria-describedby, aria-expanded and aria-controls, aria-label vs aria-labelledby, aria-live for Dynamic Content, Checklist, Complete Accessible Form (+14 more)
 
 ### Community 58 - "VisorPiezas.ts"
-Cohesion: 0.19
-Nodes (4): formatCm(), marcar(), Retratista, VisorPiezas
+Cohesion: 0.10
+Nodes (11): cargarIdioma(), dicc, Idioma, TRADUCCIONES, formatCm(), conEmojisSilueta(), ElProps, marcar() (+3 more)
 
 ### Community 59 - "cadgen"
-Cohesion: 0.10
-Nodes (5): El pivote que se clava por tramos, carril_topes(), _dedo(), disco_indexado(), pin_seguro()
+Cohesion: 0.15
+Nodes (3): El pivote que se clava por tramos, disco_indexado(), pin_seguro()
 
 ### Community 60 - "Joint"
-Cohesion: 0.13
-Nodes (9): [0.3.49] — 2026-09-12, Cambiado, Corregido, Interno, Pruebas, AssemblyHelper pattern, Core rule, Joint (+1 more)
+Cohesion: 0.16
+Nodes (8): [0.3.49] — 2026-09-12, Cambiado, Corregido, Interno, Pruebas, AssemblyHelper pattern, Core rule, Joint
 
 ### Community 61 - "Subagent-Driven Development"
 Cohesion: 0.09
@@ -654,9 +643,9 @@ Nodes (10): cotas(), disco(), disco_barbell_10lb(), disco_barbell_25lb(), disco_
 Cohesion: 0.10
 Nodes (20): 1. Identify Performance Issues, 2. Algorithmic Analysis, 3. React Performance Optimization, 4. Bundle Size Optimization, 5. Database & Query Optimization, 6. Network & API Optimization, 7. Memory Leak Detection, Analysis Commands (+12 more)
 
-### Community 65 - "i18n.ts"
-Cohesion: 0.12
-Nodes (12): cargarIdioma(), dicc, Idioma, setIdioma(), TRADUCCIONES, ElProps, marcarActual(), FAQ (+4 more)
+### Community 65 - "reloj.ts"
+Cohesion: 0.17
+Nodes (20): ConfigBisagra, Esfera, esferaDe(), formatearAmplitud(), formatearHora(), GRADOS_POR_HORA, GRADOS_POR_MINUTO, gradosDesdeHora() (+12 more)
 
 ### Community 66 - "tauri.conf.json"
 Cohesion: 0.10
@@ -683,8 +672,8 @@ Cohesion: 0.11
 Nodes (18): compilerOptions, esModuleInterop, forceConsistentCasingInFileNames, isolatedModules, lib, module, moduleResolution, noFallthroughCasesInSwitch (+10 more)
 
 ### Community 73 - "horquilla"
-Cohesion: 0.14
-Nodes (4): horquilla(), _oreja(), punto_anclaje_abrazadera(), punto_anclaje()
+Cohesion: 0.10
+Nodes (6): carril_topes(), _dedo(), horquilla(), _oreja(), punto_anclaje_abrazadera(), punto_anclaje()
 
 ### Community 74 - "a11y-architect.md"
 Cohesion: 0.11
@@ -814,9 +803,9 @@ Nodes (13): 1. Identify Independent Domains, 2. Create Focused Agent Tasks, 3. D
 Cohesion: 0.14
 Nodes (13): Agentes (`.claude/agents/`), Capacidades traídas de ECC, Capacidades traídas de fuera, De [awesome-claude-code-subagents](https://github.com/VoltAgent/awesome-claude-code-subagents), De [Claude-Code-Promts-Skills](https://github.com/Rtur2003/Claude-Code-Promts-Skills), De [ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill), Lo que NO entró, y por qué, Lo que se dejó fuera, y por qué (+5 more)
 
-### Community 108 - "PhysicsWorld.ts"
-Cohesion: 0.20
-Nodes (11): buildHorquillaGeometry(), CajaHorquilla, cajasHorquilla(), medidasHorquilla(), perfilDisco(), perfilOreja(), CableEntry, GRAVITY (+3 more)
+### Community 108 - "Landing"
+Cohesion: 0.18
+Nodes (4): PluginArchivos, RecentMeta, formatDate(), Landing
 
 ### Community 109 - "build.yml"
 Cohesion: 0.14
@@ -834,13 +823,13 @@ Nodes (6): runtime, runtime, POST(), responder(), runtime, kv
 Cohesion: 0.21
 Nodes (12): CableData, GroupData, HumanData, JointData, PartidaData, PROJECT_VERSION, Quat, RopeData (+4 more)
 
-### Community 113 - "lineToolDialog.ts"
-Cohesion: 0.24
-Nodes (12): BEAM_NOMINALS_MM, TUBE_NOMINALS_MM, confirmUnsavedChanges(), SaveChoice, prepararModal(), configurarDentada(), configureBeam(), configureGuiaTubular() (+4 more)
-
-### Community 114 - "9.2 Fragilidades reales, por riesgo"
+### Community 113 - "three"
 Cohesion: 0.17
-Nodes (9): 4.6 Guías tubulares: detección por forma + clamp cinemático, 9.1 Lo que está sólido, 9.2 Fragilidades reales, por riesgo, 9.3 Deuda en las pruebas, 9.4 Estado de publicación, 9. Estado actual y deuda técnica, EventBus, Listener (+1 more)
+Nodes (14): [0.3.65] — 2026-09-16, [0.3.69] — 2026-09-16, Añadido, Añadido, Sobre una decisión que se midió, three, bakeComponentGeometry(), firstTexturedMaterial() (+6 more)
+
+### Community 114 - "figureSegments.ts"
+Cohesion: 0.17
+Nodes (13): figureSegments, Fuente, Piel, SEGMENT_JOINT_NAMES, VALID, deleteSegment(), getAllSegments(), putSegment() (+5 more)
 
 ### Community 115 - "Pre-Delivery Checklist (canonical — the only one)"
 Cohesion: 0.15
@@ -859,12 +848,12 @@ Cohesion: 0.15
 Nodes (13): scripts, android:add, android:apk, android:open, android:sync, build, dev, preview (+5 more)
 
 ### Community 119 - "prueba-diente-retiene.mjs"
-Cohesion: 0.17
-Nodes (6): asiento, escenaCarril(), escenaConPasador(), GRADOS, recogidas, tabla
+Cohesion: 0.12
+Nodes (8): asiento, escenaCarril(), escenaConPasador(), GRADOS, recogidas, tabla, EventBus, Listener
 
-### Community 120 - "agarre_simple.py"
-Cohesion: 0.21
-Nodes (4): agarre_simple(), _empunadura(), _estribo(), _placa()
+### Community 120 - "banco-topes-geometria.py"
+Cohesion: 0.22
+Nodes (9): anguloRespaldo(), asientos(), bisagraArriba(), gira(), posar(), posicionesLocales(), qinv(), qmul() (+1 more)
 
 ### Community 121 - "Defense-in-Depth Validation"
 Cohesion: 0.17
@@ -886,9 +875,13 @@ Nodes (5): desplazado(), lamina(), pestana(), quieto(), tiron
 Cohesion: 0.39
 Nodes (11): Acordeon(), analizarVideo(), Carrusel(), nuevoAcordeon(), nuevoCarrusel(), nuevoId(), nuevoVideo(), Titulo() (+3 more)
 
-### Community 127 - "chapa.ts"
-Cohesion: 0.24
-Nodes (11): CaraDetectada, chapaGeometria(), COS_APERTURA, COS_SUAVE, detectarCaras(), emparejarCaras(), fichaDeCara(), lectura() (+3 more)
+### Community 126 - "os"
+Cohesion: 0.23
+Nodes (4): check_description_quality(), find_skill_dirs(), main(), parse_frontmatter()
+
+### Community 127 - "componentModels.ts"
+Cohesion: 0.27
+Nodes (9): hashU8(), ImportEntry, ImportStatus, deleteModel(), getAllModels(), putModel(), StoredModel, tx() (+1 more)
 
 ### Community 128 - "solveTwoBoneIK"
 Cohesion: 0.20
@@ -903,20 +896,16 @@ Cohesion: 0.18
 Nodes (10): Assemblies pull their children, Building many models, CAD project structure, Commit policy (a principle, not a layout), Folders mirror the product tree, Naming, Renaming or retiring outputs, Scaffolding a new project (+2 more)
 
 ### Community 132 - "Batería de pruebas de EXERSUITE3D"
-Cohesion: 0.18
+Cohesion: 0.17
 Nodes (11): Batería de pruebas de EXERSUITE3D, Concurrencia, Cuidado al juzgar un rojo: hay pruebas que revientan SIN imprimir un solo `✗`, Cómo correrlas, Cómo están escritas, Desde v0.4.10 la simulación la gobiernan las pruebas, por PASOS, Esperar por RELOJ es la primera causa de rojo mentiroso, Ficheros (+3 more)
 
 ### Community 133 - "prueba-brazo-pilar-angulos.mjs"
-Cohesion: 0.16
-Nodes (5): viaje, esperadas, montajes, pasos, TOPES
+Cohesion: 0.29
+Nodes (4): esperadas, montajes, pasos, TOPES
 
 ### Community 134 - "Lienzo.js"
 Cohesion: 0.35
 Nodes (9): ANCHO_DISENO, FUENTES, Lienzo(), nuevaImagen(), nuevoId(), nuevoTexto(), elegirArchivo(), elegirYSubir() (+1 more)
-
-### Community 135 - "perforar.ts"
-Cohesion: 0.31
-Nodes (10): abanico(), areaUV(), contornoCanal(), contornoVentana(), ejesDe(), P3, perforarContorno(), perforarGeometria() (+2 more)
 
 ### Community 136 - "atril_discos.py"
 Cohesion: 0.22
@@ -943,8 +932,8 @@ Cohesion: 0.20
 Nodes (9): aNue, aRef, errores, faltan, numeros(), parsed, peor, ref (+1 more)
 
 ### Community 143 - "4. Física y matemáticas"
-Cohesion: 0.22
-Nodes (8): 4.1 Escala y mundo base, 4.2 El orden de `build()` es obligatorio, 4.3 Grupos rígidos: un mecanismo real no es una nube de cuerpos sueltos, 4.4 Articulaciones, 4.5 Cables: restricción por gradientes, no cadena de cuerpos, 4.7 Cuerdas de seguridad: física + geometría, 4.9 Regla geométrica transversal, 4. Física y matemáticas
+Cohesion: 0.12
+Nodes (15): 4.1 Escala y mundo base, 4.2 El orden de `build()` es obligatorio, 4.3 Grupos rígidos: un mecanismo real no es una nube de cuerpos sueltos, 4.4 Articulaciones, 4.5 Cables: restricción por gradientes, no cadena de cuerpos, 4.6 Guías tubulares: detección por forma + clamp cinemático, 4.7 Cuerdas de seguridad: física + geometría, 4.9 Regla geométrica transversal (+7 more)
 
 ### Community 145 - "Deterministic Checks"
 Cohesion: 0.22
@@ -970,9 +959,9 @@ Nodes (5): avisosConsola, errores, fallos, FIX, ORIG
 Cohesion: 0.28
 Nodes (5): HerramientaRapida, crearBarraHerramientas(), crearBotonesHerramientas(), ICONOS, SVG()
 
-### Community 151 - "[0.4.10] — 2026-09-29"
-Cohesion: 0.25
-Nodes (6): [0.4.10] — 2026-09-29, El cambio, El examen, El porqué, Lo que recupera, Lo que salió por el camino
+### Community 151 - ".createRope"
+Cohesion: 0.27
+Nodes (3): RopeEnd, RopeKind, aplicarCuerdas()
 
 ### Community 152 - "Snapshot review"
 Cohesion: 0.25
@@ -986,13 +975,13 @@ Nodes (5): editada, errores, fallos, FRONTAL_VIEJA, MIA
 Cohesion: 0.25
 Nodes (6): derivaX, fallos, giro, maxRoll, maxTors, maxYaw
 
-### Community 156 - "estirar.ts"
-Cohesion: 0.43
-Nodes (5): bandaDe(), estirarPorElCentro(), largoDeFabrica(), puntoEnBanda(), puntoTrasEstirar()
+### Community 155 - "5. Geometría procedural"
+Cohesion: 0.22
+Nodes (9): 5.1 La cadena de construcción de una malla, 5.2 Primitiva paramétrica vs malla real, 5.3 Perforado pasante (`perforar.ts`), 5.4 Estirar por el centro (`estirar.ts`), 5.5 Piezas de línea (`linePieces.ts`), 5.5b Insertar un nodo NO deforma (v0.3.29), 5.7 Placa dentada doble (v0.3.25), 5.8 Mecanismo brazo + pilar + viga de topes (`brazoPilar.ts`, v0.3.29) (+1 more)
 
-### Community 157 - "units.ts"
-Cohesion: 0.29
-Nodes (4): CM, formatKg(), METER, gradientTexture()
+### Community 156 - "[0.4.11] — 2026-09-29"
+Cohesion: 0.22
+Nodes (9): [0.4.11] — 2026-09-29, El brazo con pilar, diseñado por ángulos, El documento de referencia, verificado antes de usarlo, El examen, El tope 1: una guía fantasma, La banca de catálogo, Lo que salió por el camino, Otra guía fantasma, y un verde falso (+1 more)
 
 ### Community 158 - "[0.4.7] — 2026-09-27"
 Cohesion: 0.29
@@ -1030,9 +1019,9 @@ Nodes (5): brazo, errores, fallos, multi, PIEZAS
 Cohesion: 0.29
 Nodes (4): errores, fallos, giro, traza
 
-### Community 169 - "10. Reglas de estilo"
+### Community 169 - "[0.4.14] — 2026-11-25"
 Cohesion: 0.33
-Nodes (6): 10.1 Idioma, 10.2 Comentarios: el rasgo más característico del proyecto, 10.3 Formato, 10.4 Lo que en este repositorio NO se hace, 10.5 Mensajes de commit, 10. Reglas de estilo
+Nodes (6): [0.4.14] — 2026-11-25, Arreglado al montarlo (no llega a verse, pero se midió), Arreglado en la aplicación (lo destapó el cuerpo nuevo), Cambiado, Examen, Pruebas
 
 ### Community 170 - "[0.2.63] — 2026-08-16"
 Cohesion: 0.33
@@ -1054,6 +1043,10 @@ Nodes (5): Agentes y skills de ECC, graphify, Plugins registrados, Skills de sup
 Cohesion: 0.33
 Nodes (5): Animation: the render module (`<name>.step.js`), Annotating a STEP you did not generate, CAD kinematics and animation, Kinematics: typed mates, Reviewing motion
 
+### Community 176 - "prueba-banco-cinco-topes.mjs"
+Cohesion: 0.33
+Nodes (3): datos, res, TOPES
+
 ### Community 177 - "El backend LLM del grafo"
 Cohesion: 0.33
 Nodes (5): El backend LLM del grafo, El estado de hoy, Las tres variables, Lo que este cableado NO acelera, Qué sale de la máquina, y esto es lo que hay que decidir
@@ -1066,17 +1059,17 @@ Nodes (5): Antes de tocar nada, Arranque rápido, EXERSUITE3D — Kit de migraci
 Cohesion: 0.47
 Nodes (5): barrer(), informe, mirar(), PALABRAS, sospechoso()
 
-### Community 181 - "prueba-banco-catalogo.mjs"
-Cohesion: 0.33
-Nodes (3): datos, res, TOPES
-
-### Community 182 - "prueba-banco-horquilla.mjs"
-Cohesion: 0.33
-Nodes (3): ANGULOS, datos, res
+### Community 181 - "[0.2.60] — 2026-08-15"
+Cohesion: 0.40
+Nodes (5): [0.2.60] — 2026-08-15, Añadido, Cambiado, Corregido, Corregido (continuación)
 
 ### Community 183 - "prueba-banco-tres-topes.mjs"
 Cohesion: 0.33
 Nodes (3): datos, res, TOPES
+
+### Community 184 - "prueba-bisagra-fisica.mjs"
+Cohesion: 0.09
+Nodes (9): SELECTORES, TAMANOS, errores, fallos, errores, fallos, errores, fallos (+1 more)
 
 ### Community 187 - "prueba-ingles.mjs"
 Cohesion: 0.47
@@ -1114,9 +1107,9 @@ Nodes (5): [0.2.66] — 2026-08-16, Añadido, Cambiado, Corregido, Sabido
 Cohesion: 0.40
 Nodes (4): [0.2.93] — 2026-08-19, Cambiado, Corregido, Verificación
 
-### Community 196 - "[0.3.97] — 2026-09-22"
-Cohesion: 0.40
-Nodes (5): [0.3.97] — 2026-09-22, Añadido — `prueba-banco-horquilla`, el recorrido de 0° a 90°, Cambiado — la banca ajustable pivota con HORQUILLA Y PASADOR, Corregido — LA HORQUILLA NO TENÍA GARGANTA PARA LA FÍSICA, Método — tres formas de medir mal una colisión, todas propias
+### Community 196 - "[0.2.52] — 2026-08-13"
+Cohesion: 0.67
+Nodes (3): [0.2.52] — 2026-08-13, Añadido, Corregido
 
 ### Community 197 - "[0.4.4] — 2026-09-26"
 Cohesion: 0.40
@@ -1157,6 +1150,10 @@ Nodes (3): EJ, errores, fallos
 ### Community 213 - "prueba-maniqui-usa.mjs"
 Cohesion: 0.40
 Nodes (3): errores, fallos, medidas
+
+### Community 216 - "[0.2.89] — 2026-08-18"
+Cohesion: 0.67
+Nodes (3): [0.2.89] — 2026-08-18, Cambiado, Corregido
 
 ### Community 217 - "[0.2.15] — 2026-08-03"
 Cohesion: 0.50
@@ -1226,9 +1223,9 @@ Nodes (4): [0.2.71] — 2026-08-16, Añadido, Cambiado, Corregido
 Cohesion: 0.50
 Nodes (4): [0.2.73] — 2026-08-17, Añadido, Corregido, Sabido
 
-### Community 234 - "[0.2.74] — 2026-08-17"
-Cohesion: 0.50
-Nodes (4): [0.2.74] — 2026-08-17, Añadido, Corregido, Sabido
+### Community 234 - "[0.2.97] — 2026-08-20"
+Cohesion: 0.67
+Nodes (3): [0.2.97] — 2026-08-20, Añadido, Corregido
 
 ### Community 235 - "[0.2.78] — 2026-08-18"
 Cohesion: 0.50
@@ -1262,13 +1259,13 @@ Nodes (4): [0.3.19] — 2026-08-27, Arreglado, Añadido, Cambiado
 Cohesion: 0.50
 Nodes (4): [0.3.23] — 2026-08-28, Arreglado, Añadido, Cambiado
 
-### Community 243 - "[0.3.2] — 2026-08-22"
-Cohesion: 0.50
-Nodes (4): [0.3.2] — 2026-08-22, Arreglado, Añadido, Cambiado
-
-### Community 244 - "[0.3.3] — 2026-08-22"
+### Community 243 - "[0.3.3] — 2026-08-22"
 Cohesion: 0.50
 Nodes (4): [0.3.3] — 2026-08-22, Arreglado, Añadido, Cambiado
+
+### Community 244 - "[0.3.13] — 2026-08-26"
+Cohesion: 0.67
+Nodes (3): [0.3.13] — 2026-08-26, Arreglado, Pendiente
 
 ### Community 245 - "[0.3.48] — 2026-09-12"
 Cohesion: 0.50
@@ -1325,6 +1322,14 @@ Nodes (3): Migration guides, Migrations, When to suspect skew
 ### Community 258 - "scan.sh"
 Cohesion: 0.83
 Nodes (3): list_files(), report(), scan.sh script
+
+### Community 260 - "[0.3.71] — 2026-09-16"
+Cohesion: 0.67
+Nodes (3): [0.3.71] — 2026-09-16, Cambiado, Sobre cómo se comprueba
+
+### Community 261 - "[0.3.83] — 2026-09-21"
+Cohesion: 0.67
+Nodes (3): [0.3.83] — 2026-09-21, Cambiado — el apaño de v0.3.82 se sustituye por la pieza de verdad, Pruebas
 
 ### Community 270 - "mundo"
 Cohesion: 0.50
@@ -1394,10 +1399,6 @@ Nodes (3): [0.2.25] — 2026-08-05, Corregido, Eliminado
 Cohesion: 0.67
 Nodes (3): [0.2.26] — 2026-08-06, Añadido, Cambiado
 
-### Community 287 - "[0.2.29] — 2026-08-07"
-Cohesion: 0.67
-Nodes (3): [0.2.29] — 2026-08-07, Añadido, Corregido
-
 ### Community 288 - "[0.2.2] — 2026-07-22"
 Cohesion: 0.67
 Nodes (3): [0.2.2] — 2026-07-22, Añadido, Corregido
@@ -1462,10 +1463,6 @@ Nodes (3): [0.2.5] — 2026-07-23, Añadido, Corregido
 Cohesion: 0.67
 Nodes (3): [0.2.62] — 2026-08-16, Cambiado, Corregido
 
-### Community 304 - "[0.2.68] — 2026-08-16"
-Cohesion: 0.67
-Nodes (3): [0.2.68] — 2026-08-16, Cambiado, Sabido
-
 ### Community 305 - "[0.2.70] — 2026-08-16"
 Cohesion: 0.67
 Nodes (3): [0.2.70] — 2026-08-16, Añadido, Sabido
@@ -1477,10 +1474,6 @@ Nodes (3): [0.2.72] — 2026-08-16, Corregido, Sabido
 ### Community 307 - "[0.2.75] — 2026-08-17"
 Cohesion: 0.67
 Nodes (3): [0.2.75] — 2026-08-17, Cambiado, Sabido
-
-### Community 308 - "[0.2.76] — 2026-08-17"
-Cohesion: 0.67
-Nodes (3): [0.2.76] — 2026-08-17, Corregido, Sabido
 
 ### Community 309 - "[0.2.77] — 2026-08-17"
 Cohesion: 0.67
@@ -1502,17 +1495,9 @@ Nodes (3): [0.2.87] — 2026-08-18, Cambiado, Corregido
 Cohesion: 0.67
 Nodes (3): [0.2.8] — 2026-07-25, Cambiado, Corregido
 
-### Community 314 - "[0.2.90] — 2026-08-18"
-Cohesion: 0.67
-Nodes (3): [0.2.90] — 2026-08-18, Corregido, Verificación
-
 ### Community 315 - "[0.2.94] — 2026-08-19"
 Cohesion: 0.67
 Nodes (3): [0.2.94] — 2026-08-19, Corregido, Verificación
-
-### Community 316 - "[0.2.95] — 2026-08-19"
-Cohesion: 0.67
-Nodes (3): [0.2.95] — 2026-08-19, Corregido, Verificación
 
 ### Community 317 - "[0.2.96] — 2026-08-19"
 Cohesion: 0.67
@@ -1610,17 +1595,13 @@ Nodes (3): [0.3.54] — 2026-09-14, Añadido, Corregido
 Cohesion: 0.67
 Nodes (3): [0.3.55] — 2026-09-15, Cambiado, Corregido
 
-### Community 341 - "[0.3.58] — 2026-09-16"
+### Community 341 - "[0.3.63] — 2026-09-16"
 Cohesion: 0.67
-Nodes (3): [0.3.58] — 2026-09-16, Cambiado, Corregido
+Nodes (3): [0.3.63] — 2026-09-16, Cambiado, Corregido
 
 ### Community 342 - "[0.3.62] — 2026-09-16"
 Cohesion: 0.67
 Nodes (3): [0.3.62] — 2026-09-16, Añadido, Sin cambios
-
-### Community 343 - "[0.3.63] — 2026-09-16"
-Cohesion: 0.67
-Nodes (3): [0.3.63] — 2026-09-16, Cambiado, Corregido
 
 ### Community 344 - "[0.3.66] — 2026-09-16"
 Cohesion: 0.67
@@ -1700,23 +1681,23 @@ Nodes (3): enElCuello(), segmentoDeVertice(), segmentoFinal()
 
 ## Knowledge Gaps
 - **1 isolated node(s):** `exersuite3d`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2356 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **67 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2366 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **55 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Changelog` connect `Changelog` to `main.ts`, `three`, `getDefinition`, `indexada.py`, `descargas.ts`, `[0.4.11] — 2026-09-29`, `agarre_doble.py`, `Joint`, `EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)`, `poseLibrary.ts`, `solveTwoBoneIK`, `[0.3.98] — 2026-09-23`, `[0.4.10] — 2026-09-29`, `[0.4.7] — 2026-09-27`, `[0.2.63] — 2026-08-16`, `[0.3.61] — 2026-09-16`, `[0.4.3] — 2026-09-23`, `[0.1.5] — 2026-07-03`, `[0.1.7] — 2026-07-06`, `[0.2.66] — 2026-08-16`, `[0.2.93] — 2026-08-19`, `[0.3.97] — 2026-09-22`, `[0.4.4] — 2026-09-26`, `[0.4.5] — 2026-09-26`, `[0.4.6] — 2026-09-27`, `[0.2.15] — 2026-08-03`, `[0.2.32] — 2026-08-09`, `[0.2.34] — 2026-08-09`, `[0.2.3] — 2026-07-22`, `[0.2.44] — 2026-08-11`, `[0.2.46] — 2026-08-11`, `[0.2.49] — 2026-08-12`, `[0.2.4] — 2026-07-23`, `[0.2.50] — 2026-08-12`, `[0.2.51] — 2026-08-12`, `[0.2.57] — 2026-08-14`, `[0.2.61] — 2026-08-16`, `[0.2.64] — 2026-08-16`, `[0.2.69] — 2026-08-16`, `[0.2.6] — 2026-07-24`, `[0.2.71] — 2026-08-16`, `[0.2.73] — 2026-08-17`, `[0.2.74] — 2026-08-17`, `[0.2.78] — 2026-08-18`, `[0.2.81] — 2026-08-18`, `[0.2.84] — 2026-08-18`, `[0.2.91] — 2026-08-19`, `[0.2.99] — 2026-08-20`, `[0.3.0] — 2026-08-20`, `[0.3.19] — 2026-08-27`, `[0.3.23] — 2026-08-28`, `[0.3.2] — 2026-08-22`, `[0.3.3] — 2026-08-22`, `[0.3.48] — 2026-09-12`, `[0.3.73] — 2026-09-19`, `[0.3.74] — 2026-09-19`, `[0.3.76] — 2026-09-19`, `[0.3.77] — 2026-09-19`, `[0.3.82] — 2026-09-21`, `[0.3.84] — 2026-09-21`, `[0.3.87] — 2026-09-21`, `[0.3.88] — 2026-09-22`, `[0.3.90] — 2026-09-22`, `[0.4.0] — 2026-09-23`, `[0.4.13] — 2026-09-30`, `[0.1.1] — 2026-06-30`, `[0.1.2] — 2026-06-30`, `[0.1.3] — 2026-06-30`, `[0.1.4] — 2026-07-01`, `[0.1.8] — 2026-07-06`, `[0.1.9] — 2026-07-17`, `[0.2.0] — 2026-07-20`, `[0.2.11] — 2026-07-26`, `[0.2.12] — 2026-07-26`, `[0.2.14] — 2026-08-02`, `[0.2.19] — 2026-08-05`, `[0.2.1] — 2026-07-21`, `[0.2.20] — 2026-08-05`, `[0.2.21] — 2026-08-05`, `[0.2.25] — 2026-08-05`, `[0.2.26] — 2026-08-06`, `[0.2.29] — 2026-08-07`, `[0.2.2] — 2026-07-22`, `[0.2.30] — 2026-08-07`, `[0.2.31] — 2026-08-07`, `[0.2.33] — 2026-08-09`, `[0.2.35] — 2026-08-09`, `[0.2.37] — 2026-08-09`, `[0.2.41] — 2026-08-10`, `[0.2.43] — 2026-08-10`, `[0.2.45] — 2026-08-11`, `[0.2.48] — 2026-08-11`, `[0.2.54] — 2026-08-13`, `[0.2.55] — 2026-08-13`, `[0.2.56] — 2026-08-13`, `[0.2.58] — 2026-08-14`, `[0.2.5] — 2026-07-23`, `[0.2.62] — 2026-08-16`, `[0.2.68] — 2026-08-16`, `[0.2.70] — 2026-08-16`, `[0.2.72] — 2026-08-16`, `[0.2.75] — 2026-08-17`, `[0.2.76] — 2026-08-17`, `[0.2.77] — 2026-08-17`, `[0.2.82] — 2026-08-18`, `[0.2.83] — 2026-08-18`, `[0.2.87] — 2026-08-18`, `[0.2.8] — 2026-07-25`, `[0.2.90] — 2026-08-18`, `[0.2.94] — 2026-08-19`, `[0.2.95] — 2026-08-19`, `[0.2.96] — 2026-08-19`, `[0.2.98] — 2026-08-20`, `[0.3.11] — 2026-08-26`, `[0.3.12] — 2026-08-26`, `[0.3.14] — 2026-08-26`, `[0.3.16] — 2026-08-27`, `[0.3.17] — 2026-08-27`, `[0.3.18] — 2026-08-27`, `[0.3.21] — 2026-08-27`, `[0.3.22] — 2026-08-28`, `[0.3.25] — 2026-08-29`, `[0.3.26] — 2026-08-31`, `[0.3.27] — 2026-09-01`, `[0.3.29] — 2026-09-02`, `[0.3.31] — 2026-09-03`, `[0.3.32] — 2026-09-09`, `[0.3.33] — 2026-09-09`, `[0.3.40] — 2026-09-12`, `[0.3.43] — 2026-09-12`, `[0.3.47] — 2026-09-12`, `[0.3.51] — 2026-09-12`, `[0.3.53] — 2026-09-14`, `[0.3.54] — 2026-09-14`, `[0.3.55] — 2026-09-15`, `[0.3.58] — 2026-09-16`, `[0.3.62] — 2026-09-16`, `[0.3.63] — 2026-09-16`, `[0.3.66] — 2026-09-16`, `[0.3.68] — 2026-09-16`, `[0.3.72] — 2026-09-18`, `[0.3.75] — 2026-09-19`, `[0.3.79] — 2026-09-20`, `[0.3.7] — 2026-08-22`, `[0.3.81] — 2026-09-21`, `[0.3.85] — 2026-09-21`, `[0.3.86] — 2026-09-21`, `[0.3.89] — 2026-09-22`, `[0.3.91] — 2026-09-22`, `[0.3.92] — 2026-09-22`, `[0.3.93] — 2026-09-22`, `[0.3.94] — 2026-09-22`, `[0.3.95] — 2026-09-22`, `[0.3.9] — 2026-08-23`, `[0.4.1] — 2026-09-23`?**
-  _High betweenness centrality (0.196) - this node is a cross-community bridge._
+- **Why does `playwright-core` connect `playwright-core` to `prepararPasos`, `prueba-brazo-pilar-angulos.mjs`, `prueba-barra-maniqui.mjs`, `prueba-home-visor.mjs`, `prueba-disco-barbell.mjs`, `prueba-torre-pesos.mjs`, `ref_node_fs`, `prueba-moleteado-tubo.mjs`, `prueba-piezas-retiradas.mjs`, `prueba-uppermachine.mjs`, `prueba-biblioteca-posturas.mjs`, `prueba-brazo-plano.mjs`, `prueba-sentadilla.mjs`, `prueba-banca-indexada.mjs`, `prueba-largo-a-medida.mjs`, `prueba-mano-brazo.mjs`, `prueba-pie-anclado.mjs`, `package.json`, `prueba-banco-cinco-topes.mjs`, `prueba-gesto-barra.mjs`, `_auditar-ingles.mjs`, `prueba-apoyos.mjs`, `prueba-bisagra-rigida.mjs`, `prueba-banco-tres-topes.mjs`, `prueba-bisagra-fisica.mjs`, `prueba-brazo-spotter.mjs`, `prueba-freno.mjs`, `prueba-ingles.mjs`, `prueba-kettlebell.mjs`, `prueba-mancuerna-hex.mjs`, `prueba-placa-dentada.mjs`, `prueba-atril-discos.mjs`, `prueba-auditoria2.mjs`, `prueba-bisagra-caras.mjs`, `prueba-cable-oculto.mjs`, `prueba-chapa.mjs`, `prueba-chapa-integracion.mjs`, `prueba-levantamiento.mjs`, `prueba-maniqui-usa.mjs`, `prueba-menus-v257.mjs`, `prueba-pasador-indexado.mjs`, `prueba-barra-olimpica.mjs`, `prueba-vibra-minima.mjs`, `prueba-diente-retiene.mjs`, `prueba-biblioteca-modelos.mjs`, `prueba-hub.mjs`?**
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `Editor` (e.g. with `0. En una página` and `2.2 El patrón de MODO (la estructura más importante del Editor)`) actually correct?**
   _`Editor` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `exersuite3d` to the rest of the system?**
   _1 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Changelog` be split into smaller, more focused modules?**
-  _Cohesion score 0.015151515151515152 - nodes in this community are weakly interconnected._
-- **Why does `Editor` connect `Editor` to `.moverPrimitiva`, `.scheduleAutosave`, `main.ts`, `Editor.ts`, `.onPointerDown`, `PreciseDrag`, `.emit`, `.constructor`, `.requestRender`, `crearBotonesHerramientas`, `SceneObject`, `Landing.ts`, `.selectJoint`, `estirar.ts`, `standardMachines.ts`, `SceneObject.ts`, `.rebuildGeometry`, `PropertiesPanel.ts`, `.listObjects`, `linePieces.ts`, `PhysicsWorld`, `ComponentPalette.ts`, `AI_CONTEXT.md — EXERSUITE3D`, `Toolbar`, `recentStore.ts`, `descargas.ts`, `SceneManager`, `VisorPiezas.ts`, `Joint`, `PrototipoFoto`, `i18n.ts`, `Cable`, `project.ts`, `.captureViewportPNG`, `.isModoCalce`, `.aplicarChapa`, `chapa.ts`?**
-  _High betweenness centrality (0.152) - this node is a cross-community bridge._
+  _Cohesion score 0.015625 - nodes in this community are weakly interconnected._
+- **Why does `Changelog` connect `Changelog` to `main.ts`, `.build`, `LibraryView.ts`, `PropertiesPanel.ts`, `indexada.py`, `[0.3.78] — 2026-09-20`, `.subpaso`, `agarre_doble.py`, `Joint`, `EXERSUITE3D — Tienda web (Vercel + Hugging Face + Mercado Pago)`, `poseLibrary.ts`, `three`, `solveTwoBoneIK`, `[0.3.98] — 2026-09-23`, `[0.4.11] — 2026-09-29`, `[0.4.7] — 2026-09-27`, `[0.4.14] — 2026-11-25`, `[0.2.63] — 2026-08-16`, `[0.3.61] — 2026-09-16`, `[0.4.3] — 2026-09-23`, `[0.2.60] — 2026-08-15`, `[0.1.5] — 2026-07-03`, `[0.1.7] — 2026-07-06`, `[0.2.66] — 2026-08-16`, `[0.2.93] — 2026-08-19`, `[0.2.52] — 2026-08-13`, `[0.4.4] — 2026-09-26`, `[0.4.5] — 2026-09-26`, `[0.4.6] — 2026-09-27`, `[0.2.89] — 2026-08-18`, `[0.2.15] — 2026-08-03`, `[0.2.32] — 2026-08-09`, `[0.2.34] — 2026-08-09`, `[0.2.3] — 2026-07-22`, `[0.2.44] — 2026-08-11`, `[0.2.46] — 2026-08-11`, `[0.2.49] — 2026-08-12`, `[0.2.4] — 2026-07-23`, `[0.2.50] — 2026-08-12`, `[0.2.51] — 2026-08-12`, `[0.2.57] — 2026-08-14`, `[0.2.61] — 2026-08-16`, `[0.2.64] — 2026-08-16`, `[0.2.69] — 2026-08-16`, `[0.2.6] — 2026-07-24`, `[0.2.71] — 2026-08-16`, `[0.2.73] — 2026-08-17`, `[0.2.97] — 2026-08-20`, `[0.2.78] — 2026-08-18`, `[0.2.81] — 2026-08-18`, `[0.2.84] — 2026-08-18`, `[0.2.91] — 2026-08-19`, `[0.2.99] — 2026-08-20`, `[0.3.0] — 2026-08-20`, `[0.3.19] — 2026-08-27`, `[0.3.23] — 2026-08-28`, `[0.3.3] — 2026-08-22`, `[0.3.13] — 2026-08-26`, `[0.3.48] — 2026-09-12`, `[0.3.73] — 2026-09-19`, `[0.3.74] — 2026-09-19`, `[0.3.76] — 2026-09-19`, `[0.3.77] — 2026-09-19`, `[0.3.82] — 2026-09-21`, `[0.3.84] — 2026-09-21`, `[0.3.87] — 2026-09-21`, `[0.3.88] — 2026-09-22`, `[0.3.90] — 2026-09-22`, `[0.4.0] — 2026-09-23`, `[0.4.13] — 2026-09-30`, `[0.3.71] — 2026-09-16`, `[0.3.83] — 2026-09-21`, `[0.1.1] — 2026-06-30`, `[0.1.2] — 2026-06-30`, `[0.1.3] — 2026-06-30`, `[0.1.4] — 2026-07-01`, `[0.1.8] — 2026-07-06`, `[0.1.9] — 2026-07-17`, `[0.2.0] — 2026-07-20`, `[0.2.11] — 2026-07-26`, `[0.2.12] — 2026-07-26`, `[0.2.14] — 2026-08-02`, `[0.2.19] — 2026-08-05`, `[0.2.1] — 2026-07-21`, `[0.2.20] — 2026-08-05`, `[0.2.21] — 2026-08-05`, `[0.2.25] — 2026-08-05`, `[0.2.26] — 2026-08-06`, `[0.2.2] — 2026-07-22`, `[0.2.30] — 2026-08-07`, `[0.2.31] — 2026-08-07`, `[0.2.33] — 2026-08-09`, `[0.2.35] — 2026-08-09`, `[0.2.37] — 2026-08-09`, `[0.2.41] — 2026-08-10`, `[0.2.43] — 2026-08-10`, `[0.2.45] — 2026-08-11`, `[0.2.48] — 2026-08-11`, `[0.2.54] — 2026-08-13`, `[0.2.55] — 2026-08-13`, `[0.2.56] — 2026-08-13`, `[0.2.58] — 2026-08-14`, `[0.2.5] — 2026-07-23`, `[0.2.62] — 2026-08-16`, `[0.2.70] — 2026-08-16`, `[0.2.72] — 2026-08-16`, `[0.2.75] — 2026-08-17`, `[0.2.77] — 2026-08-17`, `[0.2.82] — 2026-08-18`, `[0.2.83] — 2026-08-18`, `[0.2.87] — 2026-08-18`, `[0.2.8] — 2026-07-25`, `[0.2.94] — 2026-08-19`, `[0.2.96] — 2026-08-19`, `[0.2.98] — 2026-08-20`, `[0.3.11] — 2026-08-26`, `[0.3.12] — 2026-08-26`, `[0.3.14] — 2026-08-26`, `[0.3.16] — 2026-08-27`, `[0.3.17] — 2026-08-27`, `[0.3.18] — 2026-08-27`, `[0.3.21] — 2026-08-27`, `[0.3.22] — 2026-08-28`, `[0.3.25] — 2026-08-29`, `[0.3.26] — 2026-08-31`, `[0.3.27] — 2026-09-01`, `[0.3.29] — 2026-09-02`, `[0.3.31] — 2026-09-03`, `[0.3.32] — 2026-09-09`, `[0.3.33] — 2026-09-09`, `[0.3.40] — 2026-09-12`, `[0.3.43] — 2026-09-12`, `[0.3.47] — 2026-09-12`, `[0.3.51] — 2026-09-12`, `[0.3.53] — 2026-09-14`, `[0.3.54] — 2026-09-14`, `[0.3.55] — 2026-09-15`, `[0.3.63] — 2026-09-16`, `[0.3.62] — 2026-09-16`, `[0.3.66] — 2026-09-16`, `[0.3.68] — 2026-09-16`, `[0.3.72] — 2026-09-18`, `[0.3.75] — 2026-09-19`, `[0.3.79] — 2026-09-20`, `[0.3.7] — 2026-08-22`, `[0.3.81] — 2026-09-21`, `[0.3.85] — 2026-09-21`, `[0.3.86] — 2026-09-21`, `[0.3.89] — 2026-09-22`, `[0.3.91] — 2026-09-22`, `[0.3.92] — 2026-09-22`, `[0.3.93] — 2026-09-22`, `[0.3.94] — 2026-09-22`, `[0.3.95] — 2026-09-22`, `[0.3.9] — 2026-08-23`, `[0.4.1] — 2026-09-23`?**
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
 - **Are the 10 inferred relationships involving `el()` (e.g. with `10.1 Idioma` and `10.4 Lo que en este repositorio NO se hace`) actually correct?**
   _`el()` has 10 INFERRED edges - model-reasoned connections that need verification._
 - **Should `prepararPasos` be split into smaller, more focused modules?**
-  _Cohesion score 0.026798598227169654 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02338811630847029 - nodes in this community are weakly interconnected._

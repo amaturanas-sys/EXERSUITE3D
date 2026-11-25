@@ -15340,6 +15340,12 @@ export class Editor {
       // Sentada en un banco bajo, la pierna no cabe entre el asiento y el
       // suelo: se estira la rodilla, como haría cualquiera.
       this.noHundirse();
+      // Y LA ALTURA QUE SE APRENDE ES DONDE SE POSÓ (v0.4.14), no la cota de la
+      // caja del asiento. Cada postura y cada articulación vuelven a posar los
+      // glúteos en `alturaDelApoyo`: con la cota de la caja, en cuanto
+      // `posarSobreElHierro` la bajaba a la cara de verdad, editar un hombro
+      // la devolvía 0,44 cm más arriba. Es lo mismo que hace arrastrarla.
+      if (!this.tumbadaEnElApoyo) this.alturaDelApoyo = this.baseDeApoyoSentado(fig);
     } else {
       const maquina = this.piezaCercana(destino.punto, (o) => o.physics.fixed);
       if (maquina) {

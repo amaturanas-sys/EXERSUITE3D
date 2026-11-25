@@ -5,10 +5,10 @@ Todos los cambios notables de **EXERSUITE3D** se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [Versionado Semántico](https://semver.org/lang/es/).
 
-## [0.4.14] — 2026-11-22
+## [0.4.14] — 2026-11-25
 
 **El maniquí cambia de cuerpo: el modelo con rig del diseñador, aligerado de
-296.245 a 23.966 triángulos, se ve con una piel que dobla en las
+296.245 a 23.974 triángulos, se ve con una piel que dobla en las
 articulaciones y se sigue midiendo con sus dieciséis segmentos.**
 
 ### Cambiado
@@ -29,7 +29,7 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   cuerpo físico en el motor y el clic que elige una articulación. Sólo dejan
   de dibujarse. La piel tiene caja envolvente vacía y no responde al ratón,
   para no colarse en ninguna medida.
-- **No satura el motor.** 23.966 triángulos en UN objeto, donde el anterior
+- **No satura el motor.** 23.974 triángulos en UN objeto, donde el anterior
   dibujaba 47.024 en dieciséis. Desviación máxima respecto del original de
   0,45 cm. Pesa lo mismo que antes (piel 518 kB y segmentos 311 kB, contra
   860 kB), y conserva las normales del modelo de 296.000 triángulos: el
@@ -136,6 +136,11 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   pivote. Con el cuerpo anterior el corte caía un grado antes; con el nuevo,
   7,6°, y al bajar —que va al hito exacto— la columna se desviaba 5,4° de la
   de subida.
+- **La altura del asiento se aprende donde la figura se posó**, no en la cota
+  de la caja del asiento. Cada postura y cada articulación vuelven a posar los
+  glúteos a esa altura; con la cota de la caja, en cuanto la figura bajaba a la
+  cara de verdad, editar un hombro la devolvía 0,44 cm más arriba. Es lo mismo
+  que ya hacía arrastrarla.
 
 ### Pruebas
 
@@ -169,6 +174,17 @@ articulaciones y se sigue midiendo con sus dieciséis segmentos.**
   `prueba-viewer-maniqui`): arrancar la simulación o abrir un proyecto en el
   Viewer tarda más en unas máquinas que en otras —igual con el cuerpo anterior
   que con el nuevo— y con tiempos fijos fallaban.
+
+### Examen
+
+La batería completa, en serie: **126 pruebas, 126 verdes** —las 125 de
+siempre y `prueba-maniqui-piel`—, en un contenedor más lento que el de la
+v0.4.13 (60 min). En la corrida entera salieron 124; `prueba-zonas` cazó que
+editar un hombro levantaba 0,44 cm a la figura sentada —el último arreglo de
+arriba—, y tras él pasaron ella y las 25 pruebas que sientan a la figura.
+`prueba-sitio` necesita la web de marketing servida en el 3100 (ver
+`pruebas/LEEME.md`) y pasa con ella. Ningún log con ✗, ❌ ni error de página
+fuera de esas dos.
 
 ## [0.4.13] — 2026-09-30
 
